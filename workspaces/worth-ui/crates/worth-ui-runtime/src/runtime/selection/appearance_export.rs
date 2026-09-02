@@ -38,11 +38,13 @@ pub(crate) struct UiSelectionAppearanceOwnerSnapshot {
             super::UiSelectionOwnerIncarnation,
         )],
     >,
-    ambiguous_mounted_owners: Box<[(
-        worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        crate::graph::UiGraphNodeIdentity,
-        super::UiSelectionOwnerIncarnation,
-    )]>,
+    ambiguous_mounted_owners: Box<
+        [(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            crate::graph::UiGraphNodeIdentity,
+            super::UiSelectionOwnerIncarnation,
+        )],
+    >,
     postures: Box<[UiSelectionAppearancePosture]>,
 }
 

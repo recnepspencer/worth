@@ -1,5 +1,5 @@
-mod current_target;
 mod capacity;
+mod current_target;
 #[allow(
     dead_code,
     reason = "Gate 0 freezes primary-pointer admission before host consumption"
@@ -13,12 +13,12 @@ mod presentation;
 )]
 mod transition;
 
+pub use capacity::UiPointerPresenceAdmissionDenial;
+pub(crate) use capacity::UiPointerPresenceCapacity;
 pub(crate) use current_target::{
     UiPointerPresenceAppearanceOwnerSnapshot, UiPointerPresenceAppearancePosture,
     UiPointerPresenceClass,
 };
-pub use capacity::UiPointerPresenceAdmissionDenial;
-pub(crate) use capacity::UiPointerPresenceCapacity;
 pub(crate) use inspection::UiPrimaryPointerKind;
 pub(crate) use owner::UiPointerPresenceOwner;
 pub(crate) use presentation::{

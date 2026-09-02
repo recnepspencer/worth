@@ -19,6 +19,7 @@ pub enum UiPointerGestureStopReason {
         expected: worth_ui_host_contract::UiHostPointerDeviceKind,
         observed: worth_ui_host_contract::UiHostPointerDeviceKind,
     },
+    MissingPointerDeviceKind,
     ButtonChanged {
         expected: UiHostPointerButton,
         observed: UiHostPointerButton,

@@ -1,5 +1,5 @@
-use super::*;
 use super::super::UiPointerPresenceAdmissionDenial;
+use super::*;
 
 #[test]
 fn pointer_capacity_denies_without_eviction_and_recovers_after_retirement() {
@@ -72,7 +72,8 @@ fn cancel_all_is_an_exact_pointer_and_primary_shutdown_census() {
     let first_surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
     let second_surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
     let first_binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
-    let second_binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let second_binding =
+        worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
     let position = UiHostSurfacePosition::viewport_logical(4, 8);
     owner
         .record_pointer_target(

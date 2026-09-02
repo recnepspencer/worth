@@ -67,7 +67,7 @@ pub enum UiHostObservationCoalescingIdentity {
         pointer: super::UiHostPointerIdentity,
         capture_epoch: super::UiHostPointerCaptureEpoch,
         pressed_buttons: super::UiHostPressedPointerButtons,
-        device_kind: super::UiHostPointerDeviceKind,
+        device_kind: Option<super::UiHostPointerDeviceKind>,
     },
 }
 
@@ -118,7 +118,7 @@ impl UiHostObservationPayload {
                 pointer: *pointer,
                 capture_epoch: *capture_epoch,
                 pressed_buttons: *pressed_buttons,
-                device_kind: super::UiHostPointerDeviceKind::Mouse,
+                device_kind: None,
             }),
             _ => None,
         }

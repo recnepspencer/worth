@@ -50,14 +50,12 @@ fn shutdown_reports_an_exact_pointer_presence_census() {
     assert_eq!(final_state.active_gestures(), 0);
     assert_eq!(state.pointer_presence.as_ref().unwrap().pointer_count(), 0);
     assert_eq!(state.pointer_presence.as_ref().unwrap().primary_count(), 0);
-    assert!(
-        state
-            .pointer_presence
-            .as_ref()
-            .unwrap()
-            .appearance_snapshot()
-            .postures()
-            .is_empty()
-    );
+    assert!(state
+        .pointer_presence
+        .as_ref()
+        .unwrap()
+        .appearance_snapshot()
+        .postures()
+        .is_empty());
     let _ = session.shutdown();
 }

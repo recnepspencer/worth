@@ -12,6 +12,7 @@ pub struct UiHostObservationMountedBasis {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHostObservationPointerDeviceKindDenial {
     NotPointerPayload(UiHostObservationFamily),
+    MissingForPointerPayload(UiHostObservationFamily),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -82,12 +83,26 @@ impl UiHostObservationReport {
             UiHostObservationPayload::PointerMotion { .. }
                 | UiHostObservationPayload::PointerButton { .. }
         ) {
-            return Err(
-                UiHostObservationPointerDeviceKindDenial::NotPointerPayload(self.family()),
-            );
+            return Err(UiHostObservationPointerDeviceKindDenial::NotPointerPayload(
+                self.family(),
+            ));
         }
         self.pointer_device_kind = Some(kind);
         Ok(self)
+    }
+
+    pub fn admit_pointer_device_kind(
+        &self,
+    ) -> Result<UiHostPointerDeviceKind, UiHostObservationPointerDeviceKindDenial> {
+        match self.payload {
+            UiHostObservationPayload::PointerMotion { .. }
+            | UiHostObservationPayload::PointerButton { .. } => self.pointer_device_kind.ok_or(
+                UiHostObservationPointerDeviceKindDenial::MissingForPointerPayload(self.family()),
+            ),
+            _ => Err(UiHostObservationPointerDeviceKindDenial::NotPointerPayload(
+                self.family(),
+            )),
+        }
     }
 
     pub const fn sequence(&self) -> UiHostObservationSequence {
@@ -119,36 +134,27 @@ impl UiHostObservationReport {
     }
 
     pub const fn effective_pointer_device_kind(&self) -> Option<UiHostPointerDeviceKind> {
-        match self.payload {
-            UiHostObservationPayload::PointerMotion { .. }
-            | UiHostObservationPayload::PointerButton { .. } => Some(
-                match self.pointer_device_kind {
-                    Some(kind) => kind,
-                    None => UiHostPointerDeviceKind::Mouse,
-                },
-            ),
-            _ => None,
-        }
+        self.pointer_device_kind
     }
 
-    pub const fn coalescing_identity(
-        &self,
-    ) -> Option<super::UiHostObservationCoalescingIdentity> {
+    pub const fn coalescing_identity(&self) -> Option<super::UiHostObservationCoalescingIdentity> {
         match self.payload.coalescing_identity() {
             Some(super::UiHostObservationCoalescingIdentity::PointerMotion {
                 pointer,
                 capture_epoch,
                 pressed_buttons,
                 ..
-            }) => Some(super::UiHostObservationCoalescingIdentity::PointerMotion {
-                pointer,
-                capture_epoch,
-                pressed_buttons,
-                device_kind: match self.pointer_device_kind {
-                    Some(kind) => kind,
-                    None => UiHostPointerDeviceKind::Mouse,
-                },
-            }),
+            }) => match self.pointer_device_kind {
+                Some(device_kind) => {
+                    Some(super::UiHostObservationCoalescingIdentity::PointerMotion {
+                        pointer,
+                        capture_epoch,
+                        pressed_buttons,
+                        device_kind: Some(device_kind),
+                    })
+                }
+                None => None,
+            },
             other => other,
         }
     }

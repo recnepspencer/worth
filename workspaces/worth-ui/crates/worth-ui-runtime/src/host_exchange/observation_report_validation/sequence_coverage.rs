@@ -243,7 +243,7 @@ mod tests {
                 pressed_buttons: worth_ui_host_contract::UiHostPressedPointerButtons::from_buttons(
                     [worth_ui_host_contract::UiHostPointerButton::Primary],
                 ),
-                device_kind: worth_ui_host_contract::UiHostPointerDeviceKind::Mouse,
+                device_kind: Some(worth_ui_host_contract::UiHostPointerDeviceKind::Mouse),
             },
         };
         assert_eq!(

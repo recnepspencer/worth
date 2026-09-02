@@ -124,10 +124,14 @@ const fn coalescing_identity_digest(identity: super::UiHostObservationCoalescing
             pressed_buttons,
             device_kind,
         } => {
+            let device_kind = match device_kind {
+                Some(kind) => kind as u64 + 1,
+                None => 0,
+            };
             2 ^ pointer.value().rotate_left(7)
                 ^ capture_epoch.value().rotate_left(19)
                 ^ (pressed_buttons.bits() as u64).rotate_left(31)
-                ^ (device_kind as u64).rotate_left(43)
+                ^ device_kind.rotate_left(43)
         }
     }
 }

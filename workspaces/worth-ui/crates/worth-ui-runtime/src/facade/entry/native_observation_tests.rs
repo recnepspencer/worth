@@ -8,9 +8,9 @@ use worth_ui_host_contract::{
     UiHostObservationBatch, UiHostObservationBatchInput, UiHostObservationLoss,
     UiHostObservationPayload, UiHostObservationPresentationBasis, UiHostObservationReport,
     UiHostObservationSequence, UiHostObservationSequenceRange, UiHostObservationTimeBasis,
-    UiHostPointerCaptureEpoch, UiHostPointerIdentity, UiHostPresentationEpoch,
-    UiHostPressedPointerButtons, UiHostProtocolContract, UiHostProtocolNegotiation,
-    UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostPointerCaptureEpoch, UiHostPointerDeviceKind, UiHostPointerIdentity,
+    UiHostPresentationEpoch, UiHostPressedPointerButtons, UiHostProtocolContract,
+    UiHostProtocolNegotiation, UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 
 #[test]
@@ -296,7 +296,9 @@ fn pointer_motion_batch(
                 pressed_buttons: UiHostPressedPointerButtons::NONE,
                 position,
             },
-        )],
+        )
+        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+        .expect("the positive native pointer fixture declares its kind")],
     })
     .expect("pointer observation batch should satisfy the host contract")
 }

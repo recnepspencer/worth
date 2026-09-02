@@ -21,10 +21,7 @@ impl super::UiPointerGestureRuntimeState {
             let Some(active) = self.active.get(&pointer) else {
                 continue;
             };
-            if !trigger.affects_position(
-                active.position,
-                Some(active.target.mounted_instance()),
-            ) {
+            if !trigger.affects_position(active.position, Some(active.target.mounted_instance())) {
                 continue;
             }
             let target = (

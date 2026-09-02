@@ -1,13 +1,13 @@
 use super::{
     UiAppearanceCoherentBasis, UiAppearanceOwnerSnapshot, UiAppearanceSelectionSelector,
-    UiAppearanceStateAxisDemand, UiAppearanceStateConsumer, UiAppearanceStateAdapterDenial,
+    UiAppearanceStateAdapterDenial, UiAppearanceStateAxisDemand, UiAppearanceStateConsumer,
 };
 
 use worth_ui_dsl::{UiAppearanceAxisClass, UiAppearanceStateAxis};
 use worth_ui_host_contract::{
     UiHostObservationPresentationBasis, UiHostObservationSequence, UiHostPointerIdentity,
-    UiHostSurfacePosition, UiMountedInstanceIdentity, UiMountedNodeReceiptIdentity,
-    UiMountIncarnation, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+    UiHostSurfacePosition, UiMountIncarnation, UiMountedInstanceIdentity,
+    UiMountedNodeReceiptIdentity, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
 };
 
 pub(super) struct Fixture {
@@ -230,9 +230,10 @@ pub(super) fn fixture() -> Fixture {
             core::num::NonZeroU64::new(1).unwrap(),
         ),
     );
-    let selection_incarnation = crate::runtime::selection::UiSelectionOwnerIncarnation::new(1)
-        .unwrap();
-    let mut selection_state = crate::runtime::selection::UiSelectionRuntimeState::new_session_restore_candidate();
+    let selection_incarnation =
+        crate::runtime::selection::UiSelectionOwnerIncarnation::new(1).unwrap();
+    let mut selection_state =
+        crate::runtime::selection::UiSelectionRuntimeState::new_session_restore_candidate();
     selection_state
         .synchronize(
             crate::runtime::selection::UiSelectionRegistration::new(
@@ -269,13 +270,11 @@ pub(super) fn fixture() -> Fixture {
         .unwrap();
     let operability = crate::runtime::intent::UiIntentOperabilityStandingFactSnapshot::seal(
         1,
-        vec![crate::runtime::intent::UiIntentOperabilityStandingFact::for_test(
-            graph_node,
-            instance,
-            receipt,
-            "select",
-            1,
-        )],
+        vec![
+            crate::runtime::intent::UiIntentOperabilityStandingFact::for_test(
+                graph_node, instance, receipt, "select", 1,
+            ),
+        ],
     );
     let validation = crate::runtime::intent::UiValidationAppearanceFactSnapshot::for_test(
         graph_node,
@@ -299,13 +298,13 @@ pub(super) fn fixture() -> Fixture {
         Some(operability),
         Some(validation),
         Some(pointer.appearance_snapshot()),
-        Some(crate::runtime::interaction::gesture::UiPointerGestureRuntimeState::new(true).appearance_snapshot()),
+        Some(
+            crate::runtime::interaction::gesture::UiPointerGestureRuntimeState::new(true)
+                .appearance_snapshot(),
+        ),
     );
-    let selection = UiAppearanceSelectionSelector::new(
-        selection_owner,
-        selection_key,
-        selection_incarnation,
-    );
+    let selection =
+        UiAppearanceSelectionSelector::new(selection_owner, selection_key, selection_incarnation);
     let basis = UiAppearanceCoherentBasis::for_test(
         &snapshot,
         UiAppearanceStateConsumer::all_axes_for_test(graph_node),
@@ -339,7 +338,8 @@ fn selection_with_ambiguous_owner(fixture: &Fixture) -> UiAppearanceOwnerSnapsho
             core::num::NonZeroU64::new(2).unwrap(),
         ),
     );
-    let mut state = crate::runtime::selection::UiSelectionRuntimeState::new_session_restore_candidate();
+    let mut state =
+        crate::runtime::selection::UiSelectionRuntimeState::new_session_restore_candidate();
     for (owner, key) in [(owner, fixture.selection.key()), (second_owner, second_key)] {
         state
             .synchronize(

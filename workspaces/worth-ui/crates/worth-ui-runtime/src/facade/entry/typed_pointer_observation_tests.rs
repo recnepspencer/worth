@@ -1,7 +1,6 @@
 use crate::certification_support::ScriptedPresentationHost;
 use crate::mounting::{UiMountedFrameOutcome, UiMountedFramePublicationReceipt};
-use crate::runtime::tests::native_pointer_observation_test_support::
-    source_backed_hover_consumer_app_with_host;
+use crate::runtime::tests::native_pointer_observation_test_support::source_backed_hover_consumer_app_with_host;
 use worth_ui_host_contract::{
     UiHostObservationBatch, UiHostObservationBatchInput, UiHostObservationLoss,
     UiHostObservationPayload, UiHostObservationPresentationBasis, UiHostObservationReport,
@@ -58,7 +57,10 @@ fn host_pointer_kinds_reach_owners_and_touch_cannot_activate() {
         .interaction
         .pointer_presence_appearance_snapshot()
         .expect("hover demand should install pointer presence");
-    assert_eq!(presence.primary_pointer(surface), Some(UiHostPointerIdentity::new(2)));
+    assert_eq!(
+        presence.primary_pointer(surface),
+        Some(UiHostPointerIdentity::new(2))
+    );
     assert_eq!(presence.postures().len(), 3);
     assert!(presence.postures().iter().any(|posture| {
         posture.pointer() == UiHostPointerIdentity::new(1)
@@ -178,10 +180,15 @@ fn assert_pressed_kind(
     receipt: &crate::facade::interaction::UiInteractionBatchReceipt,
     kind: UiHostPointerDeviceKind,
 ) {
-    let press = receipt.transitions().iter().find_map(|transition| match transition {
-        crate::facade::interaction::UiInteractionTransition::PointerPressed(press) => Some(press),
-        _ => None,
-    });
+    let press = receipt
+        .transitions()
+        .iter()
+        .find_map(|transition| match transition {
+            crate::facade::interaction::UiInteractionTransition::PointerPressed(press) => {
+                Some(press)
+            }
+            _ => None,
+        });
     assert_eq!(press.map(|press| press.pointer_device_kind()), Some(kind));
 }
 
@@ -189,12 +196,15 @@ fn assert_activation_kind(
     receipt: &crate::facade::interaction::UiInteractionBatchReceipt,
     kind: UiHostPointerDeviceKind,
 ) {
-    let activation = receipt.transitions().iter().find_map(|transition| match transition {
-        crate::facade::interaction::UiInteractionTransition::Semantic(
-            crate::facade::interaction::UiSemanticInteraction::Activate(activation),
-        ) => Some(activation),
-        _ => None,
-    });
+    let activation = receipt
+        .transitions()
+        .iter()
+        .find_map(|transition| match transition {
+            crate::facade::interaction::UiInteractionTransition::Semantic(
+                crate::facade::interaction::UiSemanticInteraction::Activate(activation),
+            ) => Some(activation),
+            _ => None,
+        });
     let Some(activation) = activation else {
         panic!("mouse and stylus release should activate");
     };
@@ -215,11 +225,13 @@ fn interior_point(
         .mounted
         .interaction_hit_test_basis(presentation)
         .expect("the published frame should expose hit-test geometry");
-    let row = hit_test.rows().first().expect("the fixture has one hit-test row");
+    let row = hit_test
+        .rows()
+        .first()
+        .expect("the fixture has one hit-test row");
     let bounds = row.bounds();
     let clip = row.clip_bounds();
-    let x = (bounds.x().max(clip.x())
-        + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
+    let x = (bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
         / 2.0;
     let y = (bounds.y().max(clip.y())
         + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))

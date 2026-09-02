@@ -8,6 +8,8 @@ mod theme;
 #[cfg(test)]
 mod host_completion_tests;
 
+#[cfg(test)]
+pub(crate) use state::validate_presentation_for_test;
 pub use state::UiAppearanceOwnerSnapshot;
 pub(crate) use state::{
     UiAppearanceCoherentBasis, UiAppearanceCoherentBasisDenial, UiAppearanceCoherentBasisInput,
@@ -17,8 +19,6 @@ pub(crate) use state::{
     UiFocusAppearanceState, UiHoverAppearanceState, UiOperabilityAppearanceState,
     UiPressedAppearanceState, UiSelectionAppearanceState, UiValidationAppearanceState,
 };
-#[cfg(test)]
-pub(crate) use state::validate_presentation_for_test;
 pub(crate) use theme::{
     UiActiveThemeBinding, UiAppearanceThemeState, UiPreparedThemeSwitch, UiThemeCapabilityReceipt,
     UiThemeInitialBindingDenial, UiThemeSwitchDenial, UiThemeSwitchOrigin,

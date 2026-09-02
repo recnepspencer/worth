@@ -70,10 +70,6 @@ pub(crate) mod portal_dismissal;
 pub(crate) use native_observation_settlement::UiNativeObservationIngressSettlement;
 #[cfg(test)]
 mod native_observation_tests;
-#[cfg(test)]
-mod typed_pointer_observation_tests;
-#[cfg(test)]
-mod presentation_currentness_tests;
 mod native_projection_rebind;
 #[cfg(test)]
 mod native_projection_rebind_tests;
@@ -83,9 +79,15 @@ mod native_source_rebind;
 mod native_source_rebind_tests;
 mod observation;
 mod observation_report;
+#[cfg(test)]
+mod pointer_device_admission_tests;
+#[cfg(test)]
+mod presentation_currentness_tests;
 mod rebind_execution;
 mod rebind_recovery;
 mod selection_interaction;
+#[cfg(test)]
+mod typed_pointer_observation_tests;
 mod visual_overlay;
 mod visual_snapshot;
 pub use crate::lifecycle::WorthUiActiveApplicationSessionIdentity;

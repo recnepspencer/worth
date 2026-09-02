@@ -6,8 +6,7 @@ use super::draft::UiDraftRuntimeState;
 use super::gesture::{UiPointerGestureRuntimeState, UiPointerGestureStopReason};
 use super::{
     UiActivateInteraction, UiInteractionLifecycleSettlementReceipt, UiInteractionShutdownReport,
-    UiInteractionStateSnapshot,
-    UiLocalInputRecipientAdmission, UiLocalInputRecipientBindingStop,
+    UiInteractionStateSnapshot, UiLocalInputRecipientAdmission, UiLocalInputRecipientBindingStop,
     UiLocalInputRecipientContract, UiLocalInputStopReason,
 };
 
@@ -48,10 +47,9 @@ impl UiInteractionRuntimeState {
     ) -> Self {
         Self {
             pointer: UiPointerGestureRuntimeState::new(pressed_appearance_enabled),
-            pointer_presence: pointer_presence_enabled
-                .then(|| {
-                    super::pointer_presence::UiPointerPresenceOwner::new(pointer_presence_capacity)
-                }),
+            pointer_presence: pointer_presence_enabled.then(|| {
+                super::pointer_presence::UiPointerPresenceOwner::new(pointer_presence_capacity)
+            }),
             pointer_presence_capacity,
             draft: UiDraftRuntimeState::new(),
             semantic_interactions: 0,
@@ -135,11 +133,9 @@ impl UiInteractionRuntimeState {
     pub(crate) fn reconcile_appearance_demand(&mut self, hover: bool, pressed: bool) {
         match (hover, self.pointer_presence.is_some()) {
             (true, false) => {
-                self.pointer_presence = Some(
-                    super::pointer_presence::UiPointerPresenceOwner::new(
-                        self.pointer_presence_capacity,
-                    ),
-                )
+                self.pointer_presence = Some(super::pointer_presence::UiPointerPresenceOwner::new(
+                    self.pointer_presence_capacity,
+                ))
             }
             (false, true) => self.pointer_presence = None,
             _ => {}

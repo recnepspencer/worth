@@ -95,16 +95,8 @@ impl UiPointerPresenceOwner {
         pointer: UiHostPointerIdentity,
         kind: UiPrimaryPointerKind,
     ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
-        if let Some(record) = self.pointers.get(&pointer) {
-            if record.kind != kind {
-                return Err(super::UiPointerPresenceAdmissionDenial::PointerKindChanged {
-                    pointer,
-                    prior: record.kind.host_kind(),
-                    observed: kind.host_kind(),
-                });
-            }
-        }
-        Ok(())
+        self.check_pointer_kind(pointer, kind)?;
+        self.ensure_pointer_capacity(pointer)
     }
 
     fn admit_pointer(
@@ -112,7 +104,32 @@ impl UiPointerPresenceOwner {
         pointer: UiHostPointerIdentity,
         kind: UiPrimaryPointerKind,
     ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
-        self.admit_pointer_kind(pointer, kind)?;
+        self.admit_pointer_kind(pointer, kind)
+    }
+
+    fn check_pointer_kind(
+        &self,
+        pointer: UiHostPointerIdentity,
+        kind: UiPrimaryPointerKind,
+    ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
+        if let Some(record) = self.pointers.get(&pointer) {
+            if record.kind != kind {
+                return Err(
+                    super::UiPointerPresenceAdmissionDenial::PointerKindChanged {
+                        pointer,
+                        prior: record.kind.host_kind(),
+                        observed: kind.host_kind(),
+                    },
+                );
+            }
+        }
+        Ok(())
+    }
+
+    fn ensure_pointer_capacity(
+        &self,
+        pointer: UiHostPointerIdentity,
+    ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
         if !self.pointers.contains_key(&pointer) && self.pointers.len() >= self.capacity.limit() {
             return Err(super::UiPointerPresenceAdmissionDenial::CapacityExceeded {
                 pointer,
@@ -368,8 +385,8 @@ impl UiPointerPresenceOwner {
 }
 
 #[cfg(test)]
-#[path = "owner_tests.rs"]
-mod tests;
-#[cfg(test)]
 #[path = "capacity_tests.rs"]
 mod capacity_tests;
+#[cfg(test)]
+#[path = "owner_tests.rs"]
+mod tests;

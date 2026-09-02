@@ -1,4 +1,6 @@
-use worth_ui_host_contract::{UiHostPointerDeviceKind, UiHostPointerIdentity};
+use worth_ui_host_contract::{
+    UiHostObservationFamily, UiHostPointerDeviceKind, UiHostPointerIdentity,
+};
 
 /// The pointer-presence owner borrows the already sealed local observation
 /// bound. It may degrade hover state at saturation, but it never evicts an
@@ -10,6 +12,10 @@ pub(crate) struct UiPointerPresenceCapacity {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiPointerPresenceAdmissionDenial {
+    MissingDeviceKind {
+        pointer: UiHostPointerIdentity,
+        family: UiHostObservationFamily,
+    },
     CapacityExceeded {
         pointer: UiHostPointerIdentity,
         limit: usize,
@@ -37,5 +43,15 @@ impl UiPointerPresenceCapacity {
 
     pub(crate) const fn limit(self) -> usize {
         self.limit
+    }
+}
+
+impl UiPointerPresenceAdmissionDenial {
+    pub(crate) const fn pointer(self) -> UiHostPointerIdentity {
+        match self {
+            Self::MissingDeviceKind { pointer, .. }
+            | Self::CapacityExceeded { pointer, .. }
+            | Self::PointerKindChanged { pointer, .. } => pointer,
+        }
     }
 }

@@ -1,9 +1,6 @@
 use crate::certification_support::ScriptedPresentationHost;
-use crate::runtime::tests::active_application_session_test_support::
-    source_backed_component_app_with_host;
-use crate::runtime::appearance::{
-    validate_presentation_for_test, UiAppearanceCoherentBasisDenial,
-};
+use crate::runtime::appearance::{validate_presentation_for_test, UiAppearanceCoherentBasisDenial};
+use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host;
 use worth_ui_host_contract::{
     UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
 };

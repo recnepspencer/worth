@@ -32,7 +32,7 @@ impl UiPointerGestureRuntimeState {
         &mut self,
         core: UiHostObservationCanonicalCore,
         report: &worth_ui_host_contract::UiHostObservationReport,
-        kind: crate::runtime::interaction::UiPrimaryPointerKind,
+        kind: Option<crate::runtime::interaction::UiPrimaryPointerKind>,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Vec<UiPointerGestureOutcome> {
         match report.payload() {
@@ -43,6 +43,9 @@ impl UiPointerGestureRuntimeState {
                 transition,
                 position,
             } => {
+                let Some(kind) = kind else {
+                    return Vec::new();
+                };
                 self.bump_button_reports();
                 let input = UiPointerButtonReport {
                     core,
@@ -65,20 +68,35 @@ impl UiPointerGestureRuntimeState {
                 capture_epoch,
                 position,
                 ..
-            } => self.motion(
-                core,
-                report.sequence(),
-                *pointer,
-                *capture_epoch,
-                *position,
-                kind,
-                mounted,
-            ),
+            } => kind.map_or_else(Vec::new, |kind| {
+                self.motion(
+                    core,
+                    report.sequence(),
+                    *pointer,
+                    *capture_epoch,
+                    *position,
+                    kind,
+                    mounted,
+                )
+            }),
             UiHostObservationPayload::WindowFocus { focused: false, .. } => {
                 self.focus_loss(report.sequence())
             }
             _ => Vec::new(),
         }
+    }
+
+    pub(super) fn stop_active_pointer_for_denial(
+        &mut self,
+        pointer: UiHostPointerIdentity,
+        sequence: UiHostObservationSequence,
+        reason: UiPointerGestureStopReason,
+    ) -> Vec<UiPointerGestureOutcome> {
+        let Some(active) = self.active.remove(&pointer) else {
+            return Vec::new();
+        };
+        self.bump_appearance_revision();
+        vec![self.active_stop(pointer, active, sequence, reason)]
     }
 
     fn press(&mut self, input: UiPointerButtonReport<'_>) -> UiPointerGestureOutcome {

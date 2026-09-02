@@ -13,6 +13,8 @@ mod vector;
 
 pub(crate) use adapter::UiAppearanceStateAdapterDenial;
 pub(crate) use axis_demand::UiAppearanceStateAxisDemand;
+#[cfg(test)]
+pub(crate) use coherent_basis::validate_presentation_for_test;
 pub(crate) use coherent_basis::{
     UiAppearanceCoherentBasis, UiAppearanceCoherentBasisDenial, UiAppearanceCoherentBasisInput,
 };
@@ -28,8 +30,6 @@ pub(crate) use pressed::UiPressedAppearanceState;
 pub(crate) use selection::UiSelectionAppearanceState;
 pub(crate) use validation::UiValidationAppearanceState;
 pub(crate) use vector::{UiAppearanceStateVector, UiAppearanceStateVectorDenial};
-#[cfg(test)]
-pub(crate) use coherent_basis::validate_presentation_for_test;
 
 #[cfg(test)]
 #[path = "adapter_tests.rs"]
