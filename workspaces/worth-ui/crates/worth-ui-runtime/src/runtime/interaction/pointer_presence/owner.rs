@@ -6,6 +6,8 @@ use worth_ui_host_contract::{
     UiMountedInstanceIdentity, UiSemanticSurfaceIdentity,
 };
 
+use super::inspection::primary_pointer_admitted;
+use super::presentation::UiPointerPresencePresentationTrigger;
 use super::{
     UiPointerPresenceAppearanceOwnerSnapshot, UiPointerPresenceAppearancePosture,
     UiPointerPresenceClass, UiPointerPresenceTargetTransition, UiPrimaryPointerKind,
@@ -52,6 +54,23 @@ impl UiPointerPresenceOwner {
         mounted: &crate::mounting::WorthUiMountedSessionState,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     ) -> Option<UiPointerPresenceTargetTransition> {
+        self.process_pointer_report(
+            core,
+            report,
+            UiPrimaryPointerKind::Mouse,
+            mounted,
+            generation,
+        )
+    }
+
+    pub(crate) fn process_pointer_report(
+        &mut self,
+        core: UiHostObservationCanonicalCore,
+        report: &worth_ui_host_contract::UiHostObservationReport,
+        kind: UiPrimaryPointerKind,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Option<UiPointerPresenceTargetTransition> {
         let UiHostObservationPayload::PointerMotion {
             pointer, position, ..
         } = report.payload()
@@ -72,8 +91,9 @@ impl UiPointerPresenceOwner {
                 target.node_receipt(),
             )
         });
-        self.record_mouse_target(
+        self.record_pointer_target(
             *pointer,
+            kind,
             report.sequence(),
             *position,
             core.presentation(),
@@ -85,6 +105,32 @@ impl UiPointerPresenceOwner {
     fn record_mouse_target(
         &mut self,
         pointer: UiHostPointerIdentity,
+        sequence: UiHostObservationSequence,
+        position: UiHostSurfacePosition,
+        presentation: UiHostObservationPresentationBasis,
+        resolved: Option<(
+            UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiSurfaceBindingGeneration,
+            UiMountedInstanceIdentity,
+            worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+        )>,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Option<UiPointerPresenceTargetTransition> {
+        self.record_pointer_target(
+            pointer,
+            UiPrimaryPointerKind::Mouse,
+            sequence,
+            position,
+            presentation,
+            resolved,
+            generation,
+        )
+    }
+
+    pub(crate) fn record_pointer_target(
+        &mut self,
+        pointer: UiHostPointerIdentity,
+        kind: UiPrimaryPointerKind,
         sequence: UiHostObservationSequence,
         position: UiHostSurfacePosition,
         presentation: UiHostObservationPresentationBasis,
@@ -112,19 +158,25 @@ impl UiPointerPresenceOwner {
                 || record.target != target
                 || record.binding != binding
                 || record.node_receipt != node_receipt
-                || record.kind != UiPrimaryPointerKind::Mouse
+                || record.kind != kind
         });
-        let primary_changed = prior_surface.is_some_and(|prior_surface_identity| {
-            Some(prior_surface_identity) != surface
+        let prior_was_primary = prior_surface.is_some_and(|prior_surface_identity| {
+            prior.is_some_and(|record| primary_pointer_admitted(record.kind))
                 && self.primary_by_surface.get(&prior_surface_identity) == Some(&pointer)
-        }) || surface.is_some_and(|current_surface| {
-            self.primary_by_surface.get(&current_surface) != Some(&pointer)
         });
-        self.reassign_primary(pointer, prior_surface, surface);
+        let current_is_primary = primary_pointer_admitted(kind);
+        let primary_changed = prior_was_primary
+            && (Some(prior_surface.expect("a primary pointer has a surface")) != surface
+                || !current_is_primary)
+            || current_is_primary
+                && surface.is_some_and(|current_surface| {
+                    self.primary_by_surface.get(&current_surface) != Some(&pointer)
+                });
+        self.reassign_primary(pointer, prior_surface, surface, kind);
         self.pointers.insert(
             pointer,
             UiPointerPresenceRecord {
-                kind: UiPrimaryPointerKind::Mouse,
+                kind,
                 surface,
                 binding,
                 target,
@@ -153,20 +205,91 @@ impl UiPointerPresenceOwner {
         })
     }
 
+    pub(crate) fn retest_committed_presentation(
+        &mut self,
+        trigger: &UiPointerPresencePresentationTrigger,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> usize {
+        if mounted
+            .validate_current_frame(trigger.presentation().frame())
+            .is_err()
+            || mounted
+                .validate_binding(trigger.presentation().binding())
+                .is_err()
+        {
+            return 0;
+        }
+        let changed_instances = trigger.changed_instances();
+        let pointers = self
+            .pointers
+            .iter()
+            .filter_map(|(pointer, record)| {
+                (record.target.is_none()
+                    || record
+                        .target
+                        .is_some_and(|target| changed_instances.binary_search(&target).is_ok()))
+                .then_some(*pointer)
+            })
+            .collect::<Vec<_>>();
+        let mut changed = 0;
+        for pointer in pointers {
+            let Some(record) = self.pointers.get(&pointer) else {
+                continue;
+            };
+            let resolved = match crate::runtime::interaction::targeting::resolve_presented_target(
+                mounted,
+                trigger.presentation(),
+                record.position,
+            ) {
+                Ok(target) => Some((
+                    target.surface(),
+                    target.binding(),
+                    target.mounted_instance(),
+                    target.node_receipt(),
+                )),
+                Err(crate::runtime::interaction::targeting::UiInteractionTargetingDenial::NoTarget { .. }) => None,
+                Err(_) => continue,
+            };
+            let kind = record.kind;
+            let sequence = record.sequence;
+            let position = record.position;
+            if self
+                .record_pointer_target(
+                    pointer,
+                    kind,
+                    sequence,
+                    position,
+                    trigger.presentation(),
+                    resolved,
+                    generation,
+                )
+                .is_some()
+            {
+                changed += 1;
+            }
+        }
+        changed
+    }
+
     fn reassign_primary(
         &mut self,
         pointer: UiHostPointerIdentity,
         prior: Option<UiSemanticSurfaceIdentity>,
         current: Option<UiSemanticSurfaceIdentity>,
+        kind: UiPrimaryPointerKind,
     ) {
-        if prior != current {
+        if prior != current || !primary_pointer_admitted(kind) {
             if let Some(prior) = prior {
                 if self.primary_by_surface.get(&prior) == Some(&pointer) {
                     self.primary_by_surface.remove(&prior);
                 }
             }
         }
-        if let Some(current) = current {
+        if primary_pointer_admitted(kind) {
+            let Some(current) = current else {
+                return;
+            };
             self.primary_by_surface.insert(current, pointer);
         }
     }
@@ -237,6 +360,7 @@ impl UiPointerPresenceOwner {
             .map(|(pointer, record)| UiPointerPresenceAppearancePosture {
                 pointer: *pointer,
                 kind: record.kind,
+                presentation: record.presentation,
                 target: record.target,
                 node_receipt: record.node_receipt,
                 class: if record.target.is_some() {

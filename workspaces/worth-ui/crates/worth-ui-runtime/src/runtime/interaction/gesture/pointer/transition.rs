@@ -115,6 +115,7 @@ impl UiPointerGestureRuntimeState {
             press_sequence: input.sequence,
             press_time_basis: input.time_basis,
             target,
+            position: input.position,
             inside: true,
         };
         self.active.insert(input.pointer, active);
@@ -198,21 +199,39 @@ impl UiPointerGestureRuntimeState {
         position: worth_ui_host_contract::UiHostSurfacePosition,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Vec<UiPointerGestureOutcome> {
-        let Some(active) = self.active.get(&pointer) else {
+        let Some(active_capture_epoch) = self.active.get(&pointer).map(|active| {
+            (
+                active.capture_epoch,
+                (
+                    active.target.surface(),
+                    active.target.binding(),
+                    active.target.mounted_instance(),
+                    active.target.node_receipt(),
+                ),
+                active.inside,
+            )
+        }) else {
             return Vec::new();
         };
-        if active.capture_epoch == observed {
+        if active_capture_epoch.0 == observed {
+            let active_target = active_capture_epoch.1;
+            self.active
+                .get_mut(&pointer)
+                .expect("active gesture remains present")
+                .position = position;
             if !self.appearance_enabled {
                 return Vec::new();
             }
             let inside = resolve_presented_target(mounted, core.presentation(), position)
                 .is_ok_and(|target| {
-                    target.surface() == active.target.surface()
-                        && target.binding() == active.target.binding()
-                        && target.mounted_instance() == active.target.mounted_instance()
-                        && target.node_receipt() == active.target.node_receipt()
+                    (
+                        target.surface(),
+                        target.binding(),
+                        target.mounted_instance(),
+                        target.node_receipt(),
+                    ) == active_target
                 });
-            if inside != active.inside {
+            if inside != active_capture_epoch.2 {
                 self.active
                     .get_mut(&pointer)
                     .expect("active gesture remains present")

@@ -9,9 +9,16 @@ mod theme;
 mod host_completion_tests;
 
 pub use state::UiAppearanceOwnerSnapshot;
-pub(crate) use state::UiAppearanceStateAxisDemand;
+pub(crate) use state::{
+    UiAppearanceCoherentBasis, UiAppearanceCoherentBasisDenial, UiAppearanceCoherentBasisInput,
+    UiAppearanceSelectionSelector, UiAppearanceStateAdapterDenial, UiAppearanceStateAxisDemand,
+    UiAppearanceStateConsumer, UiAppearanceStateConsumerSelection,
+    UiAppearanceStateConsumerSelectionCost, UiAppearanceStateVector, UiAppearanceStateVectorDenial,
+    UiFocusAppearanceState, UiHoverAppearanceState, UiOperabilityAppearanceState,
+    UiPressedAppearanceState, UiSelectionAppearanceState, UiValidationAppearanceState,
+};
 pub(crate) use theme::{
-    UiAppearanceThemeState, UiPreparedThemeSwitch, UiThemeCapabilityReceipt,
+    UiActiveThemeBinding, UiAppearanceThemeState, UiPreparedThemeSwitch, UiThemeCapabilityReceipt,
     UiThemeInitialBindingDenial, UiThemeSwitchDenial, UiThemeSwitchOrigin,
     UiThemeSwitchOriginAdmissionDenial, UiThemeSwitchOriginFamily, UiThemeSwitchRequest,
 };

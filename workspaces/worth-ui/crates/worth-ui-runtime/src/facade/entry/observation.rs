@@ -39,6 +39,9 @@ impl super::WorthUiActiveApplicationSession {
             self.mounted
                 .validate_current_frame(transition.presentation().frame())
                 .map_err(|_| stale_pointer_transition())?;
+            self.mounted
+                .validate_binding(transition.presentation().binding())
+                .map_err(|_| stale_pointer_transition())?;
             if let (Some(instance), Some(receipt)) =
                 (transition.current(), transition.current_node_receipt())
             {

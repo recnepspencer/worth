@@ -73,6 +73,7 @@ pub(super) struct UiActivePointerGesture {
     pub(super) press_sequence: UiHostObservationSequence,
     pub(super) press_time_basis: UiHostObservationTimeBasis,
     pub(super) target: UiPresentedInteractionTarget,
+    pub(super) position: worth_ui_host_contract::UiHostSurfacePosition,
     pub(super) inside: bool,
 }
 
@@ -93,6 +94,7 @@ pub(crate) enum UiPressedAppearanceClass {
 )]
 pub(crate) struct UiPressedAppearancePosture {
     pointer: UiHostPointerIdentity,
+    presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     target: worth_ui_host_contract::UiMountedInstanceIdentity,
     node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
     class: UiPressedAppearanceClass,
@@ -121,6 +123,7 @@ impl UiPressedAppearanceOwnerSnapshot {
             .iter()
             .map(|(pointer, active)| UiPressedAppearancePosture {
                 pointer: *pointer,
+                presentation: active.target.presentation(),
                 target: active.target.mounted_instance(),
                 node_receipt: active.target.node_receipt(),
                 class: if active.inside {
@@ -157,6 +160,12 @@ impl UiPressedAppearancePosture {
     }
     pub(crate) const fn target(self) -> worth_ui_host_contract::UiMountedInstanceIdentity {
         self.target
+    }
+
+    pub(crate) const fn presentation(
+        self,
+    ) -> worth_ui_host_contract::UiHostObservationPresentationBasis {
+        self.presentation
     }
     pub(crate) const fn node_receipt(self) -> worth_ui_host_contract::UiMountedNodeReceiptIdentity {
         self.node_receipt

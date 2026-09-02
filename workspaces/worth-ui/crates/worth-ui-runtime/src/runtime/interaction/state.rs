@@ -207,6 +207,28 @@ impl UiInteractionRuntimeState {
         self.pointer.reconcile_appearance_enabled(pressed);
     }
 
+    pub(crate) fn observe_committed_presentation(
+        &mut self,
+        trigger: &super::pointer_presence::UiPointerPresencePresentationTrigger,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        generation: &WorthUiActiveApplicationGenerationIdentity,
+    ) -> (usize, usize) {
+        if mounted
+            .validate_current_frame(trigger.presentation().frame())
+            .is_err()
+            || mounted
+                .validate_binding(trigger.presentation().binding())
+                .is_err()
+        {
+            return (0, 0);
+        }
+        let hover = self.pointer_presence.as_mut().map_or(0, |owner| {
+            owner.retest_committed_presentation(trigger, mounted, generation)
+        });
+        let pressed = self.pointer.retest_committed_presentation(trigger, mounted);
+        (hover, pressed)
+    }
+
     #[allow(
         dead_code,
         reason = "milestone 3.16 Gate 0 exposes the owner snapshot only to the sealed close-turn lane"

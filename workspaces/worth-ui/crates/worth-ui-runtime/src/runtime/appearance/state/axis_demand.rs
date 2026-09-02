@@ -9,6 +9,10 @@ impl UiAppearanceStateAxisDemand {
     pub(crate) const fn contains(self, axis: worth_ui_dsl::UiAppearanceStateAxis) -> bool {
         self.0 & (1 << axis_index(axis)) != 0
     }
+
+    pub(crate) const fn index(axis: worth_ui_dsl::UiAppearanceStateAxis) -> usize {
+        axis_index(axis) as usize
+    }
 }
 
 const fn axis_index(axis: worth_ui_dsl::UiAppearanceStateAxis) -> u8 {

@@ -27,8 +27,12 @@ pub use gesture::{
     UiPointerGestureContinuityKind, UiPointerGesturePressReceipt, UiPointerGestureStop,
     UiPointerGestureStopReason, UiTargetedPointerGesture, UI_ACTIVE_POINTER_GESTURE_LIMIT,
 };
-pub(crate) use pointer_presence::UiPointerPresenceAppearanceOwnerSnapshot;
 pub use pointer_presence::UiPointerPresenceTargetTransition;
+pub(crate) use pointer_presence::{
+    UiPointerPresenceAppearanceOwnerSnapshot, UiPointerPresenceAppearancePosture,
+    UiPointerPresenceClass, UiPointerPresencePresentationTrigger,
+    UiPointerPresencePresentationTriggerDenial, UiPrimaryPointerKind,
+};
 pub(crate) use semantic::{
     selection_evidence_input, semantic_evidence_input, UiEditCommitInput, UiKeyboardSemanticInput,
 };

@@ -1,9 +1,30 @@
+mod adapter;
 mod axis_demand;
-#[allow(
-    dead_code,
-    reason = "Gate 0 exposes a read-only coherent owner snapshot before consumption"
-)]
+mod coherent_basis;
+mod consumer;
+mod focus;
+mod hover;
+mod operability;
 mod owner_snapshot;
+mod pressed;
+mod selection;
+mod validation;
+mod vector;
 
+pub(crate) use adapter::UiAppearanceStateAdapterDenial;
 pub(crate) use axis_demand::UiAppearanceStateAxisDemand;
+pub(crate) use coherent_basis::{
+    UiAppearanceCoherentBasis, UiAppearanceCoherentBasisDenial, UiAppearanceCoherentBasisInput,
+};
+pub(crate) use consumer::{
+    UiAppearanceSelectionSelector, UiAppearanceStateConsumer, UiAppearanceStateConsumerSelection,
+    UiAppearanceStateConsumerSelectionCost,
+};
+pub(crate) use focus::UiFocusAppearanceState;
+pub(crate) use hover::UiHoverAppearanceState;
+pub(crate) use operability::UiOperabilityAppearanceState;
 pub use owner_snapshot::UiAppearanceOwnerSnapshot;
+pub(crate) use pressed::UiPressedAppearanceState;
+pub(crate) use selection::UiSelectionAppearanceState;
+pub(crate) use validation::UiValidationAppearanceState;
+pub(crate) use vector::{UiAppearanceStateVector, UiAppearanceStateVectorDenial};

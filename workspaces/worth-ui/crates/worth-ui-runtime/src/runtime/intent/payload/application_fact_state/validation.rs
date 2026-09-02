@@ -241,7 +241,6 @@ impl UiValidationAppearanceFactSnapshot {
         })
     }
 
-    #[cfg(test)]
     pub(crate) fn fact_basis_for(
         &self,
         graph_node: crate::graph::UiGraphNodeIdentity,

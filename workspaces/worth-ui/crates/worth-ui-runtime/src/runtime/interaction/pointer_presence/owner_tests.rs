@@ -135,6 +135,166 @@ fn primary_pointer_reselection_changes_revision_but_primary_motion_does_not() {
 }
 
 #[test]
+fn touch_presence_cannot_displace_an_admitted_mouse_primary() {
+    let mut owner = UiPointerPresenceOwner::new();
+    let generation = active_generation();
+    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let presentation = presentation_basis(binding);
+    let position = UiHostSurfacePosition::viewport_logical(10, 20);
+    let mouse = UiHostPointerIdentity::new(1);
+    let touch = UiHostPointerIdentity::new(2);
+    let mouse_target = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let touch_target = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let mouse_receipt =
+        worth_ui_host_contract::UiMountedNodeReceiptIdentity::mint_unbound().unwrap();
+    let touch_receipt =
+        worth_ui_host_contract::UiMountedNodeReceiptIdentity::mint_unbound().unwrap();
+
+    owner
+        .record_pointer_target(
+            mouse,
+            UiPrimaryPointerKind::Mouse,
+            UiHostObservationSequence::new(1),
+            position,
+            presentation,
+            Some((surface, binding, mouse_target, mouse_receipt)),
+            &generation,
+        )
+        .unwrap();
+    owner
+        .record_pointer_target(
+            touch,
+            UiPrimaryPointerKind::Touch,
+            UiHostObservationSequence::new(2),
+            position,
+            presentation,
+            Some((surface, binding, touch_target, touch_receipt)),
+            &generation,
+        )
+        .unwrap();
+
+    let snapshot = owner.appearance_snapshot();
+    assert_eq!(snapshot.primary_pointer(surface), Some(mouse));
+    assert_eq!(
+        snapshot
+            .postures()
+            .iter()
+            .find(|posture| posture.pointer() == touch)
+            .expect("touch posture remains observable")
+            .kind(),
+        UiPrimaryPointerKind::Touch
+    );
+}
+
+#[test]
+fn pointer_cleanup_clears_old_target_before_reincarnation() {
+    let mut owner = UiPointerPresenceOwner::new();
+    let generation = active_generation();
+    let pointer = UiHostPointerIdentity::new(3);
+    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let presentation = presentation_basis(binding);
+    let position = UiHostSurfacePosition::viewport_logical(10, 20);
+    let target = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let first_receipt =
+        worth_ui_host_contract::UiMountedNodeReceiptIdentity::mint_unbound().unwrap();
+
+    owner
+        .record_pointer_target(
+            pointer,
+            UiPrimaryPointerKind::Mouse,
+            UiHostObservationSequence::new(1),
+            position,
+            presentation,
+            Some((surface, binding, target, first_receipt)),
+            &generation,
+        )
+        .unwrap();
+    owner.cancel_instance(target);
+    let cleared = owner.appearance_snapshot();
+    let cleared_posture = cleared
+        .postures()
+        .first()
+        .expect("cleanup retains the pointer posture");
+    assert_eq!(cleared_posture.target(), None);
+    assert_eq!(cleared_posture.node_receipt(), None);
+    assert_eq!(cleared.primary_pointer(surface), Some(pointer));
+
+    let successor_receipt =
+        worth_ui_host_contract::UiMountedNodeReceiptIdentity::mint_unbound().unwrap();
+    let reincarnated = owner
+        .record_pointer_target(
+            pointer,
+            UiPrimaryPointerKind::Mouse,
+            UiHostObservationSequence::new(2),
+            position,
+            presentation,
+            Some((surface, binding, target, successor_receipt)),
+            &generation,
+        )
+        .unwrap();
+    assert_eq!(reincarnated.previous(), None);
+    assert_eq!(reincarnated.previous_node_receipt(), None);
+    assert_eq!(reincarnated.current(), Some(target));
+    assert_eq!(reincarnated.current_node_receipt(), Some(successor_receipt));
+
+    owner.cancel_binding(binding);
+    let removed = owner.appearance_snapshot();
+    assert!(removed.postures().is_empty());
+    assert_eq!(removed.primary_pointer(surface), None);
+}
+
+#[test]
+fn presentation_trigger_is_canonical_and_bounded() {
+    let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let presentation = presentation_basis(binding);
+    let first = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let second = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let trigger = super::super::presentation::UiPointerPresencePresentationTrigger::new(
+        presentation,
+        &[second, first, second],
+    )
+    .unwrap();
+    assert_eq!(trigger.changed_instances().len(), 2);
+    assert!(trigger.changed_instances().contains(&first));
+    assert!(trigger.changed_instances().contains(&second));
+    assert_eq!(
+        super::super::presentation::UiPointerPresencePresentationTrigger::new(
+            presentation,
+            &[],
+        ),
+        Err(
+            super::super::presentation::UiPointerPresencePresentationTriggerDenial::EmptyChangedNeighborhood
+        )
+    );
+    let changed = (0
+        ..=super::super::presentation::UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY)
+        .map(|_| UiMountedInstanceIdentity::mint_unbound().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        super::super::presentation::UiPointerPresencePresentationTrigger::new(
+            presentation,
+            &changed,
+        ),
+        Err(
+            super::super::presentation::UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded
+        )
+    );
+}
+
+fn presentation_basis(
+    binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+) -> UiHostObservationPresentationBasis {
+    UiHostObservationPresentationBasis::new(
+        worth_ui_host_contract::UiHostSurfaceIdentity::mint_unbound().unwrap(),
+        worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap(),
+        binding,
+        worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
+    )
+}
+
+#[test]
 fn pre_cutover_owner_transition_is_rejected_by_the_successor_generation() {
     use crate::runtime::tests::active_application_session_test_support::{
         admit_candidate_catalog, component_candidate_submission, source_backed_component_session,

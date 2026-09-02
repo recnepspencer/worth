@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
-    UiHostObservationSequence, UiHostPointerIdentity, UiMountedInstanceIdentity,
-    UiSemanticSurfaceIdentity,
+    UiHostObservationPresentationBasis, UiHostObservationSequence, UiHostPointerIdentity,
+    UiMountedInstanceIdentity, UiSemanticSurfaceIdentity,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -13,6 +13,7 @@ pub(crate) enum UiPointerPresenceClass {
 pub(crate) struct UiPointerPresenceAppearancePosture {
     pub(super) pointer: UiHostPointerIdentity,
     pub(super) kind: super::UiPrimaryPointerKind,
+    pub(super) presentation: UiHostObservationPresentationBasis,
     pub(super) target: Option<UiMountedInstanceIdentity>,
     pub(super) node_receipt: Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity>,
     pub(super) class: UiPointerPresenceClass,
@@ -58,6 +59,9 @@ impl UiPointerPresenceAppearancePosture {
     }
     pub(crate) const fn kind(self) -> super::UiPrimaryPointerKind {
         self.kind
+    }
+    pub(crate) const fn presentation(self) -> UiHostObservationPresentationBasis {
+        self.presentation
     }
     pub(crate) const fn target(self) -> Option<UiMountedInstanceIdentity> {
         self.target

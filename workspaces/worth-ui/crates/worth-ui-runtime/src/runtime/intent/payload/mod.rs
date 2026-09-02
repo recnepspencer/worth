@@ -4,13 +4,12 @@ mod prepared;
 mod projection;
 mod stop;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "certification-support"))]
 pub(crate) use application_fact_state::{
-    UiAdmittedValidationAppearanceTarget, UiValidationAppearanceClass,
-    UiValidationAppearanceFactDenial,
+    UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial,
 };
 pub(crate) use application_fact_state::{
-    UiIntentApplicationFactState, UiIntentApplicationInputReference,
+    UiIntentApplicationFactState, UiIntentApplicationInputReference, UiValidationAppearanceClass,
     UiValidationAppearanceFactSnapshot,
 };
 pub use application_fact_state::{

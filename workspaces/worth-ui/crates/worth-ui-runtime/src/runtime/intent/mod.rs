@@ -38,7 +38,6 @@ pub use confirmation::{
 };
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use operability::UiIntentOperabilityDecisionInput;
-pub(crate) use operability::UiIntentOperabilityStandingFactSnapshot;
 pub(crate) use operability::{
     evaluate_intent_operability, UiIntentOccupancyPlacement, UiIntentOccupancyState,
 };
@@ -56,14 +55,16 @@ pub use operability::{
 };
 #[cfg(not(any(test, feature = "certification-support")))]
 pub(crate) use operability::{UiIntentOccupancyReservation, UiIntentOccupancyReservationDenial};
-pub(crate) use payload::{
-    prepare_intent_payload, UiIntentApplicationFactState, UiValidationAppearanceFactSnapshot,
+pub(crate) use operability::{
+    UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact,
+    UiIntentOperabilityStandingFactSnapshot,
 };
-#[cfg(test)]
 pub(crate) use payload::{
-    UiAdmittedValidationAppearanceTarget, UiValidationAppearanceClass,
-    UiValidationAppearanceFactDenial,
+    prepare_intent_payload, UiIntentApplicationFactState, UiValidationAppearanceClass,
+    UiValidationAppearanceFactSnapshot,
 };
+#[cfg(any(test, feature = "certification-support"))]
+pub(crate) use payload::{UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial};
 pub use payload::{
     UiIntentApplicationFactRevision, UiIntentApplicationFactUpdateDenial,
     UiIntentApplicationFactUpdateReceipt, UiIntentDraftInputRevision, UiIntentInputBasisReceipt,
