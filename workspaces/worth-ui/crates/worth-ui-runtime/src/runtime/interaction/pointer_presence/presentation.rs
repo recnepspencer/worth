@@ -48,6 +48,7 @@ impl UiPointerPresencePresentationTrigger {
         presentation: UiHostObservationPresentationBasis,
         changed_input: &[UiMountedInstanceIdentity],
     ) -> Result<Self, UiPointerPresencePresentationTriggerDenial> {
+        admit_raw_input(changed_input)?;
         let mut changed_instances = Vec::new();
         for instance in changed_input.iter().copied() {
             if changed_instances.contains(&instance) {
@@ -75,6 +76,7 @@ impl UiPointerPresencePresentationTrigger {
         presentation: UiHostObservationPresentationBasis,
         candidates: &[UiPointerPresenceGeometryCandidate],
     ) -> Result<Self, UiPointerPresencePresentationTriggerDenial> {
+        admit_raw_input(candidates)?;
         if candidates.is_empty() {
             return Err(UiPointerPresencePresentationTriggerDenial::EmptyChangedNeighborhood);
         }
@@ -126,6 +128,20 @@ impl UiPointerPresencePresentationTrigger {
                     .is_some_and(|geometry| geometry.contains(position))
         })
     }
+}
+
+fn admit_raw_input<T>(
+    input: &[T],
+) -> Result<(), UiPointerPresencePresentationTriggerDenial> {
+    if input.len() > UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
+        return Err(
+            UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded {
+                observed: input.len(),
+                maximum: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY,
+            },
+        );
+    }
+    Ok(())
 }
 
 fn admit_changed_instance<T>(

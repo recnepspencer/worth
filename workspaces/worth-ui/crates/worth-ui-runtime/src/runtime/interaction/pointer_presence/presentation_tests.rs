@@ -84,12 +84,15 @@ fn capacity_counts_unique_instances_and_reports_bounded_overflow_facts() {
     let duplicate_rows = (0..=UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY)
         .map(|_| UiPointerPresenceGeometryCandidate::identity_only(duplicate))
         .collect::<Vec<_>>();
-    let trigger = UiPointerPresencePresentationTrigger::new_with_geometry(
-        presentation,
-        &duplicate_rows,
-    )
-    .unwrap();
-    assert_eq!(trigger.changed_instances(), &[duplicate]);
+    assert_eq!(
+        UiPointerPresencePresentationTrigger::new_with_geometry(presentation, &duplicate_rows),
+        Err(
+            UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded {
+                observed: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY + 1,
+                maximum: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY,
+            }
+        )
+    );
 
     let changed = (0..=UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY)
         .map(|_| UiMountedInstanceIdentity::mint_unbound().unwrap())
