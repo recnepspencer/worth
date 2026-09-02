@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{btree_map::Entry, BTreeMap};
 
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 use worth_ui_dsl::UiPortalDeclarationId;
@@ -68,10 +68,13 @@ impl UiPortalOverlayBindingOwner {
         declaration: UiPortalDeclarationId,
         portal: UiPortalIdentity,
     ) -> Result<(), UiPortalOverlayBindingDenial> {
-        if self.declarations.insert(declaration, portal).is_some() {
-            return Err(UiPortalOverlayBindingDenial::DuplicateDeclaration);
+        match self.declarations.entry(declaration) {
+            Entry::Vacant(entry) => {
+                entry.insert(portal);
+                Ok(())
+            }
+            Entry::Occupied(_) => Err(UiPortalOverlayBindingDenial::DuplicateDeclaration),
         }
-        Ok(())
     }
 
     pub(crate) fn replace(
