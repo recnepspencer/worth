@@ -11,7 +11,8 @@ use worth_ui::facade::{
         UiHostObservationLoss, UiHostObservationPayload, UiHostObservationPresentationBasis,
         UiHostObservationReport, UiHostObservationSequence, UiHostObservationSequenceRange,
         UiHostObservationTimeBasis, UiHostPointerButton, UiHostPointerButtonTransition,
-        UiHostPointerCaptureEpoch, UiHostPointerIdentity, UiHostProtocolContract,
+        UiHostPointerCaptureEpoch, UiHostPointerDeviceKind, UiHostPointerIdentity,
+        UiHostProtocolContract,
         UiHostProtocolNegotiation, UiHostSurfacePosition,
         UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
     },
@@ -347,6 +348,8 @@ pub(super) fn native_activation_drain(
                 position,
             },
         )
+        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+        .expect("native pointer reports carry an explicit device kind")
     };
     let batch = UiHostObservationBatch::new(UiHostObservationBatchInput {
         protocol,

@@ -270,6 +270,25 @@ impl UiMountedMotionSampler {
         target.is_some_and(|target| self.tracks.remove(&target).is_some())
     }
 
+    pub(crate) fn retire_rebound_track(
+        &mut self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) -> bool {
+        let target = self.tracks.iter().find_map(|(target, state)| {
+            (state.queued.is_none() && state.track.identity() == track).then_some(*target)
+        });
+        target.is_some_and(|target| self.tracks.remove(&target).is_some())
+    }
+
+    pub(crate) fn contains_track(
+        &self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) -> bool {
+        self.tracks
+            .values()
+            .any(|state| state.track.identity() == track)
+    }
+
     /// Tracks the sampler still retains, active or not. Retention is what makes
     /// a zero `tracks_considered` meaningful rather than vacuous.
     pub(crate) fn retained_track_count(&self) -> usize {

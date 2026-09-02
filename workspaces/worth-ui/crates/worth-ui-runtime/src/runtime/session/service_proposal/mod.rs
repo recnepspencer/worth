@@ -46,6 +46,8 @@ pub(in crate::runtime) use participation::{
     UiServiceFamilyParticipation, UiServiceFamilyParticipationDenial,
 };
 
+#[cfg(any(test, feature = "certification-support"))]
+pub(in crate::runtime) use request_basis::UiPortalCertificationServiceRequestAuthority;
 #[cfg(test)]
 pub(in crate::runtime) use request_basis::UiServiceRequestCoherenceAxes;
 pub(in crate::runtime) use request_basis::{

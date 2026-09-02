@@ -2,6 +2,12 @@
 pub(crate) enum UiPortalServiceTransitionDenial {
     RevisionExhausted,
     StackOrdinalExhausted,
+    LiveRowCapacityExceeded { limit: u16 },
+    PortalNotLive,
+    PortalSurfaceMismatch,
+    ReplacementNotTopmost,
+    StackOrdinalConflict,
+    DescendantExitRetentionPending,
     StalePlan,
     Placement(super::UiPortalPlacementDenial),
 }

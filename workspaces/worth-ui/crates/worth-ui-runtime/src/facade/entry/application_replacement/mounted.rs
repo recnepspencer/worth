@@ -82,6 +82,10 @@ impl WorthUiActiveApplicationSession {
                 &candidate_graph,
             ))
             .map_err(WorthUiApplicationCutoverDenial::MountedIdentity)?;
+        let lifecycle = self.prepare_application_lifecycle(
+            &mounted_successor,
+            application.candidate_service_policy_plan().portal(),
+        );
         let capability_report = self.host_session.capability_report();
         let frame = super::mounted_frame::prepare_candidate_mounted_frame(
             &application,
@@ -104,6 +108,7 @@ impl WorthUiActiveApplicationSession {
                 application,
                 mounted_successor,
                 frame,
+                lifecycle,
             }),
         ))
     }
@@ -120,12 +125,14 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
             application,
             mounted_successor,
             frame,
+            lifecycle,
         } = *self;
         WorthUiDetachedPreparedMountedApplicationReplacement {
             session_identity: session.session_identity(),
             application,
             mounted_successor,
             frame,
+            lifecycle,
         }
     }
 
@@ -178,6 +185,7 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
             application,
             mounted_successor,
             frame,
+            lifecycle,
         } = *self;
         let admitted = match admission::prepare_replacement_presentation(
             admission::WorthUiMountedReplacementAdmissionInput {
@@ -185,6 +193,7 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
                 application,
                 mounted_successor,
                 frame,
+                lifecycle,
             },
             deadline,
             now,
@@ -196,17 +205,19 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
             session,
             application,
             mounted,
+            lifecycle,
         } = admitted;
         let outcome =
             session
                 .mounted
                 .present_graph_replacement(&session.host_session, mounted, now);
-        Self::finish(session, application, outcome, publish)
+        Self::finish(session, application, lifecycle, outcome, publish)
     }
 
     fn finish(
         session: &'session mut WorthUiActiveApplicationSession,
         application: Box<WorthUiPreparedApplicationActivation>,
+        lifecycle: super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
         outcome: crate::mounting::UiMountedGraphReplacementPresentation,
         publish: impl FnOnce(
             WorthUiPresentedApplicationReplacement<'session>,
@@ -219,6 +230,7 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
             } => publish(WorthUiPresentedApplicationReplacement::new(
                 session,
                 application,
+                lifecycle,
                 successor,
                 receipt,
             )),
@@ -240,6 +252,7 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
                             application,
                             mounted_successor: successor,
                             frame,
+                            lifecycle,
                         }),
                     },
                 )
@@ -250,6 +263,7 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
                         session,
                         application,
                         mounted,
+                        lifecycle,
                     },
                 ))
             }
@@ -266,6 +280,7 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
                         session,
                         application,
                         frame,
+                        lifecycle,
                     },
                 ))
             }
@@ -287,11 +302,13 @@ impl<'session> WorthUiMountedApplicationReplacementInFlight<'session> {
             session,
             application,
             mounted,
+            lifecycle,
         } = *self;
         WorthUiDetachedMountedApplicationReplacementInFlight {
             session_identity: session.session_identity(),
             application,
             mounted,
+            lifecycle,
         }
     }
 
@@ -314,6 +331,7 @@ impl<'session> WorthUiMountedApplicationReplacementInFlight<'session> {
             session,
             application,
             mounted,
+            lifecycle,
         } = *self;
         let outcome =
             session
@@ -329,6 +347,7 @@ impl<'session> WorthUiMountedApplicationReplacementInFlight<'session> {
                             session,
                             application,
                             mounted: *rejection.in_flight,
+                            lifecycle,
                         },
                     },
                 ));
@@ -337,6 +356,7 @@ impl<'session> WorthUiMountedApplicationReplacementInFlight<'session> {
         WorthUiPreparedMountedApplicationReplacement::finish(
             session,
             application,
+            lifecycle,
             outcome,
             |presented| presented.commit_once(),
         )
@@ -347,6 +367,7 @@ impl<'session> WorthUiMountedApplicationReplacementInFlight<'session> {
             session,
             application,
             mounted,
+            lifecycle,
         } = *self;
         let outcome = session
             .mounted
@@ -361,6 +382,7 @@ impl<'session> WorthUiMountedApplicationReplacementInFlight<'session> {
                             session,
                             application,
                             mounted: *rejection.in_flight,
+                            lifecycle,
                         },
                     },
                 ));
@@ -369,6 +391,7 @@ impl<'session> WorthUiMountedApplicationReplacementInFlight<'session> {
         WorthUiPreparedMountedApplicationReplacement::finish(
             session,
             application,
+            lifecycle,
             outcome,
             |presented| presented.commit_once(),
         )

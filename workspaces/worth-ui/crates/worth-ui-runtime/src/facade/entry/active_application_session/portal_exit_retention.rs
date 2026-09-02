@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-pub(super) struct UiPortalExitRetentionCoordinator {
+pub(in crate::facade::entry) struct UiPortalExitRetentionCoordinator {
     retentions:
         BTreeMap<crate::runtime::motion::UiMotionTrackIdentity, UiPortalMotionExitRetention>,
     pending: Option<UiPortalExitTerminalPending>,
@@ -21,6 +21,13 @@ pub(in crate::facade::entry) enum UiPortalExitTerminalPending {
         proposal: crate::runtime::session::UiIndeterminatePortalProposalTransaction,
         in_flight: crate::mounting::UiMountedPresentationInFlight,
     },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::facade::entry) enum UiPortalExitTerminalPendingKind {
+    InFlight,
+    Indeterminate,
+    Reconstruction,
 }
 
 pub(super) struct UiPortalMotionExitRetention {
@@ -87,6 +94,29 @@ impl UiPortalExitRetentionCoordinator {
         self.pending.as_ref()
     }
 
+    pub(in crate::facade::entry) fn pending_replacement_kind(
+        &self,
+    ) -> Option<UiPortalExitTerminalPendingKind> {
+        match self.pending.as_ref()? {
+            UiPortalExitTerminalPending::Retry(_) => None,
+            UiPortalExitTerminalPending::InFlight { .. } => {
+                Some(UiPortalExitTerminalPendingKind::InFlight)
+            }
+            UiPortalExitTerminalPending::Indeterminate { .. } => {
+                Some(UiPortalExitTerminalPendingKind::Indeterminate)
+            }
+            UiPortalExitTerminalPending::Reconstruction { .. } => {
+                Some(UiPortalExitTerminalPendingKind::Reconstruction)
+            }
+        }
+    }
+
+    pub(in crate::facade::entry) fn pending_track_is_coordinated(&self) -> bool {
+        self.pending.as_ref().map_or(true, |pending| {
+            self.retentions.contains_key(&pending.track())
+        })
+    }
+
     pub(super) fn take_pending(&mut self) -> Option<UiPortalExitTerminalPending> {
         self.pending.take()
     }
@@ -132,6 +162,50 @@ impl UiPortalExitRetentionCoordinator {
             .retentions
             .remove(&motion.track())
             .expect("validated displaced portal exit remains retained"))
+    }
+
+    pub(super) fn remove_rebound_portal(
+        &mut self,
+        portal: crate::runtime::portal::UiPortalIdentity,
+    ) -> Result<Option<crate::runtime::motion::UiMotionExitRetentionReceipt>, ()> {
+        let motion = self.retentions.values().find_map(|retention| {
+            (retention.portal.portal() == portal).then_some(retention.motion)
+        });
+        let Some(motion) = motion else {
+            return Ok(None);
+        };
+        self.remove_displaced(motion)
+            .map(|retention| Some(retention.motion()))
+    }
+
+    pub(in crate::facade::entry) fn has_portal(
+        &self,
+        portal: crate::runtime::portal::UiPortalIdentity,
+    ) -> bool {
+        self.retentions
+            .values()
+            .any(|retention| retention.portal.portal() == portal)
+    }
+
+    pub(in crate::facade::entry) fn retentions_for_portals(
+        &self,
+        portals: &[crate::runtime::portal::UiPortalIdentity],
+    ) -> Box<
+        [(
+            crate::runtime::portal::UiPortalIdentity,
+            crate::runtime::motion::UiMotionExitRetentionReceipt,
+        )],
+    > {
+        self.retentions
+            .values()
+            .filter_map(|retention| {
+                let portal = retention.portal.portal();
+                portals
+                    .contains(&portal)
+                    .then_some((portal, retention.motion))
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice()
     }
 
     pub(super) fn clear_for_shutdown(&mut self) -> usize {

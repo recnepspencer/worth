@@ -39,6 +39,54 @@ impl super::WorthUiActiveApplicationSession {
         }
     }
 
+    pub(in crate::facade::entry) fn release_rebound_portal_retention(
+        &mut self,
+        portal: crate::runtime::portal::UiPortalIdentity,
+    ) {
+        let Some(motion) = self
+            .portal_exit_retention
+            .remove_rebound_portal(portal)
+            .expect("rebound Portal exit retention has no in-flight physical work")
+        else {
+            return;
+        };
+        assert!(self
+            .motion
+            .as_mut()
+            .expect("rebound Portal exit retention retains Motion installation")
+            .release_exit_retention(motion));
+        self.retire_rebound_motion_sample(motion.track());
+    }
+
+    pub(in crate::facade::entry) fn release_rebound_motion_retention(
+        &mut self,
+        terminal: crate::runtime::motion::UiMotionTerminalReceipt,
+    ) {
+        let Some(retention) = terminal.exit_retention() else {
+            return;
+        };
+        self.portal_exit_retention
+            .remove_displaced(retention)
+            .expect("rebound Motion exit retention has exact Portal coordination");
+        assert!(self
+            .motion
+            .as_mut()
+            .expect("rebound exit retention retains Motion installation")
+            .release_exit_retention(retention));
+    }
+
+    pub(in crate::facade::entry) fn retire_rebound_motion_sample(
+        &mut self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) {
+        if !self.mounted.retire_rebound_motion_sample(track) {
+            assert!(
+                !self.mounted.contains_motion_track(track),
+                "rebound Motion terminal left an active or queued mounted sample"
+            );
+        }
+    }
+
     pub(in crate::facade::entry) fn prepare_motion_tick(
         &mut self,
         tick: u64,

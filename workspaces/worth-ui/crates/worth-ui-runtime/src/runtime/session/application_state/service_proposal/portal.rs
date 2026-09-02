@@ -46,6 +46,28 @@ impl WorthUiApplicationSessionState {
         )
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
+    pub(crate) fn begin_portal_service_proposal_for_certification(
+        &mut self,
+        transition: crate::runtime::portal::UiPreparedPortalServiceTransition,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        application: crate::runtime::intent::WorthUiActiveApplicationGenerationIdentity,
+        motion_state: &mut crate::runtime::motion::UiMotionRuntimeState,
+        motion_request: Option<crate::runtime::motion::UiMotionTransitionRequest>,
+    ) -> Result<UiPortalProposalPreparation, UiPortalProposalPreparationDenial> {
+        let request = crate::runtime::session::service_proposal::UiServiceRequestBasis::<
+            crate::runtime::session::service_proposal::UiPortalCertificationServiceRequestAuthority,
+        >::from_portal_certification(&transition, presentation, application)
+        .map_err(UiPortalProposalPreparationDenial::RequestBasis)?;
+        self.begin_portal_service_proposal_from_request(
+            request,
+            transition,
+            None,
+            motion_state,
+            motion_request,
+        )
+    }
+
     pub(crate) fn begin_portal_exit_terminal_service_proposal(
         &mut self,
         transition: crate::runtime::portal::UiPreparedPortalServiceTransition,

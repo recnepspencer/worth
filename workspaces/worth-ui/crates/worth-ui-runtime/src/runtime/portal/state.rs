@@ -1,9 +1,13 @@
 use std::collections::BTreeMap;
 
+#[path = "state/commit.rs"]
+mod commit;
 #[path = "state/duplicate_request.rs"]
 mod duplicate_request;
 #[path = "state/mounted_projection.rs"]
 mod mounted_projection;
+#[path = "state/order_index.rs"]
+mod order_index;
 #[path = "state/preparation.rs"]
 mod preparation;
 #[path = "state/shutdown.rs"]
@@ -27,8 +31,9 @@ pub(crate) struct UiPortalRuntimeState {
     closed_requests: duplicate_request::UiPortalClosedRequestWindow,
     admitted_requests: u64,
     idempotent_requests: u64,
-    revision: u64,
-    next_stack_ordinal: u64,
+    pub(super) revision: u64,
+    pub(super) stack_ordinal_issuer: super::UiPortalStackOrdinalIssuer,
+    pub(super) stack_order: order_index::UiPortalStackOrderIndex,
     last_closed: Option<super::UiPortalClosedInspectionRecord>,
 }
 
@@ -51,6 +56,18 @@ impl UiPortalRuntimeState {
         _persistence: crate::runtime::UiServiceStatePersistencePosture,
         policy: crate::declaration::UiPortalPolicy,
     ) -> Self {
+        Self::new_with_policy_and_ordinal_issuer(
+            _persistence,
+            policy,
+            super::UiPortalStackOrdinalIssuer::new(),
+        )
+    }
+
+    pub(crate) fn new_with_policy_and_ordinal_issuer(
+        _persistence: crate::runtime::UiServiceStatePersistencePosture,
+        policy: crate::declaration::UiPortalPolicy,
+        stack_ordinal_issuer: super::UiPortalStackOrdinalIssuer,
+    ) -> Self {
         Self {
             policy,
             records: BTreeMap::new(),
@@ -58,13 +75,21 @@ impl UiPortalRuntimeState {
             admitted_requests: 0,
             idempotent_requests: 0,
             revision: 0,
-            next_stack_ordinal: 1,
+            stack_ordinal_issuer,
+            stack_order: order_index::UiPortalStackOrderIndex::new(),
             last_closed: None,
         }
     }
 
     pub(crate) fn apply_policy(&mut self, policy: crate::declaration::UiPortalPolicy) {
         self.policy = policy;
+    }
+
+    pub(crate) fn take_stack_ordinal_issuer(&mut self) -> super::UiPortalStackOrdinalIssuer {
+        std::mem::replace(
+            &mut self.stack_ordinal_issuer,
+            super::UiPortalStackOrdinalIssuer::exhausted(),
+        )
     }
 
     pub(crate) fn committed_presentation_for(
@@ -86,219 +111,6 @@ impl UiPortalRuntimeState {
         })
     }
 
-    pub(crate) fn commit_published(
-        &mut self,
-        transition: super::UiPreparedPortalServiceTransition,
-    ) -> Result<super::UiPortalServiceReceipt, super::UiPortalServiceTransitionDenial> {
-        self.commit_published_with_exit_retention(transition, false)
-            .map(|(receipt, _)| receipt)
-    }
-
-    pub(crate) fn commit_published_with_exit_retention(
-        &mut self,
-        transition: super::UiPreparedPortalServiceTransition,
-        retain_exit: bool,
-    ) -> Result<
-        (
-            super::UiPortalServiceReceipt,
-            Option<super::UiPortalExitRetentionReceipt>,
-        ),
-        super::UiPortalServiceTransitionDenial,
-    > {
-        self.require_current(&transition)?;
-        let existing_retention = self
-            .records
-            .get(&transition.portal())
-            .and_then(|record| record.exit_retention);
-        if transition.is_idempotent() {
-            return self
-                .commit(transition, None, existing_retention)
-                .map(|receipt| (receipt, existing_retention));
-        }
-        let posture = match transition.request().operation() {
-            super::request::UiPortalServiceOperation::Open => {
-                super::UiPortalLifecyclePosture::Visible
-            }
-            super::request::UiPortalServiceOperation::Close(_) if retain_exit => {
-                super::UiPortalLifecyclePosture::Closing
-            }
-            super::request::UiPortalServiceOperation::Close(_) => {
-                super::UiPortalLifecyclePosture::Closed
-            }
-        };
-        let exit_retention = (posture == super::UiPortalLifecyclePosture::Closing).then(|| {
-            super::UiPortalExitRetentionReceipt::new(
-                transition.portal(),
-                transition.committed_revision(),
-                transition.request().idempotency().lineage(),
-            )
-        });
-        self.commit(transition, Some(posture), exit_retention)
-            .map(|receipt| (receipt, exit_retention))
-    }
-
-    pub(crate) fn prepare_exit_terminal(
-        &self,
-        retention: super::UiPortalExitRetentionReceipt,
-        idempotency: crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity,
-    ) -> Result<super::UiPreparedPortalServiceTransition, super::UiPortalExitTerminalDenial> {
-        let record = self
-            .records
-            .get(&retention.portal())
-            .filter(|record| {
-                record.posture == super::UiPortalLifecyclePosture::Closing
-                    && record.exit_retention == Some(retention)
-            })
-            .ok_or(super::UiPortalExitTerminalDenial::RetentionMismatch)?;
-        self.prepare(super::UiPortalServiceRequest::close(
-            retention.portal(),
-            idempotency,
-            record
-                .dismissal
-                .expect("a Closing portal retains its dismissal cause"),
-            record.semantic_surface,
-        ))
-        .map_err(super::UiPortalExitTerminalDenial::Transition)
-    }
-
-    pub(crate) fn validate_prepared(
-        &self,
-        transition: &super::UiPreparedPortalServiceTransition,
-    ) -> Result<(), super::UiPortalServiceTransitionDenial> {
-        self.require_current(transition)
-    }
-
-    fn commit(
-        &mut self,
-        transition: super::UiPreparedPortalServiceTransition,
-        posture: Option<super::UiPortalLifecyclePosture>,
-        exit_retention: Option<super::UiPortalExitRetentionReceipt>,
-    ) -> Result<super::UiPortalServiceReceipt, super::UiPortalServiceTransitionDenial> {
-        self.require_current(&transition)?;
-        let request = transition.request();
-        let posture = posture.unwrap_or(transition.staged_posture());
-        let dismissal = match request.operation() {
-            super::request::UiPortalServiceOperation::Open => None,
-            super::request::UiPortalServiceOperation::Close(cause) => Some(cause),
-        };
-        if matches!(
-            posture,
-            super::UiPortalLifecyclePosture::Closed | super::UiPortalLifecyclePosture::Closing
-        ) {
-            for descendant in transition.closed_descendants().iter().copied() {
-                let mut record = self
-                    .records
-                    .remove(&descendant)
-                    .expect("prepared descendant closure retains its portal record");
-                record.posture = posture;
-                record.dismissal = Some(super::UiPortalDismissalCause::ParentClosed);
-                record.exit_retention = None;
-                if posture == super::UiPortalLifecyclePosture::Closed {
-                    record.placement = None;
-                }
-                self.retain_record(descendant, record);
-            }
-        }
-        let placement = transition
-            .placement()
-            .map(super::UiCommittedPortalPlacement::from_prepared)
-            .or_else(|| {
-                (posture == super::UiPortalLifecyclePosture::Closing)
-                    .then(|| self.records.get(&request.portal())?.placement)
-                    .flatten()
-            });
-        let stack_ordinal = transition.stack_ordinal().or_else(|| {
-            self.records
-                .get(&request.portal())
-                .map(|record| record.stack_ordinal)
-        });
-        if transition.opens_portal() && !transition.is_idempotent() {
-            self.next_stack_ordinal = stack_ordinal
-                .expect("an opening portal receives a prepared stack ordinal")
-                .value()
-                .checked_add(1)
-                .expect("prepared stack ordinal retained successor capacity");
-        }
-        if let Some(stack_ordinal) = stack_ordinal {
-            self.retain_committed_record(
-                request,
-                UiPortalRecord {
-                    posture,
-                    semantic_surface: request.semantic_surface(),
-                    last_request: request.idempotency(),
-                    dismissal,
-                    placement,
-                    stack_ordinal,
-                    exit_retention,
-                },
-            );
-        } else {
-            debug_assert_eq!(posture, super::UiPortalLifecyclePosture::Closed);
-            self.closed_requests.retain(
-                request.portal(),
-                request.semantic_surface(),
-                request.idempotency(),
-                dismissal.expect("a terminal close retains its dismissal cause"),
-            );
-        }
-        self.admitted_requests = self.admitted_requests.saturating_add(1);
-        if transition.disposition() == super::UiPortalServiceDisposition::Idempotent {
-            self.idempotent_requests = self.idempotent_requests.saturating_add(1);
-        }
-        self.revision = transition.committed_revision();
-        if let super::request::UiPortalServiceOperation::Close(cause) = request.operation() {
-            self.last_closed = Some(super::UiPortalClosedInspectionRecord::new(
-                request.portal(),
-                cause,
-                transition.closed_descendants().len(),
-                self.revision,
-            ));
-        }
-        Ok(super::UiPortalServiceReceipt::new(
-            request.portal(),
-            posture,
-            transition.disposition(),
-        ))
-    }
-
-    /// A terminally closed portal leaves the live table and keeps only its
-    /// bounded duplicate-request row; every other posture stays live.
-    fn retain_record(&mut self, portal: super::UiPortalIdentity, record: UiPortalRecord) {
-        if record.posture == super::UiPortalLifecyclePosture::Closed {
-            self.records.remove(&portal);
-            self.closed_requests.retain(
-                portal,
-                record.semantic_surface,
-                record.last_request,
-                record
-                    .dismissal
-                    .expect("a Closed portal record retains its dismissal cause"),
-            );
-        } else {
-            self.closed_requests.forget(portal);
-            self.records.insert(portal, record);
-        }
-    }
-
-    fn retain_committed_record(
-        &mut self,
-        request: super::UiPortalServiceRequest,
-        record: UiPortalRecord,
-    ) {
-        self.retain_record(request.portal(), record);
-    }
-
-    fn require_current(
-        &self,
-        transition: &super::UiPreparedPortalServiceTransition,
-    ) -> Result<(), super::UiPortalServiceTransitionDenial> {
-        if transition.expected_revision() == self.revision {
-            Ok(())
-        } else {
-            Err(super::UiPortalServiceTransitionDenial::StalePlan)
-        }
-    }
-
     #[cfg(test)]
     pub(crate) fn posture(
         &self,
@@ -309,6 +121,16 @@ impl UiPortalRuntimeState {
             .map_or(super::UiPortalLifecyclePosture::Closed, |record| {
                 record.posture
             })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn semantic_surface_for_test(
+        &self,
+        portal: super::UiPortalIdentity,
+    ) -> Option<worth_ui_host_contract::UiSemanticSurfaceIdentity> {
+        self.records
+            .get(&portal)
+            .map(|record| record.semantic_surface)
     }
 
     /// The live table holds exactly the active portals, so this is a length
@@ -335,6 +157,13 @@ impl UiPortalRuntimeState {
             .count()
     }
 
+    pub(crate) fn exit_retention_count(&self) -> usize {
+        self.records
+            .values()
+            .filter(|record| record.exit_retention.is_some())
+            .count()
+    }
+
     pub(crate) const fn admitted_requests(&self) -> u64 {
         self.admitted_requests
     }
@@ -353,7 +182,12 @@ impl UiPortalRuntimeState {
 
     #[cfg(test)]
     pub(crate) fn force_next_stack_ordinal(&mut self, next: u64) {
-        self.next_stack_ordinal = next;
+        self.stack_ordinal_issuer.force_next(next);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn reconstruct_stack_order_for_test(&mut self) {
+        self.stack_order = order_index::UiPortalStackOrderIndex::rebuild(&self.records);
     }
 
     /// Live portal records plus the bounded duplicate-request rows retained for

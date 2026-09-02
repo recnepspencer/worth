@@ -80,11 +80,20 @@ impl WorthUiActiveApplicationSession {
                         &candidate_graph,
                     ))
                     .map_err(WorthUiApplicationCutoverDenial::MountedIdentity)?;
+                let lifecycle = self.prepare_application_lifecycle(
+                    &next_mounted,
+                    activation.candidate_service_policy_plan().portal(),
+                );
                 let scroll = self.prepare_scroll_replacement(&activation, &next_mounted, None);
                 let selection =
                     self.prepare_selection_replacement(&activation, &next_mounted, false);
-                let receipt =
-                    self.commit_application_activation(activation, next_mounted, scroll, selection);
+                let receipt = self.commit_application_activation(
+                    activation,
+                    next_mounted,
+                    lifecycle,
+                    scroll,
+                    selection,
+                );
                 Ok(WorthUiApplicationReplacementOutcome::Activated(Box::new(
                     receipt,
                 )))
@@ -108,6 +117,18 @@ impl WorthUiActiveApplicationSession {
             &pending,
             &candidate_service_policy_plan,
         )?;
+        if let Some(kind) = self.portal_exit_retention.pending_replacement_kind() {
+            return Err(
+                WorthUiApplicationCutoverDenial::PortalExitRetentionPending {
+                    kind: replacement_pending_kind(kind),
+                    retry: Box::new(WorthUiApplicationCutoverRetry {
+                        pending,
+                        admitted_delta,
+                        lane_parity_report,
+                    }),
+                },
+            );
+        }
         if self.mounted.has_active_presentation_attempt() {
             return Err(WorthUiApplicationCutoverDenial::MountedPresentationInFlight);
         }
@@ -196,13 +217,10 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         mut prepared: Box<WorthUiPreparedApplicationActivation>,
         mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
+        lifecycle: super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
         scroll: super::scroll_replacement::UiPreparedScrollReplacement,
         selection: super::selection_replacement::UiPreparedSelectionReplacement,
     ) -> WorthUiApplicationCutoverReceipt {
-        let motion_rebind = self
-            .motion
-            .as_ref()
-            .map(|motion| motion.prepare_mounted_rebind(&mounted_successor));
         let transition = prepared
             .transition
             .take()
@@ -240,12 +258,12 @@ impl WorthUiActiveApplicationSession {
                 policy.with_scope_restoration(policy.restores_on_scope_close() && restoration)
             }),
         );
-        reconcile_portal_installation(&mut self.portal, service_policy_plan.portal());
-        if let (Some(motion), Some(prepared)) = (self.motion.as_mut(), motion_rebind) {
-            for terminal in motion.commit_mounted_rebind(prepared) {
-                let _retired = self.mounted.retire_terminal_motion_sample(terminal.track());
-            }
-        }
+        self.commit_application_lifecycle(lifecycle);
+        reconcile_portal_installation(
+            &mut self.portal,
+            service_policy_plan.portal(),
+            &mut self.dormant_portal_stack_ordinal_issuer,
+        );
         reconcile_motion_installation(&mut self.motion, service_policy_plan.motion());
         let successor_appearance_demand = self
             .application
@@ -308,22 +326,21 @@ impl WorthUiActiveApplicationSession {
             intent_evidence,
         }
     }
+}
 
-    /// Lets transaction tests retain the exact production-staged pending
-    /// authority while inspecting denial behavior below the public cutover.
-    #[cfg(test)]
-    pub(crate) fn into_runtime_and_pending_after_staging_for_test(
-        self,
-        pending: WorthUiPendingApplicationCutover,
-    ) -> (
-        crate::runtime::WorthUiRuntime,
-        crate::runtime::WorthUiPendingActivation,
-    ) {
-        assert!(pending.basis.admits_session(self.session_identity()));
-        (
-            self.application.into_runtime_for_test(),
-            pending.pending_activation,
-        )
+fn replacement_pending_kind(
+    kind: crate::facade::entry::active_application_session::UiPortalExitTerminalPendingKind,
+) -> WorthUiPortalExitRetentionPendingKind {
+    match kind {
+        crate::facade::entry::active_application_session::UiPortalExitTerminalPendingKind::InFlight => {
+            WorthUiPortalExitRetentionPendingKind::InFlight
+        }
+        crate::facade::entry::active_application_session::UiPortalExitTerminalPendingKind::Indeterminate => {
+            WorthUiPortalExitRetentionPendingKind::Indeterminate
+        }
+        crate::facade::entry::active_application_session::UiPortalExitTerminalPendingKind::Reconstruction => {
+            WorthUiPortalExitRetentionPendingKind::Reconstruction
+        }
     }
 }
 

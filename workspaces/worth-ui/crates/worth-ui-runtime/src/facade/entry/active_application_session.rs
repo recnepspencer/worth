@@ -19,7 +19,9 @@ mod motion_sampling;
 #[path = "active_application_session/portal_exit_publication.rs"]
 mod portal_exit_publication;
 pub(in crate::facade::entry) use portal_exit_publication::UiPortalExitTerminalProgress;
-pub(in crate::facade::entry) use portal_exit_retention::UiPortalExitTerminalPending;
+pub(in crate::facade::entry) use portal_exit_retention::{
+    UiPortalExitTerminalPending, UiPortalExitTerminalPendingKind,
+};
 #[cfg(any(test, feature = "certification-support"))]
 #[path = "active_application_session/plan_observation.rs"]
 mod plan_observation;
@@ -60,6 +62,8 @@ pub struct WorthUiActiveApplicationSession {
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::focus::UiFocusRuntimeState>,
     pub(super) portal:
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::portal::UiPortalRuntimeState>,
+    pub(super) dormant_portal_stack_ordinal_issuer:
+        Option<crate::runtime::portal::UiPortalStackOrdinalIssuer>,
     pub(super) motion:
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::motion::UiMotionRuntimeState>,
     pub(super) scroll:
@@ -71,7 +75,7 @@ pub struct WorthUiActiveApplicationSession {
         crate::runtime::command_routing::UiCommandRoutingRuntimeState,
     >,
     pub(super) ime_composing: bool,
-    portal_exit_retention: portal_exit_retention::UiPortalExitRetentionCoordinator,
+    pub(super) portal_exit_retention: portal_exit_retention::UiPortalExitRetentionCoordinator,
     pub(super) intent_evidence: crate::inspection::intent::UiIntentEvidenceRegistry,
     pub(super) intent_application_facts: crate::runtime::intent::UiIntentApplicationFactState,
     pub(super) intent_execution: crate::runtime::intent_execution::UiIntentExecutionState,
@@ -110,6 +114,8 @@ impl WorthUiActiveApplicationSession {
                 app.capabilities(),
             );
         let service_policy_plan = app.service_policy_plan();
+        let mut dormant_portal_stack_ordinal_issuer =
+            Some(crate::runtime::portal::UiPortalStackOrdinalIssuer::new());
         let appearance_axis_demand = app
             .prepared_authority()
             .consumed_fact_index()
@@ -192,12 +198,16 @@ impl WorthUiActiveApplicationSession {
             ),
             portal: crate::runtime::UiRuntimeServiceInstallation::from_optional(
                 service_policy_plan.portal().map(|policy| {
-                    crate::runtime::portal::UiPortalRuntimeState::new_with_policy(
+                    crate::runtime::portal::UiPortalRuntimeState::new_with_policy_and_ordinal_issuer(
                         crate::runtime::UiServiceStatePersistencePosture::SessionRestoreCandidate,
                         policy,
+                        dormant_portal_stack_ordinal_issuer
+                            .take()
+                            .expect("active session retains one Portal ordinal issuer"),
                     )
                 }),
             ),
+            dormant_portal_stack_ordinal_issuer,
             motion: crate::runtime::UiRuntimeServiceInstallation::from_optional(
                 service_policy_plan.motion().map(|policy| {
                     crate::runtime::motion::UiMotionRuntimeState::new_with_policy(

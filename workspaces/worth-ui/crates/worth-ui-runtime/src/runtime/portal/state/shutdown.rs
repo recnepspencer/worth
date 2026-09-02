@@ -20,6 +20,7 @@ impl super::UiPortalRuntimeState {
             self.revision = self.revision.saturating_add(1);
         }
         self.records.clear();
+        self.stack_order.clear();
         self.clear_closed_requests();
         UiPortalShutdownReport {
             closed_records,

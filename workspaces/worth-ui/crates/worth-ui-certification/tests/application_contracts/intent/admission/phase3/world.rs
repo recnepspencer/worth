@@ -11,6 +11,7 @@ use worth_ui::facade::observation_report::{
     UiHostObservationPayload, UiHostObservationPresentationBasis, UiHostObservationReport,
     UiHostObservationSequence, UiHostObservationSequenceRange, UiHostObservationTimeBasis,
     UiHostPointerButton, UiHostPointerButtonTransition, UiHostPointerCaptureEpoch,
+    UiHostPointerDeviceKind,
     UiHostPointerIdentity, UiHostPressedPointerButtons, UiHostProtocolContract,
     UiHostProtocolNegotiation, UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
@@ -302,7 +303,9 @@ impl AdmissionWorld {
             sequence,
             UiHostObservationTimeBasis::HostMonotonicMillis(sequence.value()),
             payload,
-        );
+        )
+        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+        .expect("pointer reports carry an explicit device kind");
         let batch = UiHostObservationBatch::new(UiHostObservationBatchInput {
             protocol: protocol(),
             host_session: self.session.host_session_identity().as_u64(),

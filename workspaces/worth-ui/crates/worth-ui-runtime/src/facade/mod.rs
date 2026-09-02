@@ -91,10 +91,10 @@ pub use entry::{
     WorthUiNativePredecessorRecovery, WorthUiNativePresentationRecoveryDenial,
     WorthUiNativeProjectionRebindDenial, WorthUiNativeReducedMotionPosture,
     WorthUiNativeSourceRebindDenial, WorthUiPendingApplicationCutover,
-    WorthUiPendingMountedPreview, WorthUiPreparedApplicationReplacement,
-    WorthUiPreparedMountedApplicationReplacement, WorthUiPreparedMountedPreview,
-    WorthUiReplacementCandidateSummary, WorthUiReplacementPlannedCostEnvelope,
-    WorthUiResolvedMountedPreview,
+    WorthUiPendingMountedPreview, WorthUiPortalExitRetentionPendingKind,
+    WorthUiPreparedApplicationReplacement, WorthUiPreparedMountedApplicationReplacement,
+    WorthUiPreparedMountedPreview, WorthUiReplacementCandidateSummary,
+    WorthUiReplacementPlannedCostEnvelope, WorthUiResolvedMountedPreview,
 };
 pub(crate) use entry::{
     WorthUiDetachedMountedApplicationReplacementInFlight,

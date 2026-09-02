@@ -1,5 +1,4 @@
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(crate) struct UiPortalStackOrdinal(u64);
+use super::UiPortalStackOrdinal;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiPortalStackRow {
@@ -16,31 +15,32 @@ pub(crate) struct UiPortalStackSnapshot {
     rows: Box<[UiPortalStackRow]>,
 }
 
-impl UiPortalStackOrdinal {
-    pub(super) const fn minted(value: u64) -> Self {
-        Self(value)
-    }
-    pub(crate) const fn value(self) -> u64 {
-        self.0
-    }
-}
-
 impl super::UiPortalRuntimeState {
     pub(crate) fn stack_snapshot(&self) -> UiPortalStackSnapshot {
-        let mut rows = self
-            .records
+        assert_eq!(
+            self.stack_order.len_for_snapshot(),
+            self.records.len(),
+            "Portal stack order must cover exactly every live record"
+        );
+        let rows = self
+            .stack_order
             .iter()
-            .map(|(portal, record)| UiPortalStackRow {
-                portal: *portal,
-                parent: record
-                    .placement
-                    .and_then(|placement| placement.prepared().layer().parent()),
-                surface: record.semantic_surface,
-                ordinal: record.stack_ordinal,
-                lifecycle: record.posture,
+            .map(|(_, portal)| {
+                let record = self
+                    .records
+                    .get(portal)
+                    .expect("Portal order index retains every live record");
+                UiPortalStackRow {
+                    portal: *portal,
+                    parent: record
+                        .placement
+                        .and_then(|placement| placement.prepared().layer().parent()),
+                    surface: record.semantic_surface,
+                    ordinal: record.stack_ordinal,
+                    lifecycle: record.posture,
+                }
             })
             .collect::<Vec<_>>();
-        rows.sort_by_key(|row| row.ordinal);
         UiPortalStackSnapshot {
             owner_revision: self.revision(),
             rows: rows.into_boxed_slice(),

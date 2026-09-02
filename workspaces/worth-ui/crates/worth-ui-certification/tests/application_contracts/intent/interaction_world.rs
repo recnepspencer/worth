@@ -6,7 +6,8 @@ use worth_ui::facade::observation_report::{
     UiHostObservationReport, UiHostObservationSequence, UiHostObservationSequenceRange,
     UiHostObservationTimeBasis, UiHostPointerButton, UiHostPointerButtonTransition,
     UiHostPointerCaptureEpoch, UiHostPointerIdentity, UiHostProtocolContract,
-    UiHostProtocolNegotiation, UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostPointerDeviceKind, UiHostProtocolNegotiation, UiHostSurfacePosition,
+    UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 use worth_ui_host_contract::{
     UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision, UiHostScrollDeltaSource,
@@ -105,7 +106,9 @@ impl InteractionWorld {
                 transition,
                 position: position(point),
             },
-        );
+        )
+        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+        .expect("button reports carry an explicit pointer device kind");
         self.admit_range(
             self.presentation,
             (sequence, sequence),
@@ -242,7 +245,9 @@ impl InteractionWorld {
                 position: position(point),
             },
         )
-        .with_mounted_basis(mounted);
+        .with_mounted_basis(mounted)
+        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+        .expect("mounted button reports carry an explicit pointer device kind");
         self.admit_range(
             self.presentation,
             (sequence, sequence),
@@ -263,11 +268,23 @@ impl InteractionWorld {
             .map(|payload| {
                 let sequence = UiHostObservationSequence::new(self.next_sequence);
                 self.next_sequence += 1;
-                UiHostObservationReport::new(
+                let is_pointer = matches!(
+                    &payload,
+                    UiHostObservationPayload::PointerMotion { .. }
+                        | UiHostObservationPayload::PointerButton { .. }
+                );
+                let report = UiHostObservationReport::new(
                     sequence,
                     UiHostObservationTimeBasis::HostMonotonicMillis(sequence.value()),
                     payload,
-                )
+                );
+                if is_pointer {
+                    report
+                        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+                        .expect("pointer reports carry an explicit pointer device kind")
+                } else {
+                    report
+                }
             })
             .collect::<Vec<_>>();
         let last = reports

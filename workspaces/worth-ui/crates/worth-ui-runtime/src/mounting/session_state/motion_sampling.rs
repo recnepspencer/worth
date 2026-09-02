@@ -25,6 +25,20 @@ impl WorthUiMountedSessionState {
         self.motion_sampling.retire_terminal_track(track)
     }
 
+    pub(crate) fn retire_rebound_motion_sample(
+        &mut self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) -> bool {
+        self.motion_sampling.retire_rebound_track(track)
+    }
+
+    pub(crate) fn contains_motion_track(
+        &self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) -> bool {
+        self.motion_sampling.contains_track(track)
+    }
+
     pub(crate) fn prepare_motion_tick(
         &mut self,
         tick: u64,
