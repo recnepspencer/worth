@@ -13,7 +13,7 @@ fn compile(source: &str) -> WorthUiDslCompileReport {
             .with_module("app/main.wui", source),
     );
     let Err(report) = result else {
-        panic!("Gate 2 denial fixture must not produce a sealed semantic package");
+        panic!("appearance denial fixture must not produce a sealed semantic package");
     };
     report
 }

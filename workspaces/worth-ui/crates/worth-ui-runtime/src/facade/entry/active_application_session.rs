@@ -392,10 +392,4 @@ impl WorthUiActiveApplicationSession {
     pub fn host_session_identity(&self) -> crate::facade::WorthUiHostSessionIdentity {
         self.host_session.identity()
     }
-
-    pub(crate) fn host_measurement_capability(
-        &self,
-    ) -> crate::facade::WorthUiHostMeasurementCapability {
-        self.host_session.measurement_capability()
-    }
 }

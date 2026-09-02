@@ -129,7 +129,7 @@ fn compile_file(source: &str) -> WorthUiSealedSemanticPackage {
         WorthUiAuthoredSourceInput::rooted_at(PathBuf::from("workspace"))
             .with_module("app/main.wui", source),
     )
-    .expect("file-authored Gate 2 corpus should compile")
+    .expect("file-authored appearance corpus should compile")
 }
 
 fn compile_rust(
@@ -167,7 +167,7 @@ fn compile_rust(
     WorthUiDslCompiler::compile_rust_authored(&WorthUiRustAuthoredArtifactInput::from_modules([
         module,
     ]))
-    .expect("Rust-authored Gate 2 corpus should compile")
+    .expect("Rust-authored appearance corpus should compile")
 }
 
 fn role<'package>(
