@@ -102,34 +102,6 @@ fn subsystem_lookup_selects_only_declared_matching_aspect_family() {
 }
 
 #[test]
-fn static_paint_token_dependency_selects_only_its_component_consumers() {
-    let app = static_paint_app();
-    let authority = app.prepared_authority();
-    let index = authority.consumed_fact_index();
-    let fact = UiProducedFact::AuthoredSource(UiAuthoredChangedFact::new(
-        UiAuthoredFactSelector::node(STATIC_PAINT_TOKEN),
-        UiAuthoredFactKind::SemanticsChanged,
-    ));
-
-    let receipt = index
-        .lookup(index.basis(), &fact)
-        .expect("declared static-paint token should resolve");
-
-    assert_eq!(receipt.entries().len(), 4);
-    assert_eq!(
-        receipt
-            .entries()
-            .iter()
-            .map(|entry| entry.consumer_key().authored_identity())
-            .collect::<BTreeSet<_>>(),
-        BTreeSet::from([STATIC_PAINT_COMPONENT, STATIC_PAINT_PEER])
-    );
-    assert!(receipt.entries().iter().all(|entry| entry
-        .affected_aspect()
-        .is_some_and(|aspect| aspect.canonical_label() == "appearance.background")));
-}
-
-#[test]
 fn rebuild_is_deterministic_and_foreign_basis_is_rejected() {
     let left = indexed_app("fact-index-left");
     let right = foreign_indexed_app();

@@ -1,6 +1,7 @@
 mod active_binding;
 mod capability;
 mod prepared_switch;
+mod resolution_view;
 mod state;
 mod switch_request;
 
@@ -16,6 +17,9 @@ pub(crate) use active_binding::UiActiveThemeBinding;
 )]
 pub(crate) use capability::{UiThemeCapabilityAdmission, UiThemeCapabilityReceipt};
 pub(crate) use prepared_switch::UiPreparedThemeSwitch;
+pub(crate) use resolution_view::{
+    UiResolvedThemeSlot, UiThemeResolutionDenial, UiThemeResolutionView,
+};
 pub(crate) use state::{UiAppearanceThemeState, UiThemeInitialBindingDenial, UiThemeSwitchDenial};
 pub(crate) use switch_request::{
     UiThemeSwitchOrigin, UiThemeSwitchOriginAdmissionDenial, UiThemeSwitchOriginFamily,

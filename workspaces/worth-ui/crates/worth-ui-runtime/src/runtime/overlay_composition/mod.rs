@@ -45,7 +45,7 @@ pub(crate) use relation_graph::{
 };
 pub(crate) use snapshot::{
     UiBackdropInstanceIdentity, UiOverlayApplicationGeneration, UiOverlayBackdropInstanceScope,
-    UiOverlayBackdropRow, UiOverlayParticipantIdentity, UiOverlayStackParticipant,
+    UiOverlayBackdropRow, UiOverlayExtent, UiOverlayParticipantIdentity, UiOverlayStackParticipant,
     UiOverlayStackSnapshot,
 };
 

@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 
 use crate::capability::CapabilitySnapshot;
 use crate::declaration::{UiAppearanceRoleAttachment, UiDeclarationIdentity};
@@ -12,10 +13,15 @@ pub(super) struct UiGraphAppearanceConsumerContract {
     attachments: Box<[UiGraphAppearanceAttachment]>,
     roles: Box<[worth_ui_dsl::UiAppearanceRoleDeclaration]>,
     state_consumers: [Box<[UiAppearanceStateConsumer]>; 6],
+    state_consumer_nodes:
+        BTreeMap<worth_ui_dsl::UiAppearanceStateAxis, Box<[crate::graph::UiGraphNodeIdentity]>>,
+    role_consumers:
+        BTreeMap<worth_ui_dsl::UiAppearanceRoleIdentity, Box<[crate::graph::UiGraphNodeIdentity]>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct UiGraphAppearanceAttachment {
+    graph_node: crate::graph::UiGraphNodeIdentity,
     declaration: UiDeclarationIdentity,
     repeated_instance: UiRepeatedInstanceBasis,
     attachment: UiAppearanceRoleAttachment,
@@ -32,6 +38,14 @@ impl UiGraphAppearanceConsumerContract {
         let mut roles = Vec::new();
         let mut state_consumers: [Vec<UiAppearanceStateConsumer>; 6] =
             std::array::from_fn(|_| Vec::new());
+        let mut state_consumer_nodes = BTreeMap::<
+            worth_ui_dsl::UiAppearanceStateAxis,
+            Vec<crate::graph::UiGraphNodeIdentity>,
+        >::new();
+        let mut role_consumers = BTreeMap::<
+            worth_ui_dsl::UiAppearanceRoleIdentity,
+            Vec<crate::graph::UiGraphNodeIdentity>,
+        >::new();
         for node in snapshot.nodes() {
             let Some(attachment) = node.appearance_role_attachment() else {
                 continue;
@@ -51,6 +65,7 @@ impl UiGraphAppearanceConsumerContract {
                 UiAppearanceStateConsumer::from_role(node.graph_node_identity(), role);
             has_consumers = true;
             attachments.push(UiGraphAppearanceAttachment {
+                graph_node: node.graph_node_identity(),
                 declaration: node.declaration_identity().clone(),
                 repeated_instance: node.repeated_instance_basis().clone(),
                 attachment: attachment.clone(),
@@ -64,6 +79,19 @@ impl UiGraphAppearanceConsumerContract {
                 roles.push(role.clone());
             }
             append_state_consumer(&mut axis_demand, &mut state_consumers, &state_consumer);
+            role_consumers
+                .entry(role.role().clone())
+                .or_default()
+                .push(node.graph_node_identity());
+            for (_, partition) in role.partitions() {
+                for axis in partition.axes() {
+                    axis_demand.include(axis.axis());
+                    state_consumer_nodes
+                        .entry(axis.axis())
+                        .or_default()
+                        .push(node.graph_node_identity());
+                }
+            }
         }
         attachments.sort_by(compare_attachments);
         roles.sort_by(|left, right| left.role().cmp(right.role()));
@@ -75,12 +103,22 @@ impl UiGraphAppearanceConsumerContract {
             });
             consumers.into_boxed_slice()
         });
+        canonicalize_consumers(&mut state_consumer_nodes);
+        canonicalize_consumers(&mut role_consumers);
         Self {
             has_consumers,
             axis_demand,
             attachments: attachments.into_boxed_slice(),
             roles: roles.into_boxed_slice(),
             state_consumers,
+            state_consumer_nodes: state_consumer_nodes
+                .into_iter()
+                .map(|(axis, nodes)| (axis, nodes.into_boxed_slice()))
+                .collect(),
+            role_consumers: role_consumers
+                .into_iter()
+                .map(|(role, nodes)| (role, nodes.into_boxed_slice()))
+                .collect(),
         }
     }
 
@@ -99,6 +137,22 @@ impl UiGraphAppearanceConsumerContract {
         axis: worth_ui_dsl::UiAppearanceStateAxis,
     ) -> &[UiAppearanceStateConsumer] {
         &self.state_consumers[crate::runtime::appearance::UiAppearanceStateAxisDemand::index(axis)]
+    }
+
+    pub(super) fn state_consumer_nodes(
+        &self,
+        axis: worth_ui_dsl::UiAppearanceStateAxis,
+    ) -> &[crate::graph::UiGraphNodeIdentity] {
+        self.state_consumer_nodes
+            .get(&axis)
+            .map_or(&[], Box::as_ref)
+    }
+
+    pub(super) fn role_consumers(
+        &self,
+        role: &worth_ui_dsl::UiAppearanceRoleIdentity,
+    ) -> &[crate::graph::UiGraphNodeIdentity] {
+        self.role_consumers.get(role).map_or(&[], Box::as_ref)
     }
 }
 
@@ -127,6 +181,16 @@ fn append_state_consumer(
     }
 }
 
+fn canonicalize_consumers<K>(consumers: &mut BTreeMap<K, Vec<crate::graph::UiGraphNodeIdentity>>)
+where
+    K: Ord,
+{
+    for nodes in consumers.values_mut() {
+        nodes.sort_unstable();
+        nodes.dedup();
+    }
+}
+
 fn compare_attachments(
     left: &UiGraphAppearanceAttachment,
     right: &UiGraphAppearanceAttachment,
@@ -141,6 +205,7 @@ fn compare_attachments(
                 .cmp(&right.declaration.digest().raw())
         })
         .then_with(|| compare_repeated_instances(&left.repeated_instance, &right.repeated_instance))
+        .then_with(|| left.graph_node.cmp(&right.graph_node))
 }
 
 fn compare_repeated_instances(

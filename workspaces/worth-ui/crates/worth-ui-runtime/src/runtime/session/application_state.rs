@@ -8,6 +8,7 @@ pub(crate) use service_proposal::{
     UiIndeterminatePortalProposalTransaction, UiPortalProposalPreparationDenial,
     UiStagedPortalProposalTransaction,
 };
+mod appearance_consumers;
 #[cfg(any(test, feature = "certification-support"))]
 mod planning;
 mod rebind_planning;

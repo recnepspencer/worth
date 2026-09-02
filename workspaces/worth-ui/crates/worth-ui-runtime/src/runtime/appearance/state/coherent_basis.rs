@@ -45,6 +45,7 @@ pub(crate) struct UiAppearanceCoherentBasis {
     presentation: Option<UiHostObservationPresentationBasis>,
     selection: Option<super::UiAppearanceSelectionSelector>,
     operability_route: Option<Box<str>>,
+    owner_revisions: [u64; 6],
 }
 
 impl UiAppearanceCoherentBasis {
@@ -98,6 +99,7 @@ impl UiAppearanceCoherentBasis {
             presentation: input.presentation,
             selection: input.selection,
             operability_route: input.operability_route,
+            owner_revisions: owner_revisions(snapshot),
         })
     }
 
@@ -209,6 +211,37 @@ impl UiAppearanceCoherentBasis {
         true
     }
 
+    pub(crate) const fn owner_revisions(&self) -> &[u64; 6] {
+        &self.owner_revisions
+    }
+
+    pub(crate) fn semantic_digest(&self) -> u64 {
+        let mut digest = 0xcbf2_9ce4_8422_2325_u64;
+        digest = fold(digest, self.session.as_u64());
+        digest = fold(
+            digest,
+            self.generation
+                .prepared_generation()
+                .semantic_package_identity()
+                .narrowing_fingerprint(),
+        );
+        digest = fold(digest, self.surface.diagnostic_value());
+        digest = fold(digest, self.graph_node.digest());
+        digest = fold(digest, self.mounted_instance.diagnostic_value());
+        digest = fold(digest, self.incarnation.diagnostic_value());
+        fold(digest, self.node_receipt.diagnostic_value())
+    }
+
+    pub(crate) fn evidence_digest(&self) -> u64 {
+        let mut digest = self.semantic_digest();
+        digest = fold(digest, self.turn.as_u64());
+        digest = fold(digest, self.source_basis);
+        for revision in self.owner_revisions {
+            digest = fold(digest, revision);
+        }
+        digest
+    }
+
     #[cfg(test)]
     #[allow(
         clippy::too_many_arguments,
@@ -243,6 +276,7 @@ impl UiAppearanceCoherentBasis {
             presentation,
             selection,
             operability_route,
+            owner_revisions: owner_revisions(snapshot),
         }
     }
 }
@@ -310,6 +344,29 @@ pub(crate) fn validate_presentation_for_test(
     presentation: Option<UiHostObservationPresentationBasis>,
 ) -> Result<(), UiAppearanceCoherentBasisDenial> {
     validate_presentation(mounted, presentation)
+}
+
+fn owner_revisions(snapshot: &super::UiAppearanceOwnerSnapshot) -> [u64; 6] {
+    [
+        snapshot
+            .operability()
+            .map_or(0, |value| value.owner_revision()),
+        snapshot.focus().map_or(0, |value| value.owner_revision()),
+        snapshot
+            .validation()
+            .map_or(0, |value| value.owner_revision()),
+        snapshot
+            .selection()
+            .map_or(0, |value| value.owner_revision()),
+        snapshot
+            .pointer_presence()
+            .map_or(0, |value| value.owner_revision()),
+        snapshot.pressed().map_or(0, |value| value.owner_revision()),
+    ]
+}
+
+fn fold(digest: u64, value: u64) -> u64 {
+    digest.wrapping_mul(0x0000_0100_0000_01b3) ^ value
 }
 
 const fn axes() -> [UiAppearanceStateAxis; 6] {

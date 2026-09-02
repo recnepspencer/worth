@@ -48,5 +48,6 @@ pub(super) fn reconcile_successor_owners(
         .reconcile_validation_appearance(
             demand.contains(worth_ui_dsl::UiAppearanceStateAxis::Validation),
         );
+    session.appearance_inspection.reset_for_new_generation();
     session.appearance_owner_snapshot = None;
 }

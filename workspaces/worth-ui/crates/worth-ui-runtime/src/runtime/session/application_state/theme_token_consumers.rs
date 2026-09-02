@@ -21,6 +21,11 @@ impl WorthUiApplicationSessionState {
             Ok(receipt) => receipt
                 .entries()
                 .iter()
+                .filter(|entry| {
+                    entry
+                        .consumption_relation()
+                        .matches_theme_token(token.as_str(), declaration)
+                })
                 .filter_map(|entry| match entry.consumer() {
                     crate::graph::UiGraphFactConsumerIdentity::GraphNode(node) => Some(node),
                     crate::graph::UiGraphFactConsumerIdentity::MountEligibilitySlot(_) => None,

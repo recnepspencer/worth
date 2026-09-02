@@ -5,8 +5,8 @@ use worth_ui::facade::observation_report::{
     UiHostObservationMountedBasis, UiHostObservationPayload, UiHostObservationPresentationBasis,
     UiHostObservationReport, UiHostObservationSequence, UiHostObservationSequenceRange,
     UiHostObservationTimeBasis, UiHostPointerButton, UiHostPointerButtonTransition,
-    UiHostPointerCaptureEpoch, UiHostPointerIdentity, UiHostProtocolContract,
-    UiHostPointerDeviceKind, UiHostProtocolNegotiation, UiHostSurfacePosition,
+    UiHostPointerCaptureEpoch, UiHostPointerDeviceKind, UiHostPointerIdentity,
+    UiHostProtocolContract, UiHostProtocolNegotiation, UiHostSurfacePosition,
     UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 use worth_ui_host_contract::{

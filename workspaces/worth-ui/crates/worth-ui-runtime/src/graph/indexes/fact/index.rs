@@ -7,11 +7,12 @@ use crate::graph::{UiGraphAspectPublisherKind, UiGraphSnapshot};
 
 use super::{
     UiAuthoredDeclarationLookup, UiGraphFactConsumerIdentity, UiGraphFactConsumerKey,
-    UiGraphFactConsumerKind, UiGraphFactIndexBasis, UiGraphFactIndexEntry, UiGraphFactLookupDenial,
-    UiGraphFactLookupReceipt,
+    UiGraphFactConsumerKind, UiGraphFactConsumptionRelation, UiGraphFactIndexBasis,
+    UiGraphFactIndexEntry, UiGraphFactLookupDenial, UiGraphFactLookupReceipt,
 };
 
 mod appearance_consumer_contract;
+mod appearance_slot_relation;
 mod appearance_state;
 mod consumer;
 mod subsystem;
@@ -53,6 +54,12 @@ impl UiGraphConsumedFactIndex {
             authored_declarations,
             &mut authored_by_declaration,
         );
+        appearance_slot_relation::add_role_slot_consumers(
+            snapshot,
+            capabilities,
+            authored_declarations,
+            &mut authored_by_declaration,
+        );
         let appearance_consumers =
             UiGraphAppearanceConsumerContract::from_graph(snapshot, capabilities);
         let authored_by_declaration = authored_by_declaration
@@ -78,6 +85,20 @@ impl UiGraphConsumedFactIndex {
 
     pub(crate) const fn has_appearance_consumers(&self) -> bool {
         self.appearance_consumers.has_consumers()
+    }
+
+    pub(crate) fn appearance_state_consumer_nodes(
+        &self,
+        axis: worth_ui_dsl::UiAppearanceStateAxis,
+    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
+        self.appearance_consumers.state_consumer_nodes(axis).into()
+    }
+
+    pub(crate) fn appearance_role_consumer_nodes(
+        &self,
+        role: &worth_ui_dsl::UiAppearanceRoleIdentity,
+    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
+        self.appearance_consumers.role_consumers(role).into()
     }
 
     pub(crate) fn has_same_appearance_consumer_contract(&self, other: &Self) -> bool {
@@ -167,7 +188,7 @@ fn query_projection_consumers(
                 snapshot,
                 node,
                 contract.clone(),
-                affected_aspect.clone(),
+                UiGraphFactConsumptionRelation::general(Some(affected_aspect.clone())),
             );
         }
     }
@@ -201,7 +222,16 @@ fn add_static_paint_token_consumers(
         let affected_aspect =
             UiAspectName::from_semantic_slice(UiAspectSemanticSlice::AppearanceBackground);
         let entries = by_declaration.entry(token_identity).or_default();
-        push_component_consumer(entries, snapshot, node, contract, affected_aspect);
+        push_component_consumer(
+            entries,
+            snapshot,
+            node,
+            contract,
+            UiGraphFactConsumptionRelation::static_paint(
+                token_capability_identity,
+                affected_aspect,
+            ),
+        );
     }
 }
 
@@ -234,34 +264,34 @@ fn fact_selector_identity<'identity>(
         .unwrap_or(fallback_identity)
 }
 
-fn push_component_consumer(
+pub(super) fn push_component_consumer(
     entries: &mut Vec<UiGraphFactIndexEntry>,
     snapshot: &UiGraphSnapshot,
     node: &crate::graph::UiGraphNode,
     contract: UiConsumedFactContract,
-    affected_aspect: UiAspectName,
+    consumption_relation: UiGraphFactConsumptionRelation,
 ) {
     let authored_identity: Box<str> = node.declaration_identity().authored_semantic_name().into();
     let repeated = node.repeated_instance_basis().identity_digest();
-    entries.push(UiGraphFactIndexEntry::new(
+    entries.push(UiGraphFactIndexEntry::new_with_relation(
         UiGraphFactConsumerKey::new(
             UiGraphFactConsumerKind::GraphNode,
             authored_identity.clone(),
             repeated,
         ),
         UiGraphFactConsumerIdentity::GraphNode(node.graph_node_identity()),
-        Some(affected_aspect.clone()),
+        consumption_relation.clone(),
         contract.clone(),
     ));
     if let Some(slot) = snapshot.mount_eligibility_slot_for_node(node.graph_node_identity()) {
-        entries.push(UiGraphFactIndexEntry::new(
+        entries.push(UiGraphFactIndexEntry::new_with_relation(
             UiGraphFactConsumerKey::new(
                 UiGraphFactConsumerKind::MountEligibilitySlot,
                 authored_identity,
                 repeated,
             ),
             UiGraphFactConsumerIdentity::MountEligibilitySlot(slot.mount_eligibility_identity()),
-            Some(affected_aspect),
+            consumption_relation,
             contract,
         ));
     }
@@ -354,7 +384,10 @@ pub(super) fn canonical_entries(
         left.consumer_key()
             .cmp(right.consumer_key())
             .then_with(|| left.consumer().cmp(&right.consumer()))
-            .then_with(|| left.affected_aspect().cmp(&right.affected_aspect()))
+            .then_with(|| {
+                left.consumption_relation()
+                    .cmp(right.consumption_relation())
+            })
     });
     entries.dedup();
     entries.into_boxed_slice()

@@ -42,6 +42,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                     portal,
                     interaction,
                     host_exchange,
+                    presentation: &*presentation,
                 },
             }),
             Err(completion) => Err(Box::new(Self {
@@ -166,7 +167,9 @@ impl<'session> WorthUiPendingMountedPreview<'session> {
                 visual_overlay: None,
                 portal_overlays: std::rc::Rc::from([]),
                 semantic_content: crate::mounting::UiMountedSemanticContentInput::empty(),
-                theme_values: crate::mounting::UiMountedThemeValueSource::preview_only(),
+                theme_values: crate::mounting::UiMountedThemeValueSource::preview_only(
+                    self.ports.presentation.preview_theme_binding(surface),
+                ),
                 font_collection: std::sync::Arc::clone(&self.font_collection),
                 reuse_contract,
             })

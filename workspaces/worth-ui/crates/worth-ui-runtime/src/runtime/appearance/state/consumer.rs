@@ -106,6 +106,20 @@ impl UiAppearanceStateConsumer {
             axes,
         }
     }
+
+    #[cfg(test)]
+    pub(crate) fn for_demand_for_test(
+        graph_node: crate::graph::UiGraphNodeIdentity,
+        axes: super::UiAppearanceStateAxisDemand,
+    ) -> Self {
+        Self {
+            graph_node,
+            role: UiAppearanceRoleIdentity::new("appearance-state-test-role")
+                .expect("test appearance role identity"),
+            role_revision: UiAppearanceRoleRevision::new(1).expect("test role revision"),
+            axes,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
