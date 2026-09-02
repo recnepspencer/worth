@@ -1,5 +1,4 @@
 mod assembly;
-mod backdrop;
 mod counters;
 mod delta;
 mod denial;

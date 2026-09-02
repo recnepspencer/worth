@@ -7,7 +7,7 @@ use super::fact::{
     UiMountedAppearanceNodeInput, UiMountedAppearanceVisualBounds,
 };
 use super::{
-    outline, overlay_order, pointer_affordance, surface, text_foreground,
+    backdrop, outline, overlay_order, pointer_affordance, surface, text_foreground,
     UiMountedAppearanceLoweringDenial,
 };
 
@@ -29,7 +29,7 @@ pub(super) fn lower(
         if backdrop_input.semantic_surface != input.semantic_surface {
             return Err(UiMountedAppearanceLoweringDenial::NodeSurfaceMismatch);
         }
-        let mechanic = crate::mounting::backdrop::lower_unpublished_backdrop(backdrop_input)?;
+        let mechanic = backdrop::lower(backdrop_input)?;
         records.push(UiMountedAppearanceFact::backdrop(
             input.semantic_surface,
             backdrop_input.attribution,
