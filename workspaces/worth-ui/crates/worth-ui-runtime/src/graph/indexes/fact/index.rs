@@ -12,6 +12,7 @@ use super::{
 };
 
 mod appearance_consumer_contract;
+mod appearance_slot_relation;
 mod consumer;
 mod subsystem;
 
@@ -47,6 +48,12 @@ impl UiGraphConsumedFactIndex {
             &mut authored_by_declaration,
         );
         add_static_paint_token_consumers(
+            snapshot,
+            capabilities,
+            authored_declarations,
+            &mut authored_by_declaration,
+        );
+        appearance_slot_relation::add_role_slot_consumers(
             snapshot,
             capabilities,
             authored_declarations,
@@ -91,13 +98,6 @@ impl UiGraphConsumedFactIndex {
         role: &worth_ui_dsl::UiAppearanceRoleIdentity,
     ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
         self.appearance_consumers.role_consumers(role).into()
-    }
-
-    pub(crate) fn appearance_slot_consumer_nodes(
-        &self,
-        slot: &worth_ui_dsl::UiThemeSlotIdentity,
-    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
-        self.appearance_consumers.slot_consumers(slot).into()
     }
 
     pub(crate) fn has_same_appearance_consumer_contract(&self, other: &Self) -> bool {
@@ -187,7 +187,7 @@ fn query_projection_consumers(
                 snapshot,
                 node,
                 contract.clone(),
-                affected_aspect.clone(),
+                Some(affected_aspect.clone()),
             );
         }
     }
@@ -221,7 +221,7 @@ fn add_static_paint_token_consumers(
         let affected_aspect =
             UiAspectName::from_semantic_slice(UiAspectSemanticSlice::AppearanceBackground);
         let entries = by_declaration.entry(token_identity).or_default();
-        push_component_consumer(entries, snapshot, node, contract, affected_aspect);
+        push_component_consumer(entries, snapshot, node, contract, Some(affected_aspect));
     }
 }
 
@@ -254,12 +254,12 @@ fn fact_selector_identity<'identity>(
         .unwrap_or(fallback_identity)
 }
 
-fn push_component_consumer(
+pub(super) fn push_component_consumer(
     entries: &mut Vec<UiGraphFactIndexEntry>,
     snapshot: &UiGraphSnapshot,
     node: &crate::graph::UiGraphNode,
     contract: UiConsumedFactContract,
-    affected_aspect: UiAspectName,
+    affected_aspect: Option<UiAspectName>,
 ) {
     let authored_identity: Box<str> = node.declaration_identity().authored_semantic_name().into();
     let repeated = node.repeated_instance_basis().identity_digest();
@@ -270,7 +270,7 @@ fn push_component_consumer(
             repeated,
         ),
         UiGraphFactConsumerIdentity::GraphNode(node.graph_node_identity()),
-        Some(affected_aspect.clone()),
+        affected_aspect.clone(),
         contract.clone(),
     ));
     if let Some(slot) = snapshot.mount_eligibility_slot_for_node(node.graph_node_identity()) {
@@ -281,7 +281,7 @@ fn push_component_consumer(
                 repeated,
             ),
             UiGraphFactConsumerIdentity::MountEligibilitySlot(slot.mount_eligibility_identity()),
-            Some(affected_aspect),
+            affected_aspect,
             contract,
         ));
     }

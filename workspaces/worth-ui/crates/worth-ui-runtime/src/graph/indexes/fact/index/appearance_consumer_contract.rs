@@ -15,8 +15,6 @@ pub(super) struct UiGraphAppearanceConsumerContract {
         BTreeMap<worth_ui_dsl::UiAppearanceStateAxis, Box<[crate::graph::UiGraphNodeIdentity]>>,
     role_consumers:
         BTreeMap<worth_ui_dsl::UiAppearanceRoleIdentity, Box<[crate::graph::UiGraphNodeIdentity]>>,
-    slot_consumers:
-        BTreeMap<worth_ui_dsl::UiThemeSlotIdentity, Box<[crate::graph::UiGraphNodeIdentity]>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -42,10 +40,6 @@ impl UiGraphAppearanceConsumerContract {
         >::new();
         let mut role_consumers = BTreeMap::<
             worth_ui_dsl::UiAppearanceRoleIdentity,
-            Vec<crate::graph::UiGraphNodeIdentity>,
-        >::new();
-        let mut slot_consumers = BTreeMap::<
-            worth_ui_dsl::UiThemeSlotIdentity,
             Vec<crate::graph::UiGraphNodeIdentity>,
         >::new();
         for node in snapshot.nodes() {
@@ -90,27 +84,12 @@ impl UiGraphAppearanceConsumerContract {
                         .or_default()
                         .push(node.graph_node_identity());
                 }
-                for cell in partition.cells() {
-                    let graph_node = node.graph_node_identity();
-                    let requested_slot = cell.result().slot().clone();
-                    slot_consumers
-                        .entry(requested_slot.clone())
-                        .or_default()
-                        .push(graph_node);
-                    if let Some(terminal_slot) = terminal_slot(capabilities, &requested_slot) {
-                        slot_consumers
-                            .entry(terminal_slot)
-                            .or_default()
-                            .push(graph_node);
-                    }
-                }
             }
         }
         attachments.sort_by(compare_attachments);
         roles.sort_by(|left, right| left.role().cmp(right.role()));
         canonicalize_consumers(&mut state_consumers);
         canonicalize_consumers(&mut role_consumers);
-        canonicalize_consumers(&mut slot_consumers);
         Self {
             has_consumers,
             axis_demand,
@@ -123,10 +102,6 @@ impl UiGraphAppearanceConsumerContract {
             role_consumers: role_consumers
                 .into_iter()
                 .map(|(role, nodes)| (role, nodes.into_boxed_slice()))
-                .collect(),
-            slot_consumers: slot_consumers
-                .into_iter()
-                .map(|(slot, nodes)| (slot, nodes.into_boxed_slice()))
                 .collect(),
         }
     }
@@ -154,23 +129,6 @@ impl UiGraphAppearanceConsumerContract {
     ) -> &[crate::graph::UiGraphNodeIdentity] {
         self.role_consumers.get(role).map_or(&[], Box::as_ref)
     }
-
-    pub(super) fn slot_consumers(
-        &self,
-        slot: &worth_ui_dsl::UiThemeSlotIdentity,
-    ) -> &[crate::graph::UiGraphNodeIdentity] {
-        self.slot_consumers.get(slot).map_or(&[], Box::as_ref)
-    }
-}
-
-fn terminal_slot(
-    capabilities: &CapabilitySnapshot,
-    requested: &worth_ui_dsl::UiThemeSlotIdentity,
-) -> Option<worth_ui_dsl::UiThemeSlotIdentity> {
-    let themes = capabilities.appearance_themes()?;
-    let requested = crate::capability::ThemeTokenId::new(requested.as_str()).ok()?;
-    let terminal = themes.catalog().resolved_target(&requested)?;
-    worth_ui_dsl::UiThemeSlotIdentity::new(terminal.as_str())
 }
 
 fn canonicalize_consumers<K>(consumers: &mut BTreeMap<K, Vec<crate::graph::UiGraphNodeIdentity>>)

@@ -5,9 +5,6 @@ impl WorthUiApplicationSessionState {
         &self,
         token: &crate::capability::ThemeTokenId,
     ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
-        let mut consumers = worth_ui_dsl::UiThemeSlotIdentity::new(token.as_str())
-            .map(|slot| self.appearance_slot_consumers(&slot).consumers().to_vec())
-            .unwrap_or_default();
         let prepared = self.app.prepared_authority();
         let declarations = prepared.authored_declaration_lookup();
         let declaration = declarations
@@ -20,7 +17,7 @@ impl WorthUiApplicationSessionState {
             ),
         );
         let index = prepared.consumed_fact_index();
-        consumers.extend(match index.lookup_retained(&fact) {
+        let mut consumers = match index.lookup_retained(&fact) {
             Ok(receipt) => receipt
                 .entries()
                 .iter()
@@ -35,7 +32,7 @@ impl WorthUiApplicationSessionState {
             Err(crate::graph::UiGraphFactLookupDenial::BasisMismatch { .. }) => {
                 unreachable!("an index always accepts its own retained basis")
             }
-        });
+        };
         consumers.sort();
         consumers.dedup();
         consumers.into_boxed_slice()
