@@ -26,13 +26,17 @@ fn fold_declaration(digest: &mut u64, declaration: &WorthUiRustAuthoredDeclarati
             name_text,
             authored_identity,
             body_atoms,
-        } => fold_block(
-            digest,
-            "component",
-            name_text,
-            authored_identity.as_deref(),
-            body_atoms,
-        ),
+            appearance_role_attachment,
+        } => {
+            fold_block(
+                digest,
+                "component",
+                name_text,
+                authored_identity.as_deref(),
+                body_atoms,
+            );
+            fold_attachment(digest, appearance_role_attachment.as_ref());
+        }
         WorthUiRustAuthoredDeclaration::Surface {
             name_text,
             authored_identity,
@@ -77,6 +81,37 @@ fn fold_declaration(digest: &mut u64, declaration: &WorthUiRustAuthoredDeclarati
             fold_text(digest, "semantic-artifact");
             declaration.fold_source_revision(digest);
         }
+        WorthUiRustAuthoredDeclaration::AppearanceRole(role) => {
+            fold_text(digest, "appearance-role");
+            fold_text(digest, role.role().as_str());
+            fold_u64(digest, role.revision().value());
+            fold_u64(digest, role.canonical_bytes().len() as u64);
+            for byte in role.canonical_bytes() {
+                fold_u64(digest, u64::from(byte));
+            }
+        }
+        WorthUiRustAuthoredDeclaration::Backdrop(declaration) => {
+            fold_text(digest, "backdrop");
+            let bytes = declaration.canonical_bytes();
+            fold_u64(digest, bytes.len() as u64);
+            for byte in bytes {
+                fold_u64(digest, u64::from(byte));
+            }
+        }
+    }
+}
+
+fn fold_attachment(
+    digest: &mut u64,
+    attachment: Option<&crate::UiAppearanceRoleAttachmentDeclaration>,
+) {
+    match attachment {
+        Some(attachment) => {
+            fold_text(digest, "attachment");
+            fold_text(digest, attachment.role().as_str());
+            fold_u64(digest, attachment.revision().value());
+        }
+        None => fold_text(digest, "no-attachment"),
     }
 }
 
@@ -115,8 +150,19 @@ fn fold_atom(digest: &mut u64, atom: &WorthUiArtifactInputBodyAtom) {
         WorthUiArtifactInputBodyAtom::KeywordQueryScalar => "keyword-query-scalar",
         WorthUiArtifactInputBodyAtom::KeywordQueryCollection => "keyword-query-collection",
         WorthUiArtifactInputBodyAtom::KeywordToken => "keyword-token",
+        WorthUiArtifactInputBodyAtom::KeywordAppearance => "keyword-appearance",
+        WorthUiArtifactInputBodyAtom::KeywordBackdrop => "keyword-backdrop",
+        WorthUiArtifactInputBodyAtom::NumberLiteral(value) => {
+            fold_text(digest, "number-literal");
+            return fold_text(digest, value);
+        }
         WorthUiArtifactInputBodyAtom::LeftBrace => "left-brace",
         WorthUiArtifactInputBodyAtom::RightBrace => "right-brace",
+        WorthUiArtifactInputBodyAtom::LeftBracket => "left-bracket",
+        WorthUiArtifactInputBodyAtom::RightBracket => "right-bracket",
+        WorthUiArtifactInputBodyAtom::LeftParen => "left-paren",
+        WorthUiArtifactInputBodyAtom::RightParen => "right-paren",
+        WorthUiArtifactInputBodyAtom::Comma => "comma",
         WorthUiArtifactInputBodyAtom::Semicolon => "semicolon",
         WorthUiArtifactInputBodyAtom::Equals => "equals",
         WorthUiArtifactInputBodyAtom::Plus => "plus",

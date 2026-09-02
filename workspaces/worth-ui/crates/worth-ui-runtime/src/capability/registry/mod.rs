@@ -28,11 +28,9 @@ mod theme;
 mod theme_token;
 mod view_binding;
 
+pub use appearance_role::AppearanceRoleRegistrationDenial;
 pub use appearance_role::FrozenAppearanceRoleCapabilities;
-pub(crate) use appearance_role::{
-    AppearanceRoleAcceptedRegistrationProof, AppearanceRoleRegistrationDenial,
-    AppearanceRoleRegistry,
-};
+pub(crate) use appearance_role::{AppearanceRoleAcceptedRegistrationProof, AppearanceRoleRegistry};
 pub(crate) use command::CommandAcceptedRegistrationProof;
 pub(crate) use command::CommandRegistry;
 pub use command::{

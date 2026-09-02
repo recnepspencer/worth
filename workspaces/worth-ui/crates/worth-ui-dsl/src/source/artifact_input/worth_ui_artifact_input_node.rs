@@ -13,6 +13,8 @@ pub enum WorthUiArtifactInputNodeKind {
     QueryCollection,
     Token,
     SemanticArtifact,
+    AppearanceRole,
+    Backdrop,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -28,8 +30,16 @@ pub enum WorthUiArtifactInputBodyAtom {
     KeywordQueryScalar,
     KeywordQueryCollection,
     KeywordToken,
+    KeywordAppearance,
+    KeywordBackdrop,
+    NumberLiteral(String),
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
+    LeftParen,
+    RightParen,
+    Comma,
     Semicolon,
     Equals,
     Plus,
@@ -45,6 +55,8 @@ pub enum WorthUiArtifactInputNode {
     QueryCollection(WorthUiArtifactInputBlockNode),
     Token(WorthUiArtifactInputTokenNode),
     SemanticArtifact(WorthUiArtifactInputSemanticArtifactNode),
+    AppearanceRole(WorthUiArtifactInputAppearanceRoleNode),
+    Backdrop(WorthUiArtifactInputBackdropNode),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -58,6 +70,7 @@ pub struct WorthUiArtifactInputBlockNode {
     name_text: String,
     authored_identity: Option<String>,
     body_atoms: Vec<WorthUiArtifactInputBodyAtom>,
+    appearance_role_attachment: Option<crate::UiAppearanceRoleAttachmentDeclaration>,
     provenance: WorthUiArtifactInputProvenance,
 }
 
@@ -75,6 +88,18 @@ pub struct WorthUiArtifactInputSemanticArtifactNode {
     provenance: WorthUiArtifactInputProvenance,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WorthUiArtifactInputAppearanceRoleNode {
+    role: crate::UiAppearanceRoleDeclaration,
+    provenance: WorthUiArtifactInputProvenance,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WorthUiArtifactInputBackdropNode {
+    declaration: crate::UiStaticBackdropDeclaration,
+    provenance: WorthUiArtifactInputProvenance,
+}
+
 impl WorthUiArtifactInputNode {
     pub fn kind(&self) -> WorthUiArtifactInputNodeKind {
         match self {
@@ -86,6 +111,8 @@ impl WorthUiArtifactInputNode {
             Self::QueryCollection(_) => WorthUiArtifactInputNodeKind::QueryCollection,
             Self::Token(_) => WorthUiArtifactInputNodeKind::Token,
             Self::SemanticArtifact(_) => WorthUiArtifactInputNodeKind::SemanticArtifact,
+            Self::AppearanceRole(_) => WorthUiArtifactInputNodeKind::AppearanceRole,
+            Self::Backdrop(_) => WorthUiArtifactInputNodeKind::Backdrop,
         }
     }
 
@@ -100,6 +127,8 @@ impl WorthUiArtifactInputNode {
             | Self::QueryCollection(node) => node.provenance(),
             Self::Token(node) => node.provenance(),
             Self::SemanticArtifact(node) => node.provenance(),
+            Self::AppearanceRole(node) => node.provenance(),
+            Self::Backdrop(node) => node.provenance(),
         }
     }
 }
@@ -116,6 +145,43 @@ impl WorthUiArtifactInputSemanticArtifactNode {
     }
 
     pub fn declaration(&self) -> &WorthUiSemanticArtifactDeclaration {
+        &self.declaration
+    }
+
+    pub fn provenance(&self) -> &WorthUiArtifactInputProvenance {
+        &self.provenance
+    }
+}
+
+impl WorthUiArtifactInputAppearanceRoleNode {
+    pub(crate) fn new(
+        role: crate::UiAppearanceRoleDeclaration,
+        provenance: WorthUiArtifactInputProvenance,
+    ) -> Self {
+        Self { role, provenance }
+    }
+
+    pub fn role(&self) -> &crate::UiAppearanceRoleDeclaration {
+        &self.role
+    }
+
+    pub fn provenance(&self) -> &WorthUiArtifactInputProvenance {
+        &self.provenance
+    }
+}
+
+impl WorthUiArtifactInputBackdropNode {
+    pub(crate) fn new(
+        declaration: crate::UiStaticBackdropDeclaration,
+        provenance: WorthUiArtifactInputProvenance,
+    ) -> Self {
+        Self {
+            declaration,
+            provenance,
+        }
+    }
+
+    pub fn declaration(&self) -> &crate::UiStaticBackdropDeclaration {
         &self.declaration
     }
 
@@ -152,6 +218,7 @@ impl WorthUiArtifactInputBlockNode {
             name_text: name_text.into(),
             authored_identity,
             body_atoms,
+            appearance_role_attachment: None,
             provenance,
         }
     }
@@ -166,6 +233,23 @@ impl WorthUiArtifactInputBlockNode {
 
     pub fn authored_identity(&self) -> Option<&str> {
         self.authored_identity.as_deref()
+    }
+
+    pub fn appearance_role_attachment(
+        &self,
+    ) -> Option<&crate::UiAppearanceRoleAttachmentDeclaration> {
+        self.appearance_role_attachment.as_ref()
+    }
+
+    pub(crate) fn with_appearance_role_attachment(
+        mut self,
+        attachment: crate::UiAppearanceRoleAttachmentDeclaration,
+    ) -> Result<Self, crate::UiAppearanceRoleAttachmentDeclarationDenial> {
+        if self.appearance_role_attachment.is_some() {
+            return Err(crate::UiAppearanceRoleAttachmentDeclarationDenial::DuplicateAttachment);
+        }
+        self.appearance_role_attachment = Some(attachment);
+        Ok(self)
     }
 
     pub fn provenance(&self) -> &WorthUiArtifactInputProvenance {

@@ -19,9 +19,10 @@ pub use compile::certification;
 pub(crate) use artifact_input::WorthUiArtifactInputEquivalentShape;
 pub(crate) use artifact_input::WorthUiArtifactInputNormalizer;
 pub use artifact_input::{
-    WorthUiArtifactInput, WorthUiArtifactInputBlockNode, WorthUiArtifactInputBodyAtom,
-    WorthUiArtifactInputImportNode, WorthUiArtifactInputModule, WorthUiArtifactInputNode,
-    WorthUiArtifactInputNodeKind, WorthUiArtifactInputProvenance, WorthUiArtifactInputReference,
+    WorthUiArtifactInput, WorthUiArtifactInputAppearanceRoleNode, WorthUiArtifactInputBackdropNode,
+    WorthUiArtifactInputBlockNode, WorthUiArtifactInputBodyAtom, WorthUiArtifactInputImportNode,
+    WorthUiArtifactInputModule, WorthUiArtifactInputNode, WorthUiArtifactInputNodeKind,
+    WorthUiArtifactInputProvenance, WorthUiArtifactInputReference,
     WorthUiArtifactInputSemanticArtifactNode, WorthUiArtifactInputTokenNode,
     WorthUiSemanticArtifactDeclaration,
 };
@@ -31,6 +32,7 @@ pub use compile::{
     WorthUiDslCompileDiagnosticCode, WorthUiDslCompileReport, WorthUiDslCompileStopClass,
     WorthUiDslCompiler, WorthUiDslDiagnosticIdentity, WorthUiDslProtocolIdentity,
     WorthUiDslSourceSpan, WorthUiSealedSemanticArtifact, WorthUiSealedSemanticPackage,
+    WorthUiSemanticAppearanceRoleDeclaration, WorthUiSemanticBackdropDeclaration,
     WorthUiSemanticBlock, WorthUiSemanticDeclaration, WorthUiSemanticDeclarationView,
     WorthUiSemanticImport, WorthUiSemanticModule, WorthUiSemanticPackageIdentity,
     WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
@@ -60,10 +62,10 @@ pub(crate) use package::{
 };
 pub use parse::WorthUiSourceSpan;
 pub(crate) use parse::{
-    WorthUiParseDiagnostic, WorthUiParseDiagnosticCode, WorthUiParseReport, WorthUiParsedBlockBody,
-    WorthUiParsedBlockDeclaration, WorthUiParsedImportDeclaration, WorthUiParsedSourceDeclaration,
-    WorthUiParsedSourceModule, WorthUiParsedSourcePackage, WorthUiParsedTokenDeclaration,
-    WorthUiSourceParser,
+    WorthUiParseDiagnostic, WorthUiParseDiagnosticCode, WorthUiParseReport,
+    WorthUiParsedAppearanceRoleDeclaration, WorthUiParsedBlockBody, WorthUiParsedBlockDeclaration,
+    WorthUiParsedImportDeclaration, WorthUiParsedSourceDeclaration, WorthUiParsedSourceModule,
+    WorthUiParsedSourcePackage, WorthUiParsedTokenDeclaration, WorthUiSourceParser,
 };
 pub(crate) use projection::parse_projection_requirement;
 pub use projection::{

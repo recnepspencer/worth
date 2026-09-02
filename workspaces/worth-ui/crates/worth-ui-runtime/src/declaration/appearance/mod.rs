@@ -24,6 +24,9 @@ pub use state_axis::{
 };
 pub use theme_slot_use::UiThemeSlotUse;
 pub use worth_ui_dsl::{
-    UiAppearanceRoleDeclaration, UiAppearanceRoleDeclarationDenial, UiAppearanceRoleIdentity,
-    UiAppearanceRoleRevision, UiAppearanceRoleSchemaVersion,
+    UiAppearanceCell, UiAppearanceCellBuilder, UiAppearanceCellBuilderDenial,
+    UiAppearanceCellValue, UiAppearanceDecisionValue, UiAppearancePartitionAuthoring,
+    UiAppearanceRole, UiAppearanceRoleAuthoring, UiAppearanceRoleAuthoringDenial,
+    UiAppearanceRoleDeclaration, UiAppearanceRoleDeclarationDenial, UiAppearanceRoleId,
+    UiAppearanceRoleIdentity, UiAppearanceRoleRevision, UiAppearanceRoleSchemaVersion,
 };

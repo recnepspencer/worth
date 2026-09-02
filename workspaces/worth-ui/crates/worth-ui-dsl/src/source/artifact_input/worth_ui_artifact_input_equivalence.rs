@@ -33,7 +33,9 @@ fn nodes_are_equivalent(left: &WorthUiArtifactInputNode, right: &WorthUiArtifact
         (WorthUiArtifactInputNode::Component(left), WorthUiArtifactInputNode::Component(right))
         | (WorthUiArtifactInputNode::Surface(left), WorthUiArtifactInputNode::Surface(right))
         | (WorthUiArtifactInputNode::Binding(left), WorthUiArtifactInputNode::Binding(right)) => {
-            left.name_text() == right.name_text() && left.body_atoms() == right.body_atoms()
+            left.name_text() == right.name_text()
+                && left.body_atoms() == right.body_atoms()
+                && left.appearance_role_attachment() == right.appearance_role_attachment()
         }
         (
             WorthUiArtifactInputNode::QueryScalar(left),
@@ -50,6 +52,13 @@ fn nodes_are_equivalent(left: &WorthUiArtifactInputNode, right: &WorthUiArtifact
             WorthUiArtifactInputNode::SemanticArtifact(left),
             WorthUiArtifactInputNode::SemanticArtifact(right),
         ) => left.declaration() == right.declaration(),
+        (
+            WorthUiArtifactInputNode::AppearanceRole(left),
+            WorthUiArtifactInputNode::AppearanceRole(right),
+        ) => left.role() == right.role(),
+        (WorthUiArtifactInputNode::Backdrop(left), WorthUiArtifactInputNode::Backdrop(right)) => {
+            left.declaration() == right.declaration()
+        }
         _ => false,
     }
 }

@@ -81,12 +81,22 @@ fn lower_rust_authored_module(
                     name_text,
                     authored_identity,
                     body_atoms,
-                } => WorthUiArtifactInputNode::Component(WorthUiArtifactInputBlockNode::new(
-                    name_text,
-                    authored_identity.clone(),
-                    body_atoms.clone(),
-                    provenance,
-                )),
+                    appearance_role_attachment,
+                } => {
+                    let node = WorthUiArtifactInputBlockNode::new(
+                        name_text,
+                        authored_identity.clone(),
+                        body_atoms.clone(),
+                        provenance,
+                    );
+                    let node = match appearance_role_attachment.clone() {
+                        Some(attachment) => node
+                            .with_appearance_role_attachment(attachment)
+                            .expect("a Rust-authored component has one attachment"),
+                        None => node,
+                    };
+                    WorthUiArtifactInputNode::Component(node)
+                }
                 WorthUiRustAuthoredDeclaration::Surface {
                     name_text,
                     authored_identity,
@@ -139,6 +149,22 @@ fn lower_rust_authored_module(
                     WorthUiArtifactInputNode::SemanticArtifact(
                         WorthUiArtifactInputSemanticArtifactNode::new(
                             declaration.clone().canonicalize(),
+                            provenance,
+                        ),
+                    )
+                }
+                WorthUiRustAuthoredDeclaration::AppearanceRole(role) => {
+                    WorthUiArtifactInputNode::AppearanceRole(
+                        crate::WorthUiArtifactInputAppearanceRoleNode::new(
+                            role.clone(),
+                            provenance,
+                        ),
+                    )
+                }
+                WorthUiRustAuthoredDeclaration::Backdrop(declaration) => {
+                    WorthUiArtifactInputNode::Backdrop(
+                        crate::WorthUiArtifactInputBackdropNode::new(
+                            declaration.clone(),
                             provenance,
                         ),
                     )

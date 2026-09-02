@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use super::appearance_parser::{parse_appearance_role_declaration, parse_backdrop_declaration};
 use super::worth_ui_source_parser_expectations::{
     expect_identifier_token, expect_punctuation_token, expect_string_literal_token,
     span_from_bounds, token_identifier_text, token_string_literal_text,
@@ -94,6 +95,12 @@ fn parse_next_declaration(
     stream: &mut WorthUiSourceTokenStream,
 ) -> Result<WorthUiParsedSourceDeclaration, WorthUiParseDiagnostic> {
     match stream.peek().map(WorthUiSourceToken::kind) {
+        Some(WorthUiSourceTokenKind::KeywordAppearance) => {
+            parse_appearance_role_declaration(module_id, source_length, stream)
+        }
+        Some(WorthUiSourceTokenKind::KeywordBackdrop) => {
+            parse_backdrop_declaration(module_id, source_length, stream)
+        }
         Some(WorthUiSourceTokenKind::KeywordImport) => {
             parse_import_declaration(module_id, source_length, stream)
         }
@@ -258,7 +265,7 @@ fn parse_token_declaration(
     ))
 }
 
-fn parse_block_body_tokens(
+pub(super) fn parse_block_body_tokens(
     module_id: &WorthUiSourceModuleId,
     stream: &mut WorthUiSourceTokenStream,
     left_brace_span: &WorthUiSourceSpan,
@@ -311,6 +318,8 @@ fn recover_module_root(stream: &mut WorthUiSourceTokenStream) {
                 | WorthUiSourceTokenKind::KeywordQueryScalar
                 | WorthUiSourceTokenKind::KeywordQueryCollection
                 | WorthUiSourceTokenKind::KeywordToken
+                | WorthUiSourceTokenKind::KeywordAppearance
+                | WorthUiSourceTokenKind::KeywordBackdrop
         ) {
             break;
         }

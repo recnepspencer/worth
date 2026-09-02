@@ -21,7 +21,8 @@ pub use compiler::WorthUiDslCompiler;
 pub use protocol_identity::WorthUiDslProtocolIdentity;
 pub use sealed_semantic_artifact::WorthUiSealedSemanticArtifact;
 pub use sealed_semantic_package::{
-    WorthUiSealedSemanticPackage, WorthUiSemanticBlock, WorthUiSemanticDeclaration,
+    WorthUiSealedSemanticPackage, WorthUiSemanticAppearanceRoleDeclaration,
+    WorthUiSemanticBackdropDeclaration, WorthUiSemanticBlock, WorthUiSemanticDeclaration,
     WorthUiSemanticDeclarationView, WorthUiSemanticImport, WorthUiSemanticModule,
     WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
 };

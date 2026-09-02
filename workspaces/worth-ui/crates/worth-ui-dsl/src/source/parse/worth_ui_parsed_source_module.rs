@@ -23,6 +23,8 @@ pub(crate) enum WorthUiParsedSourceDeclaration {
     QueryScalar(WorthUiParsedBlockDeclaration),
     QueryCollection(WorthUiParsedBlockDeclaration),
     Token(WorthUiParsedTokenDeclaration),
+    AppearanceRole(WorthUiParsedAppearanceRoleDeclaration),
+    Backdrop(WorthUiParsedBlockDeclaration),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -50,6 +52,15 @@ pub(crate) struct WorthUiParsedTokenDeclaration {
     value_text: String,
     span: WorthUiSourceSpan,
     value_span: WorthUiSourceSpan,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct WorthUiParsedAppearanceRoleDeclaration {
+    name_text: String,
+    revision: u64,
+    applies_to: String,
+    span: WorthUiSourceSpan,
+    body: WorthUiParsedBlockBody,
 }
 
 impl WorthUiParsedSourceModule {
@@ -150,6 +161,44 @@ impl WorthUiParsedTokenDeclaration {
     }
 }
 
+impl WorthUiParsedAppearanceRoleDeclaration {
+    pub(crate) fn new(
+        name_text: String,
+        revision: u64,
+        applies_to: String,
+        span: WorthUiSourceSpan,
+        body: WorthUiParsedBlockBody,
+    ) -> Self {
+        Self {
+            name_text,
+            revision,
+            applies_to,
+            span,
+            body,
+        }
+    }
+
+    pub(crate) fn name_text(&self) -> &str {
+        &self.name_text
+    }
+
+    pub(crate) const fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    pub(crate) fn applies_to(&self) -> &str {
+        &self.applies_to
+    }
+
+    pub(crate) fn span(&self) -> &WorthUiSourceSpan {
+        &self.span
+    }
+
+    pub(crate) fn body(&self) -> &WorthUiParsedBlockBody {
+        &self.body
+    }
+}
+
 impl WorthUiParsedSourceModule {
     #[cfg(test)]
     pub(crate) fn equivalent_shape(&self, other: &Self) -> bool {
@@ -185,6 +234,15 @@ impl WorthUiParsedSourceDeclaration {
             }
             (Self::Token(left), Self::Token(right)) => {
                 left.name_text == right.name_text && left.value_text == right.value_text
+            }
+            (Self::AppearanceRole(left), Self::AppearanceRole(right)) => {
+                left.name_text == right.name_text
+                    && left.revision == right.revision
+                    && left.applies_to == right.applies_to
+                    && left.body.tokens == right.body.tokens
+            }
+            (Self::Backdrop(left), Self::Backdrop(right)) => {
+                left.name_text == right.name_text && left.body.tokens == right.body.tokens
             }
             _ => false,
         }

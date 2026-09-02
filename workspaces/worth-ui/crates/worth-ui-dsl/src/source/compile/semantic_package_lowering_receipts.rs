@@ -60,7 +60,9 @@ fn lower_declaration(view: WorthUiSemanticDeclarationView<'_>) -> Option<Lowerin
         }
         WorthUiSemanticDeclaration::Import(_)
         | WorthUiSemanticDeclaration::Projection(_)
-        | WorthUiSemanticDeclaration::Token(_) => {
+        | WorthUiSemanticDeclaration::Token(_)
+        | WorthUiSemanticDeclaration::AppearanceRole(_)
+        | WorthUiSemanticDeclaration::Backdrop(_) => {
             return None;
         }
     };
@@ -129,6 +131,11 @@ fn structural_spec(
         spec = spec.with_posture_token(UiDslPostureToken::new(
             "intent:attached:canonical-route-catalog",
         ));
+    }
+    if let Some(attachment) = block.appearance_role_attachment() {
+        spec = spec
+            .with_appearance_role_attachment(attachment.clone())
+            .expect("one sealed component carries at most one appearance attachment");
     }
     spec
 }

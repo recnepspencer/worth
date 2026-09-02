@@ -22,11 +22,14 @@ mod support;
 )]
 pub use appearance::{
     UiAppearanceAspect, UiAppearanceAspectContract, UiAppearanceAxisClass, UiAppearanceAxisDomain,
-    UiAppearanceAxisPredicate, UiAppearanceDecisionCell, UiAppearanceDecisionPartition,
-    UiAppearanceDecisionPartitionDenial, UiAppearanceDecisionResult, UiAppearanceDecisionRule,
-    UiAppearanceRoleDeclaration, UiAppearanceRoleDeclarationDenial, UiAppearanceRoleIdentity,
-    UiAppearanceRoleRevision, UiAppearanceRoleSchemaVersion, UiAppearanceStateAxis,
-    UiAppearanceStateAxisVersion, UiThemeSlotUse,
+    UiAppearanceAxisPredicate, UiAppearanceCell, UiAppearanceCellBuilder,
+    UiAppearanceCellBuilderDenial, UiAppearanceCellValue, UiAppearanceDecisionCell,
+    UiAppearanceDecisionPartition, UiAppearanceDecisionPartitionDenial, UiAppearanceDecisionResult,
+    UiAppearanceDecisionRule, UiAppearanceDecisionValue, UiAppearancePartitionAuthoring,
+    UiAppearanceRole, UiAppearanceRoleAuthoring, UiAppearanceRoleAuthoringDenial,
+    UiAppearanceRoleDeclaration, UiAppearanceRoleDeclarationDenial, UiAppearanceRoleId,
+    UiAppearanceRoleIdentity, UiAppearanceRoleRevision, UiAppearanceRoleSchemaVersion,
+    UiAppearanceStateAxis, UiAppearanceStateAxisVersion, UiThemeSlotUse,
 };
 #[allow(
     unused_imports,

@@ -37,6 +37,9 @@ pub struct UiAppearanceRoleDeclaration {
     slot_uses: Box<[UiThemeSlotUse]>,
 }
 
+pub type UiAppearanceRole = UiAppearanceRoleDeclaration;
+pub type UiAppearanceRoleId = UiAppearanceRoleIdentity;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiThemeSlotUseDenial {
     ValueKindMismatch,
@@ -114,6 +117,10 @@ impl UiThemeSlotUse {
 }
 
 impl UiAppearanceRoleDeclaration {
+    pub fn new(identity: UiAppearanceRoleIdentity) -> super::UiAppearanceRoleAuthoring {
+        super::UiAppearanceRoleAuthoring::new(identity)
+    }
+
     pub fn admit(
         role: UiAppearanceRoleIdentity,
         revision: UiAppearanceRoleRevision,
@@ -167,16 +174,18 @@ impl UiAppearanceRoleDeclaration {
                 if cell.result().value_kind() != aspect.value_kind() {
                     return Err(UiAppearanceRoleDeclarationDenial::ResultValueKindMismatch);
                 }
-                if !slot_uses.iter().any(|slot_use: &UiThemeSlotUse| {
-                    slot_use.aspect == *aspect && slot_use.slot == *cell.result().slot()
-                }) {
-                    slot_uses.push(UiThemeSlotUse {
-                        aspect: *aspect,
-                        slot: cell.result().slot().clone(),
-                        expected_kind: cell.result().value_kind(),
-                    });
-                    if slot_uses.len() > super::UI_APPEARANCE_SLOT_USES_PER_ROLE_CAPACITY {
-                        return Err(UiAppearanceRoleDeclarationDenial::SlotUseCapacityExceeded);
+                if let Some(slot) = cell.result().slot() {
+                    if !slot_uses.iter().any(|slot_use: &UiThemeSlotUse| {
+                        slot_use.aspect == *aspect && slot_use.slot == *slot
+                    }) {
+                        slot_uses.push(UiThemeSlotUse {
+                            aspect: *aspect,
+                            slot: slot.clone(),
+                            expected_kind: cell.result().value_kind(),
+                        });
+                        if slot_uses.len() > super::UI_APPEARANCE_SLOT_USES_PER_ROLE_CAPACITY {
+                            return Err(UiAppearanceRoleDeclarationDenial::SlotUseCapacityExceeded);
+                        }
                     }
                 }
             }
@@ -217,6 +226,10 @@ impl UiAppearanceRoleDeclaration {
     }
     pub fn slot_uses(&self) -> &[UiThemeSlotUse] {
         &self.slot_uses
+    }
+
+    pub fn canonical_bytes(&self) -> Vec<u8> {
+        super::canonical::role_bytes(self)
     }
 }
 

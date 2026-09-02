@@ -8,3 +8,5 @@ mod phase7_projection_declaration_tests;
 mod phase7_projection_expectation;
 mod phase7_rust_projection_declaration_tests;
 mod phase8_service_declaration_tests;
+mod phase9_declaration_dsl_tests;
+mod phase9_overlay_relation_tests;

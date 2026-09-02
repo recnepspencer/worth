@@ -43,6 +43,7 @@ pub mod text;
 pub(crate) use crate::declaration::WorthUiRustAuthoredDeclarationFixture;
 pub(crate) use inspection::foreign_evidence_refs_for_obligation_record;
 
+pub use crate::capability::AppearanceRoleRegistrationDenial;
 pub use entry::{
     CapabilityRegistrationBuilder, UiChangeProfileInstalled, UiChangeProfileMissing,
     UiFocusHostPlacementReconciliationDenial, UiFocusHostPlacementReconciliationOutcome,
