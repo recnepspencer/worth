@@ -87,3 +87,6 @@ fn unchanged_translation_preserves_predecessor_and_zero_work() {
     assert!(transcript.changes().is_empty());
     assert!(transcript.damage().is_empty());
 }
+
+#[path = "tests/nonempty.rs"]
+mod nonempty;

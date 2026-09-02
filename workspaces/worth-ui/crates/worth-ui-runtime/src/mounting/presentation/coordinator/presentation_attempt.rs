@@ -57,7 +57,7 @@ pub(super) fn present_one_surface(
                 text,
                 presentation_async_runtime,
             ) {
-                let (outcome, text_candidate, request_bases, pending_receipts) =
+                let (outcome, text_candidate, request_bases, pending_receipts, foreground_reuse) =
                     observation.into_parts();
                 progress.semantic_requests.extend(request_bases);
                 return super::presentation_outcome::record(
@@ -68,6 +68,8 @@ pub(super) fn present_one_surface(
                     outcome,
                     text_candidate,
                     pending_receipts,
+                    foreground_reuse,
+                    text,
                     Some(presentation_async_runtime),
                 );
             }
@@ -108,6 +110,8 @@ pub(super) fn present_one_surface(
         outcome,
         None,
         Box::new([]),
+        None,
+        text,
         presentation_async,
     )
 }

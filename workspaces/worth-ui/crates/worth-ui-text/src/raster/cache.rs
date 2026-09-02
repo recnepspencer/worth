@@ -47,6 +47,14 @@ impl UiGlyphRasterCache {
         self.entries.is_empty()
     }
 
+    /// Report whether the exact text-owned raster key is retained.  Pin and
+    /// atlas ownership stay outside this cache; this check only lets a
+    /// presentation successor prove that its reuse receipt cannot select a
+    /// raster miss.
+    pub fn contains_key(&self, key: UiGlyphRasterKey) -> bool {
+        self.entries.contains_key(&key)
+    }
+
     pub(crate) fn alpha_record(
         &self,
         demand: UiGlyphRasterDemandRecord,

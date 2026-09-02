@@ -4,8 +4,6 @@ pub(crate) struct UiMountedAppearanceCounters {
     pub(super) mounted_mechanics_changed: u64,
     pub(super) equal_output_changes_suppressed: u64,
     pub(super) damage_regions_emitted: u64,
-    pub(super) text_layouts_reused: u64,
-    pub(super) text_layouts_requalified: u64,
     pub(super) host_commands_added: u64,
     pub(super) host_commands_changed: u64,
     pub(super) host_commands_removed: u64,
@@ -13,14 +11,6 @@ pub(crate) struct UiMountedAppearanceCounters {
 }
 
 impl UiMountedAppearanceCounters {
-    pub(super) fn observe_text_reuse(&mut self, proof: super::UiMountedTextForegroundReuseProof) {
-        if proof.paint_only() {
-            self.text_layouts_reused = self.text_layouts_reused.saturating_add(1);
-        } else if !proof.layout_reused() {
-            self.text_layouts_requalified = self.text_layouts_requalified.saturating_add(1);
-        }
-    }
-
     pub(super) fn observe(
         &mut self,
         work: &worth_ui_host_contract::UiMountedAppearanceWork,

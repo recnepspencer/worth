@@ -26,7 +26,7 @@ pub(super) struct MountedTextDemandJoin<'damage, 'work, Resolve> {
 }
 
 pub(super) fn prepare_demands<'work, Resolve>(
-    mechanics: &[MountedSemanticTextCommand<'_>],
+    mechanics: &[MountedSemanticTextCommand<'work>],
     join: &MountedTextDemandJoin<'_, 'work, Resolve>,
 ) -> Result<PreparedDemand, UiNativeTextPresentationReadiness>
 where
@@ -43,10 +43,27 @@ where
         .zip(&layouts)
         .map(|((_, mechanic), layout)| join.demand_for(layout, mechanic))
         .collect::<Result<Vec<_>, _>>()?;
-    let glyph_runs = mechanics
+    let glyph_runs = rebuild_glyph_runs(mechanics, &layouts, &demands);
+    Ok(PreparedDemand {
+        demands: demands.into_boxed_slice(),
+        glyph_runs,
+    })
+}
+
+/// Rebuild only borrowed draw attribution against an already admitted demand.
+/// This is the paint-only path: it updates foreground bytes while retaining
+/// the exact qualified layout, positioned records, and raster keys.
+pub(super) fn rebuild_glyph_runs<'work>(
+    mechanics: &[MountedSemanticTextCommand<'work>],
+    layouts: &[&'work worth_ui_text::UiQualifiedTextLayout],
+    demands: &[UiGlyphRasterDemandBatch],
+) -> Box<[UiGlyphRunView]> {
+    debug_assert_eq!(mechanics.len(), layouts.len());
+    debug_assert_eq!(mechanics.len(), demands.len());
+    mechanics
         .iter()
-        .zip(&layouts)
-        .zip(&demands)
+        .zip(layouts)
+        .zip(demands)
         .flat_map(|(((identity, mechanic), layout), demand)| {
             demand
                 .records()
@@ -64,7 +81,7 @@ where
                     debug_assert!(spans.next().is_none());
                     let positioned = demand
                         .positioned_glyph_for_record(layout, record_index)
-                        .expect("derived demand retains exact positioned-glyph provenance");
+                        .expect("retained demand preserves positioned-glyph provenance");
                     let mounted_x = mounted_origin_millipoints(mechanic.origin_x());
                     let mounted_y = mounted_origin_millipoints(mechanic.origin_y());
                     UiGlyphRunView::from_text_mechanics(UiGlyphRunViewInput {
@@ -90,11 +107,7 @@ where
                 })
         })
         .collect::<Vec<_>>()
-        .into_boxed_slice();
-    Ok(PreparedDemand {
-        demands: demands.into_boxed_slice(),
-        glyph_runs,
-    })
+        .into_boxed_slice()
 }
 
 impl<'work, Resolve> MountedTextDemandJoin<'_, 'work, Resolve>

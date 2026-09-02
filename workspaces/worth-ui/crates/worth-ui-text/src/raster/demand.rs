@@ -189,7 +189,7 @@ impl UiGlyphRasterDemandBatch {
         self.scale
     }
 
-    pub(crate) const fn placement(&self) -> UiGlyphRasterPlacement {
+    pub const fn placement(&self) -> UiGlyphRasterPlacement {
         self.placement
     }
 

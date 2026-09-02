@@ -276,14 +276,6 @@ impl UiMountedProjectionFrame {
         self.appearance.reconstruct(input)
     }
 
-    #[allow(dead_code)]
-    pub(in crate::mounting) fn prove_unpublished_text_reuse(
-        &mut self,
-        input: super::UiMountedAppearanceTextReuseInput<'_, '_>,
-    ) -> super::UiMountedTextForegroundReuseProof {
-        self.appearance.record_text_reuse(input)
-    }
-
     pub(in crate::mounting) fn input_text_profile(
         &self,
     ) -> worth_ui_host_contract::UiTextProfileGeneration {

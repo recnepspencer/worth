@@ -25,6 +25,7 @@ mod reuse;
 mod semantic_content;
 mod session_state;
 mod surface_binding;
+mod text_reuse;
 mod theme_values;
 mod visual_region_basis;
 
@@ -135,6 +136,9 @@ pub(crate) use session_state::{
     UiMountedPublicationTransition, WorthUiMountedSessionState,
 };
 pub use surface_binding::{UiSurfaceBindingCoordinatePosture, UiSurfaceBindingProfile};
+pub(crate) use text_reuse::{
+    UiMountedTextForegroundPresentationBasis, UiMountedTextForegroundReuseReceipt,
+};
 pub(crate) use visual_region_basis::{
     UiMountedHitTestPresentation, UiMountedUnsupportedPaintBasis, UiMountedVisualRegionBasis,
 };

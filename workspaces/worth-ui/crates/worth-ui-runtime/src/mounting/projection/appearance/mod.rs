@@ -16,7 +16,6 @@ mod pointer_affordance;
 mod reconstruction;
 mod surface;
 mod text_foreground;
-mod text_reuse;
 
 pub(crate) use backdrop::lower as lower_backdrop;
 pub(crate) use delta::UiMountedAppearanceDeltaSummary;
@@ -25,8 +24,6 @@ pub(crate) use fact::{
     UiMountedAppearanceNodeInput, UiMountedAppearanceOutlineInput, UiMountedAppearanceOverlayInput,
     UiMountedAppearancePointerInput, UiMountedAppearanceTextForegroundInput,
 };
-pub(crate) use text_reuse::{UiMountedAppearanceTextReuseInput, UiMountedTextForegroundReuseProof};
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UiMountedAppearanceLoweringDenial {
     NodeReceiptFrameMismatch,
@@ -81,15 +78,6 @@ impl UiMountedAppearanceSidecar {
             self.current = Some(facts);
             delta.work
         })
-    }
-
-    pub(crate) fn record_text_reuse(
-        &mut self,
-        input: UiMountedAppearanceTextReuseInput<'_, '_>,
-    ) -> UiMountedTextForegroundReuseProof {
-        let proof = text_reuse::prove(input);
-        self.counters.observe_text_reuse(proof);
-        proof
     }
 
     pub(crate) fn current(&self) -> Option<&UiMountedAppearanceFacts> {
