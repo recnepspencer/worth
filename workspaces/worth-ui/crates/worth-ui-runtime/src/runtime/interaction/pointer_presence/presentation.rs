@@ -1,14 +1,13 @@
-#![allow(
-    dead_code,
-    reason = "Gate 1 retains pointer-presence presentation mechanics for later mounted cutover"
-)]
-
 use worth_ui_host_contract::{
     UiHostObservationPresentationBasis, UiHostSurfacePosition, UiMountedCanonicalBox,
     UiMountedCoordinateSpace, UiMountedInstanceIdentity,
     UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 
+#[allow(
+    dead_code,
+    reason = "The dormant mounted-presentation admission lane uses this raw-input cap."
+)]
 pub(crate) const UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY: usize = 2_048;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -38,12 +37,20 @@ pub(crate) struct UiPointerPresencePresentationTrigger {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[allow(
+    dead_code,
+    reason = "These denials belong to the dormant mounted-presentation admission lane."
+)]
 pub(crate) enum UiPointerPresencePresentationTriggerDenial {
     EmptyChangedNeighborhood,
     ChangedNeighborhoodCapacityExceeded { observed: usize, maximum: usize },
 }
 
 impl UiPointerPresencePresentationTrigger {
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will consume this constructor after cutover."
+    )]
     pub(crate) fn new(
         presentation: UiHostObservationPresentationBasis,
         changed_input: &[UiMountedInstanceIdentity],
@@ -67,6 +74,10 @@ impl UiPointerPresencePresentationTrigger {
         })
     }
 
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will consume this geometry constructor after cutover."
+    )]
     pub(crate) fn new_with_geometry(
         presentation: UiHostObservationPresentationBasis,
         candidates: &[UiPointerPresenceGeometryCandidate],
@@ -106,6 +117,10 @@ impl UiPointerPresencePresentationTrigger {
         self.presentation
     }
 
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will consume canonical instances after cutover."
+    )]
     pub(crate) fn changed_instances(&self) -> &[UiMountedInstanceIdentity] {
         &self.changed_instances
     }
@@ -127,6 +142,10 @@ impl UiPointerPresencePresentationTrigger {
     }
 }
 
+#[allow(
+    dead_code,
+    reason = "Raw-input admission is reserved for the dormant mounted-presentation producer."
+)]
 fn admit_raw_input<T>(input: &[T]) -> Result<(), UiPointerPresencePresentationTriggerDenial> {
     if input.len() > UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
         return Err(
@@ -211,6 +230,10 @@ impl super::UiPointerPresenceOwner {
 }
 
 impl UiPointerPresenceGeometry {
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will construct geometry after cutover."
+    )]
     pub(crate) const fn new(
         bounds: UiMountedCanonicalBox,
         clip_bounds: UiMountedCanonicalBox,
@@ -221,10 +244,18 @@ impl UiPointerPresenceGeometry {
         }
     }
 
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will read geometry bounds after cutover."
+    )]
     pub(crate) const fn bounds(self) -> UiMountedCanonicalBox {
         self.bounds
     }
 
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will read clip bounds after cutover."
+    )]
     pub(crate) const fn clip_bounds(self) -> UiMountedCanonicalBox {
         self.clip_bounds
     }
@@ -246,6 +277,10 @@ impl UiPointerPresenceGeometry {
 }
 
 impl UiPointerPresenceGeometryCandidate {
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will construct geometry candidates after cutover."
+    )]
     pub(crate) const fn new(
         instance: UiMountedInstanceIdentity,
         old: Option<UiPointerPresenceGeometry>,
@@ -254,18 +289,34 @@ impl UiPointerPresenceGeometryCandidate {
         Self { instance, old, new }
     }
 
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will create identity-only candidates after cutover."
+    )]
     pub(crate) const fn identity_only(instance: UiMountedInstanceIdentity) -> Self {
         Self::new(instance, None, None)
     }
 
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will read candidate identities after cutover."
+    )]
     pub(crate) const fn instance(self) -> UiMountedInstanceIdentity {
         self.instance
     }
 
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will read prior geometry after cutover."
+    )]
     pub(crate) const fn old(self) -> Option<UiPointerPresenceGeometry> {
         self.old
     }
 
+    #[allow(
+        dead_code,
+        reason = "The successor presentation producer will read successor geometry after cutover."
+    )]
     pub(crate) const fn new_geometry(self) -> Option<UiPointerPresenceGeometry> {
         self.new
     }
