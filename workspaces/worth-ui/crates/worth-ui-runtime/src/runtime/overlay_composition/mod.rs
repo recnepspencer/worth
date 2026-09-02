@@ -1,14 +1,19 @@
+mod coordinator;
 mod dependency_index;
 mod extent;
 mod full_rebuild;
 mod materialization;
 mod order;
+mod owner_input;
 mod planner;
 mod relation_cache;
 mod relation_graph;
 mod snapshot;
 mod state;
 mod topological_order;
+
+pub(super) use coordinator::UiOverlayCompositionCoordinator;
+pub(super) use owner_input::UiOverlayCompositionOwnerInput;
 
 pub(crate) use dependency_index::{
     UiOverlayChangeSet, UiOverlayChangedBasis, UiOverlayDependencyIndex, UiOverlayDependencyKind,

@@ -12,6 +12,8 @@ mod materialization;
 mod motion_locality;
 #[path = "order_cases.rs"]
 mod order_cases;
+#[path = "owner_lifecycle.rs"]
+mod owner_lifecycle;
 #[path = "reconstruction.rs"]
 mod reconstruction;
 #[path = "relation_compilation.rs"]

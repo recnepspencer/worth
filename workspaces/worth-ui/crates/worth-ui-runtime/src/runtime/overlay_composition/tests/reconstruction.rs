@@ -45,13 +45,16 @@ fn affected_scope_selects_only_direct_dependents_and_reports_reasons() {
 #[test]
 fn indexed_scope_presence_placement_and_motion_dependents_are_exact() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
-    let portal = worth_ui_dsl::UiPortalDeclarationId::new(10).unwrap();
+    let scope_portal = worth_ui_dsl::UiPortalDeclarationId::new(10).unwrap();
+    let presence_portal = worth_ui_dsl::UiPortalDeclarationId::new(11).unwrap();
+    let placement_portal = worth_ui_dsl::UiPortalDeclarationId::new(12).unwrap();
+    let motion_portal = worth_ui_dsl::UiPortalDeclarationId::new(13).unwrap();
     let declarations = [
         declaration(
             1,
             surface,
-            worth_ui_dsl::UiBackdropScope::PerPortalInstance(portal),
-            worth_ui_dsl::UiBackdropPresenceBasis::WhilePortalPresented(portal),
+            worth_ui_dsl::UiBackdropScope::PerPortalInstance(scope_portal),
+            worth_ui_dsl::UiBackdropPresenceBasis::WhilePortalPresented(scope_portal),
             worth_ui_dsl::UiBackdropMotionBasis::None,
             worth_ui_dsl::UiBackdropPlacement::AboveSurfaceContent,
         ),
@@ -59,7 +62,7 @@ fn indexed_scope_presence_placement_and_motion_dependents_are_exact() {
             2,
             surface,
             worth_ui_dsl::UiBackdropScope::SurfaceSingleton,
-            worth_ui_dsl::UiBackdropPresenceBasis::WhilePortalPresented(portal),
+            worth_ui_dsl::UiBackdropPresenceBasis::WhilePortalPresented(presence_portal),
             worth_ui_dsl::UiBackdropMotionBasis::None,
             worth_ui_dsl::UiBackdropPlacement::AboveSurfaceContent,
         ),
@@ -69,36 +72,36 @@ fn indexed_scope_presence_placement_and_motion_dependents_are_exact() {
             worth_ui_dsl::UiBackdropScope::SurfaceSingleton,
             worth_ui_dsl::UiBackdropPresenceBasis::Always,
             worth_ui_dsl::UiBackdropMotionBasis::None,
-            worth_ui_dsl::UiBackdropPlacement::ImmediatelyBeforePortal(portal),
+            worth_ui_dsl::UiBackdropPlacement::ImmediatelyBeforePortal(placement_portal),
         ),
         declaration(
             4,
             surface,
             worth_ui_dsl::UiBackdropScope::SurfaceSingleton,
             worth_ui_dsl::UiBackdropPresenceBasis::Always,
-            worth_ui_dsl::UiBackdropMotionBasis::PortalPresentation(portal),
+            worth_ui_dsl::UiBackdropMotionBasis::PortalPresentation(motion_portal),
             worth_ui_dsl::UiBackdropPlacement::AboveSurfaceContent,
         ),
     ];
     let index = UiOverlayDependencyIndex::rebuild(&declarations).unwrap();
     let cases = [
         (
-            UiOverlayChangedBasis::PortalScope(portal),
+            UiOverlayChangedBasis::PortalScope(scope_portal),
             worth_ui_dsl::UiBackdropIdentity::new(1).unwrap(),
             UiOverlayDependencyKind::Scope,
         ),
         (
-            UiOverlayChangedBasis::PortalPresence(portal),
+            UiOverlayChangedBasis::PortalPresence(presence_portal),
             worth_ui_dsl::UiBackdropIdentity::new(2).unwrap(),
             UiOverlayDependencyKind::Presence,
         ),
         (
-            UiOverlayChangedBasis::PortalPlacement(portal),
+            UiOverlayChangedBasis::PortalPlacement(placement_portal),
             worth_ui_dsl::UiBackdropIdentity::new(3).unwrap(),
             UiOverlayDependencyKind::Placement,
         ),
         (
-            UiOverlayChangedBasis::PortalMotion(portal),
+            UiOverlayChangedBasis::PortalMotion(motion_portal),
             worth_ui_dsl::UiBackdropIdentity::new(4).unwrap(),
             UiOverlayDependencyKind::Motion,
         ),
