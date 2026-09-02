@@ -8,11 +8,14 @@ use crate::{
 };
 
 fn compile(source: &str) -> WorthUiDslCompileReport {
-    WorthUiDslCompiler::compile_source(
+    let result = WorthUiDslCompiler::compile_source(
         WorthUiAuthoredSourceInput::rooted_at(PathBuf::from("workspace"))
             .with_module("app/main.wui", source),
-    )
-    .expect_err("Gate 2 denial fixture should be rejected")
+    );
+    let Err(report) = result else {
+        panic!("Gate 2 denial fixture must not produce a sealed semantic package");
+    };
+    report
 }
 
 fn only_diagnostic(source: &str) -> WorthUiDslCompileDiagnostic {
@@ -208,6 +211,64 @@ fn saturated_partition_is_denied_before_canonical_cells_are_materialized() {
         UiAppearanceDecisionPartitionDenial::CellCapacityExceeded
     );
     assert!(source_span.is_some());
+}
+
+fn assert_stale_role_revision(source: &str, declaration_marker: &str) {
+    let diagnostic = only_diagnostic(source);
+    assert_eq!(
+        diagnostic.identity().code(),
+        WorthUiDslCompileDiagnosticCode::StaleAppearanceRoleRevision
+    );
+    assert_location(
+        &diagnostic,
+        WorthUiDslCompileStopClass::SemanticNormalization,
+    );
+    let span = diagnostic
+        .identity()
+        .span()
+        .expect("stale role revision must retain source location");
+    assert_eq!(span.module_id(), "app/main.wui");
+    assert_eq!(
+        span.start_byte(),
+        source
+            .find(declaration_marker)
+            .expect("the referenced declaration should be located")
+    );
+    assert!(span.end_byte() > span.start_byte());
+}
+
+#[test]
+fn stale_component_role_revision_is_denied_at_the_file_compiler_boundary() {
+    let source = r#"
+    appearance role control.appearance revision 2 applies_to platform.control.activation {
+        background use token(control.background)
+    }
+    component platform.control.activation {
+        appearance { role control.appearance revision 1 }
+        ;
+    }
+    "#;
+    assert_stale_role_revision(source, "component platform.control.activation");
+}
+
+#[test]
+fn stale_backdrop_role_revision_is_denied_at_the_file_compiler_boundary() {
+    let source = r#"
+    appearance role overlay.scrim revision 2 applies_to backdrop {
+        background use token(overlay.background)
+        opacity use token(overlay.opacity)
+    }
+    surface pulse.surface {}
+    backdrop pulse.scrim {
+        scope surface_singleton
+        extent surface_viewport pulse.surface
+        presence always
+        motion none
+        place above_surface_content
+        appearance { role overlay.scrim revision 1 }
+    }
+    "#;
+    assert_stale_role_revision(source, "backdrop pulse.scrim");
 }
 
 fn overlay_source(backdrops: &str) -> String {
