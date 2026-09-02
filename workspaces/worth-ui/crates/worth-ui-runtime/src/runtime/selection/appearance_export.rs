@@ -38,6 +38,11 @@ pub(crate) struct UiSelectionAppearanceOwnerSnapshot {
             super::UiSelectionOwnerIncarnation,
         )],
     >,
+    ambiguous_mounted_owners: Box<[(
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        crate::graph::UiGraphNodeIdentity,
+        super::UiSelectionOwnerIncarnation,
+    )]>,
     postures: Box<[UiSelectionAppearancePosture]>,
 }
 
@@ -94,9 +99,15 @@ impl super::UiSelectionRuntimeState {
             .iter()
             .map(|(owner, record)| (*owner, record.incarnation))
             .collect();
+        let ambiguous_mounted_owners = self
+            .mounted_owners
+            .iter()
+            .filter_map(|(identity, owners)| (owners.len() != 1).then_some(*identity))
+            .collect();
         UiSelectionAppearanceOwnerSnapshot {
             owner_revision: self.revision,
             owners,
+            ambiguous_mounted_owners,
             postures,
         }
     }
@@ -177,6 +188,11 @@ impl UiSelectionAppearanceOwnerSnapshot {
         }
         if key.family() != owner.key_family() {
             return Err(UiSelectionAppearancePostureDenial::ForeignItemKeyFamily);
+        }
+        if self.ambiguous_mounted_owners.iter().any(|candidate| {
+            *candidate == (owner.semantic_surface(), owner.graph_node(), incarnation)
+        }) {
+            return Err(UiSelectionAppearancePostureDenial::AmbiguousMountedOwner);
         }
         Ok(self
             .postures

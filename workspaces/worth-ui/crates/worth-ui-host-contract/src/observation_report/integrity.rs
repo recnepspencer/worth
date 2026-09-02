@@ -30,6 +30,9 @@ impl UiHostObservationIntegrity {
             digest = digest.rotate_left(7) ^ report.sequence().value();
             digest = digest.rotate_left(7) ^ report.time_basis().diagnostic_value();
             digest = digest.rotate_left(7) ^ report.payload().integrity_digest();
+            if let Some(kind) = report.pointer_device_kind() {
+                digest = digest.rotate_left(7) ^ (kind as u64 + 1);
+            }
             if let Some(basis) = report.mounted_basis() {
                 digest = digest.rotate_left(7) ^ basis.instance().diagnostic_value();
                 digest = digest.rotate_left(7) ^ basis.node_receipt().diagnostic_value();
@@ -119,10 +122,12 @@ const fn coalescing_identity_digest(identity: super::UiHostObservationCoalescing
             pointer,
             capture_epoch,
             pressed_buttons,
+            device_kind,
         } => {
             2 ^ pointer.value().rotate_left(7)
                 ^ capture_epoch.value().rotate_left(19)
                 ^ (pressed_buttons.bits() as u64).rotate_left(31)
+                ^ (device_kind as u64).rotate_left(43)
         }
     }
 }

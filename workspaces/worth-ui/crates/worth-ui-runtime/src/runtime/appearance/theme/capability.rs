@@ -138,6 +138,29 @@ impl UiThemeCapabilityReceipt {
     ) -> &worth_ui_host_contract::UiHostAppearanceProfileContract {
         &self.host_profile
     }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Self {
+        Self {
+            definition: super::UiThemeDefinitionIdentity::new("appearance-state-test")
+                .expect("test theme definition identity"),
+            definition_revision: 1,
+            slot_catalog_revision: 1,
+            required_roles: Box::new([]),
+            surface,
+            application,
+            host_profile: worth_ui_host_contract::UiHostAppearanceProfileContract::admit(
+                "appearance-state-test-host",
+                1,
+                worth_ui_host_contract::UiHostAppearanceMechanicFamily::ALL,
+                Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
+            )
+            .expect("test host appearance profile"),
+        }
+    }
 }
 
 impl UiThemeRequiredRoleBasis {

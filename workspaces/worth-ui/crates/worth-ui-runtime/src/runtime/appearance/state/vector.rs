@@ -3,6 +3,7 @@ use worth_ui_dsl::UiAppearanceStateAxis;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UiAppearanceStateVectorDenial {
     SnapshotChanged,
+    PresentationChanged,
     Adapter(UiAppearanceStateAdapterDenial),
 }
 
@@ -24,6 +25,9 @@ impl UiAppearanceStateVector {
     ) -> Result<Self, UiAppearanceStateVectorDenial> {
         if !basis.matches_snapshot(snapshot) {
             return Err(UiAppearanceStateVectorDenial::SnapshotChanged);
+        }
+        if !basis.presentation_matches_owner_snapshot(snapshot) {
+            return Err(UiAppearanceStateVectorDenial::PresentationChanged);
         }
         let consumer = basis.consumer();
         let operability = consumer

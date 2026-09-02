@@ -84,6 +84,28 @@ impl UiAppearanceStateConsumer {
     pub(crate) const fn consumes(&self, axis: UiAppearanceStateAxis) -> bool {
         self.axes.contains(axis)
     }
+
+    #[cfg(test)]
+    pub(crate) fn all_axes_for_test(graph_node: crate::graph::UiGraphNodeIdentity) -> Self {
+        let mut axes = super::UiAppearanceStateAxisDemand::default();
+        for axis in [
+            UiAppearanceStateAxis::Operability,
+            UiAppearanceStateAxis::Focus,
+            UiAppearanceStateAxis::Validation,
+            UiAppearanceStateAxis::Selection,
+            UiAppearanceStateAxis::Hover,
+            UiAppearanceStateAxis::Pressed,
+        ] {
+            axes.include(axis);
+        }
+        Self {
+            graph_node,
+            role: UiAppearanceRoleIdentity::new("appearance-state-test-role")
+                .expect("test appearance role identity"),
+            role_revision: UiAppearanceRoleRevision::new(1).expect("test role revision"),
+            axes,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

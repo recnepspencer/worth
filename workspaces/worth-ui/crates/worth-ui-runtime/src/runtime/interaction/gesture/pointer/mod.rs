@@ -35,9 +35,10 @@ impl UiPointerGestureRuntimeState {
         &mut self,
         core: worth_ui_host_contract::UiHostObservationCanonicalCore,
         report: &worth_ui_host_contract::UiHostObservationReport,
+        kind: crate::runtime::interaction::UiPrimaryPointerKind,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Vec<UiPointerGestureOutcome> {
-        self.process_pointer_report(core, report, mounted)
+        self.process_pointer_report(core, report, kind, mounted)
     }
 
     pub(crate) fn snapshot(&self) -> UiPointerGestureStateSnapshot {

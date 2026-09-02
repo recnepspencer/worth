@@ -8,9 +8,13 @@ fn active_generation() -> crate::runtime::WorthUiActiveApplicationGenerationIden
     generation
 }
 
+fn test_owner() -> UiPointerPresenceOwner {
+    UiPointerPresenceOwner::new(UiPointerPresenceCapacity::for_test(64))
+}
+
 #[test]
 fn position_only_motion_does_not_change_presence_revision() {
-    let mut owner = UiPointerPresenceOwner::new();
+    let mut owner = test_owner();
     let generation = active_generation();
     let pointer = UiHostPointerIdentity::new(1);
     let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
@@ -35,6 +39,7 @@ fn position_only_motion_does_not_change_presence_revision() {
             &generation,
         )
         .unwrap();
+    let first = first.expect("the first target admission changes presence");
     assert_eq!(first.owner_revision(), 1);
     assert!(owner
         .record_mouse_target(
@@ -45,6 +50,7 @@ fn position_only_motion_does_not_change_presence_revision() {
             Some((surface, binding, target, first_receipt)),
             &generation,
         )
+        .unwrap()
         .is_none());
     assert_eq!(owner.appearance_snapshot().owner_revision(), 1);
     let successor = UiMountedInstanceIdentity::mint_unbound().unwrap();
@@ -60,6 +66,7 @@ fn position_only_motion_does_not_change_presence_revision() {
             &generation,
         )
         .unwrap();
+    let changed = changed.expect("the successor target admission changes presence");
     assert_eq!(changed.previous(), Some(target));
     assert_eq!(changed.current(), Some(successor));
     assert_eq!(changed.previous_node_receipt(), Some(first_receipt));
@@ -71,7 +78,7 @@ fn position_only_motion_does_not_change_presence_revision() {
 
 #[test]
 fn primary_pointer_reselection_changes_revision_but_primary_motion_does_not() {
-    let mut owner = UiPointerPresenceOwner::new();
+    let mut owner = test_owner();
     let generation = active_generation();
     let first = UiHostPointerIdentity::new(1);
     let second = UiHostPointerIdentity::new(2);
@@ -120,6 +127,7 @@ fn primary_pointer_reselection_changes_revision_but_primary_motion_does_not() {
             &generation,
         )
         .unwrap();
+    let reselected = reselected.expect("the primary pointer reselection changes presence");
     assert_eq!(reselected.owner_revision(), 3);
     assert!(owner
         .record_mouse_target(
@@ -130,13 +138,14 @@ fn primary_pointer_reselection_changes_revision_but_primary_motion_does_not() {
             Some((surface, binding, first_target, first_receipt)),
             &generation,
         )
+        .unwrap()
         .is_none());
     assert_eq!(owner.appearance_snapshot().owner_revision(), 3);
 }
 
 #[test]
 fn touch_presence_cannot_displace_an_admitted_mouse_primary() {
-    let mut owner = UiPointerPresenceOwner::new();
+    let mut owner = test_owner();
     let generation = active_generation();
     let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
     let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
@@ -189,7 +198,7 @@ fn touch_presence_cannot_displace_an_admitted_mouse_primary() {
 
 #[test]
 fn pointer_cleanup_clears_old_target_before_reincarnation() {
-    let mut owner = UiPointerPresenceOwner::new();
+    let mut owner = test_owner();
     let generation = active_generation();
     let pointer = UiHostPointerIdentity::new(3);
     let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
@@ -234,6 +243,7 @@ fn pointer_cleanup_clears_old_target_before_reincarnation() {
             &generation,
         )
         .unwrap();
+    let reincarnated = reincarnated.expect("the new receipt changes presence");
     assert_eq!(reincarnated.previous(), None);
     assert_eq!(reincarnated.previous_node_receipt(), None);
     assert_eq!(reincarnated.current(), Some(target));
@@ -302,7 +312,7 @@ fn pre_cutover_owner_transition_is_rejected_by_the_successor_generation() {
 
     let mut session = source_backed_component_session();
     let generation = session.active_generation_identity();
-    let mut owner = UiPointerPresenceOwner::new();
+    let mut owner = test_owner();
     let pointer = UiHostPointerIdentity::new(7);
     let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
     let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
@@ -329,6 +339,7 @@ fn pre_cutover_owner_transition_is_rejected_by_the_successor_generation() {
             &generation,
         )
         .unwrap();
+    let transition = transition.expect("the first target admission changes presence");
 
     let mut prepared = session
         .prepare_replacement(component_candidate_submission(

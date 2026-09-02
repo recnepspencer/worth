@@ -17,6 +17,8 @@ pub(crate) use state::{
     UiFocusAppearanceState, UiHoverAppearanceState, UiOperabilityAppearanceState,
     UiPressedAppearanceState, UiSelectionAppearanceState, UiValidationAppearanceState,
 };
+#[cfg(test)]
+pub(crate) use state::validate_presentation_for_test;
 pub(crate) use theme::{
     UiActiveThemeBinding, UiAppearanceThemeState, UiPreparedThemeSwitch, UiThemeCapabilityReceipt,
     UiThemeInitialBindingDenial, UiThemeSwitchDenial, UiThemeSwitchOrigin,

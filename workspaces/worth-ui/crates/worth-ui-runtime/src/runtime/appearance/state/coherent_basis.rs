@@ -171,6 +171,80 @@ impl UiAppearanceCoherentBasis {
             && self.source_basis == snapshot.source_basis()
             && self.generation == *snapshot.generation()
     }
+
+    pub(crate) fn presentation_matches_owner_snapshot(
+        &self,
+        snapshot: &super::UiAppearanceOwnerSnapshot,
+    ) -> bool {
+        if self.consumer.consumes(UiAppearanceStateAxis::Hover) {
+            let Some(pointer_owner) = snapshot.pointer_presence() else {
+                return true;
+            };
+            let Some(pointer) = pointer_owner.primary_pointer(self.surface) else {
+                return true;
+            };
+            let Some(posture) = pointer_owner
+                .postures()
+                .iter()
+                .find(|posture| posture.pointer() == pointer)
+            else {
+                return false;
+            };
+            if self.presentation != Some(posture.presentation()) {
+                return false;
+            }
+        }
+        if self.consumer.consumes(UiAppearanceStateAxis::Pressed) {
+            if let Some(pressed_owner) = snapshot.pressed() {
+                let mismatch = pressed_owner.postures().iter().any(|posture| {
+                    posture.target() == self.mounted_instance
+                        && posture.node_receipt() == self.node_receipt
+                        && self.presentation != Some(posture.presentation())
+                });
+                if mismatch {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    #[cfg(test)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "test basis carries the exact identity fields consumed by direct adapters"
+    )]
+    pub(crate) fn for_test(
+        snapshot: &super::UiAppearanceOwnerSnapshot,
+        consumer: super::UiAppearanceStateConsumer,
+        mounted_instance: UiMountedInstanceIdentity,
+        incarnation: UiMountIncarnation,
+        node_receipt: UiMountedNodeReceiptIdentity,
+        surface: UiSemanticSurfaceIdentity,
+        presentation: Option<UiHostObservationPresentationBasis>,
+        selection: Option<super::UiAppearanceSelectionSelector>,
+        operability_route: Option<Box<str>>,
+    ) -> Self {
+        Self {
+            turn: snapshot.turn(),
+            session: snapshot.session(),
+            source_basis: snapshot.source_basis(),
+            generation: snapshot.generation().clone(),
+            graph_node: consumer.graph_node(),
+            consumer,
+            mounted_instance,
+            incarnation,
+            node_receipt,
+            surface,
+            theme: crate::runtime::appearance::UiActiveThemeBinding::for_test(
+                surface,
+                snapshot.generation().clone(),
+            ),
+            presentation,
+            selection,
+            operability_route,
+        }
+    }
 }
 
 fn validate_mounted_target(
@@ -220,10 +294,22 @@ fn validate_presentation(
             .validate_current_frame(presentation.frame())
             .is_err()
             || mounted.validate_binding(presentation.binding()).is_err()
+            || mounted
+                .current_publication()
+                .and_then(|publication| publication.semantic_surface_for_presentation(presentation))
+                .is_none()
     }) {
         return Err(UiAppearanceCoherentBasisDenial::PresentationNotCurrent);
     }
     Ok(())
+}
+
+#[cfg(test)]
+pub(crate) fn validate_presentation_for_test(
+    mounted: &crate::mounting::WorthUiMountedSessionState,
+    presentation: Option<UiHostObservationPresentationBasis>,
+) -> Result<(), UiAppearanceCoherentBasisDenial> {
+    validate_presentation(mounted, presentation)
 }
 
 const fn axes() -> [UiAppearanceStateAxis; 6] {

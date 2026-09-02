@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use worth_ui_host_contract::{
     UiHostObservationSequence, UiHostObservationTimeBasis, UiHostPointerButton,
-    UiHostPointerCaptureEpoch, UiHostPointerIdentity,
+    UiHostPointerCaptureEpoch, UiHostPointerDeviceKind, UiHostPointerIdentity,
 };
 
 use super::super::UiPointerGestureStop;
@@ -36,6 +36,7 @@ pub struct UiPointerGesturePressReceipt {
     pub(super) time_basis: UiHostObservationTimeBasis,
     pub(super) position: worth_ui_host_contract::UiHostSurfacePosition,
     pub(super) target: crate::runtime::interaction::UiPresentedInteractionTargetView,
+    pub(super) pointer_device_kind: UiHostPointerDeviceKind,
 }
 
 #[derive(Debug)]
@@ -51,6 +52,7 @@ pub struct UiTargetedPointerGesture {
     pub(super) released: UiPresentedInteractionTarget,
     pub(super) continuity: UiPointerGestureContinuityKind,
     pub(super) continuity_witness_digest: u64,
+    pub(super) pointer_device_kind: UiHostPointerDeviceKind,
 }
 
 #[derive(Debug)]
@@ -68,6 +70,7 @@ pub(crate) struct UiPointerGestureRuntimeState {
 }
 
 pub(super) struct UiActivePointerGesture {
+    pub(super) kind: crate::runtime::interaction::UiPrimaryPointerKind,
     pub(super) capture_epoch: UiHostPointerCaptureEpoch,
     pub(super) button: UiHostPointerButton,
     pub(super) press_sequence: UiHostObservationSequence,

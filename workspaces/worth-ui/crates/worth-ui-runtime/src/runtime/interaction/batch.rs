@@ -20,6 +20,8 @@ pub struct UiInteractionBatchReceipt {
     )]
     pub(super) pointer_presence_transitions:
         Box<[super::pointer_presence::UiPointerPresenceTargetTransition]>,
+    pub(super) pointer_presence_denials:
+        Box<[super::pointer_presence::UiPointerPresenceAdmissionDenial]>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -85,6 +87,12 @@ impl UiInteractionBatchReceipt {
         &self,
     ) -> &[super::pointer_presence::UiPointerPresenceTargetTransition] {
         &self.pointer_presence_transitions
+    }
+
+    pub fn pointer_presence_denials(
+        &self,
+    ) -> &[super::pointer_presence::UiPointerPresenceAdmissionDenial] {
+        &self.pointer_presence_denials
     }
 
     pub(crate) fn retain_service_dismissal(&mut self, dismissal: super::UiDismissInteraction) {

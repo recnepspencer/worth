@@ -13,6 +13,7 @@ pub use crate::runtime::interaction::{
     UiLocalInputRecipientContract, UiLocalInputRecipientFamily, UiLocalInputStop,
     UiLocalInputStopReason, UiPointerGestureContinuityKind, UiPointerGesturePressReceipt,
     UiPointerGestureStop, UiPointerGestureStopReason, UiPointerPresenceTargetTransition,
+    UiPointerPresenceAdmissionDenial,
     UiPresentedInteractionTarget, UiPresentedInteractionTargetView, UiPresentedTargetFrameRelation,
     UiQuarantinedHostInteractionBatch, UiSelectionCommitInteraction, UiSelectionCommitStop,
     UiSelectionCommitStopReason, UiSemanticInteraction, UiSubmitInteraction,

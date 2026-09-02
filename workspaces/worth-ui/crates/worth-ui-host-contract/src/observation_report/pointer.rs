@@ -8,6 +8,14 @@ pub const UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT: i64 = 1_000;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[repr(u8)]
+pub enum UiHostPointerDeviceKind {
+    Mouse,
+    Stylus,
+    Touch,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[repr(u8)]
 pub enum UiHostSurfaceCoordinateSpace {
     Viewport,
     Window,

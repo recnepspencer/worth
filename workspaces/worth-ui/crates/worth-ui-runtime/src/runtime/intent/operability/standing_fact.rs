@@ -69,6 +69,25 @@ impl UiIntentOperabilityStandingFact {
     pub(crate) fn route(&self) -> &str {
         &self.route
     }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        graph_node: crate::graph::UiGraphNodeIdentity,
+        mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+        route: &str,
+        owner_revision: u64,
+    ) -> Self {
+        Self {
+            graph_node,
+            mounted_instance,
+            node_receipt,
+            route: route.into(),
+            decision: super::UiIntentOperabilityDecision::ready_for_test(),
+            class: UiIntentOperabilityAppearanceClass::Ready,
+            owner_revision,
+        }
+    }
 }
 
 impl UiIntentOperabilityStandingFactSnapshot {

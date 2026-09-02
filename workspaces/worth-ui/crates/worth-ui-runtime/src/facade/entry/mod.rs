@@ -70,6 +70,10 @@ pub(crate) mod portal_dismissal;
 pub(crate) use native_observation_settlement::UiNativeObservationIngressSettlement;
 #[cfg(test)]
 mod native_observation_tests;
+#[cfg(test)]
+mod typed_pointer_observation_tests;
+#[cfg(test)]
+mod presentation_currentness_tests;
 mod native_projection_rebind;
 #[cfg(test)]
 mod native_projection_rebind_tests;

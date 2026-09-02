@@ -28,3 +28,12 @@ pub(crate) use pressed::UiPressedAppearanceState;
 pub(crate) use selection::UiSelectionAppearanceState;
 pub(crate) use validation::UiValidationAppearanceState;
 pub(crate) use vector::{UiAppearanceStateVector, UiAppearanceStateVectorDenial};
+#[cfg(test)]
+pub(crate) use coherent_basis::validate_presentation_for_test;
+
+#[cfg(test)]
+#[path = "adapter_tests.rs"]
+mod adapter_tests;
+#[cfg(test)]
+#[path = "vector_tests.rs"]
+mod vector_tests;

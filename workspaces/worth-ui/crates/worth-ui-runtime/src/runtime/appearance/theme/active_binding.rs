@@ -17,4 +17,16 @@ impl UiActiveThemeBinding {
     pub(crate) const fn capability(&self) -> &super::UiThemeCapabilityReceipt {
         &self.capability
     }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Self {
+        Self {
+            surface,
+            binding_generation: 1,
+            capability: super::UiThemeCapabilityReceipt::for_test(surface, application),
+        }
+    }
 }

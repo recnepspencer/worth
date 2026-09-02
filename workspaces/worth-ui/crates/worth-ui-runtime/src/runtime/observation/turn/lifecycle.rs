@@ -24,6 +24,13 @@ pub(crate) struct UiObservationTurnCloseAuthority {
     _private: (),
 }
 
+#[cfg(test)]
+impl UiObservationTurnCloseAuthority {
+    pub(crate) const fn for_test() -> Self {
+        Self { _private: () }
+    }
+}
+
 pub(crate) struct UiPreparedObservationProgressCommit {
     progress: Box<[super::super::progress::UiObservationProgress]>,
 }
