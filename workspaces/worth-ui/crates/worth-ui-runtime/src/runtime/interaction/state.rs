@@ -143,6 +143,10 @@ impl UiInteractionRuntimeState {
         self.pointer.reconcile_appearance_enabled(pressed);
     }
 
+    #[allow(
+        dead_code,
+        reason = "Gate 1 retains committed presentation observation for later mounted cutover"
+    )]
     pub(crate) fn observe_committed_presentation(
         &mut self,
         trigger: &super::pointer_presence::UiPointerPresencePresentationTrigger,

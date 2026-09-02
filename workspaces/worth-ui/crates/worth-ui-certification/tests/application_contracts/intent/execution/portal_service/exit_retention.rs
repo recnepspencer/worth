@@ -130,13 +130,10 @@ fn shutdown_cancels_in_flight_terminal_portal_proposal_without_motion_owner_leak
         UiPortalExitTerminalCertificationOutcome::AwaitingPhysical
     );
     assert_retention_census(&world.session);
-    assert_eq!(
-        world
-            .session
-            .inspect_portal_runtime_for_certification()
-            .pending_track_coordinated(),
-        true
-    );
+    assert!(world
+        .session
+        .inspect_portal_runtime_for_certification()
+        .pending_track_coordinated(),);
     assert_eq!(
         world
             .session

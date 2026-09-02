@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains the native appearance profile for later host qualification"
+)]
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UiNativePlatformProfileIdentity(&'static str);
 

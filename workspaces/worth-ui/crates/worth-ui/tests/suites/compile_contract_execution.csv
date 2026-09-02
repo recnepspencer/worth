@@ -80,4 +80,5 @@ fail,tests/ui/facade/command/construction/command_descriptor_fields_not_publicly
 fail,tests/ui/facade_visibility/descriptor_authority/representative_descriptor_fields_not_publicly_mintable.rs,facade_visibility.rs
 fail,tests/ui/facade/service/fail/proposal_compiler_is_not_a_product_surface.rs,facade_compile.rs
 fail,tests/ui/facade/service/fail/service_family_is_not_a_public_payload_enum.rs,facade_compile.rs
-fail,tests/ui/facade/appearance/fail/resolved_appearance_is_not_a_gate_zero_facade.rs,appearance_contract_baseline
+fail,tests/ui/facade/appearance/fail/resolved_appearance_is_not_a_gate_one_facade.rs,appearance_contract_baseline
+pass,tests/ui/facade/appearance/pass/gate_one_appearance_contract.rs,appearance_contract_baseline

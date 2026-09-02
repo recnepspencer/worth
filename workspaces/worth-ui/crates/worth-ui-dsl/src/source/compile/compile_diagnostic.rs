@@ -75,7 +75,7 @@ pub struct WorthUiDslCompileDiagnostic {
     identity: WorthUiDslDiagnosticIdentity,
     stop_class: WorthUiDslCompileStopClass,
     message: String,
-    detail: Option<WorthUiDslCompileDiagnosticDetail>,
+    detail: Option<Box<WorthUiDslCompileDiagnosticDetail>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -154,11 +154,11 @@ impl WorthUiDslCompileDiagnostic {
     }
 
     pub fn detail(&self) -> Option<&WorthUiDslCompileDiagnosticDetail> {
-        self.detail.as_ref()
+        self.detail.as_deref()
     }
 
     pub(crate) fn with_detail(mut self, detail: WorthUiDslCompileDiagnosticDetail) -> Self {
-        self.detail = Some(detail);
+        self.detail = Some(Box::new(detail));
         self
     }
 }

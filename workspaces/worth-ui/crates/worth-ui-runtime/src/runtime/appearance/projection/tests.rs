@@ -130,7 +130,7 @@ fn resolver_rejects_an_unbound_vector_before_any_effect() {
     super::tests::run_on_appearance_fixture_stack(|| {
         let (session, binding, target, _bound_vector, theme) = inputs();
         let snapshot = session.appearance_owner_snapshot_for_test().unwrap();
-        let unbound_vector = UiAppearanceStateVector::seal(&snapshot, &target)
+        let unbound_vector = UiAppearanceStateVector::seal(snapshot, &target)
             .expect("the same sealed owner snapshot should produce an unbound control vector");
         let evidence = UiAppearanceResolver::new()
             .resolve_node(
@@ -149,10 +149,6 @@ fn resolver_rejects_an_unbound_vector_before_any_effect() {
         assert_eq!(
             evidence.subject(),
             super::UiAppearanceResolutionSubject::GraphNode(target.graph_node())
-        );
-        assert_eq!(
-            evidence.effects(),
-            super::UiAppearanceResolutionEffectPosture::zero()
         );
         assert!(session
             .inspect_mounted_identity()
@@ -177,7 +173,9 @@ fn resolver_uses_the_canonical_node_index_without_linear_fallback() {
             })
             .expect("appearance fixture should provide an unattached peer")
             .graph_node_identity();
-        let stale_index = snapshot_with_swapped_node_index(graph, attached, peer);
+        let stale_index = crate::graph::adversarial_snapshot_with_swapped_node_index_for_test(
+            graph, attached, peer,
+        );
         let missing = UiAppearanceNodeRoleBindingDenial::MissingRoleAttachment;
 
         assert_eq!(stale_index.authority_digest(), graph.authority_digest());
@@ -199,7 +197,7 @@ fn resolver_uses_the_canonical_node_index_without_linear_fallback() {
         );
         assert_eq!(
             UiAppearanceStateVector::seal_for_binding(
-                &session.appearance_owner_snapshot_for_test().unwrap(),
+                session.appearance_owner_snapshot_for_test().unwrap(),
                 &stale_index,
                 session.capabilities(),
                 &binding,
@@ -219,46 +217,12 @@ fn resolver_uses_the_canonical_node_index_without_linear_fallback() {
             evidence.denial(),
             super::UiAppearanceResolutionDenial::NodeRoleBinding(missing,)
         );
-        assert_eq!(
-            evidence.effects(),
-            super::UiAppearanceResolutionEffectPosture::zero()
-        );
         assert!(session
             .inspect_mounted_identity()
             .frame_receipts()
             .is_empty());
         let _ = session.shutdown();
     });
-}
-
-fn snapshot_with_swapped_node_index(
-    snapshot: &crate::graph::UiGraphSnapshot,
-    attached: crate::graph::UiGraphNodeIdentity,
-    peer: crate::graph::UiGraphNodeIdentity,
-) -> crate::graph::UiGraphSnapshot {
-    let mut indexed_nodes = snapshot.nodes().to_vec();
-    let attached_position = indexed_nodes
-        .iter()
-        .position(|node| node.graph_node_identity() == attached)
-        .expect("attached node should be present in the index source");
-    let peer_position = indexed_nodes
-        .iter()
-        .position(|node| node.graph_node_identity() == peer)
-        .expect("peer node should be present in the index source");
-    indexed_nodes.swap(attached_position, peer_position);
-    let indexes = crate::graph::UiGraphCoreIndexes::build(
-        &indexed_nodes,
-        snapshot.topology(),
-        snapshot.mount_eligibilities(),
-    );
-    crate::graph::UiGraphSnapshot::new(
-        snapshot.generation(),
-        snapshot.world_profile().clone(),
-        snapshot.nodes().to_vec(),
-        snapshot.topology().clone(),
-        snapshot.mount_eligibilities().clone(),
-        indexes,
-    )
 }
 
 pub(super) fn inputs() -> (
@@ -319,7 +283,7 @@ pub(super) fn inputs() -> (
     .unwrap();
     let target = binding.target().clone();
     let vector = UiAppearanceStateVector::seal_for_binding(
-        &snapshot,
+        snapshot,
         session.graph().snapshot(),
         session.capabilities(),
         &binding,

@@ -150,6 +150,10 @@ pub(crate) use mounted_projection_journal::{
     UiMountedAllocationExactDelta, UiMountedAllocationProjectionDelta,
     UiMountedAllocationProjectionSource,
 };
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed mounted overlay extent denials for later publication"
+)]
 pub(crate) use mounted_projection_overlay_extent_export::{
     UiCommittedOverlayExtentBounds, UiMountedOverlayExtentDenial, UiMountedOverlayExtentOwner,
     UiMountedOverlayExtentOwnerExport, UiMountedOverlayRegionExtent,

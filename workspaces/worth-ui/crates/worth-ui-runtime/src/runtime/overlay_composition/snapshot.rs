@@ -26,7 +26,6 @@ impl UiOverlayApplicationGeneration {
     pub(crate) const fn for_test(value: u64) -> Self {
         Self::Test(value)
     }
-
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -64,7 +63,6 @@ impl UiBackdropInstanceIdentity {
     pub(crate) const fn scope(self) -> UiOverlayBackdropInstanceScope {
         self.scope
     }
-
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -346,5 +344,4 @@ impl UiOverlayStackSnapshot {
     pub(crate) fn participants(&self) -> &[UiOverlayStackParticipant] {
         &self.participants
     }
-
 }

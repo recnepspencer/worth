@@ -40,6 +40,10 @@ pub(crate) use inspection::UiPortalClosedInspectionRecord;
 pub(crate) use lifecycle::{
     UiPortalDismissalCause, UiPortalInputShielding, UiPortalLifecyclePosture,
 };
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains the sealed Portal overlay binding row for later composition"
+)]
 pub(crate) use overlay_binding_export::{
     UiPortalOverlayBindingDenial, UiPortalOverlayBindingOwner, UiPortalOverlayBindingOwnerExport,
     UiPortalOverlayBindingRow,

@@ -111,10 +111,7 @@ fn vector_rejects_a_presentation_that_disagrees_with_owner_postures() {
         fixture.basis.surface(),
         Some(changed),
         fixture.basis.selection(),
-        fixture
-            .basis
-            .operability_route()
-            .map(|route| Box::<str>::from(route)),
+        fixture.basis.operability_route().map(Box::<str>::from),
     );
     assert_eq!(
         UiAppearanceStateVector::seal(&fixture.snapshot, &basis),

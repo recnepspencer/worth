@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains the Portal stack snapshot for later overlay composition"
+)]
+
 use super::UiPortalStackOrdinal;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

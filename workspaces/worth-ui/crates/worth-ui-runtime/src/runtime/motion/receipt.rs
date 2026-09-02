@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains the motion receipt seam for later overlay publication"
+)]
+
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) struct UiMotionTargetIdentity {
     semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,

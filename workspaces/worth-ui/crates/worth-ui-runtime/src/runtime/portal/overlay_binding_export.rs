@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains the Portal overlay binding owner for later overlay composition"
+)]
+
 use std::collections::{btree_map::Entry, BTreeMap};
 
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;

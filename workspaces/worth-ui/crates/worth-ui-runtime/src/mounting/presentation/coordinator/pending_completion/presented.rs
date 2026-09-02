@@ -8,6 +8,8 @@ pub(super) struct PresentedPendingSurface {
     pub(super) expected_effects: Box<[worth_ui_host_contract::UiMountedEffectFamily]>,
     pub(super) text_candidate: Option<super::super::UiMountedTextPinCandidate>,
     pub(super) semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+    pub(super) text_reuse:
+        Option<crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate>,
 }
 
 pub(super) fn complete(
@@ -52,6 +54,9 @@ pub(super) fn complete(
     if !context.progress.superseded {
         if let Some(candidate) = pending.text_candidate {
             context.text.commit_surface_candidate(candidate);
+        }
+        if let Some(update) = pending.text_reuse {
+            context.text.commit_foreground_reuse(update);
         }
     }
     None

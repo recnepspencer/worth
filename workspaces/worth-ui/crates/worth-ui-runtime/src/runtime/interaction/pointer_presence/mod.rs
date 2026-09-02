@@ -21,6 +21,10 @@ pub(crate) use current_target::{
 };
 pub(crate) use inspection::UiPrimaryPointerKind;
 pub(crate) use owner::UiPointerPresenceOwner;
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed pointer-presence geometry types for later presentation consumers"
+)]
 pub(crate) use presentation::{
     UiPointerPresenceGeometry, UiPointerPresenceGeometryCandidate,
     UiPointerPresencePresentationTrigger, UiPointerPresencePresentationTriggerDenial,

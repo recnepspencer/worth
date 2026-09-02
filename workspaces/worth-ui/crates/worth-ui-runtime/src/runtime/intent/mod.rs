@@ -55,6 +55,10 @@ pub use operability::{
 };
 #[cfg(not(any(test, feature = "certification-support")))]
 pub(crate) use operability::{UiIntentOccupancyReservation, UiIntentOccupancyReservationDenial};
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed intent standing facts for later appearance consumers"
+)]
 pub(crate) use operability::{
     UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact,
     UiIntentOperabilityStandingFactSnapshot,
@@ -64,6 +68,10 @@ pub(crate) use payload::{
     UiValidationAppearanceFactSnapshot,
 };
 #[cfg(any(test, feature = "certification-support"))]
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed validation admission denials for certification consumers"
+)]
 pub(crate) use payload::{UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial};
 pub use payload::{
     UiIntentApplicationFactRevision, UiIntentApplicationFactUpdateDenial,

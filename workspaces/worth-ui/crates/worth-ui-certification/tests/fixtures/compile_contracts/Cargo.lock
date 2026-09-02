@@ -2970,6 +2970,9 @@ dependencies = [
 [[package]]
 name = "worth-ui-inspection"
 version = "0.1.0"
+dependencies = [
+ "worth-ui-dsl",
+]
 
 [[package]]
 name = "worth-ui-native-platform"

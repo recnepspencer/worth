@@ -174,16 +174,22 @@ pub(crate) fn appearance_component_builder(
         .register_component(static_paint_component(CANDIDATE_COMPONENT, token.clone()))
         .register_appearance_role(role.clone())
         .unwrap()
-        .register_theme_token(crate::capability::ThemeTokenDescriptor::define(
-            token,
-            crate::capability::ThemeTokenFamily::surface(),
-            crate::capability::ThemeTokenSource::application(),
-            crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#112233").unwrap(),
-            ),
-        ))
+        .register_theme_token(appearance_theme_token(token))
         .register_mosaic_region_kind(source_backed_package_region())
         .register_mosaic_sizing_contract(source_backed_package_sizing())
+}
+
+pub(crate) fn appearance_theme_token(
+    token: crate::capability::ThemeTokenId,
+) -> crate::capability::ThemeTokenDescriptor {
+    crate::capability::ThemeTokenDescriptor::define(
+        token,
+        crate::capability::ThemeTokenFamily::surface(),
+        crate::capability::ThemeTokenSource::application(),
+        crate::capability::ThemeTokenValue::color(
+            crate::capability::ThemeColorValue::hex("#112233").unwrap(),
+        ),
+    )
 }
 
 pub(crate) fn static_paint_component(

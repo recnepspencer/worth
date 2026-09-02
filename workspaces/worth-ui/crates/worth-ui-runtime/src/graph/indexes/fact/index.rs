@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains graph-owned appearance fact selectors for later consumers"
+)]
+
 use std::collections::BTreeMap;
 
 use crate::capability::{CapabilitySnapshot, ComponentId};

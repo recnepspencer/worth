@@ -8,7 +8,7 @@ use crate::{
 pub(super) struct AppearanceLoweringError {
     code: WorthUiDslCompileDiagnosticCode,
     message: String,
-    detail: Option<WorthUiDslCompileDiagnosticDetail>,
+    detail: Option<Box<WorthUiDslCompileDiagnosticDetail>>,
 }
 
 impl AppearanceLoweringError {
@@ -204,7 +204,7 @@ impl AppearanceLoweringError {
         Self {
             code,
             message,
-            detail: Some(detail),
+            detail: Some(Box::new(detail)),
         }
     }
 
@@ -252,7 +252,7 @@ impl AppearanceLoweringError {
             Some(diagnostic_span),
         );
         match self.detail {
-            Some(detail) => diagnostic.with_detail(detail),
+            Some(detail) => diagnostic.with_detail(*detail),
             None => diagnostic,
         }
     }

@@ -135,6 +135,7 @@ impl super::UiPortalRuntimeState {
                     record.posture,
                     super::UiPortalLifecyclePosture::Open
                         | super::UiPortalLifecyclePosture::Visible
+                        | super::UiPortalLifecyclePosture::Closing
                 ) && match trigger {
                     UiPortalDismissalTrigger::Escape
                     | UiPortalDismissalTrigger::OutsidePress { .. }

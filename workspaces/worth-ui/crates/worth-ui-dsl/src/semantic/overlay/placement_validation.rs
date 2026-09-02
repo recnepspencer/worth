@@ -102,7 +102,7 @@ fn surface_for(
         .iter()
         .find(|participant| participant.anchor == anchor)
         .map(|participant| participant.surface)
-        .or_else(|| match anchor {
+        .or(match anchor {
             UiOverlayAnchor::SurfaceContentOn(surface) => Some(surface),
             UiOverlayAnchor::SurfaceContent
             | UiOverlayAnchor::Portal(_)

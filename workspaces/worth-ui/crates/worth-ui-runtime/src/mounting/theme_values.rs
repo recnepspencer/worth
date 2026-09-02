@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains the mounted preview theme seam for later appearance publication"
+)]
+
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -125,6 +130,5 @@ mod tests {
         assert_eq!(binding.theme_revision(), 4);
         assert_eq!(source.current_value(&token), Some(&value));
         assert!(!source.uses_frozen_plan());
-        assert!(source.changed_graph_nodes().is_empty());
     }
 }

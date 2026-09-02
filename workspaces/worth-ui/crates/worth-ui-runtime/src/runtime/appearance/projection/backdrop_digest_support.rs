@@ -8,8 +8,10 @@ use worth_ui_dsl::{
 
 use super::super::state::UiBackdropAppearanceStateVector;
 use super::super::theme::UiThemeResolutionView;
-use super::{UiAppearanceResolver, UiBackdropAppearanceProjection, UiBackdropInstanceIdentity,
-    UiOverlayStackSnapshot};
+use super::{
+    UiAppearanceResolver, UiBackdropAppearanceProjection, UiBackdropInstanceIdentity,
+    UiOverlayStackSnapshot,
+};
 use crate::runtime::overlay_composition::{
     UiOverlayApplicationGeneration, UiOverlayBackdropRow, UiOverlayExtent,
     UiOverlayStackParticipant,
@@ -189,9 +191,7 @@ pub(super) fn overlay(
         declaration_revision,
         1,
         None,
-        include_instance
-            .then_some(UiOverlayStackParticipant::Backdrop(row))
-            .into_iter(),
+        include_instance.then_some(UiOverlayStackParticipant::Backdrop(row)),
     )
 }
 
@@ -278,10 +278,4 @@ pub(super) fn current_value(
         .complete_application_theme_values_source()
         .current_value(&token)
         .cloned()
-}
-
-pub(super) fn assert_zero_effects(effects: super::UiAppearanceResolutionEffectPosture) {
-    assert_eq!(effects.host_commands(), 0);
-    assert!(!effects.live_values_changed());
-    assert!(!effects.mounted_output_changed());
 }

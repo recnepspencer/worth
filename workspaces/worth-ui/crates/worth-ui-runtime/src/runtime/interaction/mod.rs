@@ -30,6 +30,10 @@ pub use gesture::{
 };
 pub use pointer_presence::UiPointerPresenceAdmissionDenial;
 pub use pointer_presence::UiPointerPresenceTargetTransition;
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed pointer-presence presentation types for later mounting consumers"
+)]
 pub(crate) use pointer_presence::{
     UiPointerPresenceAppearanceOwnerSnapshot, UiPointerPresenceAppearancePosture,
     UiPointerPresenceCapacity, UiPointerPresenceClass, UiPointerPresenceOwner,

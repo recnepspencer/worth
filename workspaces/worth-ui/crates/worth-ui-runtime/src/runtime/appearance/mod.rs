@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains the appearance authority for later mounting cutover"
+)]
+
 mod inspection;
 mod invalidation;
 mod projection;
@@ -13,6 +18,10 @@ mod host_completion_tests;
 
 pub(crate) use inspection::UiAppearanceInspectionProducer;
 pub(crate) use invalidation::UiAppearanceConsumerSelection;
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed appearance projection re-exports for later mounting consumers"
+)]
 pub(crate) use projection::{
     UiAppearanceChangeOutcome, UiAppearanceChangeReceipt, UiAppearanceProjection,
     UiAppearanceResolutionDenial, UiAppearanceResolver, UiBackdropAppearanceProjection,
@@ -21,6 +30,10 @@ pub(crate) use projection::{
 #[cfg(test)]
 pub(crate) use state::validate_presentation_for_test;
 pub use state::UiAppearanceOwnerSnapshot;
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed appearance state re-exports for later interaction consumers"
+)]
 pub(crate) use state::{
     UiAppearanceCoherentBasis, UiAppearanceCoherentBasisDenial, UiAppearanceCoherentBasisInput,
     UiAppearanceSelectionSelector, UiAppearanceStateAdapterDenial, UiAppearanceStateAxisDemand,

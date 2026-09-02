@@ -296,10 +296,11 @@ fn first_provenance(
     modules
         .values()
         .flat_map(|declarations| declarations.iter())
-        .find_map(|declaration| match declaration {
-            WorthUiFileAuthoredLoweredDeclaration::Artifact(node) => Some(provenance(node)),
-            WorthUiFileAuthoredLoweredDeclaration::Backdrop { provenance, .. } => Some(provenance),
+        .map(|declaration| match declaration {
+            WorthUiFileAuthoredLoweredDeclaration::Artifact(node) => provenance(node),
+            WorthUiFileAuthoredLoweredDeclaration::Backdrop { provenance, .. } => provenance,
         })
+        .next()
 }
 
 fn provenance(node: &WorthUiArtifactInputNode) -> &WorthUiArtifactInputProvenance {

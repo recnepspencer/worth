@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains appearance consumer projections for later mounting publication"
+)]
+
 use super::WorthUiApplicationSessionState;
 
 impl WorthUiApplicationSessionState {

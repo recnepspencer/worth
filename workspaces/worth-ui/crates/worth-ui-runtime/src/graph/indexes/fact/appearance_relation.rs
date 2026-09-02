@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains graph-owned appearance relation classification for later consumers"
+)]
+
 use crate::declaration::UiAspectName;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

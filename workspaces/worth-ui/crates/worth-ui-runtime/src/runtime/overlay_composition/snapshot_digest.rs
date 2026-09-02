@@ -3,7 +3,7 @@ impl super::UiOverlayApplicationGeneration {
         &self,
     ) -> Option<
         &crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
-    > {
+    >{
         match self {
             Self::Prepared(identity) => Some(identity),
             #[cfg(test)]
@@ -41,7 +41,7 @@ impl super::UiOverlayStackSnapshot {
         &self,
     ) -> Option<
         &crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
-    > {
+    >{
         self.generation.application()
     }
 

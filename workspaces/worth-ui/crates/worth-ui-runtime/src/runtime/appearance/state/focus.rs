@@ -28,9 +28,11 @@ pub(crate) fn adapt(
             && target.incarnation() == basis.incarnation()
     });
     Ok(UiFocusAppearanceState {
-        class: current
-            .then(|| map_class(posture.class()))
-            .unwrap_or(UiAppearanceAxisClass::FocusUnfocused),
+        class: if current {
+            map_class(posture.class())
+        } else {
+            UiAppearanceAxisClass::FocusUnfocused
+        },
         source_class: posture.class(),
         owner_revision: posture.owner_revision(),
         target: current.then(|| basis.mounted_instance()),

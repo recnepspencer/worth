@@ -39,6 +39,10 @@ pub(crate) use role_binding::{
     UiAppearanceNodeRoleBinding, UiAppearanceNodeRoleBindingDenial, UiAppearanceRoleBindingBasis,
 };
 pub(crate) use selection::UiSelectionAppearanceState;
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed appearance target denials for later admission consumers"
+)]
 pub(crate) use target::{UiAppearanceTarget, UiAppearanceTargetDenial};
 pub(crate) use validation::UiValidationAppearanceState;
 pub(crate) use vector::{UiAppearanceStateVector, UiAppearanceStateVectorDenial};

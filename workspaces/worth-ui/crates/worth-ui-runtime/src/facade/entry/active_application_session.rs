@@ -306,6 +306,7 @@ impl WorthUiActiveApplicationSession {
         self.appearance_owner_snapshot.as_ref()
     }
 
+    #[allow(dead_code, reason = "Gate 1 staged appearance inspection recording")]
     pub(crate) fn record_appearance_projection_for_inspection(
         &mut self,
         projection: &crate::runtime::appearance::UiAppearanceProjection,

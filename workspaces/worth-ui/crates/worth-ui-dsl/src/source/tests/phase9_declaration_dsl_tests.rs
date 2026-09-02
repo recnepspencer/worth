@@ -19,7 +19,7 @@ fn slot(value: &str) -> UiThemeSlotIdentity {
 }
 
 fn component_role() -> crate::UiAppearanceRoleDeclaration {
-    UiAppearanceRole::new(UiAppearanceRoleIdentity::new("action.primary").unwrap())
+    UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("action.primary").unwrap())
         .applies_to_component(UiDslComponentReference::new("platform.control.activation").unwrap())
         .cover(
             UiAppearanceAspect::Background,
@@ -41,7 +41,7 @@ fn component_role() -> crate::UiAppearanceRoleDeclaration {
 }
 
 fn backdrop_role() -> crate::UiAppearanceRoleDeclaration {
-    UiAppearanceRole::new(UiAppearanceRoleIdentity::new("overlay.scrim").unwrap())
+    UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("overlay.scrim").unwrap())
         .applies_to_backdrop()
         .cover(
             UiAppearanceAspect::Background,

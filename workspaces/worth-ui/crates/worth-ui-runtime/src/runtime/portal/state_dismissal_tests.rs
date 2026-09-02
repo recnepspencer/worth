@@ -235,6 +235,49 @@ fn outside_press_respects_bounds_and_duplicate_dismissal_coalesces() {
 }
 
 #[test]
+fn a_second_non_anchor_dismissal_republishes_a_retained_closing_portal() {
+    let mut state = state();
+    let portal = portal(261, 271);
+    let opened = state.prepare(open_request(portal, 281)).unwrap();
+    state.commit_published(opened).unwrap();
+
+    let UiPortalDismissalPreparation::Prepared(first) = state
+        .prepare_dismissal(UiPortalDismissalTrigger::Escape, None, idempotency(282))
+        .unwrap()
+    else {
+        panic!("the first dismissal must prepare");
+    };
+    state
+        .commit_published_with_exit_retention(first.into_transition(), true)
+        .unwrap();
+    let placement = state
+        .placement(portal)
+        .expect("a retained closing portal keeps its placement");
+
+    let UiPortalDismissalPreparation::Prepared(second) = state
+        .prepare_dismissal(
+            UiPortalDismissalTrigger::AcceptedSelection,
+            None,
+            idempotency(283),
+        )
+        .unwrap()
+    else {
+        panic!("a second non-anchor dismissal must republish a retained close");
+    };
+    let receipt = state
+        .commit_published_with_exit_retention(second.into_transition(), true)
+        .unwrap()
+        .0;
+
+    assert_eq!(receipt.posture(), UiPortalLifecyclePosture::Closing);
+    assert_eq!(state.posture(portal), UiPortalLifecyclePosture::Closing);
+    assert_eq!(state.placement(portal), Some(placement));
+    assert_eq!(state.active_count(), 1);
+    assert_eq!(state.exit_retention_count(), 1);
+    assert_eq!(state.admitted_requests(), 3);
+}
+
+#[test]
 fn modal_policy_shields_input_and_disables_outside_press_dismissal() {
     let mut state = super::UiPortalRuntimeState::new_with_policy(
         crate::runtime::UiServiceStatePersistencePosture::SessionRestoreCandidate,

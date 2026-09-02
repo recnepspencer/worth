@@ -267,6 +267,10 @@ impl UiValidationAppearanceFactSnapshot {
         })
     }
 
+    #[allow(
+        dead_code,
+        reason = "Gate 1 retains validation fact basis lookup for later appearance consumers"
+    )]
     pub(crate) fn fact_basis_for(
         &self,
         graph_node: crate::graph::UiGraphNodeIdentity,

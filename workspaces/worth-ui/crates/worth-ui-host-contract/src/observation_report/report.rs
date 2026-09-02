@@ -133,10 +133,6 @@ impl UiHostObservationReport {
         self.pointer_device_kind
     }
 
-    pub const fn effective_pointer_device_kind(&self) -> Option<UiHostPointerDeviceKind> {
-        self.pointer_device_kind
-    }
-
     pub const fn coalescing_identity(&self) -> Option<super::UiHostObservationCoalescingIdentity> {
         match self.payload.coalescing_identity() {
             Some(super::UiHostObservationCoalescingIdentity::PointerMotion {

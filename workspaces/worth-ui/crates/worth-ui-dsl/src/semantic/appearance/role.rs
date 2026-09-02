@@ -117,7 +117,7 @@ impl UiThemeSlotUse {
 }
 
 impl UiAppearanceRoleDeclaration {
-    pub fn new(identity: UiAppearanceRoleIdentity) -> super::UiAppearanceRoleAuthoring {
+    pub fn authoring(identity: UiAppearanceRoleIdentity) -> super::UiAppearanceRoleAuthoring {
         super::UiAppearanceRoleAuthoring::new(identity)
     }
 

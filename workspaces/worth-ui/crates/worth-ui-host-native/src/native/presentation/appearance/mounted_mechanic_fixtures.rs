@@ -182,6 +182,7 @@ pub(super) fn mounted_text_foreground(
     UiMountedTextForegroundAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedTextForegroundAppearanceCompletionInput {
             issuer,
+            node_receipt: issuer.receipt_for(UiMountedInstanceIdentity::mint_unbound().unwrap()),
             paint_span: UiMountedTextPaintSpanIdentity::from_runtime_mounting([input.seed; 32]),
             foreground: input.foreground,
             opacity: input.opacity,

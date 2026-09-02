@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains graph-owned appearance state selection for later consumers"
+)]
+
 use worth_ui_dsl::UiAppearanceStateAxis;
 
 use super::super::{UiGraphFactIndexBasis, UiGraphFactLookupDenial};

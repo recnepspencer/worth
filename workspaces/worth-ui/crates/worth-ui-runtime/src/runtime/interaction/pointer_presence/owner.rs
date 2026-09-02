@@ -320,6 +320,7 @@ impl UiPointerPresenceOwner {
         self.bump_revision();
     }
 
+    #[allow(dead_code, reason = "Gate 1 staged pointer retirement")]
     pub(crate) fn retire_pointer(&mut self, pointer: UiHostPointerIdentity) -> bool {
         let Some(record) = self.pointers.remove(&pointer) else {
             return false;
@@ -337,10 +338,12 @@ impl UiPointerPresenceOwner {
         self.pointers.len()
     }
 
+    #[allow(dead_code, reason = "Gate 1 staged primary-pointer evidence")]
     pub(crate) fn primary_count(&self) -> usize {
         self.primary_by_surface.len()
     }
 
+    #[allow(dead_code, reason = "Gate 1 staged pointer-capacity evidence")]
     pub(crate) const fn capacity_limit(&self) -> usize {
         self.capacity.limit()
     }

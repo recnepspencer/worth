@@ -69,6 +69,8 @@ pub(super) struct UiPendingMountedSurface {
     pub(super) expected_effects: Box<[worth_ui_host_contract::UiMountedEffectFamily]>,
     pub(super) text_candidate: Option<super::coordinator::UiMountedTextPinCandidate>,
     pub(super) semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+    pub(super) text_reuse:
+        Option<crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

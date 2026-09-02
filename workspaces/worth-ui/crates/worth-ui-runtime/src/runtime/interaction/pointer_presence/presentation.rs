@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains pointer-presence presentation mechanics for later mounted cutover"
+)]
+
 use worth_ui_host_contract::{
     UiHostObservationPresentationBasis, UiHostSurfacePosition, UiMountedCanonicalBox,
     UiMountedCoordinateSpace, UiMountedInstanceIdentity,

@@ -207,3 +207,34 @@ fn clone_node_with_posture(
         participation_posture,
     })
 }
+
+#[cfg(test)]
+pub(crate) fn adversarial_snapshot_with_swapped_node_index_for_test(
+    snapshot: &UiGraphSnapshot,
+    attached: UiGraphNodeIdentity,
+    peer: UiGraphNodeIdentity,
+) -> UiGraphSnapshot {
+    let mut indexed_nodes = snapshot.nodes().to_vec();
+    let attached_position = indexed_nodes
+        .iter()
+        .position(|node| node.graph_node_identity() == attached)
+        .expect("attached node should be present in the index source");
+    let peer_position = indexed_nodes
+        .iter()
+        .position(|node| node.graph_node_identity() == peer)
+        .expect("peer node should be present in the index source");
+    indexed_nodes.swap(attached_position, peer_position);
+    let indexes = UiGraphCoreIndexes::build(
+        &indexed_nodes,
+        snapshot.topology(),
+        snapshot.mount_eligibilities(),
+    );
+    UiGraphSnapshot::new(
+        snapshot.generation(),
+        snapshot.world_profile().clone(),
+        snapshot.nodes().to_vec(),
+        snapshot.topology().clone(),
+        snapshot.mount_eligibilities().clone(),
+        indexes,
+    )
+}

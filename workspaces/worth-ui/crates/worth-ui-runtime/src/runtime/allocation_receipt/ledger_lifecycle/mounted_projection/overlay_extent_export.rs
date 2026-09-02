@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains the mounted overlay extent owner for later publication"
+)]
+
 use worth_ui_dsl::{UiMosaicRegionDeclarationIdentity, UiSemanticSurfaceDeclarationIdentity};
 use worth_ui_host_contract::UiSemanticSurfaceIdentity;
 

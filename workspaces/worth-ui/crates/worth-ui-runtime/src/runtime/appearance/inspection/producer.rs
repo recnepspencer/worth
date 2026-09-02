@@ -140,14 +140,11 @@ impl UiAppearanceInspectionProducer {
             .next_sequence
             .checked_add(1)
             .expect("bounded appearance inspection sequence exhausted");
-        if self.entries.contains_key(&key) {
-            self.entries.insert(
-                key,
-                Entry {
-                    explanation,
-                    sequence,
-                },
-            );
+        if let std::collections::btree_map::Entry::Occupied(mut entry) = self.entries.entry(key) {
+            entry.insert(Entry {
+                explanation,
+                sequence,
+            });
             return;
         }
         if self.entries.len() == UI_APPEARANCE_INSPECTION_CAPACITY {

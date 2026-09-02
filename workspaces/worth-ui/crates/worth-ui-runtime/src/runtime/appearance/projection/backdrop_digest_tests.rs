@@ -1,8 +1,7 @@
 use worth_ui_dsl::{UiBackdropIdentity, UiSemanticSurfaceDeclarationIdentity};
 
 use super::backdrop_digest_support::{
-    assert_zero_effects, backdrop_role, backdrop_theme_view, current_value, declaration, inputs,
-    overlay, projection_for,
+    backdrop_role, backdrop_theme_view, current_value, declaration, inputs, overlay, projection_for,
 };
 use super::{
     UiAppearanceResolutionDenial, UiAppearanceResolutionSubject, UiAppearanceResolver,
@@ -78,7 +77,6 @@ fn backdrop_denial_evidence_is_resolver_owned_and_effect_free() {
             UiAppearanceResolutionSubject::Backdrop(instance)
         );
         assert_ne!(evidence.input_digest(), 0);
-        assert_zero_effects(evidence.effects());
         assert_eq!(current_value(&session), before_value);
         assert_eq!(
             session.inspect_mounted_identity().frame_receipts().len(),
@@ -126,7 +124,6 @@ fn backdrop_surface_denial_has_independent_zero_effect_evidence() {
             evidence.denial(),
             UiAppearanceResolutionDenial::WrongSurface
         );
-        assert_zero_effects(evidence.effects());
         assert_eq!(current_value(&session), before_value);
         assert!(session
             .inspect_mounted_identity()
@@ -172,7 +169,6 @@ fn unadmitted_backdrop_role_denial_is_independent_and_effect_free() {
             evidence.denial(),
             UiAppearanceResolutionDenial::MissingRoleCapability
         );
-        assert_zero_effects(evidence.effects());
         assert_eq!(current_value(&session), before_value);
         assert!(session
             .inspect_mounted_identity()

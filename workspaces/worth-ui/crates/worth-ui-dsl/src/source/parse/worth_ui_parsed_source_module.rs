@@ -123,14 +123,6 @@ impl WorthUiParsedBlockDeclaration {
 }
 
 impl WorthUiParsedBlockBody {
-    pub(crate) fn new(span: WorthUiSourceSpan, tokens: Vec<WorthUiSourceTokenKind>) -> Self {
-        Self {
-            span,
-            token_spans: Vec::new(),
-            tokens,
-        }
-    }
-
     pub(crate) fn new_with_spans(span: WorthUiSourceSpan, tokens: Vec<WorthUiSourceToken>) -> Self {
         let token_spans = tokens.iter().map(|token| token.span().clone()).collect();
         let tokens = tokens

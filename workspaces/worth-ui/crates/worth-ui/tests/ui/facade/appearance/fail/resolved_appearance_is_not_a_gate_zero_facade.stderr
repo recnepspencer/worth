@@ -1,2 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::appearance`
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/appearance/fail/resolved_appearance_is_not_a_gate_zero_facade.rs

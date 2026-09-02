@@ -78,10 +78,11 @@ impl UiAppearanceCoherentBasis {
             && (consumer.consumes(UiAppearanceStateAxis::Hover)
                 || consumer.consumes(UiAppearanceStateAxis::Pressed))
         {
-            let axis = consumer
-                .consumes(UiAppearanceStateAxis::Hover)
-                .then_some(UiAppearanceStateAxis::Hover)
-                .unwrap_or(UiAppearanceStateAxis::Pressed);
+            let axis = if consumer.consumes(UiAppearanceStateAxis::Hover) {
+                UiAppearanceStateAxis::Hover
+            } else {
+                UiAppearanceStateAxis::Pressed
+            };
             return Err(UiAppearanceCoherentBasisDenial::MissingPresentation(axis));
         }
         Ok(Self {

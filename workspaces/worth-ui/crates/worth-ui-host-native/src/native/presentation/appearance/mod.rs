@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains native appearance qualification until the later host cutover"
+)]
+
 //! Gate 1 native appearance qualification lane.
 //!
 //! This module consumes only sealed Gate 0 host mechanics. It is deliberately

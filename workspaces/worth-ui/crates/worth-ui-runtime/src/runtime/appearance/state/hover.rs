@@ -54,9 +54,11 @@ pub(crate) fn adapt(
         && posture.target() == Some(basis.mounted_instance())
         && posture.node_receipt() == Some(basis.node_receipt());
     Ok(UiHoverAppearanceState {
-        class: on_target
-            .then_some(UiAppearanceAxisClass::Hovered)
-            .unwrap_or(UiAppearanceAxisClass::HoverOutside),
+        class: if on_target {
+            UiAppearanceAxisClass::Hovered
+        } else {
+            UiAppearanceAxisClass::HoverOutside
+        },
         source_class: posture.class(),
         owner_revision,
         pointer: Some(pointer),

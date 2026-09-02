@@ -39,40 +39,10 @@ pub(crate) enum UiAppearanceResolutionSubject {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct UiAppearanceResolutionEffectPosture {
-    host_commands: u32,
-    live_values_changed: bool,
-    mounted_output_changed: bool,
-}
-
-impl UiAppearanceResolutionEffectPosture {
-    pub(crate) const fn zero() -> Self {
-        Self {
-            host_commands: 0,
-            live_values_changed: false,
-            mounted_output_changed: false,
-        }
-    }
-
-    pub(crate) const fn host_commands(self) -> u32 {
-        self.host_commands
-    }
-
-    pub(crate) const fn live_values_changed(self) -> bool {
-        self.live_values_changed
-    }
-
-    pub(crate) const fn mounted_output_changed(self) -> bool {
-        self.mounted_output_changed
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiAppearanceResolutionDenialEvidence {
     subject: UiAppearanceResolutionSubject,
     denial: UiAppearanceResolutionDenial,
     input_digest: u64,
-    effects: UiAppearanceResolutionEffectPosture,
 }
 
 impl UiAppearanceResolutionDenialEvidence {
@@ -85,7 +55,6 @@ impl UiAppearanceResolutionDenialEvidence {
             subject,
             denial,
             input_digest,
-            effects: UiAppearanceResolutionEffectPosture::zero(),
         }
     }
 
@@ -98,7 +67,6 @@ impl UiAppearanceResolutionDenialEvidence {
             subject,
             denial,
             input_digest,
-            effects: UiAppearanceResolutionEffectPosture::zero(),
         }
     }
 
@@ -112,10 +80,6 @@ impl UiAppearanceResolutionDenialEvidence {
 
     pub(crate) const fn input_digest(self) -> u64 {
         self.input_digest
-    }
-
-    pub(crate) const fn effects(self) -> UiAppearanceResolutionEffectPosture {
-        self.effects
     }
 }
 
@@ -172,9 +136,9 @@ impl UiAppearanceResolver {
         if let worth_ui_dsl::UiAppearanceRoleApplicability::Component(component) =
             role.applicability()
         {
-            if !target
+            if target
                 .component_reference()
-                .is_some_and(|target| target.as_str() == component.as_str())
+                .is_none_or(|target| target.as_str() != component.as_str())
             {
                 return Err(UiAppearanceResolutionDenial::WrongRoleApplicability);
             }

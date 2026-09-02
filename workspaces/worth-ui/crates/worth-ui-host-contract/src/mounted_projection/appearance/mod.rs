@@ -1,7 +1,9 @@
 mod backdrop;
 mod bounds;
+mod change;
 mod color;
 mod compositing;
+mod frame;
 mod logical_length;
 mod native_profile;
 mod node_attribution;
@@ -25,12 +27,21 @@ pub use bounds::{
     UiAppearanceDamageAttribution, UiAppearanceDamageRegion, UiAppearanceEmptyRegion,
     UiAppearanceGeometryOverflow, UiAppearanceVisualBounds,
 };
+pub use change::{
+    UiMountedAppearanceMechanic, UiMountedAppearanceMechanicChange,
+    UiMountedAppearanceMechanicIdentity,
+};
 pub use color::UiMountedAppearanceColor;
 pub use compositing::{
     compose_source_over, SRGB_GAMMA_DENOMINATOR, SRGB_GAMMA_NUMERATOR,
     SRGB_LINEAR_SCALE_DENOMINATOR, SRGB_LINEAR_SCALE_NUMERATOR, SRGB_LINEAR_THRESHOLD_DENOMINATOR,
     SRGB_LINEAR_THRESHOLD_NUMERATOR, SRGB_OFFSET_DENOMINATOR, SRGB_OFFSET_NUMERATOR,
     SRGB_SCALE_DENOMINATOR, SRGB_SCALE_NUMERATOR,
+};
+pub use frame::{
+    UiMountedAppearanceFrame, UiMountedAppearanceFrameDenial,
+    UiMountedAppearancePredecessorManifest, UiMountedAppearanceWork,
+    UiMountedAppearanceWorkPosture,
 };
 pub use logical_length::{
     UiAppearanceLogicalLength, UiAppearanceNegativeLength,

@@ -1,4 +1,8 @@
 impl super::UiPointerGestureRuntimeState {
+    #[allow(
+        dead_code,
+        reason = "Gate 1 retains pointer gesture presentation retesting for later mounted cutover"
+    )]
     pub(crate) fn retest_committed_presentation(
         &mut self,
         trigger: &crate::runtime::interaction::pointer_presence::UiPointerPresencePresentationTrigger,

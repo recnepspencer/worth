@@ -47,64 +47,66 @@ fn otherwise_compiles_to_a_total_finite_partition() {
 
 #[test]
 fn declaration_permutations_lower_to_identical_role_bytes() {
-    let first = UiAppearanceRole::new(UiAppearanceRoleIdentity::new("button.primary").unwrap())
-        .applies_to_component(UiDslComponentReference::new("button").unwrap())
-        .cover(
-            UiAppearanceAspect::Background,
-            UiAppearancePartitionAuthoring::new([
-                domain(crate::UiAppearanceStateAxis::Pressed),
-                domain(crate::UiAppearanceStateAxis::Hover),
-            ])
-            .with_cell(
-                UiAppearanceCell::named("outside")
-                    .when([
-                        UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::HoverOutside),
-                        UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::PressedIdle),
-                    ])
-                    .uses_slot(slot("button.outside"), UiThemeValueKind::Color),
+    let first =
+        UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("button.primary").unwrap())
+            .applies_to_component(UiDslComponentReference::new("button").unwrap())
+            .cover(
+                UiAppearanceAspect::Background,
+                UiAppearancePartitionAuthoring::new([
+                    domain(crate::UiAppearanceStateAxis::Pressed),
+                    domain(crate::UiAppearanceStateAxis::Hover),
+                ])
+                .with_cell(
+                    UiAppearanceCell::named("outside")
+                        .when([
+                            UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::HoverOutside),
+                            UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::PressedIdle),
+                        ])
+                        .uses_slot(slot("button.outside"), UiThemeValueKind::Color),
+                )
+                .with_cell(
+                    UiAppearanceCell::named("hovered")
+                        .when([
+                            UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::Hovered),
+                            UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::PressedIdle),
+                        ])
+                        .uses_slot(slot("button.hovered"), UiThemeValueKind::Color),
+                )
+                .otherwise_same_as("outside"),
             )
-            .with_cell(
-                UiAppearanceCell::named("hovered")
-                    .when([
-                        UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::Hovered),
-                        UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::PressedIdle),
-                    ])
-                    .uses_slot(slot("button.hovered"), UiThemeValueKind::Color),
+            .unwrap()
+            .build()
+            .unwrap();
+    let second =
+        UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("button.primary").unwrap())
+            .applies_to_component(UiDslComponentReference::new("button").unwrap())
+            .cover(
+                UiAppearanceAspect::Background,
+                UiAppearancePartitionAuthoring::new([
+                    domain(crate::UiAppearanceStateAxis::Hover),
+                    domain(crate::UiAppearanceStateAxis::Pressed),
+                ])
+                .with_cell(
+                    UiAppearanceCell::named("hovered")
+                        .when([
+                            UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::PressedIdle),
+                            UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::Hovered),
+                        ])
+                        .uses_slot(slot("button.hovered"), UiThemeValueKind::Color),
+                )
+                .with_cell(
+                    UiAppearanceCell::named("outside")
+                        .when([
+                            UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::PressedIdle),
+                            UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::HoverOutside),
+                        ])
+                        .uses_slot(slot("button.outside"), UiThemeValueKind::Color),
+                )
+                .otherwise_same_as("outside"),
             )
-            .otherwise_same_as("outside"),
-        )
-        .unwrap()
-        .build()
-        .unwrap();
-    let second = UiAppearanceRole::new(UiAppearanceRoleIdentity::new("button.primary").unwrap())
-        .applies_to_component(UiDslComponentReference::new("button").unwrap())
-        .cover(
-            UiAppearanceAspect::Background,
-            UiAppearancePartitionAuthoring::new([
-                domain(crate::UiAppearanceStateAxis::Hover),
-                domain(crate::UiAppearanceStateAxis::Pressed),
-            ])
-            .with_cell(
-                UiAppearanceCell::named("hovered")
-                    .when([
-                        UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::PressedIdle),
-                        UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::Hovered),
-                    ])
-                    .uses_slot(slot("button.hovered"), UiThemeValueKind::Color),
-            )
-            .with_cell(
-                UiAppearanceCell::named("outside")
-                    .when([
-                        UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::PressedIdle),
-                        UiAppearanceAxisPredicate::exact(UiAppearanceAxisClass::HoverOutside),
-                    ])
-                    .uses_slot(slot("button.outside"), UiThemeValueKind::Color),
-            )
-            .otherwise_same_as("outside"),
-        )
-        .unwrap()
-        .build()
-        .unwrap();
+            .unwrap()
+            .build()
+            .unwrap();
 
     assert_eq!(first.canonical_bytes(), second.canonical_bytes());
 }

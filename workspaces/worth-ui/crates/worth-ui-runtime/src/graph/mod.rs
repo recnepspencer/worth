@@ -122,6 +122,8 @@ pub use mount_eligibility::{
 };
 
 // --- mutation ---
+#[cfg(test)]
+pub(crate) use mutation::adversarial_snapshot_with_swapped_node_index_for_test;
 pub(crate) use mutation::UiGraphMutationStage;
 pub use mutation::{
     UiGraphMountEligibilityAdmissionDenial, UiGraphMutationCommitDenial,

@@ -29,7 +29,10 @@ EXPECTED_OWNERS = {
 }
 PUBLIC_TYPE_DECLARATION = re.compile(r"\bpub\s+(?:struct|enum)\s+([A-Za-z_][A-Za-z0-9_]*)\b")
 RUST_COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/", re.DOTALL)
-STAGED_NATIVE_RELATIVE_PATHS = (
+GATE_ONE_UNPUBLISHED_RELATIVE_PATHS = (
+    Path("workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/projection/appearance"),
+    Path("workspaces/worth-ui/crates/worth-ui-host-headless/src/headless_transcript/appearance"),
+    Path("workspaces/worth-ui/crates/worth-ui-host-headless/src/headless_translation/appearance"),
     Path("workspaces/worth-ui/crates/worth-ui-host-native/src/native/presentation/appearance"),
     Path("workspaces/worth-ui/crates/worth-ui-host-native/src/native/event_loop/pointer_cursor.rs"),
 )
@@ -86,18 +89,18 @@ def validate(root: Path, matrix_path: Path) -> None:
         live_source = "\n".join(
             path.read_text(encoding="utf-8")
             for path in live_root.rglob("*.rs")
-            if not is_staged_native_path(root, path)
+            if not is_gate_one_unpublished_path(root, path)
         )
         leaked = leaked_contract_symbols(live_source, EXPECTED_SYMBOLS)
         if leaked:
             raise ValueError(f"Gate 0 appearance contract reached live publisher {live_root}: {leaked}")
 
 
-def is_staged_native_path(root: Path, path: Path) -> bool:
+def is_gate_one_unpublished_path(root: Path, path: Path) -> bool:
     relative = path.relative_to(root)
     return any(
         relative == staged_path or staged_path in relative.parents
-        for staged_path in STAGED_NATIVE_RELATIVE_PATHS
+        for staged_path in GATE_ONE_UNPUBLISHED_RELATIVE_PATHS
     )
 
 

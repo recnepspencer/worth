@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains presentation overlay exports for later composition publication"
+)]
+
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 use worth_ui_host_contract::UiMountedPresentationAttemptIdentity;
 

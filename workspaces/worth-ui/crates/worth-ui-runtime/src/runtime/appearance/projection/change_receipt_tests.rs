@@ -30,7 +30,7 @@ fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
         session.classify_observations(observations).unwrap();
         let later_snapshot = session.appearance_owner_snapshot_for_test().unwrap();
         let later_vector = super::super::super::state::UiAppearanceStateVector::seal_for_binding(
-            &later_snapshot,
+            later_snapshot,
             session.graph().snapshot(),
             session.capabilities(),
             &binding,

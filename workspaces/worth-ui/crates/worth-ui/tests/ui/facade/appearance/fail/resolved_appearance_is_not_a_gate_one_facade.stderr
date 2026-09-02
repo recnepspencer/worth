@@ -1,0 +1,3 @@
+error[E0432]: unresolved import `worth_ui::facade::appearance::UiAppearanceProjection`
+ --> $WORKSPACE/crates/worth-ui/tests/ui/facade/appearance/fail/resolved_appearance_is_not_a_gate_one_facade.rs
+ help: a similar name exists in the module

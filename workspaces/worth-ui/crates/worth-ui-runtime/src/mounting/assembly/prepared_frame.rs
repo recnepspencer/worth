@@ -128,10 +128,6 @@ impl UiPreparedMountedFrame {
         &self.identity_trace_basis
     }
 
-    pub fn is_unpublished(&self) -> bool {
-        self.candidate.is_unpublished()
-    }
-
     pub(crate) fn presented_receipt_basis(&self) -> &crate::mounting::UiMountedNodeReceiptBasis {
         self.candidate.presented_receipt_basis()
     }

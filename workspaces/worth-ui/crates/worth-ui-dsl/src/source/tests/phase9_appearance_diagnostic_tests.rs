@@ -216,24 +216,25 @@ fn one_hole_repair_predicate_covers_only_the_uncovered_cell() {
 
 #[test]
 fn file_missing_partition_facts_match_rust_authoring_facts_without_a_source_span() {
-    let rust_denial = UiAppearanceRole::new(UiAppearanceRoleIdentity::new("rust-missing").unwrap())
-        .cover(
-            UiAppearanceAspect::Background,
-            UiAppearancePartitionAuthoring::new([UiAppearanceAxisDomain::complete(
-                UiAppearanceStateAxis::Hover,
-            )])
-            .with_cell(UiAppearanceCell::new(
-                None::<&str>,
-                [UiAppearanceAxisPredicate::exact(
-                    UiAppearanceAxisClass::HoverOutside,
-                )],
-                crate::UiAppearanceCellValue::theme_slot(
-                    slot("rust.background"),
-                    UiThemeValueKind::Color,
-                ),
-            )),
-        )
-        .expect_err("Rust authoring must expose the same missing coverage denial");
+    let rust_denial =
+        UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("rust-missing").unwrap())
+            .cover(
+                UiAppearanceAspect::Background,
+                UiAppearancePartitionAuthoring::new([UiAppearanceAxisDomain::complete(
+                    UiAppearanceStateAxis::Hover,
+                )])
+                .with_cell(UiAppearanceCell::new(
+                    None::<&str>,
+                    [UiAppearanceAxisPredicate::exact(
+                        UiAppearanceAxisClass::HoverOutside,
+                    )],
+                    crate::UiAppearanceCellValue::theme_slot(
+                        slot("rust.background"),
+                        UiThemeValueKind::Color,
+                    ),
+                )),
+            )
+            .expect_err("Rust authoring must expose the same missing coverage denial");
     let crate::UiAppearanceRoleAuthoringDenial::Partition(denial) = rust_denial else {
         panic!("expected a typed partition admission denial");
     };

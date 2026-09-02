@@ -1,3 +1,8 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains motion overlay exports for later composition publication"
+)]
+
 use crate::runtime::motion::{UiCommittedMotionTrack, UiMotionTargetIdentity};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

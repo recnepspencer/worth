@@ -64,56 +64,19 @@ fn static_paint_selection_retains_each_typed_appearance_relation() {
         .entries()
         .iter()
         .filter(|entry| entry.consumption_relation().is_static_paint())
-        .all(|entry| entry
-            .affected_aspect()
-            .is_some_and(|aspect| aspect.canonical_label() == "appearance.background")));
+        .all(|entry| entry.affected_aspect().is_some_and(|aspect| {
+            aspect.semantic_slice()
+                == crate::declaration::UiAspectSemanticSlice::AppearanceBackground
+        })));
 }
 
 #[test]
 fn unattached_node_does_not_infer_appearance_demand_from_its_component() {
-    let token = crate::capability::ThemeTokenId::new(super::STATIC_PAINT_TOKEN).unwrap();
-    let role = crate::runtime::tests::appearance_component_session_test_support::validation_background_role(
+    let app = crate::declaration::appearance_fact_index_test_support::unattached_static_paint_app(
+        "unattached-static-paint",
+        super::STATIC_PAINT_COMPONENT,
         super::STATIC_PAINT_TOKEN,
     );
-    let app = crate::facade::WorthUi::app()
-        .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
-        .register_component(
-            crate::runtime::tests::appearance_component_session_test_support::static_paint_component(
-                super::STATIC_PAINT_COMPONENT,
-                token.clone(),
-            ),
-        )
-        .register_appearance_role(role)
-        .unwrap()
-        .register_theme_token(crate::capability::ThemeTokenDescriptor::define(
-            token,
-            crate::capability::ThemeTokenFamily::surface(),
-            crate::capability::ThemeTokenSource::application(),
-            crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#112233").unwrap(),
-            ),
-        ))
-        .with_rust_authored_declaration_fixture(
-            crate::facade::WorthUiRustAuthoredDeclarationFixture::named("unattached-static-paint")
-                .with_semantic_artifact_spec(
-                    worth_ui_dsl::UiDslSemanticArtifactSpec::new(
-                        worth_ui_dsl::UiDslSemanticKey::new(super::STATIC_PAINT_COMPONENT),
-                        worth_ui_dsl::UiDslSemanticFamily::Control,
-                        worth_ui_dsl::UiDslSourceProvenance::file_authored("app/unattached.wui", 0),
-                    )
-                    .with_structural_token(worth_ui_dsl::UiDslStructuralToken::new(
-                        "control:unattached-static-paint",
-                    ))
-                    .with_component_reference(
-                        worth_ui_dsl::UiDslComponentReference::new(super::STATIC_PAINT_COMPONENT)
-                            .unwrap(),
-                    )
-                    .unwrap(),
-                ),
-        )
-        .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
-        .expect("unattached static-paint fixture should prepare");
 
     assert!(super::graph_node_named(
         app.prepared_authority().graph_snapshot(),
@@ -244,77 +207,10 @@ fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
 }
 
 fn role_only_app() -> crate::facade::WorthUiApp {
-    let role = crate::runtime::tests::appearance_component_session_test_support::validation_background_role(
+    crate::declaration::appearance_fact_index_test_support::role_only_fact_index_app(
+        "role-only-fact-index",
         super::STATIC_PAINT_TOKEN,
-    );
-    let token = crate::capability::ThemeTokenId::new(super::STATIC_PAINT_TOKEN).unwrap();
-    crate::facade::WorthUi::app()
-        .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
-        .register_component(role_only_component(super::STATIC_PAINT_COMPONENT))
-        .register_component(role_only_component(super::STATIC_PAINT_PEER))
-        .register_appearance_role(role.clone())
-        .unwrap()
-        .register_theme_token(crate::capability::ThemeTokenDescriptor::define(
-            token,
-            crate::capability::ThemeTokenFamily::surface(),
-            crate::capability::ThemeTokenSource::application(),
-            crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#112233").unwrap(),
-            ),
-        ))
-        .with_rust_authored_declaration_fixture(
-            crate::facade::WorthUiRustAuthoredDeclarationFixture::named("role-only-fact-index")
-                .with_semantic_artifact_spec(role_only_spec(
-                    super::STATIC_PAINT_COMPONENT,
-                    Some(&role),
-                    0,
-                ))
-                .with_semantic_artifact_spec(role_only_spec(super::STATIC_PAINT_PEER, None, 1)),
-        )
-        .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
-        .expect("role-only fact-index fixture should prepare")
-}
-
-fn role_only_component(identity: &str) -> crate::capability::ComponentDescriptor {
-    crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_component(
-        identity,
+        super::STATIC_PAINT_COMPONENT,
+        super::STATIC_PAINT_PEER,
     )
-    .with_appearance_aspect_contract(
-        worth_ui_dsl::UiAppearanceAspectContract::component(
-            [worth_ui_dsl::UiAppearanceAspect::Background],
-            [],
-        )
-        .unwrap(),
-    )
-    .expect("role-only component contract should be admitted")
-}
-
-fn role_only_spec(
-    identity: &str,
-    role: Option<&worth_ui_dsl::UiAppearanceRoleDeclaration>,
-    declaration_index: usize,
-) -> worth_ui_dsl::UiDslSemanticArtifactSpec {
-    let spec = worth_ui_dsl::UiDslSemanticArtifactSpec::new(
-        worth_ui_dsl::UiDslSemanticKey::new(identity),
-        worth_ui_dsl::UiDslSemanticFamily::Control,
-        worth_ui_dsl::UiDslSourceProvenance::file_authored(
-            "app/role-only-fact-index.wui",
-            declaration_index,
-        ),
-    )
-    .with_structural_token(worth_ui_dsl::UiDslStructuralToken::new(
-        "control:role-only-fact-index",
-    ))
-    .with_component_reference(worth_ui_dsl::UiDslComponentReference::new(identity).unwrap())
-    .unwrap();
-    role.map_or(spec.clone(), |role| {
-        spec.with_appearance_role_attachment(
-            worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration::new(
-                role.role().clone(),
-                role.revision(),
-            ),
-        )
-        .unwrap()
-    })
 }

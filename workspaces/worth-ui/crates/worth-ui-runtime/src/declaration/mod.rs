@@ -1,4 +1,7 @@
 mod appearance;
+#[cfg(test)]
+#[path = "appearance_fact_index_test_support.rs"]
+pub(crate) mod appearance_fact_index_test_support;
 mod artifact;
 mod aspect_contract;
 mod closeout;

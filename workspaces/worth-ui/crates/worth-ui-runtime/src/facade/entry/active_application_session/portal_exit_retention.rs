@@ -112,9 +112,9 @@ impl UiPortalExitRetentionCoordinator {
     }
 
     pub(in crate::facade::entry) fn pending_track_is_coordinated(&self) -> bool {
-        self.pending.as_ref().map_or(true, |pending| {
-            self.retentions.contains_key(&pending.track())
-        })
+        self.pending
+            .as_ref()
+            .is_none_or(|pending| self.retentions.contains_key(&pending.track()))
     }
 
     pub(super) fn take_pending(&mut self) -> Option<UiPortalExitTerminalPending> {
