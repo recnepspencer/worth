@@ -20,7 +20,39 @@ pub struct UiNativeMechanicsCapacities {
 
 pub const WORTH_UI_NATIVE_PROFILE_MANIFEST: &str =
     include_str!("../profiles/worth-ui-windows-dx12-v1.toml");
+pub(crate) const WORTH_UI_NATIVE_NEXT_PROFILE_MANIFEST: &str =
+    include_str!("../profiles/worth-ui-windows-dx12-v2.toml");
 pub(crate) const QUALIFIED_WHEEL_LINE_LOGICAL_SUBPIXELS: i64 = 40_000;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct UiNativeStagedAppearanceProfile {
+    pub(crate) identity: &'static str,
+    pub(crate) scales_milli: &'static [u16; 4],
+    pub(crate) anti_alias_fringe_physical_pixels: u8,
+    pub(crate) retained_commands: u16,
+    pub(crate) surface_commands: u16,
+    pub(crate) outline_commands: u16,
+    pub(crate) backdrop_commands: u16,
+    pub(crate) overlay_order_commands: u16,
+    pub(crate) pointer_affordance_commands: u16,
+    pub(crate) text_foreground_commands: u16,
+    pub(crate) damage_regions: u16,
+}
+
+pub(crate) const STAGED_APPEARANCE_PROFILE: UiNativeStagedAppearanceProfile =
+    UiNativeStagedAppearanceProfile {
+        identity: "worth-ui-windows-dx12-v2",
+        scales_milli: &[1_000, 1_250, 1_500, 2_000],
+        anti_alias_fringe_physical_pixels: 1,
+        retained_commands: 4_096,
+        surface_commands: 2_048,
+        outline_commands: 1_024,
+        backdrop_commands: 512,
+        overlay_order_commands: 4_096,
+        pointer_affordance_commands: 64,
+        text_foreground_commands: 2_048,
+        damage_regions: 4_096,
+    };
 
 impl UiNativePlatformProfileIdentity {
     pub const WORTH_UI_WINDOWS_DX12_V1: Self = Self("worth-ui-windows-dx12-v1");

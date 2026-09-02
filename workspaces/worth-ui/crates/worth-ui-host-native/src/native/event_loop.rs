@@ -22,6 +22,7 @@ mod finish_capture;
 mod finish_cleanup;
 mod physical_clock;
 mod physical_progression;
+mod pointer_cursor;
 mod pointer_position;
 mod presentation_correlation;
 mod presentation_retry;
