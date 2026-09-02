@@ -5,10 +5,16 @@ use super::{UiAppearanceChangeOutcome, UiAppearanceChangeReceipt};
 #[test]
 fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
     super::super::tests::run_on_appearance_fixture_stack(|| {
-        let (mut session, role, target, vector, theme) = super::super::tests::inputs();
+        let (mut session, binding, _target, vector, theme) = super::super::tests::inputs();
         let resolver = super::super::UiAppearanceResolver::new();
         let base = resolver
-            .resolve_node(&target, &role, &vector, &theme)
+            .resolve_node(
+                session.graph().snapshot(),
+                session.capabilities(),
+                &binding,
+                &vector,
+                &theme,
+            )
             .expect("sealed appearance inputs should resolve");
         let original = &base.aspects()[0];
 
@@ -23,19 +29,26 @@ fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
         let observations = turn.seal().unwrap();
         session.classify_observations(observations).unwrap();
         let later_snapshot = session.appearance_owner_snapshot_for_test().unwrap();
-        let later_vector = super::super::super::state::UiAppearanceStateVector::seal_for_role(
+        let later_vector = super::super::super::state::UiAppearanceStateVector::seal_for_binding(
             &later_snapshot,
-            &target,
-            &role,
+            session.graph().snapshot(),
+            session.capabilities(),
+            &binding,
         )
         .unwrap();
         let evidence_successor = resolver
-            .resolve_node(&target, &role, &later_vector, &theme)
+            .resolve_node(
+                session.graph().snapshot(),
+                session.capabilities(),
+                &binding,
+                &later_vector,
+                &theme,
+            )
             .expect("the later sealed observation remains resolvable");
 
         let semantic_successor = projection_with_aspect(
             &base,
-            &role,
+            binding.role(),
             &theme,
             aspect_with(
                 original,
@@ -47,7 +60,7 @@ fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
         );
         let value_successor = projection_with_aspect(
             &base,
-            &role,
+            binding.role(),
             &theme,
             aspect_with(
                 original,
@@ -59,7 +72,7 @@ fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
         );
         let equal_output_successor = projection_with_aspect(
             &base,
-            &role,
+            binding.role(),
             &theme,
             aspect_with(
                 original,

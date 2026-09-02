@@ -1,19 +1,41 @@
 use worth_ui_dsl::{UiAppearanceAspect, UiThemeColor, UiThemeValue, UiThemeValueKind};
 
-use super::super::state::{UiAppearanceStateVector, UiAppearanceTarget};
+use super::super::state::{
+    UiAppearanceNodeRoleBinding, UiAppearanceStateVector, UiAppearanceTarget,
+};
 use super::super::theme::UiThemeResolutionView;
 use super::UiAppearanceResolver;
 
 #[test]
 fn resolver_is_deterministic_and_emits_no_host_commands() {
     super::tests::run_on_appearance_fixture_stack(|| {
-        let (mut session, role, target, vector, theme) = inputs();
+        let (mut session, binding, target, vector, theme) = inputs();
+        assert_eq!(binding.basis().graph_node(), target.graph_node());
+        assert_eq!(binding.basis().role(), binding.role().role());
+        assert_eq!(binding.basis().revision(), binding.role().revision());
+        assert_eq!(
+            binding.basis().aspect_contract(),
+            binding.role().aspect_contract()
+        );
+        assert_eq!(vector.binding(), Some(binding.basis()));
         let resolver = UiAppearanceResolver::new();
         let first = resolver
-            .resolve_node(&target, &role, &vector, &theme)
+            .resolve_node(
+                session.graph().snapshot(),
+                session.capabilities(),
+                &binding,
+                &vector,
+                &theme,
+            )
             .expect("sealed appearance inputs should resolve");
         let second = resolver
-            .resolve_node(&target, &role, &vector, &theme)
+            .resolve_node(
+                session.graph().snapshot(),
+                session.capabilities(),
+                &binding,
+                &vector,
+                &theme,
+            )
             .expect("the same sealed inputs should resolve identically");
 
         assert!(first.exactly_equivalent(&second));
@@ -59,7 +81,7 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
         else {
             panic!("a recorded sealed projection should be inspectable")
         };
-        assert_eq!(explanation.role(), role.role().as_str());
+        assert_eq!(explanation.role(), binding.role().role().as_str());
         assert_eq!(explanation.theme(), "theme.test");
         assert_eq!(
             explanation.value(),
@@ -102,20 +124,55 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
     });
 }
 
+#[test]
+fn resolver_rejects_an_unbound_vector_before_any_effect() {
+    super::tests::run_on_appearance_fixture_stack(|| {
+        let (session, binding, target, _bound_vector, theme) = inputs();
+        let snapshot = session.appearance_owner_snapshot_for_test().unwrap();
+        let unbound_vector = UiAppearanceStateVector::seal(&snapshot, &target)
+            .expect("the same sealed owner snapshot should produce an unbound control vector");
+        let evidence = UiAppearanceResolver::new()
+            .resolve_node(
+                session.graph().snapshot(),
+                session.capabilities(),
+                &binding,
+                &unbound_vector,
+                &theme,
+            )
+            .expect_err("resolver must require the binding-carrying vector");
+
+        assert_eq!(
+            evidence.denial(),
+            super::UiAppearanceResolutionDenial::VectorRoleBindingMismatch
+        );
+        assert_eq!(
+            evidence.subject(),
+            super::UiAppearanceResolutionSubject::GraphNode(target.graph_node())
+        );
+        assert_eq!(
+            evidence.effects(),
+            super::UiAppearanceResolutionEffectPosture::zero()
+        );
+        assert!(session
+            .inspect_mounted_identity()
+            .frame_receipts()
+            .is_empty());
+        let _ = session.shutdown();
+    });
+}
+
 pub(super) fn inputs() -> (
     crate::facade::WorthUiActiveApplicationSession,
-    worth_ui_dsl::UiAppearanceRoleDeclaration,
+    UiAppearanceNodeRoleBinding,
     UiAppearanceTarget,
     UiAppearanceStateVector,
     UiThemeResolutionView,
 ) {
     use crate::runtime::tests::appearance_component_session_test_support::{
         attached_appearance_candidate_submission, source_backed_static_paint_consumer_session,
-        validation_background_role, APPEARANCE_TOKEN,
     };
 
     let mut session = source_backed_static_paint_consumer_session();
-    let role = validation_background_role(APPEARANCE_TOKEN);
     let candidate = attached_appearance_candidate_submission(
         &session,
         "appearance-resolver-test",
@@ -151,9 +208,22 @@ pub(super) fn inputs() -> (
         node_receipt,
     )
     .unwrap();
-    let vector = UiAppearanceStateVector::seal_for_role(&snapshot, &target, &role).unwrap();
-    let theme = theme_view(&session, &role, surface);
-    (session, role, target, vector, theme)
+    let binding = UiAppearanceNodeRoleBinding::from_current_graph(
+        session.graph().snapshot(),
+        session.capabilities(),
+        &target,
+    )
+    .unwrap();
+    let target = binding.target().clone();
+    let vector = UiAppearanceStateVector::seal_for_binding(
+        &snapshot,
+        session.graph().snapshot(),
+        session.capabilities(),
+        &binding,
+    )
+    .unwrap();
+    let theme = theme_view(&session, binding.role(), surface);
+    (session, binding, target, vector, theme)
 }
 
 pub(super) fn run_on_appearance_fixture_stack(test: impl FnOnce() + Send + 'static) {

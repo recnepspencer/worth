@@ -8,6 +8,7 @@ pub(crate) struct UiAppearanceCellLookup {
 pub(crate) fn lookup(
     partition: &worth_ui_dsl::UiAppearanceDecisionPartition,
     vector: &super::super::super::state::UiAppearanceStateVector,
+    aspect: worth_ui_dsl::UiAppearanceAspect,
 ) -> Result<UiAppearanceCellLookup, super::UiAppearanceResolutionDenial> {
     let classes =
         partition
@@ -30,11 +31,42 @@ pub(crate) fn lookup(
             (cell.classes() == classes.as_ref()).then_some((index, cell))
         });
     let (index, cell) = cell.ok_or(super::UiAppearanceResolutionDenial::MissingDecisionCell(
-        worth_ui_dsl::UiAppearanceAspect::Background,
+        aspect,
     ))?;
     Ok(UiAppearanceCellLookup {
         result: cell.result().clone(),
         classes,
+        cell_ordinal: u32::try_from(index)
+            .expect("appearance decision cell count fits inspection ordinal")
+            .saturating_add(1),
+        visited,
+    })
+}
+
+pub(crate) fn lookup_without_state(
+    partition: &worth_ui_dsl::UiAppearanceDecisionPartition,
+    aspect: worth_ui_dsl::UiAppearanceAspect,
+) -> Result<UiAppearanceCellLookup, super::UiAppearanceResolutionDenial> {
+    if let Some(axis) = partition.axes().first() {
+        return Err(super::UiAppearanceResolutionDenial::MissingStateAxis(
+            axis.axis(),
+        ));
+    }
+    let mut visited = 0_u32;
+    let cell = partition
+        .cells()
+        .iter()
+        .enumerate()
+        .find_map(|(index, cell)| {
+            visited = visited.saturating_add(1);
+            cell.classes().is_empty().then_some((index, cell))
+        });
+    let (index, cell) = cell.ok_or(super::UiAppearanceResolutionDenial::MissingDecisionCell(
+        aspect,
+    ))?;
+    Ok(UiAppearanceCellLookup {
+        result: cell.result().clone(),
+        classes: Box::new([]),
         cell_ordinal: u32::try_from(index)
             .expect("appearance decision cell count fits inspection ordinal")
             .saturating_add(1),

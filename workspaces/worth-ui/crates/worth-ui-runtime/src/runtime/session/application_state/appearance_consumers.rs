@@ -29,6 +29,7 @@ impl WorthUiApplicationSessionState {
         let index = prepared.consumed_fact_index();
         crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
             index,
+            slot.as_str(),
             authored_identity,
         )
     }

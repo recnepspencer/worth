@@ -7,8 +7,8 @@ use crate::graph::{UiGraphAspectPublisherKind, UiGraphSnapshot};
 
 use super::{
     UiAuthoredDeclarationLookup, UiGraphFactConsumerIdentity, UiGraphFactConsumerKey,
-    UiGraphFactConsumerKind, UiGraphFactIndexBasis, UiGraphFactIndexEntry, UiGraphFactLookupDenial,
-    UiGraphFactLookupReceipt,
+    UiGraphFactConsumerKind, UiGraphFactConsumptionRelation, UiGraphFactIndexBasis,
+    UiGraphFactIndexEntry, UiGraphFactLookupDenial, UiGraphFactLookupReceipt,
 };
 
 mod appearance_consumer_contract;
@@ -187,7 +187,7 @@ fn query_projection_consumers(
                 snapshot,
                 node,
                 contract.clone(),
-                Some(affected_aspect.clone()),
+                UiGraphFactConsumptionRelation::general(Some(affected_aspect.clone())),
             );
         }
     }
@@ -221,7 +221,16 @@ fn add_static_paint_token_consumers(
         let affected_aspect =
             UiAspectName::from_semantic_slice(UiAspectSemanticSlice::AppearanceBackground);
         let entries = by_declaration.entry(token_identity).or_default();
-        push_component_consumer(entries, snapshot, node, contract, Some(affected_aspect));
+        push_component_consumer(
+            entries,
+            snapshot,
+            node,
+            contract,
+            UiGraphFactConsumptionRelation::static_paint(
+                token_capability_identity,
+                affected_aspect,
+            ),
+        );
     }
 }
 
@@ -259,29 +268,29 @@ pub(super) fn push_component_consumer(
     snapshot: &UiGraphSnapshot,
     node: &crate::graph::UiGraphNode,
     contract: UiConsumedFactContract,
-    affected_aspect: Option<UiAspectName>,
+    consumption_relation: UiGraphFactConsumptionRelation,
 ) {
     let authored_identity: Box<str> = node.declaration_identity().authored_semantic_name().into();
     let repeated = node.repeated_instance_basis().identity_digest();
-    entries.push(UiGraphFactIndexEntry::new(
+    entries.push(UiGraphFactIndexEntry::new_with_relation(
         UiGraphFactConsumerKey::new(
             UiGraphFactConsumerKind::GraphNode,
             authored_identity.clone(),
             repeated,
         ),
         UiGraphFactConsumerIdentity::GraphNode(node.graph_node_identity()),
-        affected_aspect.clone(),
+        consumption_relation.clone(),
         contract.clone(),
     ));
     if let Some(slot) = snapshot.mount_eligibility_slot_for_node(node.graph_node_identity()) {
-        entries.push(UiGraphFactIndexEntry::new(
+        entries.push(UiGraphFactIndexEntry::new_with_relation(
             UiGraphFactConsumerKey::new(
                 UiGraphFactConsumerKind::MountEligibilitySlot,
                 authored_identity,
                 repeated,
             ),
             UiGraphFactConsumerIdentity::MountEligibilitySlot(slot.mount_eligibility_identity()),
-            affected_aspect,
+            consumption_relation,
             contract,
         ));
     }
@@ -374,7 +383,10 @@ pub(super) fn canonical_entries(
         left.consumer_key()
             .cmp(right.consumer_key())
             .then_with(|| left.consumer().cmp(&right.consumer()))
-            .then_with(|| left.affected_aspect().cmp(&right.affected_aspect()))
+            .then_with(|| {
+                left.consumption_relation()
+                    .cmp(right.consumption_relation())
+            })
     });
     entries.dedup();
     entries.into_boxed_slice()

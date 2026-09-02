@@ -4,12 +4,24 @@ pub(crate) fn resolve(
     vector: &super::super::super::state::UiAppearanceStateVector,
     theme: &super::super::super::theme::UiThemeResolutionView,
 ) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionDenial> {
-    let lookup = super::cell_lookup::lookup(partition, vector).map_err(|denial| match denial {
-        super::UiAppearanceResolutionDenial::MissingDecisionCell(_) => {
-            super::UiAppearanceResolutionDenial::MissingDecisionCell(aspect)
-        }
-        denial => denial,
-    })?;
+    let lookup = super::cell_lookup::lookup(partition, vector, aspect)?;
+    finish(aspect, lookup, theme)
+}
+
+pub(crate) fn resolve_backdrop(
+    aspect: worth_ui_dsl::UiAppearanceAspect,
+    partition: &worth_ui_dsl::UiAppearanceDecisionPartition,
+    theme: &super::super::super::theme::UiThemeResolutionView,
+) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionDenial> {
+    let lookup = super::cell_lookup::lookup_without_state(partition, aspect)?;
+    finish(aspect, lookup, theme)
+}
+
+fn finish(
+    aspect: worth_ui_dsl::UiAppearanceAspect,
+    lookup: super::cell_lookup::UiAppearanceCellLookup,
+    theme: &super::super::super::theme::UiThemeResolutionView,
+) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionDenial> {
     let resolved = theme
         .resolve(&lookup.result.slot().clone(), lookup.result.value_kind())
         .map_err(super::UiAppearanceResolutionDenial::ThemeResolution)?;

@@ -21,6 +21,7 @@ impl UiAppearanceConsumerSelection {
 
     pub(crate) fn for_slot(
         index: &crate::graph::UiGraphConsumedFactIndex,
+        capability_identity: &str,
         authored_identity: &str,
     ) -> Self {
         let fact = crate::fact_contract::UiProducedFact::AuthoredSource(
@@ -35,6 +36,11 @@ impl UiAppearanceConsumerSelection {
                 receipt
                     .entries()
                     .iter()
+                    .filter(|entry| {
+                        entry
+                            .consumption_relation()
+                            .matches_theme_token(capability_identity, authored_identity)
+                    })
                     .filter_map(|entry| match entry.consumer() {
                         crate::graph::UiGraphFactConsumerIdentity::GraphNode(node) => Some(node),
                         crate::graph::UiGraphFactConsumerIdentity::MountEligibilitySlot(_) => None,
@@ -46,8 +52,11 @@ impl UiAppearanceConsumerSelection {
     }
 
     fn from_nodes(consumers: Box<[crate::graph::UiGraphNodeIdentity]>) -> Self {
+        let mut consumers = consumers.into_vec();
+        consumers.sort_unstable();
+        consumers.dedup();
         Self {
-            consumers,
+            consumers: consumers.into_boxed_slice(),
             reconstructible: true,
         }
     }

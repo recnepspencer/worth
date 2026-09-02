@@ -20,4 +20,7 @@ pub(crate) use projection::UiAppearanceProjection;
 pub(crate) use resolved_aspect::{
     UiAppearanceProvenance, UiAppearanceSupportPosture, UiResolvedAppearanceAspect,
 };
-pub(crate) use resolver::{UiAppearanceResolutionDenial, UiAppearanceResolver};
+pub(crate) use resolver::{
+    UiAppearanceResolutionDenial, UiAppearanceResolutionEffectPosture,
+    UiAppearanceResolutionSubject, UiAppearanceResolver,
+};

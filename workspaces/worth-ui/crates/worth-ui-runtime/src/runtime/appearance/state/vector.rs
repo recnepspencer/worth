@@ -3,6 +3,7 @@ use worth_ui_dsl::{UiAppearanceAxisClass as Class, UiAppearanceStateAxis as Axis
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiAppearanceStateVector {
     basis: super::UiAppearanceCoherentBasis,
+    binding: Option<super::UiAppearanceRoleBindingBasis>,
     classes: [Option<Class>; 6],
 }
 
@@ -12,6 +13,7 @@ pub(crate) enum UiAppearanceStateVectorDenial {
     ForeignGeneration,
     MissingAxis(Axis),
     AmbiguousSelection,
+    RoleBinding(super::UiAppearanceNodeRoleBindingDenial),
 }
 
 impl UiAppearanceStateVector {
@@ -19,27 +21,37 @@ impl UiAppearanceStateVector {
         snapshot: &super::UiAppearanceOwnerSnapshot,
         target: &super::UiAppearanceTarget,
     ) -> Result<Self, UiAppearanceStateVectorDenial> {
-        Self::seal_with_demand(snapshot, target, snapshot.demand())
+        Self::seal_with_demand(snapshot, target, snapshot.demand(), None)
     }
 
-    pub(crate) fn seal_for_role(
+    pub(crate) fn seal_for_binding(
         snapshot: &super::UiAppearanceOwnerSnapshot,
-        target: &super::UiAppearanceTarget,
-        role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
+        graph: &crate::graph::UiGraphSnapshot,
+        capabilities: &crate::capability::CapabilitySnapshot,
+        binding: &super::UiAppearanceNodeRoleBinding,
     ) -> Result<Self, UiAppearanceStateVectorDenial> {
+        binding
+            .validate_current(graph, capabilities)
+            .map_err(UiAppearanceStateVectorDenial::RoleBinding)?;
         let mut demand = super::UiAppearanceStateAxisDemand::default();
-        for (_, partition) in role.partitions() {
+        for (_, partition) in binding.role().partitions() {
             for axis in partition.axes() {
                 demand.include(axis.axis());
             }
         }
-        Self::seal_with_demand(snapshot, target, demand)
+        Self::seal_with_demand(
+            snapshot,
+            binding.target(),
+            demand,
+            Some(binding.basis().clone()),
+        )
     }
 
     fn seal_with_demand(
         snapshot: &super::UiAppearanceOwnerSnapshot,
         target: &super::UiAppearanceTarget,
         demand: super::UiAppearanceStateAxisDemand,
+        binding: Option<super::UiAppearanceRoleBindingBasis>,
     ) -> Result<Self, UiAppearanceStateVectorDenial> {
         if snapshot.session() != target.session() {
             return Err(UiAppearanceStateVectorDenial::ForeignSession);
@@ -77,12 +89,17 @@ impl UiAppearanceStateVector {
         }
         Ok(Self {
             basis: super::UiAppearanceCoherentBasis::seal(snapshot, target, revisions),
+            binding,
             classes,
         })
     }
 
     pub(crate) const fn basis(&self) -> &super::UiAppearanceCoherentBasis {
         &self.basis
+    }
+
+    pub(crate) const fn binding(&self) -> Option<&super::UiAppearanceRoleBindingBasis> {
+        self.binding.as_ref()
     }
 
     pub(crate) const fn class(&self, axis: Axis) -> Option<Class> {
@@ -103,10 +120,18 @@ impl UiAppearanceStateVector {
     }
 
     pub(crate) fn semantic_digest(&self) -> u64 {
-        self.classes()
-            .fold(self.basis.semantic_digest(), |digest, (axis, class)| {
-                fold(fold(digest, axis as u64 + 1), class as u64 + 1)
-            })
+        let digest = self.binding.as_ref().map_or_else(
+            || fold(self.basis.semantic_digest(), 0),
+            |binding| {
+                fold(
+                    fold(self.basis.semantic_digest(), 1),
+                    binding.semantic_digest(),
+                )
+            },
+        );
+        self.classes().fold(digest, |digest, (axis, class)| {
+            fold(fold(digest, axis as u64 + 1), class as u64 + 1)
+        })
     }
 
     pub(crate) fn evidence_digest(&self) -> u64 {

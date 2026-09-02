@@ -4,7 +4,7 @@ use crate::runtime::overlay_composition::UiBackdropInstanceIdentity;
 pub(crate) struct UiBackdropAppearanceProjection {
     instance: UiBackdropInstanceIdentity,
     declaration: worth_ui_dsl::UiBackdropDeclaration,
-    state: super::super::state::UiAppearanceStateVector,
+    state: super::super::state::UiBackdropAppearanceStateVector,
     theme: Box<str>,
     theme_revision: u64,
     catalog_revision: u64,
@@ -14,10 +14,10 @@ pub(crate) struct UiBackdropAppearanceProjection {
 }
 
 impl UiBackdropAppearanceProjection {
-    pub(crate) fn seal(
+    pub(super) fn seal(
         instance: UiBackdropInstanceIdentity,
         declaration: &worth_ui_dsl::UiBackdropDeclaration,
-        state: super::super::state::UiAppearanceStateVector,
+        state: super::super::state::UiBackdropAppearanceStateVector,
         theme: &super::super::theme::UiThemeResolutionView,
         overlay: super::UiOverlayStackSnapshot,
         aspects: Box<[super::UiResolvedAppearanceAspect]>,
@@ -63,7 +63,7 @@ impl UiBackdropAppearanceProjection {
         &self.declaration
     }
 
-    pub(crate) const fn state(&self) -> &super::super::state::UiAppearanceStateVector {
+    pub(crate) const fn state(&self) -> &super::super::state::UiBackdropAppearanceStateVector {
         &self.state
     }
 
