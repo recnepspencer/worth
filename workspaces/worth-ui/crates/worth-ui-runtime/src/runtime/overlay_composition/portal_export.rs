@@ -6,6 +6,10 @@ pub(crate) struct UiOverlayPortalOwnerExport {
 }
 
 impl UiOverlayPortalOwnerExport {
+    pub(super) fn from_snapshot(snapshot: UiPortalStackSnapshot) -> Self {
+        Self { snapshot }
+    }
+
     pub(super) fn from_owner(owner: &crate::runtime::portal::UiPortalRuntimeState) -> Self {
         Self {
             snapshot: owner.stack_snapshot(),

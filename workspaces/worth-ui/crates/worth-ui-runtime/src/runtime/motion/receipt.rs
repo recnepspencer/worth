@@ -64,7 +64,6 @@ impl UiMotionTargetIdentity {
         }
     }
 
-    #[cfg(test)]
     pub(crate) const fn semantic_surface(
         self,
     ) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {

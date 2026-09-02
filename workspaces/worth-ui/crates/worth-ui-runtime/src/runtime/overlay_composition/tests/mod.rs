@@ -12,6 +12,8 @@ mod materialization;
 mod motion_locality;
 #[path = "order_cases.rs"]
 mod order_cases;
+#[path = "owner_bridge_reachability.rs"]
+mod owner_bridge_reachability;
 #[path = "owner_lifecycle.rs"]
 mod owner_lifecycle;
 #[path = "owner_reconfiguration.rs"]

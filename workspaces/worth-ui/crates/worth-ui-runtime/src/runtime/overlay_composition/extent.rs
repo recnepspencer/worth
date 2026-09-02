@@ -1,4 +1,11 @@
 use worth_ui_dsl::{UiPortalDeclarationId, UiSemanticSurfaceDeclarationIdentity};
+use worth_ui_host_contract::{
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+};
+
+use crate::runtime::allocation_receipt::{
+    UiCommittedOverlayExtentBounds, UiMountedOverlayExtentOwnerExport,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiOverlayRegionExtent {
@@ -33,6 +40,27 @@ pub(crate) struct UiOverlaySurfaceExtentSnapshot {
 }
 
 impl UiOverlaySurfaceExtentSnapshot {
+    pub(super) fn from_owner_export(export: UiMountedOverlayExtentOwnerExport) -> Result<Self, ()> {
+        let viewport = project_bounds(export.viewport())?;
+        let regions = export
+            .regions()
+            .iter()
+            .map(|region| {
+                Ok(UiOverlayRegionExtent::new(
+                    region.identity(),
+                    project_bounds(region.bounds())?,
+                ))
+            })
+            .collect::<Result<Vec<_>, ()>>()?;
+        Self::seal(
+            export.declaration_surface(),
+            export.runtime_surface(),
+            export.revision(),
+            viewport,
+            regions,
+        )
+    }
+
     pub(in crate::runtime::overlay_composition) fn seal(
         declaration_surface: UiSemanticSurfaceDeclarationIdentity,
         runtime_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
@@ -80,6 +108,17 @@ impl UiOverlaySurfaceExtentSnapshot {
             .ok()
             .map(|index| self.regions[index])
     }
+}
+
+fn project_bounds(bounds: UiCommittedOverlayExtentBounds) -> Result<UiMountedCanonicalBox, ()> {
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x: bounds.x(),
+        y: bounds.y(),
+        width: bounds.width(),
+        height: bounds.height(),
+        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+    })
+    .map_err(|_| ())
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

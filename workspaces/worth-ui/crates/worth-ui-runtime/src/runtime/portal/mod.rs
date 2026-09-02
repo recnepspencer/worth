@@ -3,6 +3,7 @@ mod dismissal;
 mod identity;
 mod inspection;
 mod lifecycle;
+mod overlay_binding_export;
 mod placement;
 #[cfg(test)]
 mod placement_tests;
@@ -34,6 +35,10 @@ pub(crate) use identity::{UiPortalIdentity, UiPortalOwnerIdentity};
 pub(crate) use inspection::UiPortalClosedInspectionRecord;
 pub(crate) use lifecycle::{
     UiPortalDismissalCause, UiPortalInputShielding, UiPortalLifecyclePosture,
+};
+pub(crate) use overlay_binding_export::{
+    UiPortalOverlayBindingDenial, UiPortalOverlayBindingOwner, UiPortalOverlayBindingOwnerExport,
+    UiPortalOverlayBindingRow,
 };
 pub(crate) use placement::{
     UiCommittedPortalPlacement, UiPortalLayerIdentity, UiPortalPlacementDenial,

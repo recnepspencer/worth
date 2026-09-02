@@ -7,7 +7,9 @@ mod materialization;
 mod motion_export;
 mod order;
 mod owner;
+mod owner_bridge;
 mod owner_input;
+mod owner_lifecycle;
 mod planner;
 mod portal_export;
 mod relation_cache;
@@ -20,6 +22,9 @@ pub(super) use binding_export::UiOverlayPortalBindingExport;
 pub(super) use motion_export::UiOverlayMotionOwnerExport;
 pub(super) use owner::UiOverlayCompositionOwner;
 pub(super) use owner_input::{UiOverlayOwnerExportDenial, UiOverlayOwnerExportVector};
+pub(super) use owner_lifecycle::{
+    UiOverlayCompositionOwnerLifecycle, UiOverlayOwnerBridgeDenial, UiOverlayOwnerSources,
+};
 pub(super) use portal_export::UiOverlayPortalOwnerExport;
 
 pub(crate) use dependency_index::{

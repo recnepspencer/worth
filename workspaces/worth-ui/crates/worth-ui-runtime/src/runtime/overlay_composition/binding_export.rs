@@ -1,5 +1,6 @@
 use super::planner::UiOverlayPortalBinding;
 use super::snapshot::UiOverlayApplicationGeneration;
+use crate::runtime::portal::UiPortalOverlayBindingOwnerExport;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiOverlayPortalBindingExport {
@@ -11,10 +12,39 @@ pub(crate) struct UiOverlayPortalBindingExport {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum UiOverlayBindingExportDenial {
+    GenerationMismatch,
     DuplicatePortal,
 }
 
 impl UiOverlayPortalBindingExport {
+    pub(super) fn from_owner(
+        generation: crate::facade::prepared_application_authority::
+            WorthUiPreparedApplicationGenerationIdentity,
+        source: &UiPortalOverlayBindingOwnerExport,
+    ) -> Result<Self, UiOverlayBindingExportDenial> {
+        if source.generation() != &generation {
+            return Err(UiOverlayBindingExportDenial::GenerationMismatch);
+        }
+        let rows = source
+            .rows()
+            .iter()
+            .map(|row| UiOverlayPortalBinding::new(row.declaration(), row.portal()))
+            .collect::<Vec<_>>();
+        if rows
+            .windows(2)
+            .any(|window| window[0].portal() == window[1].portal())
+        {
+            return Err(UiOverlayBindingExportDenial::DuplicatePortal);
+        }
+        Ok(Self {
+            generation: UiOverlayApplicationGeneration::from_prepared(generation),
+            runtime_surface: source.runtime_surface(),
+            portal_revision: source.portal_revision(),
+            rows: rows.into_boxed_slice(),
+        })
+    }
+
+    #[cfg(test)]
     pub(super) fn from_prepared(
         generation: crate::facade::prepared_application_authority::
             WorthUiPreparedApplicationGenerationIdentity,
