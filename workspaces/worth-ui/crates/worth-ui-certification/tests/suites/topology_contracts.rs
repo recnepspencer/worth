@@ -62,6 +62,8 @@ mod admission_topology_audit;
 mod allocation_planning_boundary_certification;
 #[path = "../application_authority_topology.rs"]
 mod application_authority_topology;
+#[path = "../appearance_owner_topology.rs"]
+mod appearance_owner_topology;
 #[path = "../declaration_residue_audit.rs"]
 mod declaration_residue_audit;
 #[path = "../declaration_topology_audit.rs"]

@@ -5,6 +5,7 @@ mod allocation_closeout_anti_bypass_audit;
 mod allocation_planning_anti_bypass_audit;
 mod allocation_planning_boundary_certification;
 mod application_authority_topology_audit;
+mod appearance_owner_topology_audit;
 mod certification_entry;
 mod declaration_public_surface_audit;
 mod declaration_residue_audit;
@@ -48,6 +49,7 @@ pub use allocation_planning_boundary_certification::{
     special_input_suite,
 };
 pub use application_authority_topology_audit::audit_application_authority_topology;
+pub use appearance_owner_topology_audit::audit_appearance_owner_export_topology;
 pub use declaration_public_surface_audit::{
     audit_declaration_facades_are_curated_and_glob_free,
     audit_runtime_declaration_surface_routes_through_curated_submodule,

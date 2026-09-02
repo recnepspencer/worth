@@ -40,24 +40,25 @@ pub(crate) struct UiPointerPresencePresentationTrigger {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPointerPresencePresentationTriggerDenial {
     EmptyChangedNeighborhood,
-    ChangedNeighborhoodCapacityExceeded,
+    ChangedNeighborhoodCapacityExceeded { observed: usize, maximum: usize },
 }
 
 impl UiPointerPresencePresentationTrigger {
     pub(crate) fn new(
         presentation: UiHostObservationPresentationBasis,
-        changed_instances: &[UiMountedInstanceIdentity],
+        changed_input: &[UiMountedInstanceIdentity],
     ) -> Result<Self, UiPointerPresencePresentationTriggerDenial> {
-        let mut changed_instances = changed_instances.to_vec();
+        admit_raw_input(changed_input)?;
+        let mut changed_instances = Vec::new();
+        for instance in changed_input.iter().copied() {
+            if changed_instances.contains(&instance) {
+                continue;
+            }
+            admit_changed_instance(&mut changed_instances, instance)?;
+        }
         changed_instances.sort_unstable();
-        changed_instances.dedup();
         if changed_instances.is_empty() {
             return Err(UiPointerPresencePresentationTriggerDenial::EmptyChangedNeighborhood);
-        }
-        if changed_instances.len() > UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
-            return Err(
-                UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded,
-            );
         }
         let geometry_candidates = changed_instances
             .iter()
@@ -75,33 +76,23 @@ impl UiPointerPresencePresentationTrigger {
         presentation: UiHostObservationPresentationBasis,
         candidates: &[UiPointerPresenceGeometryCandidate],
     ) -> Result<Self, UiPointerPresencePresentationTriggerDenial> {
+        admit_raw_input(candidates)?;
         if candidates.is_empty() {
             return Err(UiPointerPresencePresentationTriggerDenial::EmptyChangedNeighborhood);
         }
-        if candidates.len() > UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
-            return Err(
-                UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded,
-            );
-        }
-        let mut geometry_candidates = candidates.to_vec();
-        geometry_candidates.sort_unstable_by_key(|candidate| candidate.instance);
-        let mut canonical: Vec<UiPointerPresenceGeometryCandidate> =
-            Vec::with_capacity(geometry_candidates.len());
-        for candidate in geometry_candidates {
-            if let Some(previous) = canonical.last_mut() {
-                if previous.instance == candidate.instance {
-                    previous.old = previous.old.or(candidate.old);
-                    previous.new = previous.new.or(candidate.new);
-                    continue;
-                }
+        let mut canonical: Vec<UiPointerPresenceGeometryCandidate> = Vec::new();
+        for candidate in candidates.iter().copied() {
+            if let Some(previous) = canonical
+                .iter_mut()
+                .find(|previous| previous.instance == candidate.instance)
+            {
+                previous.old = previous.old.or(candidate.old);
+                previous.new = previous.new.or(candidate.new);
+            } else {
+                admit_changed_instance(&mut canonical, candidate)?;
             }
-            canonical.push(candidate);
         }
-        if canonical.len() > UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
-            return Err(
-                UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded,
-            );
-        }
+        canonical.sort_unstable_by_key(|candidate| candidate.instance);
         let changed_instances = canonical
             .iter()
             .map(|candidate| candidate.instance)
@@ -137,6 +128,36 @@ impl UiPointerPresencePresentationTrigger {
                     .is_some_and(|geometry| geometry.contains(position))
         })
     }
+}
+
+fn admit_raw_input<T>(
+    input: &[T],
+) -> Result<(), UiPointerPresencePresentationTriggerDenial> {
+    if input.len() > UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
+        return Err(
+            UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded {
+                observed: input.len(),
+                maximum: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY,
+            },
+        );
+    }
+    Ok(())
+}
+
+fn admit_changed_instance<T>(
+    changed_instances: &mut Vec<T>,
+    instance: T,
+) -> Result<(), UiPointerPresencePresentationTriggerDenial> {
+    if changed_instances.len() == UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
+        return Err(
+            UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded {
+                observed: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY + 1,
+                maximum: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY,
+            },
+        );
+    }
+    changed_instances.push(instance);
+    Ok(())
 }
 
 impl super::UiPointerPresenceOwner {
