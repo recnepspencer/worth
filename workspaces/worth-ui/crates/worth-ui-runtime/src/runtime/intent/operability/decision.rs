@@ -119,6 +119,21 @@ impl UiIntentOperabilityDecision {
     pub fn primary_cause(&self) -> Option<UiIntentInoperableCause> {
         self.causes().next()
     }
+
+    #[cfg(test)]
+    pub(crate) fn ready_for_test() -> Self {
+        Self::new(UiIntentOperabilityDecisionInput {
+            contract_identity: "appearance-state-test-intent".into(),
+            support: UiIntentSupportPosture::Supported,
+            mutability: UiIntentMutabilityPosture::Writable,
+            readiness: UiIntentReadinessPosture::Ready,
+            occupancy: UiIntentOccupancyPosture::Idle,
+            policy: UiIntentPolicyPosture::Admitted,
+            affinity: UiIntentAffinityPosture::Current,
+            confirmation: UiIntentConfirmationPosture::NotRequired,
+            selected_dependencies_visited: 0,
+        })
+    }
 }
 
 impl UiIntentOperabilityCost {

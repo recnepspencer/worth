@@ -1,10 +1,13 @@
 mod accessors;
 mod model;
+mod presentation;
 mod transition;
 
 use std::collections::BTreeMap;
 
-use worth_ui_host_contract::{UiHostPointerIdentity, UiSurfaceBindingGeneration};
+use worth_ui_host_contract::{
+    UiHostObservationSequence, UiHostPointerIdentity, UiSurfaceBindingGeneration,
+};
 
 use super::UiPointerGestureStopReason;
 use model::UiActivePointerGesture;
@@ -34,9 +37,19 @@ impl UiPointerGestureRuntimeState {
         &mut self,
         core: worth_ui_host_contract::UiHostObservationCanonicalCore,
         report: &worth_ui_host_contract::UiHostObservationReport,
+        kind: Option<crate::runtime::interaction::UiPrimaryPointerKind>,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Vec<UiPointerGestureOutcome> {
-        self.process_pointer_report(core, report, mounted)
+        self.process_pointer_report(core, report, kind, mounted)
+    }
+
+    pub(crate) fn stop_pointer_for_denial(
+        &mut self,
+        pointer: UiHostPointerIdentity,
+        sequence: UiHostObservationSequence,
+        reason: UiPointerGestureStopReason,
+    ) -> Vec<UiPointerGestureOutcome> {
+        self.stop_active_pointer_for_denial(pointer, sequence, reason)
     }
 
     pub(crate) fn snapshot(&self) -> UiPointerGestureStateSnapshot {

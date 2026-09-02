@@ -3,9 +3,9 @@ use worth_ui::facade::observation_report::{
     UiHostObservationBatch, UiHostObservationBatchInput, UiHostObservationLoss,
     UiHostObservationMountedBasis, UiHostObservationPayload, UiHostObservationPresentationBasis,
     UiHostObservationReport, UiHostObservationSequence, UiHostObservationSequenceRange,
-    UiHostObservationTimeBasis, UiHostPointerCaptureEpoch, UiHostPointerIdentity,
-    UiHostPressedPointerButtons, UiHostProtocolContract, UiHostProtocolNegotiation,
-    UiHostSurfacePosition,
+    UiHostObservationTimeBasis, UiHostPointerCaptureEpoch, UiHostPointerDeviceKind,
+    UiHostPointerIdentity, UiHostPressedPointerButtons, UiHostProtocolContract,
+    UiHostProtocolNegotiation, UiHostSurfacePosition,
 };
 use worth_ui_runtime::facade::mounted::UiSurfaceBindingGeneration;
 
@@ -23,7 +23,7 @@ pub(super) fn report(
     payload: UiHostObservationPayload,
     basis: &PresentedObservationBasis,
 ) -> UiHostObservationReport {
-    UiHostObservationReport::new(
+    let report = UiHostObservationReport::new(
         UiHostObservationSequence::new(sequence),
         UiHostObservationTimeBasis::HostMonotonicMillis(sequence),
         payload,
@@ -31,7 +31,18 @@ pub(super) fn report(
     .with_mounted_basis(UiHostObservationMountedBasis::new(
         basis.instance,
         basis.receipt,
-    ))
+    ));
+    if matches!(
+        report.payload(),
+        UiHostObservationPayload::PointerMotion { .. }
+            | UiHostObservationPayload::PointerButton { .. }
+    ) {
+        report
+            .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+            .expect("pointer fixture reports carry an explicit host kind")
+    } else {
+        report
+    }
 }
 
 pub(super) fn window_focus(

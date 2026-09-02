@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use crate::capability::CapabilitySnapshot;
 use crate::declaration::{UiAppearanceRoleAttachment, UiDeclarationIdentity};
 use crate::graph::{UiGraphSnapshot, UiRepeatedInstanceBasis};
+use crate::runtime::appearance::UiAppearanceStateConsumer;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct UiGraphAppearanceConsumerContract {
@@ -10,6 +11,7 @@ pub(super) struct UiGraphAppearanceConsumerContract {
     axis_demand: crate::runtime::appearance::UiAppearanceStateAxisDemand,
     attachments: Box<[UiGraphAppearanceAttachment]>,
     roles: Box<[worth_ui_dsl::UiAppearanceRoleDeclaration]>,
+    state_consumers: [Box<[UiAppearanceStateConsumer]>; 6],
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,6 +30,8 @@ impl UiGraphAppearanceConsumerContract {
         let mut axis_demand = crate::runtime::appearance::UiAppearanceStateAxisDemand::default();
         let mut attachments = Vec::new();
         let mut roles = Vec::new();
+        let mut state_consumers: [Vec<UiAppearanceStateConsumer>; 6] =
+            std::array::from_fn(|_| Vec::new());
         for node in snapshot.nodes() {
             let Some(attachment) = node.appearance_role_attachment() else {
                 continue;
@@ -43,6 +47,8 @@ impl UiGraphAppearanceConsumerContract {
             {
                 continue;
             }
+            let state_consumer =
+                UiAppearanceStateConsumer::from_role(node.graph_node_identity(), role);
             has_consumers = true;
             attachments.push(UiGraphAppearanceAttachment {
                 declaration: node.declaration_identity().clone(),
@@ -57,19 +63,24 @@ impl UiGraphAppearanceConsumerContract {
             {
                 roles.push(role.clone());
             }
-            for (_, partition) in role.partitions() {
-                for axis in partition.axes() {
-                    axis_demand.include(axis.axis());
-                }
-            }
+            append_state_consumer(&mut axis_demand, &mut state_consumers, &state_consumer);
         }
         attachments.sort_by(compare_attachments);
         roles.sort_by(|left, right| left.role().cmp(right.role()));
+        let state_consumers = state_consumers.map(|mut consumers| {
+            consumers.sort_by(|left, right| {
+                left.graph_node()
+                    .cmp(&right.graph_node())
+                    .then_with(|| left.role().cmp(right.role()))
+            });
+            consumers.into_boxed_slice()
+        });
         Self {
             has_consumers,
             axis_demand,
             attachments: attachments.into_boxed_slice(),
             roles: roles.into_boxed_slice(),
+            state_consumers,
         }
     }
 
@@ -81,6 +92,38 @@ impl UiGraphAppearanceConsumerContract {
 
     pub(super) const fn has_consumers(&self) -> bool {
         self.has_consumers
+    }
+
+    pub(super) fn state_consumers(
+        &self,
+        axis: worth_ui_dsl::UiAppearanceStateAxis,
+    ) -> &[UiAppearanceStateConsumer] {
+        &self.state_consumers[crate::runtime::appearance::UiAppearanceStateAxisDemand::index(axis)]
+    }
+}
+
+fn append_state_consumer(
+    axis_demand: &mut crate::runtime::appearance::UiAppearanceStateAxisDemand,
+    state_consumers: &mut [Vec<UiAppearanceStateConsumer>; 6],
+    state_consumer: &UiAppearanceStateConsumer,
+) {
+    for axis in [
+        worth_ui_dsl::UiAppearanceStateAxis::Operability,
+        worth_ui_dsl::UiAppearanceStateAxis::Focus,
+        worth_ui_dsl::UiAppearanceStateAxis::Validation,
+        worth_ui_dsl::UiAppearanceStateAxis::Selection,
+        worth_ui_dsl::UiAppearanceStateAxis::Hover,
+        worth_ui_dsl::UiAppearanceStateAxis::Pressed,
+    ] {
+        if !state_consumer.consumes(axis) {
+            continue;
+        }
+        axis_demand.include(axis);
+        let consumers = &mut state_consumers
+            [crate::runtime::appearance::UiAppearanceStateAxisDemand::index(axis)];
+        if !consumers.contains(state_consumer) {
+            consumers.push(state_consumer.clone());
+        }
     }
 }
 

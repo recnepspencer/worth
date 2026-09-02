@@ -167,6 +167,32 @@ impl super::UiIntentApplicationFactState {
     }
 }
 
+impl UiValidationAppearanceFactSnapshot {
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        graph_node: crate::graph::UiGraphNodeIdentity,
+        mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+        class: UiValidationAppearanceClass,
+    ) -> Self {
+        Self {
+            owner_revision: 1,
+            facts: Box::new([(
+                UiValidationAppearanceTarget {
+                    graph_node,
+                    mounted_instance,
+                },
+                UiValidationAppearanceFact {
+                    identity: 1,
+                    revision: 1,
+                    node_receipt,
+                    class,
+                },
+            )]),
+        }
+    }
+}
+
 impl UiAdmittedValidationAppearanceTarget {
     #[allow(
         dead_code,
@@ -241,7 +267,6 @@ impl UiValidationAppearanceFactSnapshot {
         })
     }
 
-    #[cfg(test)]
     pub(crate) fn fact_basis_for(
         &self,
         graph_node: crate::graph::UiGraphNodeIdentity,

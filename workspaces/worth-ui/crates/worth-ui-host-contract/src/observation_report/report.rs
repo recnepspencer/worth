@@ -1,12 +1,18 @@
 use super::{
     UiHostObservationFamily, UiHostObservationPayload, UiHostObservationSequence,
-    UiHostObservationTimeBasis,
+    UiHostObservationTimeBasis, UiHostPointerDeviceKind,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UiHostObservationMountedBasis {
     instance: crate::UiMountedInstanceIdentity,
     node_receipt: crate::UiMountedNodeReceiptIdentity,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiHostObservationPointerDeviceKindDenial {
+    NotPointerPayload(UiHostObservationFamily),
+    MissingForPointerPayload(UiHostObservationFamily),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -16,6 +22,7 @@ pub struct UiHostObservationReport {
     payload: UiHostObservationPayload,
     mounted_basis: Option<UiHostObservationMountedBasis>,
     input_affinity: Option<super::UiHostInputRecipientAffinityReceipt>,
+    pointer_device_kind: Option<UiHostPointerDeviceKind>,
 }
 
 impl UiHostObservationMountedBasis {
@@ -50,6 +57,7 @@ impl UiHostObservationReport {
             payload,
             mounted_basis: None,
             input_affinity: None,
+            pointer_device_kind: None,
         }
     }
 
@@ -64,6 +72,37 @@ impl UiHostObservationReport {
     ) -> Self {
         self.input_affinity = Some(affinity);
         self
+    }
+
+    pub fn with_pointer_device_kind(
+        mut self,
+        kind: UiHostPointerDeviceKind,
+    ) -> Result<Self, UiHostObservationPointerDeviceKindDenial> {
+        if !matches!(
+            self.payload,
+            UiHostObservationPayload::PointerMotion { .. }
+                | UiHostObservationPayload::PointerButton { .. }
+        ) {
+            return Err(UiHostObservationPointerDeviceKindDenial::NotPointerPayload(
+                self.family(),
+            ));
+        }
+        self.pointer_device_kind = Some(kind);
+        Ok(self)
+    }
+
+    pub fn admit_pointer_device_kind(
+        &self,
+    ) -> Result<UiHostPointerDeviceKind, UiHostObservationPointerDeviceKindDenial> {
+        match self.payload {
+            UiHostObservationPayload::PointerMotion { .. }
+            | UiHostObservationPayload::PointerButton { .. } => self.pointer_device_kind.ok_or(
+                UiHostObservationPointerDeviceKindDenial::MissingForPointerPayload(self.family()),
+            ),
+            _ => Err(UiHostObservationPointerDeviceKindDenial::NotPointerPayload(
+                self.family(),
+            )),
+        }
     }
 
     pub const fn sequence(&self) -> UiHostObservationSequence {
@@ -90,10 +129,41 @@ impl UiHostObservationReport {
         self.input_affinity
     }
 
+    pub const fn pointer_device_kind(&self) -> Option<UiHostPointerDeviceKind> {
+        self.pointer_device_kind
+    }
+
+    pub const fn effective_pointer_device_kind(&self) -> Option<UiHostPointerDeviceKind> {
+        self.pointer_device_kind
+    }
+
+    pub const fn coalescing_identity(&self) -> Option<super::UiHostObservationCoalescingIdentity> {
+        match self.payload.coalescing_identity() {
+            Some(super::UiHostObservationCoalescingIdentity::PointerMotion {
+                pointer,
+                capture_epoch,
+                pressed_buttons,
+                ..
+            }) => match self.pointer_device_kind {
+                Some(device_kind) => {
+                    Some(super::UiHostObservationCoalescingIdentity::PointerMotion {
+                        pointer,
+                        capture_epoch,
+                        pressed_buttons,
+                        device_kind: Some(device_kind),
+                    })
+                }
+                None => None,
+            },
+            other => other,
+        }
+    }
+
     pub fn encoded_len(&self) -> usize {
         24 + self.payload.encoded_len()
             + usize::from(self.mounted_basis.is_some()) * 16
             + usize::from(self.input_affinity.is_some()) * 96
+            + usize::from(self.pointer_device_kind.is_some())
     }
 
     pub fn input_affine_encoded_len(payload: &UiHostObservationPayload) -> usize {

@@ -37,6 +37,13 @@ pub(crate) enum UiThemeSwitchDenial {
 }
 
 impl UiAppearanceThemeState {
+    pub(crate) fn active_binding(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Option<&super::UiActiveThemeBinding> {
+        self.bindings.get(&surface)
+    }
+
     pub(crate) fn install_initial(
         &mut self,
         capability: super::UiThemeCapabilityReceipt,

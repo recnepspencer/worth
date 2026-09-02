@@ -23,6 +23,7 @@ struct UiPointerButtonReport<'world> {
     capture_epoch: UiHostPointerCaptureEpoch,
     button: UiHostPointerButton,
     position: worth_ui_host_contract::UiHostSurfacePosition,
+    kind: crate::runtime::interaction::UiPrimaryPointerKind,
     mounted: &'world crate::mounting::WorthUiMountedSessionState,
 }
 
@@ -31,6 +32,7 @@ impl UiPointerGestureRuntimeState {
         &mut self,
         core: UiHostObservationCanonicalCore,
         report: &worth_ui_host_contract::UiHostObservationReport,
+        kind: Option<crate::runtime::interaction::UiPrimaryPointerKind>,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Vec<UiPointerGestureOutcome> {
         match report.payload() {
@@ -41,6 +43,9 @@ impl UiPointerGestureRuntimeState {
                 transition,
                 position,
             } => {
+                let Some(kind) = kind else {
+                    return Vec::new();
+                };
                 self.bump_button_reports();
                 let input = UiPointerButtonReport {
                     core,
@@ -50,6 +55,7 @@ impl UiPointerGestureRuntimeState {
                     capture_epoch: *capture_epoch,
                     button: *button,
                     position: *position,
+                    kind,
                     mounted,
                 };
                 vec![match transition {
@@ -62,19 +68,35 @@ impl UiPointerGestureRuntimeState {
                 capture_epoch,
                 position,
                 ..
-            } => self.motion(
-                core,
-                report.sequence(),
-                *pointer,
-                *capture_epoch,
-                *position,
-                mounted,
-            ),
+            } => kind.map_or_else(Vec::new, |kind| {
+                self.motion(
+                    core,
+                    report.sequence(),
+                    *pointer,
+                    *capture_epoch,
+                    *position,
+                    kind,
+                    mounted,
+                )
+            }),
             UiHostObservationPayload::WindowFocus { focused: false, .. } => {
                 self.focus_loss(report.sequence())
             }
             _ => Vec::new(),
         }
+    }
+
+    pub(super) fn stop_active_pointer_for_denial(
+        &mut self,
+        pointer: UiHostPointerIdentity,
+        sequence: UiHostObservationSequence,
+        reason: UiPointerGestureStopReason,
+    ) -> Vec<UiPointerGestureOutcome> {
+        let Some(active) = self.active.remove(&pointer) else {
+            return Vec::new();
+        };
+        self.bump_appearance_revision();
+        vec![self.active_stop(pointer, active, sequence, reason)]
     }
 
     fn press(&mut self, input: UiPointerButtonReport<'_>) -> UiPointerGestureOutcome {
@@ -87,6 +109,7 @@ impl UiPointerGestureRuntimeState {
         if let Some(active) = self.active.remove(&input.pointer) {
             self.bump_appearance_revision();
             let reason = capture_change_reason(&active, input.capture_epoch)
+                .or_else(|| pointer_kind_change_reason(&active, input.kind))
                 .unwrap_or(UiPointerGestureStopReason::DuplicatePress);
             return self.active_stop(input.pointer, active, input.sequence, reason);
         }
@@ -110,11 +133,13 @@ impl UiPointerGestureRuntimeState {
         };
         let target_view = target.view();
         let active = UiActivePointerGesture {
+            kind: input.kind,
             capture_epoch: input.capture_epoch,
             button: input.button,
             press_sequence: input.sequence,
             press_time_basis: input.time_basis,
             target,
+            position: input.position,
             inside: true,
         };
         self.active.insert(input.pointer, active);
@@ -128,6 +153,7 @@ impl UiPointerGestureRuntimeState {
             time_basis: input.time_basis,
             position: input.position,
             target: target_view,
+            pointer_device_kind: input.kind.host_kind(),
         })
     }
 
@@ -137,6 +163,9 @@ impl UiPointerGestureRuntimeState {
         };
         self.bump_appearance_revision();
         if let Some(reason) = capture_change_reason(&active, input.capture_epoch) {
+            return self.active_stop(input.pointer, active, input.sequence, reason);
+        }
+        if let Some(reason) = pointer_kind_change_reason(&active, input.kind) {
             return self.active_stop(input.pointer, active, input.sequence, reason);
         }
         if active.button != input.button {
@@ -186,6 +215,7 @@ impl UiPointerGestureRuntimeState {
             released,
             continuity: witness.kind(),
             continuity_witness_digest: witness.digest(),
+            pointer_device_kind: active.kind.host_kind(),
         })
     }
 
@@ -196,23 +226,53 @@ impl UiPointerGestureRuntimeState {
         pointer: UiHostPointerIdentity,
         observed: UiHostPointerCaptureEpoch,
         position: worth_ui_host_contract::UiHostSurfacePosition,
+        kind: crate::runtime::interaction::UiPrimaryPointerKind,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Vec<UiPointerGestureOutcome> {
-        let Some(active) = self.active.get(&pointer) else {
+        let Some(active_capture_epoch) = self.active.get(&pointer).map(|active| {
+            (
+                active.capture_epoch,
+                (
+                    active.target.surface(),
+                    active.target.binding(),
+                    active.target.mounted_instance(),
+                    active.target.node_receipt(),
+                ),
+                active.inside,
+                active.kind,
+            )
+        }) else {
             return Vec::new();
         };
-        if active.capture_epoch == observed {
+        if active_capture_epoch.3 != kind {
+            let active = self
+                .active
+                .remove(&pointer)
+                .expect("the active pointer was just observed");
+            self.bump_appearance_revision();
+            let reason = pointer_kind_change_reason(&active, kind)
+                .expect("the observed pointer kind changed");
+            return vec![self.active_stop(pointer, active, sequence, reason)];
+        }
+        if active_capture_epoch.0 == observed {
+            let active_target = active_capture_epoch.1;
+            self.active
+                .get_mut(&pointer)
+                .expect("active gesture remains present")
+                .position = position;
             if !self.appearance_enabled {
                 return Vec::new();
             }
             let inside = resolve_presented_target(mounted, core.presentation(), position)
                 .is_ok_and(|target| {
-                    target.surface() == active.target.surface()
-                        && target.binding() == active.target.binding()
-                        && target.mounted_instance() == active.target.mounted_instance()
-                        && target.node_receipt() == active.target.node_receipt()
+                    (
+                        target.surface(),
+                        target.binding(),
+                        target.mounted_instance(),
+                        target.node_receipt(),
+                    ) == active_target
                 });
-            if inside != active.inside {
+            if inside != active_capture_epoch.2 {
                 self.active
                     .get_mut(&pointer)
                     .expect("active gesture remains present")
@@ -294,6 +354,16 @@ fn capture_change_reason(
     (active.capture_epoch != observed).then_some(UiPointerGestureStopReason::CaptureChanged {
         expected: active.capture_epoch,
         observed,
+    })
+}
+
+fn pointer_kind_change_reason(
+    active: &UiActivePointerGesture,
+    observed: crate::runtime::interaction::UiPrimaryPointerKind,
+) -> Option<UiPointerGestureStopReason> {
+    (active.kind != observed).then_some(UiPointerGestureStopReason::PointerDeviceKindChanged {
+        expected: active.kind.host_kind(),
+        observed: observed.host_kind(),
     })
 }
 

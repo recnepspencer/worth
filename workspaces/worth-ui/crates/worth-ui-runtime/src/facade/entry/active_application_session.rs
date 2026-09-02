@@ -174,6 +174,9 @@ impl WorthUiActiveApplicationSession {
             interaction: crate::runtime::interaction::UiInteractionRuntimeState::new(
                 pointer_presence_enabled,
                 pressed_appearance_enabled,
+                crate::runtime::interaction::UiPointerPresenceCapacity::from_host_observation(
+                    host_observation_capacity,
+                ),
             ),
             focus: crate::runtime::UiRuntimeServiceInstallation::from_optional(
                 service_policy_plan.focus().map(|policy| {

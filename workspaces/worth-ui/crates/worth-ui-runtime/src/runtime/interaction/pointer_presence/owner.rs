@@ -6,29 +6,32 @@ use worth_ui_host_contract::{
     UiMountedInstanceIdentity, UiSemanticSurfaceIdentity,
 };
 
+use super::inspection::primary_pointer_admitted;
 use super::{
     UiPointerPresenceAppearanceOwnerSnapshot, UiPointerPresenceAppearancePosture,
-    UiPointerPresenceClass, UiPointerPresenceTargetTransition, UiPrimaryPointerKind,
+    UiPointerPresenceCapacity, UiPointerPresenceClass, UiPointerPresenceTargetTransition,
+    UiPrimaryPointerKind,
 };
 
 pub(crate) struct UiPointerPresenceOwner {
-    pointers: BTreeMap<UiHostPointerIdentity, UiPointerPresenceRecord>,
+    capacity: UiPointerPresenceCapacity,
+    pub(super) pointers: BTreeMap<UiHostPointerIdentity, UiPointerPresenceRecord>,
     primary_by_surface: BTreeMap<UiSemanticSurfaceIdentity, UiHostPointerIdentity>,
     revision: u64,
 }
 
-struct UiPointerPresenceRecord {
-    kind: UiPrimaryPointerKind,
+pub(super) struct UiPointerPresenceRecord {
+    pub(super) kind: UiPrimaryPointerKind,
     surface: Option<UiSemanticSurfaceIdentity>,
     binding: Option<worth_ui_host_contract::UiSurfaceBindingGeneration>,
-    target: Option<UiMountedInstanceIdentity>,
+    pub(super) target: Option<UiMountedInstanceIdentity>,
     node_receipt: Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity>,
-    sequence: UiHostObservationSequence,
+    pub(super) sequence: UiHostObservationSequence,
     #[allow(
         dead_code,
         reason = "Gate 0 retains admitted pointer geometry without host emission"
     )]
-    position: UiHostSurfacePosition,
+    pub(super) position: UiHostSurfacePosition,
     #[allow(
         dead_code,
         reason = "Gate 0 retains the exact presentation basis without emission"
@@ -37,27 +40,31 @@ struct UiPointerPresenceRecord {
 }
 
 impl UiPointerPresenceOwner {
-    pub(crate) const fn new() -> Self {
+    pub(crate) const fn new(capacity: UiPointerPresenceCapacity) -> Self {
         Self {
+            capacity,
             pointers: BTreeMap::new(),
             primary_by_surface: BTreeMap::new(),
             revision: 0,
         }
     }
 
-    pub(crate) fn process_mouse_report(
+    pub(crate) fn process_pointer_report(
         &mut self,
         core: UiHostObservationCanonicalCore,
         report: &worth_ui_host_contract::UiHostObservationReport,
+        kind: UiPrimaryPointerKind,
         mounted: &crate::mounting::WorthUiMountedSessionState,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    ) -> Option<UiPointerPresenceTargetTransition> {
+    ) -> Result<Option<UiPointerPresenceTargetTransition>, super::UiPointerPresenceAdmissionDenial>
+    {
         let UiHostObservationPayload::PointerMotion {
             pointer, position, ..
         } = report.payload()
         else {
-            return None;
+            return Ok(None);
         };
+        self.admit_pointer(*pointer, kind)?;
         let resolved = crate::runtime::interaction::targeting::resolve_presented_target(
             mounted,
             core.presentation(),
@@ -72,8 +79,9 @@ impl UiPointerPresenceOwner {
                 target.node_receipt(),
             )
         });
-        self.record_mouse_target(
+        self.record_pointer_target(
             *pointer,
+            kind,
             report.sequence(),
             *position,
             core.presentation(),
@@ -82,6 +90,56 @@ impl UiPointerPresenceOwner {
         )
     }
 
+    pub(crate) fn admit_pointer_kind(
+        &self,
+        pointer: UiHostPointerIdentity,
+        kind: UiPrimaryPointerKind,
+    ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
+        self.check_pointer_kind(pointer, kind)?;
+        self.ensure_pointer_capacity(pointer)
+    }
+
+    fn admit_pointer(
+        &self,
+        pointer: UiHostPointerIdentity,
+        kind: UiPrimaryPointerKind,
+    ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
+        self.admit_pointer_kind(pointer, kind)
+    }
+
+    fn check_pointer_kind(
+        &self,
+        pointer: UiHostPointerIdentity,
+        kind: UiPrimaryPointerKind,
+    ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
+        if let Some(record) = self.pointers.get(&pointer) {
+            if record.kind != kind {
+                return Err(
+                    super::UiPointerPresenceAdmissionDenial::PointerKindChanged {
+                        pointer,
+                        prior: record.kind.host_kind(),
+                        observed: kind.host_kind(),
+                    },
+                );
+            }
+        }
+        Ok(())
+    }
+
+    fn ensure_pointer_capacity(
+        &self,
+        pointer: UiHostPointerIdentity,
+    ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
+        if !self.pointers.contains_key(&pointer) && self.pointers.len() >= self.capacity.limit() {
+            return Err(super::UiPointerPresenceAdmissionDenial::CapacityExceeded {
+                pointer,
+                limit: self.capacity.limit(),
+            });
+        }
+        Ok(())
+    }
+
+    #[cfg(test)]
     fn record_mouse_target(
         &mut self,
         pointer: UiHostPointerIdentity,
@@ -95,7 +153,36 @@ impl UiPointerPresenceOwner {
             worth_ui_host_contract::UiMountedNodeReceiptIdentity,
         )>,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    ) -> Option<UiPointerPresenceTargetTransition> {
+    ) -> Result<Option<UiPointerPresenceTargetTransition>, super::UiPointerPresenceAdmissionDenial>
+    {
+        self.record_pointer_target(
+            pointer,
+            UiPrimaryPointerKind::Mouse,
+            sequence,
+            position,
+            presentation,
+            resolved,
+            generation,
+        )
+    }
+
+    pub(crate) fn record_pointer_target(
+        &mut self,
+        pointer: UiHostPointerIdentity,
+        kind: UiPrimaryPointerKind,
+        sequence: UiHostObservationSequence,
+        position: UiHostSurfacePosition,
+        presentation: UiHostObservationPresentationBasis,
+        resolved: Option<(
+            UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiSurfaceBindingGeneration,
+            UiMountedInstanceIdentity,
+            worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+        )>,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Result<Option<UiPointerPresenceTargetTransition>, super::UiPointerPresenceAdmissionDenial>
+    {
+        self.admit_pointer(pointer, kind)?;
         let prior = self.pointers.get(&pointer);
         let prior_surface = prior.and_then(|record| record.surface);
         let surface = resolved.as_ref().map(|target| target.0).or(prior_surface);
@@ -112,19 +199,25 @@ impl UiPointerPresenceOwner {
                 || record.target != target
                 || record.binding != binding
                 || record.node_receipt != node_receipt
-                || record.kind != UiPrimaryPointerKind::Mouse
+                || record.kind != kind
         });
-        let primary_changed = prior_surface.is_some_and(|prior_surface_identity| {
-            Some(prior_surface_identity) != surface
+        let prior_was_primary = prior_surface.is_some_and(|prior_surface_identity| {
+            prior.is_some_and(|record| primary_pointer_admitted(record.kind))
                 && self.primary_by_surface.get(&prior_surface_identity) == Some(&pointer)
-        }) || surface.is_some_and(|current_surface| {
-            self.primary_by_surface.get(&current_surface) != Some(&pointer)
         });
-        self.reassign_primary(pointer, prior_surface, surface);
+        let current_is_primary = primary_pointer_admitted(kind);
+        let primary_changed = prior_was_primary
+            && (Some(prior_surface.expect("a primary pointer has a surface")) != surface
+                || !current_is_primary)
+            || current_is_primary
+                && surface.is_some_and(|current_surface| {
+                    self.primary_by_surface.get(&current_surface) != Some(&pointer)
+                });
+        self.reassign_primary(pointer, prior_surface, surface, kind);
         self.pointers.insert(
             pointer,
             UiPointerPresenceRecord {
-                kind: UiPrimaryPointerKind::Mouse,
+                kind,
                 surface,
                 binding,
                 target,
@@ -138,7 +231,7 @@ impl UiPointerPresenceOwner {
         if changed {
             self.bump_revision();
         }
-        changed.then_some(UiPointerPresenceTargetTransition {
+        Ok(changed.then_some(UiPointerPresenceTargetTransition {
             generation: generation.clone(),
             pointer,
             previous_surface: prior_surface,
@@ -150,7 +243,7 @@ impl UiPointerPresenceOwner {
             owner_revision: self.revision,
             position,
             presentation,
-        })
+        }))
     }
 
     fn reassign_primary(
@@ -158,15 +251,19 @@ impl UiPointerPresenceOwner {
         pointer: UiHostPointerIdentity,
         prior: Option<UiSemanticSurfaceIdentity>,
         current: Option<UiSemanticSurfaceIdentity>,
+        kind: UiPrimaryPointerKind,
     ) {
-        if prior != current {
+        if prior != current || !primary_pointer_admitted(kind) {
             if let Some(prior) = prior {
                 if self.primary_by_surface.get(&prior) == Some(&pointer) {
                     self.primary_by_surface.remove(&prior);
                 }
             }
         }
-        if let Some(current) = current {
+        if primary_pointer_admitted(kind) {
+            let Some(current) = current else {
+                return;
+            };
             self.primary_by_surface.insert(current, pointer);
         }
     }
@@ -223,6 +320,31 @@ impl UiPointerPresenceOwner {
         self.bump_revision();
     }
 
+    pub(crate) fn retire_pointer(&mut self, pointer: UiHostPointerIdentity) -> bool {
+        let Some(record) = self.pointers.remove(&pointer) else {
+            return false;
+        };
+        if let Some(surface) = record.surface {
+            if self.primary_by_surface.get(&surface) == Some(&pointer) {
+                self.primary_by_surface.remove(&surface);
+            }
+        }
+        self.bump_revision();
+        true
+    }
+
+    pub(crate) fn pointer_count(&self) -> usize {
+        self.pointers.len()
+    }
+
+    pub(crate) fn primary_count(&self) -> usize {
+        self.primary_by_surface.len()
+    }
+
+    pub(crate) const fn capacity_limit(&self) -> usize {
+        self.capacity.limit()
+    }
+
     fn bump_revision(&mut self) {
         self.revision = self
             .revision
@@ -237,6 +359,7 @@ impl UiPointerPresenceOwner {
             .map(|(pointer, record)| UiPointerPresenceAppearancePosture {
                 pointer: *pointer,
                 kind: record.kind,
+                presentation: record.presentation,
                 target: record.target,
                 node_receipt: record.node_receipt,
                 class: if record.target.is_some() {
@@ -261,6 +384,9 @@ impl UiPointerPresenceOwner {
     }
 }
 
+#[cfg(test)]
+#[path = "capacity_tests.rs"]
+mod capacity_tests;
 #[cfg(test)]
 #[path = "owner_tests.rs"]
 mod tests;

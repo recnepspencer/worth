@@ -12,6 +12,7 @@ use super::{
 };
 
 mod appearance_consumer_contract;
+mod appearance_state;
 mod consumer;
 mod subsystem;
 

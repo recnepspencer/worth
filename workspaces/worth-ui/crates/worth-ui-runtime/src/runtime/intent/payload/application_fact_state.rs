@@ -10,12 +10,11 @@ use crate::declaration::{
 
 #[path = "application_fact_state/validation.rs"]
 mod validation;
-pub(crate) use validation::UiValidationAppearanceFactSnapshot;
-#[cfg(test)]
+#[cfg(any(test, feature = "certification-support"))]
 pub(crate) use validation::{
-    UiAdmittedValidationAppearanceTarget, UiValidationAppearanceClass,
-    UiValidationAppearanceFactDenial,
+    UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial,
 };
+pub(crate) use validation::{UiValidationAppearanceClass, UiValidationAppearanceFactSnapshot};
 
 pub(crate) struct UiIntentApplicationFactState {
     slots_by_identity: BTreeMap<Arc<str>, crate::declaration::UiIntentApplicationFactSlot>,

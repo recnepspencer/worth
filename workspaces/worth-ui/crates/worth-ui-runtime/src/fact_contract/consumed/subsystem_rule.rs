@@ -16,6 +16,10 @@ impl UiSubsystemConsumedFactRule {
         UiProducedFactFamily::HostDeviceScale,
         UiAspectFamily::Appearance,
     )];
+    const POINTER_PRESENCE_TARGET: [Self; 1] = [Self::new(
+        UiProducedFactFamily::PointerPresenceTarget,
+        UiAspectFamily::Appearance,
+    )];
     const MEASUREMENT: [Self; 1] = [Self::new(
         UiProducedFactFamily::Measurement,
         UiAspectFamily::Layout,
@@ -77,6 +81,7 @@ impl UiSubsystemConsumedFactRule {
         Self::HOST_VIEWPORT
             .into_iter()
             .chain(Self::HOST_DEVICE_SCALE)
+            .chain(Self::POINTER_PRESENCE_TARGET)
             .chain(Self::MEASUREMENT)
             .chain(Self::QUERY)
             .chain(Self::COMMITTED_SCROLL_EXTENT)
@@ -92,7 +97,7 @@ impl UiSubsystemConsumedFactRule {
             UiProducedFactFamily::AuthoredSource => &[],
             UiProducedFactFamily::HostViewport => &Self::HOST_VIEWPORT,
             UiProducedFactFamily::HostDeviceScale => &Self::HOST_DEVICE_SCALE,
-            UiProducedFactFamily::PointerPresenceTarget => &[],
+            UiProducedFactFamily::PointerPresenceTarget => &Self::POINTER_PRESENCE_TARGET,
             UiProducedFactFamily::Measurement => &Self::MEASUREMENT,
             UiProducedFactFamily::Query => &Self::QUERY,
             UiProducedFactFamily::IntentPosture => &[],

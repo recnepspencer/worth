@@ -35,6 +35,7 @@ worth-ui-host-headless = { path = "../worth-ui-host-headless", optional = true }
 worth-ui-host-native = { path = "../worth-ui-host-native" }
 
 [dev-dependencies]
+winit = { workspace = true }
 worth-ui-host-contract = { path = "../worth-ui-host-contract" }
 worth-ui-host-headless = { path = "../worth-ui-host-headless" }
 worth-ui-dsl = { path = "../worth-ui-dsl", features = ["certification-support"] }

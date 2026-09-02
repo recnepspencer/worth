@@ -27,6 +27,7 @@ fn every_non_authored_fact_family_has_an_explicit_subsystem_rule() {
     for family in [
         UiProducedFactFamily::HostViewport,
         UiProducedFactFamily::HostDeviceScale,
+        UiProducedFactFamily::PointerPresenceTarget,
         UiProducedFactFamily::Measurement,
         UiProducedFactFamily::Query,
         UiProducedFactFamily::CommittedScrollExtent,

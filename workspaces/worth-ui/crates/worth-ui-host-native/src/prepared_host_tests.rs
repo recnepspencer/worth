@@ -6,10 +6,11 @@ use winit::event::{DeviceId, WindowEvent};
 use worth_ui_host_contract::{
     UiHostApplicationGeneration, UiHostInputDraftSessionIdentity, UiHostInputRecipientBindingInput,
     UiHostInputRecipientBindingReceipt, UiHostInputRecipientFamily, UiHostInputRecipientGeneration,
-    UiHostObservationPayload, UiHostObservationPresentationBasis, UiHostPresentationEpoch,
-    UiHostProtocolContract, UiHostProtocolNegotiation, UiMountedFrameIdentity,
-    UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer, UiSemanticSurfaceIdentity,
-    UiSurfaceBindingGeneration, UiTextProfileGeneration, WorthUiHostMechanicsAdapter,
+    UiHostObservationPayload, UiHostObservationPresentationBasis, UiHostPointerDeviceKind,
+    UiHostPresentationEpoch, UiHostProtocolContract, UiHostProtocolNegotiation,
+    UiMountedFrameIdentity, UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer,
+    UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration, UiTextProfileGeneration,
+    WorthUiHostMechanicsAdapter,
 };
 
 use super::{
@@ -100,6 +101,10 @@ fn prepared_mechanics_delegates_retained_observation_drain() {
         batches[0].reports()[0].payload(),
         UiHostObservationPayload::PointerMotion { .. }
     ));
+    assert_eq!(
+        batches[0].reports()[0].pointer_device_kind(),
+        Some(UiHostPointerDeviceKind::Mouse)
+    );
 
     let recipient = input_recipient(host_session, basis);
     assert!(prepared.install_mechanical_input_recipient(recipient));

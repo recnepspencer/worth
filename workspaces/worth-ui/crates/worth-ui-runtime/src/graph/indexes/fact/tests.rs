@@ -7,6 +7,8 @@ use worth_ui_dsl::{
 
 #[path = "tests/appearance_attachment.rs"]
 mod appearance_attachment;
+#[path = "tests/appearance_state.rs"]
+mod appearance_state;
 
 use crate::capability::{
     ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
