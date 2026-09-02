@@ -6,6 +6,7 @@ use super::{
 pub(super) struct WorthUiPresentedApplicationReplacement<'session> {
     session: &'session mut WorthUiActiveApplicationSession,
     application: Box<WorthUiPreparedApplicationActivation>,
+    lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
     mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
     mounted_receipt: crate::mounting::UiMountedFramePublicationReceipt,
     focus: Option<crate::runtime::focus::UiPreparedFocusMountedReconciliation>,
@@ -17,6 +18,7 @@ impl<'session> WorthUiPresentedApplicationReplacement<'session> {
     pub(super) fn new(
         session: &'session mut WorthUiActiveApplicationSession,
         application: Box<WorthUiPreparedApplicationActivation>,
+        lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
         mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
         mounted_receipt: crate::mounting::UiMountedFramePublicationReceipt,
     ) -> Self {
@@ -49,6 +51,7 @@ impl<'session> WorthUiPresentedApplicationReplacement<'session> {
         Self {
             session,
             application,
+            lifecycle,
             mounted_successor,
             mounted_receipt,
             focus,
@@ -61,6 +64,7 @@ impl<'session> WorthUiPresentedApplicationReplacement<'session> {
         let application = self.session.commit_application_activation(
             self.application,
             self.mounted_successor,
+            self.lifecycle,
             self.scroll,
             self.selection,
         );

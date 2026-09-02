@@ -9,12 +9,14 @@ pub(super) struct WorthUiMountedReplacementAdmissionInput<'session> {
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
     pub(super) frame: crate::mounting::UiPreparedMountedFrame,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
 }
 
 pub(super) struct WorthUiAdmittedMountedReplacement<'session> {
     pub(super) session: &'session mut WorthUiActiveApplicationSession,
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted: crate::mounting::UiMountedGraphReplacementAdmission,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
 }
 
 pub(super) fn prepare_replacement_presentation(
@@ -30,6 +32,7 @@ pub(super) fn prepare_replacement_presentation(
         application,
         mounted_successor,
         frame,
+        lifecycle,
     } = input;
     let prepared = session.mounted.prepare_graph_replacement_presentation(
         mounted_successor,
@@ -44,6 +47,7 @@ pub(super) fn prepare_replacement_presentation(
                 session,
                 application,
                 mounted,
+                lifecycle,
             })
         }
         crate::mounting::UiMountedGraphReplacementPreparation::AdmissionDenied {
@@ -65,6 +69,7 @@ pub(super) fn prepare_replacement_presentation(
                             application,
                             mounted_successor: successor,
                             frame,
+                            lifecycle,
                         }),
                     },
                 ),
@@ -89,6 +94,7 @@ pub(super) fn prepare_replacement_presentation(
                             application,
                             mounted_successor: successor,
                             frame,
+                            lifecycle,
                         }),
                     },
                 ),

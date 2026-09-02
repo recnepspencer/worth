@@ -17,6 +17,7 @@ pub(crate) use declaration::{
     UiMotionPropertyChannel, UiMotionPropertyChannels, UiMotionReducedMotionPolicy,
 };
 pub(crate) use produced_fact::{UiMotionProducedFact, UiMotionProducedFactKind};
+pub(crate) use rebind::UiPreparedMotionRebind;
 pub(crate) use receipt::{
     UiMotionSemanticGeometry, UiMotionTargetIdentity, UiMotionTransitionRequest,
     UiMotionTransitionRequestDenial,

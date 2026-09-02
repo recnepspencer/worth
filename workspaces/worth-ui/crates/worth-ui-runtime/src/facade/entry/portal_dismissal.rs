@@ -16,6 +16,20 @@ pub(crate) enum UiPortalDismissalPublicationOutcome<'session> {
     Stopped(UiPortalDismissalPublicationStop),
 }
 
+pub(in crate::facade::entry) fn finish_portal_service_proposal(
+    session: &mut WorthUiActiveApplicationSession,
+    proposal: crate::runtime::session::UiStagedPortalProposalTransaction,
+    outcome: crate::mounting::UiMountedFrameOutcome,
+) -> UiPortalDismissalPublicationOutcome<'_> {
+    completion::finish(
+        UiPortalDismissalAdmitted {
+            session,
+            proposal: Some(proposal),
+        },
+        outcome,
+    )
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPortalDismissalPublicationStop {
     IdentityExhausted,

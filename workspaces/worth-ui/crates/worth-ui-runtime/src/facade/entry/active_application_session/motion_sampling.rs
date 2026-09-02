@@ -55,7 +55,7 @@ impl super::WorthUiActiveApplicationSession {
             .as_mut()
             .expect("rebound Portal exit retention retains Motion installation")
             .release_exit_retention(motion));
-        assert!(self.mounted.retire_terminal_motion_sample(motion.track()));
+        self.retire_rebound_motion_sample(motion.track());
     }
 
     pub(in crate::facade::entry) fn release_rebound_motion_retention(
@@ -73,6 +73,18 @@ impl super::WorthUiActiveApplicationSession {
             .as_mut()
             .expect("rebound exit retention retains Motion installation")
             .release_exit_retention(retention));
+    }
+
+    pub(in crate::facade::entry) fn retire_rebound_motion_sample(
+        &mut self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) {
+        if !self.mounted.retire_rebound_motion_sample(track) {
+            assert!(
+                !self.mounted.contains_motion_track(track),
+                "rebound Motion terminal left an active or queued mounted sample"
+            );
+        }
     }
 
     pub(in crate::facade::entry) fn prepare_motion_tick(

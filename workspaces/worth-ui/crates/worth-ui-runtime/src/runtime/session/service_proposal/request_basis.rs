@@ -2,12 +2,17 @@ use core::num::NonZeroU64;
 
 #[path = "request_basis/admitted_intent.rs"]
 mod admitted_intent;
+#[cfg(any(test, feature = "certification-support"))]
+#[path = "request_basis/portal_certification.rs"]
+mod portal_certification;
 #[path = "request_basis/portal_dismissal.rs"]
 mod portal_dismissal;
 #[path = "request_basis/portal_exit_terminal.rs"]
 mod portal_exit_terminal;
 
 pub(in crate::runtime) use admitted_intent::UiAdmittedIntentServiceRequestAuthority;
+#[cfg(any(test, feature = "certification-support"))]
+pub(in crate::runtime) use portal_certification::UiPortalCertificationServiceRequestAuthority;
 pub(in crate::runtime) use portal_dismissal::UiPortalDismissalServiceRequestAuthority;
 pub(in crate::runtime) use portal_exit_terminal::UiPortalExitTerminalServiceRequestAuthority;
 

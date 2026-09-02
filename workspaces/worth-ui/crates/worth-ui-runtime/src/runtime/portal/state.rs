@@ -157,6 +157,13 @@ impl UiPortalRuntimeState {
             .count()
     }
 
+    pub(crate) fn exit_retention_count(&self) -> usize {
+        self.records
+            .values()
+            .filter(|record| record.exit_retention.is_some())
+            .count()
+    }
+
     pub(crate) const fn admitted_requests(&self) -> u64 {
         self.admitted_requests
     }

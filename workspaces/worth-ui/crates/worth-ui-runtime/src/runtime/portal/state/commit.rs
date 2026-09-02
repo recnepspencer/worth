@@ -111,6 +111,10 @@ impl super::UiPortalRuntimeState {
             .map(|record| record.stack_ordinal);
         let request = transition.request();
         let posture = posture.unwrap_or(transition.staged_posture());
+        assert!(
+            posture != super::super::UiPortalLifecyclePosture::Closing || exit_retention.is_some(),
+            "a Closing Portal row must retain its terminal receipt"
+        );
         let dismissal = match request.operation() {
             super::super::request::UiPortalServiceOperation::Open => None,
             super::super::request::UiPortalServiceOperation::Close(cause) => Some(cause),
@@ -125,13 +129,14 @@ impl super::UiPortalRuntimeState {
                     .records
                     .remove(&descendant)
                     .expect("prepared descendant closure retains its portal record");
-                record.posture = posture;
+                assert!(
+                    record.exit_retention.is_none(),
+                    "parent close cannot clear a descendant exit receipt"
+                );
+                record.posture = super::super::UiPortalLifecyclePosture::Closed;
                 record.dismissal = Some(super::super::UiPortalDismissalCause::ParentClosed);
-                record.exit_retention = None;
-                if posture == super::super::UiPortalLifecyclePosture::Closed {
-                    record.placement = None;
-                    self.stack_order.remove(record.stack_ordinal, descendant);
-                }
+                record.placement = None;
+                self.stack_order.remove(record.stack_ordinal, descendant);
                 self.retain_record(descendant, record);
             }
         }

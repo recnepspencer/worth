@@ -140,7 +140,8 @@ impl WorthUiActiveApplicationSession {
                         | crate::runtime::portal::UiPortalServiceTransitionDenial::StackOrdinalConflict
                         | crate::runtime::portal::UiPortalServiceTransitionDenial::PortalNotLive
                         | crate::runtime::portal::UiPortalServiceTransitionDenial::PortalSurfaceMismatch
-                        | crate::runtime::portal::UiPortalServiceTransitionDenial::ReplacementNotTopmost,
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::ReplacementNotTopmost
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::DescendantExitRetentionPending,
                     ) => {
                         return self.stop_intent_consequence(
                             handoff,
@@ -201,7 +202,8 @@ impl WorthUiActiveApplicationSession {
                     | crate::runtime::portal::UiPortalServiceTransitionDenial::PortalNotLive
                     | crate::runtime::portal::UiPortalServiceTransitionDenial::PortalSurfaceMismatch
                     | crate::runtime::portal::UiPortalServiceTransitionDenial::ReplacementNotTopmost
-                    | crate::runtime::portal::UiPortalServiceTransitionDenial::StackOrdinalConflict,
+                    | crate::runtime::portal::UiPortalServiceTransitionDenial::StackOrdinalConflict
+                    | crate::runtime::portal::UiPortalServiceTransitionDenial::DescendantExitRetentionPending,
                 )) => unreachable!("portal dismissal targets one current live row"),
                 Some(Err(crate::runtime::portal::UiPortalServiceTransitionDenial::Placement(
                     denial,

@@ -51,16 +51,28 @@ impl super::UiPortalRuntimeState {
             }
             (super::super::request::UiPortalServiceOperation::Close(_), _) => None,
         };
-        let closed_descendants = match request.operation() {
-            super::super::request::UiPortalServiceOperation::Open => Box::default(),
-            super::super::request::UiPortalServiceOperation::Close(_) => self
+        let closed_descendants: Vec<_> = match (request.operation(), disposition) {
+            (super::super::request::UiPortalServiceOperation::Open, _) => Vec::new(),
+            (
+                super::super::request::UiPortalServiceOperation::Close(_),
+                super::super::UiPortalServiceDisposition::Idempotent,
+            ) => Vec::new(),
+            (super::super::request::UiPortalServiceOperation::Close(_), _) => self
                 .records
                 .keys()
                 .copied()
                 .filter(|portal| self.portal_descends_from(*portal, request.portal()))
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
+                .collect::<Vec<_>>(),
         };
+        if closed_descendants.iter().any(|portal| {
+            self.records
+                .get(portal)
+                .is_some_and(|record| record.exit_retention.is_some())
+        }) {
+            return Err(
+                super::super::UiPortalServiceTransitionDenial::DescendantExitRetentionPending,
+            );
+        }
         Ok(super::super::UiPreparedPortalServiceTransition::new(
             request,
             self.revision,
@@ -69,7 +81,7 @@ impl super::UiPortalRuntimeState {
             disposition,
             placement,
             staged_stack_ordinal,
-            closed_descendants,
+            closed_descendants.into_boxed_slice(),
         ))
     }
 

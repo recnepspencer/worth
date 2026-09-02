@@ -19,6 +19,10 @@ use crate::intent::{
     },
 };
 
+#[path = "portal_service/application_replacement_lifecycle.rs"]
+mod application_replacement_lifecycle;
+#[path = "portal_service/application_replacement_recovery.rs"]
+mod application_replacement_recovery;
 #[path = "portal_service/content_rebind_reconstruction.rs"]
 mod content_rebind_reconstruction;
 #[path = "portal_service/drop_cleanup.rs"]

@@ -7,6 +7,7 @@ pub(crate) enum UiPortalServiceTransitionDenial {
     PortalSurfaceMismatch,
     ReplacementNotTopmost,
     StackOrdinalConflict,
+    DescendantExitRetentionPending,
     StalePlan,
     Placement(super::UiPortalPlacementDenial),
 }

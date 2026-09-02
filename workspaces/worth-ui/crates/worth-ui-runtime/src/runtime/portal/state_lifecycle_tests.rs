@@ -142,6 +142,59 @@ fn nested_and_sibling_rows_are_sealed_in_one_total_order() {
 }
 
 #[test]
+fn parent_close_denies_before_effects_when_a_descendant_retains_exit() {
+    let mut state = state();
+    let parent = portal(7_020, 8_020);
+    let child = portal(7_021, 8_021);
+    let parent_surface = open_live(&mut state, parent, 9_020);
+    let geometry = presented_geometry(15);
+    let child_open = UiPortalServiceRequest::open_nested(
+        child,
+        idempotency(9_021),
+        geometry,
+        viewport_bounds(geometry),
+        semantic_surface(),
+        parent,
+        UiPortalInputShielding::ContentBounds,
+    );
+    let child_surface = child_open.semantic_surface();
+    state
+        .commit_published(state.prepare(child_open).unwrap())
+        .unwrap();
+    let child_close = state
+        .prepare(UiPortalServiceRequest::close(
+            child,
+            idempotency(9_022),
+            super::UiPortalDismissalCause::Escape,
+            child_surface,
+        ))
+        .unwrap();
+    let (_, child_retention) = state
+        .commit_published_with_exit_retention(child_close, true)
+        .unwrap();
+    let child_retention = child_retention.expect("child close retains its exact receipt");
+    let before = state.stack_snapshot();
+
+    assert!(matches!(
+        state.prepare(UiPortalServiceRequest::close(
+            parent,
+            idempotency(9_023),
+            super::UiPortalDismissalCause::Escape,
+            parent_surface,
+        )),
+        Err(UiPortalServiceTransitionDenial::DescendantExitRetentionPending)
+    ));
+    assert_eq!(state.stack_snapshot(), before);
+    assert_eq!(
+        state.posture(child),
+        super::UiPortalLifecyclePosture::Closing
+    );
+    assert!(state
+        .prepare_exit_terminal(child_retention, idempotency(9_024))
+        .is_ok());
+}
+
+#[test]
 fn reconstructed_order_index_produces_the_same_sealed_snapshot() {
     let mut state = state();
     let first = portal(710, 810);
@@ -237,45 +290,6 @@ fn ordinal_issuer_survives_portal_installation_replacement() {
 }
 
 #[test]
-fn rebind_removes_missing_owners_and_their_portal_owned_descendants() {
-    let mut state = state();
-    let parent = portal(716, 816);
-    let child = portal(717, 817);
-    let sibling = portal(718, 818);
-    open_live(&mut state, parent, 921);
-    let geometry = presented_geometry(14);
-    let child_request = UiPortalServiceRequest::open_nested(
-        child,
-        idempotency(922),
-        geometry,
-        viewport_bounds(geometry),
-        semantic_surface(),
-        parent,
-        UiPortalInputShielding::ContentBounds,
-    );
-    state
-        .commit_published(state.prepare(child_request).unwrap())
-        .unwrap();
-    open_live(&mut state, sibling, 923);
-    let before_revision = state.revision();
-
-    let removed = state.remove_rebound_portals(&successor_view(&[sibling]));
-
-    assert!(removed.contains(&parent));
-    assert!(removed.contains(&child));
-    assert!(!removed.contains(&sibling));
-    assert_eq!(state.active_count(), 1);
-    assert_eq!(state.stack_snapshot().rows()[0].portal(), sibling);
-    assert_eq!(state.revision(), before_revision + 1);
-
-    let revision = state.revision();
-    assert!(state
-        .remove_rebound_portals(&successor_view(&[sibling]))
-        .is_empty());
-    assert_eq!(state.revision(), revision);
-}
-
-#[test]
 fn wrong_surface_close_is_denied_without_touching_current_portal_truth() {
     let mut state = state();
     let portal = portal(719, 819);
@@ -324,24 +338,4 @@ fn moved_open(
         Some(viewport_bounds(geometry)),
         surface,
     )
-}
-
-fn successor_view(portals: &[UiPortalIdentity]) -> crate::mounting::UiMountedIdentityView {
-    let instances = portals
-        .iter()
-        .map(|portal| {
-            let basis = crate::mounting::UiMountedIdentityBasis::new(
-                portal.owner().graph_node(),
-                crate::graph::UiRepeatedInstanceBasis::unavailable(),
-                semantic_surface(),
-                worth_ui_host_contract::UiMountIncarnation::mint_unbound()
-                    .expect("rebind fixture mount incarnation"),
-            );
-            crate::mounting::UiMountedInstanceIdentityView::new(
-                portal.owner().mounted_instance_identity(),
-                basis,
-            )
-        })
-        .collect();
-    crate::mounting::UiMountedIdentityView::new(instances, Vec::new(), None, Vec::new())
 }

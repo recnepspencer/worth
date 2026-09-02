@@ -146,6 +146,25 @@ where
     (app, facts)
 }
 
+pub(in crate::intent) fn portal_owner_removal_input(
+    facts: &OperabilityFacts,
+) -> WorthUiRustAuthoredArtifactInput {
+    let route = WorthUiIntentInteractionRoute::product(
+        WorthUiIntentInteractionFamily::Activate,
+        PRIMARY_DECLARATION,
+    );
+    WorthUiRustAuthoredArtifactInput::from_modules([WorthUiRustAuthoredArtifactInputModule::new(
+        "app/main.wui",
+    )
+    .with_component(PAINT_ONLY)
+    .with_control_routes(HIT_ONLY, [route.clone()])
+    .with_component(NEITHER)
+    .with_surface(SURFACE)
+    .with_token(PAINT_ONLY_TOKEN, "theme.visual_identity.red")
+    .with_token(PAINT_AND_HIT_TOKEN, "theme.visual_identity.purple")
+    .with_intent_declaration(declaration(facts))])
+}
+
 pub(in crate::intent) fn build_open_portal_projection_application_with_host<Host>(
     host: Host,
     registration: worth_ui::facade::query_binding::UiScalarProjectionRegistration,

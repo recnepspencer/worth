@@ -19,7 +19,9 @@ mod motion_sampling;
 #[path = "active_application_session/portal_exit_publication.rs"]
 mod portal_exit_publication;
 pub(in crate::facade::entry) use portal_exit_publication::UiPortalExitTerminalProgress;
-pub(in crate::facade::entry) use portal_exit_retention::UiPortalExitTerminalPending;
+pub(in crate::facade::entry) use portal_exit_retention::{
+    UiPortalExitTerminalPending, UiPortalExitTerminalPendingKind,
+};
 #[cfg(any(test, feature = "certification-support"))]
 #[path = "active_application_session/plan_observation.rs"]
 mod plan_observation;
@@ -73,7 +75,7 @@ pub struct WorthUiActiveApplicationSession {
         crate::runtime::command_routing::UiCommandRoutingRuntimeState,
     >,
     pub(super) ime_composing: bool,
-    portal_exit_retention: portal_exit_retention::UiPortalExitRetentionCoordinator,
+    pub(super) portal_exit_retention: portal_exit_retention::UiPortalExitRetentionCoordinator,
     pub(super) intent_evidence: crate::inspection::intent::UiIntentEvidenceRegistry,
     pub(super) intent_application_facts: crate::runtime::intent::UiIntentApplicationFactState,
     pub(super) intent_execution: crate::runtime::intent_execution::UiIntentExecutionState,

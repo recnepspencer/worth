@@ -107,8 +107,8 @@ pub use mounted_frame_execution::{
 pub use planning::planning_pair_for_certification_suite;
 pub use portal_observation::{
     UiPortalDismissalCertificationOutcome, UiPortalDismissalCertificationStop,
-    UiPortalExitTerminalCertificationOutcome, UiPortalRuntimeCertificationSnapshot,
-    WorthUiPortalRuntimeCertificationExt,
+    UiPortalExitTerminalCertificationOutcome, UiPortalNestedCertificationOutcome,
+    UiPortalRuntimeCertificationSnapshot, WorthUiPortalRuntimeCertificationExt,
 };
 pub use presentation_async_installation::{
     WorthUiPresentationAsyncInstallationCertificationDenial,

@@ -8,18 +8,21 @@ pub struct WorthUiPreparedMountedApplicationReplacement<'session> {
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
     pub(super) frame: crate::mounting::UiPreparedMountedFrame,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
 }
 
 pub struct WorthUiMountedApplicationReplacementInFlight<'session> {
     pub(super) session: &'session mut WorthUiActiveApplicationSession,
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted: crate::mounting::UiMountedGraphReplacementInFlight,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
 }
 
 pub struct WorthUiMountedApplicationReplacementIndeterminate<'session> {
     pub(super) session: &'session mut WorthUiActiveApplicationSession,
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) frame: crate::mounting::UiMountedIndeterminateFrame,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
 }
 
 pub struct WorthUiMountedReplacementAdmissionDenial<'session> {
@@ -42,12 +45,14 @@ pub(crate) struct WorthUiDetachedPreparedMountedApplicationReplacement {
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
     pub(super) frame: crate::mounting::UiPreparedMountedFrame,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
 }
 
 pub(crate) struct WorthUiDetachedMountedApplicationReplacementInFlight {
     pub(super) session_identity: crate::facade::WorthUiActiveApplicationSessionIdentity,
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted: crate::mounting::UiMountedGraphReplacementInFlight,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
 }
 
 pub struct WorthUiMountedReplacementHostRejection<'session> {
@@ -85,8 +90,10 @@ impl<'session> WorthUiMountedApplicationReplacementIndeterminate<'session> {
             session,
             application,
             frame,
+            lifecycle,
         } = *self;
         drop((application, frame));
+        drop(lifecycle);
         session
     }
 }

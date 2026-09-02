@@ -67,6 +67,8 @@ mod native_intent_terminal_posture;
 mod native_managed_rebind;
 mod native_observation_settlement;
 pub(crate) mod portal_dismissal;
+#[cfg(any(test, feature = "certification-support"))]
+mod portal_test_access;
 pub(crate) use native_observation_settlement::UiNativeObservationIngressSettlement;
 #[cfg(test)]
 mod native_observation_tests;
@@ -113,9 +115,9 @@ pub use application_replacement::{
     WorthUiMountedApplicationReplacementIndeterminate, WorthUiMountedApplicationReplacementOutcome,
     WorthUiMountedReplacementAdmissionDenial, WorthUiMountedReplacementCompletionDenial,
     WorthUiMountedReplacementPreparationOutcome, WorthUiMountedReplacementRetentionDenial,
-    WorthUiPendingApplicationCutover, WorthUiPreparedApplicationReplacement,
-    WorthUiPreparedMountedApplicationReplacement, WorthUiReplacementCandidateSummary,
-    WorthUiReplacementPlannedCostEnvelope,
+    WorthUiPendingApplicationCutover, WorthUiPortalExitRetentionPendingKind,
+    WorthUiPreparedApplicationReplacement, WorthUiPreparedMountedApplicationReplacement,
+    WorthUiReplacementCandidateSummary, WorthUiReplacementPlannedCostEnvelope,
 };
 pub(crate) use application_replacement::{
     WorthUiDetachedMountedApplicationReplacementInFlight,

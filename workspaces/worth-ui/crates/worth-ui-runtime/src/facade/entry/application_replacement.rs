@@ -11,8 +11,11 @@ mod candidate_pipeline;
 mod candidate_scroll_geometry;
 mod cutover;
 mod cutover_generation;
+#[cfg(test)]
+mod cutover_test_access;
 mod mounted;
 mod mounted_frame;
+mod portal_lifecycle;
 mod prepared_activation_access;
 mod publication_observation;
 mod rebind_preparation;
@@ -109,6 +112,13 @@ pub struct WorthUiApplicationCutoverReceipt {
     intent_evidence: worth_ui_inspection::UiIntentEvidenceRetirementReport,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthUiPortalExitRetentionPendingKind {
+    InFlight,
+    Indeterminate,
+    Reconstruction,
+}
+
 enum WorthUiApplicationCutoverTransition {
     Prepared(crate::runtime::WorthUiPreparedApplicationPlanSwap),
     Committed {
@@ -183,6 +193,10 @@ pub enum WorthUiApplicationCutoverDenial {
     MountedIdentity(crate::mounting::UiMountedIdentityDenial),
     MountedFrame(crate::mounting::UiMountedFramePreparationDenial),
     MountedPresentationRequired {
+        retry: Box<WorthUiApplicationCutoverRetry>,
+    },
+    PortalExitRetentionPending {
+        kind: WorthUiPortalExitRetentionPendingKind,
         retry: Box<WorthUiApplicationCutoverRetry>,
     },
     MissingAllocationCatalogSuccessorReceipt,

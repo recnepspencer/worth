@@ -24,6 +24,8 @@ mod state_dismissal_tests;
 #[cfg(test)]
 mod state_lifecycle_tests;
 #[cfg(test)]
+mod state_rebind_tests;
+#[cfg(test)]
 mod state_retention_tests;
 #[cfg(test)]
 mod state_tests;
@@ -42,6 +44,7 @@ pub(crate) use placement::{
     UiPortalPlacementSide, UiPreparedPortalPlacement, UiPresentedPortalBounds,
 };
 pub(crate) use proposal::UiStagedPortalServiceProposal;
+pub(crate) use rebind::UiPreparedPortalRebindRemoval;
 pub(crate) use receipt::{
     UiPortalExitRetentionReceipt, UiPortalServiceDisposition, UiPortalServiceReceipt,
 };
