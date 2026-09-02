@@ -1,3 +1,5 @@
+mod phase10_gate2_compiler_denial_tests;
+mod phase10_gate2_lowering_equivalence_tests;
 mod phase1_source_package_tests;
 mod phase2_parse_tests;
 mod phase3_artifact_input_tests;
