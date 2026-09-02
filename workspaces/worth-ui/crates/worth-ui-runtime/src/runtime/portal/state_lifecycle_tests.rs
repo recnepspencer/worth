@@ -221,6 +221,8 @@ fn live_row_capacity_denies_the_next_open_before_any_effect() {
         state.commit_published(transition).unwrap();
     }
     let before = state.stack_snapshot();
+    let before_revision = state.revision();
+    let before_cursor = state.stack_ordinal_issuer.next();
     let rejected = portal(21_024, 31_024);
 
     assert!(matches!(
@@ -229,6 +231,8 @@ fn live_row_capacity_denies_the_next_open_before_any_effect() {
     ));
     assert_eq!(state.active_count(), limit);
     assert_eq!(state.stack_snapshot(), before);
+    assert_eq!(state.revision(), before_revision);
+    assert_eq!(state.stack_ordinal_issuer.next(), before_cursor);
 }
 
 #[test]
@@ -249,12 +253,16 @@ fn stale_replacement_cannot_consume_a_second_ordinal() {
     let replacement_ordinal = prepared.stack_ordinal().unwrap();
     state.commit_published(prepared).unwrap();
     let before_stale = state.stack_snapshot();
+    let before_revision = state.revision();
+    let before_cursor = state.stack_ordinal_issuer.next();
 
     assert_eq!(
         state.commit_published(stale),
         Err(UiPortalServiceTransitionDenial::StalePlan)
     );
     assert_eq!(state.stack_snapshot(), before_stale);
+    assert_eq!(state.revision(), before_revision);
+    assert_eq!(state.stack_ordinal_issuer.next(), before_cursor);
 
     let sibling = portal(713, 813);
     let sibling_open = state.prepare(open_request(sibling, 918)).unwrap();

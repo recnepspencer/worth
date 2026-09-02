@@ -343,10 +343,28 @@ fn sibling_open_mints_a_new_ordinal_and_exhaustion_denies_before_effects() {
     state
         .commit_published(final_open)
         .expect("the maximum ordinal remains publishable");
+    assert_eq!(
+        state
+            .stack_snapshot()
+            .rows()
+            .last()
+            .unwrap()
+            .ordinal()
+            .value(),
+        u64::MAX
+    );
     let before_revision = state.revision();
+    let before_snapshot = state.stack_snapshot();
+    let before_cursor = state.stack_ordinal_issuer.next();
+    let before_active = state.active_count();
+    let before_admitted = state.admitted_requests();
     assert!(matches!(
         state.prepare(open_request(portal(604, 704), 804)),
         Err(UiPortalServiceTransitionDenial::StackOrdinalExhausted)
     ));
     assert_eq!(state.revision(), before_revision);
+    assert_eq!(state.stack_snapshot(), before_snapshot);
+    assert_eq!(state.stack_ordinal_issuer.next(), before_cursor);
+    assert_eq!(state.active_count(), before_active);
+    assert_eq!(state.admitted_requests(), before_admitted);
 }

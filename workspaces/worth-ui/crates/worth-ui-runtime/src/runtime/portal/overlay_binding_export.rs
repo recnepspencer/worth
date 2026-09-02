@@ -44,8 +44,8 @@ pub(crate) struct UiPortalOverlayBindingOwnerExport {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPortalOverlayBindingDenial {
-    DuplicateDeclaration,
-    DuplicatePortal,
+    DuplicateBinding,
+    PortalDeclarationConflict,
     MissingPortal,
     ForeignSurface,
 }
@@ -53,7 +53,7 @@ pub(crate) enum UiPortalOverlayBindingDenial {
 pub(crate) struct UiPortalOverlayBindingOwner {
     generation: WorthUiPreparedApplicationGenerationIdentity,
     runtime_surface: UiSemanticSurfaceIdentity,
-    declarations: BTreeMap<UiPortalDeclarationId, UiPortalIdentity>,
+    portal_declarations: BTreeMap<UiPortalIdentity, UiPortalDeclarationId>,
 }
 
 impl UiPortalOverlayBindingOwner {
@@ -64,7 +64,7 @@ impl UiPortalOverlayBindingOwner {
         Self {
             generation,
             runtime_surface,
-            declarations: BTreeMap::new(),
+            portal_declarations: BTreeMap::new(),
         }
     }
 
@@ -73,29 +73,18 @@ impl UiPortalOverlayBindingOwner {
         declaration: UiPortalDeclarationId,
         portal: UiPortalIdentity,
     ) -> Result<(), UiPortalOverlayBindingDenial> {
-        match self.declarations.entry(declaration) {
-            Entry::Vacant(entry) => {
-                entry.insert(portal);
-                Ok(())
-            }
-            Entry::Occupied(_) => Err(UiPortalOverlayBindingDenial::DuplicateDeclaration),
-        }
+        Self::insert_binding(&mut self.portal_declarations, portal, declaration)
     }
 
     pub(crate) fn replace(
         &mut self,
         bindings: impl IntoIterator<Item = UiPortalOverlayBindingRow>,
     ) -> Result<(), UiPortalOverlayBindingDenial> {
-        let mut declarations = BTreeMap::new();
+        let mut candidate = BTreeMap::new();
         for binding in bindings {
-            if declarations
-                .insert(binding.declaration(), binding.portal())
-                .is_some()
-            {
-                return Err(UiPortalOverlayBindingDenial::DuplicateDeclaration);
-            }
+            Self::insert_binding(&mut candidate, binding.portal(), binding.declaration())?;
         }
-        self.declarations = declarations;
+        self.portal_declarations = candidate;
         Ok(())
     }
 
@@ -111,26 +100,46 @@ impl UiPortalOverlayBindingOwner {
             .iter()
             .map(|row| (row.portal(), row.surface()))
             .collect::<BTreeMap<_, _>>();
-        let mut seen_portals = BTreeMap::new();
-        let mut rows = Vec::with_capacity(self.declarations.len());
-        for (declaration, portal) in &self.declarations {
+        for portal in self.portal_declarations.keys() {
             let Some(surface) = by_portal.get(portal).copied() else {
                 return Err(UiPortalOverlayBindingDenial::MissingPortal);
             };
             if surface != self.runtime_surface {
                 return Err(UiPortalOverlayBindingDenial::ForeignSurface);
             }
-            if seen_portals.insert(*portal, ()).is_some() {
-                return Err(UiPortalOverlayBindingDenial::DuplicatePortal);
-            }
-            rows.push(UiPortalOverlayBindingRow::new(*declaration, *portal));
         }
+        let rows = snapshot
+            .rows()
+            .iter()
+            .filter_map(|row| {
+                self.portal_declarations
+                    .get(&row.portal())
+                    .map(|declaration| UiPortalOverlayBindingRow::new(*declaration, row.portal()))
+            })
+            .collect::<Vec<_>>();
         Ok(UiPortalOverlayBindingOwnerExport {
             generation: self.generation.clone(),
             runtime_surface: self.runtime_surface,
             portal_revision: snapshot.owner_revision(),
             rows: rows.into_boxed_slice(),
         })
+    }
+
+    fn insert_binding(
+        table: &mut BTreeMap<UiPortalIdentity, UiPortalDeclarationId>,
+        portal: UiPortalIdentity,
+        declaration: UiPortalDeclarationId,
+    ) -> Result<(), UiPortalOverlayBindingDenial> {
+        match table.entry(portal) {
+            Entry::Vacant(entry) => {
+                entry.insert(declaration);
+                Ok(())
+            }
+            Entry::Occupied(entry) if *entry.get() == declaration => {
+                Err(UiPortalOverlayBindingDenial::DuplicateBinding)
+            }
+            Entry::Occupied(_) => Err(UiPortalOverlayBindingDenial::PortalDeclarationConflict),
+        }
     }
 }
 
