@@ -16,7 +16,6 @@ mod reconstruction;
 mod surface;
 mod text_foreground;
 
-pub(crate) use backdrop::lower as lower_backdrop;
 pub(crate) use delta::UiMountedAppearanceDeltaSummary;
 pub(crate) use fact::{
     UiMountedAppearanceBackdropInput, UiMountedAppearanceFacts, UiMountedAppearanceLoweringInput,

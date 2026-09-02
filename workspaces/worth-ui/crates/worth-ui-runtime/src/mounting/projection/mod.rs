@@ -14,11 +14,10 @@ mod prepared_projection;
 mod semantic_text;
 mod static_paint;
 
-#[allow(unused_imports)]
 pub(crate) use appearance::{
-    lower_backdrop as lower_unpublished_appearance_backdrop, UiMountedAppearanceBackdropInput,
-    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
-    UiMountedAppearanceNodeInput, UiMountedAppearanceOutlineInput, UiMountedAppearanceOverlayInput,
+    UiMountedAppearanceBackdropInput, UiMountedAppearanceLoweringDenial,
+    UiMountedAppearanceLoweringInput, UiMountedAppearanceNodeInput,
+    UiMountedAppearanceOutlineInput, UiMountedAppearanceOverlayInput,
     UiMountedAppearancePointerInput, UiMountedAppearanceSidecar,
     UiMountedAppearanceTextForegroundInput,
 };
