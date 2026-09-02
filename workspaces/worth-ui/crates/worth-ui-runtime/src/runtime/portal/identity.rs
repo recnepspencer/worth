@@ -50,11 +50,8 @@ impl UiPortalOwnerIdentity {
 
 impl UiPortalIdentity {
     #[cfg(test)]
-    pub(crate) fn for_test(graph_node: u64, mounted_instance: u64) -> Self {
-        Self::for_owner(UiPortalOwnerIdentity::for_test(
-            graph_node,
-            mounted_instance,
-        ))
+    pub(crate) fn for_test(graph_node: u64) -> Self {
+        Self::for_owner(UiPortalOwnerIdentity::for_test(graph_node, 0))
     }
 
     pub(crate) fn for_owner(owner: UiPortalOwnerIdentity) -> Self {

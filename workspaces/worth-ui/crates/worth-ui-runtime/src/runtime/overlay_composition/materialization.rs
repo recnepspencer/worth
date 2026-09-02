@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use worth_ui_dsl::{
     UiBackdropDeclaration, UiBackdropExtentBasis, UiBackdropIdentity, UiBackdropMotionBasis,
@@ -17,25 +17,45 @@ use super::snapshot::{
     UiOverlayExtent, UiOverlayPortalRow,
 };
 
+pub(super) struct UiOverlayCurrentPortals {
+    rows: Vec<UiOverlayPortalRow>,
+    source_rows_read: usize,
+    binding_entries_read: usize,
+}
+
+impl UiOverlayCurrentPortals {
+    pub(super) fn rows(self) -> Vec<UiOverlayPortalRow> {
+        self.rows
+    }
+
+    pub(super) const fn source_rows_read(&self) -> usize {
+        self.source_rows_read
+    }
+
+    pub(super) const fn binding_entries_read(&self) -> usize {
+        self.binding_entries_read
+    }
+}
+
 pub(super) fn current_portals(
     input: &UiOverlayCompositionInput<'_>,
     capacity: UiOverlayCapacityProfile,
-) -> Result<Vec<UiOverlayPortalRow>, UiOverlayCompositionDenial> {
+) -> Result<UiOverlayCurrentPortals, UiOverlayCompositionDenial> {
+    let source_rows = input.portal_snapshot.rows();
+    if source_rows.len() > capacity.max_portal_rows {
+        return Err(UiOverlayCompositionDenial::PortalRowCapacityExceeded {
+            observed: source_rows.len(),
+            maximum: capacity.max_portal_rows,
+        });
+    }
+    if input.portal_bindings.len() > capacity.max_portal_rows {
+        return Err(UiOverlayCompositionDenial::PortalRowCapacityExceeded {
+            observed: input.portal_bindings.len(),
+            maximum: capacity.max_portal_rows,
+        });
+    }
     let mut bindings = BTreeMap::new();
     for binding in input.portal_bindings {
-        let Some(row) = input
-            .portal_snapshot
-            .rows()
-            .iter()
-            .find(|row| row.portal() == binding.portal())
-        else {
-            return Err(UiOverlayCompositionDenial::MissingPortalSnapshotRow(
-                binding.portal(),
-            ));
-        };
-        if row.surface() != input.extent.runtime_surface() {
-            continue;
-        }
         if bindings
             .insert(binding.portal(), binding.declaration())
             .is_some()
@@ -44,15 +64,46 @@ pub(super) fn current_portals(
         }
     }
 
-    let mut portals = Vec::new();
+    let target_surface = input.extent.runtime_surface();
+    let mut seen_portals = BTreeSet::new();
+    let mut bound_portals = BTreeSet::new();
+    let mut portals = Vec::with_capacity(
+        input
+            .portal_snapshot
+            .rows()
+            .len()
+            .min(capacity.max_portal_rows),
+    );
     let mut previous_ordinal = None;
-    for row in input.portal_snapshot.rows() {
-        if row.surface() != input.extent.runtime_surface() {
-            continue;
+    let mut source_rows_read = 0;
+    for row in source_rows {
+        source_rows_read += 1;
+        if !seen_portals.insert(row.portal()) {
+            return Err(UiOverlayCompositionDenial::DuplicatePortalSnapshotRow(
+                row.portal(),
+            ));
         }
-        let declaration = bindings.get(&row.portal()).copied().ok_or(
-            UiOverlayCompositionDenial::MissingPortalDeclarationBinding(row.portal()),
-        )?;
+        let Some(declaration) = bindings.get(&row.portal()).copied() else {
+            if row.surface() == target_surface {
+                return Err(UiOverlayCompositionDenial::MissingPortalDeclarationBinding(
+                    row.portal(),
+                ));
+            }
+            continue;
+        };
+        if row.surface() != target_surface {
+            return Err(UiOverlayCompositionDenial::ForeignPortalBinding {
+                portal: row.portal(),
+                surface: row.surface(),
+            });
+        }
+        bound_portals.insert(row.portal());
+        if portals.len() == capacity.max_portal_rows {
+            return Err(UiOverlayCompositionDenial::PortalRowCapacityExceeded {
+                observed: portals.len() + 1,
+                maximum: capacity.max_portal_rows,
+            });
+        }
         if previous_ordinal.is_some_and(|ordinal| ordinal >= row.ordinal()) {
             return Err(UiOverlayCompositionDenial::Cycle);
         }
@@ -65,13 +116,18 @@ pub(super) fn current_portals(
             row.lifecycle(),
         ));
     }
-    if portals.len() > capacity.max_portal_rows {
-        return Err(UiOverlayCompositionDenial::PortalRowCapacityExceeded {
-            observed: portals.len(),
-            maximum: capacity.max_portal_rows,
-        });
+    for portal in bindings.keys() {
+        if !bound_portals.contains(portal) {
+            return Err(UiOverlayCompositionDenial::MissingPortalSnapshotRow(
+                *portal,
+            ));
+        }
     }
-    Ok(portals)
+    Ok(UiOverlayCurrentPortals {
+        rows: portals,
+        source_rows_read,
+        binding_entries_read: input.portal_bindings.len(),
+    })
 }
 
 pub(super) fn materialize_backdrops(

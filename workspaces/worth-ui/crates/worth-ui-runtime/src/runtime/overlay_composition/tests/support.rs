@@ -119,15 +119,15 @@ pub(crate) fn surface_extent_with_viewport(
         .unwrap()
 }
 
-pub(crate) fn portal(graph: u64, instance: u64) -> crate::runtime::portal::UiPortalIdentity {
-    crate::runtime::portal::UiPortalIdentity::for_test(graph, instance)
+pub(crate) fn portal(graph: u64) -> crate::runtime::portal::UiPortalIdentity {
+    crate::runtime::portal::UiPortalIdentity::for_test(graph)
 }
 
 pub(crate) fn portal_snapshot(
     runtime_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     rows: impl IntoIterator<Item = (crate::runtime::portal::UiPortalIdentity, u64)>,
 ) -> crate::runtime::portal::UiPortalStackSnapshot {
-    crate::runtime::portal::UiPortalStackSnapshot::for_test(
+    portal_snapshot_with_rows(
         7,
         rows.into_iter().map(|(portal, ordinal)| {
             (
@@ -141,6 +141,21 @@ pub(crate) fn portal_snapshot(
     )
 }
 
+pub(crate) fn portal_snapshot_with_rows(
+    owner_revision: u64,
+    rows: impl IntoIterator<
+        Item = (
+            crate::runtime::portal::UiPortalIdentity,
+            Option<crate::runtime::portal::UiPortalIdentity>,
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            u64,
+            crate::runtime::portal::UiPortalLifecyclePosture,
+        ),
+    >,
+) -> crate::runtime::portal::UiPortalStackSnapshot {
+    crate::runtime::portal::UiPortalStackSnapshot::for_test(owner_revision, rows)
+}
+
 pub(crate) fn input<'a>(
     extent: &'a UiOverlaySurfaceExtentSnapshot,
     snapshot: &'a crate::runtime::portal::UiPortalStackSnapshot,
@@ -150,6 +165,24 @@ pub(crate) fn input<'a>(
 ) -> UiOverlayCompositionInput<'a> {
     UiOverlayCompositionInput::new(
         UiOverlayApplicationGeneration::for_test(1),
+        presentation,
+        extent,
+        snapshot,
+        bindings,
+        motion,
+    )
+}
+
+pub(crate) fn input_with_generation<'a>(
+    generation: u64,
+    extent: &'a UiOverlaySurfaceExtentSnapshot,
+    snapshot: &'a crate::runtime::portal::UiPortalStackSnapshot,
+    bindings: &'a [UiOverlayPortalBinding],
+    motion: Option<&'a UiOverlayMotionSnapshot>,
+    presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+) -> UiOverlayCompositionInput<'a> {
+    UiOverlayCompositionInput::new(
+        UiOverlayApplicationGeneration::for_test(generation),
         presentation,
         extent,
         snapshot,

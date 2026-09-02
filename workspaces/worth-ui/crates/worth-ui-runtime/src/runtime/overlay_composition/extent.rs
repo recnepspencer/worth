@@ -7,6 +7,7 @@ pub(crate) struct UiOverlayRegionExtent {
 }
 
 impl UiOverlayRegionExtent {
+    #[cfg(test)]
     pub(in crate::runtime::overlay_composition) const fn new(
         identity: worth_ui_dsl::UiMosaicRegionDeclarationIdentity,
         bounds: worth_ui_host_contract::UiMountedCanonicalBox,
@@ -33,6 +34,7 @@ pub(crate) struct UiOverlaySurfaceExtentSnapshot {
 }
 
 impl UiOverlaySurfaceExtentSnapshot {
+    #[cfg(test)]
     pub(in crate::runtime::overlay_composition) fn seal(
         declaration_surface: UiSemanticSurfaceDeclarationIdentity,
         runtime_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
@@ -90,6 +92,7 @@ pub(crate) struct UiOverlayMotionBinding {
 }
 
 impl UiOverlayMotionBinding {
+    #[cfg(test)]
     pub(in crate::runtime::overlay_composition) const fn new(
         portal_declaration: UiPortalDeclarationId,
         portal: crate::runtime::portal::UiPortalIdentity,
@@ -119,6 +122,7 @@ pub(crate) struct UiOverlayMotionSnapshot {
 }
 
 impl UiOverlayMotionSnapshot {
+    #[cfg(test)]
     pub(in crate::runtime::overlay_composition) fn seal(
         owner_revision: u64,
         rows: impl IntoIterator<Item = UiOverlayMotionBinding>,

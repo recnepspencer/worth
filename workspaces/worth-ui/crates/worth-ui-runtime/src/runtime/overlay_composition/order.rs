@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use worth_ui_dsl::{UiBackdropIdentity, UiBackdropPlacement, UiPortalDeclarationId};
+use worth_ui_dsl::{UiBackdropIdentity, UiPortalDeclarationId};
 
 use super::planner::UiOverlayCompositionDenial;
 use super::relation_graph::{
@@ -78,31 +78,7 @@ pub(super) fn compile_order(
             &mut immediate,
         )?;
     }
-    for backdrop in backdrops {
-        let mut visiting = BTreeSet::new();
-        let (lower, upper) =
-            placement_bounds(backdrop, portals, &backdrop_by_declaration, &mut visiting)?;
-        if let Some(lower) = lower {
-            add_edge(
-                &mut edges,
-                &mut immediate,
-                lower,
-                OrderNode::Backdrop(backdrop.identity()),
-                UiOverlayRelationKind::Precedes,
-            )?;
-        }
-        if let Some(upper) = upper {
-            add_edge(
-                &mut edges,
-                &mut immediate,
-                OrderNode::Backdrop(backdrop.identity()),
-                upper,
-                UiOverlayRelationKind::Precedes,
-            )?;
-        }
-    }
-
-    let ordered = unique_topological_order(&nodes, &edges)?;
+    let ordered = unique_topological_order(&nodes, &edges, &immediate)?;
     let mut position = BTreeMap::new();
     for (index, node) in ordered.iter().enumerate() {
         position.insert(*node, index);
@@ -279,87 +255,4 @@ fn matching_backdrop(
         };
     };
     Ok(candidate.clone())
-}
-
-fn placement_bounds(
-    backdrop: &UiOverlayBackdropRow,
-    portals: &[UiOverlayPortalRow],
-    backdrops: &BTreeMap<UiBackdropIdentity, Vec<&UiOverlayBackdropRow>>,
-    visiting: &mut BTreeSet<UiBackdropInstanceIdentity>,
-) -> Result<(Option<OrderNode>, Option<OrderNode>), UiOverlayCompositionDenial> {
-    if !visiting.insert(backdrop.identity()) {
-        return Err(UiOverlayCompositionDenial::Cycle);
-    }
-    let result = match backdrop.placement() {
-        UiBackdropPlacement::AboveSurfaceContent => (
-            Some(OrderNode::Content),
-            portals
-                .first()
-                .map(|portal| OrderNode::Portal(portal.portal())),
-        ),
-        UiBackdropPlacement::ImmediatelyBeforePortal(target) => {
-            let target = matching_portal_from_slice(backdrop, target, portals)?;
-            let index = portals
-                .iter()
-                .position(|portal| portal.portal() == target.portal())
-                .expect("matched Portal is current");
-            (
-                index
-                    .checked_sub(1)
-                    .map(|index| OrderNode::Portal(portals[index].portal()))
-                    .or(Some(OrderNode::Content)),
-                Some(OrderNode::Portal(target.portal())),
-            )
-        }
-        UiBackdropPlacement::ImmediatelyAfterPortal(target) => {
-            let target = matching_portal_from_slice(backdrop, target, portals)?;
-            let index = portals
-                .iter()
-                .position(|portal| portal.portal() == target.portal())
-                .expect("matched Portal is current");
-            (
-                Some(OrderNode::Portal(target.portal())),
-                portals
-                    .get(index + 1)
-                    .map(|portal| OrderNode::Portal(portal.portal())),
-            )
-        }
-        UiBackdropPlacement::ImmediatelyBeforeBackdrop(target)
-        | UiBackdropPlacement::ImmediatelyAfterBackdrop(target) => {
-            let target = matching_backdrop(backdrop, target, backdrops)?;
-            placement_bounds(&target, portals, backdrops, visiting)?
-        }
-    };
-    visiting.remove(&backdrop.identity());
-    Ok(result)
-}
-
-fn matching_portal_from_slice(
-    source: &UiOverlayBackdropRow,
-    target: UiPortalDeclarationId,
-    portals: &[UiOverlayPortalRow],
-) -> Result<UiOverlayPortalRow, UiOverlayCompositionDenial> {
-    let mut candidates = portals
-        .iter()
-        .filter(|portal| portal.declaration() == target);
-    if let UiOverlayBackdropInstanceScope::Portal(portal) = source.identity().scope() {
-        return candidates
-            .find(|candidate| candidate.portal() == portal)
-            .cloned()
-            .ok_or(UiOverlayCompositionDenial::MissingPortalAnchor {
-                backdrop: source.declaration(),
-                portal: target,
-            });
-    }
-    match candidates.cloned().collect::<Vec<_>>().as_slice() {
-        [] => Err(UiOverlayCompositionDenial::MissingPortalAnchor {
-            backdrop: source.declaration(),
-            portal: target,
-        }),
-        [candidate] => Ok(candidate.clone()),
-        _ => Err(UiOverlayCompositionDenial::AmbiguousPortalAnchor {
-            backdrop: source.declaration(),
-            portal: target,
-        }),
-    }
 }

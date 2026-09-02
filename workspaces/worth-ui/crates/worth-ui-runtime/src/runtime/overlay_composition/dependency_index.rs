@@ -57,6 +57,27 @@ impl UiOverlayChangeSet {
             )
         })
     }
+
+    pub(crate) fn has_motion_change(&self) -> bool {
+        self.changes
+            .iter()
+            .any(|change| matches!(change, UiOverlayChangedBasis::PortalMotion(_)))
+    }
+
+    pub(crate) fn has_extent_change(&self) -> bool {
+        self.changes.iter().any(|change| {
+            matches!(
+                change,
+                UiOverlayChangedBasis::SurfaceExtent(_) | UiOverlayChangedBasis::RegionExtent(_)
+            )
+        })
+    }
+
+    pub(crate) fn has_declaration_change(&self) -> bool {
+        self.changes
+            .iter()
+            .any(|change| matches!(change, UiOverlayChangedBasis::Backdrop(_)))
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -98,13 +119,6 @@ impl UiOverlayAffectedScope {
 
     pub(crate) fn regions(&self) -> &[UiMosaicRegionDeclarationIdentity] {
         &self.regions
-    }
-
-    pub(crate) fn is_empty(&self) -> bool {
-        self.backdrops.is_empty()
-            && self.portals.is_empty()
-            && self.surfaces.is_empty()
-            && self.regions.is_empty()
     }
 }
 
@@ -236,6 +250,16 @@ impl UiOverlayDependencyIndex {
         let mut portals = BTreeSet::new();
         let mut surfaces = BTreeSet::new();
         let mut regions = BTreeSet::new();
+        let close_relations = changes.changes().iter().any(|change| {
+            matches!(
+                change,
+                UiOverlayChangedBasis::Portal(_)
+                    | UiOverlayChangedBasis::PortalScope(_)
+                    | UiOverlayChangedBasis::PortalPresence(_)
+                    | UiOverlayChangedBasis::PortalPlacement(_)
+                    | UiOverlayChangedBasis::Backdrop(_)
+            )
+        });
         for change in changes.changes() {
             match *change {
                 UiOverlayChangedBasis::Portal(portal) => {
@@ -299,11 +323,6 @@ impl UiOverlayDependencyIndex {
                         &[identity],
                         UiOverlayDependencyKind::Placement,
                     );
-                    add(
-                        &mut selected,
-                        self.relation_dependents(identity),
-                        UiOverlayDependencyKind::Placement,
-                    );
                 }
                 UiOverlayChangedBasis::SurfaceExtent(surface) => {
                     surfaces.insert(surface);
@@ -322,6 +341,22 @@ impl UiOverlayDependencyIndex {
                         self.by_region_extent.get(&region).map_or(&[], Box::as_ref),
                         UiOverlayDependencyKind::Extent,
                     );
+                }
+            }
+        }
+        if close_relations {
+            let mut pending = selected.keys().copied().collect::<Vec<_>>();
+            let mut visited = BTreeSet::new();
+            while let Some(identity) = pending.pop() {
+                if !visited.insert(identity) {
+                    continue;
+                }
+                for dependent in self.relation_dependents(identity) {
+                    selected
+                        .entry(*dependent)
+                        .or_default()
+                        .insert(UiOverlayDependencyKind::Placement);
+                    pending.push(*dependent);
                 }
             }
         }

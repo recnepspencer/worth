@@ -8,7 +8,7 @@ use super::support::{
 fn materializes_a_per_portal_backdrop_with_an_incarnation_identity() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
     let portal_declaration = worth_ui_dsl::UiPortalDeclarationId::new(10).unwrap();
-    let runtime_portal = portal(20, 30);
+    let runtime_portal = portal(20);
     let backdrop = declaration(
         1,
         surface,
@@ -49,8 +49,9 @@ fn materializes_a_per_portal_backdrop_with_an_incarnation_identity() {
 fn repeats_per_portal_rows_for_distinct_current_incarnations() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
     let portal_declaration = worth_ui_dsl::UiPortalDeclarationId::new(10).unwrap();
-    let first_portal = portal(20, 30);
-    let second_portal = portal(20, 31);
+    let first_portal = portal(20);
+    let second_portal = portal(20);
+    assert_ne!(first_portal, second_portal);
     let backdrop = declaration(
         1,
         surface,
@@ -100,7 +101,7 @@ fn resolves_region_extent_and_optional_motion_without_host_work() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
     let region = worth_ui_dsl::UiMosaicRegionDeclarationIdentity::new(5).unwrap();
     let portal_declaration = worth_ui_dsl::UiPortalDeclarationId::new(10).unwrap();
-    let runtime_portal = portal(20, 30);
+    let runtime_portal = portal(20);
     let backdrop = declaration_with_extent(
         1,
         surface,

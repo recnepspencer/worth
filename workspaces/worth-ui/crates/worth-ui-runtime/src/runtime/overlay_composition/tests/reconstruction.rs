@@ -43,6 +43,75 @@ fn affected_scope_selects_only_direct_dependents_and_reports_reasons() {
 }
 
 #[test]
+fn indexed_scope_presence_placement_and_motion_dependents_are_exact() {
+    let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
+    let portal = worth_ui_dsl::UiPortalDeclarationId::new(10).unwrap();
+    let declarations = [
+        declaration(
+            1,
+            surface,
+            worth_ui_dsl::UiBackdropScope::PerPortalInstance(portal),
+            worth_ui_dsl::UiBackdropPresenceBasis::WhilePortalPresented(portal),
+            worth_ui_dsl::UiBackdropMotionBasis::None,
+            worth_ui_dsl::UiBackdropPlacement::AboveSurfaceContent,
+        ),
+        declaration(
+            2,
+            surface,
+            worth_ui_dsl::UiBackdropScope::SurfaceSingleton,
+            worth_ui_dsl::UiBackdropPresenceBasis::WhilePortalPresented(portal),
+            worth_ui_dsl::UiBackdropMotionBasis::None,
+            worth_ui_dsl::UiBackdropPlacement::AboveSurfaceContent,
+        ),
+        declaration(
+            3,
+            surface,
+            worth_ui_dsl::UiBackdropScope::SurfaceSingleton,
+            worth_ui_dsl::UiBackdropPresenceBasis::Always,
+            worth_ui_dsl::UiBackdropMotionBasis::None,
+            worth_ui_dsl::UiBackdropPlacement::ImmediatelyBeforePortal(portal),
+        ),
+        declaration(
+            4,
+            surface,
+            worth_ui_dsl::UiBackdropScope::SurfaceSingleton,
+            worth_ui_dsl::UiBackdropPresenceBasis::Always,
+            worth_ui_dsl::UiBackdropMotionBasis::PortalPresentation(portal),
+            worth_ui_dsl::UiBackdropPlacement::AboveSurfaceContent,
+        ),
+    ];
+    let index = UiOverlayDependencyIndex::rebuild(&declarations).unwrap();
+    let cases = [
+        (
+            UiOverlayChangedBasis::PortalScope(portal),
+            worth_ui_dsl::UiBackdropIdentity::new(1).unwrap(),
+            UiOverlayDependencyKind::Scope,
+        ),
+        (
+            UiOverlayChangedBasis::PortalPresence(portal),
+            worth_ui_dsl::UiBackdropIdentity::new(2).unwrap(),
+            UiOverlayDependencyKind::Presence,
+        ),
+        (
+            UiOverlayChangedBasis::PortalPlacement(portal),
+            worth_ui_dsl::UiBackdropIdentity::new(3).unwrap(),
+            UiOverlayDependencyKind::Placement,
+        ),
+        (
+            UiOverlayChangedBasis::PortalMotion(portal),
+            worth_ui_dsl::UiBackdropIdentity::new(4).unwrap(),
+            UiOverlayDependencyKind::Motion,
+        ),
+    ];
+    for (basis, identity, reason) in cases {
+        let affected = index.affected_scope(&UiOverlayChangeSet::from_changes([basis]));
+        assert_eq!(affected.backdrops().len(), 1);
+        assert_eq!(affected.backdrops()[0].identity(), identity);
+        assert_eq!(affected.backdrops()[0].reasons(), &[reason]);
+    }
+}
+
+#[test]
 fn reconstruction_rebuilds_the_index_and_preserves_the_published_snapshot() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
     let runtime_surface =
@@ -137,7 +206,7 @@ fn structural_successor_recomputes_the_indexed_scope_only() {
     let portal_declaration = worth_ui_dsl::UiPortalDeclarationId::new(10).unwrap();
     let runtime_surface =
         worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
-    let runtime_portal = super::support::portal(20, 30);
+    let runtime_portal = super::support::portal(20);
     let extent = surface_extent(surface, runtime_surface, 2);
     let portals = portal_snapshot(runtime_surface, [(runtime_portal, 1)]);
     let selected = declaration(

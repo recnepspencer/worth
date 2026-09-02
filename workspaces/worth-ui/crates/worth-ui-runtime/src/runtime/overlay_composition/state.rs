@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use worth_ui_dsl::UiBackdropDeclaration;
 
-use super::change_accounting::changed_backdrop_count;
 use super::dependency_index::{
     UiOverlayAffectedScope, UiOverlayChangeSet, UiOverlayDependencyIndex,
 };
@@ -105,6 +104,9 @@ impl UiOverlayCompositionState {
         if !same_world(&predecessor, &input) {
             return Err(UiOverlayCompositionDenial::ReconstructionRequired);
         }
+        if changes.has_declaration_change() {
+            return Err(UiOverlayCompositionDenial::ReconstructionRequired);
+        }
         let index = self
             .index
             .as_ref()
@@ -117,7 +119,7 @@ impl UiOverlayCompositionState {
         let (snapshot, reservation, counters) = if changes.has_structural_change() {
             self.compile_successor(&input, &predecessor, &scope, &relations)?
         } else {
-            self.update_nonstructural(&input, &predecessor, &scope)?
+            self.update_nonstructural(&input, &predecessor, &scope, changes)?
         };
         Ok(UiPreparedOverlayComposition {
             predecessor: Some(predecessor),
@@ -175,7 +177,10 @@ impl UiOverlayCompositionState {
         ),
         UiOverlayCompositionDenial,
     > {
-        let portals = current_portals(input, self.capacity)?;
+        let portal_rows = current_portals(input, self.capacity)?;
+        let portal_stack_rows_read = portal_rows.source_rows_read();
+        let portal_binding_entries_read = portal_rows.binding_entries_read();
+        let portals = portal_rows.rows();
         let relations =
             relation_cache::for_surface(relation_cache, input.extent.declaration_surface());
         let affected = scope
@@ -183,16 +188,19 @@ impl UiOverlayCompositionState {
             .iter()
             .map(|backdrop| backdrop.identity())
             .collect::<BTreeSet<_>>();
-        let mut backdrops = predecessor
-            .participants()
-            .iter()
-            .filter_map(|participant| match participant {
-                UiOverlayStackParticipant::Portal(_) => None,
-                UiOverlayStackParticipant::Backdrop(row) => {
-                    (!affected.contains(&row.declaration())).then_some(row.clone())
-                }
-            })
-            .collect::<Vec<_>>();
+        let mut previous_affected = BTreeMap::new();
+        let mut backdrops = Vec::new();
+        for participant in predecessor.participants() {
+            let UiOverlayStackParticipant::Backdrop(row) = participant else {
+                continue;
+            };
+            if affected.contains(&row.declaration()) {
+                previous_affected.insert(row.identity(), row.clone());
+            } else {
+                backdrops.push(row.clone());
+            }
+        }
+        let mut changed = 0;
         for identity in &affected {
             let declaration = self
                 .index
@@ -201,15 +209,19 @@ impl UiOverlayCompositionState {
                 .and_then(|index| self.declarations.get(index))
                 .ok_or(UiOverlayCompositionDenial::ReconstructionRequired)?;
             if declaration.surface() == input.extent.declaration_surface() {
-                backdrops.extend(materialize_one(
-                    declaration,
-                    &portals,
-                    input.extent,
-                    input.motion,
-                )?);
+                for row in materialize_one(declaration, &portals, input.extent, input.motion)? {
+                    if previous_affected
+                        .remove(&row.identity())
+                        .is_none_or(|previous| previous != row)
+                    {
+                        changed += 1;
+                    }
+                    backdrops.push(row);
+                }
                 ensure_backdrop_capacity(backdrops.len(), self.capacity)?;
             }
         }
+        changed += previous_affected.len();
         let (participants, relation_edges) = compile_order(&portals, &backdrops, &relations)?;
         let reservation = reserve(
             portals.len(),
@@ -233,13 +245,11 @@ impl UiOverlayCompositionState {
             snapshot,
             reservation,
             UiOverlayPlanCounters {
-                portal_stack_rows_read: input.portal_snapshot.rows().len(),
+                portal_stack_rows_read,
+                portal_binding_entries_read,
                 backdrop_declarations_selected: affected.len(),
                 overlay_relation_edges_visited: relation_edges,
-                backdrop_mechanics_changed: changed_backdrop_count(
-                    predecessor.participants(),
-                    &participants,
-                ),
+                backdrop_mechanics_changed: changed,
                 ..UiOverlayPlanCounters::default()
             },
         ))
@@ -250,6 +260,7 @@ impl UiOverlayCompositionState {
         input: &UiOverlayCompositionInput<'_>,
         predecessor: &UiOverlayStackSnapshot,
         scope: &UiOverlayAffectedScope,
+        changes: &UiOverlayChangeSet,
     ) -> Result<
         (
             UiOverlayStackSnapshot,
@@ -258,7 +269,10 @@ impl UiOverlayCompositionState {
         ),
         UiOverlayCompositionDenial,
     > {
-        let portals = current_portals(input, self.capacity)?;
+        let portal_rows = current_portals(input, self.capacity)?;
+        let portal_stack_rows_read = portal_rows.source_rows_read();
+        let portal_binding_entries_read = portal_rows.binding_entries_read();
+        let portals = portal_rows.rows();
         let old_portals = predecessor
             .participants()
             .iter()
@@ -276,8 +290,11 @@ impl UiOverlayCompositionState {
                     || old.lifecycle() != new.lifecycle()
             })
             || predecessor.portal_revision() != input.portal_snapshot.owner_revision()
-            || predecessor.motion_revision()
+            || (predecessor.motion_revision()
                 != input.motion.map(UiOverlayMotionSnapshot::owner_revision)
+                && !changes.has_motion_change())
+            || (predecessor.extent_revision() != input.extent.revision()
+                && !changes.has_extent_change())
         {
             return Err(UiOverlayCompositionDenial::ReconstructionRequired);
         }
@@ -344,7 +361,8 @@ impl UiOverlayCompositionState {
             snapshot,
             reservation,
             UiOverlayPlanCounters {
-                portal_stack_rows_read: input.portal_snapshot.rows().len(),
+                portal_stack_rows_read,
+                portal_binding_entries_read,
                 backdrop_declarations_selected: scope.backdrops().len(),
                 backdrop_mechanics_changed: changed,
                 ..UiOverlayPlanCounters::default()

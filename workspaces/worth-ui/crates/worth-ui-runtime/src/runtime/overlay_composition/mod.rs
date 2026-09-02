@@ -1,4 +1,3 @@
-mod change_accounting;
 mod dependency_index;
 mod extent;
 mod full_rebuild;
@@ -12,8 +11,7 @@ mod state;
 mod topological_order;
 
 pub(crate) use dependency_index::{
-    UiOverlayAffectedBackdrop, UiOverlayAffectedScope, UiOverlayChangeSet, UiOverlayChangedBasis,
-    UiOverlayDependencyIndex, UiOverlayDependencyKind,
+    UiOverlayChangeSet, UiOverlayChangedBasis, UiOverlayDependencyIndex, UiOverlayDependencyKind,
 };
 pub(crate) use extent::{
     UiOverlayMotionBinding, UiOverlayMotionSnapshot, UiOverlayRegionExtent,
@@ -21,17 +19,17 @@ pub(crate) use extent::{
 };
 pub(crate) use planner::{
     UiOverlayCapacityProfile, UiOverlayCommitDenial, UiOverlayCompositionDenial,
-    UiOverlayCompositionInput, UiOverlayCompositionState, UiOverlayPlanCounters,
-    UiOverlayPortalBinding, UiOverlayReservation, UiPreparedOverlayComposition,
+    UiOverlayCompositionInput, UiOverlayCompositionState, UiOverlayPortalBinding,
+    UiPreparedOverlayComposition,
 };
 pub(crate) use relation_graph::{
-    UiCompiledOverlayRelation, UiCompiledOverlayRelationGraph, UiOverlayAnchor,
-    UiOverlayRelationCompilationDenial, UiOverlayRelationKind,
+    UiCompiledOverlayRelationGraph, UiOverlayAnchor, UiOverlayRelationCompilationDenial,
+    UiOverlayRelationKind,
 };
 pub(crate) use snapshot::{
     UiBackdropInstanceIdentity, UiOverlayApplicationGeneration, UiOverlayBackdropInstanceScope,
-    UiOverlayBackdropRow, UiOverlayExtent, UiOverlayParticipantIdentity, UiOverlayPortalRow,
-    UiOverlayStackParticipant, UiOverlayStackSnapshot,
+    UiOverlayBackdropRow, UiOverlayParticipantIdentity, UiOverlayStackParticipant,
+    UiOverlayStackSnapshot,
 };
 
 #[cfg(test)]

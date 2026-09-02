@@ -20,7 +20,10 @@ pub(super) fn compile_full(
     ),
     UiOverlayCompositionDenial,
 > {
-    let portals = current_portals(input, state.capacity)?;
+    let portal_rows = current_portals(input, state.capacity)?;
+    let portal_stack_rows_read = portal_rows.source_rows_read();
+    let portal_binding_entries_read = portal_rows.binding_entries_read();
+    let portals = portal_rows.rows();
     let declarations = state
         .declarations
         .iter()
@@ -58,7 +61,8 @@ pub(super) fn compile_full(
         snapshot,
         reservation,
         UiOverlayPlanCounters {
-            portal_stack_rows_read: input.portal_snapshot.rows().len(),
+            portal_stack_rows_read,
+            portal_binding_entries_read,
             backdrop_declarations_selected: declarations.len(),
             overlay_relation_edges_visited: relation_edges,
             backdrop_mechanics_changed: backdrops.len(),

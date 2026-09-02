@@ -14,6 +14,7 @@ pub(crate) struct UiOverlayPortalBinding {
 }
 
 impl UiOverlayPortalBinding {
+    #[cfg(test)]
     pub(in crate::runtime::overlay_composition) const fn new(
         declaration: UiPortalDeclarationId,
         portal: crate::runtime::portal::UiPortalIdentity,
@@ -43,6 +44,7 @@ pub(crate) struct UiOverlayCapacityProfile {
 }
 
 impl UiOverlayCapacityProfile {
+    #[cfg(test)]
     pub(crate) const fn qualified() -> Self {
         Self {
             max_backdrop_declarations: worth_ui_dsl::UI_APPEARANCE_BACKDROP_RELATION_CAPACITY,
@@ -54,6 +56,7 @@ impl UiOverlayCapacityProfile {
     }
 }
 
+#[cfg(test)]
 impl Default for UiOverlayCapacityProfile {
     fn default() -> Self {
         Self::qualified()
@@ -71,6 +74,7 @@ pub(crate) struct UiOverlayReservation {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct UiOverlayPlanCounters {
     pub(super) portal_stack_rows_read: usize,
+    pub(super) portal_binding_entries_read: usize,
     pub(super) backdrop_declarations_selected: usize,
     pub(super) overlay_relation_edges_visited: usize,
     pub(super) backdrop_mechanics_changed: usize,
@@ -81,6 +85,9 @@ pub(crate) struct UiOverlayPlanCounters {
 impl UiOverlayPlanCounters {
     pub(crate) const fn portal_stack_rows_read(self) -> usize {
         self.portal_stack_rows_read
+    }
+    pub(crate) const fn portal_binding_entries_read(self) -> usize {
+        self.portal_binding_entries_read
     }
     pub(crate) const fn backdrop_declarations_selected(self) -> usize {
         self.backdrop_declarations_selected
@@ -109,6 +116,11 @@ pub(crate) enum UiOverlayCompositionDenial {
     DuplicateBackdropIdentity,
     Relation(super::relation_graph::UiOverlayRelationCompilationDenial),
     DuplicatePortalBinding,
+    DuplicatePortalSnapshotRow(crate::runtime::portal::UiPortalIdentity),
+    ForeignPortalBinding {
+        portal: crate::runtime::portal::UiPortalIdentity,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    },
     MissingPortalDeclarationBinding(crate::runtime::portal::UiPortalIdentity),
     MissingPortalSnapshotRow(crate::runtime::portal::UiPortalIdentity),
     PortalRowCapacityExceeded {
@@ -206,6 +218,7 @@ pub(crate) struct UiOverlayCompositionInput<'a> {
 }
 
 impl<'a> UiOverlayCompositionInput<'a> {
+    #[cfg(test)]
     pub(in crate::runtime::overlay_composition) fn new(
         generation: UiOverlayApplicationGeneration,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
