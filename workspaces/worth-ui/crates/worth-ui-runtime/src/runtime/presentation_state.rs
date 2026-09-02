@@ -1,12 +1,15 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
+mod overlay_export;
 #[path = "presentation_state/theme_values.rs"]
 mod theme_values;
 
 #[cfg(test)]
 #[path = "presentation_state_tests.rs"]
 mod tests;
+
+pub(crate) use overlay_export::UiApplicationPresentationOwnerExport;
 
 pub(crate) struct UiApplicationPresentationState {
     rows: HashMap<Box<str>, UiApplicationSemanticTextRow>,

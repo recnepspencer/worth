@@ -49,6 +49,7 @@ pub(crate) mod focus;
 mod measurement;
 pub(crate) mod motion;
 pub(crate) mod observation;
+pub(crate) mod overlay_composition;
 pub(crate) mod persistent_index;
 pub(crate) mod planning;
 pub(crate) mod portal;

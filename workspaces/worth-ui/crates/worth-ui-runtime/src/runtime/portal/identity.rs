@@ -49,6 +49,11 @@ impl UiPortalOwnerIdentity {
 }
 
 impl UiPortalIdentity {
+    #[cfg(test)]
+    pub(crate) fn for_test(graph_node: u64) -> Self {
+        Self::for_owner(UiPortalOwnerIdentity::for_test(graph_node, 0))
+    }
+
     pub(crate) fn for_owner(owner: UiPortalOwnerIdentity) -> Self {
         let diagnostic_value = owner.graph_node.digest().rotate_left(17)
             ^ owner

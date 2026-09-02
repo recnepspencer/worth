@@ -1,5 +1,6 @@
 mod census;
 mod declaration;
+mod overlay_export;
 mod produced_fact;
 mod rebind;
 mod receipt;
@@ -16,6 +17,7 @@ pub(crate) use declaration::{
     UiMotionDeclaration, UiMotionEasing, UiMotionFillPolicy, UiMotionInterruptionPolicy,
     UiMotionPropertyChannel, UiMotionPropertyChannels, UiMotionReducedMotionPolicy,
 };
+pub(crate) use overlay_export::UiMotionOverlayOwnerExport;
 pub(crate) use produced_fact::{UiMotionProducedFact, UiMotionProducedFactKind};
 pub(crate) use rebind::UiPreparedMotionRebind;
 pub(crate) use receipt::{

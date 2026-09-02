@@ -40,6 +40,8 @@ mod ledger_state;
 mod mounted_projection_catalog;
 #[path = "ledger_lifecycle/mounted_projection/journal.rs"]
 mod mounted_projection_journal;
+#[path = "ledger_lifecycle/mounted_projection/overlay_extent_export.rs"]
+mod mounted_projection_overlay_extent_export;
 #[path = "ledger_lifecycle/mounted_projection/row.rs"]
 mod mounted_projection_row;
 #[path = "transaction/prepared_portal_commit.rs"]
@@ -147,6 +149,10 @@ pub(crate) use mounted_projection_catalog::UiMountedAllocationProjectionCatalog;
 pub(crate) use mounted_projection_journal::{
     UiMountedAllocationExactDelta, UiMountedAllocationProjectionDelta,
     UiMountedAllocationProjectionSource,
+};
+pub(crate) use mounted_projection_overlay_extent_export::{
+    UiCommittedOverlayExtentBounds, UiMountedOverlayExtentDenial, UiMountedOverlayExtentOwner,
+    UiMountedOverlayExtentOwnerExport, UiMountedOverlayRegionExtent,
 };
 pub(crate) use mounted_projection_row::{
     UiCommittedViewportGeometry, UiMountedAllocationProjectionDenial,
