@@ -1,5 +1,5 @@
 use super::geometry::{UiNativeAppearanceScale, UiNativePhysicalRect};
-use super::mounted_mechanic_fixtures::{allocation, logical_length};
+use super::mounted_mechanic_fixtures::allocation;
 
 #[test]
 fn qualified_scales_preserve_exact_half_open_floor_and_ceil_edges() {
@@ -17,11 +17,4 @@ fn qualified_scales_preserve_exact_half_open_floor_and_ceil_edges() {
         }
     );
     assert!(UiNativeAppearanceScale::qualified(1_333).is_err());
-}
-
-#[test]
-fn staged_surface_fixture_keeps_logical_bounds_in_the_contract_unit() {
-    let allocation = allocation(0, 0, 2_000, 3_000);
-    assert_eq!(allocation.width(), 2_000);
-    assert_eq!(logical_length(1_000).subpixels(), 1_000);
 }

@@ -17,6 +17,10 @@ mod surface_pipeline;
 pub(crate) mod cursor;
 
 #[cfg(test)]
+mod backdrop_tests;
+#[cfg(test)]
+mod cursor_tests;
+#[cfg(test)]
 mod geometry_tests;
 #[cfg(test)]
 mod mounted_mechanic_fixtures;
