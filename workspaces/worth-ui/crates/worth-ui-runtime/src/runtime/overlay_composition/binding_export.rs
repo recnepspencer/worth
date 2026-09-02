@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use super::planner::UiOverlayPortalBinding;
 use super::snapshot::UiOverlayApplicationGeneration;
 use crate::runtime::portal::UiPortalOverlayBindingOwnerExport;
@@ -30,12 +32,7 @@ impl UiOverlayPortalBindingExport {
             .iter()
             .map(|row| UiOverlayPortalBinding::new(row.declaration(), row.portal()))
             .collect::<Vec<_>>();
-        if rows
-            .windows(2)
-            .any(|window| window[0].portal() == window[1].portal())
-        {
-            return Err(UiOverlayBindingExportDenial::DuplicatePortal);
-        }
+        reject_duplicate_runtime_portals(&rows)?;
         Ok(Self {
             generation: UiOverlayApplicationGeneration::from_prepared(generation),
             runtime_surface: source.runtime_surface(),
@@ -53,14 +50,8 @@ impl UiOverlayPortalBindingExport {
         bindings: impl IntoIterator<Item = UiOverlayPortalBinding>,
     ) -> Result<Self, UiOverlayBindingExportDenial> {
         let generation = UiOverlayApplicationGeneration::from_prepared(generation);
-        let mut rows = bindings.into_iter().collect::<Vec<_>>();
-        rows.sort_unstable_by_key(|binding| (binding.portal(), binding.declaration()));
-        if rows
-            .windows(2)
-            .any(|window| window[0].portal() == window[1].portal())
-        {
-            return Err(UiOverlayBindingExportDenial::DuplicatePortal);
-        }
+        let rows = bindings.into_iter().collect::<Vec<_>>();
+        reject_duplicate_runtime_portals(&rows)?;
         Ok(Self {
             generation,
             runtime_surface,
@@ -86,4 +77,14 @@ impl UiOverlayPortalBindingExport {
     pub(super) fn rows(&self) -> &[UiOverlayPortalBinding] {
         &self.rows
     }
+}
+
+fn reject_duplicate_runtime_portals(
+    rows: &[UiOverlayPortalBinding],
+) -> Result<(), UiOverlayBindingExportDenial> {
+    let mut portals = BTreeSet::new();
+    if rows.iter().any(|row| !portals.insert(row.portal())) {
+        return Err(UiOverlayBindingExportDenial::DuplicatePortal);
+    }
+    Ok(())
 }

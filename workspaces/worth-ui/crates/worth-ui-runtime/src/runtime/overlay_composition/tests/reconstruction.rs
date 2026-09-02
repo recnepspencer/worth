@@ -196,10 +196,14 @@ fn stale_successor_is_denied_and_the_current_snapshot_is_retained() {
         )
         .unwrap();
     state.publish(next).unwrap();
+    let retained_snapshot = state.current().cloned();
+    let retained_index = state.dependency_index().cloned();
     assert_eq!(
         state.publish(stale),
         Err(UiOverlayCommitDenial::StalePredecessor)
     );
+    assert_eq!(state.current(), retained_snapshot.as_ref());
+    assert_eq!(state.dependency_index(), retained_index.as_ref());
     assert_eq!(state.current().unwrap().extent_revision(), 3);
 }
 

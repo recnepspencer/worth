@@ -1,7 +1,13 @@
 mod support;
 
+#[path = "binding_export.rs"]
+mod binding_export;
 #[path = "capacity.rs"]
 mod capacity;
+#[path = "gate2_total_order.rs"]
+mod gate2_total_order;
+#[path = "gate2_total_order_denials.rs"]
+mod gate2_total_order_denials;
 #[path = "independent_model.rs"]
 mod independent_model;
 #[path = "lifecycle_cases.rs"]
