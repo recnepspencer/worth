@@ -82,23 +82,21 @@ fn viewport_fit_keeps_a_portal_presentable_when_the_anchor_consumes_both_sides()
 fn changed_anchor_is_not_coalesced_as_an_exact_duplicate() {
     let mut state = state();
     let portal = portal(41, 42);
+    let first_request = open_request(portal, 43, [40.0, 40.0, 40.0, 20.0], viewport());
+    let first_surface = first_request.semantic_surface();
     let first = state
-        .prepare(open_request(
-            portal,
-            43,
-            [40.0, 40.0, 40.0, 20.0],
-            viewport(),
-        ))
+        .prepare(first_request)
         .expect("first placement prepares");
     state
         .commit_published(first)
         .expect("first placement commits");
     let moved = state
-        .prepare(open_request(
+        .prepare(open_request_on_surface(
             portal,
             43,
             [80.0, 40.0, 40.0, 20.0],
             viewport(),
+            first_surface,
         ))
         .expect("moved placement prepares");
 
@@ -181,6 +179,23 @@ fn open_request(
     anchor: [f32; 4],
     clip: [f32; 4],
 ) -> UiPortalServiceRequest {
+    open_request_on_surface(
+        portal,
+        lineage,
+        anchor,
+        clip,
+        worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound()
+            .expect("test semantic surface identity capacity"),
+    )
+}
+
+fn open_request_on_surface(
+    portal: UiPortalIdentity,
+    lineage: u64,
+    anchor: [f32; 4],
+    clip: [f32; 4],
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+) -> UiPortalServiceRequest {
     let presentation = presentation();
     UiPortalServiceRequest::open(
         portal,
@@ -191,8 +206,7 @@ fn open_request(
             anchor,
         ),
         Some(presented_viewport(clip, presentation)),
-        worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound()
-            .expect("test semantic surface identity capacity"),
+        surface,
     )
 }
 

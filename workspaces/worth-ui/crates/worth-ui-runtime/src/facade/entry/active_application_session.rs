@@ -60,6 +60,8 @@ pub struct WorthUiActiveApplicationSession {
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::focus::UiFocusRuntimeState>,
     pub(super) portal:
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::portal::UiPortalRuntimeState>,
+    pub(super) dormant_portal_stack_ordinal_issuer:
+        Option<crate::runtime::portal::UiPortalStackOrdinalIssuer>,
     pub(super) motion:
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::motion::UiMotionRuntimeState>,
     pub(super) scroll:
@@ -110,6 +112,8 @@ impl WorthUiActiveApplicationSession {
                 app.capabilities(),
             );
         let service_policy_plan = app.service_policy_plan();
+        let mut dormant_portal_stack_ordinal_issuer =
+            Some(crate::runtime::portal::UiPortalStackOrdinalIssuer::new());
         let appearance_axis_demand = app
             .prepared_authority()
             .consumed_fact_index()
@@ -189,12 +193,16 @@ impl WorthUiActiveApplicationSession {
             ),
             portal: crate::runtime::UiRuntimeServiceInstallation::from_optional(
                 service_policy_plan.portal().map(|policy| {
-                    crate::runtime::portal::UiPortalRuntimeState::new_with_policy(
+                    crate::runtime::portal::UiPortalRuntimeState::new_with_policy_and_ordinal_issuer(
                         crate::runtime::UiServiceStatePersistencePosture::SessionRestoreCandidate,
                         policy,
+                        dormant_portal_stack_ordinal_issuer
+                            .take()
+                            .expect("active session retains one Portal ordinal issuer"),
                     )
                 }),
             ),
+            dormant_portal_stack_ordinal_issuer,
             motion: crate::runtime::UiRuntimeServiceInstallation::from_optional(
                 service_policy_plan.motion().map(|policy| {
                     crate::runtime::motion::UiMotionRuntimeState::new_with_policy(

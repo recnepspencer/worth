@@ -1,5 +1,5 @@
 use super::{
-    state_tests::{
+    test_support::{
         idempotency, open_request, portal, presented_geometry, semantic_surface, state,
         viewport_bounds,
     },
@@ -120,12 +120,15 @@ fn non_interaction_dismissal_causes_remain_typed_and_inspectable() {
             .prepare(open_request(identity, 250 + offset as u64))
             .unwrap();
         state.commit_published(open).unwrap();
+        let surface = state
+            .semantic_surface_for_test(identity)
+            .expect("live portal retains its semantic surface");
         let close = state
             .prepare(UiPortalServiceRequest::close(
                 identity,
                 idempotency(260 + offset as u64),
                 cause,
-                semantic_surface(),
+                surface,
             ))
             .unwrap();
         state.commit_published(close).unwrap();
@@ -153,13 +156,16 @@ fn explicit_parent_close_atomically_closes_its_descendant_chain() {
         ))
         .unwrap();
     state.commit_published(child_open).unwrap();
+    let surface = state
+        .semantic_surface_for_test(parent)
+        .expect("parent retains its semantic surface");
 
     let close = state
         .prepare(UiPortalServiceRequest::close(
             parent,
             idempotency(247),
             UiPortalDismissalCause::ExplicitOwnerRequest,
-            semantic_surface(),
+            surface,
         ))
         .unwrap();
     assert!(state.mounted_projection_inputs(&close, false).is_empty());

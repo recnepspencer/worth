@@ -240,10 +240,27 @@ impl WorthUiActiveApplicationSession {
                 policy.with_scope_restoration(policy.restores_on_scope_close() && restoration)
             }),
         );
-        reconcile_portal_installation(&mut self.portal, service_policy_plan.portal());
-        if let (Some(motion), Some(prepared)) = (self.motion.as_mut(), motion_rebind) {
-            for terminal in motion.commit_mounted_rebind(prepared) {
-                let _retired = self.mounted.retire_terminal_motion_sample(terminal.track());
+        reconcile_portal_installation(
+            &mut self.portal,
+            service_policy_plan.portal(),
+            &mut self.dormant_portal_stack_ordinal_issuer,
+        );
+        let rebound_terminals = match (self.motion.as_mut(), motion_rebind) {
+            (Some(motion), Some(prepared)) => motion.commit_mounted_rebind(prepared),
+            _ => Box::default(),
+        };
+        for terminal in rebound_terminals {
+            self.release_rebound_motion_retention(terminal);
+            let _retired = self.mounted.retire_terminal_motion_sample(terminal.track());
+        }
+        let successor_identity = mounted_successor.identity_view();
+        let removed_portals = self
+            .portal
+            .as_mut()
+            .map(|portal| portal.remove_rebound_portals(&successor_identity));
+        if let Some(removed_portals) = removed_portals {
+            for portal in removed_portals.iter().copied() {
+                self.release_rebound_portal_retention(portal);
             }
         }
         reconcile_motion_installation(&mut self.motion, service_policy_plan.motion());

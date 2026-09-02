@@ -1,7 +1,10 @@
 use super::{
-    UiPortalDismissalCause, UiPortalIdentity, UiPortalLifecyclePosture, UiPortalOwnerIdentity,
-    UiPortalRuntimeState, UiPortalServiceDisposition, UiPortalServiceRequest,
-    UiPortalServiceTransitionDenial,
+    test_support::{
+        idempotency, open_request, portal, presented_geometry, semantic_surface, state,
+        viewport_bounds,
+    },
+    UiPortalDismissalCause, UiPortalLifecyclePosture, UiPortalServiceDisposition,
+    UiPortalServiceRequest, UiPortalServiceTransitionDenial,
 };
 
 #[test]
@@ -28,6 +31,9 @@ fn published_open_and_close_commit_physical_portal_truth() {
         .prepare(open_request(portal, 61))
         .expect("open prepares");
     let opened = state.commit_published(open).expect("open remains current");
+    let surface = state
+        .semantic_surface_for_test(portal)
+        .expect("visible portal retains its semantic surface");
 
     assert_eq!(opened.disposition(), UiPortalServiceDisposition::Opened);
     assert_eq!(opened.posture(), UiPortalLifecyclePosture::Visible);
@@ -38,7 +44,7 @@ fn published_open_and_close_commit_physical_portal_truth() {
             portal,
             idempotency(62),
             UiPortalDismissalCause::Escape,
-            semantic_surface(),
+            surface,
         ))
         .expect("close prepares");
     let closed = state
@@ -57,15 +63,19 @@ fn exit_retention_keeps_closing_projection_until_exact_terminal_publication() {
     let portal = portal(43, 53);
     let open = state.prepare(open_request(portal, 63)).unwrap();
     state.commit_published(open).unwrap();
+    let surface = state
+        .semantic_surface_for_test(portal)
+        .expect("closing portal retains its semantic surface");
     let placement = state
         .placement(portal)
         .expect("visible portal has placement");
+    let original_ordinal = state.stack_snapshot().rows()[0].ordinal();
     let close = state
         .prepare(UiPortalServiceRequest::close(
             portal,
             idempotency(64),
             UiPortalDismissalCause::Escape,
-            semantic_surface(),
+            surface,
         ))
         .unwrap();
     let closing_projection = state.mounted_projection_inputs(&close, true);
@@ -82,6 +92,10 @@ fn exit_retention_keeps_closing_projection_until_exact_terminal_publication() {
     assert_eq!(state.posture(portal), UiPortalLifecyclePosture::Closing);
     assert_eq!(state.placement(portal), Some(placement));
     assert_eq!(state.active_count(), 1);
+    let closing_snapshot = state.stack_snapshot();
+    assert_eq!(closing_snapshot.rows().len(), 1);
+    assert_eq!(closing_snapshot.rows()[0].portal(), portal);
+    assert_eq!(closing_snapshot.rows()[0].ordinal(), original_ordinal);
     let mismatched = super::UiPortalExitRetentionReceipt::new(
         portal,
         retention.revision() + 1,
@@ -154,16 +168,21 @@ fn reused_idempotency_with_changed_dismissal_cause_is_not_an_exact_duplicate() {
     let mut state = state();
     let portal = portal(92, 93);
     let idempotency = idempotency(94);
+    let open = state.prepare(open_request(portal, 95)).unwrap();
+    state.commit_published(open).unwrap();
+    let surface = state
+        .semantic_surface_for_test(portal)
+        .expect("live portal retains its semantic surface");
     let first = state
         .prepare(UiPortalServiceRequest::close(
             portal,
             idempotency,
             UiPortalDismissalCause::Escape,
-            semantic_surface(),
+            surface,
         ))
         .expect("first close prepares");
     state
-        .commit_published(first)
+        .commit_published_with_exit_retention(first, true)
         .expect("first close remains current");
 
     let changed = state
@@ -171,13 +190,13 @@ fn reused_idempotency_with_changed_dismissal_cause_is_not_an_exact_duplicate() {
             portal,
             idempotency,
             UiPortalDismissalCause::OutsidePress,
-            semantic_surface(),
+            surface,
         ))
         .expect("changed close prepares as fresh work");
     assert_eq!(changed.staged_posture(), UiPortalLifecyclePosture::Closing);
     let receipt = state
         .commit_published(changed)
-        .expect("changed close remains current");
+        .expect("changed close settles");
     assert_eq!(receipt.disposition(), UiPortalServiceDisposition::Closing);
     assert_eq!(state.idempotent_requests(), 0);
 }
@@ -297,7 +316,7 @@ fn stack_snapshot_uses_minted_total_order_not_identity_or_depth() {
 }
 
 #[test]
-fn replacement_mints_a_new_ordinal_and_exhaustion_denies_before_effects() {
+fn sibling_open_mints_a_new_ordinal_and_exhaustion_denies_before_effects() {
     let mut state = state();
     let original = portal(601, 701);
     let replacement = portal(601, 702);
@@ -317,70 +336,17 @@ fn replacement_mints_a_new_ordinal_and_exhaustion_denies_before_effects() {
     assert!(replacement_ordinal > original_ordinal);
 
     state.force_next_stack_ordinal(u64::MAX);
+    let final_portal = portal(603, 703);
+    let final_open = state
+        .prepare(open_request(final_portal, 803))
+        .expect("the maximum ordinal is still issuable");
+    state
+        .commit_published(final_open)
+        .expect("the maximum ordinal remains publishable");
     let before_revision = state.revision();
     assert!(matches!(
-        state.prepare(open_request(portal(603, 703), 803)),
+        state.prepare(open_request(portal(604, 704), 804)),
         Err(UiPortalServiceTransitionDenial::StackOrdinalExhausted)
     ));
     assert_eq!(state.revision(), before_revision);
-}
-
-pub(super) fn state() -> UiPortalRuntimeState {
-    UiPortalRuntimeState::new(
-        crate::runtime::UiServiceStatePersistencePosture::SessionRestoreCandidate,
-    )
-}
-
-pub(super) fn portal(graph_node: u64, mounted_instance: u64) -> UiPortalIdentity {
-    UiPortalIdentity::for_owner(UiPortalOwnerIdentity::for_test(
-        graph_node,
-        mounted_instance,
-    ))
-}
-
-pub(super) fn idempotency(
-    lineage: u64,
-) -> crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity {
-    crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity::issued(1, lineage)
-}
-
-pub(super) fn open_request(portal: UiPortalIdentity, lineage: u64) -> UiPortalServiceRequest {
-    let geometry = presented_geometry(1);
-    UiPortalServiceRequest::open(
-        portal,
-        idempotency(lineage),
-        geometry,
-        Some(viewport_bounds(geometry)),
-        semantic_surface(),
-    )
-}
-
-pub(super) fn viewport_bounds(
-    geometry: crate::runtime::interaction::UiPresentedInteractionGeometry,
-) -> crate::runtime::interaction::UiPresentedViewportGeometry {
-    crate::runtime::interaction::UiPresentedViewportGeometry::for_test(
-        geometry.clip_bounds(),
-        geometry.presentation(),
-    )
-}
-
-pub(super) fn semantic_surface() -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
-    worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound()
-        .expect("test semantic surface identity capacity")
-}
-
-pub(super) fn presented_geometry(
-    epoch: u64,
-) -> crate::runtime::interaction::UiPresentedInteractionGeometry {
-    let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound()
-        .expect("test binding identity capacity");
-    let presentation = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-        worth_ui_host_contract::UiHostSurfaceIdentity::mint_unbound()
-            .expect("test host surface identity capacity"),
-        worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound()
-            .expect("test frame identity capacity"),
-        binding,
-        worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(epoch),
-    );
-    crate::runtime::interaction::UiPresentedInteractionGeometry::for_test(presentation)
 }

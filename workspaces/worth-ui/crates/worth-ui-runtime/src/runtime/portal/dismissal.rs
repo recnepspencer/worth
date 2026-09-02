@@ -119,24 +119,30 @@ impl super::UiPortalRuntimeState {
             return self
                 .records
                 .get_key_value(&anchor)
+                .filter(|(_, record)| {
+                    matches!(
+                        record.posture,
+                        super::UiPortalLifecyclePosture::Open
+                            | super::UiPortalLifecyclePosture::Visible
+                    )
+                })
                 .map(|(portal, record)| (*portal, record));
         }
         self.records
             .iter()
-            .filter(|_| match trigger {
-                UiPortalDismissalTrigger::Escape
-                | UiPortalDismissalTrigger::OutsidePress { .. }
-                | UiPortalDismissalTrigger::AcceptedSelection => true,
-                UiPortalDismissalTrigger::AnchorLoss(_) => unreachable!(),
+            .filter(|(_, record)| {
+                matches!(
+                    record.posture,
+                    super::UiPortalLifecyclePosture::Open
+                        | super::UiPortalLifecyclePosture::Visible
+                ) && match trigger {
+                    UiPortalDismissalTrigger::Escape
+                    | UiPortalDismissalTrigger::OutsidePress { .. }
+                    | UiPortalDismissalTrigger::AcceptedSelection => true,
+                    UiPortalDismissalTrigger::AnchorLoss(_) => unreachable!(),
+                }
             })
-            .max_by_key(|(portal, record)| {
-                (
-                    record
-                        .placement
-                        .map_or(0, |placement| placement.prepared().layer().depth()),
-                    **portal,
-                )
-            })
+            .max_by_key(|(_, record)| record.stack_ordinal)
             .map(|(portal, record)| (*portal, record))
     }
 

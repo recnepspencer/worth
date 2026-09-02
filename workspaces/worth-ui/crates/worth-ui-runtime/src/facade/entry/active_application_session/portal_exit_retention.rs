@@ -134,6 +134,20 @@ impl UiPortalExitRetentionCoordinator {
             .expect("validated displaced portal exit remains retained"))
     }
 
+    pub(super) fn remove_rebound_portal(
+        &mut self,
+        portal: crate::runtime::portal::UiPortalIdentity,
+    ) -> Result<Option<crate::runtime::motion::UiMotionExitRetentionReceipt>, ()> {
+        let motion = self.retentions.values().find_map(|retention| {
+            (retention.portal.portal() == portal).then_some(retention.motion)
+        });
+        let Some(motion) = motion else {
+            return Ok(None);
+        };
+        self.remove_displaced(motion)
+            .map(|retention| Some(retention.motion()))
+    }
+
     pub(super) fn clear_for_shutdown(&mut self) -> usize {
         assert!(self.pending.is_none());
         let retained = self.retentions.len();
