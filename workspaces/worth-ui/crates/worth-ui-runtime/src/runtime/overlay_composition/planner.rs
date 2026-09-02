@@ -14,7 +14,6 @@ pub(crate) struct UiOverlayPortalBinding {
 }
 
 impl UiOverlayPortalBinding {
-    #[cfg(test)]
     pub(in crate::runtime::overlay_composition) const fn new(
         declaration: UiPortalDeclarationId,
         portal: crate::runtime::portal::UiPortalIdentity,
@@ -44,7 +43,6 @@ pub(crate) struct UiOverlayCapacityProfile {
 }
 
 impl UiOverlayCapacityProfile {
-    #[cfg(test)]
     pub(crate) const fn qualified() -> Self {
         Self {
             max_backdrop_declarations: worth_ui_dsl::UI_APPEARANCE_BACKDROP_RELATION_CAPACITY,
@@ -218,24 +216,6 @@ pub(crate) struct UiOverlayCompositionInput<'a> {
 }
 
 impl<'a> UiOverlayCompositionInput<'a> {
-    pub(super) fn from_sealed_owner_snapshot(
-        generation: UiOverlayApplicationGeneration,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-        extent: &'a UiOverlaySurfaceExtentSnapshot,
-        portal_snapshot: &'a crate::runtime::portal::UiPortalStackSnapshot,
-        portal_bindings: &'a [UiOverlayPortalBinding],
-        motion: Option<&'a UiOverlayMotionSnapshot>,
-    ) -> Self {
-        Self {
-            generation,
-            presentation,
-            extent,
-            portal_snapshot,
-            portal_bindings,
-            motion,
-        }
-    }
-
     #[cfg(test)]
     pub(in crate::runtime::overlay_composition) fn new(
         generation: UiOverlayApplicationGeneration,

@@ -14,6 +14,10 @@ mod motion_locality;
 mod order_cases;
 #[path = "owner_lifecycle.rs"]
 mod owner_lifecycle;
+#[path = "owner_reconfiguration.rs"]
+mod owner_reconfiguration;
+#[path = "owner_support.rs"]
+mod owner_support;
 #[path = "reconstruction.rs"]
 mod reconstruction;
 #[path = "relation_compilation.rs"]

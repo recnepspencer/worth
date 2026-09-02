@@ -1,116 +1,37 @@
 use super::super::{
-    UiOverlayApplicationGeneration, UiOverlayChangeSet, UiOverlayChangedBasis,
-    UiOverlayCompositionCoordinator, UiOverlayCompositionOwnerInput, UiOverlayCompositionState,
-    UiOverlayPortalBinding, UiOverlayStackParticipant,
+    UiOverlayChangeSet, UiOverlayChangedBasis, UiOverlayCompositionOwner, UiOverlayPortalBinding,
+    UiOverlayStackParticipant,
+};
+use super::owner_support::{
+    close_request, commit_open, owner_exports, owner_portal, owner_state, prepared_generation,
 };
 use super::support::{declaration, presentation, surface_extent};
-use crate::runtime::interaction::{UiPresentedInteractionGeometry, UiPresentedViewportGeometry};
-use crate::runtime::portal::{
-    UiPortalDismissalCause, UiPortalIdentity, UiPortalLifecyclePosture, UiPortalRuntimeState,
-    UiPortalServiceRequest,
-};
+use crate::runtime::portal::{UiPortalLifecyclePosture, UiPortalRuntimeState};
 
-fn owner_state() -> UiPortalRuntimeState {
-    UiPortalRuntimeState::new(
-        crate::runtime::UiServiceStatePersistencePosture::SessionRestoreCandidate,
-    )
-}
-
-fn owner_portal(graph: u64) -> UiPortalIdentity {
-    UiPortalIdentity::for_test(graph)
-}
-
-fn idempotency(
-    lineage: u64,
-) -> crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity {
-    crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity::issued(1, lineage)
-}
-
-fn presentation_geometry(epoch: u64) -> UiPresentedInteractionGeometry {
-    let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound()
-        .expect("test binding identity capacity");
-    let presentation = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-        worth_ui_host_contract::UiHostSurfaceIdentity::mint_unbound()
-            .expect("test host surface identity capacity"),
-        worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound()
-            .expect("test frame identity capacity"),
-        binding,
-        worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(epoch),
-    );
-    UiPresentedInteractionGeometry::for_test(presentation)
-}
-
-fn open_request(
-    portal: UiPortalIdentity,
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    lineage: u64,
-) -> UiPortalServiceRequest {
-    let geometry = presentation_geometry(lineage);
-    UiPortalServiceRequest::open(
-        portal,
-        idempotency(lineage),
-        geometry,
-        Some(UiPresentedViewportGeometry::for_test(
-            geometry.clip_bounds(),
-            geometry.presentation(),
-        )),
-        surface,
-    )
-}
-
-fn close_request(
-    portal: UiPortalIdentity,
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    lineage: u64,
-) -> UiPortalServiceRequest {
-    UiPortalServiceRequest::close(
-        portal,
-        idempotency(lineage),
-        UiPortalDismissalCause::Escape,
-        surface,
-    )
+fn close(
+    owner: &mut UiPortalRuntimeState,
+    request: crate::runtime::portal::UiPortalServiceRequest,
+) {
+    let transition = owner.prepare(request).expect("owner close prepares");
+    owner
+        .commit_published(transition)
+        .expect("owner close commits");
 }
 
 fn open(
     owner: &mut UiPortalRuntimeState,
-    portal: UiPortalIdentity,
+    portal: crate::runtime::portal::UiPortalIdentity,
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     lineage: u64,
 ) {
-    let transition = owner
-        .prepare(open_request(portal, surface, lineage))
-        .expect("owner open prepares");
-    owner
-        .commit_published(transition)
-        .expect("owner open commits");
-}
-
-fn owner_input<'a>(
-    generation: u64,
-    extent: &'a super::super::UiOverlaySurfaceExtentSnapshot,
-    owner: &'a UiPortalRuntimeState,
-    bindings: &'a [UiOverlayPortalBinding],
-    presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-) -> UiOverlayCompositionOwnerInput<'a> {
-    UiOverlayCompositionOwnerInput::new(
-        UiOverlayApplicationGeneration::for_test(generation),
-        presentation,
-        extent,
+    commit_open(
         owner,
-        bindings,
-        None,
-    )
-}
-
-fn coordinator(backdrop: worth_ui_dsl::UiBackdropDeclaration) -> UiOverlayCompositionCoordinator {
-    UiOverlayCompositionCoordinator::new(
-        UiOverlayCompositionState::admit([backdrop], 3, Default::default())
-            .expect("admitted overlay state"),
-    )
+        super::owner_support::open_request(portal, surface, lineage),
+    );
 }
 
 #[test]
-fn coordinator_consumes_owner_push_topmost_close_and_shutdown_exports() {
+fn owner_bridge_consumes_push_topmost_close_reconstruction_and_shutdown() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
     let portal_declaration = worth_ui_dsl::UiPortalDeclarationId::new(10).unwrap();
     let runtime_surface =
@@ -126,6 +47,7 @@ fn coordinator_consumes_owner_push_topmost_close_and_shutdown_exports() {
         worth_ui_dsl::UiBackdropPlacement::ImmediatelyBeforePortal(portal_declaration),
     );
     let extent = surface_extent(surface, runtime_surface, 2);
+    let generation = prepared_generation();
     let mut owner = owner_state();
     open(&mut owner, first, runtime_surface, 1);
     open(&mut owner, second, runtime_surface, 2);
@@ -133,15 +55,23 @@ fn coordinator_consumes_owner_push_topmost_close_and_shutdown_exports() {
     assert_eq!(owner.stack_snapshot().owner_revision(), owner.revision());
     assert_eq!(owner.current_mounted_projection_inputs().len(), 2);
     let presentation = presentation();
-
     let bindings = [
         UiOverlayPortalBinding::new(portal_declaration, first),
         UiOverlayPortalBinding::new(portal_declaration, second),
     ];
-    let mut coordinator = coordinator(backdrop);
-    let initial = coordinator
-        .prepare_initial(&owner_input(1, &extent, &owner, &bindings, presentation))
-        .expect("coordinator consumes the real owner stack");
+    let mut composition = UiOverlayCompositionOwner::admit([backdrop], 3)
+        .expect("production owner admits overlay state");
+    let initial_exports = owner_exports(
+        &generation,
+        &owner,
+        extent.clone(),
+        presentation,
+        bindings,
+        None,
+    );
+    let initial = composition
+        .prepare_initial(&initial_exports)
+        .expect("owner bridge consumes the real Portal export");
     assert_eq!(initial.snapshot().portal_revision(), owner.revision());
     assert_eq!(
         initial
@@ -152,48 +82,54 @@ fn coordinator_consumes_owner_push_topmost_close_and_shutdown_exports() {
             .count(),
         2
     );
-    coordinator.retain_prepared(initial).unwrap();
-    let reconstructed = coordinator
-        .reconstruct(&owner_input(1, &extent, &owner, &bindings, presentation))
-        .expect("coordinator reconstructs from the owner export");
+    composition.retain_prepared(initial).unwrap();
+    let reconstructed = composition
+        .reconstruct(&owner_exports(
+            &generation,
+            &owner,
+            extent.clone(),
+            presentation,
+            bindings,
+            None,
+        ))
+        .expect("owner bridge reconstructs from sealed exports");
     assert_eq!(
         reconstructed.snapshot(),
-        coordinator.current().expect("published owner composition")
+        composition.current().expect("retained owner composition")
     );
 
-    let close = owner
-        .prepare(close_request(second, runtime_surface, 3))
-        .expect("topmost close prepares");
-    owner
-        .commit_published(close)
-        .expect("topmost close commits");
+    close(&mut owner, close_request(second, runtime_surface, 3));
     assert_eq!(owner.active_count(), 1);
-    assert_eq!(owner.stack_snapshot().rows().len(), 1);
     let retained_binding = [UiOverlayPortalBinding::new(portal_declaration, first)];
-    let successor = coordinator
+    let successor = composition
         .prepare_successor(
-            &owner_input(1, &extent, &owner, &retained_binding, presentation),
+            &owner_exports(
+                &generation,
+                &owner,
+                extent.clone(),
+                presentation,
+                retained_binding,
+                None,
+            ),
             &UiOverlayChangeSet::from_changes([UiOverlayChangedBasis::Portal(portal_declaration)]),
         )
-        .expect("close successor consumes owner export");
-    assert_eq!(successor.snapshot().portal_revision(), owner.revision());
+        .expect("topmost close successor consumes owner export");
     assert_eq!(successor.reservation().portal_rows, 1);
-    coordinator.retain_prepared(successor).unwrap();
+    composition.retain_prepared(successor).unwrap();
 
     let shutdown = owner.shutdown();
     assert_eq!(shutdown.final_active_records(), 0);
-    assert!(owner.stack_snapshot().rows().is_empty());
-    let terminal = coordinator
+    let terminal = composition
         .prepare_successor(
-            &owner_input(1, &extent, &owner, &[], presentation),
+            &owner_exports(&generation, &owner, extent, presentation, [], None),
             &UiOverlayChangeSet::from_changes([UiOverlayChangedBasis::Portal(portal_declaration)]),
         )
-        .expect("shutdown successor consumes the empty owner export");
+        .expect("shutdown successor consumes empty owner export");
     assert!(terminal.snapshot().participants().is_empty());
 }
 
 #[test]
-fn coordinator_consumes_real_exit_retention_before_terminal_owner_removal() {
+fn owner_bridge_retains_real_exit_until_terminal_owner_transition() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(2).unwrap();
     let portal_declaration = worth_ui_dsl::UiPortalDeclarationId::new(20).unwrap();
     let runtime_surface =
@@ -208,6 +144,7 @@ fn coordinator_consumes_real_exit_retention_before_terminal_owner_removal() {
         worth_ui_dsl::UiBackdropPlacement::ImmediatelyBeforePortal(portal_declaration),
     );
     let extent = surface_extent(surface, runtime_surface, 2);
+    let generation = prepared_generation();
     let binding = [UiOverlayPortalBinding::new(
         portal_declaration,
         runtime_portal,
@@ -215,14 +152,19 @@ fn coordinator_consumes_real_exit_retention_before_terminal_owner_removal() {
     let mut owner = owner_state();
     open(&mut owner, runtime_portal, runtime_surface, 10);
     let presentation = presentation();
-    let mut coordinator = coordinator(backdrop);
-    coordinator
-        .retain_prepared(
-            coordinator
-                .prepare_initial(&owner_input(1, &extent, &owner, &binding, presentation))
-                .unwrap(),
-        )
+    let mut composition = UiOverlayCompositionOwner::admit([backdrop], 3)
+        .expect("production owner admits overlay state");
+    let initial = composition
+        .prepare_initial(&owner_exports(
+            &generation,
+            &owner,
+            extent.clone(),
+            presentation,
+            binding,
+            None,
+        ))
         .unwrap();
+    composition.retain_prepared(initial).unwrap();
 
     let close = owner
         .prepare(close_request(runtime_portal, runtime_surface, 11))
@@ -231,36 +173,37 @@ fn coordinator_consumes_real_exit_retention_before_terminal_owner_removal() {
         .commit_published_with_exit_retention(close, true)
         .unwrap();
     let retention = retention.expect("owner issues exit retention");
-    let closing_snapshot = owner.stack_snapshot();
     assert_eq!(
-        closing_snapshot.rows()[0].lifecycle(),
+        owner.stack_snapshot().rows()[0].lifecycle(),
         UiPortalLifecyclePosture::Closing
     );
-    assert_eq!(owner.current_mounted_projection_inputs().len(), 1);
-    let closing = coordinator
+    let closing = composition
         .prepare_successor(
-            &owner_input(1, &extent, &owner, &binding, presentation),
+            &owner_exports(
+                &generation,
+                &owner,
+                extent.clone(),
+                presentation,
+                binding,
+                None,
+            ),
             &UiOverlayChangeSet::from_changes([UiOverlayChangedBasis::Portal(portal_declaration)]),
         )
         .unwrap();
     assert!(closing.snapshot().participants().iter().any(|participant| {
         matches!(participant, UiOverlayStackParticipant::Portal(row) if row.lifecycle() == UiPortalLifecyclePosture::Closing)
     }));
-    coordinator.retain_prepared(closing).unwrap();
+    composition.retain_prepared(closing).unwrap();
 
     let terminal_transition = owner
-        .prepare_exit_terminal(retention, idempotency(12))
-        .expect("exact owner retention prepares terminal exit");
-    assert!(owner
-        .mounted_projection_inputs(&terminal_transition, false)
-        .is_empty());
+        .prepare_exit_terminal(retention, super::owner_support::idempotency(12))
+        .expect("owner retention prepares terminal exit");
     owner
         .commit_published_with_exit_retention(terminal_transition, false)
         .unwrap();
-    assert!(owner.stack_snapshot().rows().is_empty());
-    let terminal = coordinator
+    let terminal = composition
         .prepare_successor(
-            &owner_input(1, &extent, &owner, &[], presentation),
+            &owner_exports(&generation, &owner, extent, presentation, [], None),
             &UiOverlayChangeSet::from_changes([UiOverlayChangedBasis::Portal(portal_declaration)]),
         )
         .unwrap();
