@@ -1,6 +1,6 @@
 use super::{
     UiAppearanceAspect, UiAppearanceAspectContract, UiAppearanceAspectContractDenial,
-    UiAppearanceDecisionPartition, UiAppearanceDecisionPartitionDenial,
+    UiAppearanceDecisionPartition, UiAppearancePartitionAdmissionDenial,
     UiAppearancePartitionAuthoring, UiAppearanceRoleApplicability, UiAppearanceRoleDeclaration,
     UiAppearanceRoleDeclarationDenial, UiAppearanceRoleIdentity, UiAppearanceRoleRevision,
 };
@@ -13,10 +13,10 @@ pub struct UiAppearanceRoleAuthoring {
     partitions: Vec<(UiAppearanceAspect, UiAppearanceDecisionPartition)>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum UiAppearanceRoleAuthoringDenial {
     InvalidRevision,
-    Partition(UiAppearanceDecisionPartitionDenial),
+    Partition(UiAppearancePartitionAdmissionDenial),
     AspectContract(UiAppearanceAspectContractDenial),
     Contract(UiAppearanceRoleDeclarationDenial),
 }
@@ -54,9 +54,14 @@ impl UiAppearanceRoleAuthoring {
         aspect: UiAppearanceAspect,
         partition: UiAppearancePartitionAuthoring,
     ) -> Result<Self, UiAppearanceRoleAuthoringDenial> {
-        let partition = partition
-            .compile(aspect)
-            .map_err(UiAppearanceRoleAuthoringDenial::Partition)?;
+        let partition = partition.compile(aspect).map_err(|denial| {
+            UiAppearanceRoleAuthoringDenial::Partition(UiAppearancePartitionAdmissionDenial::new(
+                self.identity.clone(),
+                aspect,
+                aspect.value_kind(),
+                denial,
+            ))
+        })?;
         self.partitions.push((aspect, partition));
         Ok(self)
     }

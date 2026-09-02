@@ -96,7 +96,7 @@ pub struct WorthUiArtifactInputAppearanceRoleNode {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WorthUiArtifactInputBackdropNode {
-    declaration: crate::UiStaticBackdropDeclaration,
+    declaration: crate::UiBackdropDeclaration,
     provenance: WorthUiArtifactInputProvenance,
 }
 
@@ -172,7 +172,7 @@ impl WorthUiArtifactInputAppearanceRoleNode {
 
 impl WorthUiArtifactInputBackdropNode {
     pub(crate) fn new(
-        declaration: crate::UiStaticBackdropDeclaration,
+        declaration: crate::UiBackdropDeclaration,
         provenance: WorthUiArtifactInputProvenance,
     ) -> Self {
         Self {
@@ -181,7 +181,7 @@ impl WorthUiArtifactInputBackdropNode {
         }
     }
 
-    pub fn declaration(&self) -> &crate::UiStaticBackdropDeclaration {
+    pub fn declaration(&self) -> &crate::UiBackdropDeclaration {
         &self.declaration
     }
 

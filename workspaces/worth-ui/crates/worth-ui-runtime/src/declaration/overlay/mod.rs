@@ -11,7 +11,8 @@ pub use extent::{
 };
 pub use motion::UiBackdropMotionBasis;
 pub use placement::{
-    UiBackdropPlacement, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
+    UiBackdropPlacement, UiOverlayAnchor, UiOverlayPortalParticipant, UiOverlayRelation,
+    UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph, UiOverlayRelationKind,
 };
 pub use presence::{UiBackdropPresenceBasis, UiPortalDeclarationId};
 pub use scope::UiBackdropScope;

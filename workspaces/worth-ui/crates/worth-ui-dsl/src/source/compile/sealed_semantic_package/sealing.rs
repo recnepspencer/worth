@@ -157,26 +157,30 @@ pub(super) fn appearance_diagnostic(
 }
 
 pub(super) fn overlay_diagnostic(
-    denial: crate::UiStaticOverlayRelationGraphDenial,
+    denial: crate::UiOverlayRelationAdmissionDenial,
     provenance: &WorthUiArtifactInputProvenance,
 ) -> WorthUiDslCompileDiagnostic {
     let code = match denial {
-        crate::UiStaticOverlayRelationGraphDenial::BackdropCapacityExceeded => {
+        crate::UiOverlayRelationAdmissionDenial::BackdropCapacityExceeded => {
             WorthUiDslCompileDiagnosticCode::OverlayCapacityDenied
         }
-        crate::UiStaticOverlayRelationGraphDenial::MissingAnchor => {
+        crate::UiOverlayRelationAdmissionDenial::MissingAnchor => {
             WorthUiDslCompileDiagnosticCode::MissingOverlayAnchor
         }
-        crate::UiStaticOverlayRelationGraphDenial::ForeignSurfaceAnchor => {
+        crate::UiOverlayRelationAdmissionDenial::ForeignSurfaceAnchor => {
             WorthUiDslCompileDiagnosticCode::ForeignOverlaySurface
         }
-        crate::UiStaticOverlayRelationGraphDenial::Cycle => {
+        crate::UiOverlayRelationAdmissionDenial::Cycle => {
             WorthUiDslCompileDiagnosticCode::CyclicOverlayRelation
         }
-        crate::UiStaticOverlayRelationGraphDenial::AmbiguousOrder => {
+        crate::UiOverlayRelationAdmissionDenial::AmbiguousOrder => {
             WorthUiDslCompileDiagnosticCode::AmbiguousOverlayRelation
         }
-        _ => WorthUiDslCompileDiagnosticCode::InvalidBackdropDeclaration,
+        crate::UiOverlayRelationAdmissionDenial::DuplicateParticipant
+        | crate::UiOverlayRelationAdmissionDenial::SelfRelation
+        | crate::UiOverlayRelationAdmissionDenial::ConflictingImmediateAdjacency => {
+            WorthUiDslCompileDiagnosticCode::InvalidBackdropDeclaration
+        }
     };
     appearance_diagnostic(
         code,

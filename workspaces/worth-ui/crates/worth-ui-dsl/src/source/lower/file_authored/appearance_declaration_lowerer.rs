@@ -1,14 +1,14 @@
 use crate::source::{
     WorthUiArtifactInputAppearanceRoleNode, WorthUiArtifactInputNode,
     WorthUiArtifactInputProvenance, WorthUiDslCompileDiagnostic,
-    WorthUiParsedAppearanceRoleDeclaration, WorthUiSourceTokenKind,
+    WorthUiParsedAppearanceRoleDeclaration, WorthUiSourceSpan, WorthUiSourceTokenKind,
 };
 use crate::{
     UiAppearanceAspect, UiAppearanceAxisClass, UiAppearanceAxisDomain, UiAppearanceAxisPredicate,
-    UiAppearanceCell, UiAppearanceCellValue, UiAppearancePartitionAuthoring,
-    UiAppearanceRoleApplicability, UiAppearanceRoleDeclaration, UiAppearanceRoleIdentity,
-    UiAppearanceRoleRevision, UiAppearanceStateAxis, UiDslComponentReference, UiThemeSlotIdentity,
-    UiThemeValueKind,
+    UiAppearanceCell, UiAppearanceCellReferenceOrigin, UiAppearanceCellValue,
+    UiAppearancePartitionAuthoring, UiAppearanceRoleApplicability, UiAppearanceRoleDeclaration,
+    UiAppearanceRoleIdentity, UiAppearanceRoleRevision, UiAppearanceStateAxis,
+    UiDslComponentReference, UiThemeSlotIdentity, UiThemeValueKind,
 };
 
 #[path = "appearance_diagnostic.rs"]
@@ -17,6 +17,10 @@ mod appearance_diagnostic;
 mod appearance_value_lowerer;
 use appearance_diagnostic::AppearanceLoweringError;
 use appearance_value_lowerer::transparent_value;
+
+#[path = "appearance_cursor.rs"]
+mod appearance_cursor;
+use appearance_cursor::Cursor;
 
 pub(super) fn lower_role(
     declaration: &WorthUiParsedAppearanceRoleDeclaration,
@@ -51,19 +55,30 @@ fn parse_role(
                 .ok_or_else(|| "appearance role component target is invalid".to_owned())?,
         )
     };
-    let mut cursor = Cursor::new(declaration.body().tokens());
+    let mut cursor = Cursor::with_spans(
+        declaration.body().tokens(),
+        declaration.body().token_spans(),
+    );
     let mut partitions = Vec::new();
     while !cursor.eof() {
         cursor.skip(WorthUiSourceTokenKind::Semicolon);
         if cursor.eof() {
             break;
         }
+        let aspect_span = cursor.current_span().cloned();
         let aspect = parse_aspect(cursor.word()?)?;
         cursor.advance();
         let partition = if cursor.take_word("use") {
-            simple_partition(aspect, parse_value(&mut cursor, aspect)?)?
+            let value = parse_value(&mut cursor, aspect)?;
+            simple_partition(
+                aspect,
+                &identity,
+                value.value,
+                aspect_span,
+                value.reference_span,
+            )?
         } else if cursor.take_word("over") {
-            parse_table(&mut cursor, aspect)?
+            parse_table(&mut cursor, aspect, &identity, aspect_span)?
         } else {
             return Err(AppearanceLoweringError::invalid(format!(
                 "aspect {aspect:?} requires 'use' or 'over'"
@@ -90,17 +105,30 @@ fn parse_role(
 
 fn simple_partition(
     aspect: UiAppearanceAspect,
+    role: &UiAppearanceRoleIdentity,
     value: UiAppearanceCellValue,
+    aspect_span: Option<WorthUiSourceSpan>,
+    reference_span: Option<WorthUiSourceSpan>,
 ) -> Result<crate::UiAppearanceDecisionPartition, AppearanceLoweringError> {
     UiAppearancePartitionAuthoring::new([])
         .with_cell(UiAppearanceCell::when([]).uses(value))
         .compile(aspect)
-        .map_err(|denial| AppearanceLoweringError::partition(denial, aspect))
+        .map_err(|denial| {
+            AppearanceLoweringError::partition(
+                denial,
+                role.clone(),
+                aspect,
+                aspect_span,
+                reference_span,
+            )
+        })
 }
 
 fn parse_table(
     cursor: &mut Cursor<'_>,
     aspect: UiAppearanceAspect,
+    role: &UiAppearanceRoleIdentity,
+    aspect_span: Option<WorthUiSourceSpan>,
 ) -> Result<crate::UiAppearanceDecisionPartition, AppearanceLoweringError> {
     cursor.expect_symbol(WorthUiSourceTokenKind::LeftBracket)?;
     let mut domains = Vec::new();
@@ -115,16 +143,35 @@ fn parse_table(
     cursor.expect_symbol(WorthUiSourceTokenKind::RightBracket)?;
     cursor.expect_symbol(WorthUiSourceTokenKind::LeftBrace)?;
     let mut authoring = UiAppearancePartitionAuthoring::new(domains);
+    let mut reference_spans = Vec::new();
     while !cursor.take_symbol(WorthUiSourceTokenKind::RightBrace) {
         cursor.skip(WorthUiSourceTokenKind::Semicolon);
         if cursor.take_word("otherwise") {
             authoring = if cursor.take_word("same_as") {
+                let reference_span = cursor.current_span().cloned();
                 let name = cursor.word()?.to_owned();
                 cursor.advance();
+                if let Some(span) = reference_span {
+                    reference_spans.push((
+                        name.clone(),
+                        UiAppearanceCellReferenceOrigin::OtherwiseClause,
+                        span,
+                    ));
+                }
                 authoring.otherwise_same_as(name)
             } else {
                 cursor.expect_word("use")?;
-                authoring.with_otherwise(parse_value(cursor, aspect)?)
+                let value = parse_value(cursor, aspect)?;
+                if let Some(span) = value.reference_span {
+                    if let UiAppearanceCellValue::SameAs(name) = &value.value {
+                        reference_spans.push((
+                            name.to_string(),
+                            UiAppearanceCellReferenceOrigin::OtherwiseClause,
+                            span,
+                        ));
+                    }
+                }
+                authoring.with_otherwise(value.value)
             };
         } else {
             let name = if cursor.take_word("cell") {
@@ -138,13 +185,28 @@ fn parse_table(
             let predicates = parse_predicates(cursor)?;
             cursor.expect_word("use")?;
             let value = parse_value(cursor, aspect)?;
-            authoring = authoring.with_cell(UiAppearanceCell::new(name, predicates, value));
+            if let Some(span) = value.reference_span {
+                if let UiAppearanceCellValue::SameAs(name) = &value.value {
+                    reference_spans.push((
+                        name.to_string(),
+                        UiAppearanceCellReferenceOrigin::NamedCell,
+                        span,
+                    ));
+                }
+            }
+            authoring = authoring.with_cell(UiAppearanceCell::new(name, predicates, value.value));
         }
         cursor.skip(WorthUiSourceTokenKind::Semicolon);
     }
-    authoring
-        .compile(aspect)
-        .map_err(|denial| AppearanceLoweringError::partition(denial, aspect))
+    authoring.compile(aspect).map_err(|denial| {
+        AppearanceLoweringError::partition_with_references(
+            denial,
+            role.clone(),
+            aspect,
+            aspect_span,
+            &reference_spans,
+        )
+    })
 }
 
 fn parse_predicates(cursor: &mut Cursor<'_>) -> Result<Vec<UiAppearanceAxisPredicate>, String> {
@@ -169,15 +231,19 @@ fn parse_predicates(cursor: &mut Cursor<'_>) -> Result<Vec<UiAppearanceAxisPredi
 fn parse_value(
     cursor: &mut Cursor<'_>,
     aspect: UiAppearanceAspect,
-) -> Result<UiAppearanceCellValue, AppearanceLoweringError> {
+) -> Result<ParsedValue, AppearanceLoweringError> {
     if cursor.take_word("same_as") {
         let parenthesized = cursor.take_symbol(WorthUiSourceTokenKind::LeftParen);
+        let reference_span = cursor.current_span().cloned();
         let name = cursor.word()?.to_owned();
         cursor.advance();
         if parenthesized {
             cursor.expect_symbol(WorthUiSourceTokenKind::RightParen)?;
         }
-        return Ok(UiAppearanceCellValue::same_as(name));
+        return Ok(ParsedValue {
+            value: UiAppearanceCellValue::same_as(name),
+            reference_span,
+        });
     }
     if cursor.take_word("token") {
         cursor.expect_symbol(WorthUiSourceTokenKind::LeftParen)?;
@@ -185,7 +251,10 @@ fn parse_value(
             .ok_or_else(|| "theme slot identity is invalid".to_owned())?;
         cursor.advance();
         cursor.expect_symbol(WorthUiSourceTokenKind::RightParen)?;
-        return Ok(UiAppearanceCellValue::theme_slot(slot, aspect.value_kind()));
+        return Ok(ParsedValue {
+            value: UiAppearanceCellValue::theme_slot(slot, aspect.value_kind()),
+            reference_span: None,
+        });
     }
     let literal = cursor.word()?.to_owned();
     cursor.advance();
@@ -198,7 +267,10 @@ fn parse_value(
         UiThemeValueKind::SolidOutline => "transparent-outline",
     };
     if literal == "transparent" || literal == expected_literal {
-        Ok(UiAppearanceCellValue::literal(transparent_value(aspect)))
+        Ok(ParsedValue {
+            value: UiAppearanceCellValue::literal(transparent_value(aspect)),
+            reference_span: None,
+        })
     } else if matches!(
         literal.as_str(),
         "transparent-color"
@@ -216,6 +288,11 @@ fn parse_value(
             "unsupported appearance value '{literal}'"
         )))
     }
+}
+
+struct ParsedValue {
+    value: UiAppearanceCellValue,
+    reference_span: Option<WorthUiSourceSpan>,
 }
 
 fn parse_aspect(value: &str) -> Result<UiAppearanceAspect, String> {
@@ -274,74 +351,4 @@ fn parse_class(axis: UiAppearanceStateAxis, value: &str) -> Result<UiAppearanceA
         _ => return Err(format!("class '{value}' does not belong to axis {axis:?}")),
     };
     Ok(class)
-}
-
-struct Cursor<'a> {
-    tokens: &'a [WorthUiSourceTokenKind],
-    index: usize,
-}
-
-impl<'a> Cursor<'a> {
-    fn new(tokens: &'a [WorthUiSourceTokenKind]) -> Self {
-        Self { tokens, index: 0 }
-    }
-
-    fn eof(&self) -> bool {
-        self.index >= self.tokens.len()
-    }
-
-    fn advance(&mut self) {
-        self.index += 1;
-    }
-
-    fn word(&self) -> Result<&str, String> {
-        match self.tokens.get(self.index) {
-            Some(WorthUiSourceTokenKind::Identifier(value)) => Ok(value),
-            Some(WorthUiSourceTokenKind::KeywordToken) => Ok("token"),
-            Some(WorthUiSourceTokenKind::NumberLiteral(value)) => Ok(value),
-            _ => Err("appearance declaration expected a word".to_owned()),
-        }
-    }
-
-    fn peek_word(&self, expected: &str) -> bool {
-        self.word().is_ok_and(|word| word == expected)
-    }
-
-    fn take_word(&mut self, expected: &str) -> bool {
-        if self.peek_word(expected) {
-            self.advance();
-            true
-        } else {
-            false
-        }
-    }
-
-    fn expect_word(&mut self, expected: &str) -> Result<(), String> {
-        if self.take_word(expected) {
-            Ok(())
-        } else {
-            Err(format!("appearance declaration expected '{expected}'"))
-        }
-    }
-
-    fn take_symbol(&mut self, expected: WorthUiSourceTokenKind) -> bool {
-        if self.tokens.get(self.index) == Some(&expected) {
-            self.advance();
-            true
-        } else {
-            false
-        }
-    }
-
-    fn expect_symbol(&mut self, expected: WorthUiSourceTokenKind) -> Result<(), String> {
-        if self.take_symbol(expected) {
-            Ok(())
-        } else {
-            Err("appearance declaration has malformed punctuation".to_owned())
-        }
-    }
-
-    fn skip(&mut self, expected: WorthUiSourceTokenKind) {
-        while self.take_symbol(expected.clone()) {}
-    }
 }

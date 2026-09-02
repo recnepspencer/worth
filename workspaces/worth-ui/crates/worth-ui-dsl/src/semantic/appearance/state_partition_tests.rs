@@ -44,7 +44,7 @@ fn compiler_rejects_overlap_holes_and_products_above_512() {
         ),
         Err(UiAppearanceDecisionPartitionDenial::AmbiguousCell)
     );
-    assert_eq!(
+    assert!(matches!(
         UiAppearanceDecisionPartition::compile(
             [hover],
             [UiAppearanceDecisionRule::new(
@@ -54,8 +54,8 @@ fn compiler_rejects_overlap_holes_and_products_above_512() {
                 result.clone()
             )]
         ),
-        Err(UiAppearanceDecisionPartitionDenial::MissingCell)
-    );
+        Err(UiAppearanceDecisionPartitionDenial::MissingCell { .. })
+    ));
     let all = [
         UiAppearanceStateAxis::Operability,
         UiAppearanceStateAxis::Focus,

@@ -139,10 +139,10 @@ fn missing_and_cyclic_named_cells_are_typed() {
     let missing = UiAppearancePartitionAuthoring::new([])
         .with_otherwise(crate::UiAppearanceCellValue::same_as("unknown"))
         .compile(UiAppearanceAspect::Background);
-    assert_eq!(
+    assert!(matches!(
         missing,
-        Err(UiAppearanceDecisionPartitionDenial::MissingNamedCell)
-    );
+        Err(UiAppearanceDecisionPartitionDenial::MissingNamedCell { .. })
+    ));
 
     let cyclic = UiAppearancePartitionAuthoring::new([])
         .with_cell(UiAppearanceCell::named("first").same_as("second"))

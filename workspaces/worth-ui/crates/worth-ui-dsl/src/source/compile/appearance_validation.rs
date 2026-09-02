@@ -76,11 +76,6 @@ impl WorthUiSemanticPackageSealingState {
                 ));
             }
         }
-        let backdrops = self
-            .backdrops
-            .iter()
-            .map(|(declaration, _)| declaration.clone())
-            .collect::<Vec<_>>();
         for (backdrop, provenance) in &self.backdrops {
             match self.appearance_roles.get(backdrop.role().as_str()) {
                 None => self.diagnostics.push(super::sealing::appearance_diagnostic(
@@ -165,7 +160,24 @@ impl WorthUiSemanticPackageSealingState {
                 }
             }
         }
-        match crate::UiStaticOverlayRelationGraph::admit(&self.portal_identities, &backdrops) {
+        let portal_ids =
+            match crate::source::resolve_portal_identity_names(self.portal_identities.clone()) {
+                Ok(portal_ids) => portal_ids,
+                Err(()) => {
+                    if let Some((_, provenance)) = self.backdrops.first() {
+                        self.diagnostics.push(super::sealing::appearance_diagnostic(
+                            crate::WorthUiDslCompileDiagnosticCode::DuplicateAppearanceDeclaration,
+                            "portal identity is declared more than once",
+                            provenance,
+                        ));
+                    }
+                    return;
+                }
+            };
+        match crate::UiOverlayRelationGraph::admit_with_backdrop_surface_facts(
+            portal_ids,
+            self.backdrops.iter().map(|(declaration, _)| declaration),
+        ) {
             Ok(graph) => self.overlay_relation_graph = Some(graph),
             Err(denial) => {
                 if let Some((_, provenance)) = self.backdrops.first() {

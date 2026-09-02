@@ -199,7 +199,7 @@ fn parse_block_declaration(
     let declaration = WorthUiParsedBlockDeclaration::new(
         token_identifier_text(&name_token),
         span_from_bounds(keyword.span(), right_brace.span()),
-        WorthUiParsedBlockBody::new(
+        WorthUiParsedBlockBody::new_with_spans(
             span_from_bounds(left_brace.span(), right_brace.span()),
             body_tokens,
         ),
@@ -269,7 +269,7 @@ pub(super) fn parse_block_body_tokens(
     module_id: &WorthUiSourceModuleId,
     stream: &mut WorthUiSourceTokenStream,
     left_brace_span: &WorthUiSourceSpan,
-) -> Result<(Vec<WorthUiSourceTokenKind>, WorthUiSourceToken), WorthUiParseDiagnostic> {
+) -> Result<(Vec<WorthUiSourceToken>, WorthUiSourceToken), WorthUiParseDiagnostic> {
     let mut depth = 1usize;
     let mut body_tokens = Vec::new();
 
@@ -277,16 +277,16 @@ pub(super) fn parse_block_body_tokens(
         match token.kind() {
             WorthUiSourceTokenKind::LeftBrace => {
                 depth += 1;
-                body_tokens.push(token.kind().clone());
+                body_tokens.push(token);
             }
             WorthUiSourceTokenKind::RightBrace => {
                 depth -= 1;
                 if depth == 0 {
                     return Ok((body_tokens, token));
                 }
-                body_tokens.push(token.kind().clone());
+                body_tokens.push(token);
             }
-            _ => body_tokens.push(token.kind().clone()),
+            _ => body_tokens.push(token),
         }
     }
 

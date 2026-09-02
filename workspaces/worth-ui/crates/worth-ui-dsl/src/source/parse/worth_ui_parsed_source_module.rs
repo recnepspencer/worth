@@ -1,4 +1,6 @@
-use crate::source::{WorthUiSourceModuleId, WorthUiSourceSpan, WorthUiSourceTokenKind};
+use crate::source::{
+    WorthUiSourceModuleId, WorthUiSourceSpan, WorthUiSourceToken, WorthUiSourceTokenKind,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct WorthUiParsedSourceModule {
@@ -44,6 +46,7 @@ pub(crate) struct WorthUiParsedBlockDeclaration {
 pub(crate) struct WorthUiParsedBlockBody {
     span: WorthUiSourceSpan,
     tokens: Vec<WorthUiSourceTokenKind>,
+    token_spans: Vec<WorthUiSourceSpan>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -121,11 +124,32 @@ impl WorthUiParsedBlockDeclaration {
 
 impl WorthUiParsedBlockBody {
     pub(crate) fn new(span: WorthUiSourceSpan, tokens: Vec<WorthUiSourceTokenKind>) -> Self {
-        Self { span, tokens }
+        Self {
+            span,
+            token_spans: Vec::new(),
+            tokens,
+        }
+    }
+
+    pub(crate) fn new_with_spans(span: WorthUiSourceSpan, tokens: Vec<WorthUiSourceToken>) -> Self {
+        let token_spans = tokens.iter().map(|token| token.span().clone()).collect();
+        let tokens = tokens
+            .into_iter()
+            .map(|token| token.kind().clone())
+            .collect();
+        Self {
+            span,
+            tokens,
+            token_spans,
+        }
     }
 
     pub(crate) fn tokens(&self) -> &[WorthUiSourceTokenKind] {
         &self.tokens
+    }
+
+    pub(crate) fn token_spans(&self) -> &[WorthUiSourceSpan] {
+        &self.token_spans
     }
 }
 

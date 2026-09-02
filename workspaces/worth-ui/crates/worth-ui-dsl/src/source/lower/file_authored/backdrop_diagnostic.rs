@@ -1,6 +1,6 @@
 use crate::{
-    UiBackdropDeclarationAuthoringDenial, WorthUiDslCompileDiagnostic,
-    WorthUiDslCompileDiagnosticCode, WorthUiDslCompileStopClass, WorthUiDslSourceSpan,
+    WorthUiDslCompileDiagnostic, WorthUiDslCompileDiagnosticCode, WorthUiDslCompileStopClass,
+    WorthUiDslSourceSpan,
 };
 
 pub(super) struct BackdropLoweringError {
@@ -13,31 +13,6 @@ impl BackdropLoweringError {
         Self {
             code: WorthUiDslCompileDiagnosticCode::InvalidBackdropDeclaration,
             message: message.into(),
-        }
-    }
-
-    pub(super) fn specification(denial: UiBackdropDeclarationAuthoringDenial) -> Self {
-        let code = match denial {
-            UiBackdropDeclarationAuthoringDenial::MissingScope
-            | UiBackdropDeclarationAuthoringDenial::MissingExtent
-            | UiBackdropDeclarationAuthoringDenial::MissingPresence
-            | UiBackdropDeclarationAuthoringDenial::MissingPlacement => {
-                WorthUiDslCompileDiagnosticCode::MissingBackdropDeclaration
-            }
-            UiBackdropDeclarationAuthoringDenial::ForeignSurfaceExtent => {
-                WorthUiDslCompileDiagnosticCode::ForeignOverlaySurface
-            }
-            UiBackdropDeclarationAuthoringDenial::EmptyIdentity
-            | UiBackdropDeclarationAuthoringDenial::EmptySurface
-            | UiBackdropDeclarationAuthoringDenial::DuplicateClause
-            | UiBackdropDeclarationAuthoringDenial::PerPortalScopeMismatch
-            | UiBackdropDeclarationAuthoringDenial::ForeignPortalPlacement => {
-                WorthUiDslCompileDiagnosticCode::InvalidBackdropDeclaration
-            }
-        };
-        Self {
-            code,
-            message: format!("backdrop admission denied: {denial:?}"),
         }
     }
 

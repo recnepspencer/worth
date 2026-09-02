@@ -2,6 +2,7 @@ mod aspect;
 mod attachment;
 mod canonical;
 mod capacity;
+mod diagnostics;
 mod role;
 mod role_authoring;
 mod state_partition;
@@ -18,6 +19,10 @@ pub use attachment::{
 pub use capacity::{
     UI_APPEARANCE_BACKDROP_RELATION_CAPACITY, UI_APPEARANCE_ROLE_CAPACITY,
     UI_APPEARANCE_SLOT_USES_PER_ROLE_CAPACITY,
+};
+pub use diagnostics::{
+    UiAppearanceCanonicalStateCell, UiAppearanceCellReferenceOrigin, UiAppearanceFinitePredicate,
+    UiAppearancePartitionAdmissionDenial,
 };
 pub use role::{UiAppearanceRole, UiAppearanceRoleId};
 pub use role::{

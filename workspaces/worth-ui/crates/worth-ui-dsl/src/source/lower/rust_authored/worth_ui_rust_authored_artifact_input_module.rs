@@ -46,7 +46,7 @@ pub(crate) enum WorthUiRustAuthoredDeclaration {
     },
     SemanticArtifact(WorthUiSemanticArtifactDeclaration),
     AppearanceRole(crate::UiAppearanceRoleDeclaration),
-    Backdrop(crate::UiStaticBackdropDeclaration),
+    Backdrop(crate::UiBackdropDeclaration),
 }
 
 impl WorthUiRustAuthoredArtifactInputModule {
@@ -287,7 +287,7 @@ impl WorthUiRustAuthoredArtifactInputModule {
         self
     }
 
-    pub fn with_backdrop(mut self, declaration: crate::UiStaticBackdropDeclaration) -> Self {
+    pub fn with_backdrop(mut self, declaration: crate::UiBackdropDeclaration) -> Self {
         self.declarations
             .push(WorthUiRustAuthoredDeclaration::Backdrop(declaration));
         self

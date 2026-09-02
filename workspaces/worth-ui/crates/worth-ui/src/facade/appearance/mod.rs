@@ -12,13 +12,14 @@ pub use worth_ui_dsl::{
     UiAppearanceRoleAuthoringDenial, UiAppearanceRoleDeclaration,
     UiAppearanceRoleDeclarationDenial, UiAppearanceRoleId, UiAppearanceRoleIdentity,
     UiAppearanceRoleRevision, UiAppearanceRoleSchemaVersion, UiAppearanceStateAxis,
-    UiAppearanceStateAxisVersion, UiBackdropDeclarationAuthoring,
-    UiBackdropDeclarationAuthoringDenial, UiStaticBackdropDeclaration, UiStaticBackdropExtent,
-    UiStaticBackdropMotion, UiStaticBackdropPlacement, UiStaticBackdropPresence,
-    UiStaticBackdropScope, UiStaticOverlayRelation, UiStaticOverlayRelationGraph,
-    UiStaticOverlayRelationGraphDenial, UiStaticOverlayRelationKind, UiThemeColor,
-    UiThemeColorParseDenial, UiThemeCornerRadii, UiThemeOpacity, UiThemeOpacityDenial,
-    UiThemeOutline, UiThemeSlotIdentity, UiThemeSolidStroke, UiThemeValue, UiThemeValueKind,
+    UiAppearanceStateAxisVersion, UiBackdropDeclaration, UiBackdropDeclarationDenial,
+    UiBackdropExtentBasis, UiBackdropIdentity, UiBackdropMotionBasis, UiBackdropPlacement,
+    UiBackdropPresenceBasis, UiBackdropScope, UiMosaicRegionDeclarationIdentity, UiOverlayAnchor,
+    UiOverlayPortalParticipant, UiOverlayRelation, UiOverlayRelationAdmissionDenial,
+    UiOverlayRelationGraph, UiOverlayRelationKind, UiPortalDeclarationId,
+    UiSemanticSurfaceDeclarationIdentity, UiThemeColor, UiThemeColorParseDenial,
+    UiThemeCornerRadii, UiThemeOpacity, UiThemeOpacityDenial, UiThemeOutline, UiThemeSlotIdentity,
+    UiThemeSolidStroke, UiThemeValue, UiThemeValueKind,
 };
 
 pub use worth_ui_runtime::facade::AppearanceRoleRegistrationDenial;

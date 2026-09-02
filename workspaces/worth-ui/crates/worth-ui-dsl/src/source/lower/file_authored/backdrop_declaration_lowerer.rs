@@ -1,35 +1,115 @@
 use crate::source::{
-    WorthUiArtifactInputBackdropNode, WorthUiArtifactInputNode, WorthUiArtifactInputProvenance,
-    WorthUiDslCompileDiagnostic, WorthUiParsedBlockDeclaration, WorthUiSourceTokenKind,
+    WorthUiArtifactInputProvenance, WorthUiParsedBlockDeclaration, WorthUiSourceTokenKind,
 };
-use crate::{
-    UiAppearanceRoleIdentity, UiAppearanceRoleRevision, UiBackdropDeclarationAuthoring,
-    UiStaticBackdropExtent, UiStaticBackdropMotion, UiStaticBackdropPlacement,
-    UiStaticBackdropPresence, UiStaticBackdropScope,
-};
+use crate::{UiAppearanceRoleIdentity, UiAppearanceRoleRevision};
 
 #[path = "backdrop_diagnostic.rs"]
 mod backdrop_diagnostic;
 use backdrop_diagnostic::BackdropLoweringError;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct WorthUiBackdropSource {
+    identity: Box<str>,
+    surface: Box<str>,
+    scope: WorthUiBackdropScopeSource,
+    extent: WorthUiBackdropExtentSource,
+    presence: WorthUiBackdropPresenceSource,
+    motion: WorthUiBackdropMotionSource,
+    placement: WorthUiBackdropPlacementSource,
+    role: UiAppearanceRoleIdentity,
+    role_revision: UiAppearanceRoleRevision,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum WorthUiBackdropScopeSource {
+    SurfaceSingleton,
+    PerPortalInstance(Box<str>),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum WorthUiBackdropExtentSource {
+    SurfaceViewport(Box<str>),
+    PresentedMosaicRegion { surface: Box<str>, region: Box<str> },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum WorthUiBackdropPresenceSource {
+    Always,
+    WhilePortalPresented(Box<str>),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum WorthUiBackdropMotionSource {
+    None,
+    PortalPresentation(Box<str>),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum WorthUiBackdropPlacementSource {
+    AboveSurfaceContent,
+    ImmediatelyBeforePortal(Box<str>),
+    ImmediatelyAfterPortal(Box<str>),
+    ImmediatelyBeforeBackdrop(Box<str>),
+    ImmediatelyAfterBackdrop(Box<str>),
+}
+
+impl WorthUiBackdropSource {
+    pub(crate) fn identity(&self) -> &str {
+        &self.identity
+    }
+
+    pub(crate) fn surface(&self) -> &str {
+        &self.surface
+    }
+
+    pub(crate) fn scope(&self) -> &WorthUiBackdropScopeSource {
+        &self.scope
+    }
+
+    pub(crate) fn extent(&self) -> &WorthUiBackdropExtentSource {
+        &self.extent
+    }
+
+    pub(crate) fn presence(&self) -> &WorthUiBackdropPresenceSource {
+        &self.presence
+    }
+
+    pub(crate) fn motion(&self) -> &WorthUiBackdropMotionSource {
+        &self.motion
+    }
+
+    pub(crate) fn placement(&self) -> &WorthUiBackdropPlacementSource {
+        &self.placement
+    }
+
+    pub(crate) fn role(&self) -> &UiAppearanceRoleIdentity {
+        &self.role
+    }
+
+    pub(crate) const fn role_revision(&self) -> UiAppearanceRoleRevision {
+        self.role_revision
+    }
+}
+
 pub(super) fn lower_backdrop(
     declaration: &WorthUiParsedBlockDeclaration,
     declaration_index: usize,
-) -> Result<WorthUiArtifactInputNode, WorthUiDslCompileDiagnostic> {
+) -> Result<
+    (WorthUiBackdropSource, WorthUiArtifactInputProvenance),
+    crate::WorthUiDslCompileDiagnostic,
+> {
     let parsed = parse_backdrop(declaration).map_err(|error| error.into_diagnostic(declaration))?;
     let provenance = WorthUiArtifactInputProvenance::parsed_source(
         declaration.span().clone(),
         None,
         declaration_index,
     );
-    Ok(WorthUiArtifactInputNode::Backdrop(
-        WorthUiArtifactInputBackdropNode::new(parsed, provenance),
-    ))
+    Ok((parsed, provenance))
 }
 
 fn parse_backdrop(
     declaration: &WorthUiParsedBlockDeclaration,
-) -> Result<crate::UiStaticBackdropDeclaration, BackdropLoweringError> {
+) -> Result<WorthUiBackdropSource, BackdropLoweringError> {
     let mut cursor = Cursor::new(declaration.body().tokens());
     let mut scope = None;
     let mut extent = None;
@@ -71,37 +151,35 @@ fn parse_backdrop(
     }
     let role = UiAppearanceRoleIdentity::new(role.ok_or("backdrop is missing appearance role")?)
         .ok_or("backdrop role identity is invalid")?;
-    let revision =
+    let role_revision =
         UiAppearanceRoleRevision::new(revision).ok_or("backdrop role revision must be positive")?;
-    let extent = extent.ok_or("backdrop is missing extent")?;
-    let mut result = UiBackdropDeclarationAuthoring::new(
-        declaration.name_text(),
-        extent.surface().to_owned(),
+    Ok(WorthUiBackdropSource {
+        identity: declaration.name_text().to_owned().into_boxed_str(),
+        surface: match extent.as_ref().ok_or("backdrop is missing extent")? {
+            WorthUiBackdropExtentSource::SurfaceViewport(surface)
+            | WorthUiBackdropExtentSource::PresentedMosaicRegion { surface, .. } => surface.clone(),
+        },
+        scope: scope.ok_or("backdrop is missing scope")?,
+        extent: extent.ok_or("backdrop is missing extent")?,
+        presence: presence.ok_or("backdrop is missing presence")?,
+        motion: motion.unwrap_or(WorthUiBackdropMotionSource::None),
+        placement: placement.ok_or("backdrop is missing placement")?,
         role,
-        revision,
-    )
-    .map_err(|_| "backdrop identity or surface is invalid".to_owned())?
-    .with_extent(extent)
-    .with_scope(scope.ok_or("backdrop is missing scope")?)
-    .with_presence(presence.ok_or("backdrop is missing presence")?)
-    .with_placement(placement.ok_or("backdrop is missing placement")?);
-    if let Some(motion) = motion {
-        result = result.with_motion(motion);
-    }
-    result.admit().map_err(BackdropLoweringError::specification)
+        role_revision,
+    })
 }
 
-fn parse_scope(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropScope, String> {
+fn parse_scope(cursor: &mut Cursor<'_>) -> Result<WorthUiBackdropScopeSource, String> {
     match cursor.word()? {
         "surface_singleton" => {
             cursor.advance();
-            Ok(UiStaticBackdropScope::SurfaceSingleton)
+            Ok(WorthUiBackdropScopeSource::SurfaceSingleton)
         }
         "per_portal_instance" => {
             cursor.advance();
             let portal = cursor.word()?.to_owned();
             cursor.advance();
-            Ok(UiStaticBackdropScope::PerPortalInstance(
+            Ok(WorthUiBackdropScopeSource::PerPortalInstance(
                 portal.into_boxed_str(),
             ))
         }
@@ -109,13 +187,13 @@ fn parse_scope(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropScope, String>
     }
 }
 
-fn parse_extent(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropExtent, String> {
+fn parse_extent(cursor: &mut Cursor<'_>) -> Result<WorthUiBackdropExtentSource, String> {
     match cursor.word()? {
         "surface_viewport" => {
             cursor.advance();
             let surface = cursor.word()?.to_owned();
             cursor.advance();
-            Ok(UiStaticBackdropExtent::SurfaceViewport(
+            Ok(WorthUiBackdropExtentSource::SurfaceViewport(
                 surface.into_boxed_str(),
             ))
         }
@@ -125,7 +203,7 @@ fn parse_extent(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropExtent, Strin
             cursor.advance();
             let region = cursor.word()?.to_owned();
             cursor.advance();
-            Ok(UiStaticBackdropExtent::PresentedMosaicRegion {
+            Ok(WorthUiBackdropExtentSource::PresentedMosaicRegion {
                 surface: surface.into_boxed_str(),
                 region: region.into_boxed_str(),
             })
@@ -134,11 +212,11 @@ fn parse_extent(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropExtent, Strin
     }
 }
 
-fn parse_presence(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropPresence, String> {
+fn parse_presence(cursor: &mut Cursor<'_>) -> Result<WorthUiBackdropPresenceSource, String> {
     match cursor.word()? {
         "always" => {
             cursor.advance();
-            Ok(UiStaticBackdropPresence::Always)
+            Ok(WorthUiBackdropPresenceSource::Always)
         }
         "while" => {
             cursor.advance();
@@ -146,7 +224,7 @@ fn parse_presence(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropPresence, S
             let portal = cursor.word()?.to_owned();
             cursor.advance();
             cursor.expect_word("presented")?;
-            Ok(UiStaticBackdropPresence::WhilePortalPresented(
+            Ok(WorthUiBackdropPresenceSource::WhilePortalPresented(
                 portal.into_boxed_str(),
             ))
         }
@@ -154,11 +232,11 @@ fn parse_presence(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropPresence, S
     }
 }
 
-fn parse_motion(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropMotion, String> {
+fn parse_motion(cursor: &mut Cursor<'_>) -> Result<WorthUiBackdropMotionSource, String> {
     match cursor.word()? {
         "none" => {
             cursor.advance();
-            Ok(UiStaticBackdropMotion::None)
+            Ok(WorthUiBackdropMotionSource::None)
         }
         "follow" => {
             cursor.advance();
@@ -166,7 +244,7 @@ fn parse_motion(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropMotion, Strin
             let portal = cursor.word()?.to_owned();
             cursor.advance();
             cursor.expect_word("presentation")?;
-            Ok(UiStaticBackdropMotion::PortalPresentation(
+            Ok(WorthUiBackdropMotionSource::PortalPresentation(
                 portal.into_boxed_str(),
             ))
         }
@@ -174,11 +252,11 @@ fn parse_motion(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropMotion, Strin
     }
 }
 
-fn parse_placement(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropPlacement, String> {
+fn parse_placement(cursor: &mut Cursor<'_>) -> Result<WorthUiBackdropPlacementSource, String> {
     let direction = cursor.word()?.to_owned();
     cursor.advance();
     match direction.as_str() {
-        "above_surface_content" => Ok(UiStaticBackdropPlacement::AboveSurfaceContent),
+        "above_surface_content" => Ok(WorthUiBackdropPlacementSource::AboveSurfaceContent),
         "immediately_before" | "immediately_after" => {
             let before = direction == "immediately_before";
             let anchor_kind = cursor.word()?.to_owned();
@@ -186,14 +264,18 @@ fn parse_placement(cursor: &mut Cursor<'_>) -> Result<UiStaticBackdropPlacement,
             let anchor = cursor.word()?.to_owned().into_boxed_str();
             cursor.advance();
             match (before, anchor_kind.as_str()) {
-                (true, "portal") => Ok(UiStaticBackdropPlacement::ImmediatelyBeforePortal(anchor)),
-                (false, "portal") => Ok(UiStaticBackdropPlacement::ImmediatelyAfterPortal(anchor)),
-                (true, "backdrop") => {
-                    Ok(UiStaticBackdropPlacement::ImmediatelyBeforeBackdrop(anchor))
-                }
-                (false, "backdrop") => {
-                    Ok(UiStaticBackdropPlacement::ImmediatelyAfterBackdrop(anchor))
-                }
+                (true, "portal") => Ok(WorthUiBackdropPlacementSource::ImmediatelyBeforePortal(
+                    anchor,
+                )),
+                (false, "portal") => Ok(WorthUiBackdropPlacementSource::ImmediatelyAfterPortal(
+                    anchor,
+                )),
+                (true, "backdrop") => Ok(
+                    WorthUiBackdropPlacementSource::ImmediatelyBeforeBackdrop(anchor),
+                ),
+                (false, "backdrop") => Ok(
+                    WorthUiBackdropPlacementSource::ImmediatelyAfterBackdrop(anchor),
+                ),
                 _ => Err("backdrop placement requires portal or backdrop anchor".to_owned()),
             }
         }
@@ -218,12 +300,15 @@ impl<'a> Cursor<'a> {
     fn new(tokens: &'a [WorthUiSourceTokenKind]) -> Self {
         Self { tokens, index: 0 }
     }
+
     fn eof(&self) -> bool {
         self.index == self.tokens.len()
     }
+
     fn advance(&mut self) {
         self.index += 1;
     }
+
     fn word(&self) -> Result<&str, String> {
         match self.tokens.get(self.index) {
             Some(WorthUiSourceTokenKind::Identifier(value)) => Ok(value),
@@ -234,6 +319,7 @@ impl<'a> Cursor<'a> {
             _ => Err("backdrop declaration expected a word".to_owned()),
         }
     }
+
     fn take_word(&mut self, expected: &str) -> bool {
         if self.word().is_ok_and(|word| word == expected) {
             self.advance();
@@ -242,11 +328,13 @@ impl<'a> Cursor<'a> {
             false
         }
     }
+
     fn expect_word(&mut self, expected: &str) -> Result<(), String> {
         self.take_word(expected)
             .then_some(())
             .ok_or_else(|| format!("backdrop declaration expected '{expected}'"))
     }
+
     fn number(&mut self) -> Result<u64, String> {
         let value = self
             .word()?
@@ -255,6 +343,7 @@ impl<'a> Cursor<'a> {
         self.advance();
         Ok(value)
     }
+
     fn take_symbol(&mut self, expected: WorthUiSourceTokenKind) -> bool {
         if self.tokens.get(self.index) == Some(&expected) {
             self.advance();
@@ -263,11 +352,13 @@ impl<'a> Cursor<'a> {
             false
         }
     }
+
     fn expect_symbol(&mut self, expected: WorthUiSourceTokenKind) -> Result<(), String> {
         self.take_symbol(expected)
             .then_some(())
             .ok_or_else(|| "backdrop declaration has malformed punctuation".to_owned())
     }
+
     fn skip(&mut self, expected: WorthUiSourceTokenKind) {
         while self.take_symbol(expected.clone()) {}
     }

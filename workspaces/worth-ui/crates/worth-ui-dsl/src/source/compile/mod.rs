@@ -4,6 +4,7 @@ mod authored_source_input;
 pub mod certification;
 mod compile_diagnostic;
 mod compiler;
+mod overlay_identity_resolution;
 mod protocol_identity;
 mod sealed_semantic_artifact;
 mod sealed_semantic_package;
@@ -14,10 +15,14 @@ mod semantic_package_lowering_receipts;
 pub use authored_mode::WorthUiAuthoredMode;
 pub use authored_source_input::WorthUiAuthoredSourceInput;
 pub use compile_diagnostic::{
-    WorthUiDslCompileDiagnostic, WorthUiDslCompileDiagnosticCode, WorthUiDslCompileReport,
-    WorthUiDslCompileStopClass, WorthUiDslDiagnosticIdentity, WorthUiDslSourceSpan,
+    WorthUiDslCompileDiagnostic, WorthUiDslCompileDiagnosticCode,
+    WorthUiDslCompileDiagnosticDetail, WorthUiDslCompileReport, WorthUiDslCompileStopClass,
+    WorthUiDslDiagnosticIdentity, WorthUiDslSourceSpan,
 };
 pub use compiler::WorthUiDslCompiler;
+pub(crate) use overlay_identity_resolution::{
+    resolve_file_authored_overlay_declarations, resolve_portal_identity_names,
+};
 pub use protocol_identity::WorthUiDslProtocolIdentity;
 pub use sealed_semantic_artifact::WorthUiSealedSemanticArtifact;
 pub use sealed_semantic_package::{

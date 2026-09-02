@@ -10,12 +10,13 @@ use crate::source::{
 use super::appearance_declaration_lowerer::lower_role;
 use super::backdrop_declaration_lowerer::lower_backdrop;
 use super::component_appearance_attachment::lower_component;
+use super::WorthUiFileAuthoredLoweredDeclaration;
 
 pub(crate) fn lower_parsed_source_declaration(
     declaration: &WorthUiParsedSourceDeclaration,
     declaration_index: usize,
-) -> Result<WorthUiArtifactInputNode, WorthUiDslCompileDiagnostic> {
-    Ok(match declaration {
+) -> Result<WorthUiFileAuthoredLoweredDeclaration, WorthUiDslCompileDiagnostic> {
+    let node = match declaration {
         WorthUiParsedSourceDeclaration::Import(import_declaration) => {
             WorthUiArtifactInputNode::Import(lower_import_declaration(
                 import_declaration,
@@ -98,12 +99,16 @@ pub(crate) fn lower_parsed_source_declaration(
             ))
         }
         WorthUiParsedSourceDeclaration::AppearanceRole(role) => {
-            return lower_role(role, declaration_index);
+            return lower_role(role, declaration_index)
+                .map(WorthUiFileAuthoredLoweredDeclaration::Artifact);
         }
         WorthUiParsedSourceDeclaration::Backdrop(backdrop) => {
-            return lower_backdrop(backdrop, declaration_index);
+            return lower_backdrop(backdrop, declaration_index).map(|(source, provenance)| {
+                WorthUiFileAuthoredLoweredDeclaration::Backdrop { source, provenance }
+            });
         }
-    })
+    };
+    Ok(WorthUiFileAuthoredLoweredDeclaration::Artifact(node))
 }
 
 fn lower_service_declaration(

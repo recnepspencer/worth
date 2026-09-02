@@ -74,10 +74,17 @@ fn node_normalization_key(
             format!("appearance-role:{}", node.role().role().as_str())
         }
         WorthUiArtifactInputNode::Backdrop(node) => {
-            format!("backdrop:{}", node.declaration().canonical_text())
+            format!("backdrop:{}", hex(node.declaration().canonical_bytes()))
         }
     };
     (node.kind(), detail)
+}
+
+fn hex(bytes: Vec<u8>) -> String {
+    bytes
+        .into_iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 fn body_atoms_key(body_atoms: &[crate::source::WorthUiArtifactInputBodyAtom]) -> String {

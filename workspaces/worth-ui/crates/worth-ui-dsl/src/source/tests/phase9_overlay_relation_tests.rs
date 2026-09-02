@@ -15,6 +15,7 @@ fn compile_file(
 fn overlay_cycles_are_rejected_before_any_runtime_plan_exists() {
     let report = compile_file(
         r#"
+        surface pulse.surface {}
         appearance role overlay.scrim applies_to backdrop {
             background use token(overlay.scrim.background)
             opacity use token(overlay.scrim.opacity)

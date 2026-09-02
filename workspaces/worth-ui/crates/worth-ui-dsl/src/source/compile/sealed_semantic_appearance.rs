@@ -10,7 +10,7 @@ pub struct WorthUiSemanticAppearanceRoleDeclaration {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthUiSemanticBackdropDeclaration {
-    declaration: crate::UiStaticBackdropDeclaration,
+    declaration: crate::UiBackdropDeclaration,
     provenance_ref: WorthUiSemanticProvenanceRef,
 }
 
@@ -36,7 +36,7 @@ impl WorthUiSemanticAppearanceRoleDeclaration {
 
 impl WorthUiSemanticBackdropDeclaration {
     pub(super) fn new(
-        declaration: crate::UiStaticBackdropDeclaration,
+        declaration: crate::UiBackdropDeclaration,
         provenance_ref: WorthUiSemanticProvenanceRef,
     ) -> Self {
         Self {
@@ -45,7 +45,7 @@ impl WorthUiSemanticBackdropDeclaration {
         }
     }
 
-    pub fn declaration(&self) -> &crate::UiStaticBackdropDeclaration {
+    pub fn declaration(&self) -> &crate::UiBackdropDeclaration {
         &self.declaration
     }
 
@@ -55,7 +55,7 @@ impl WorthUiSemanticBackdropDeclaration {
 }
 
 impl WorthUiSealedSemanticPackage {
-    pub fn overlay_relation_graph(&self) -> Option<&crate::UiStaticOverlayRelationGraph> {
+    pub fn overlay_relation_graph(&self) -> Option<&crate::UiOverlayRelationGraph> {
         self.overlay_relation_graph.as_ref()
     }
 

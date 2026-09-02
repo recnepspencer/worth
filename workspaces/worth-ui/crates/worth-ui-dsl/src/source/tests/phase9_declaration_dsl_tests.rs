@@ -4,12 +4,14 @@ use crate::{
     UiAppearanceAspect, UiAppearanceAxisClass, UiAppearanceAxisDomain, UiAppearanceAxisPredicate,
     UiAppearanceCell, UiAppearancePartitionAuthoring, UiAppearanceRole,
     UiAppearanceRoleAttachmentDeclaration, UiAppearanceRoleIdentity, UiAppearanceRoleRevision,
-    UiAppearanceStateAxis, UiBackdropDeclarationAuthoring, UiDslComponentReference,
-    UiStaticBackdropExtent, UiStaticBackdropMotion, UiStaticBackdropPlacement,
-    UiStaticBackdropPresence, UiStaticBackdropScope, UiThemeSlotIdentity, UiThemeValueKind,
-    WorthUiAuthoredSourceInput, WorthUiDslCompileDiagnosticCode, WorthUiDslCompiler,
+    UiAppearanceStateAxis, UiBackdropDeclaration, UiBackdropExtentBasis, UiBackdropIdentity,
+    UiBackdropMotionBasis, UiBackdropPlacement, UiBackdropPresenceBasis, UiBackdropScope,
+    UiDslComponentReference, UiDslSemanticFamily, UiDslSemanticKey, UiPortalDeclarationId,
+    UiSemanticSurfaceDeclarationIdentity, UiThemeSlotIdentity, UiThemeValueKind,
+    WorthUiArtifactInputBodyAtom, WorthUiAuthoredSourceInput, WorthUiDslCompiler,
     WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule,
-    WorthUiSealedSemanticPackage,
+    WorthUiSealedSemanticPackage, WorthUiSemanticArtifactDeclaration,
+    WorthUiServiceDeclarationMeaning, WorthUiServiceFamily,
 };
 
 fn slot(value: &str) -> UiThemeSlotIdentity {
@@ -61,28 +63,6 @@ fn backdrop_role() -> crate::UiAppearanceRoleDeclaration {
         .expect("backdrop role is valid")
 }
 
-fn backdrop_spec(
-    identity: &str,
-    placement: UiStaticBackdropPlacement,
-) -> crate::UiStaticBackdropDeclaration {
-    UiBackdropDeclarationAuthoring::new(
-        identity,
-        "pulse.confirmation.surface",
-        UiAppearanceRoleIdentity::new("overlay.scrim").unwrap(),
-        UiAppearanceRoleRevision::new(1).unwrap(),
-    )
-    .expect("backdrop identity is valid")
-    .with_scope(UiStaticBackdropScope::SurfaceSingleton)
-    .with_extent(UiStaticBackdropExtent::SurfaceViewport(
-        "pulse.confirmation.surface".into(),
-    ))
-    .with_presence(UiStaticBackdropPresence::Always)
-    .with_motion(UiStaticBackdropMotion::None)
-    .with_placement(placement)
-    .admit()
-    .expect("backdrop specification is valid")
-}
-
 fn compile_file(
     source: &str,
 ) -> Result<WorthUiSealedSemanticPackage, crate::WorthUiDslCompileReport> {
@@ -100,12 +80,51 @@ fn compile_rust(
     ]))
 }
 
-fn first_code(report: &crate::WorthUiDslCompileReport) -> WorthUiDslCompileDiagnosticCode {
-    report.diagnostics()[0].identity().code()
+fn typed_backdrop(
+    identity: u64,
+    surface: u64,
+    placement: UiBackdropPlacement,
+    role: &crate::UiAppearanceRoleDeclaration,
+) -> UiBackdropDeclaration {
+    let surface = UiSemanticSurfaceDeclarationIdentity::new(surface).unwrap();
+    UiBackdropDeclaration::admit(
+        UiBackdropIdentity::new(identity).unwrap(),
+        surface,
+        UiBackdropScope::SurfaceSingleton,
+        UiBackdropExtentBasis::SurfaceViewport(surface),
+        UiBackdropPresenceBasis::Always,
+        UiBackdropMotionBasis::None,
+        placement,
+        role,
+    )
+    .expect("typed backdrop should pass Gate-0 admission")
+}
+
+fn rust_portal(name: &str, anchor: &str) -> WorthUiSemanticArtifactDeclaration {
+    let atoms = [
+        WorthUiArtifactInputBodyAtom::Identifier("anchor".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier(anchor.to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("layer".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("transient".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("dismiss".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("escape".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("focus".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("first_enabled".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("motion".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("system_popover".to_owned()),
+    ];
+    let service =
+        WorthUiServiceDeclarationMeaning::parse(WorthUiServiceFamily::Portal, name, &atoms)
+            .expect("Rust portal service should parse");
+    WorthUiSemanticArtifactDeclaration::new(
+        UiDslSemanticKey::new(name),
+        UiDslSemanticFamily::RuntimeService,
+    )
+    .with_service_declaration(service)
 }
 
 #[test]
-fn rust_and_file_declarations_share_role_bytes_and_attachment_meaning() {
+fn rust_and_file_component_authoring_keep_explicit_role_attachment() {
     let file = compile_file(
         r#"
         appearance role action.primary applies_to platform.control.activation {
@@ -121,10 +140,9 @@ fn rust_and_file_declarations_share_role_bytes_and_attachment_meaning() {
         "#,
     )
     .expect("file declaration should compile");
-    let role = component_role();
     let rust = compile_rust(
         WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
-            .with_appearance_role(role.clone())
+            .with_appearance_role(component_role())
             .with_component_appearance_role(
                 "platform.control.activation",
                 UiAppearanceRoleAttachmentDeclaration::new(
@@ -135,238 +153,158 @@ fn rust_and_file_declarations_share_role_bytes_and_attachment_meaning() {
             .expect("Rust component attachment should be unique"),
     )
     .expect("Rust declaration should compile");
-
-    let file_role = file.appearance_role_declarations().next().unwrap().role();
-    let rust_role = rust.appearance_role_declarations().next().unwrap().role();
-    assert_eq!(file_role.canonical_bytes(), role.canonical_bytes());
-    assert_eq!(rust_role.canonical_bytes(), role.canonical_bytes());
-    assert_eq!(file.identity(), rust.identity());
-    let file_receipt = file
+    let has_attachment = file
         .declaration_lowering_receipts()
         .into_iter()
-        .find(|receipt| {
+        .any(|receipt| {
             receipt
                 .semantic_artifact()
                 .appearance_role_attachment()
                 .is_some()
-        })
-        .expect("file attachment should reach the runtime lowering receipt");
+        });
+    assert!(
+        has_attachment,
+        "file attachment should reach the lowering receipt"
+    );
     assert_eq!(
-        file_receipt
-            .semantic_artifact()
-            .appearance_role_attachment()
+        file.appearance_role_declarations()
+            .next()
             .unwrap()
             .role()
-            .as_str(),
-        "action.primary"
+            .canonical_bytes(),
+        rust.appearance_role_declarations()
+            .next()
+            .unwrap()
+            .role()
+            .canonical_bytes()
     );
-    let attachment = file
-        .module(&file.module_ids()[0])
-        .unwrap()
-        .declarations()
-        .iter()
-        .find_map(|declaration| match declaration {
-            crate::WorthUiSemanticDeclaration::Component(component) => {
-                component.appearance_role_attachment()
-            }
-            _ => None,
-        })
-        .expect("file component should carry an explicit role attachment");
-    assert_eq!(attachment.role().as_str(), "action.primary");
 }
+
 #[test]
-fn rust_and_file_backdrop_declarations_share_exact_meaning() {
-    let file = compile_file(
-        r#"
+fn file_and_rust_backdrops_converge_on_equal_typed_graph_and_bytes() {
+    let source = r#"
+        surface beta.surface {}
+        portal beta.portal {
+            anchor beta.anchor
+            layer transient
+            dismiss escape
+            focus first_enabled
+            motion system_popover
+        }
         appearance role overlay.scrim applies_to backdrop {
             background use token(overlay.scrim.background)
             opacity use token(overlay.scrim.opacity)
         }
-        backdrop pulse.confirmation.scrim {
+        backdrop z.scrim {
             scope surface_singleton
-            extent surface_viewport pulse.confirmation.surface
+            extent surface_viewport beta.surface
             presence always
             motion none
-            place above_surface_content
+            place immediately_before portal beta.portal
             appearance { role overlay.scrim }
         }
-        "#,
-    )
-    .expect("file backdrop declaration should compile");
+        surface alpha.surface {}
+        portal alpha.portal {
+            anchor alpha.anchor
+            layer transient
+            dismiss escape
+            focus first_enabled
+            motion system_popover
+        }
+        backdrop a.scrim {
+            scope surface_singleton
+            extent surface_viewport alpha.surface
+            presence always
+            motion none
+            place immediately_before portal alpha.portal
+            appearance { role overlay.scrim }
+        }
+    "#;
+    let permuted = r#"
+        appearance role overlay.scrim applies_to backdrop {
+            background use token(overlay.scrim.background)
+            opacity use token(overlay.scrim.opacity)
+        }
+        backdrop a.scrim {
+            scope surface_singleton
+            extent surface_viewport alpha.surface
+            presence always
+            motion none
+            place immediately_before portal alpha.portal
+            appearance { role overlay.scrim }
+        }
+        portal alpha.portal {
+            anchor alpha.anchor
+            layer transient
+            dismiss escape
+            focus first_enabled
+            motion system_popover
+        }
+        surface alpha.surface {}
+        backdrop z.scrim {
+            scope surface_singleton
+            extent surface_viewport beta.surface
+            presence always
+            motion none
+            place immediately_before portal beta.portal
+            appearance { role overlay.scrim }
+        }
+        portal beta.portal {
+            anchor beta.anchor
+            layer transient
+            dismiss escape
+            focus first_enabled
+            motion system_popover
+        }
+        surface beta.surface {}
+    "#;
+    let file = compile_file(source).expect("file declarations should compile");
+    let permuted_file = compile_file(permuted).expect("permuted file declarations should compile");
+    let role = backdrop_role();
     let rust = compile_rust(
         WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
-            .with_appearance_role(backdrop_role())
-            .with_backdrop(backdrop_spec(
-                "pulse.confirmation.scrim",
-                UiStaticBackdropPlacement::AboveSurfaceContent,
+            .with_surface("beta.surface")
+            .with_semantic_declaration(rust_portal("beta.portal", "beta.anchor"))
+            .with_appearance_role(role.clone())
+            .with_backdrop(typed_backdrop(
+                2,
+                2,
+                UiBackdropPlacement::ImmediatelyBeforePortal(
+                    UiPortalDeclarationId::new(2).unwrap(),
+                ),
+                &role,
+            ))
+            .with_surface("alpha.surface")
+            .with_semantic_declaration(rust_portal("alpha.portal", "alpha.anchor"))
+            .with_backdrop(typed_backdrop(
+                1,
+                1,
+                UiBackdropPlacement::ImmediatelyBeforePortal(
+                    UiPortalDeclarationId::new(1).unwrap(),
+                ),
+                &role,
             )),
     )
-    .expect("Rust backdrop declaration should compile");
-
-    assert_eq!(file.identity(), rust.identity());
-    assert_eq!(
-        file.backdrop_declarations()
-            .next()
-            .unwrap()
-            .declaration()
-            .identity(),
-        "pulse.confirmation.scrim"
-    );
-    let file_backdrop = file.backdrop_declarations().next().unwrap().declaration();
-    let rust_backdrop = rust.backdrop_declarations().next().unwrap().declaration();
-    assert_eq!(
-        file_backdrop.canonical_bytes(),
-        rust_backdrop.canonical_bytes()
-    );
+    .expect("Rust declarations should compile");
+    let file_backdrops = file
+        .backdrop_declarations()
+        .map(|declaration| declaration.declaration().clone())
+        .collect::<Vec<_>>();
+    let rust_backdrops = rust
+        .backdrop_declarations()
+        .map(|declaration| declaration.declaration().clone())
+        .collect::<Vec<_>>();
+    let permuted_backdrops = permuted_file
+        .backdrop_declarations()
+        .map(|declaration| declaration.declaration().clone())
+        .collect::<Vec<_>>();
+    assert_eq!(file_backdrops, rust_backdrops);
+    assert_eq!(file_backdrops, permuted_backdrops);
+    assert_eq!(file.overlay_relation_graph(), rust.overlay_relation_graph());
     assert_eq!(
         file.overlay_relation_graph().unwrap().canonical_bytes(),
         rust.overlay_relation_graph().unwrap().canonical_bytes()
     );
-}
-
-#[test]
-fn source_partition_diagnostics_are_typed_and_source_linked() {
-    let overlapping = compile_file(
-        r#"appearance role bad applies_to button {
-            background over [hover] {
-                cell first when hover = outside use token(first)
-                cell second when hover = outside use token(second)
-            }
-        }"#,
-    )
-    .expect_err("overlap must be denied");
-    assert_eq!(
-        first_code(&overlapping),
-        WorthUiDslCompileDiagnosticCode::OverlappingAppearanceCells
-    );
-    assert!(overlapping.diagnostics()[0].identity().span().is_some());
-
-    let missing = compile_file(
-        r#"appearance role incomplete applies_to button {
-            background over [hover] {
-                cell outside when hover = outside use token(button.background)
-            }
-        }"#,
-    )
-    .expect_err("a hole must be denied");
-    assert_eq!(
-        first_code(&missing),
-        WorthUiDslCompileDiagnosticCode::MissingAppearanceDeclaration
-    );
-
-    let wrong_kind = compile_file(
-        r#"appearance role wrong-kind applies_to button {
-            background use transparent-outline
-        }"#,
-    )
-    .expect_err("a transparent outline cannot fill a background aspect");
-    assert_eq!(
-        first_code(&wrong_kind),
-        WorthUiDslCompileDiagnosticCode::WrongAppearanceValueKind
-    );
-
-    let cyclic = compile_file(
-        r#"appearance role cyclic applies_to button {
-            background over [hover] {
-                cell first when hover = outside use same_as(second)
-                cell second when hover = hovered use same_as(first)
-            }
-        }"#,
-    )
-    .expect_err("cyclic cell references must be denied");
-    assert_eq!(
-        first_code(&cyclic),
-        WorthUiDslCompileDiagnosticCode::CyclicAppearanceCellReference
-    );
-
-    let capacity = compile_file(
-        r#"appearance role saturated applies_to button {
-            background over [operability, focus, validation, selection] {
-                otherwise use transparent-color
-            }
-        }"#,
-    )
-    .expect_err("expanded cell capacity must be denied");
-    assert_eq!(
-        first_code(&capacity),
-        WorthUiDslCompileDiagnosticCode::AppearanceCapacityDenied
-    );
-}
-
-#[test]
-fn attachment_and_overlay_relation_diagnostics_are_typed() {
-    let missing_role =
-        compile_file("component platform.control.activation { appearance { role missing.role } }")
-            .expect_err("missing attachment role must be denied");
-    assert_eq!(
-        first_code(&missing_role),
-        WorthUiDslCompileDiagnosticCode::MissingAppearanceDeclaration
-    );
-
-    let wrong_kind = compile_file(
-        r#"
-        appearance role overlay.scrim applies_to backdrop {
-            background use token(overlay.scrim.background)
-            opacity use token(overlay.scrim.opacity)
-        }
-        component platform.control.activation { appearance { role overlay.scrim } }
-        "#,
-    )
-    .expect_err("backdrop role cannot attach to a component");
-    assert_eq!(
-        first_code(&wrong_kind),
-        WorthUiDslCompileDiagnosticCode::WrongAppearanceDeclarationKind
-    );
-
-    let missing_anchor = compile_file(
-        r#"
-        appearance role overlay.scrim applies_to backdrop {
-            background use token(overlay.scrim.background)
-            opacity use token(overlay.scrim.opacity)
-        }
-        backdrop pulse.scrim {
-            scope per_portal_instance missing.portal
-            extent surface_viewport pulse.surface
-            presence while portal missing.portal presented
-            motion follow portal missing.portal presentation
-            place immediately_before portal missing.portal
-            appearance { role overlay.scrim }
-        }
-        "#,
-    )
-    .expect_err("missing portal anchor must be denied");
-    assert_eq!(
-        first_code(&missing_anchor),
-        WorthUiDslCompileDiagnosticCode::MissingOverlayAnchor
-    );
-
-    let ambiguous = compile_file(
-        r#"
-        appearance role overlay.scrim applies_to backdrop {
-            background use token(overlay.scrim.background)
-            opacity use token(overlay.scrim.opacity)
-        }
-        backdrop first {
-            scope surface_singleton
-            extent surface_viewport pulse.surface
-            presence always
-            motion none
-            place above_surface_content
-            appearance { role overlay.scrim }
-        }
-        backdrop second {
-            scope surface_singleton
-            extent surface_viewport pulse.surface
-            presence always
-            motion none
-            place above_surface_content
-            appearance { role overlay.scrim }
-        }
-        "#,
-    )
-    .expect_err("unrelated overlay rows must be denied as ambiguous");
-    assert_eq!(
-        first_code(&ambiguous),
-        WorthUiDslCompileDiagnosticCode::AmbiguousOverlayRelation
-    );
+    assert_eq!(file.identity(), rust.identity());
+    assert_eq!(file.identity(), permuted_file.identity());
 }

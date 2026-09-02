@@ -27,7 +27,15 @@ impl UiAppearanceDecisionPartition {
                 .filter(|rule| rule_matches(rule, classes))
                 .collect::<Vec<_>>();
             match matches.as_slice() {
-                [] => Err(UiAppearanceDecisionPartitionDenial::MissingCell),
+                [] => {
+                    let uncovered =
+                        super::super::UiAppearanceCanonicalStateCell::new(classes.iter().copied());
+                    let repair = super::super::UiAppearanceFinitePredicate::exact_for(&uncovered);
+                    Err(UiAppearanceDecisionPartitionDenial::MissingCell {
+                        uncovered_canonical_state_cell: uncovered,
+                        exact_repair_predicate: repair,
+                    })
+                }
                 [rule] => {
                     cells.push(UiAppearanceDecisionCell {
                         classes: classes.to_vec().into_boxed_slice(),

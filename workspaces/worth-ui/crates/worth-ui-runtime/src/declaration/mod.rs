@@ -120,8 +120,9 @@ pub use measurement_dependency::{
 pub use overlay::{
     UiBackdropDeclaration, UiBackdropDeclarationDenial, UiBackdropExtentBasis, UiBackdropIdentity,
     UiBackdropMotionBasis, UiBackdropPlacement, UiBackdropPresenceBasis, UiBackdropScope,
-    UiMosaicRegionDeclarationIdentity, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
-    UiPortalDeclarationId, UiSemanticSurfaceDeclarationIdentity,
+    UiMosaicRegionDeclarationIdentity, UiOverlayAnchor, UiOverlayPortalParticipant,
+    UiOverlayRelation, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
+    UiOverlayRelationKind, UiPortalDeclarationId, UiSemanticSurfaceDeclarationIdentity,
 };
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use rust_authored_declaration_fixture::WorthUiRustAuthoredDeclarationFixture;

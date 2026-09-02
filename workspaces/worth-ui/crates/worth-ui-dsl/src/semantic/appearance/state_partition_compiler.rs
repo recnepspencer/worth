@@ -307,10 +307,12 @@ fn resolve_cell(
         }
         UiAppearanceCellValue::Literal(value) => UiAppearanceDecisionResult::literal(*value),
         UiAppearanceCellValue::SameAs(name) => {
-            let target = names
-                .get(name.as_ref())
-                .copied()
-                .ok_or(UiAppearanceDecisionPartitionDenial::MissingNamedCell)?;
+            let target = names.get(name.as_ref()).copied().ok_or(
+                UiAppearanceDecisionPartitionDenial::MissingNamedCell {
+                    referenced_cell_name: name.clone(),
+                    reference_origin: super::UiAppearanceCellReferenceOrigin::NamedCell,
+                },
+            )?;
             resolve_cell(target, cells, names, states)?
         }
     };
@@ -326,10 +328,12 @@ fn resolve_otherwise(
 ) -> Result<UiAppearanceDecisionResult, UiAppearanceDecisionPartitionDenial> {
     match value {
         UiAppearanceCellValue::SameAs(name) => {
-            let index = names
-                .get(name.as_ref())
-                .copied()
-                .ok_or(UiAppearanceDecisionPartitionDenial::MissingNamedCell)?;
+            let index = names.get(name.as_ref()).copied().ok_or(
+                UiAppearanceDecisionPartitionDenial::MissingNamedCell {
+                    referenced_cell_name: name.clone(),
+                    reference_origin: super::UiAppearanceCellReferenceOrigin::OtherwiseClause,
+                },
+            )?;
             resolve_cell(index, cells, names, states)
         }
         _ => value_to_result(value),
@@ -344,8 +348,11 @@ fn value_to_result(
             UiAppearanceDecisionResult::theme_slot(slot.clone(), *value_kind)
         }
         UiAppearanceCellValue::Literal(value) => UiAppearanceDecisionResult::literal(*value),
-        UiAppearanceCellValue::SameAs(_) => {
-            return Err(UiAppearanceDecisionPartitionDenial::MissingNamedCell)
+        UiAppearanceCellValue::SameAs(name) => {
+            return Err(UiAppearanceDecisionPartitionDenial::MissingNamedCell {
+                referenced_cell_name: name.clone(),
+                reference_origin: super::UiAppearanceCellReferenceOrigin::OtherwiseClause,
+            })
         }
     })
 }

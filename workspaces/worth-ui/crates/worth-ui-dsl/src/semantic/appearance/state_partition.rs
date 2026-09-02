@@ -70,7 +70,7 @@ pub struct UiAppearanceDecisionRule {
     result: UiAppearanceDecisionResult,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct UiAppearanceAxisPredicate {
     axis: UiAppearanceStateAxis,
     class: Option<UiAppearanceAxisClass>,
@@ -88,7 +88,7 @@ pub struct UiAppearanceDecisionPartition {
     cells: Box<[UiAppearanceDecisionCell]>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum UiAppearanceDecisionPartitionDenial {
     DuplicateAxis,
     PredicateArity,
@@ -99,11 +99,44 @@ pub enum UiAppearanceDecisionPartitionDenial {
     AmbiguousCell,
     OverlappingCell,
     DuplicateOtherwise,
-    MissingCell,
+    MissingCell {
+        uncovered_canonical_state_cell: super::UiAppearanceCanonicalStateCell,
+        exact_repair_predicate: super::UiAppearanceFinitePredicate,
+    },
     DuplicateCellName,
-    MissingNamedCell,
+    MissingNamedCell {
+        referenced_cell_name: Box<str>,
+        reference_origin: super::UiAppearanceCellReferenceOrigin,
+    },
     CyclicCellReference,
     ResultValueKindMismatch,
+}
+
+impl UiAppearanceDecisionPartitionDenial {
+    pub fn missing_cell(
+        &self,
+    ) -> Option<(
+        &super::UiAppearanceCanonicalStateCell,
+        &super::UiAppearanceFinitePredicate,
+    )> {
+        match self {
+            Self::MissingCell {
+                uncovered_canonical_state_cell,
+                exact_repair_predicate,
+            } => Some((uncovered_canonical_state_cell, exact_repair_predicate)),
+            _ => None,
+        }
+    }
+
+    pub fn missing_named_cell(&self) -> Option<(&str, super::UiAppearanceCellReferenceOrigin)> {
+        match self {
+            Self::MissingNamedCell {
+                referenced_cell_name,
+                reference_origin,
+            } => Some((referenced_cell_name, *reference_origin)),
+            _ => None,
+        }
+    }
 }
 
 impl UiAppearanceStateAxisVersion {

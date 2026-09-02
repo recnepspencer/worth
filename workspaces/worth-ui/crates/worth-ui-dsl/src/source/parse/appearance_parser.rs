@@ -61,8 +61,10 @@ pub(super) fn parse_appearance_role_declaration(
         "appearance role declaration requires '{'",
     )?;
     let (body_tokens, right) = parse_block_body_tokens(module_id, stream, left.span())?;
-    let body =
-        WorthUiParsedBlockBody::new(span_from_bounds(left.span(), right.span()), body_tokens);
+    let body = WorthUiParsedBlockBody::new_with_spans(
+        span_from_bounds(left.span(), right.span()),
+        body_tokens,
+    );
     Ok(WorthUiParsedSourceDeclaration::AppearanceRole(
         WorthUiParsedAppearanceRoleDeclaration::new(
             token_identifier_text(&name),
@@ -98,7 +100,10 @@ pub(super) fn parse_backdrop_declaration(
         WorthUiParsedBlockDeclaration::new(
             token_identifier_text(&name),
             span_from_bounds(keyword.span(), right.span()),
-            WorthUiParsedBlockBody::new(span_from_bounds(left.span(), right.span()), body_tokens),
+            WorthUiParsedBlockBody::new_with_spans(
+                span_from_bounds(left.span(), right.span()),
+                body_tokens,
+            ),
         ),
     ))
 }

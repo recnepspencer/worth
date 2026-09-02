@@ -29,7 +29,7 @@ pub struct WorthUiSealedSemanticPackage {
     identity: WorthUiSemanticPackageIdentity,
     protocol: WorthUiDslProtocolIdentity,
     authored_mode: WorthUiAuthoredMode,
-    overlay_relation_graph: Option<crate::UiStaticOverlayRelationGraph>,
+    overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
     _seal: WorthUiSemanticPackageSeal,
 }
 
@@ -110,12 +110,9 @@ struct WorthUiSemanticPackageSealingState {
             WorthUiArtifactInputProvenance,
         ),
     >,
-    backdrops: Vec<(
-        crate::UiStaticBackdropDeclaration,
-        WorthUiArtifactInputProvenance,
-    )>,
+    backdrops: Vec<(crate::UiBackdropDeclaration, WorthUiArtifactInputProvenance)>,
     portal_identities: Vec<String>,
-    overlay_relation_graph: Option<crate::UiStaticOverlayRelationGraph>,
+    overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
 }
 
 impl WorthUiSealedSemanticPackage {
