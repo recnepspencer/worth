@@ -197,6 +197,60 @@ fn assert_order_capacity_is_denied() {
     );
 }
 
+#[test]
+fn successor_order_capacity_denial_retains_published_predecessor() {
+    let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(91).unwrap();
+    let runtime_surface =
+        worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let extent = surface_extent(surface, runtime_surface, 2);
+    let first = portal(922);
+    let second = portal(923);
+    let portal_declaration = worth_ui_dsl::UiPortalDeclarationId::new(922).unwrap();
+    let initial_portals = portal_snapshot(runtime_surface, [(first, 1)]);
+    let initial_bindings = [UiOverlayPortalBinding::new(portal_declaration, first)];
+    let successor_portals = portal_snapshot(runtime_surface, [(first, 1), (second, 2)]);
+    let successor_bindings = [
+        UiOverlayPortalBinding::new(portal_declaration, first),
+        UiOverlayPortalBinding::new(portal_declaration, second),
+    ];
+    let mut capacity = UiOverlayCapacityProfile::qualified();
+    capacity.max_order_rows = 1;
+    let mut state = UiOverlayCompositionState::admit([], 3, capacity).unwrap();
+    let predecessor = state
+        .prepare_initial(input(
+            &extent,
+            &initial_portals,
+            &initial_bindings,
+            None,
+            presentation(),
+        ))
+        .unwrap();
+    state.publish(predecessor).unwrap();
+    let retained_snapshot = state.current().cloned();
+    let retained_index = state.dependency_index().cloned();
+    let changes =
+        UiOverlayChangeSet::from_changes([UiOverlayChangedBasis::Portal(portal_declaration)]);
+
+    assert_eq!(
+        state.prepare_successor(
+            input(
+                &extent,
+                &successor_portals,
+                &successor_bindings,
+                None,
+                presentation(),
+            ),
+            &changes,
+        ),
+        Err(UiOverlayCompositionDenial::OverlayOrderCapacityExceeded {
+            observed: 2,
+            maximum: 1,
+        })
+    );
+    assert_eq!(state.current(), retained_snapshot.as_ref());
+    assert_eq!(state.dependency_index(), retained_index.as_ref());
+}
+
 fn assert_relation_edge_capacity_is_denied() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(91).unwrap();
     let runtime_surface =
