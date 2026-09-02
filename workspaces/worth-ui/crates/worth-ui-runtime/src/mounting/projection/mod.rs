@@ -15,11 +15,7 @@ mod semantic_text;
 mod static_paint;
 
 pub(crate) use appearance::{
-    UiMountedAppearanceBackdropInput, UiMountedAppearanceLoweringDenial,
-    UiMountedAppearanceLoweringInput, UiMountedAppearanceNodeInput,
-    UiMountedAppearanceOutlineInput, UiMountedAppearanceOverlayInput,
-    UiMountedAppearancePointerInput, UiMountedAppearanceSidecar,
-    UiMountedAppearanceTextForegroundInput,
+    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput, UiMountedAppearanceSidecar,
 };
 pub use denial::UiMountedProjectionDenial;
 pub(crate) use focus_scope::UiMountedFocusScope;
