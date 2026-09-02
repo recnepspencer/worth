@@ -60,7 +60,10 @@ fn active_session_close_seals_all_six_owner_exports_on_one_basis() {
         prepared.service_policy_plan().selection(),
         Some(crate::declaration::UiSelectionPolicy::single())
     );
-    let mut session = crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host(prepared)
+    let mut session =
+        crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host(
+            prepared,
+        )
         .launch()
         .expect("six-axis appearance source application should launch");
     let candidate = appearance_axis_close_test_support::candidate_submission(
@@ -182,7 +185,6 @@ fn axis_partition(
     axis: UiAppearanceStateAxis,
     value: UiThemeValue,
 ) -> UiAppearancePartitionAuthoring {
-    UiAppearancePartitionAuthoring::new([UiAppearanceAxisDomain::complete(axis)]).with_cell(
-        UiAppearanceCell::when([UiAppearanceAxisPredicate::any(axis)]).literal(value),
-    )
+    UiAppearancePartitionAuthoring::new([UiAppearanceAxisDomain::complete(axis)])
+        .with_cell(UiAppearanceCell::when([UiAppearanceAxisPredicate::any(axis)]).literal(value))
 }

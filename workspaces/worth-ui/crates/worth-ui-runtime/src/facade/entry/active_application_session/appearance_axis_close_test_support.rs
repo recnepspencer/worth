@@ -1,5 +1,4 @@
-use crate::runtime::tests::appearance_component_session_test_support::
-    six_axis_appearance_component_builder;
+use crate::runtime::tests::appearance_component_session_test_support::six_axis_appearance_component_builder;
 use crate::runtime::tests::source_ingress_boundary_test_support::lower_rust_submission;
 
 const SELECTION_INTENT_ID: &str = "test.six_axis.selection";
@@ -32,12 +31,10 @@ impl crate::capability::UiIntentPayload for SixAxisSelectionPayload {
         fields: &mut crate::capability::UiIntentPayloadProjection<Self>,
     ) -> Result<Self, crate::capability::UiIntentPayloadProjectionViolation> {
         Ok(Self {
-            _selection: fields.take(
-                crate::capability::UiIntentPayloadField::<
-                    Self,
-                    crate::capability::UiIntentSelection,
-                >::selection(0, "selection"),
-            )?,
+            _selection: fields.take(crate::capability::UiIntentPayloadField::<
+                Self,
+                crate::capability::UiIntentSelection,
+            >::selection(0, "selection"))?,
         })
     }
 }
@@ -100,19 +97,19 @@ impl crate::runtime::intent_execution::UiIntentExecutionProvider<SixAxisSelectio
 pub(super) fn six_axis_builder(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
-    let query_domain = worth_ui_query_binding::certification::worth_ui_installed_test_domain(
-        "six-axis-selection",
-    );
-    let selection_projection = crate::facade::query_binding::UiCollectionProjectionRegistration::text(
-        query_domain
-            .projection_view(SELECTION_PROJECTION_ID)
-            .expect("selection projection view should admit"),
-        crate::facade::query_binding::UiProjectionFieldRequirement::identity_id(),
-        [crate::facade::query_binding::UiProjectionFieldRequirement::query_text_status()],
-        false,
-        false,
-    )
-    .expect("selection projection registration should admit");
+    let query_domain =
+        worth_ui_query_binding::certification::worth_ui_installed_test_domain("six-axis-selection");
+    let selection_projection =
+        crate::facade::query_binding::UiCollectionProjectionRegistration::text(
+            query_domain
+                .projection_view(SELECTION_PROJECTION_ID)
+                .expect("selection projection view should admit"),
+            crate::facade::query_binding::UiProjectionFieldRequirement::identity_id(),
+            [crate::facade::query_binding::UiProjectionFieldRequirement::query_text_status()],
+            false,
+            false,
+        )
+        .expect("selection projection registration should admit");
     six_axis_appearance_component_builder(role)
         .register_collection_projection(selection_projection)
         .expect("selection projection should register")
@@ -131,17 +128,17 @@ pub(super) fn six_axis_builder(
             true,
         )
         .expect("selection policy fact should register")
-        .register_intent_definition(
-            crate::capability::UiIntentDefinition::<SixAxisSelectionIntent>::application_effect(),
-        )
+        .register_intent_definition(crate::capability::UiIntentDefinition::<
+            SixAxisSelectionIntent,
+        >::application_effect())
         .expect("selection intent definition should register")
         .register_intent_provider(SixAxisSelectionProvider)
         .expect("selection intent provider should register")
-        .register_runtime_service_intent_definition(
-            crate::capability::UiIntentDefinition::<SixAxisFocusServiceIntent>::runtime_service(
-                crate::capability::UiIntentRuntimeServiceDestination::OpenPortal,
-            ),
-        )
+        .register_runtime_service_intent_definition(crate::capability::UiIntentDefinition::<
+            SixAxisFocusServiceIntent,
+        >::runtime_service(
+            crate::capability::UiIntentRuntimeServiceDestination::OpenPortal,
+        ))
         .expect("focus service definition should register")
 }
 
@@ -166,12 +163,10 @@ pub(super) fn candidate_submission(
         .unwrap(),
     )
     .unwrap()
-    .with_appearance_role_attachment(
-        worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration::new(
-            role.role().clone(),
-            role.revision(),
-        ),
-    )
+    .with_appearance_role_attachment(worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration::new(
+        role.role().clone(),
+        role.revision(),
+    ))
     .unwrap();
     let input = worth_ui_dsl::WorthUiRustAuthoredArtifactInput::from_modules([
         worth_ui_dsl::WorthUiRustAuthoredArtifactInputModule::new("appearance/consumer")
@@ -181,7 +176,9 @@ pub(super) fn candidate_submission(
     lower_rust_submission(
         crate::runtime::WorthUiSourceProvider::rust_authored(source_name)
             .with_rust_authored_input(input),
-        [crate::runtime::WorthUiWatcherEvent::provider_revision(source_name)],
+        [crate::runtime::WorthUiWatcherEvent::provider_revision(
+            source_name,
+        )],
         capabilities,
     )
 }
@@ -203,8 +200,10 @@ fn selection_intent_declaration() -> worth_ui_dsl::WorthUiIntentDeclarationSpec 
         worth_ui_dsl::WorthUiIntentConcurrencyScope::TargetRouteSingleFlight,
         worth_ui_dsl::WorthUiIntentConsequenceContractSpec::none(),
     )
-    .with_payload_source(worth_ui_dsl::WorthUiIntentPayloadSourceSpec::projection_selection(
-        "selection",
-        SELECTION_PROJECTION_ID,
-    ))
+    .with_payload_source(
+        worth_ui_dsl::WorthUiIntentPayloadSourceSpec::projection_selection(
+            "selection",
+            SELECTION_PROJECTION_ID,
+        ),
+    )
 }

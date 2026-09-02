@@ -6,9 +6,10 @@ use super::{
     WorthUiActiveFrameworkTurnCompletion, WorthUiApp,
 };
 #[cfg(test)]
+mod appearance_axis_close_tests;
+#[cfg(test)]
 #[path = "active_application_session/appearance_observation_close_tests.rs"]
 mod appearance_observation_close_tests;
-#[cfg(test)] mod appearance_axis_close_tests;
 #[path = "active_application_session/command_context.rs"]
 mod command_context;
 #[path = "active_application_session/command_observation.rs"]

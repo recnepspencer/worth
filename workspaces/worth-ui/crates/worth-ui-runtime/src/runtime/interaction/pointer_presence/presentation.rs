@@ -130,9 +130,7 @@ impl UiPointerPresencePresentationTrigger {
     }
 }
 
-fn admit_raw_input<T>(
-    input: &[T],
-) -> Result<(), UiPointerPresencePresentationTriggerDenial> {
+fn admit_raw_input<T>(input: &[T]) -> Result<(), UiPointerPresencePresentationTriggerDenial> {
     if input.len() > UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
         return Err(
             UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded {

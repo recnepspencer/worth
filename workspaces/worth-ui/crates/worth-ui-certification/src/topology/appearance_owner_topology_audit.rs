@@ -32,13 +32,13 @@ const DIRECT_OWNER_READS: [&str; 6] = [
     ".pressed_appearance_snapshot(",
 ];
 
-pub fn audit_appearance_owner_export_topology(
-    inventory: &WorkspaceSourceInventory,
-) -> Vec<String> {
+pub fn audit_appearance_owner_export_topology(inventory: &WorkspaceSourceInventory) -> Vec<String> {
     let mut violations = Vec::new();
     for relative_path in APPEARANCE_ADAPTERS {
         let Some(source) = inventory.source(relative_path) else {
-            violations.push(format!("missing appearance adapter source `{relative_path}`"));
+            violations.push(format!(
+                "missing appearance adapter source `{relative_path}`"
+            ));
             continue;
         };
         audit_adapter(source.text(), source.absolute_path(), &mut violations);
@@ -51,7 +51,10 @@ pub fn audit_appearance_owner_export_topology(
 
 fn audit_adapter(source: &str, path: &Path, violations: &mut Vec<String>) {
     let syntax = syn::parse_file(source).unwrap_or_else(|error| {
-        panic!("{} should parse for appearance topology audit: {error}", path.display())
+        panic!(
+            "{} should parse for appearance topology audit: {error}",
+            path.display()
+        )
     });
     let has_snapshot_parameter = syntax.items.iter().any(|item| match item {
         Item::Fn(function) if function.sig.ident == "adapt" => function
