@@ -1,4 +1,11 @@
 impl super::WorthUiActiveApplicationSession {
+    pub fn why_appearance(
+        &self,
+        query: worth_ui_inspection::UiAppearanceInspectionQuery,
+    ) -> worth_ui_inspection::UiAppearanceInspectionOutcome {
+        self.appearance_inspection.query(query)
+    }
+
     pub fn why_portal_closed(
         &self,
     ) -> Option<worth_ui_inspection::UiPortalClosedInspectionSummary> {

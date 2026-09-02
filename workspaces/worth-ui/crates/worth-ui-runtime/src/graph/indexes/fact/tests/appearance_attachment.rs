@@ -71,3 +71,39 @@ fn unattached_node_does_not_infer_appearance_demand_from_its_component() {
         .consumed_fact_index()
         .has_appearance_consumers());
 }
+
+#[test]
+fn appearance_consumer_queries_reconstruct_from_the_existing_index_without_host_work() {
+    let app = super::static_paint_app();
+    let authority = app.prepared_authority();
+    let index = authority.consumed_fact_index();
+    let role = crate::runtime::tests::appearance_component_session_test_support::validation_background_role(
+        super::STATIC_PAINT_TOKEN,
+    );
+    let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
+    let node = super::graph_node_named(authority.graph_snapshot(), super::STATIC_PAINT_COMPONENT)
+        .graph_node_identity();
+
+    let state = crate::runtime::appearance::UiAppearanceConsumerSelection::for_state(
+        index,
+        worth_ui_dsl::UiAppearanceStateAxis::Validation,
+    );
+    let role_selection =
+        crate::runtime::appearance::UiAppearanceConsumerSelection::for_role(index, role.role());
+    let slot_selection =
+        crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(index, &slot);
+
+    for selection in [&state, &role_selection, &slot_selection] {
+        assert!(selection.is_reconstructible());
+        assert_eq!(selection.selected_count(), 1);
+        assert_eq!(selection.consumers(), [node]);
+    }
+    assert!(
+        authority
+            .consumed_fact_index()
+            .appearance_slot_consumer_nodes(&slot)
+            .iter()
+            .all(|selected| *selected == node),
+        "the prepared-only proof has no host command publisher to invoke"
+    );
+}

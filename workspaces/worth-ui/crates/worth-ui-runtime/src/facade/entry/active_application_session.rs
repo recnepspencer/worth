@@ -79,6 +79,7 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) intent_confirmation: crate::runtime::intent::UiIntentConfirmationState,
     pub(super) intent_postures: crate::mounting::UiIntentPostureTable,
     pub(super) presentation: crate::runtime::presentation_state::UiApplicationPresentationState,
+    pub(super) appearance_inspection: crate::runtime::appearance::UiAppearanceInspectionProducer,
     pub(super) appearance_owner_snapshot:
         Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
     pub(super) visual_inspection:
@@ -227,6 +228,7 @@ impl WorthUiActiveApplicationSession {
             intent_confirmation: crate::runtime::intent::UiIntentConfirmationState::new(),
             intent_postures: crate::mounting::UiIntentPostureTable::new(),
             presentation,
+            appearance_inspection: crate::runtime::appearance::UiAppearanceInspectionProducer::new(),
             appearance_owner_snapshot: None,
             visual_inspection,
             next_visual_capture_identity: 1,
@@ -289,6 +291,15 @@ impl WorthUiActiveApplicationSession {
         &self,
     ) -> Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot> {
         self.appearance_owner_snapshot.as_ref()
+    }
+
+    pub(crate) fn record_appearance_projection_for_inspection(
+        &mut self,
+        projection: &crate::runtime::appearance::UiAppearanceProjection,
+        consumers_selected: u32,
+    ) {
+        self.appearance_inspection
+            .record_projection(projection, consumers_selected);
     }
 
     pub fn resolve_affected_scope(

@@ -297,6 +297,17 @@ impl UiApplicationPresentationState {
         self.theme_values_source_with_graph_nodes(self.pending_theme_graph_nodes.iter().copied())
     }
 
+    pub(crate) fn preview_theme_binding(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> crate::mounting::UiMountedPreviewThemeBinding {
+        crate::mounting::UiMountedPreviewThemeBinding::from_presentation(
+            surface,
+            self.theme_revision,
+            Arc::clone(&self.token_values),
+        )
+    }
+
     pub(crate) fn theme_values_source_with_graph_nodes(
         &self,
         graph_nodes: impl IntoIterator<Item = crate::graph::UiGraphNodeIdentity>,

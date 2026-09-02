@@ -2,6 +2,7 @@
 //! target identity → query admission → receipt projection → evidence contract → posture → scope.
 
 mod allocation;
+mod appearance;
 mod evidence_contract;
 mod facade;
 mod intent;
@@ -16,6 +17,17 @@ mod target;
 pub use target::{
     UiAuthoredSourceProvenanceRef, UiInspectionAspectName, UiInspectionDeclarationIdentity,
     UiInspectionTarget, UiSourceArtifactGeneration, UiSourceArtifactIdentity,
+};
+
+// Appearance inspection lane. These are inert evidence contracts; runtime
+// owns production and no contract below can authorize a runtime mutation.
+pub use appearance::{
+    UiAppearanceInspectionCost, UiAppearanceInspectionDecisionCell, UiAppearanceInspectionEvidence,
+    UiAppearanceInspectionExplanation, UiAppearanceInspectionInvalidationCause,
+    UiAppearanceInspectionMountedMechanic, UiAppearanceInspectionOutcome,
+    UiAppearanceInspectionPhysicalSuppression, UiAppearanceInspectionQuery,
+    UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport, UiAppearanceInspectionValue,
+    UiAppearanceInspectionWorld,
 };
 
 // Evidence contract lane

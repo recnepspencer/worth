@@ -79,6 +79,27 @@ impl UiGraphConsumedFactIndex {
         self.appearance_consumers.has_consumers()
     }
 
+    pub(crate) fn appearance_state_consumer_nodes(
+        &self,
+        axis: worth_ui_dsl::UiAppearanceStateAxis,
+    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
+        self.appearance_consumers.state_consumers(axis).into()
+    }
+
+    pub(crate) fn appearance_role_consumer_nodes(
+        &self,
+        role: &worth_ui_dsl::UiAppearanceRoleIdentity,
+    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
+        self.appearance_consumers.role_consumers(role).into()
+    }
+
+    pub(crate) fn appearance_slot_consumer_nodes(
+        &self,
+        slot: &worth_ui_dsl::UiThemeSlotIdentity,
+    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
+        self.appearance_consumers.slot_consumers(slot).into()
+    }
+
     pub(crate) fn has_same_appearance_consumer_contract(&self, other: &Self) -> bool {
         self.appearance_consumers == other.appearance_consumers
     }
