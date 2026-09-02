@@ -55,6 +55,38 @@ impl UiPortalStackSnapshot {
     pub(crate) fn rows(&self) -> &[UiPortalStackRow] {
         &self.rows
     }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        owner_revision: u64,
+        rows: impl IntoIterator<
+            Item = (
+                super::UiPortalIdentity,
+                Option<super::UiPortalIdentity>,
+                worth_ui_host_contract::UiSemanticSurfaceIdentity,
+                u64,
+                super::UiPortalLifecyclePosture,
+            ),
+        >,
+    ) -> Self {
+        let mut rows = rows
+            .into_iter()
+            .map(
+                |(portal, parent, surface, ordinal, lifecycle)| UiPortalStackRow {
+                    portal,
+                    parent,
+                    surface,
+                    ordinal: UiPortalStackOrdinal::minted(ordinal),
+                    lifecycle,
+                },
+            )
+            .collect::<Vec<_>>();
+        rows.sort_by_key(|row| row.ordinal);
+        Self {
+            owner_revision,
+            rows: rows.into_boxed_slice(),
+        }
+    }
 }
 
 impl UiPortalStackRow {
