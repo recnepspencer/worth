@@ -110,7 +110,7 @@ impl OwnerIntegrationWorld {
     pub(crate) fn take_backdrop(&mut self) -> worth_ui_dsl::UiBackdropDeclaration {
         self.backdrop
             .take()
-            .expect("Gate 2 integration owns one admitted backdrop")
+            .expect("owner integration owns one admitted backdrop")
     }
 }
 

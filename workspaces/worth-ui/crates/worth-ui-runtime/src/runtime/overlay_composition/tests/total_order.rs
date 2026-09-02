@@ -25,7 +25,7 @@ struct TotalOrderFixture {
 }
 
 #[test]
-fn gate2_total_order_matches_the_model_and_ignores_source_order() {
+fn total_order_matches_the_model_and_ignores_source_order() {
     let fixture = total_order_fixture();
     let (forward_relations, reverse_relations) = compile_total_order_relations(&fixture);
     assert_eq!(forward_relations.relations(), reverse_relations.relations());

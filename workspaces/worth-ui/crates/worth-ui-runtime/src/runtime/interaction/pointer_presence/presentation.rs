@@ -49,14 +49,9 @@ impl UiPointerPresencePresentationTrigger {
         changed_input: &[UiMountedInstanceIdentity],
     ) -> Result<Self, UiPointerPresencePresentationTriggerDenial> {
         admit_raw_input(changed_input)?;
-        let mut changed_instances = Vec::new();
-        for instance in changed_input.iter().copied() {
-            if changed_instances.contains(&instance) {
-                continue;
-            }
-            admit_changed_instance(&mut changed_instances, instance)?;
-        }
+        let mut changed_instances = changed_input.to_vec();
         changed_instances.sort_unstable();
+        changed_instances.dedup();
         if changed_instances.is_empty() {
             return Err(UiPointerPresencePresentationTriggerDenial::EmptyChangedNeighborhood);
         }
@@ -80,19 +75,21 @@ impl UiPointerPresencePresentationTrigger {
         if candidates.is_empty() {
             return Err(UiPointerPresencePresentationTriggerDenial::EmptyChangedNeighborhood);
         }
-        let mut canonical: Vec<UiPointerPresenceGeometryCandidate> = Vec::new();
-        for candidate in candidates.iter().copied() {
-            if let Some(previous) = canonical
-                .iter_mut()
-                .find(|previous| previous.instance == candidate.instance)
-            {
+        let mut sorted = candidates.to_vec();
+        sorted.sort_by_key(|candidate| candidate.instance);
+        let mut canonical = Vec::<UiPointerPresenceGeometryCandidate>::with_capacity(sorted.len());
+        for candidate in sorted {
+            if let Some(previous) = canonical.last_mut() {
+                if previous.instance != candidate.instance {
+                    canonical.push(candidate);
+                    continue;
+                }
                 previous.old = previous.old.or(candidate.old);
                 previous.new = previous.new.or(candidate.new);
             } else {
-                admit_changed_instance(&mut canonical, candidate)?;
+                canonical.push(candidate);
             }
         }
-        canonical.sort_unstable_by_key(|candidate| candidate.instance);
         let changed_instances = canonical
             .iter()
             .map(|candidate| candidate.instance)
@@ -139,22 +136,6 @@ fn admit_raw_input<T>(input: &[T]) -> Result<(), UiPointerPresencePresentationTr
             },
         );
     }
-    Ok(())
-}
-
-fn admit_changed_instance<T>(
-    changed_instances: &mut Vec<T>,
-    instance: T,
-) -> Result<(), UiPointerPresencePresentationTriggerDenial> {
-    if changed_instances.len() == UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY {
-        return Err(
-            UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded {
-                observed: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY + 1,
-                maximum: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY,
-            },
-        );
-    }
-    changed_instances.push(instance);
     Ok(())
 }
 

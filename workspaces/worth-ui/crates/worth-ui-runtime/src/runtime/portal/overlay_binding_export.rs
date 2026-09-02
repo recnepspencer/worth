@@ -1,9 +1,4 @@
-#![allow(
-    dead_code,
-    reason = "Gate 1 retains the Portal overlay binding owner for later overlay composition"
-)]
-
-use std::collections::{btree_map::Entry, BTreeMap};
+use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 use worth_ui_dsl::UiPortalDeclarationId;
@@ -44,7 +39,15 @@ pub(crate) struct UiPortalOverlayBindingOwnerExport {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPortalOverlayBindingDenial {
+    #[allow(
+        dead_code,
+        reason = "The binding mutation lane exposes this denial to successor owners and tests."
+    )]
     DuplicateBinding,
+    #[allow(
+        dead_code,
+        reason = "The binding mutation lane exposes this denial to successor owners and tests."
+    )]
     PortalDeclarationConflict,
     MissingPortal,
     ForeignSurface,
@@ -57,6 +60,10 @@ pub(crate) struct UiPortalOverlayBindingOwner {
 }
 
 impl UiPortalOverlayBindingOwner {
+    #[allow(
+        dead_code,
+        reason = "Binding-owner construction is consumed by owner tests and successor-facing setup."
+    )]
     pub(crate) fn new(
         generation: WorthUiPreparedApplicationGenerationIdentity,
         runtime_surface: UiSemanticSurfaceIdentity,
@@ -68,6 +75,10 @@ impl UiPortalOverlayBindingOwner {
         }
     }
 
+    #[allow(
+        dead_code,
+        reason = "Binding mutation is consumed by owner tests and successor-facing setup."
+    )]
     pub(crate) fn bind(
         &mut self,
         declaration: UiPortalDeclarationId,
@@ -76,6 +87,10 @@ impl UiPortalOverlayBindingOwner {
         Self::insert_binding(&mut self.portal_declarations, portal, declaration)
     }
 
+    #[allow(
+        dead_code,
+        reason = "Binding replacement is consumed by owner tests and successor-facing setup."
+    )]
     pub(crate) fn replace(
         &mut self,
         bindings: impl IntoIterator<Item = UiPortalOverlayBindingRow>,
@@ -88,35 +103,36 @@ impl UiPortalOverlayBindingOwner {
         Ok(())
     }
 
-    /// Seal the binding export from one current Portal snapshot. The snapshot
-    /// is indexed once; every declared binding then resolves through that
-    /// carried index instead of rescanning Portal rows.
+    /// Seal the binding export in one ordered pass over the current Portal
+    /// snapshot. Missing and foreign bindings are checked after that pass so
+    /// their existing denial precedence is preserved.
     pub(crate) fn export(
         &self,
         snapshot: &UiPortalStackSnapshot,
     ) -> Result<UiPortalOverlayBindingOwnerExport, UiPortalOverlayBindingDenial> {
-        let by_portal = snapshot
-            .rows()
-            .iter()
-            .map(|row| (row.portal(), row.surface()))
-            .collect::<BTreeMap<_, _>>();
-        for portal in self.portal_declarations.keys() {
-            let Some(surface) = by_portal.get(portal).copied() else {
-                return Err(UiPortalOverlayBindingDenial::MissingPortal);
+        let mut seen = BTreeSet::new();
+        let mut foreign = BTreeSet::new();
+        let mut rows = Vec::new();
+        for row in snapshot.rows() {
+            let portal = row.portal();
+            let Some(declaration) = self.portal_declarations.get(&portal) else {
+                continue;
             };
-            if surface != self.runtime_surface {
+            seen.insert(portal);
+            if row.surface() != self.runtime_surface {
+                foreign.insert(portal);
+            } else {
+                rows.push(UiPortalOverlayBindingRow::new(*declaration, portal));
+            }
+        }
+        for portal in self.portal_declarations.keys() {
+            if !seen.contains(portal) {
+                return Err(UiPortalOverlayBindingDenial::MissingPortal);
+            }
+            if foreign.contains(portal) {
                 return Err(UiPortalOverlayBindingDenial::ForeignSurface);
             }
         }
-        let rows = snapshot
-            .rows()
-            .iter()
-            .filter_map(|row| {
-                self.portal_declarations
-                    .get(&row.portal())
-                    .map(|declaration| UiPortalOverlayBindingRow::new(*declaration, row.portal()))
-            })
-            .collect::<Vec<_>>();
         Ok(UiPortalOverlayBindingOwnerExport {
             generation: self.generation.clone(),
             runtime_surface: self.runtime_surface,
@@ -125,6 +141,10 @@ impl UiPortalOverlayBindingOwner {
         })
     }
 
+    #[allow(
+        dead_code,
+        reason = "Binding insertion supports the dormant successor-facing mutation lane."
+    )]
     fn insert_binding(
         table: &mut BTreeMap<UiPortalIdentity, UiPortalDeclarationId>,
         portal: UiPortalIdentity,

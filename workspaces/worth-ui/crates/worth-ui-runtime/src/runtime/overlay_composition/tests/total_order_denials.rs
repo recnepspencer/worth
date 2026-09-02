@@ -2,7 +2,7 @@ use super::super::*;
 use super::support::{declaration, input, portal, portal_snapshot, presentation, surface_extent};
 
 #[test]
-fn gate2_total_order_denials_cover_graph_and_capacity_edges() {
+fn total_order_denials_cover_graph_and_capacity_edges() {
     assert_ambiguous_tie_is_denied();
     assert_cycle_is_denied();
     assert_cross_scope_anchor_is_denied();

@@ -4,14 +4,6 @@ mod support;
 mod binding_export;
 #[path = "capacity.rs"]
 mod capacity;
-#[path = "gate2_owner_integration.rs"]
-mod gate2_owner_integration;
-#[path = "gate2_owner_integration_support.rs"]
-mod gate2_owner_integration_support;
-#[path = "gate2_total_order.rs"]
-mod gate2_total_order;
-#[path = "gate2_total_order_denials.rs"]
-mod gate2_total_order_denials;
 #[path = "independent_model.rs"]
 mod independent_model;
 #[path = "lifecycle_cases.rs"]
@@ -24,6 +16,10 @@ mod motion_locality;
 mod order_cases;
 #[path = "owner_bridge_reachability.rs"]
 mod owner_bridge_reachability;
+#[path = "owner_integration.rs"]
+mod owner_integration;
+#[path = "owner_integration_support.rs"]
+mod owner_integration_support;
 #[path = "owner_lifecycle.rs"]
 mod owner_lifecycle;
 #[path = "owner_reconfiguration.rs"]
@@ -34,3 +30,7 @@ mod owner_support;
 mod reconstruction;
 #[path = "relation_compilation.rs"]
 mod relation_compilation;
+#[path = "total_order.rs"]
+mod total_order;
+#[path = "total_order_denials.rs"]
+mod total_order_denials;

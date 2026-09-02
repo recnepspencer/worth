@@ -1,7 +1,7 @@
 use super::super::{
     UiOverlayCompositionOwnerLifecycle, UiOverlayOwnerBridgeDenial, UiOverlayStackSnapshot,
 };
-use super::gate2_owner_integration_support::{
+use super::owner_integration_support::{
     assert_overlay, close_topmost, extent_owner, OwnerIntegrationWorld,
 };
 use super::owner_support::{close_request, idempotency, prepared_generation_variant};
@@ -11,7 +11,7 @@ use crate::runtime::portal::{
 };
 
 #[test]
-fn gate2_owner_boundaries_retain_one_truthful_order_through_portal_lifecycle() {
+fn owner_boundaries_retain_one_truthful_order_through_portal_lifecycle() {
     let mut world = OwnerIntegrationWorld::new();
     let mut lifecycle = admit(&mut world);
     let initial = lifecycle.current().cloned().unwrap();

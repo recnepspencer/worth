@@ -56,29 +56,26 @@ fn captured_press_retests_when_its_target_is_in_the_changed_candidate_set() {
 fn geometry_candidates_are_canonicalized_and_bounded_before_storage() {
     let presentation = presentation_basis();
     let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let old_geometry = geometry([0.0, 0.0, 2.0, 2.0]);
+    let new_geometry = geometry([2.0, 2.0, 2.0, 2.0]);
     let trigger = UiPointerPresencePresentationTrigger::new_with_geometry(
         presentation,
         &[
-            UiPointerPresenceGeometryCandidate::new(
-                instance,
-                Some(geometry([0.0, 0.0, 2.0, 2.0])),
-                None,
-            ),
-            UiPointerPresenceGeometryCandidate::new(
-                instance,
-                None,
-                Some(geometry([2.0, 2.0, 2.0, 2.0])),
-            ),
+            UiPointerPresenceGeometryCandidate::new(instance, Some(old_geometry), None),
+            UiPointerPresenceGeometryCandidate::new(instance, None, Some(new_geometry)),
         ],
     )
     .unwrap();
     assert_eq!(trigger.changed_instances(), &[instance]);
-    assert!(trigger.geometry_candidates[0].old().is_some());
-    assert!(trigger.geometry_candidates[0].new_geometry().is_some());
+    assert_eq!(trigger.geometry_candidates[0].old(), Some(old_geometry));
+    assert_eq!(
+        trigger.geometry_candidates[0].new_geometry(),
+        Some(new_geometry)
+    );
 }
 
 #[test]
-fn capacity_counts_unique_instances_and_reports_bounded_overflow_facts() {
+fn raw_input_capacity_reports_bounded_overflow_facts() {
     let presentation = presentation_basis();
     let duplicate = UiMountedInstanceIdentity::mint_unbound().unwrap();
     let duplicate_rows = (0..=UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY)
@@ -106,6 +103,31 @@ fn capacity_counts_unique_instances_and_reports_bounded_overflow_facts() {
             }
         )
     );
+}
+
+#[test]
+fn geometry_canonicalization_is_sorted_and_bounded_at_raw_capacity() {
+    let presentation = presentation_basis();
+    let mut candidates = (0..UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY)
+        .map(|_| {
+            UiPointerPresenceGeometryCandidate::identity_only(
+                UiMountedInstanceIdentity::mint_unbound().unwrap(),
+            )
+        })
+        .collect::<Vec<_>>();
+    candidates.reverse();
+
+    let trigger =
+        UiPointerPresencePresentationTrigger::new_with_geometry(presentation, &candidates).unwrap();
+
+    assert_eq!(
+        trigger.geometry_candidates.len(),
+        UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY
+    );
+    assert!(trigger
+        .geometry_candidates
+        .windows(2)
+        .all(|window| window[0].instance() < window[1].instance()));
 }
 
 fn geometry(components: [f32; 4]) -> UiPointerPresenceGeometry {
