@@ -1,5 +1,9 @@
 //! Public native-platform facade over the runtime-owned binding gate.
 
+mod profile;
+
+pub use profile::{UiNativeStagedProfileIdentity, WORTH_UI_NATIVE_NEXT_PROFILE_IDENTITY};
+
 pub use worth_ui_runtime::native_platform::{
     UiNativeApplicationBuilder, UiNativeApplicationDefinition, UiNativeApplicationFrame,
     UiNativeApplicationObservationProgress, UiNativeApplicationPhysicalProgress,

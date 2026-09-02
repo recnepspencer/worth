@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -59,8 +60,15 @@ def validate(root: Path, manifest: Path) -> None:
     if intended["protocol_current"] <= live["protocol_current"]:
         raise ValueError("intended protocol must succeed the live protocol")
     intended_profile = root / f"workspaces/worth-ui/crates/worth-ui-host-native/profiles/{intended['native_profile']}.toml"
-    if intended_profile.exists():
-        raise ValueError("Gate 0 must not install the intended-next native profile as live")
+    if not intended_profile.is_file():
+        raise ValueError("intended-next native profile must be staged")
+    staged_profile = tomllib.loads(intended_profile.read_text(encoding="utf-8"))
+    if staged_profile.get("identity") != intended["native_profile"]:
+        raise ValueError("intended-next native profile identity drifted")
+    if staged_profile.get("profile_stage") != "qualification-only-non-current":
+        raise ValueError("intended-next native profile must remain qualification-only")
+    if staged_profile.get("live_emission") != "disabled":
+        raise ValueError("intended-next native profile must keep live emission disabled")
 
 
 def main() -> int:

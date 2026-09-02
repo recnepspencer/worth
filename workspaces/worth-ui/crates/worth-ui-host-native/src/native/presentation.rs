@@ -8,6 +8,7 @@ use super::{
     UiNativeResourceClass, UiNativeResourceRegistry,
 };
 
+pub(crate) mod appearance;
 mod completed_effects;
 mod damage_index;
 mod damage_regions;

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,6 +29,10 @@ EXPECTED_OWNERS = {
 }
 PUBLIC_TYPE_DECLARATION = re.compile(r"\bpub\s+(?:struct|enum)\s+([A-Za-z_][A-Za-z0-9_]*)\b")
 RUST_COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/", re.DOTALL)
+STAGED_NATIVE_RELATIVE_PATHS = (
+    Path("workspaces/worth-ui/crates/worth-ui-host-native/src/native/presentation/appearance"),
+    Path("workspaces/worth-ui/crates/worth-ui-host-native/src/native/event_loop/pointer_cursor.rs"),
+)
 
 
 def missing_declared_contract_symbols(source: str, symbols: list[str]) -> list[str]:
@@ -51,8 +56,15 @@ def validate(root: Path, matrix_path: Path) -> None:
         raise ValueError("preserved appearance owners must remain exact")
     live = root / f"workspaces/worth-ui/crates/worth-ui-host-native/profiles/{matrix['live_profile']}.toml"
     intended = root / f"workspaces/worth-ui/crates/worth-ui-host-native/profiles/{matrix['intended_profile']}.toml"
-    if not live.is_file() or intended.exists():
-        raise ValueError("Gate 0 requires live v1 and contract-only intended v2")
+    if not live.is_file() or not intended.is_file():
+        raise ValueError("Gate 1 requires live v1 and staged intended v2 profiles")
+    staged_profile = tomllib.loads(intended.read_text(encoding="utf-8"))
+    if staged_profile.get("identity") != matrix["intended_profile"]:
+        raise ValueError("staged intended profile identity drifted")
+    if staged_profile.get("profile_stage") != "qualification-only-non-current":
+        raise ValueError("intended profile must remain qualification-only")
+    if staged_profile.get("live_emission") != "disabled":
+        raise ValueError("intended profile must not enable live emission")
     host_root = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_projection/appearance"
     source = "\n".join(path.read_text(encoding="utf-8") for path in host_root.glob("*.rs"))
     missing = missing_declared_contract_symbols(source, matrix["required_host_contract_symbols"])
@@ -71,10 +83,22 @@ def validate(root: Path, matrix_path: Path) -> None:
         root / "workspaces/worth-ui/crates/worth-ui-native-platform/src",
     ]
     for live_root in live_roots:
-        live_source = "\n".join(path.read_text(encoding="utf-8") for path in live_root.rglob("*.rs"))
+        live_source = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in live_root.rglob("*.rs")
+            if not is_staged_native_path(root, path)
+        )
         leaked = leaked_contract_symbols(live_source, EXPECTED_SYMBOLS)
         if leaked:
             raise ValueError(f"Gate 0 appearance contract reached live publisher {live_root}: {leaked}")
+
+
+def is_staged_native_path(root: Path, path: Path) -> bool:
+    relative = path.relative_to(root)
+    return any(
+        relative == staged_path or staged_path in relative.parents
+        for staged_path in STAGED_NATIVE_RELATIVE_PATHS
+    )
 
 
 def main() -> int:

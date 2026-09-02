@@ -8,6 +8,7 @@ use super::{
 };
 
 mod font_coverage;
+mod native_appearance;
 mod qualified_dependencies;
 
 #[test]
