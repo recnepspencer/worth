@@ -2,8 +2,9 @@
 
 ## Status and Placement
 
-Status: implementation in progress. Gate 0's contract baseline is complete;
-later gates have not started.
+Status: implementation in progress. Gates 0 and 1 are complete. Gate 1's
+approved integration SHA is `e1d61bce2aeaa059777028f861e797f09c0ea785`.
+Gate 2 is next and in progress, but is not complete.
 
 Milestone 3.16 follows the closed Milestone 3.15 production-runtime-services
 slice and precedes Milestone 3.17 DSL expressions and semantic evaluation. It

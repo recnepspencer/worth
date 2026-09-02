@@ -2258,8 +2258,9 @@ is created.
 
 Detailed spec: [milestone-3.16.md](./milestone-3.16.md)
 
-Status: In progress. Gate 0's contract baseline is complete; later gates have
-not started.
+Status: In progress. Gates 0 and 1 are complete. Gate 1's approved integration
+SHA is `e1d61bce2aeaa059777028f861e797f09c0ea785`. Gate 2 is next and in
+progress, but is not complete.
 
 The governing design freezes explicit role attachment,
 surface-bound theme capability, coherent owner-issued state vectors, finite
