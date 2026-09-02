@@ -288,7 +288,11 @@ fn presentation_trigger_is_canonical_and_bounded() {
             &changed,
         ),
         Err(
-            super::super::presentation::UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded
+            super::super::presentation::UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded {
+                observed: super::super::presentation::UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY
+                    + 1,
+                maximum: super::super::presentation::UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY,
+            }
         )
     );
 }

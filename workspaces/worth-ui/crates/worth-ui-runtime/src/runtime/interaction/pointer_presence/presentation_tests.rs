@@ -77,6 +77,34 @@ fn geometry_candidates_are_canonicalized_and_bounded_before_storage() {
     assert!(trigger.geometry_candidates[0].new_geometry().is_some());
 }
 
+#[test]
+fn capacity_counts_unique_instances_and_reports_bounded_overflow_facts() {
+    let presentation = presentation_basis();
+    let duplicate = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let duplicate_rows = (0..=UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY)
+        .map(|_| UiPointerPresenceGeometryCandidate::identity_only(duplicate))
+        .collect::<Vec<_>>();
+    let trigger = UiPointerPresencePresentationTrigger::new_with_geometry(
+        presentation,
+        &duplicate_rows,
+    )
+    .unwrap();
+    assert_eq!(trigger.changed_instances(), &[duplicate]);
+
+    let changed = (0..=UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY)
+        .map(|_| UiMountedInstanceIdentity::mint_unbound().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        UiPointerPresencePresentationTrigger::new(presentation, &changed),
+        Err(
+            UiPointerPresencePresentationTriggerDenial::ChangedNeighborhoodCapacityExceeded {
+                observed: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY + 1,
+                maximum: UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY,
+            }
+        )
+    );
+}
+
 fn geometry(components: [f32; 4]) -> UiPointerPresenceGeometry {
     let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
         x: components[0],
