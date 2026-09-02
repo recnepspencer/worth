@@ -8,7 +8,7 @@ use crate::runtime::allocation_receipt::{
     UiCommittedOverlayExtentBounds, UiMountedOverlayExtentOwner,
 };
 use crate::runtime::motion::UiMotionRuntimeState;
-use crate::runtime::portal::{UiPortalOverlayBindingDenial, UiPortalOverlayBindingOwner};
+use crate::runtime::portal::UiPortalOverlayBindingOwner;
 use crate::runtime::presentation_state::UiApplicationPresentationState;
 
 fn sources<'a>(
@@ -191,7 +191,7 @@ fn normal_library_lifecycle_rejects_incoherent_owner_generation_before_planning(
 }
 
 #[test]
-fn duplicate_binding_denial_preserves_original_owner_binding() {
+fn repeated_portal_instances_share_one_declaration_in_owner_export() {
     let generation = prepared_owner().generation_identity().clone();
     let surface = worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
     let declaration = worth_ui_dsl::UiPortalDeclarationId::new(940).unwrap();
@@ -203,15 +203,16 @@ fn duplicate_binding_denial_preserves_original_owner_binding() {
 
     let mut bindings = UiPortalOverlayBindingOwner::new(generation, surface);
     bindings.bind(declaration, original).unwrap();
-    assert_eq!(
-        bindings.bind(declaration, replacement),
-        Err(UiPortalOverlayBindingDenial::DuplicateDeclaration)
-    );
+    bindings
+        .bind(declaration, replacement)
+        .expect("distinct Portal identities may share one declaration");
 
     let export = bindings
         .export(&portal_owner.stack_snapshot())
-        .expect("the original binding remains exportable");
-    assert_eq!(export.rows().len(), 1);
+        .expect("shared declaration bindings remain exportable");
+    assert_eq!(export.rows().len(), 2);
     assert_eq!(export.rows()[0].declaration(), declaration);
     assert_eq!(export.rows()[0].portal(), original);
+    assert_eq!(export.rows()[1].declaration(), declaration);
+    assert_eq!(export.rows()[1].portal(), replacement);
 }

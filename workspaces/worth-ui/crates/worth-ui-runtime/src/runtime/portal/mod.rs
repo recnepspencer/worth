@@ -21,6 +21,8 @@ mod state;
 mod transition;
 
 #[cfg(test)]
+mod overlay_binding_tests;
+#[cfg(test)]
 mod state_dismissal_tests;
 #[cfg(test)]
 mod state_lifecycle_tests;
