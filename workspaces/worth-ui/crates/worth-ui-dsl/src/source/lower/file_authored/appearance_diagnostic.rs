@@ -1,8 +1,8 @@
 use crate::{
-    UiAppearanceAspect, UiAppearanceCellReferenceOrigin, UiAppearanceDecisionPartitionDenial,
-    UiAppearanceRoleDeclarationDenial, UiAppearanceRoleIdentity, WorthUiDslCompileDiagnostic,
-    WorthUiDslCompileDiagnosticCode, WorthUiDslCompileDiagnosticDetail, WorthUiDslCompileStopClass,
-    WorthUiDslSourceSpan,
+    UiAppearanceAspect, UiAppearanceCellReferenceOrigin, UiAppearanceCellReferenceRepair,
+    UiAppearanceDecisionPartitionDenial, UiAppearanceRoleDeclarationDenial,
+    UiAppearanceRoleIdentity, WorthUiDslCompileDiagnostic, WorthUiDslCompileDiagnosticCode,
+    WorthUiDslCompileDiagnosticDetail, WorthUiDslCompileStopClass, WorthUiDslSourceSpan,
 };
 
 pub(super) struct AppearanceLoweringError {
@@ -102,20 +102,26 @@ impl AppearanceLoweringError {
             UiAppearanceDecisionPartitionDenial::MissingNamedCell {
                 referenced_cell_name,
                 reference_origin,
-            } => (
-                WorthUiDslCompileDiagnosticCode::MissingAppearanceCellReference,
-                format!(
-                    "appearance aspect {aspect:?} references missing cell '{referenced_cell_name}'"
-                ),
-                WorthUiDslCompileDiagnosticDetail::MissingAppearanceCellReference {
-                    role: role.clone(),
-                    aspect,
-                    expected_kind,
-                    referenced_cell_name: referenced_cell_name.clone(),
-                    reference_origin: *reference_origin,
-                    source_span: detail_span,
-                },
-            ),
+            } => {
+                let repair = UiAppearanceCellReferenceRepair::DeclareNamedCellOrRetargetReference;
+                (
+                    WorthUiDslCompileDiagnosticCode::MissingAppearanceCellReference,
+                    format!(
+                        "appearance aspect {aspect:?} references missing cell \
+                         '{referenced_cell_name}'; lawful repair: {}",
+                        repair.render()
+                    ),
+                    WorthUiDslCompileDiagnosticDetail::MissingAppearanceCellReference {
+                        role: role.clone(),
+                        aspect,
+                        expected_kind,
+                        referenced_cell_name: referenced_cell_name.clone(),
+                        reference_origin: *reference_origin,
+                        repair,
+                        source_span: detail_span,
+                    },
+                )
+            }
             UiAppearanceDecisionPartitionDenial::AmbiguousCell
             | UiAppearanceDecisionPartitionDenial::DuplicateOtherwise => (
                 WorthUiDslCompileDiagnosticCode::AmbiguousAppearanceDeclaration,

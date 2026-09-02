@@ -2,10 +2,11 @@ use std::path::PathBuf;
 
 use crate::{
     UiAppearanceAspect, UiAppearanceAxisClass, UiAppearanceAxisDomain, UiAppearanceAxisPredicate,
-    UiAppearanceCell, UiAppearanceDecisionPartitionDenial, UiAppearancePartitionAuthoring,
-    UiAppearanceRole, UiAppearanceRoleIdentity, UiAppearanceStateAxis, UiThemeSlotIdentity,
-    UiThemeValueKind, WorthUiAuthoredSourceInput, WorthUiDslCompileDiagnosticCode,
-    WorthUiDslCompileDiagnosticDetail, WorthUiDslCompiler,
+    UiAppearanceCell, UiAppearanceCellReferenceOrigin, UiAppearanceCellReferenceRepair,
+    UiAppearanceDecisionPartitionDenial, UiAppearancePartitionAuthoring, UiAppearanceRole,
+    UiAppearanceRoleIdentity, UiAppearanceStateAxis, UiThemeSlotIdentity, UiThemeValueKind,
+    WorthUiAuthoredSourceInput, WorthUiDslCompileDiagnosticCode, WorthUiDslCompileDiagnosticDetail,
+    WorthUiDslCompiler,
 };
 
 fn compile(source: &str) -> crate::WorthUiDslCompileReport {
@@ -85,6 +86,7 @@ fn missing_same_as_preserves_name_origin_and_reference_token_span() {
         expected_kind,
         referenced_cell_name,
         reference_origin,
+        repair,
         source_span,
     }) = diagnostic.detail()
     else {
@@ -96,8 +98,64 @@ fn missing_same_as_preserves_name_origin_and_reference_token_span() {
     assert_eq!(referenced_cell_name.as_ref(), "missing");
     assert_eq!(
         *reference_origin,
-        crate::UiAppearanceCellReferenceOrigin::OtherwiseClause
+        UiAppearanceCellReferenceOrigin::OtherwiseClause
     );
+    assert_eq!(
+        *repair,
+        UiAppearanceCellReferenceRepair::DeclareNamedCellOrRetargetReference
+    );
+    assert!(diagnostic
+        .message()
+        .contains(&format!("lawful repair: {}", repair.render())));
+    let span = source_span.as_ref().expect("same_as name span is required");
+    assert_eq!(
+        span.start_byte(),
+        source.rfind("missing").expect("reference token exists")
+    );
+}
+
+#[test]
+fn missing_named_cell_reference_carries_the_same_lawful_repair() {
+    let source = r#"appearance role missing-named applies_to button {
+        background over [hover] {
+            cell outside when hover = outside use token(button.background)
+            cell inside when hover = hovered use same_as missing
+            otherwise use token(button.background)
+        }
+    }"#;
+    let report = compile(source);
+    let diagnostic = &report.diagnostics()[0];
+    assert_eq!(
+        diagnostic.identity().code(),
+        WorthUiDslCompileDiagnosticCode::MissingAppearanceCellReference
+    );
+    let Some(WorthUiDslCompileDiagnosticDetail::MissingAppearanceCellReference {
+        role,
+        aspect,
+        expected_kind,
+        referenced_cell_name,
+        reference_origin,
+        repair,
+        source_span,
+    }) = diagnostic.detail()
+    else {
+        panic!("named-cell same_as must carry its typed repair facts");
+    };
+    assert_eq!(role.as_str(), "missing-named");
+    assert_eq!(*aspect, UiAppearanceAspect::Background);
+    assert_eq!(*expected_kind, UiThemeValueKind::Color);
+    assert_eq!(referenced_cell_name.as_ref(), "missing");
+    assert_eq!(
+        *reference_origin,
+        UiAppearanceCellReferenceOrigin::NamedCell
+    );
+    assert_eq!(
+        *repair,
+        UiAppearanceCellReferenceRepair::DeclareNamedCellOrRetargetReference
+    );
+    assert!(diagnostic
+        .message()
+        .contains(&format!("lawful repair: {}", repair.render())));
     let span = source_span.as_ref().expect("same_as name span is required");
     assert_eq!(
         span.start_byte(),

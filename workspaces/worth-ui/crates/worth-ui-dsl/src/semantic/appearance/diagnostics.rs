@@ -4,6 +4,17 @@ pub enum UiAppearanceCellReferenceOrigin {
     OtherwiseClause,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum UiAppearanceCellReferenceRepair {
+    DeclareNamedCellOrRetargetReference,
+}
+
+impl UiAppearanceCellReferenceRepair {
+    pub const fn render(self) -> &'static str {
+        "declare the named cell or retarget the reference"
+    }
+}
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct UiAppearanceCanonicalStateCell {
     classes: Box<[super::UiAppearanceAxisClass]>,

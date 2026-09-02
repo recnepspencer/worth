@@ -101,6 +101,7 @@ pub enum WorthUiDslCompileDiagnosticDetail {
         expected_kind: crate::UiThemeValueKind,
         referenced_cell_name: Box<str>,
         reference_origin: crate::UiAppearanceCellReferenceOrigin,
+        repair: crate::UiAppearanceCellReferenceRepair,
         source_span: Option<WorthUiDslSourceSpan>,
     },
 }

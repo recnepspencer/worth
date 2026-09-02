@@ -21,7 +21,8 @@ pub use capacity::{
     UI_APPEARANCE_SLOT_USES_PER_ROLE_CAPACITY,
 };
 pub use diagnostics::{
-    UiAppearanceCanonicalStateCell, UiAppearanceCellReferenceOrigin, UiAppearanceFinitePredicate,
+    UiAppearanceCanonicalStateCell, UiAppearanceCellReferenceOrigin,
+    UiAppearanceCellReferenceRepair, UiAppearanceFinitePredicate,
     UiAppearancePartitionAdmissionDenial,
 };
 pub use role::{UiAppearanceRole, UiAppearanceRoleId};
