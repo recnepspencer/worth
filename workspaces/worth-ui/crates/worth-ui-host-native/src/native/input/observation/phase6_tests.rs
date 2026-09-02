@@ -2,9 +2,9 @@ use super::*;
 use winit::dpi::PhysicalPosition;
 use winit::event::{DeviceId, ElementState, MouseButton, WindowEvent};
 use worth_ui_host_contract::{
-    UiHostObservationPayload, UiHostObservationTimeBasis, UiHostPresentationEpoch,
-    UiHostProtocolContract, UiHostProtocolNegotiation, UiMountedFrameIdentity,
-    UiSurfaceBindingGeneration,
+    UiHostObservationPayload, UiHostObservationTimeBasis, UiHostPointerDeviceKind,
+    UiHostPresentationEpoch, UiHostProtocolContract, UiHostProtocolNegotiation,
+    UiMountedFrameIdentity, UiSurfaceBindingGeneration,
 };
 
 const HOST_SESSION: u64 = 73;
@@ -42,6 +42,10 @@ fn event_time_is_independent_from_observation_sequence() {
     assert_eq!(
         report.time_basis(),
         UiHostObservationTimeBasis::HostMonotonicMillis(77)
+    );
+    assert_eq!(
+        report.pointer_device_kind(),
+        Some(UiHostPointerDeviceKind::Mouse)
     );
     assert_eq!(state.report().retained_batch_count(), 1);
     assert_eq!(state.report().retained_event_count(), 1);
@@ -125,6 +129,10 @@ fn button_event_uses_the_event_time_position_witness() {
         UiHostObservationPayload::PointerButton { position, .. }
             if position.x_subpixels() == 12_000 && position.y_subpixels() == 24_000
     ));
+    assert_eq!(
+        batches[0].reports()[0].pointer_device_kind(),
+        Some(UiHostPointerDeviceKind::Mouse)
+    );
     assert_eq!(
         batches[0].reports()[0].time_basis(),
         UiHostObservationTimeBasis::HostMonotonicMillis(19)

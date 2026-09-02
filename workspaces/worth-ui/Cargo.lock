@@ -4512,6 +4512,7 @@ version = "0.1.0"
 dependencies = [
  "notify",
  "sha2",
+ "winit",
  "worth-foundational",
  "worth-proof",
  "worth-ui-dsl",

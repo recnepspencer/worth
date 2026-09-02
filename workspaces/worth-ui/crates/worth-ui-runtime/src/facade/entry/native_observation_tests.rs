@@ -4,6 +4,10 @@ use crate::runtime::tests::active_application_session_test_support::{
     source_backed_component_session, source_backed_focusable_component_app_with_host,
 };
 use crate::runtime::tests::native_pointer_observation_test_support::source_backed_hover_consumer_app_with_host;
+#[cfg(feature = "certification-support")]
+use winit::dpi::PhysicalPosition;
+#[cfg(feature = "certification-support")]
+use winit::event::{DeviceId, ElementState, MouseButton, WindowEvent};
 use worth_ui_host_contract::{
     UiHostObservationBatch, UiHostObservationBatchInput, UiHostObservationLoss,
     UiHostObservationPayload, UiHostObservationPresentationBasis, UiHostObservationReport,
@@ -59,6 +63,93 @@ fn native_observation_ready_path_drains_through_runtime_interaction_owner() {
         .expect("focusable fixture installs Focus")
         .window_is_focused_for_test());
 
+    let shutdown = shell.shutdown();
+    assert!(shutdown.host_session_released());
+}
+
+#[cfg(feature = "certification-support")]
+#[test]
+fn native_window_event_drain_preserves_typed_mouse_hover_and_press() {
+    let host = ScriptedPresentationHost::native_display();
+    host.push_native_display_presented();
+    let mut shell = source_backed_hover_consumer_app_with_host(host)
+        .launch_native_surface()
+        .expect("pointer-presence shell should launch");
+    let frame = published(shell.present_frame(100, 1), "hover");
+    let binding = *frame.bindings().first().expect("native binding");
+    let host_session = shell.session.host_session.identity().as_u64();
+    let presentation = UiHostObservationPresentationBasis::new(
+        shell.session.mounted.view().surface_bindings()[0].host_surface_identity(),
+        frame.frame(),
+        binding,
+        UiHostPresentationEpoch::issued_by_host(1),
+    );
+    let protocol = match UiHostProtocolContract::current().negotiate() {
+        UiHostProtocolNegotiation::Compatible(agreement) => agreement,
+        UiHostProtocolNegotiation::Incompatible(_) => unreachable!(),
+    };
+    let mut native_input = worth_ui_host_native::UiNativeInputObservationContract::new();
+    native_input.install_initial_profile(1.0, [800, 600]);
+    assert!(native_input.record_completed_presentation(protocol, host_session, presentation,));
+
+    let position = PhysicalPosition::new(10.0, 20.0);
+    assert_eq!(
+        native_input.observe_window_event_at(
+            &WindowEvent::CursorMoved {
+                device_id: DeviceId::dummy(),
+                position,
+            },
+            2,
+            Some(position),
+        ),
+        worth_ui_host_native::UiNativeInputObservationContractDisposition::Retained
+    );
+    assert_eq!(
+        native_input.observe_window_event_at(
+            &WindowEvent::MouseInput {
+                device_id: DeviceId::dummy(),
+                state: ElementState::Pressed,
+                button: MouseButton::Left,
+            },
+            3,
+            Some(position),
+        ),
+        worth_ui_host_native::UiNativeInputObservationContractDisposition::Retained
+    );
+
+    let mut batches = native_input.drain(host_session).into_batches().into_vec();
+    assert_eq!(batches.len(), 2);
+    assert!(batches.iter().all(|batch| {
+        batch
+            .reports()
+            .iter()
+            .all(|report| report.pointer_device_kind() == Some(UiHostPointerDeviceKind::Mouse))
+    }));
+
+    let motion = match shell
+        .session
+        .admit_host_interaction_batch(batches.remove(0))
+    {
+        crate::facade::interaction::UiHostInteractionIngressOutcome::Applied(receipt) => receipt,
+        _ => panic!("native mouse motion should reach the interaction owner"),
+    };
+    assert!(motion.pointer_presence_denials().is_empty());
+    assert_eq!(motion.pointer_presence_transitions().len(), 1);
+
+    let press = match shell
+        .session
+        .admit_host_interaction_batch(batches.remove(0))
+    {
+        crate::facade::interaction::UiHostInteractionIngressOutcome::Applied(receipt) => receipt,
+        _ => panic!("native mouse press should reach the interaction owner"),
+    };
+    assert!(press.pointer_presence_denials().is_empty());
+    assert!(press.transitions().iter().any(|transition| {
+        matches!(
+            transition,
+            crate::facade::interaction::UiInteractionTransition::PointerPressed(_)
+        )
+    }));
     let shutdown = shell.shutdown();
     assert!(shutdown.host_session_released());
 }
