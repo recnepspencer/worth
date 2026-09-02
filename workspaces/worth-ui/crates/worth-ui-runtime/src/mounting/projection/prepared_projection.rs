@@ -248,6 +248,9 @@ impl UiPreparedMountedProjection {
             portal_overlays_changed: self.portal_overlays_changed,
             changed_instances: self.presentation_changed_instances.clone(),
         });
+        if let Some(predecessor) = predecessor {
+            frame.inherit_unpublished_appearance(predecessor.appearance_sidecar());
+        }
         frame.complete_mechanics()?;
         if let Some(receipt) = self.ordinary.as_ref() {
             frame.record_ordinary(receipt)?;

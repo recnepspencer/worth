@@ -8,6 +8,7 @@ use worth_ui_host_contract::{
     UiSurfaceBindingGeneration,
 };
 
+pub(crate) mod appearance;
 mod delta;
 mod mechanic_accessors;
 mod semantic_text;

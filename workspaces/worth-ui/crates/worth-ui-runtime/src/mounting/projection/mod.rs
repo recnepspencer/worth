@@ -1,3 +1,4 @@
+mod appearance;
 mod cost_accounting;
 mod denial;
 mod focus_scope;
@@ -13,6 +14,15 @@ mod prepared_projection;
 mod semantic_text;
 mod static_paint;
 
+#[allow(unused_imports)]
+pub(in crate::mounting) use appearance::{
+    lower_backdrop as lower_unpublished_appearance_backdrop, UiMountedAppearanceBackdropInput,
+    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
+    UiMountedAppearanceNodeInput, UiMountedAppearanceOutlineInput, UiMountedAppearanceOverlayInput,
+    UiMountedAppearancePointerInput, UiMountedAppearanceSidecar,
+    UiMountedAppearanceTextForegroundInput, UiMountedAppearanceTextReuseInput,
+    UiMountedTextForegroundReuseProof,
+};
 pub use denial::UiMountedProjectionDenial;
 pub(crate) use focus_scope::UiMountedFocusScope;
 pub(in crate::mounting) use frame_storage::diagnostic_source::UiMountedDiagnosticSource;

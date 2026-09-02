@@ -48,6 +48,7 @@ pub struct UiMountedProjectionFrame {
     plan_digest: u64,
     semantic: UiMountedSemanticProjection,
     mechanics: UiMountedMechanicSource,
+    appearance: super::UiMountedAppearanceSidecar,
     presentation_effects: UiMountedPresentationEffectSource,
     diagnostics: UiMountedDiagnosticSource,
     changed_instances: std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
@@ -104,6 +105,7 @@ impl UiMountedProjectionFrame {
             plan_digest: input.plan_digest,
             semantic: input.semantic,
             mechanics: input.mechanics,
+            appearance: super::UiMountedAppearanceSidecar::default(),
             presentation_effects: input.presentation_effects,
             diagnostics: input.diagnostics,
             changed_instances: input.changed_instances,
@@ -232,6 +234,54 @@ impl UiMountedProjectionFrame {
 
     pub(super) fn mechanic_source(&self) -> UiMountedMechanicSource {
         self.mechanics.clone()
+    }
+
+    pub(in crate::mounting) fn appearance_sidecar(&self) -> &super::UiMountedAppearanceSidecar {
+        &self.appearance
+    }
+
+    #[allow(dead_code)]
+    pub(in crate::mounting) fn appearance_sidecar_mut(
+        &mut self,
+    ) -> &mut super::UiMountedAppearanceSidecar {
+        &mut self.appearance
+    }
+
+    pub(in crate::mounting) fn inherit_unpublished_appearance(
+        &mut self,
+        predecessor: &super::UiMountedAppearanceSidecar,
+    ) {
+        self.appearance = predecessor.clone();
+    }
+
+    #[allow(dead_code)]
+    pub(in crate::mounting) fn mount_unpublished_appearance(
+        &mut self,
+        input: super::UiMountedAppearanceLoweringInput,
+    ) -> Result<
+        worth_ui_host_contract::UiMountedAppearanceWork,
+        super::UiMountedAppearanceLoweringDenial,
+    > {
+        self.appearance.mount(input)
+    }
+
+    #[allow(dead_code)]
+    pub(in crate::mounting) fn reconstruct_unpublished_appearance(
+        &mut self,
+        input: super::UiMountedAppearanceLoweringInput,
+    ) -> Result<
+        worth_ui_host_contract::UiMountedAppearanceWork,
+        super::UiMountedAppearanceLoweringDenial,
+    > {
+        self.appearance.reconstruct(input)
+    }
+
+    #[allow(dead_code)]
+    pub(in crate::mounting) fn prove_unpublished_text_reuse(
+        &mut self,
+        input: super::UiMountedAppearanceTextReuseInput<'_, '_>,
+    ) -> super::UiMountedTextForegroundReuseProof {
+        self.appearance.record_text_reuse(input)
     }
 
     pub(in crate::mounting) fn input_text_profile(

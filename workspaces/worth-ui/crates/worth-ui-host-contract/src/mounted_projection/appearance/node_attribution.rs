@@ -25,7 +25,8 @@ impl UiMountedNodeAppearanceAttribution {
         }
     }
 
-    pub(super) fn matches_issuer(self, issuer: crate::UiMountedNodeReceiptIssuer) -> bool {
+    #[doc(hidden)]
+    pub fn matches_issuer(self, issuer: crate::UiMountedNodeReceiptIssuer) -> bool {
         self.frame == issuer.frame_identity() && self.issuer_nonce == issuer.issuer_nonce()
     }
 

@@ -4,7 +4,7 @@ use std::num::NonZeroU64;
 ///
 /// The Portal identity is only a scope anchor. It does not turn the backdrop into
 /// a mounted node or grant any Portal lifecycle authority.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum UiMountedBackdropScope {
     SurfaceSingleton(crate::UiSemanticSurfaceIdentity),
     PerPortalInstance(crate::UiMountedInstanceIdentity),
@@ -16,7 +16,7 @@ pub enum UiMountedBackdropScope {
 /// scope, and a nonzero runtime-supplied incarnation coordinate. It is not the
 /// runtime-owned semantic backdrop instance, grants no publication authority,
 /// and proves neither currentness nor lifecycle admission.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct UiMountedBackdropIdentity {
     declaration_projection: Box<str>,
     scope: UiMountedBackdropScope,
@@ -199,6 +199,12 @@ impl UiMountedBackdropAppearanceAttribution {
 
     pub const fn identity(self) -> u64 {
         self.identity
+    }
+    pub const fn semantic_surface(self) -> crate::UiSemanticSurfaceIdentity {
+        self.semantic_surface
+    }
+    pub const fn overlay_revision(self) -> u64 {
+        self.overlay_revision
     }
     pub const fn revision(self) -> u64 {
         self.revision

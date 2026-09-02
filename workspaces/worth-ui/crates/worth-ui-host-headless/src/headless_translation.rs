@@ -14,6 +14,7 @@ use super::{
     UiHeadlessRecorderCapacity, UiHeadlessResolvedClip, UiHeadlessResourceContact,
 };
 
+pub(crate) mod appearance;
 mod portal_overlay;
 pub(super) mod semantic_text;
 pub(super) mod static_paint;
@@ -22,6 +23,16 @@ mod unperformed_effects;
 use unperformed_effects::{
     has_accessibility, has_diagnostic, has_focus, has_motion, unperformed_effects,
 };
+
+#[allow(dead_code)]
+pub(crate) fn translate_unpublished_appearance_work(
+    work: &worth_ui_host_contract::UiMountedAppearanceWork,
+) -> Result<
+    super::headless_transcript::appearance::UiHeadlessAppearanceWorkTranscript,
+    appearance::UiHeadlessAppearanceTranslationDenial,
+> {
+    appearance::translate(work)
+}
 
 pub(super) fn translate_headless_frame(
     view: &UiMountedFrameConsumptionView<'_>,

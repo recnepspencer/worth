@@ -72,6 +72,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
     let _text = UiMountedTextForegroundAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedTextForegroundAppearanceCompletionInput {
             issuer: node_issuer,
+            node_receipt: node_issuer.receipt_for(portal),
             paint_span: UiMountedTextPaintSpanIdentity::from_runtime_mounting([7; 32]),
             foreground: color,
             opacity: UiMountedAppearanceOpacity::ONE,

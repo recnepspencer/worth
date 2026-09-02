@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct UiMountedTextPaintSpanIdentity([u8; 32]);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
