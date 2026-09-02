@@ -43,9 +43,19 @@ fn node_normalization_key(
         | WorthUiArtifactInputNode::QueryScalar(block_node)
         | WorthUiArtifactInputNode::QueryCollection(block_node) => {
             format!(
-                "block:{}:{}",
+                "block:{}:{}:{}",
                 block_node.name_text(),
-                body_atoms_key(block_node.body_atoms())
+                body_atoms_key(block_node.body_atoms()),
+                block_node.appearance_role_attachment().map_or_else(
+                    || "none".to_owned(),
+                    |attachment| {
+                        format!(
+                            "{}:{}",
+                            attachment.role().as_str(),
+                            attachment.revision().value()
+                        )
+                    }
+                )
             )
         }
         WorthUiArtifactInputNode::Token(token_node) => {
@@ -60,8 +70,21 @@ fn node_normalization_key(
             node.declaration().family().as_str(),
             node.declaration().key().as_str()
         ),
+        WorthUiArtifactInputNode::AppearanceRole(node) => {
+            format!("appearance-role:{}", node.role().role().as_str())
+        }
+        WorthUiArtifactInputNode::Backdrop(node) => {
+            format!("backdrop:{}", hex(node.declaration().canonical_bytes()))
+        }
     };
     (node.kind(), detail)
+}
+
+fn hex(bytes: Vec<u8>) -> String {
+    bytes
+        .into_iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 fn body_atoms_key(body_atoms: &[crate::source::WorthUiArtifactInputBodyAtom]) -> String {
@@ -89,8 +112,20 @@ fn body_atom_key(body_atom: &crate::source::WorthUiArtifactInputBodyAtom) -> Str
             "kw:query-collection".to_owned()
         }
         crate::source::WorthUiArtifactInputBodyAtom::KeywordToken => "kw:token".to_owned(),
+        crate::source::WorthUiArtifactInputBodyAtom::KeywordAppearance => {
+            "kw:appearance".to_owned()
+        }
+        crate::source::WorthUiArtifactInputBodyAtom::KeywordBackdrop => "kw:backdrop".to_owned(),
+        crate::source::WorthUiArtifactInputBodyAtom::NumberLiteral(value) => {
+            format!("number:{value}")
+        }
         crate::source::WorthUiArtifactInputBodyAtom::LeftBrace => "{".to_owned(),
         crate::source::WorthUiArtifactInputBodyAtom::RightBrace => "}".to_owned(),
+        crate::source::WorthUiArtifactInputBodyAtom::LeftBracket => "[".to_owned(),
+        crate::source::WorthUiArtifactInputBodyAtom::RightBracket => "]".to_owned(),
+        crate::source::WorthUiArtifactInputBodyAtom::LeftParen => "(".to_owned(),
+        crate::source::WorthUiArtifactInputBodyAtom::RightParen => ")".to_owned(),
+        crate::source::WorthUiArtifactInputBodyAtom::Comma => ",".to_owned(),
         crate::source::WorthUiArtifactInputBodyAtom::Semicolon => ";".to_owned(),
         crate::source::WorthUiArtifactInputBodyAtom::Equals => "=".to_owned(),
         crate::source::WorthUiArtifactInputBodyAtom::Plus => "+".to_owned(),

@@ -34,6 +34,26 @@ pub enum WorthUiDslCompileDiagnosticCode {
     InvalidServiceDeclaration,
     InvalidRustAuthoredModulePath,
     DuplicateRustAuthoredModuleIdentity,
+    InvalidAppearanceDeclaration,
+    InvalidAppearanceAttachment,
+    MissingAppearanceDeclaration,
+    MissingAppearanceCoverage,
+    MissingAppearanceCellReference,
+    OverlappingAppearanceCells,
+    WrongAppearanceValueKind,
+    WrongAppearanceDeclarationKind,
+    StaleAppearanceRoleRevision,
+    CyclicAppearanceCellReference,
+    AmbiguousAppearanceDeclaration,
+    AppearanceCapacityDenied,
+    DuplicateAppearanceDeclaration,
+    InvalidBackdropDeclaration,
+    MissingBackdropDeclaration,
+    MissingOverlayAnchor,
+    ForeignOverlaySurface,
+    CyclicOverlayRelation,
+    AmbiguousOverlayRelation,
+    OverlayCapacityDenied,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -55,6 +75,35 @@ pub struct WorthUiDslCompileDiagnostic {
     identity: WorthUiDslDiagnosticIdentity,
     stop_class: WorthUiDslCompileStopClass,
     message: String,
+    detail: Option<WorthUiDslCompileDiagnosticDetail>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthUiDslCompileDiagnosticDetail {
+    AppearancePartition {
+        role: crate::UiAppearanceRoleIdentity,
+        aspect: crate::UiAppearanceAspect,
+        expected_kind: crate::UiThemeValueKind,
+        denial: crate::UiAppearanceDecisionPartitionDenial,
+        source_span: Option<WorthUiDslSourceSpan>,
+    },
+    MissingAppearanceCoverage {
+        role: crate::UiAppearanceRoleIdentity,
+        aspect: crate::UiAppearanceAspect,
+        expected_kind: crate::UiThemeValueKind,
+        uncovered_canonical_state_cell: crate::UiAppearanceCanonicalStateCell,
+        exact_repair_predicate: crate::UiAppearanceFinitePredicate,
+        source_span: Option<WorthUiDslSourceSpan>,
+    },
+    MissingAppearanceCellReference {
+        role: crate::UiAppearanceRoleIdentity,
+        aspect: crate::UiAppearanceAspect,
+        expected_kind: crate::UiThemeValueKind,
+        referenced_cell_name: Box<str>,
+        reference_origin: crate::UiAppearanceCellReferenceOrigin,
+        repair: crate::UiAppearanceCellReferenceRepair,
+        source_span: Option<WorthUiDslSourceSpan>,
+    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -88,6 +137,7 @@ impl WorthUiDslCompileDiagnostic {
             },
             stop_class,
             message: message.into(),
+            detail: None,
         }
     }
 
@@ -101,6 +151,15 @@ impl WorthUiDslCompileDiagnostic {
 
     pub fn message(&self) -> &str {
         &self.message
+    }
+
+    pub fn detail(&self) -> Option<&WorthUiDslCompileDiagnosticDetail> {
+        self.detail.as_ref()
+    }
+
+    pub(crate) fn with_detail(mut self, detail: WorthUiDslCompileDiagnosticDetail) -> Self {
+        self.detail = Some(detail);
+        self
     }
 }
 

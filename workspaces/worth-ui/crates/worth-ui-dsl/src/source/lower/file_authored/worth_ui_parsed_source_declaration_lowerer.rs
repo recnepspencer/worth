@@ -7,11 +7,16 @@ use crate::source::{
     WorthUiSourceTokenKind,
 };
 
+use super::appearance_declaration_lowerer::lower_role;
+use super::backdrop_declaration_lowerer::lower_backdrop;
+use super::component_appearance_attachment::lower_component;
+use super::WorthUiFileAuthoredLoweredDeclaration;
+
 pub(crate) fn lower_parsed_source_declaration(
     declaration: &WorthUiParsedSourceDeclaration,
     declaration_index: usize,
-) -> Result<WorthUiArtifactInputNode, WorthUiDslCompileDiagnostic> {
-    Ok(match declaration {
+) -> Result<WorthUiFileAuthoredLoweredDeclaration, WorthUiDslCompileDiagnostic> {
+    let node = match declaration {
         WorthUiParsedSourceDeclaration::Import(import_declaration) => {
             WorthUiArtifactInputNode::Import(lower_import_declaration(
                 import_declaration,
@@ -19,16 +24,16 @@ pub(crate) fn lower_parsed_source_declaration(
             ))
         }
         WorthUiParsedSourceDeclaration::Component(block_declaration) => {
-            WorthUiArtifactInputNode::Component(lower_parsed_block_declaration(
+            WorthUiArtifactInputNode::Component(lower_component(
                 block_declaration,
                 declaration_index,
-            ))
+            )?)
         }
         WorthUiParsedSourceDeclaration::Control(block_declaration) => {
-            WorthUiArtifactInputNode::Component(lower_parsed_block_declaration(
+            WorthUiArtifactInputNode::Component(lower_component(
                 block_declaration,
                 declaration_index,
-            ))
+            )?)
         }
         WorthUiParsedSourceDeclaration::Intent(block_declaration) => {
             lower_intent_declaration(block_declaration, declaration_index)?
@@ -93,7 +98,17 @@ pub(crate) fn lower_parsed_source_declaration(
                 declaration_index,
             ))
         }
-    })
+        WorthUiParsedSourceDeclaration::AppearanceRole(role) => {
+            return lower_role(role, declaration_index)
+                .map(WorthUiFileAuthoredLoweredDeclaration::Artifact);
+        }
+        WorthUiParsedSourceDeclaration::Backdrop(backdrop) => {
+            return lower_backdrop(backdrop, declaration_index).map(|(source, provenance)| {
+                WorthUiFileAuthoredLoweredDeclaration::Backdrop { source, provenance }
+            });
+        }
+    };
+    Ok(WorthUiFileAuthoredLoweredDeclaration::Artifact(node))
 }
 
 fn lower_service_declaration(
@@ -228,7 +243,7 @@ fn lower_parsed_block_body(body: &WorthUiParsedBlockBody) -> Vec<WorthUiArtifact
         .collect()
 }
 
-fn lower_token_kind_to_body_atom(
+pub(super) fn lower_token_kind_to_body_atom(
     token_kind: &WorthUiSourceTokenKind,
 ) -> WorthUiArtifactInputBodyAtom {
     match token_kind {
@@ -251,8 +266,20 @@ fn lower_token_kind_to_body_atom(
             WorthUiArtifactInputBodyAtom::KeywordQueryCollection
         }
         WorthUiSourceTokenKind::KeywordToken => WorthUiArtifactInputBodyAtom::KeywordToken,
+        WorthUiSourceTokenKind::KeywordAppearance => {
+            WorthUiArtifactInputBodyAtom::KeywordAppearance
+        }
+        WorthUiSourceTokenKind::KeywordBackdrop => WorthUiArtifactInputBodyAtom::KeywordBackdrop,
+        WorthUiSourceTokenKind::NumberLiteral(value) => {
+            WorthUiArtifactInputBodyAtom::NumberLiteral(value.clone())
+        }
         WorthUiSourceTokenKind::LeftBrace => WorthUiArtifactInputBodyAtom::LeftBrace,
         WorthUiSourceTokenKind::RightBrace => WorthUiArtifactInputBodyAtom::RightBrace,
+        WorthUiSourceTokenKind::LeftBracket => WorthUiArtifactInputBodyAtom::LeftBracket,
+        WorthUiSourceTokenKind::RightBracket => WorthUiArtifactInputBodyAtom::RightBracket,
+        WorthUiSourceTokenKind::LeftParen => WorthUiArtifactInputBodyAtom::LeftParen,
+        WorthUiSourceTokenKind::RightParen => WorthUiArtifactInputBodyAtom::RightParen,
+        WorthUiSourceTokenKind::Comma => WorthUiArtifactInputBodyAtom::Comma,
         WorthUiSourceTokenKind::Semicolon => WorthUiArtifactInputBodyAtom::Semicolon,
         WorthUiSourceTokenKind::Equals => WorthUiArtifactInputBodyAtom::Equals,
         WorthUiSourceTokenKind::Plus => WorthUiArtifactInputBodyAtom::Plus,

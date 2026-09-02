@@ -9,7 +9,8 @@ pub use backdrop::{UiBackdropDeclaration, UiBackdropDeclarationDenial};
 pub use extent::{UiBackdropExtentBasis, UiMosaicRegionDeclarationIdentity};
 pub use motion::UiBackdropMotionBasis;
 pub use placement::{
-    UiBackdropPlacement, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
+    UiBackdropPlacement, UiOverlayAnchor, UiOverlayPortalParticipant, UiOverlayRelation,
+    UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph, UiOverlayRelationKind,
 };
 pub use presence::UiBackdropPresenceBasis;
 pub use scope::{

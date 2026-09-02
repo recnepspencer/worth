@@ -264,17 +264,13 @@ fn capability(
         &contract,
         [(
             worth_ui_dsl::UiAppearanceAspect::Background,
-            worth_ui_dsl::UiAppearanceDecisionPartition::compile(
-                [],
-                [worth_ui_dsl::UiAppearanceDecisionRule::new(
-                    [],
-                    worth_ui_dsl::UiAppearanceDecisionResult::theme_slot(
-                        worth_ui_dsl::UiThemeSlotIdentity::new("surface.base").unwrap(),
-                        worth_ui_dsl::UiThemeValueKind::Color,
-                    ),
-                )],
-            )
-            .unwrap(),
+            worth_ui_dsl::UiAppearancePartitionAuthoring::new([])
+                .with_cell(worth_ui_dsl::UiAppearanceCell::when([]).uses_slot(
+                    worth_ui_dsl::UiThemeSlotIdentity::new("surface.base").unwrap(),
+                    worth_ui_dsl::UiThemeValueKind::Color,
+                ))
+                .compile(worth_ui_dsl::UiAppearanceAspect::Background)
+                .unwrap(),
         )],
     )
     .unwrap();

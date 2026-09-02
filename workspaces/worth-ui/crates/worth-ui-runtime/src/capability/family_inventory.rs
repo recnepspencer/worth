@@ -147,7 +147,7 @@ macro_rules! define_registry_families {
 define_registry_families! {
     AppearanceRole => {
         name: "appearance_role",
-        facade_exposure: InternalOnly,
+        facade_exposure: PublicFacade,
         lifecycle: FullRegistryLifecycle,
     },
     AppearanceTheme => {

@@ -37,6 +37,8 @@ pub(super) enum WorthUiSemanticDeclarationExactBasis {
         intent: Option<WorthUiIntentDeclarationExactBasis>,
         service: Option<String>,
     },
+    AppearanceRole(Box<[u8]>),
+    Backdrop(Box<[u8]>),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -106,6 +108,12 @@ impl WorthUiSemanticDeclarationExactBasis {
                         .service_declaration()
                         .map(crate::WorthUiServiceDeclarationMeaning::canonical_text),
                 }
+            }
+            WorthUiSemanticDeclaration::AppearanceRole(role) => {
+                Self::AppearanceRole(role.role().canonical_bytes().into_boxed_slice())
+            }
+            WorthUiSemanticDeclaration::Backdrop(backdrop) => {
+                Self::Backdrop(backdrop.declaration().canonical_bytes().into_boxed_slice())
             }
         }
     }
@@ -187,6 +195,14 @@ impl WorthUiSemanticDeclarationExactBasis {
                     None => fingerprint.fold_bool(false),
                 }
                 fingerprint.fold_optional_text(service.as_deref());
+            }
+            Self::AppearanceRole(bytes) => {
+                fingerprint.fold_text("appearance-role");
+                fingerprint.fold_bytes(bytes);
+            }
+            Self::Backdrop(text) => {
+                fingerprint.fold_text("backdrop");
+                fingerprint.fold_bytes(text);
             }
         }
     }

@@ -26,6 +26,7 @@ pub(crate) use registration::{
     validate_registration_candidates, RegistrationCandidate, RegistrationCandidateDiagnostic,
     RegistrationDependency, RegistrationValidationReport,
 };
+pub use registry::AppearanceRoleRegistrationDenial;
 #[allow(
     unused_imports,
     reason = "Gate 0 retains the component appearance denial contract"
@@ -119,13 +120,13 @@ pub use registry::{
     reason = "Gate 0 retains non-current theme registry contracts"
 )]
 pub(crate) use registry::{
-    AppearanceRoleAcceptedRegistrationProof, AppearanceRoleRegistrationDenial,
-    AppearanceRoleRegistry, AppearanceThemeAcceptedRegistrationProof,
-    CommandAcceptedRegistrationProof, CommandProjectionAcceptedRegistrationProof,
-    CommandProjectionRegistry, CommandRegistry, ComponentAcceptedRegistrationProof,
-    ComponentRegistry, FrozenAppearanceThemeCapabilities, FrozenAppearanceThemeCapabilitiesDenial,
-    IconAcceptedRegistrationProof, IconRegistry, IntentDefinitionAcceptedRegistrationProof,
-    IntentDefinitionRegistry, MosaicPlacementAcceptedRegistrationProof, MosaicPlacementRegistry,
+    AppearanceRoleAcceptedRegistrationProof, AppearanceRoleRegistry,
+    AppearanceThemeAcceptedRegistrationProof, CommandAcceptedRegistrationProof,
+    CommandProjectionAcceptedRegistrationProof, CommandProjectionRegistry, CommandRegistry,
+    ComponentAcceptedRegistrationProof, ComponentRegistry, FrozenAppearanceThemeCapabilities,
+    FrozenAppearanceThemeCapabilitiesDenial, IconAcceptedRegistrationProof, IconRegistry,
+    IntentDefinitionAcceptedRegistrationProof, IntentDefinitionRegistry,
+    MosaicPlacementAcceptedRegistrationProof, MosaicPlacementRegistry,
     MosaicRegionAcceptedRegistrationProof, MosaicRegionRegistry,
     MosaicSeamPaintAcceptedRegistrationProof, MosaicSizingAcceptedRegistrationProof,
     MosaicSizingRegistry, MosaicStateSlotAcceptedRegistrationProof, MosaicStateSlotRegistry,

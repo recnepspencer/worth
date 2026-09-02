@@ -30,6 +30,30 @@ impl UiBackdropDeclaration {
         placement: super::UiBackdropPlacement,
         role: &super::super::UiAppearanceRoleDeclaration,
     ) -> Result<Self, UiBackdropDeclarationDenial> {
+        Self::admit_with_role_revision(
+            identity,
+            surface,
+            scope,
+            extent,
+            presence,
+            motion,
+            placement,
+            role.revision(),
+            role,
+        )
+    }
+
+    pub fn admit_with_role_revision(
+        identity: super::UiBackdropIdentity,
+        surface: super::UiSemanticSurfaceDeclarationIdentity,
+        scope: super::UiBackdropScope,
+        extent: super::UiBackdropExtentBasis,
+        presence: super::UiBackdropPresenceBasis,
+        motion: super::UiBackdropMotionBasis,
+        placement: super::UiBackdropPlacement,
+        role_revision: super::super::UiAppearanceRoleRevision,
+        role: &super::super::UiAppearanceRoleDeclaration,
+    ) -> Result<Self, UiBackdropDeclarationDenial> {
         if extent.surface() != surface {
             return Err(UiBackdropDeclarationDenial::ForeignSurfaceExtent);
         }
@@ -63,7 +87,7 @@ impl UiBackdropDeclaration {
             motion,
             placement,
             role: role.role().clone(),
-            role_revision: role.revision(),
+            role_revision,
         })
     }
 
@@ -94,210 +118,93 @@ impl UiBackdropDeclaration {
     pub const fn role_revision(&self) -> super::super::UiAppearanceRoleRevision {
         self.role_revision
     }
+
+    pub fn canonical_bytes(&self) -> Vec<u8> {
+        let mut bytes = b"worth-ui:backdrop:v3".to_vec();
+        bytes.extend_from_slice(&self.identity.value().to_le_bytes());
+        bytes.extend_from_slice(&self.surface.value().to_le_bytes());
+        encode_scope(&mut bytes, self.scope);
+        encode_extent(&mut bytes, self.extent);
+        encode_presence(&mut bytes, self.presence);
+        encode_motion(&mut bytes, self.motion);
+        encode_placement(&mut bytes, self.placement);
+        text(&mut bytes, self.role.as_str());
+        bytes.extend_from_slice(&self.role_revision.value().to_le_bytes());
+        bytes
+    }
+}
+
+fn encode_scope(bytes: &mut Vec<u8>, scope: super::UiBackdropScope) {
+    match scope {
+        super::UiBackdropScope::SurfaceSingleton => bytes.push(1),
+        super::UiBackdropScope::PerPortalInstance(portal) => {
+            bytes.push(2);
+            bytes.extend_from_slice(&portal.value().to_le_bytes());
+        }
+    }
+}
+
+fn encode_extent(bytes: &mut Vec<u8>, extent: super::UiBackdropExtentBasis) {
+    match extent {
+        super::UiBackdropExtentBasis::SurfaceViewport(surface) => {
+            bytes.push(1);
+            bytes.extend_from_slice(&surface.value().to_le_bytes());
+        }
+        super::UiBackdropExtentBasis::PresentedMosaicRegion { surface, region } => {
+            bytes.push(2);
+            bytes.extend_from_slice(&surface.value().to_le_bytes());
+            bytes.extend_from_slice(&region.value().to_le_bytes());
+        }
+    }
+}
+
+fn encode_presence(bytes: &mut Vec<u8>, presence: super::UiBackdropPresenceBasis) {
+    match presence {
+        super::UiBackdropPresenceBasis::Always => bytes.push(1),
+        super::UiBackdropPresenceBasis::WhilePortalPresented(portal) => {
+            bytes.push(2);
+            bytes.extend_from_slice(&portal.value().to_le_bytes());
+        }
+    }
+}
+
+fn encode_motion(bytes: &mut Vec<u8>, motion: super::UiBackdropMotionBasis) {
+    match motion {
+        super::UiBackdropMotionBasis::None => bytes.push(1),
+        super::UiBackdropMotionBasis::PortalPresentation(portal) => {
+            bytes.push(2);
+            bytes.extend_from_slice(&portal.value().to_le_bytes());
+        }
+    }
+}
+
+fn encode_placement(bytes: &mut Vec<u8>, placement: super::UiBackdropPlacement) {
+    match placement {
+        super::UiBackdropPlacement::AboveSurfaceContent => bytes.push(1),
+        super::UiBackdropPlacement::ImmediatelyBeforePortal(portal) => {
+            bytes.push(2);
+            bytes.extend_from_slice(&portal.value().to_le_bytes());
+        }
+        super::UiBackdropPlacement::ImmediatelyAfterPortal(portal) => {
+            bytes.push(3);
+            bytes.extend_from_slice(&portal.value().to_le_bytes());
+        }
+        super::UiBackdropPlacement::ImmediatelyBeforeBackdrop(backdrop) => {
+            bytes.push(4);
+            bytes.extend_from_slice(&backdrop.value().to_le_bytes());
+        }
+        super::UiBackdropPlacement::ImmediatelyAfterBackdrop(backdrop) => {
+            bytes.push(5);
+            bytes.extend_from_slice(&backdrop.value().to_le_bytes());
+        }
+    }
+}
+
+fn text(bytes: &mut Vec<u8>, value: &str) {
+    bytes.extend_from_slice(&(value.len() as u64).to_le_bytes());
+    bytes.extend_from_slice(value.as_bytes());
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn role(with_axis: bool) -> super::super::super::UiAppearanceRoleDeclaration {
-        let contract = super::super::super::UiAppearanceAspectContract::backdrop();
-        let partition = |aspect, kind| {
-            let axes = with_axis
-                .then(|| {
-                    super::super::super::UiAppearanceAxisDomain::complete(
-                        super::super::super::UiAppearanceStateAxis::Validation,
-                    )
-                })
-                .into_iter()
-                .collect::<Vec<_>>();
-            let predicates = with_axis
-                .then(|| {
-                    super::super::super::UiAppearanceAxisPredicate::any(
-                        super::super::super::UiAppearanceStateAxis::Validation,
-                    )
-                })
-                .into_iter()
-                .collect::<Vec<_>>();
-            super::super::super::UiAppearanceDecisionPartition::compile(
-                axes,
-                [super::super::super::UiAppearanceDecisionRule::new(
-                    predicates,
-                    super::super::super::UiAppearanceDecisionResult::theme_slot(
-                        super::super::super::UiThemeSlotIdentity::new(format!(
-                            "backdrop.{aspect:?}"
-                        ))
-                        .unwrap(),
-                        kind,
-                    ),
-                )],
-            )
-            .unwrap()
-        };
-        super::super::super::UiAppearanceRoleDeclaration::admit(
-            super::super::super::UiAppearanceRoleIdentity::new("backdrop.test").unwrap(),
-            super::super::super::UiAppearanceRoleRevision::new(1).unwrap(),
-            super::super::super::UiAppearanceRoleApplicability::Backdrop,
-            &contract,
-            [
-                (
-                    super::super::super::UiAppearanceAspect::Background,
-                    partition(
-                        super::super::super::UiAppearanceAspect::Background,
-                        super::super::super::UiThemeValueKind::Color,
-                    ),
-                ),
-                (
-                    super::super::super::UiAppearanceAspect::Opacity,
-                    partition(
-                        super::super::super::UiAppearanceAspect::Opacity,
-                        super::super::super::UiThemeValueKind::Opacity,
-                    ),
-                ),
-            ],
-        )
-        .unwrap()
-    }
-
-    #[test]
-    fn backdrop_admission_rejects_foreign_and_stateful_bases() {
-        let surface = crate::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
-        let foreign = crate::UiSemanticSurfaceDeclarationIdentity::new(2).unwrap();
-        let portal = crate::UiPortalDeclarationId::new(3).unwrap();
-        let other_portal = crate::UiPortalDeclarationId::new(4).unwrap();
-        let identity = crate::UiBackdropIdentity::new(5).unwrap();
-        let valid_role = role(false);
-        let stateful_role = role(true);
-        let admit = |extent, presence, motion, placement, role| {
-            UiBackdropDeclaration::admit(
-                identity,
-                surface,
-                crate::UiBackdropScope::PerPortalInstance(portal),
-                extent,
-                presence,
-                motion,
-                placement,
-                role,
-            )
-        };
-        assert_eq!(
-            admit(
-                crate::UiBackdropExtentBasis::SurfaceViewport(foreign),
-                crate::UiBackdropPresenceBasis::WhilePortalPresented(portal),
-                crate::UiBackdropMotionBasis::PortalPresentation(portal),
-                crate::UiBackdropPlacement::ImmediatelyBeforePortal(portal),
-                &valid_role,
-            ),
-            Err(UiBackdropDeclarationDenial::ForeignSurfaceExtent)
-        );
-        assert_eq!(
-            admit(
-                crate::UiBackdropExtentBasis::SurfaceViewport(surface),
-                crate::UiBackdropPresenceBasis::WhilePortalPresented(other_portal),
-                crate::UiBackdropMotionBasis::PortalPresentation(portal),
-                crate::UiBackdropPlacement::ImmediatelyBeforePortal(portal),
-                &valid_role,
-            ),
-            Err(UiBackdropDeclarationDenial::PerPortalScopeMismatch)
-        );
-        assert_eq!(
-            admit(
-                crate::UiBackdropExtentBasis::SurfaceViewport(surface),
-                crate::UiBackdropPresenceBasis::WhilePortalPresented(portal),
-                crate::UiBackdropMotionBasis::PortalPresentation(portal),
-                crate::UiBackdropPlacement::ImmediatelyBeforePortal(other_portal),
-                &valid_role,
-            ),
-            Err(UiBackdropDeclarationDenial::ForeignPortalPlacement)
-        );
-        assert_eq!(
-            admit(
-                crate::UiBackdropExtentBasis::SurfaceViewport(surface),
-                crate::UiBackdropPresenceBasis::WhilePortalPresented(portal),
-                crate::UiBackdropMotionBasis::PortalPresentation(portal),
-                crate::UiBackdropPlacement::ImmediatelyBeforePortal(portal),
-                &stateful_role,
-            ),
-            Err(UiBackdropDeclarationDenial::IncompatibleAppearanceRole)
-        );
-        assert!(admit(
-            crate::UiBackdropExtentBasis::SurfaceViewport(surface),
-            crate::UiBackdropPresenceBasis::WhilePortalPresented(portal),
-            crate::UiBackdropMotionBasis::PortalPresentation(portal),
-            crate::UiBackdropPlacement::ImmediatelyBeforePortal(portal),
-            &valid_role,
-        )
-        .is_ok());
-        assert!(admit(
-            crate::UiBackdropExtentBasis::SurfaceViewport(surface),
-            crate::UiBackdropPresenceBasis::WhilePortalPresented(portal),
-            crate::UiBackdropMotionBasis::None,
-            crate::UiBackdropPlacement::ImmediatelyBeforePortal(portal),
-            &valid_role,
-        )
-        .is_ok());
-    }
-
-    #[test]
-    fn component_contract_with_backdrop_aspects_is_not_a_backdrop_contract() {
-        let component_contract = crate::UiAppearanceAspectContract::component(
-            [
-                crate::UiAppearanceAspect::Background,
-                crate::UiAppearanceAspect::Opacity,
-            ],
-            [],
-        )
-        .unwrap();
-        assert_ne!(
-            component_contract,
-            crate::UiAppearanceAspectContract::backdrop()
-        );
-
-        let partition = |aspect: crate::UiAppearanceAspect| {
-            crate::UiAppearanceDecisionPartition::compile(
-                [],
-                [crate::UiAppearanceDecisionRule::new(
-                    [],
-                    crate::UiAppearanceDecisionResult::theme_slot(
-                        crate::UiThemeSlotIdentity::new(format!("component.{aspect:?}")).unwrap(),
-                        aspect.value_kind(),
-                    ),
-                )],
-            )
-            .unwrap()
-        };
-        let role = crate::UiAppearanceRoleDeclaration::admit(
-            crate::UiAppearanceRoleIdentity::new("component.same-aspects").unwrap(),
-            crate::UiAppearanceRoleRevision::new(1).unwrap(),
-            crate::UiAppearanceRoleApplicability::Component(
-                crate::UiDslComponentReference::new("test.component").unwrap(),
-            ),
-            &component_contract,
-            [
-                (
-                    crate::UiAppearanceAspect::Background,
-                    partition(crate::UiAppearanceAspect::Background),
-                ),
-                (
-                    crate::UiAppearanceAspect::Opacity,
-                    partition(crate::UiAppearanceAspect::Opacity),
-                ),
-            ],
-        )
-        .unwrap();
-        let surface = crate::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
-        assert_eq!(
-            UiBackdropDeclaration::admit(
-                crate::UiBackdropIdentity::new(1).unwrap(),
-                surface,
-                crate::UiBackdropScope::SurfaceSingleton,
-                crate::UiBackdropExtentBasis::SurfaceViewport(surface),
-                crate::UiBackdropPresenceBasis::Always,
-                crate::UiBackdropMotionBasis::None,
-                crate::UiBackdropPlacement::AboveSurfaceContent,
-                &role,
-            ),
-            Err(UiBackdropDeclarationDenial::IncompatibleAppearanceRole)
-        );
-    }
-}
+#[path = "backdrop_tests.rs"]
+mod tests;

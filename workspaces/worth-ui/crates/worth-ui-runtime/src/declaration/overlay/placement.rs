@@ -1,3 +1,4 @@
 pub use worth_ui_dsl::{
-    UiBackdropPlacement, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
+    UiBackdropPlacement, UiOverlayAnchor, UiOverlayPortalParticipant, UiOverlayRelation,
+    UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph, UiOverlayRelationKind,
 };

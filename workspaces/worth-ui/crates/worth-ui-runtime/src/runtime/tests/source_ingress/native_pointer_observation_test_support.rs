@@ -134,20 +134,19 @@ fn hover_background_role() -> worth_ui_dsl::UiAppearanceRoleDeclaration {
         [],
     )
     .unwrap();
-    let partition = worth_ui_dsl::UiAppearanceDecisionPartition::compile(
-        [worth_ui_dsl::UiAppearanceAxisDomain::complete(
+    let partition = worth_ui_dsl::UiAppearancePartitionAuthoring::new([
+        worth_ui_dsl::UiAppearanceAxisDomain::complete(worth_ui_dsl::UiAppearanceStateAxis::Hover),
+    ])
+    .with_cell(
+        worth_ui_dsl::UiAppearanceCell::when([worth_ui_dsl::UiAppearanceAxisPredicate::any(
             worth_ui_dsl::UiAppearanceStateAxis::Hover,
-        )],
-        [worth_ui_dsl::UiAppearanceDecisionRule::new(
-            [worth_ui_dsl::UiAppearanceAxisPredicate::any(
-                worth_ui_dsl::UiAppearanceStateAxis::Hover,
-            )],
-            worth_ui_dsl::UiAppearanceDecisionResult::theme_slot(
-                worth_ui_dsl::UiThemeSlotIdentity::new(TOKEN).unwrap(),
-                worth_ui_dsl::UiThemeValueKind::Color,
-            ),
-        )],
+        )])
+        .uses_slot(
+            worth_ui_dsl::UiThemeSlotIdentity::new(TOKEN).unwrap(),
+            worth_ui_dsl::UiThemeValueKind::Color,
+        ),
     )
+    .compile(worth_ui_dsl::UiAppearanceAspect::Background)
     .unwrap();
     worth_ui_dsl::UiAppearanceRoleDeclaration::admit(
         worth_ui_dsl::UiAppearanceRoleIdentity::new("test.hover-background").unwrap(),

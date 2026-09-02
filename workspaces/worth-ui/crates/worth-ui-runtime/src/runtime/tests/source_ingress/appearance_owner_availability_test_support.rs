@@ -27,17 +27,17 @@ fn axis_background_role(
         [],
     )
     .unwrap();
-    let result = worth_ui_dsl::UiAppearanceDecisionResult::theme_slot(
-        worth_ui_dsl::UiThemeSlotIdentity::new(APPEARANCE_TOKEN).unwrap(),
-        worth_ui_dsl::UiThemeValueKind::Color,
-    );
-    let partition = worth_ui_dsl::UiAppearanceDecisionPartition::compile(
-        [worth_ui_dsl::UiAppearanceAxisDomain::complete(axis)],
-        [worth_ui_dsl::UiAppearanceDecisionRule::new(
-            [worth_ui_dsl::UiAppearanceAxisPredicate::any(axis)],
-            result,
-        )],
+    let partition = worth_ui_dsl::UiAppearancePartitionAuthoring::new([
+        worth_ui_dsl::UiAppearanceAxisDomain::complete(axis),
+    ])
+    .with_cell(
+        worth_ui_dsl::UiAppearanceCell::when([worth_ui_dsl::UiAppearanceAxisPredicate::any(axis)])
+            .uses_slot(
+                worth_ui_dsl::UiThemeSlotIdentity::new(APPEARANCE_TOKEN).unwrap(),
+                worth_ui_dsl::UiThemeValueKind::Color,
+            ),
     )
+    .compile(worth_ui_dsl::UiAppearanceAspect::Background)
     .unwrap();
     worth_ui_dsl::UiAppearanceRoleDeclaration::admit(
         worth_ui_dsl::UiAppearanceRoleIdentity::new(identity).unwrap(),

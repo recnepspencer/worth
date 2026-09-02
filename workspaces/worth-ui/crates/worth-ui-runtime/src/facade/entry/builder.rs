@@ -106,12 +106,7 @@ impl CapabilityRegistrationBuilder {
         Ok(self)
     }
 
-    #[cfg(any(test, feature = "certification-support"))]
-    #[allow(
-        dead_code,
-        reason = "Gate 0 keeps appearance registration certification-only"
-    )]
-    pub(crate) fn register_appearance_role(
+    pub fn register_appearance_role(
         mut self,
         role: worth_ui_dsl::UiAppearanceRoleDeclaration,
     ) -> Result<Self, crate::capability::AppearanceRoleRegistrationDenial> {

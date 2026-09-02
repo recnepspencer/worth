@@ -7,4 +7,5 @@ mod semantic_digest;
 
 pub use frozen_entry::FrozenAppearanceRoleCapabilities;
 pub(crate) use registration::AppearanceRoleAcceptedRegistrationProof;
-pub(crate) use registry::{AppearanceRoleRegistrationDenial, AppearanceRoleRegistry};
+pub use registry::AppearanceRoleRegistrationDenial;
+pub(crate) use registry::AppearanceRoleRegistry;

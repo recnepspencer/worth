@@ -22,11 +22,14 @@ mod support;
 )]
 pub use appearance::{
     UiAppearanceAspect, UiAppearanceAspectContract, UiAppearanceAxisClass, UiAppearanceAxisDomain,
-    UiAppearanceAxisPredicate, UiAppearanceDecisionCell, UiAppearanceDecisionPartition,
-    UiAppearanceDecisionPartitionDenial, UiAppearanceDecisionResult, UiAppearanceDecisionRule,
-    UiAppearanceRoleDeclaration, UiAppearanceRoleDeclarationDenial, UiAppearanceRoleIdentity,
-    UiAppearanceRoleRevision, UiAppearanceRoleSchemaVersion, UiAppearanceStateAxis,
-    UiAppearanceStateAxisVersion, UiThemeSlotUse,
+    UiAppearanceAxisPredicate, UiAppearanceCell, UiAppearanceCellBuilder,
+    UiAppearanceCellBuilderDenial, UiAppearanceCellValue, UiAppearanceDecisionCell,
+    UiAppearanceDecisionPartition, UiAppearanceDecisionPartitionDenial, UiAppearanceDecisionResult,
+    UiAppearanceDecisionRule, UiAppearanceDecisionValue, UiAppearancePartitionAuthoring,
+    UiAppearanceRole, UiAppearanceRoleAuthoring, UiAppearanceRoleAuthoringDenial,
+    UiAppearanceRoleDeclaration, UiAppearanceRoleDeclarationDenial, UiAppearanceRoleId,
+    UiAppearanceRoleIdentity, UiAppearanceRoleRevision, UiAppearanceRoleSchemaVersion,
+    UiAppearanceStateAxis, UiAppearanceStateAxisVersion, UiThemeSlotUse,
 };
 #[allow(
     unused_imports,
@@ -117,8 +120,9 @@ pub use measurement_dependency::{
 pub use overlay::{
     UiBackdropDeclaration, UiBackdropDeclarationDenial, UiBackdropExtentBasis, UiBackdropIdentity,
     UiBackdropMotionBasis, UiBackdropPlacement, UiBackdropPresenceBasis, UiBackdropScope,
-    UiMosaicRegionDeclarationIdentity, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
-    UiPortalDeclarationId, UiSemanticSurfaceDeclarationIdentity,
+    UiMosaicRegionDeclarationIdentity, UiOverlayAnchor, UiOverlayPortalParticipant,
+    UiOverlayRelation, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
+    UiOverlayRelationKind, UiPortalDeclarationId, UiSemanticSurfaceDeclarationIdentity,
 };
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use rust_authored_declaration_fixture::WorthUiRustAuthoredDeclarationFixture;

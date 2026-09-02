@@ -19,21 +19,27 @@ pub use compile::certification;
 pub(crate) use artifact_input::WorthUiArtifactInputEquivalentShape;
 pub(crate) use artifact_input::WorthUiArtifactInputNormalizer;
 pub use artifact_input::{
-    WorthUiArtifactInput, WorthUiArtifactInputBlockNode, WorthUiArtifactInputBodyAtom,
-    WorthUiArtifactInputImportNode, WorthUiArtifactInputModule, WorthUiArtifactInputNode,
-    WorthUiArtifactInputNodeKind, WorthUiArtifactInputProvenance, WorthUiArtifactInputReference,
+    WorthUiArtifactInput, WorthUiArtifactInputAppearanceRoleNode, WorthUiArtifactInputBackdropNode,
+    WorthUiArtifactInputBlockNode, WorthUiArtifactInputBodyAtom, WorthUiArtifactInputImportNode,
+    WorthUiArtifactInputModule, WorthUiArtifactInputNode, WorthUiArtifactInputNodeKind,
+    WorthUiArtifactInputProvenance, WorthUiArtifactInputReference,
     WorthUiArtifactInputSemanticArtifactNode, WorthUiArtifactInputTokenNode,
     WorthUiSemanticArtifactDeclaration,
 };
 pub(crate) use canonical::WorthUiCanonicalModuleOrder;
+pub(crate) use compile::{
+    resolve_file_authored_overlay_declarations, resolve_portal_identity_names,
+};
 pub use compile::{
     WorthUiAuthoredMode, WorthUiAuthoredSourceInput, WorthUiDslCompileDiagnostic,
-    WorthUiDslCompileDiagnosticCode, WorthUiDslCompileReport, WorthUiDslCompileStopClass,
-    WorthUiDslCompiler, WorthUiDslDiagnosticIdentity, WorthUiDslProtocolIdentity,
-    WorthUiDslSourceSpan, WorthUiSealedSemanticArtifact, WorthUiSealedSemanticPackage,
-    WorthUiSemanticBlock, WorthUiSemanticDeclaration, WorthUiSemanticDeclarationView,
-    WorthUiSemanticImport, WorthUiSemanticModule, WorthUiSemanticPackageIdentity,
-    WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
+    WorthUiDslCompileDiagnosticCode, WorthUiDslCompileDiagnosticDetail, WorthUiDslCompileReport,
+    WorthUiDslCompileStopClass, WorthUiDslCompiler, WorthUiDslDiagnosticIdentity,
+    WorthUiDslProtocolIdentity, WorthUiDslSourceSpan, WorthUiSealedSemanticArtifact,
+    WorthUiSealedSemanticPackage, WorthUiSemanticAppearanceRoleDeclaration,
+    WorthUiSemanticBackdropDeclaration, WorthUiSemanticBlock, WorthUiSemanticDeclaration,
+    WorthUiSemanticDeclarationView, WorthUiSemanticImport, WorthUiSemanticModule,
+    WorthUiSemanticPackageIdentity, WorthUiSemanticProjectionDeclaration,
+    WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
 };
 pub(crate) use import_graph::{WorthUiSourceImport, WorthUiSourceImportGraph};
 pub use legality::{
@@ -49,8 +55,8 @@ pub use lower::rust_authored::{
     WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule,
 };
 pub(crate) use lower::{
-    WorthUiParsedSourceToArtifactInputLowerer, WorthUiRustAuthoredInputLoweringDenial,
-    WorthUiRustAuthoredToArtifactInputLowerer,
+    WorthUiFileAuthoredLoweredDeclaration, WorthUiParsedSourceToArtifactInputLowerer,
+    WorthUiRustAuthoredInputLoweringDenial, WorthUiRustAuthoredToArtifactInputLowerer,
 };
 pub use module::WorthUiSourceModuleId;
 pub(crate) use module::WorthUiSourceModuleRecord;
@@ -60,10 +66,10 @@ pub(crate) use package::{
 };
 pub use parse::WorthUiSourceSpan;
 pub(crate) use parse::{
-    WorthUiParseDiagnostic, WorthUiParseDiagnosticCode, WorthUiParseReport, WorthUiParsedBlockBody,
-    WorthUiParsedBlockDeclaration, WorthUiParsedImportDeclaration, WorthUiParsedSourceDeclaration,
-    WorthUiParsedSourceModule, WorthUiParsedSourcePackage, WorthUiParsedTokenDeclaration,
-    WorthUiSourceParser,
+    WorthUiParseDiagnostic, WorthUiParseDiagnosticCode, WorthUiParseReport,
+    WorthUiParsedAppearanceRoleDeclaration, WorthUiParsedBlockBody, WorthUiParsedBlockDeclaration,
+    WorthUiParsedImportDeclaration, WorthUiParsedSourceDeclaration, WorthUiParsedSourceModule,
+    WorthUiParsedSourcePackage, WorthUiParsedTokenDeclaration, WorthUiSourceParser,
 };
 pub(crate) use projection::parse_projection_requirement;
 pub use projection::{

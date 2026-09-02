@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use super::appearance_parser::{parse_appearance_role_declaration, parse_backdrop_declaration};
 use super::worth_ui_source_parser_expectations::{
     expect_identifier_token, expect_punctuation_token, expect_string_literal_token,
     span_from_bounds, token_identifier_text, token_string_literal_text,
@@ -94,6 +95,12 @@ fn parse_next_declaration(
     stream: &mut WorthUiSourceTokenStream,
 ) -> Result<WorthUiParsedSourceDeclaration, WorthUiParseDiagnostic> {
     match stream.peek().map(WorthUiSourceToken::kind) {
+        Some(WorthUiSourceTokenKind::KeywordAppearance) => {
+            parse_appearance_role_declaration(module_id, source_length, stream)
+        }
+        Some(WorthUiSourceTokenKind::KeywordBackdrop) => {
+            parse_backdrop_declaration(module_id, source_length, stream)
+        }
         Some(WorthUiSourceTokenKind::KeywordImport) => {
             parse_import_declaration(module_id, source_length, stream)
         }
@@ -192,7 +199,7 @@ fn parse_block_declaration(
     let declaration = WorthUiParsedBlockDeclaration::new(
         token_identifier_text(&name_token),
         span_from_bounds(keyword.span(), right_brace.span()),
-        WorthUiParsedBlockBody::new(
+        WorthUiParsedBlockBody::new_with_spans(
             span_from_bounds(left_brace.span(), right_brace.span()),
             body_tokens,
         ),
@@ -258,11 +265,11 @@ fn parse_token_declaration(
     ))
 }
 
-fn parse_block_body_tokens(
+pub(super) fn parse_block_body_tokens(
     module_id: &WorthUiSourceModuleId,
     stream: &mut WorthUiSourceTokenStream,
     left_brace_span: &WorthUiSourceSpan,
-) -> Result<(Vec<WorthUiSourceTokenKind>, WorthUiSourceToken), WorthUiParseDiagnostic> {
+) -> Result<(Vec<WorthUiSourceToken>, WorthUiSourceToken), WorthUiParseDiagnostic> {
     let mut depth = 1usize;
     let mut body_tokens = Vec::new();
 
@@ -270,16 +277,16 @@ fn parse_block_body_tokens(
         match token.kind() {
             WorthUiSourceTokenKind::LeftBrace => {
                 depth += 1;
-                body_tokens.push(token.kind().clone());
+                body_tokens.push(token);
             }
             WorthUiSourceTokenKind::RightBrace => {
                 depth -= 1;
                 if depth == 0 {
                     return Ok((body_tokens, token));
                 }
-                body_tokens.push(token.kind().clone());
+                body_tokens.push(token);
             }
-            _ => body_tokens.push(token.kind().clone()),
+            _ => body_tokens.push(token),
         }
     }
 
@@ -311,6 +318,8 @@ fn recover_module_root(stream: &mut WorthUiSourceTokenStream) {
                 | WorthUiSourceTokenKind::KeywordQueryScalar
                 | WorthUiSourceTokenKind::KeywordQueryCollection
                 | WorthUiSourceTokenKind::KeywordToken
+                | WorthUiSourceTokenKind::KeywordAppearance
+                | WorthUiSourceTokenKind::KeywordBackdrop
         ) {
             break;
         }

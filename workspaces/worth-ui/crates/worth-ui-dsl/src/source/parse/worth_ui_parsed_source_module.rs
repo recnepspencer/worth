@@ -1,4 +1,6 @@
-use crate::source::{WorthUiSourceModuleId, WorthUiSourceSpan, WorthUiSourceTokenKind};
+use crate::source::{
+    WorthUiSourceModuleId, WorthUiSourceSpan, WorthUiSourceToken, WorthUiSourceTokenKind,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct WorthUiParsedSourceModule {
@@ -23,6 +25,8 @@ pub(crate) enum WorthUiParsedSourceDeclaration {
     QueryScalar(WorthUiParsedBlockDeclaration),
     QueryCollection(WorthUiParsedBlockDeclaration),
     Token(WorthUiParsedTokenDeclaration),
+    AppearanceRole(WorthUiParsedAppearanceRoleDeclaration),
+    Backdrop(WorthUiParsedBlockDeclaration),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,6 +46,7 @@ pub(crate) struct WorthUiParsedBlockDeclaration {
 pub(crate) struct WorthUiParsedBlockBody {
     span: WorthUiSourceSpan,
     tokens: Vec<WorthUiSourceTokenKind>,
+    token_spans: Vec<WorthUiSourceSpan>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -50,6 +55,15 @@ pub(crate) struct WorthUiParsedTokenDeclaration {
     value_text: String,
     span: WorthUiSourceSpan,
     value_span: WorthUiSourceSpan,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct WorthUiParsedAppearanceRoleDeclaration {
+    name_text: String,
+    revision: u64,
+    applies_to: String,
+    span: WorthUiSourceSpan,
+    body: WorthUiParsedBlockBody,
 }
 
 impl WorthUiParsedSourceModule {
@@ -110,11 +124,32 @@ impl WorthUiParsedBlockDeclaration {
 
 impl WorthUiParsedBlockBody {
     pub(crate) fn new(span: WorthUiSourceSpan, tokens: Vec<WorthUiSourceTokenKind>) -> Self {
-        Self { span, tokens }
+        Self {
+            span,
+            token_spans: Vec::new(),
+            tokens,
+        }
+    }
+
+    pub(crate) fn new_with_spans(span: WorthUiSourceSpan, tokens: Vec<WorthUiSourceToken>) -> Self {
+        let token_spans = tokens.iter().map(|token| token.span().clone()).collect();
+        let tokens = tokens
+            .into_iter()
+            .map(|token| token.kind().clone())
+            .collect();
+        Self {
+            span,
+            tokens,
+            token_spans,
+        }
     }
 
     pub(crate) fn tokens(&self) -> &[WorthUiSourceTokenKind] {
         &self.tokens
+    }
+
+    pub(crate) fn token_spans(&self) -> &[WorthUiSourceSpan] {
+        &self.token_spans
     }
 }
 
@@ -147,6 +182,44 @@ impl WorthUiParsedTokenDeclaration {
 
     pub(crate) fn value_span(&self) -> &WorthUiSourceSpan {
         &self.value_span
+    }
+}
+
+impl WorthUiParsedAppearanceRoleDeclaration {
+    pub(crate) fn new(
+        name_text: String,
+        revision: u64,
+        applies_to: String,
+        span: WorthUiSourceSpan,
+        body: WorthUiParsedBlockBody,
+    ) -> Self {
+        Self {
+            name_text,
+            revision,
+            applies_to,
+            span,
+            body,
+        }
+    }
+
+    pub(crate) fn name_text(&self) -> &str {
+        &self.name_text
+    }
+
+    pub(crate) const fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    pub(crate) fn applies_to(&self) -> &str {
+        &self.applies_to
+    }
+
+    pub(crate) fn span(&self) -> &WorthUiSourceSpan {
+        &self.span
+    }
+
+    pub(crate) fn body(&self) -> &WorthUiParsedBlockBody {
+        &self.body
     }
 }
 
@@ -185,6 +258,15 @@ impl WorthUiParsedSourceDeclaration {
             }
             (Self::Token(left), Self::Token(right)) => {
                 left.name_text == right.name_text && left.value_text == right.value_text
+            }
+            (Self::AppearanceRole(left), Self::AppearanceRole(right)) => {
+                left.name_text == right.name_text
+                    && left.revision == right.revision
+                    && left.applies_to == right.applies_to
+                    && left.body.tokens == right.body.tokens
+            }
+            (Self::Backdrop(left), Self::Backdrop(right)) => {
+                left.name_text == right.name_text && left.body.tokens == right.body.tokens
             }
             _ => false,
         }
