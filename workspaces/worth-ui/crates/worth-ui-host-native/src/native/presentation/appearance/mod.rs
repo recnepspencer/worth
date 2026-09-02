@@ -17,8 +17,12 @@ mod surface_pipeline;
 pub(crate) mod cursor;
 
 #[cfg(test)]
-mod family_tests;
+mod geometry_tests;
+#[cfg(test)]
+mod mounted_mechanic_fixtures;
+#[cfg(test)]
+mod outline_tests;
 #[cfg(test)]
 mod retained_tests;
 #[cfg(test)]
-mod tests;
+mod surface_tests;
