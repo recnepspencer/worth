@@ -4,6 +4,10 @@ mod support;
 mod binding_export;
 #[path = "capacity.rs"]
 mod capacity;
+#[path = "gate2_owner_integration.rs"]
+mod gate2_owner_integration;
+#[path = "gate2_owner_integration_support.rs"]
+mod gate2_owner_integration_support;
 #[path = "gate2_total_order.rs"]
 mod gate2_total_order;
 #[path = "gate2_total_order_denials.rs"]
