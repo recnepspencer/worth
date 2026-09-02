@@ -16,4 +16,4 @@ pub use owner_snapshot::UiAppearanceOwnerSnapshot;
 pub(crate) use role_binding::{
     UiAppearanceNodeRoleBinding, UiAppearanceNodeRoleBindingDenial, UiAppearanceRoleBindingBasis,
 };
-pub(crate) use vector::UiAppearanceStateVector;
+pub(crate) use vector::{UiAppearanceStateVector, UiAppearanceStateVectorDenial};

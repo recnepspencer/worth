@@ -187,9 +187,9 @@ fn current_node(
     graph_node: UiGraphNodeIdentity,
 ) -> Result<&crate::graph::UiGraphNode, UiAppearanceNodeRoleBindingDenial> {
     snapshot
-        .nodes()
-        .iter()
-        .find(|node| node.graph_node_identity() == graph_node)
+        .core_indexes()
+        .node_identity()
+        .node(snapshot.nodes(), graph_node)
         .ok_or(UiAppearanceNodeRoleBindingDenial::MissingGraphNode)
 }
 
