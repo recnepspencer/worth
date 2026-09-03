@@ -26,7 +26,7 @@ pub(crate) fn adapt(
     let source_class = owner.class_for(
         basis.graph_node(),
         basis.mounted_instance(),
-        basis.node_receipt(),
+        basis.owner_node_receipt(),
     );
     let (fact_identity, fact_revision, node_receipt) = source
         .map_or((None, None, None), |(identity, revision, receipt)| {

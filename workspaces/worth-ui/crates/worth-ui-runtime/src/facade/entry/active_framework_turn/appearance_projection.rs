@@ -36,17 +36,6 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
                 consumers_selected,
                 snapshot.source_basis(),
             );
-            let Some(mounted_identity) = self
-                .mounted
-                .current_mounted_identity_basis(mounted_context.mounted_instance)
-            else {
-                stage_denial(
-                    frame,
-                    context,
-                    crate::runtime::appearance::UiAppearanceInspectionDenial::Basis,
-                );
-                continue;
-            };
             let binding =
                 match crate::runtime::appearance::UiAppearanceNodeRoleBinding::from_current_graph(
                     self.graph.snapshot(),
@@ -64,6 +53,32 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
                     }
                 };
             context.set_role(binding.role());
+            let Some(mounted_identity) = self
+                .mounted
+                .current_mounted_identity_basis(mounted_context.mounted_instance)
+            else {
+                stage_denial(
+                    frame,
+                    context,
+                    crate::runtime::appearance::UiAppearanceInspectionDenial::Basis,
+                );
+                continue;
+            };
+            let receipt_basis = match self.mounted.seal_appearance_receipt_basis(
+                mounted_context.mounted_instance,
+                mounted_context.incarnation,
+                frame.presented_receipt_basis(),
+            ) {
+                Ok(receipt_basis) => receipt_basis,
+                Err(_) => {
+                    stage_denial(
+                        frame,
+                        context,
+                        crate::runtime::appearance::UiAppearanceInspectionDenial::Basis,
+                    );
+                    continue;
+                }
+            };
             let theme = match self.presentation.appearance_theme_resolution_view(
                 self.capabilities,
                 binding.role(),
@@ -113,7 +128,7 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
                 crate::runtime::appearance::UiAppearanceCoherentBasisInput {
                     mounted_identity,
                     mounted_instance: mounted_context.mounted_instance,
-                    node_receipt: mounted_context.node_receipt,
+                    receipt_basis,
                     theme: theme_binding,
                     presentation: None,
                     selection: None,

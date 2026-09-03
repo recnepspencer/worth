@@ -38,7 +38,7 @@ pub(crate) fn adapt(
     let current_facts = scoped_facts
         .iter()
         .copied()
-        .filter(|fact| fact.node_receipt() == basis.node_receipt())
+        .filter(|fact| fact.node_receipt() == basis.owner_node_receipt())
         .collect::<Vec<_>>();
     let fact = match current_facts.as_slice() {
         [fact] => *fact,

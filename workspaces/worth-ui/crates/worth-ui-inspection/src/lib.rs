@@ -22,7 +22,8 @@ pub use target::{
 // Appearance inspection lane. These are inert evidence contracts; runtime
 // owns production and no contract below can authorize a runtime mutation.
 pub use appearance::{
-    UiAppearanceInspectionCost, UiAppearanceInspectionDecisionCell, UiAppearanceInspectionEvidence,
+    UiAppearanceInspectionCost, UiAppearanceInspectionDecisionCell,
+    UiAppearanceInspectionDenialPosture, UiAppearanceInspectionEvidence,
     UiAppearanceInspectionExplanation, UiAppearanceInspectionInvalidationCause,
     UiAppearanceInspectionMountedMechanic, UiAppearanceInspectionOutcome,
     UiAppearanceInspectionPhysicalSuppression, UiAppearanceInspectionQuery,

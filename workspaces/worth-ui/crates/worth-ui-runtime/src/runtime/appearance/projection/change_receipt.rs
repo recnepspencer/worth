@@ -118,7 +118,8 @@ impl UiAppearanceChangeReceipt {
                 mounting_result_available: true,
             });
         };
-        let input_evidence_changed = predecessor.state().basis() != successor.state().basis();
+        let input_evidence_changed = predecessor.state().basis().evidence_digest()
+            != successor.state().basis().evidence_digest();
         let semantic_projection_changed =
             predecessor.semantic_digest() != successor.semantic_digest();
         let resolved_aspect_value_changed = predecessor.aspects().len()

@@ -114,6 +114,15 @@ pub enum UiAppearanceInspectionInvalidationCause {
     GenerationRetired,
 }
 
+/// Typed posture for an appearance attempt denied before mounting effects.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiAppearanceInspectionDenialPosture {
+    Basis,
+    Resolution,
+    MountAffinity,
+    MountLowering,
+}
+
 /// Mounted-mechanic posture reported by the bounded Gate 3 producer.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiAppearanceInspectionMountedMechanic {
@@ -238,6 +247,7 @@ pub struct UiAppearanceInspectionExplanation {
     support: UiAppearanceInspectionSupport,
     value: UiAppearanceInspectionValue,
     invalidation_cause: UiAppearanceInspectionInvalidationCause,
+    denial_posture: Option<UiAppearanceInspectionDenialPosture>,
     mounted_mechanic: UiAppearanceInspectionMountedMechanic,
     physical_suppression: UiAppearanceInspectionPhysicalSuppression,
     semantic_digest: u64,
@@ -281,6 +291,7 @@ impl UiAppearanceInspectionExplanation {
             support,
             value,
             invalidation_cause,
+            denial_posture: None,
             mounted_mechanic,
             physical_suppression,
             semantic_digest,
@@ -327,6 +338,16 @@ impl UiAppearanceInspectionExplanation {
     }
     pub const fn invalidation_cause(&self) -> UiAppearanceInspectionInvalidationCause {
         self.invalidation_cause
+    }
+    pub const fn denial_posture(&self) -> Option<UiAppearanceInspectionDenialPosture> {
+        self.denial_posture
+    }
+    pub const fn with_denial_posture(
+        mut self,
+        posture: UiAppearanceInspectionDenialPosture,
+    ) -> Self {
+        self.denial_posture = Some(posture);
+        self
     }
     pub const fn mounted_mechanic(&self) -> UiAppearanceInspectionMountedMechanic {
         self.mounted_mechanic

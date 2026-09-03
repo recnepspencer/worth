@@ -18,6 +18,7 @@ static NEXT_STATE_REVISION: AtomicU64 = AtomicU64::new(1);
 const SEMANTIC_SURFACE_LIMIT: usize = 256;
 const RETIRED_INSTANCE_LIMIT: usize = 256;
 
+mod appearance_receipt_basis;
 mod frame_lifecycle;
 mod graph_replacement;
 mod instance_lifecycle;

@@ -13,6 +13,9 @@ mod appearance_observation_close_tests;
 #[cfg(test)]
 #[path = "active_application_session/appearance_projection_tests.rs"]
 mod appearance_projection_tests;
+#[cfg(test)]
+#[path = "active_application_session/appearance_receipt_distinction_tests.rs"]
+mod appearance_receipt_distinction_tests;
 #[path = "active_application_session/command_context.rs"]
 mod command_context;
 #[path = "active_application_session/command_observation.rs"]

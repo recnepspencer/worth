@@ -3,7 +3,7 @@ use super::producer::UiAppearanceInspectionProducer;
 pub(super) fn record_attempt_denial(
     producer: &mut UiAppearanceInspectionProducer,
     context: &super::super::projection::UiAppearanceAttemptContext,
-    _denial: super::UiAppearanceInspectionDenial,
+    denial: super::UiAppearanceInspectionDenial,
     receipt: super::super::projection::UiAppearanceChangeReceipt,
 ) {
     let world = world_for_context(context);
@@ -70,8 +70,50 @@ pub(super) fn record_attempt_denial(
                 context.catalog_revision() as u32,
                 context.consumers_selected(),
             ),
-        );
+        )
+        .with_denial_posture(denial_posture(denial));
         producer.record(query, explanation);
+    }
+}
+
+fn denial_posture(
+    denial: super::UiAppearanceInspectionDenial,
+) -> worth_ui_inspection::UiAppearanceInspectionDenialPosture {
+    match denial {
+        super::UiAppearanceInspectionDenial::Basis => {
+            worth_ui_inspection::UiAppearanceInspectionDenialPosture::Basis
+        }
+        super::UiAppearanceInspectionDenial::Resolution => {
+            worth_ui_inspection::UiAppearanceInspectionDenialPosture::Resolution
+        }
+        super::UiAppearanceInspectionDenial::MountAffinity => {
+            worth_ui_inspection::UiAppearanceInspectionDenialPosture::MountAffinity
+        }
+        super::UiAppearanceInspectionDenial::MountLowering => {
+            worth_ui_inspection::UiAppearanceInspectionDenialPosture::MountLowering
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::denial_posture;
+
+    #[test]
+    fn maps_every_runtime_denial_to_its_public_posture() {
+        use crate::runtime::appearance::inspection::UiAppearanceInspectionDenial as Denial;
+        use worth_ui_inspection::UiAppearanceInspectionDenialPosture as Posture;
+
+        assert_eq!(denial_posture(Denial::Basis), Posture::Basis);
+        assert_eq!(denial_posture(Denial::Resolution), Posture::Resolution);
+        assert_eq!(
+            denial_posture(Denial::MountAffinity),
+            Posture::MountAffinity
+        );
+        assert_eq!(
+            denial_posture(Denial::MountLowering),
+            Posture::MountLowering
+        );
     }
 }
 

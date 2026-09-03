@@ -1,3 +1,4 @@
+mod appearance_receipt_basis;
 mod assembly;
 mod counters;
 mod delta;
@@ -28,6 +29,9 @@ mod text_reuse;
 mod theme_values;
 mod visual_region_basis;
 
+pub(crate) use appearance_receipt_basis::{
+    UiMountedAppearanceReceiptBasis, UiMountedAppearanceReceiptBasisDenial,
+};
 pub(crate) use assembly::{binding_requirement, UiPreparedMountedFrameAdmission};
 pub(crate) use counters::{UiMountCostOverflow, UiMountStageCounters};
 pub use counters::{UiMountCostReport, UiMountNamedCounters, UiMountWorkClass};

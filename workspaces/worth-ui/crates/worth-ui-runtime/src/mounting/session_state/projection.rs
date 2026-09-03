@@ -9,6 +9,19 @@ pub(crate) struct UiMountedPaintAttribution {
 }
 
 impl WorthUiMountedSessionState {
+    pub(crate) fn seal_appearance_receipt_basis(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        incarnation: worth_ui_host_contract::UiMountIncarnation,
+        successor: &crate::mounting::UiMountedNodeReceiptBasis,
+    ) -> Result<
+        crate::mounting::UiMountedAppearanceReceiptBasis,
+        crate::mounting::UiMountedAppearanceReceiptBasisDenial,
+    > {
+        self.identity
+            .seal_appearance_receipt_basis(instance, incarnation, successor)
+    }
+
     pub(crate) fn current_mounted_identity_basis(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,

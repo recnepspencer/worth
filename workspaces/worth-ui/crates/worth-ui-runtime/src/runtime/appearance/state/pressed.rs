@@ -32,7 +32,7 @@ pub(crate) fn adapt(
         .iter()
         .filter(|posture| {
             posture.target() == basis.mounted_instance()
-                && posture.node_receipt() == basis.node_receipt()
+                && posture.node_receipt() == basis.owner_node_receipt()
         })
         .collect::<Vec<_>>();
     if postures.len() > 1 {
@@ -48,7 +48,7 @@ pub(crate) fn adapt(
             pointer: Some(posture.pointer()),
             presentation: Some(posture.presentation()),
             target: basis.mounted_instance(),
-            node_receipt: basis.node_receipt(),
+            node_receipt: basis.owner_node_receipt(),
             press_sequence: Some(posture.press_sequence()),
         },
         None => UiPressedAppearanceState {
@@ -58,7 +58,7 @@ pub(crate) fn adapt(
             pointer: None,
             presentation: None,
             target: basis.mounted_instance(),
-            node_receipt: basis.node_receipt(),
+            node_receipt: basis.owner_node_receipt(),
             press_sequence: None,
         },
     })

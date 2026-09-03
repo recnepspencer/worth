@@ -1,5 +1,9 @@
 use crate::runtime::tests::appearance_component_session_test_support as support;
 
+#[path = "appearance_projection_test_support.rs"]
+mod test_support;
+use test_support::theme_session;
+
 #[test]
 fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
     let role = support::validation_background_role(support::APPEARANCE_TOKEN);
@@ -95,6 +99,8 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         committed_nodes
     );
     session.advance_mounted_identity_frame().unwrap();
+    host.push_native_display_presented();
+    test_support::publish_frame(&mut session, 0);
 
     let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
     let value = crate::capability::ThemeTokenValue::color(
@@ -321,70 +327,10 @@ fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
         explanation.physical_suppression(),
         worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotAttempted
     );
+    assert_eq!(
+        explanation.denial_posture(),
+        Some(worth_ui_inspection::UiAppearanceInspectionDenialPosture::Basis)
+    );
 
     let _ = session.shutdown();
-}
-
-fn theme_session(
-    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
-) -> (
-    crate::facade::WorthUiActiveApplicationSession,
-    crate::certification_support::ScriptedPresentationHost,
-) {
-    let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    let host_observer = host.clone();
-    host.set_capabilities(
-        worth_ui_host_contract::WorthUiHostCapabilityReport::available(vec![
-            worth_ui_host_contract::WorthUiHostCapability::NativePaint,
-            worth_ui_host_contract::WorthUiHostCapability::ViewportObservation,
-            worth_ui_host_contract::WorthUiHostCapability::DpiObservation,
-            worth_ui_host_contract::WorthUiHostCapability::PortalAnchorObservation,
-        ]),
-    );
-    let session = support::legacy_static_paint_appearance_component_builder(role)
-        .register_appearance_theme_bundle(theme_bundle())
-        .unwrap()
-        .with_rust_authored_declaration_fixture(support::appearance_fixture(role))
-        .freeze()
-        .map(|application| {
-            host.push_native_display_presented();
-            crate::facade::entry::WorthUiCertificationApplicationTransition::activate_test_host(
-                application,
-                host,
-            )
-        })
-        .expect("appearance capability fixture should prepare")
-        .launch()
-        .expect("appearance capability fixture should launch");
-    (session, host_observer)
-}
-
-fn theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabilities {
-    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
-    let catalog = crate::capability::UiThemeSlotCatalog::admit(
-        1,
-        [crate::capability::UiThemeSlotDeclaration::new(
-            token.clone(),
-            crate::capability::ThemeTokenFamily::surface(),
-            worth_ui_dsl::UiThemeValueKind::Color,
-            crate::capability::ThemeTokenSource::application(),
-            crate::capability::UiThemeSlotDisclosure::Public,
-            crate::capability::UiThemeSlotSuccessorCompatibility::ExactMeaning,
-            None,
-        )],
-    )
-    .unwrap();
-    let definition = crate::capability::UiThemeDefinition::admit(
-        crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.production").unwrap(),
-        1,
-        &catalog,
-        [(
-            token,
-            worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
-                17, 34, 51, 255,
-            ])),
-        )],
-    )
-    .unwrap();
-    crate::capability::FrozenAppearanceThemeCapabilities::admit(catalog, vec![definition]).unwrap()
 }

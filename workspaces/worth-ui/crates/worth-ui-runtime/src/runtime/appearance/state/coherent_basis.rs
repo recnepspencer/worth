@@ -8,6 +8,9 @@ use worth_ui_host_contract::{
 #[path = "coherent_basis_test_support.rs"]
 mod test_support;
 
+#[cfg(test)]
+pub(crate) use test_support::validate_presentation_for_test;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiAppearanceCoherentBasisDenial {
     ConsumerTargetMismatch,
@@ -26,7 +29,7 @@ pub(crate) enum UiAppearanceCoherentBasisDenial {
 pub(crate) struct UiAppearanceCoherentBasisInput {
     pub(crate) mounted_identity: crate::mounting::UiMountedIdentityBasis,
     pub(crate) mounted_instance: UiMountedInstanceIdentity,
-    pub(crate) node_receipt: UiMountedNodeReceiptIdentity,
+    pub(crate) receipt_basis: crate::mounting::UiMountedAppearanceReceiptBasis,
     pub(crate) theme: crate::runtime::appearance::UiActiveThemeBinding,
     pub(crate) presentation: Option<UiHostObservationPresentationBasis>,
     pub(crate) selection: Option<super::UiAppearanceSelectionSelector>,
@@ -43,6 +46,7 @@ pub(crate) struct UiAppearanceCoherentBasis {
     graph_node: crate::graph::UiGraphNodeIdentity,
     mounted_instance: UiMountedInstanceIdentity,
     incarnation: UiMountIncarnation,
+    owner_node_receipt: UiMountedNodeReceiptIdentity,
     node_receipt: UiMountedNodeReceiptIdentity,
     surface: UiSemanticSurfaceIdentity,
     theme: crate::runtime::appearance::UiActiveThemeBinding,
@@ -123,7 +127,8 @@ impl UiAppearanceCoherentBasis {
             graph_node: identity.graph_node_identity(),
             mounted_instance: input.mounted_instance,
             incarnation: identity.mount_incarnation(),
-            node_receipt: input.node_receipt,
+            owner_node_receipt: input.receipt_basis.owner_node_receipt(),
+            node_receipt: input.receipt_basis.successor_node_receipt(),
             surface,
             theme: input.theme,
             presentation: input.presentation,
@@ -163,6 +168,10 @@ impl UiAppearanceCoherentBasis {
 
     pub(crate) const fn node_receipt(&self) -> UiMountedNodeReceiptIdentity {
         self.node_receipt
+    }
+
+    pub(crate) const fn owner_node_receipt(&self) -> UiMountedNodeReceiptIdentity {
+        self.owner_node_receipt
     }
 
     pub(crate) const fn surface(&self) -> UiSemanticSurfaceIdentity {
@@ -230,7 +239,7 @@ impl UiAppearanceCoherentBasis {
             if let Some(pressed_owner) = snapshot.pressed() {
                 let mismatch = pressed_owner.postures().iter().any(|posture| {
                     posture.target() == self.mounted_instance
-                        && posture.node_receipt() == self.node_receipt
+                        && posture.node_receipt() == self.owner_node_receipt
                         && self.presentation != Some(posture.presentation())
                 });
                 if mismatch {
@@ -258,8 +267,7 @@ impl UiAppearanceCoherentBasis {
         digest = fold(digest, self.surface.diagnostic_value());
         digest = fold(digest, self.graph_node.digest());
         digest = fold(digest, self.mounted_instance.diagnostic_value());
-        digest = fold(digest, self.incarnation.diagnostic_value());
-        fold(digest, self.node_receipt.diagnostic_value())
+        fold(digest, self.incarnation.diagnostic_value())
     }
 
     pub(crate) fn evidence_digest(&self) -> u64 {
@@ -282,7 +290,10 @@ fn validate_mounted_target(
         .as_ref()
         != Some(&input.mounted_identity)
         || mounted
-            .validate_current_receipt(input.mounted_instance, input.node_receipt)
+            .validate_current_receipt(
+                input.mounted_instance,
+                input.receipt_basis.owner_node_receipt(),
+            )
             .is_err()
     {
         return Err(UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent);
@@ -298,7 +309,15 @@ fn validate_prepared_target(
         .current_mounted_identity_basis(input.mounted_instance)
         .as_ref()
         != Some(&input.mounted_identity)
-        || input.node_receipt.mounted_instance() != input.mounted_instance
+        || input.receipt_basis.mounted_instance() != input.mounted_instance
+        || input.receipt_basis.incarnation() != input.mounted_identity.mount_incarnation()
+        || mounted.current_publication().is_none()
+        || mounted
+            .validate_current_receipt(
+                input.mounted_instance,
+                input.receipt_basis.owner_node_receipt(),
+            )
+            .is_err()
     {
         return Err(UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent);
     }
@@ -343,14 +362,6 @@ fn validate_presentation(
         return Err(UiAppearanceCoherentBasisDenial::PresentationNotCurrent);
     }
     Ok(())
-}
-
-#[cfg(test)]
-pub(crate) fn validate_presentation_for_test(
-    mounted: &crate::mounting::WorthUiMountedSessionState,
-    presentation: Option<UiHostObservationPresentationBasis>,
-) -> Result<(), UiAppearanceCoherentBasisDenial> {
-    validate_presentation(mounted, presentation)
 }
 
 fn owner_revisions(snapshot: &super::UiAppearanceOwnerSnapshot) -> [u64; 6] {

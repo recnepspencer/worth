@@ -3,6 +3,10 @@ use crate::runtime::tests::source_ingress_boundary_test_support::{
     source_backed_package_sizing,
 };
 
+#[path = "appearance_role_test_support.rs"]
+mod role_support;
+pub(crate) use role_support::{validation_background_role, validation_background_role_with_axis};
+
 const ACTIVE_COMPONENT: &str = "workspace.component.active_session_current";
 const CANDIDATE_COMPONENT: &str = "workspace.component.active_session_candidate";
 pub(crate) const APPEARANCE_TOKEN: &str = "theme.appearance_consumer";
@@ -119,11 +123,21 @@ fn appearance_submission(
     attachment: Option<&worth_ui_dsl::UiAppearanceRoleDeclaration>,
     capabilities: &crate::capability::CapabilitySnapshot,
 ) -> crate::runtime::WorthUiWatchedCandidateSubmission {
-    let declaration = appearance_semantic_declaration(component, attachment);
-    let input = worth_ui_dsl::WorthUiRustAuthoredArtifactInput::from_modules([
-        worth_ui_dsl::WorthUiRustAuthoredArtifactInputModule::new("appearance/consumer")
-            .with_semantic_declaration(declaration),
-    ]);
+    let module = worth_ui_dsl::WorthUiRustAuthoredArtifactInputModule::new("appearance/consumer");
+    let module = match attachment {
+        Some(role) => module
+            .with_appearance_role(role.clone())
+            .with_component_appearance_role(
+                component,
+                worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration::new(
+                    role.role().clone(),
+                    role.revision(),
+                ),
+            )
+            .expect("appearance candidate component should carry one attachment"),
+        None => module.with_semantic_declaration(appearance_semantic_declaration(component, None)),
+    };
+    let input = worth_ui_dsl::WorthUiRustAuthoredArtifactInput::from_modules([module]);
     lower_rust_submission(
         crate::runtime::WorthUiSourceProvider::rust_authored(source_name)
             .with_rust_authored_input(input),
@@ -190,6 +204,17 @@ pub(crate) fn six_axis_appearance_component_builder(
     )
     .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
     .with_selection_policy_defaults(crate::declaration::UiSelectionPolicy::single())
+}
+
+pub(crate) fn single_aspect_appearance_component_builder(
+    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
+    aspect: worth_ui_dsl::UiAppearanceAspect,
+) -> crate::facade::entry::WorthUiApplicationBuilder {
+    appearance_component_builder_with_contract_and_static_token(
+        role,
+        worth_ui_dsl::UiAppearanceAspectContract::component([aspect], []).unwrap(),
+        APPEARANCE_TOKEN,
+    )
 }
 
 fn appearance_component_builder_with_contract_and_static_token(
@@ -260,12 +285,19 @@ fn six_axis_component_appearance_contract() -> worth_ui_dsl::UiAppearanceAspectC
 pub(crate) fn appearance_theme_token(
     token: crate::capability::ThemeTokenId,
 ) -> crate::capability::ThemeTokenDescriptor {
+    appearance_theme_token_with_color(token, "#112233")
+}
+
+pub(crate) fn appearance_theme_token_with_color(
+    token: crate::capability::ThemeTokenId,
+    hex: &str,
+) -> crate::capability::ThemeTokenDescriptor {
     crate::capability::ThemeTokenDescriptor::define(
         token,
         crate::capability::ThemeTokenFamily::surface(),
         crate::capability::ThemeTokenSource::application(),
         crate::capability::ThemeTokenValue::color(
-            crate::capability::ThemeColorValue::hex("#112233").unwrap(),
+            crate::capability::ThemeColorValue::hex(hex).unwrap(),
         ),
     )
 }
@@ -296,6 +328,18 @@ fn static_paint_component_with_contract(
         .with_appearance_aspect_contract(appearance_contract)
 }
 
+pub(crate) fn appearance_fixture(
+    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
+) -> crate::facade::WorthUiRustAuthoredDeclarationFixture {
+    let attachment = worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration::new(
+        role.role().clone(),
+        role.revision(),
+    );
+    crate::facade::WorthUiRustAuthoredDeclarationFixture::named("appearance-consumer-current")
+        .with_appearance_role("appearance/consumer", role.clone())
+        .with_component_appearance_role("appearance/consumer", ACTIVE_COMPONENT, attachment)
+}
+
 #[test]
 fn component_descriptor_rejects_the_actual_backdrop_contract() {
     let token = crate::capability::ThemeTokenId::new(APPEARANCE_TOKEN).unwrap();
@@ -310,18 +354,6 @@ fn component_descriptor_rejects_the_actual_backdrop_contract() {
             crate::capability::ComponentAppearanceAspectContractDenial::BackdropContractOnComponent
         )
     );
-}
-
-pub(crate) fn appearance_fixture(
-    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
-) -> crate::facade::WorthUiRustAuthoredDeclarationFixture {
-    let attachment = worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration::new(
-        role.role().clone(),
-        role.revision(),
-    );
-    crate::facade::WorthUiRustAuthoredDeclarationFixture::named("appearance-consumer-current")
-        .with_appearance_role("appearance/consumer", role.clone())
-        .with_component_appearance_role("appearance/consumer", ACTIVE_COMPONENT, attachment)
 }
 
 fn appearance_fixture_without_attachment() -> crate::facade::WorthUiRustAuthoredDeclarationFixture {
@@ -340,55 +372,4 @@ fn appearance_fixture_without_attachment() -> crate::facade::WorthUiRustAuthored
             )
             .unwrap(),
         )
-}
-
-pub(crate) fn validation_background_role(slot: &str) -> worth_ui_dsl::UiAppearanceRoleDeclaration {
-    validation_background_role_for(
-        slot,
-        worth_ui_dsl::UiAppearanceRoleApplicability::AnyComponent,
-        worth_ui_dsl::UiAppearanceStateAxis::Validation,
-    )
-}
-
-pub(crate) fn validation_background_role_with_axis(
-    slot: &str,
-    axis: worth_ui_dsl::UiAppearanceStateAxis,
-) -> worth_ui_dsl::UiAppearanceRoleDeclaration {
-    validation_background_role_for(
-        slot,
-        worth_ui_dsl::UiAppearanceRoleApplicability::AnyComponent,
-        axis,
-    )
-}
-
-fn validation_background_role_for(
-    slot: &str,
-    applicability: worth_ui_dsl::UiAppearanceRoleApplicability,
-    axis: worth_ui_dsl::UiAppearanceStateAxis,
-) -> worth_ui_dsl::UiAppearanceRoleDeclaration {
-    let contract = worth_ui_dsl::UiAppearanceAspectContract::component(
-        [worth_ui_dsl::UiAppearanceAspect::Background],
-        [],
-    )
-    .unwrap();
-    let partition = worth_ui_dsl::UiAppearancePartitionAuthoring::new([
-        worth_ui_dsl::UiAppearanceAxisDomain::complete(axis),
-    ])
-    .with_cell(
-        worth_ui_dsl::UiAppearanceCell::when([worth_ui_dsl::UiAppearanceAxisPredicate::any(axis)])
-            .uses_slot(
-                worth_ui_dsl::UiThemeSlotIdentity::new(slot).unwrap(),
-                worth_ui_dsl::UiThemeValueKind::Color,
-            ),
-    )
-    .compile(worth_ui_dsl::UiAppearanceAspect::Background)
-    .unwrap();
-    worth_ui_dsl::UiAppearanceRoleDeclaration::admit(
-        worth_ui_dsl::UiAppearanceRoleIdentity::new("test.validation-background").unwrap(),
-        worth_ui_dsl::UiAppearanceRoleRevision::new(1).unwrap(),
-        applicability,
-        &contract,
-        [(worth_ui_dsl::UiAppearanceAspect::Background, partition)],
-    )
-    .unwrap()
 }

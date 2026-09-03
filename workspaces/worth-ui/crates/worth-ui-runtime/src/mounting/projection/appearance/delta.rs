@@ -46,7 +46,10 @@ pub(super) fn work(
     let changes = mechanic_changes(predecessor, successor);
     let semantic_facts_changed = semantic_facts_changed(predecessor, successor);
     let order_changed = predecessor.is_none_or(|predecessor| {
-        predecessor.frame().overlay_order() != successor.frame().overlay_order()
+        !same_overlay_structure(
+            predecessor.frame().overlay_order(),
+            successor.frame().overlay_order(),
+        )
     });
     let mechanics_changed = !changes.is_empty() || order_changed;
     let posture = match predecessor {
@@ -96,6 +99,16 @@ pub(super) fn work(
             order_changed,
         },
     })
+}
+
+fn same_overlay_structure(
+    predecessor: &worth_ui_host_contract::UiMountedOverlayOrderMechanic,
+    successor: &worth_ui_host_contract::UiMountedOverlayOrderMechanic,
+) -> bool {
+    predecessor.semantic_surface() == successor.semantic_surface()
+        && predecessor.portal_revision() == successor.portal_revision()
+        && predecessor.backdrop_revision() == successor.backdrop_revision()
+        && predecessor.bottom_to_top() == successor.bottom_to_top()
 }
 
 pub(super) fn semantic_facts_changed(
