@@ -146,7 +146,7 @@ pub use assembly::{
     UiMountedFramePreparationDenial, UiMountedFrameReceipt, UiMountedFrameRequest,
     UiMountedSurfaceReceipt, UiPreparedMountedFrame,
 };
-pub(crate) use theme_values::{UiMountedPreviewThemeBinding, UiMountedThemeValueSource};
+pub(crate) use theme_values::{UiMountedPreviewThemeObservation, UiMountedThemeValueSource};
 pub use worth_ui_host_contract::{
     UiHostSurfaceBaselineIdentity, UiHostSurfaceIdentity, UiHostSurfacePresentationMode,
     UiMountIncarnation, UiMountedFrameIdentity, UiMountedInstanceIdentity,

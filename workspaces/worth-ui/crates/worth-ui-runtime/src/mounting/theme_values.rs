@@ -1,35 +1,67 @@
-#![allow(
-    dead_code,
-    reason = "Gate 1 retains the mounted preview theme seam for later appearance publication"
-)]
-
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+/// An immutable theme observation admitted by the presentation owner.
+///
+/// It contains only the already-admitted values and revision. The mounted
+/// preview binds it to the surface after mounted identity validation; the
+/// observation cannot resolve a role, select consumers, or publish state.
 #[derive(Clone)]
-pub(crate) struct UiMountedPreviewThemeBinding {
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+pub(crate) struct UiMountedPreviewThemeObservation {
     theme_revision: u64,
     values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
 }
 
-impl UiMountedPreviewThemeBinding {
-    pub(crate) fn from_presentation(
-        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+impl UiMountedPreviewThemeObservation {
+    pub(crate) fn admit_from_presentation(
         theme_revision: u64,
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
     ) -> Self {
         Self {
-            surface,
             theme_revision,
             values,
         }
     }
 
+    pub(crate) fn bind_surface(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> UiMountedPreviewThemeBinding {
+        UiMountedPreviewThemeBinding {
+            surface,
+            theme_revision: self.theme_revision,
+            values: Arc::clone(&self.values),
+        }
+    }
+}
+
+/// An immutable theme observation bound to one mounted-preview surface.
+///
+/// The presentation owner supplies the admitted values. This binding only
+/// lets the preview read those values; it cannot resolve a role, select
+/// consumers, or publish any runtime state.
+#[derive(Clone)]
+pub(crate) struct UiMountedPreviewThemeBinding {
+    #[allow(
+        dead_code,
+        reason = "The existing preview seam carries surface provenance for the later appearance consumer"
+    )]
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    #[allow(
+        dead_code,
+        reason = "The existing preview seam carries theme revision provenance for the later appearance consumer"
+    )]
+    theme_revision: u64,
+    values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
+}
+
+impl UiMountedPreviewThemeBinding {
+    #[cfg(test)]
     pub(crate) const fn surface(&self) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
         self.surface
     }
 
+    #[cfg(test)]
     pub(crate) const fn theme_revision(&self) -> u64 {
         self.theme_revision
     }
@@ -113,11 +145,11 @@ mod tests {
         let value = crate::capability::ThemeTokenValue::color(
             crate::capability::ThemeColorValue::hex("#112233").unwrap(),
         );
-        let binding = UiMountedPreviewThemeBinding::from_presentation(
-            surface,
+        let binding = UiMountedPreviewThemeObservation::admit_from_presentation(
             4,
             Arc::new(BTreeMap::from([(token.clone(), value.clone())])),
-        );
+        )
+        .bind_surface(surface);
         let source = UiMountedThemeValueSource::preview_only(binding.clone());
 
         assert_eq!(binding.surface(), surface);
@@ -145,5 +177,31 @@ mod tests {
         assert_eq!(source.canonical_consumers(), &[selected]);
         assert!(source.is_canonically_selected(selected));
         assert!(!source.is_canonically_selected(unselected));
+    }
+
+    #[test]
+    fn preview_binding_observes_values_without_selecting_consumers() {
+        let surface = worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+        let token = crate::capability::ThemeTokenId::new("preview.observed").unwrap();
+        let value = crate::capability::ThemeTokenValue::color(
+            crate::capability::ThemeColorValue::hex("#445566").unwrap(),
+        );
+        let source = UiMountedThemeValueSource::preview_only(
+            UiMountedPreviewThemeObservation::admit_from_presentation(
+                7,
+                Arc::new(BTreeMap::from([(token.clone(), value)])),
+            )
+            .bind_surface(surface),
+        );
+        let graph_node = crate::graph::UiGraphNodeIdentity::new(7_316);
+
+        assert!(matches!(
+            &source,
+            UiMountedThemeValueSource::PreviewOnly { .. }
+        ));
+        assert!(source.canonical_consumers().is_empty());
+        assert!(!source.is_canonically_selected(graph_node));
+        assert!(!source.uses_frozen_plan());
+        assert!(source.current_value(&token).is_some());
     }
 }

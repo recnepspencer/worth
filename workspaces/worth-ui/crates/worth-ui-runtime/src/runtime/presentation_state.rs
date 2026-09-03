@@ -304,12 +304,10 @@ impl UiApplicationPresentationState {
         )
     }
 
-    pub(crate) fn preview_theme_binding(
+    pub(crate) fn preview_theme_observation(
         &self,
-        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> crate::mounting::UiMountedPreviewThemeBinding {
-        crate::mounting::UiMountedPreviewThemeBinding::from_presentation(
-            surface,
+    ) -> crate::mounting::UiMountedPreviewThemeObservation {
+        crate::mounting::UiMountedPreviewThemeObservation::admit_from_presentation(
             self.theme_revision,
             Arc::clone(&self.token_values),
         )

@@ -12,6 +12,7 @@ pub struct WorthUiPendingMountedPreview<'session> {
     plan_digest: u64,
     transition: crate::runtime::UiPendingMountedPreviewTransition<'session>,
     planning_counters: crate::runtime::UiFrameworkTransitionPlanningCounters,
+    preview_theme_observation: crate::mounting::UiMountedPreviewThemeObservation,
     ports: WorthUiMountedPreviewPorts<'session>,
 }
 
@@ -60,7 +61,6 @@ struct WorthUiMountedPreviewPorts<'session> {
     portal: Option<&'session mut crate::runtime::portal::UiPortalRuntimeState>,
     interaction: &'session mut crate::runtime::interaction::UiInteractionRuntimeState,
     host_exchange: &'session mut crate::host_exchange::WorthUiHostExchangeSessionState,
-    presentation: &'session crate::runtime::presentation_state::UiApplicationPresentationState,
 }
 
 #[derive(Debug, PartialEq)]

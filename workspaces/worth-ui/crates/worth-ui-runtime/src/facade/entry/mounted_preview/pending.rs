@@ -24,6 +24,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             interaction,
             presentation,
         } = self;
+        let preview_theme_observation = presentation.preview_theme_observation();
         match completion.into_pending_mounted_preview() {
             Ok((transition, planning_counters)) => Ok(WorthUiPendingMountedPreview {
                 generation: generation_identity.clone(),
@@ -33,6 +34,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 plan_digest: active_plan_digest,
                 transition,
                 planning_counters,
+                preview_theme_observation,
                 ports: WorthUiMountedPreviewPorts {
                     application_session_identity,
                     generation_identity,
@@ -42,7 +44,6 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                     portal,
                     interaction,
                     host_exchange,
-                    presentation: &*presentation,
                 },
             }),
             Err(completion) => Err(Box::new(Self {
@@ -168,7 +169,7 @@ impl<'session> WorthUiPendingMountedPreview<'session> {
                 portal_overlays: std::rc::Rc::from([]),
                 semantic_content: crate::mounting::UiMountedSemanticContentInput::empty(),
                 theme_values: crate::mounting::UiMountedThemeValueSource::preview_only(
-                    self.ports.presentation.preview_theme_binding(surface),
+                    self.preview_theme_observation.bind_surface(surface),
                 ),
                 font_collection: std::sync::Arc::clone(&self.font_collection),
                 reuse_contract,
