@@ -101,7 +101,7 @@ impl UiApplicationPresentationState {
     pub(crate) fn commit_theme_values(
         &mut self,
         update: UiApplicationThemeValueUpdate,
-        changed_graph_nodes: impl IntoIterator<Item = crate::graph::UiGraphNodeIdentity>,
+        canonical_selection: crate::runtime::appearance::UiAppearanceConsumerSelection,
     ) -> Result<(), ()> {
         if update.predecessor_theme_revision != self.theme_revision {
             return Err(());
@@ -116,7 +116,7 @@ impl UiApplicationPresentationState {
                     .presentation_revision = revision;
             }
             self.theme_revision = update.theme_revision;
-            self.pending_theme_graph_nodes.extend(changed_graph_nodes);
+            self.pending_theme_consumers.merge(canonical_selection);
         }
         Ok(())
     }

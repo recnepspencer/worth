@@ -51,7 +51,8 @@ pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
             return lower_directive(directive).map(Some);
         }
     }
-    if let Some(predecessor) = predecessor.filter(|_| !theme_values.changes_graph_node(graph_node))
+    if let Some(predecessor) =
+        predecessor.filter(|_| !theme_values.is_canonically_selected(graph_node))
     {
         return Ok(Some(predecessor.formatting().clone()));
     }
