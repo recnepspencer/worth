@@ -103,9 +103,9 @@ impl UiPortalOverlayBindingOwner {
         Ok(())
     }
 
-    /// Seal the binding export in one ordered pass over the current Portal
-    /// snapshot. Missing and foreign bindings are checked after that pass so
-    /// their existing denial precedence is preserved.
+    /// Seal the binding export with one ordered pass over the current Portal
+    /// snapshot, then validate bindings in bound portal-identity order. For
+    /// each binding, MissingPortal is checked before ForeignSurface.
     pub(crate) fn export(
         &self,
         snapshot: &UiPortalStackSnapshot,
