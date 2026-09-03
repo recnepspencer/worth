@@ -51,6 +51,7 @@ struct ScriptedPresentationState {
     wrong_next_deregistration_receipt: bool,
     cancellation_calls: Vec<u64>,
     presentation_calls: usize,
+    last_filled_rect_colors: Vec<worth_ui_host_contract::UiMountedRgba8>,
     last_presentation_correlation:
         Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation>,
     next_physical_presentation_sequence: u64,
@@ -93,6 +94,7 @@ impl Default for ScriptedPresentationState {
             wrong_next_deregistration_receipt: false,
             cancellation_calls: Vec::new(),
             presentation_calls: 0,
+            last_filled_rect_colors: Vec::new(),
             last_presentation_correlation: None,
             next_physical_presentation_sequence: 1,
             last_focus_placement: None,
@@ -227,6 +229,10 @@ impl ScriptedPresentationHost {
 
     pub fn presentation_calls(&self) -> usize {
         self.state.lock().unwrap().presentation_calls
+    }
+
+    pub fn last_filled_rect_colors(&self) -> Vec<worth_ui_host_contract::UiMountedRgba8> {
+        self.state.lock().unwrap().last_filled_rect_colors.clone()
     }
 
     pub fn last_presentation_correlation(

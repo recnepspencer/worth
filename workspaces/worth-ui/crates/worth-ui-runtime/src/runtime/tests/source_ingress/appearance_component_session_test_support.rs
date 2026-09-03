@@ -343,31 +343,50 @@ fn appearance_fixture_without_attachment() -> crate::facade::WorthUiRustAuthored
 }
 
 pub(crate) fn validation_background_role(slot: &str) -> worth_ui_dsl::UiAppearanceRoleDeclaration {
+    validation_background_role_for(
+        slot,
+        worth_ui_dsl::UiAppearanceRoleApplicability::AnyComponent,
+        worth_ui_dsl::UiAppearanceStateAxis::Validation,
+    )
+}
+
+pub(crate) fn validation_background_role_with_axis(
+    slot: &str,
+    axis: worth_ui_dsl::UiAppearanceStateAxis,
+) -> worth_ui_dsl::UiAppearanceRoleDeclaration {
+    validation_background_role_for(
+        slot,
+        worth_ui_dsl::UiAppearanceRoleApplicability::AnyComponent,
+        axis,
+    )
+}
+
+fn validation_background_role_for(
+    slot: &str,
+    applicability: worth_ui_dsl::UiAppearanceRoleApplicability,
+    axis: worth_ui_dsl::UiAppearanceStateAxis,
+) -> worth_ui_dsl::UiAppearanceRoleDeclaration {
     let contract = worth_ui_dsl::UiAppearanceAspectContract::component(
         [worth_ui_dsl::UiAppearanceAspect::Background],
         [],
     )
     .unwrap();
     let partition = worth_ui_dsl::UiAppearancePartitionAuthoring::new([
-        worth_ui_dsl::UiAppearanceAxisDomain::complete(
-            worth_ui_dsl::UiAppearanceStateAxis::Validation,
-        ),
+        worth_ui_dsl::UiAppearanceAxisDomain::complete(axis),
     ])
     .with_cell(
-        worth_ui_dsl::UiAppearanceCell::when([worth_ui_dsl::UiAppearanceAxisPredicate::any(
-            worth_ui_dsl::UiAppearanceStateAxis::Validation,
-        )])
-        .uses_slot(
-            worth_ui_dsl::UiThemeSlotIdentity::new(slot).unwrap(),
-            worth_ui_dsl::UiThemeValueKind::Color,
-        ),
+        worth_ui_dsl::UiAppearanceCell::when([worth_ui_dsl::UiAppearanceAxisPredicate::any(axis)])
+            .uses_slot(
+                worth_ui_dsl::UiThemeSlotIdentity::new(slot).unwrap(),
+                worth_ui_dsl::UiThemeValueKind::Color,
+            ),
     )
     .compile(worth_ui_dsl::UiAppearanceAspect::Background)
     .unwrap();
     worth_ui_dsl::UiAppearanceRoleDeclaration::admit(
         worth_ui_dsl::UiAppearanceRoleIdentity::new("test.validation-background").unwrap(),
         worth_ui_dsl::UiAppearanceRoleRevision::new(1).unwrap(),
-        worth_ui_dsl::UiAppearanceRoleApplicability::AnyComponent,
+        applicability,
         &contract,
         [(worth_ui_dsl::UiAppearanceAspect::Background, partition)],
     )

@@ -16,6 +16,7 @@ impl ScriptedPresentationHost {
         let (outcome, queued_observation, queued_measurement) = {
             let mut state = self.state.lock().unwrap();
             state.presentation_calls += 1;
+            state.last_filled_rect_colors = filled_rect_colors(request.presentation_work());
             let mut requested_portal_commands = state.requested_portal_overlay_commands.clone();
             match request.presentation_work() {
                 worth_ui_host_contract::UiMountedPresentationWorkView::Initial(work) => {
@@ -135,6 +136,49 @@ impl ScriptedPresentationHost {
             .observation_events
             .push("presentation-exit");
         outcome
+    }
+}
+
+fn filled_rect_colors(
+    work: worth_ui_host_contract::UiMountedPresentationWorkView<'_>,
+) -> Vec<worth_ui_host_contract::UiMountedRgba8> {
+    match work {
+        worth_ui_host_contract::UiMountedPresentationWorkView::Initial(work) => work
+            .commands()
+            .iter()
+            .filter_map(filled_rect_color)
+            .collect(),
+        worth_ui_host_contract::UiMountedPresentationWorkView::Delta(work) => work
+            .changes()
+            .iter()
+            .filter_map(|change| match change {
+                worth_ui_host_contract::UiMountedPaintCommandChange::Insert(command)
+                | worth_ui_host_contract::UiMountedPaintCommandChange::Replace {
+                    successor: command,
+                    ..
+                } => filled_rect_color(command),
+                worth_ui_host_contract::UiMountedPaintCommandChange::Remove(_) => None,
+            })
+            .collect(),
+        worth_ui_host_contract::UiMountedPresentationWorkView::Reconstruction(work) => work
+            .commands()
+            .iter()
+            .filter_map(filled_rect_color)
+            .collect(),
+        worth_ui_host_contract::UiMountedPresentationWorkView::Sample(_)
+        | worth_ui_host_contract::UiMountedPresentationWorkView::Unchanged(_) => Vec::new(),
+    }
+}
+
+fn filled_rect_color(
+    command: &worth_ui_host_contract::UiMountedPaintCommand,
+) -> Option<worth_ui_host_contract::UiMountedRgba8> {
+    match command {
+        worth_ui_host_contract::UiMountedPaintCommand::FilledRect { mechanic, .. } => {
+            Some(mechanic.color())
+        }
+        worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay { .. }
+        | worth_ui_host_contract::UiMountedPaintCommand::SemanticText { .. } => None,
     }
 }
 

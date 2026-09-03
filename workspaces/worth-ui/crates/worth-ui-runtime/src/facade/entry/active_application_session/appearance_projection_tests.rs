@@ -3,7 +3,7 @@ use crate::runtime::tests::appearance_component_session_test_support as support;
 #[test]
 fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
     let role = support::validation_background_role(support::APPEARANCE_TOKEN);
-    let mut session = theme_session(&role);
+    let (mut session, host) = theme_session(&role);
     let initial_observation = support::attached_appearance_candidate_submission(
         &session,
         "appearance-production-initial",
@@ -122,6 +122,11 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         outcome,
         crate::mounting::UiMountedFrameOutcome::Published(_)
     ));
+    let static_paint_colors = host.last_filled_rect_colors();
+    assert!(!static_paint_colors.is_empty());
+    assert!(static_paint_colors
+        .iter()
+        .all(|color| color.channels() == [17, 34, 51, 255]));
 
     let world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
         session.session_identity().as_u64(),
@@ -166,10 +171,168 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
     let _ = session.shutdown();
 }
 
+#[test]
+fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
+    let role = support::validation_background_role_with_axis(
+        support::APPEARANCE_TOKEN,
+        worth_ui_dsl::UiAppearanceStateAxis::Hover,
+    );
+    let (mut session, _host) = theme_session(&role);
+    let initial_observation = support::appearance_candidate_submission(
+        &session,
+        "appearance-production-denial",
+        Some(&role),
+    );
+    let mut initial_turn = session.begin_observation_turn().unwrap();
+    initial_turn.admit_source(initial_observation).unwrap();
+    let initial_admitted = initial_turn.seal().unwrap();
+    session.classify_observations(initial_admitted).unwrap();
+    assert!(session.has_appearance_owner_snapshot_for_test());
+    let surface = session.create_semantic_surface().unwrap();
+    session
+        .register_host_surface(
+            surface,
+            crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
+            crate::facade::mounted::UiSurfaceBindingProfile::new(
+                1_000,
+                crate::facade::mounted::UiSurfaceBindingCoordinatePosture::LogicalPoints,
+                1,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    let graph_nodes = {
+        let graph = session.graph();
+        graph
+            .node_identities()
+            .filter_map(|identity| {
+                let lookup = graph.lookup().graph_node(identity)?;
+                let semantic = lookup
+                    .value()
+                    .declaration_identity()
+                    .authored_semantic_name()
+                    .to_owned();
+                (semantic != "worth_ui.runtime.bootstrap.product_root")
+                    .then(|| (identity, Box::<str>::from(semantic)))
+            })
+            .collect::<Vec<_>>()
+    };
+    for (graph_node, authored_semantic_identity) in graph_nodes {
+        session
+            .register_application_semantic_text(authored_semantic_identity, graph_node)
+            .unwrap();
+        let mounted_node = session.mounted_graph_node(graph_node).unwrap();
+        session.mount_instance(mounted_node, surface).unwrap();
+    }
+    let graph_node = session
+        .graph()
+        .snapshot()
+        .nodes()
+        .iter()
+        .find(|node| node.appearance_role_attachment().is_some())
+        .expect("the production fixture has one appearance consumer")
+        .graph_node_identity();
+    let capability = session.host_measurement_capability();
+    let assumptions = crate::host::UiHostMeasurementAssumptionProfile::from_capability_report(
+        capability.capability_report(),
+        1,
+        2,
+        3,
+        4,
+    );
+    let allocation_receipt = session
+        .establish_mounted_allocation_catalog(
+            1,
+            [
+                crate::facade::entry::UiMountedAllocationMeasurementRequest::new(
+                    worth_ui_host_contract::UiMeasurementEvidenceFamily::ViewportExtent,
+                    crate::host::UiHostMeasurementNeed::ViewportExtent(
+                        worth_ui_host_contract::UiViewportExtentRequest,
+                    ),
+                    crate::host::UiHostMeasurementNormalizationContext::viewport_logical_exact(
+                        assumptions,
+                    ),
+                ),
+            ],
+        )
+        .expect("mounted allocation should commit before the denied appearance attempt");
+    assert!(allocation_receipt
+        .committed()
+        .receipts()
+        .iter()
+        .any(|receipt| receipt.identity().graph_node_identity() == graph_node));
+    session.advance_mounted_identity_frame().unwrap();
+
+    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
+    let value = crate::capability::ThemeTokenValue::color(
+        crate::capability::ThemeColorValue::hex("#405060").unwrap(),
+    );
+    let change = super::super::UiNativeThemeTokenValueChange::new(token, value).unwrap();
+    session.admit_application_theme_values(&[change]).unwrap();
+    assert!(!session
+        .complete_application_theme_values_source()
+        .canonical_consumers()
+        .is_empty());
+
+    let outcome = session
+        .execute_mounted_frame(
+            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
+            worth_ui_host_contract::UiPresentationDeadline::at_tick(100),
+            1,
+            |_| {},
+        )
+        .unwrap_or_else(|_| panic!("the production frame should retain the appearance denial"));
+    assert!(matches!(
+        outcome,
+        crate::mounting::UiMountedFrameOutcome::Published(_)
+    ));
+
+    let world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
+        session.session_identity().as_u64(),
+        session
+            .active_generation_identity()
+            .prepared_generation()
+            .semantic_package_identity()
+            .narrowing_fingerprint(),
+        surface.diagnostic_value(),
+    );
+    let query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
+        world,
+        graph_node.digest(),
+        worth_ui_dsl::UiAppearanceAspect::Background,
+    );
+    let explanation = match session.why_appearance(query) {
+        worth_ui_inspection::UiAppearanceInspectionOutcome::Found(explanation) => explanation,
+        outcome => panic!("first appearance denial was not inspected: {outcome:?}"),
+    };
+    assert_eq!(
+        explanation.invalidation_cause(),
+        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::DeniedBeforeEffects
+    );
+    assert_eq!(
+        explanation.value(),
+        worth_ui_inspection::UiAppearanceInspectionValue::Missing
+    );
+    assert_eq!(
+        explanation.mounted_mechanic(),
+        worth_ui_inspection::UiAppearanceInspectionMountedMechanic::NotAttempted
+    );
+    assert_eq!(
+        explanation.physical_suppression(),
+        worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotAttempted
+    );
+
+    let _ = session.shutdown();
+}
+
 fn theme_session(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
-) -> crate::facade::WorthUiActiveApplicationSession {
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    crate::certification_support::ScriptedPresentationHost,
+) {
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
+    let host_observer = host.clone();
     host.set_capabilities(
         worth_ui_host_contract::WorthUiHostCapabilityReport::available(vec![
             worth_ui_host_contract::WorthUiHostCapability::NativePaint,
@@ -178,7 +341,7 @@ fn theme_session(
             worth_ui_host_contract::WorthUiHostCapability::PortalAnchorObservation,
         ]),
     );
-    support::legacy_static_paint_appearance_component_builder(role)
+    let session = support::legacy_static_paint_appearance_component_builder(role)
         .register_appearance_theme_bundle(theme_bundle())
         .unwrap()
         .with_rust_authored_declaration_fixture(support::appearance_fixture(role))
@@ -192,7 +355,8 @@ fn theme_session(
         })
         .expect("appearance capability fixture should prepare")
         .launch()
-        .expect("appearance capability fixture should launch")
+        .expect("appearance capability fixture should launch");
+    (session, host_observer)
 }
 
 fn theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabilities {
