@@ -24,31 +24,15 @@ impl UiAppearanceConsumerSelection {
         capability_identity: &str,
         authored_identity: &str,
     ) -> Self {
-        let fact = crate::fact_contract::UiProducedFact::AuthoredSource(
-            crate::fact_contract::UiAuthoredChangedFact::new(
-                crate::fact_contract::UiAuthoredFactSelector::node(authored_identity),
-                crate::fact_contract::UiAuthoredFactKind::SemanticsChanged,
-            ),
-        );
-        let consumers = index
-            .lookup_retained(&fact)
-            .map(|receipt| {
-                receipt
-                    .entries()
-                    .iter()
-                    .filter(|entry| {
-                        entry
-                            .consumption_relation()
-                            .matches_theme_token(capability_identity, authored_identity)
-                    })
-                    .filter_map(|entry| match entry.consumer() {
-                        crate::graph::UiGraphFactConsumerIdentity::GraphNode(node) => Some(node),
-                        crate::graph::UiGraphFactConsumerIdentity::MountEligibilitySlot(_) => None,
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
-        Self::from_nodes(consumers.into_boxed_slice())
+        let consumers = match index.select_appearance_slot_consumers(
+            index.basis(),
+            capability_identity,
+            authored_identity,
+        ) {
+            Ok(consumers) => consumers,
+            Err(_) => return Self::unavailable(),
+        };
+        Self::from_nodes(consumers)
     }
 
     fn from_nodes(consumers: Box<[crate::graph::UiGraphNodeIdentity]>) -> Self {
@@ -58,6 +42,13 @@ impl UiAppearanceConsumerSelection {
         Self {
             consumers: consumers.into_boxed_slice(),
             reconstructible: true,
+        }
+    }
+
+    fn unavailable() -> Self {
+        Self {
+            consumers: Box::new([]),
+            reconstructible: false,
         }
     }
 

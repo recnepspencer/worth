@@ -206,6 +206,109 @@ fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
     assert_ne!(attached, peer);
 }
 
+#[test]
+fn canonical_slot_selection_exposes_unknown_authored_fact_denial() {
+    let app = role_only_app();
+    let authority = app.prepared_authority();
+    let index = authority.consumed_fact_index();
+    let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
+    let denial = index.select_appearance_slot_consumers(
+        index.basis(),
+        slot.as_str(),
+        "theme.pulse.missing",
+    );
+
+    assert_eq!(
+        denial,
+        Err(crate::graph::UiGraphFactLookupDenial::UnknownAuthoredDeclaration {
+            authored_identity: "theme.pulse.missing".into(),
+        })
+    );
+    let selection = crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
+        index,
+        slot.as_str(),
+        "theme.pulse.missing",
+    );
+    assert!(!selection.is_reconstructible());
+    assert_eq!(selection.selected_count(), 0);
+}
+
+#[test]
+fn canonical_slot_selection_rebuild_matches_authoritative_graph_fact_oracle() {
+    let mut app = role_only_app();
+    let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
+    let expected = {
+        let authority = app.prepared_authority();
+        authoritative_role_slot_consumers(
+            authority.graph_snapshot(),
+            authority.capabilities(),
+            slot.as_str(),
+        )
+    };
+    assert_eq!(
+        expected.len(),
+        1,
+        "the attached role is the only slot consumer"
+    );
+
+    let before_rebuild = {
+        let authority = app.prepared_authority();
+        crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
+            authority.consumed_fact_index(),
+            slot.as_str(),
+            slot.as_str(),
+        )
+        .consumers()
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>()
+    };
+    assert_eq!(before_rebuild, expected);
+
+    app.rebuild_prepared_derived_indexes();
+
+    let after_rebuild = {
+        let authority = app.prepared_authority();
+        crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
+            authority.consumed_fact_index(),
+            slot.as_str(),
+            slot.as_str(),
+        )
+        .consumers()
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>()
+    };
+    assert_eq!(after_rebuild, expected);
+}
+
+fn authoritative_role_slot_consumers(
+    snapshot: &crate::graph::UiGraphSnapshot,
+    capabilities: &crate::capability::CapabilitySnapshot,
+    slot: &str,
+) -> BTreeSet<crate::graph::UiGraphNodeIdentity> {
+    snapshot
+        .nodes()
+        .iter()
+        .filter_map(|node| {
+            let attachment = node.appearance_role_attachment()?;
+            if node.component_reference() != Some(attachment.target()) {
+                return None;
+            }
+            let role = capabilities.appearance_roles().get(attachment.role())?;
+            if role.aspect_contract() != attachment.aspect_contract()
+                || role.revision() != attachment.revision()
+            {
+                return None;
+            }
+            role.slot_uses()
+                .iter()
+                .any(|slot_use| slot_use.slot().as_str() == slot)
+                .then_some(node.graph_node_identity())
+        })
+        .collect()
+}
+
 fn role_only_app() -> crate::facade::WorthUiApp {
     crate::declaration::appearance_fact_index_test_support::role_only_fact_index_app(
         "role-only-fact-index",
