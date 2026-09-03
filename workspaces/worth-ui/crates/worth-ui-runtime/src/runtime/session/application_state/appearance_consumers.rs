@@ -25,14 +25,17 @@ impl WorthUiApplicationSessionState {
     pub(crate) fn appearance_slot_consumers(
         &self,
         slot: &worth_ui_dsl::UiThemeSlotIdentity,
-    ) -> crate::runtime::appearance::UiAppearanceConsumerSelection {
+    ) -> Result<
+        crate::runtime::appearance::UiAppearanceConsumerSelection,
+        crate::graph::UiGraphFactLookupDenial,
+    > {
         let prepared = self.app.prepared_authority();
         let declarations = prepared.authored_declaration_lookup();
         let authored_identity = declarations
             .theme_token_declaration_identity(slot.as_str())
             .unwrap_or(slot.as_str());
         let index = prepared.consumed_fact_index();
-        crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
+        crate::runtime::appearance::UiAppearanceConsumerSelection::try_for_slot(
             index,
             slot.as_str(),
             authored_identity,

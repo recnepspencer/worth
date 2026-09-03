@@ -15,7 +15,6 @@ mod rebind_planning;
 mod rebind_publication;
 mod replacement;
 mod selection_mapping;
-mod theme_token_consumers;
 
 pub(crate) use selection_mapping::UiDeclaredSelectionMappingDenial;
 

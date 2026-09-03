@@ -25,7 +25,7 @@ fn complete_projection_retains_current_paint_after_incremental_projection_commit
         resolved_targets: BTreeMap::from([(token.clone(), token.clone())]),
         mutable_token_revisions: BTreeMap::from([(token.clone(), 1)]),
         theme_revision: 0,
-        pending_theme_graph_nodes: Default::default(),
+        pending_theme_consumers: crate::runtime::appearance::UiAppearanceConsumerSelection::empty(),
         appearance_theme_state: Default::default(),
     };
 
@@ -89,7 +89,7 @@ fn theme_update_is_transactional_and_fans_out_to_alias_consumers() {
         ]),
         mutable_token_revisions: BTreeMap::from([(root.clone(), 0)]),
         theme_revision: 0,
-        pending_theme_graph_nodes: Default::default(),
+        pending_theme_consumers: crate::runtime::appearance::UiAppearanceConsumerSelection::empty(),
         appearance_theme_state: Default::default(),
     };
 
@@ -101,7 +101,10 @@ fn theme_update_is_transactional_and_fans_out_to_alias_consumers() {
         .expect("current revision prepares");
     assert_eq!(update.changed_tokens(), &[alias.clone(), root.clone()]);
     state
-        .commit_theme_values(update, [node])
+        .commit_theme_values(
+            update,
+            crate::runtime::appearance::UiAppearanceConsumerSelection::for_test([node]),
+        )
         .expect("prepared transaction commits");
 
     assert_eq!(state.token_values.get(&root), Some(&successor));
@@ -109,7 +112,7 @@ fn theme_update_is_transactional_and_fans_out_to_alias_consumers() {
     assert_eq!(state.mutable_token_revisions.get(&root), Some(&1));
     assert_eq!(state.theme_revision, 1);
     assert_eq!(state.rows["component:test"].presentation_revision, 3);
-    assert!(state.pending_theme_graph_nodes.contains(&node));
+    assert_eq!(state.theme_values_source().canonical_consumers(), &[node]);
 
     let before_values = Arc::clone(&state.token_values);
     let before_revisions = state.mutable_token_revisions.clone();

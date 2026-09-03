@@ -44,9 +44,9 @@ impl UiMountedPreviewThemeBinding {
 
 #[derive(Clone)]
 pub(crate) enum UiMountedThemeValueSource {
-    ActiveCurrent {
+    CanonicalSelection {
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-        changed_graph_nodes: Arc<[crate::graph::UiGraphNodeIdentity]>,
+        selection: crate::runtime::appearance::UiAppearanceConsumerSelection,
     },
     ReplacementCandidateFrozenPlan,
     PreviewOnly {
@@ -55,17 +55,11 @@ pub(crate) enum UiMountedThemeValueSource {
 }
 
 impl UiMountedThemeValueSource {
-    pub(crate) fn current(
+    pub(crate) fn from_canonical_selection(
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-        changed_graph_nodes: impl IntoIterator<Item = crate::graph::UiGraphNodeIdentity>,
+        selection: crate::runtime::appearance::UiAppearanceConsumerSelection,
     ) -> Self {
-        let mut changed_graph_nodes = changed_graph_nodes.into_iter().collect::<Vec<_>>();
-        changed_graph_nodes.sort();
-        changed_graph_nodes.dedup();
-        Self::ActiveCurrent {
-            values,
-            changed_graph_nodes: changed_graph_nodes.into(),
-        }
+        Self::CanonicalSelection { values, selection }
     }
 
     pub(crate) const fn replacement_candidate_frozen_plan() -> Self {
@@ -81,7 +75,7 @@ impl UiMountedThemeValueSource {
         token: &crate::capability::ThemeTokenId,
     ) -> Option<&crate::capability::ThemeTokenValue> {
         match self {
-            Self::ActiveCurrent { values, .. } => values.get(token),
+            Self::CanonicalSelection { values, .. } => values.get(token),
             Self::PreviewOnly { binding } => binding.current_value(token),
             Self::ReplacementCandidateFrozenPlan => None,
         }
@@ -91,18 +85,18 @@ impl UiMountedThemeValueSource {
         matches!(self, Self::ReplacementCandidateFrozenPlan)
     }
 
-    pub(crate) fn changed_graph_nodes(&self) -> &[crate::graph::UiGraphNodeIdentity] {
+    pub(crate) fn canonical_consumers(&self) -> &[crate::graph::UiGraphNodeIdentity] {
         match self {
-            Self::ActiveCurrent {
-                changed_graph_nodes,
-                ..
-            } => changed_graph_nodes,
+            Self::CanonicalSelection { selection, .. } => selection.consumers(),
             Self::ReplacementCandidateFrozenPlan | Self::PreviewOnly { .. } => &[],
         }
     }
 
-    pub(crate) fn changes_graph_node(&self, graph_node: crate::graph::UiGraphNodeIdentity) -> bool {
-        self.changed_graph_nodes()
+    pub(crate) fn is_canonically_selected(
+        &self,
+        graph_node: crate::graph::UiGraphNodeIdentity,
+    ) -> bool {
+        self.canonical_consumers()
             .binary_search(&graph_node)
             .is_ok()
     }
@@ -130,5 +124,26 @@ mod tests {
         assert_eq!(binding.theme_revision(), 4);
         assert_eq!(source.current_value(&token), Some(&value));
         assert!(!source.uses_frozen_plan());
+    }
+
+    #[test]
+    fn active_values_expose_only_the_canonical_consumer_selection() {
+        let token = crate::capability::ThemeTokenId::new("theme.current").unwrap();
+        let value = crate::capability::ThemeTokenValue::color(
+            crate::capability::ThemeColorValue::hex("#112233").unwrap(),
+        );
+        let selected = crate::graph::UiGraphNodeIdentity::new(92_001);
+        let unselected = crate::graph::UiGraphNodeIdentity::new(92_002);
+        let selection =
+            crate::runtime::appearance::UiAppearanceConsumerSelection::for_test([selected]);
+        let source = UiMountedThemeValueSource::from_canonical_selection(
+            Arc::new(BTreeMap::from([(token.clone(), value.clone())])),
+            selection,
+        );
+
+        assert_eq!(source.current_value(&token), Some(&value));
+        assert_eq!(source.canonical_consumers(), &[selected]);
+        assert!(source.is_canonically_selected(selected));
+        assert!(!source.is_canonically_selected(unselected));
     }
 }

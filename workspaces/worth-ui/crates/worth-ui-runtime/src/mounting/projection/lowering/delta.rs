@@ -68,7 +68,7 @@ impl UiMountedDeltaScope {
         let theme_affected = input
             .state
             .try_projection_instances_for_graph_nodes(
-                input.lowering.theme_values.changed_graph_nodes(),
+                input.lowering.theme_values.canonical_consumers(),
             )
             .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
         let mut changed = input.changes.changed_instances().collect::<Vec<_>>();
@@ -93,7 +93,7 @@ impl UiMountedDeltaScope {
                 || input.changes.retired_instances().next().is_some()
                 || input.changes.order_changed()
                 || !input.lowering.semantic_content.is_empty()
-                || !input.lowering.theme_values.changed_graph_nodes().is_empty(),
+                || !input.lowering.theme_values.canonical_consumers().is_empty(),
             allocation_delta_observed: input.allocation_delta.journal_entries_touched() > 0
                 || !input.allocation_delta.changed_graph_nodes().is_empty(),
             initial_index_entries,

@@ -18,7 +18,7 @@ pub(crate) struct UiApplicationPresentationState {
     resolved_targets: BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenId>,
     mutable_token_revisions: BTreeMap<crate::capability::ThemeTokenId, u64>,
     theme_revision: u64,
-    pending_theme_graph_nodes: std::collections::BTreeSet<crate::graph::UiGraphNodeIdentity>,
+    pending_theme_consumers: crate::runtime::appearance::UiAppearanceConsumerSelection,
     #[allow(
         dead_code,
         reason = "milestone 3.16 Gate 0 places the future binding owner without activating switching"
@@ -89,7 +89,8 @@ impl UiApplicationPresentationState {
             resolved_targets,
             mutable_token_revisions,
             theme_revision: 0,
-            pending_theme_graph_nodes: Default::default(),
+            pending_theme_consumers:
+                crate::runtime::appearance::UiAppearanceConsumerSelection::empty(),
             appearance_theme_state: None,
         }
     }
@@ -297,7 +298,10 @@ impl UiApplicationPresentationState {
     }
 
     pub(crate) fn theme_values_source(&self) -> crate::mounting::UiMountedThemeValueSource {
-        self.theme_values_source_with_graph_nodes(self.pending_theme_graph_nodes.iter().copied())
+        crate::mounting::UiMountedThemeValueSource::from_canonical_selection(
+            Arc::clone(&self.token_values),
+            self.pending_theme_consumers.clone(),
+        )
     }
 
     pub(crate) fn preview_theme_binding(
@@ -311,20 +315,6 @@ impl UiApplicationPresentationState {
         )
     }
 
-    pub(crate) fn theme_values_source_with_graph_nodes(
-        &self,
-        graph_nodes: impl IntoIterator<Item = crate::graph::UiGraphNodeIdentity>,
-    ) -> crate::mounting::UiMountedThemeValueSource {
-        crate::mounting::UiMountedThemeValueSource::current(
-            Arc::clone(&self.token_values),
-            graph_nodes,
-        )
-    }
-
-    pub(crate) fn theme_token_ids(&self) -> impl Iterator<Item = &crate::capability::ThemeTokenId> {
-        self.token_values.keys()
-    }
-
     pub(crate) fn commit(&mut self, projection: &UiApplicationPresentationProjection) {
         for (identity, revision) in &projection.revisions {
             if let Some(row) = self.rows.get_mut(identity.as_ref()) {
@@ -334,7 +324,8 @@ impl UiApplicationPresentationState {
             }
         }
         if self.theme_revision == projection.theme_revision {
-            self.pending_theme_graph_nodes.clear();
+            self.pending_theme_consumers =
+                crate::runtime::appearance::UiAppearanceConsumerSelection::empty();
         }
     }
 }

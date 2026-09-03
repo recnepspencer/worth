@@ -6,25 +6,23 @@ impl WorthUiActiveApplicationSession {
         changes: &[super::super::UiNativeThemeTokenValueChange],
     ) -> Result<(), ()> {
         let update = self.presentation.prepare_theme_values(changes)?;
-        let mut changed_graph_nodes = Vec::new();
+        let mut canonical_selection =
+            crate::runtime::appearance::UiAppearanceConsumerSelection::empty();
         for token in update.changed_tokens() {
-            changed_graph_nodes
-                .extend_from_slice(&self.application.theme_token_graph_consumers(token));
+            let slot = worth_ui_dsl::UiThemeSlotIdentity::new(token.as_str()).ok_or(())?;
+            canonical_selection.merge(
+                self.application
+                    .appearance_slot_consumers(&slot)
+                    .map_err(|_| ())?,
+            );
         }
-        changed_graph_nodes.sort();
-        changed_graph_nodes.dedup();
         self.presentation
-            .commit_theme_values(update, changed_graph_nodes)
+            .commit_theme_values(update, canonical_selection)
     }
 
     pub(crate) fn complete_application_theme_values_source(
         &self,
     ) -> crate::mounting::UiMountedThemeValueSource {
-        let mut graph_nodes = Vec::new();
-        for token in self.presentation.theme_token_ids() {
-            graph_nodes.extend_from_slice(&self.application.theme_token_graph_consumers(token));
-        }
-        self.presentation
-            .theme_values_source_with_graph_nodes(graph_nodes)
+        self.presentation.theme_values_source()
     }
 }

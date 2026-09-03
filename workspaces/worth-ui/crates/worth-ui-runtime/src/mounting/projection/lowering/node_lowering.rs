@@ -46,7 +46,7 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
                     semantic_input_available: semantic_input.is_some(),
                     theme_value_changed: self
                         .theme_values
-                        .changes_graph_node(instance.graph_node_identity()),
+                        .is_canonically_selected(instance.graph_node_identity()),
                 },
             );
         }
