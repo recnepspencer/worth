@@ -55,6 +55,16 @@ fn real_wui_preview_records_and_publishes_through_the_mounted_contract() {
         .iter()
         .filter(|cell| cell.lane() != UiMountedLaneParticipation::Preview)
         .all(|cell| cell.status() == UiRequiredLaneContributionStatus::ExplicitEmpty));
+    assert_eq!(
+        frame
+            .manifest()
+            .lane_contributions()
+            .iter()
+            .filter(|cell| cell.lane() == UiMountedLaneParticipation::Preview)
+            .count(),
+        1,
+        "the existing mounted-preview contract has one preview lane"
+    );
     assert!(matches!(
         frame.surfaces()[0].projection().nodes()[0].preview(),
         UiMountedPreviewProjection::Resize {
