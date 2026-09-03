@@ -21,12 +21,18 @@ pub(crate) struct UiAppearanceChangeReceipt {
     mounting_result_available: bool,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiAppearanceMountAffinity {
+    pub(crate) session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+    pub(crate) generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     pub(crate) frame: worth_ui_host_contract::UiMountedFrameIdentity,
     pub(crate) surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     pub(crate) graph_node: UiGraphNodeIdentity,
     pub(crate) mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    pub(crate) incarnation: worth_ui_host_contract::UiMountIncarnation,
+    pub(crate) node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+    pub(crate) issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
+    pub(crate) presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,15 +40,41 @@ pub(crate) enum UiAppearanceMountAffinityDenial {
     SuccessorFrameMismatch,
     SuccessorSurfaceMismatch,
     SuccessorNodeMismatch,
+    SuccessorSessionMismatch,
+    SuccessorGenerationMismatch,
+    SuccessorIncarnationMismatch,
+    SuccessorReceiptMismatch,
+    IssuerMismatch,
+    PresentationAttemptUnavailable,
 }
 
 impl UiAppearanceChangeReceipt {
+    pub(crate) const fn for_denial() -> Self {
+        Self {
+            input_evidence_changed: false,
+            semantic_projection_changed: false,
+            resolved_aspect_value_changed: false,
+            mounted_mechanical_output_changed: false,
+            equal_output_suppressed: false,
+            denied_before_effects: true,
+            mounting_result_available: false,
+        }
+    }
+
     pub(crate) fn from_resolved_mount(
         predecessor: Option<&super::UiAppearanceProjection>,
         successor: &super::UiAppearanceProjection,
         mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
         affinity: UiAppearanceMountAffinity,
     ) -> Result<Self, UiAppearanceMountAffinityDenial> {
+        if affinity.presentation.diagnostic_value() == 0 {
+            return Err(UiAppearanceMountAffinityDenial::PresentationAttemptUnavailable);
+        }
+        if affinity.issuer.frame_identity() != affinity.frame
+            || affinity.issuer.receipt_for(affinity.mounted_instance) != affinity.node_receipt
+        {
+            return Err(UiAppearanceMountAffinityDenial::IssuerMismatch);
+        }
         if mounting.successor().frame() != affinity.frame {
             return Err(UiAppearanceMountAffinityDenial::SuccessorFrameMismatch);
         }
@@ -51,6 +83,12 @@ impl UiAppearanceChangeReceipt {
         }
         if successor.state().basis().graph_node() != affinity.graph_node {
             return Err(UiAppearanceMountAffinityDenial::SuccessorNodeMismatch);
+        }
+        if successor.state().basis().session() != affinity.session {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorSessionMismatch);
+        }
+        if successor.state().basis().generation() != &affinity.generation {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorGenerationMismatch);
         }
         if mounting.successor().mechanics().iter().any(|mechanic| {
             mechanic_identity_instance(mechanic)
@@ -62,6 +100,12 @@ impl UiAppearanceChangeReceipt {
             || successor.state().basis().mounted_instance() != affinity.mounted_instance
         {
             return Err(UiAppearanceMountAffinityDenial::SuccessorNodeMismatch);
+        }
+        if successor.state().basis().incarnation() != affinity.incarnation {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorIncarnationMismatch);
+        }
+        if successor.state().basis().node_receipt() != affinity.node_receipt {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorReceiptMismatch);
         }
         let Some(predecessor) = predecessor else {
             return Ok(Self {

@@ -14,26 +14,26 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
     let radii = UiAppearanceNormalizedLogicalRadii::normalize(bounds, [zero; 4]);
     let projection =
         UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 21, 4).unwrap();
-    let node = UiMountedAppearanceNodeInput::new(
+    let node = UiMountedAppearanceNodeInput {
         issuer,
-        surface,
-        receipt,
+        semantic_surface: surface,
+        node_receipt: receipt,
         projection,
         bounds,
-        UiAppearanceClip::new(0, 0, 100, 70).unwrap(),
-        UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+        clip: UiAppearanceClip::new(0, 0, 100, 70).unwrap(),
+        layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
         radii,
-        Some(UiMountedSurfacePaint::Fill(
+        surface_paint: Some(UiMountedSurfacePaint::Fill(
             UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 255]),
         )),
-        None,
-        [],
-        None,
-        UiMountedAppearanceOpacity::ONE,
-        None,
-        13,
-        Some(portal),
-    );
+        outline: None,
+        text_foregrounds: Box::new([]),
+        pointer: None,
+        appearance_opacity: UiMountedAppearanceOpacity::ONE,
+        motion_opacity: None,
+        semantic_digest: 13,
+        portal_instance: Some(portal),
+    };
     let placement = UiOverlayPlacementReceipt::from_runtime_overlay_order(7, 0).unwrap();
     let identity = UiMountedBackdropIdentity::from_runtime_mounting(
         "dialog.backdrop",
@@ -41,19 +41,21 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
         1,
     )
     .unwrap();
-    let backdrop = UiMountedAppearanceBackdropInput::new(
-        identity.clone(),
-        surface,
+    let backdrop = UiMountedAppearanceBackdropInput {
+        identity: identity.clone(),
+        semantic_surface: surface,
         placement,
-        worth_ui_host_contract::UiAppearanceBackdropExtent::new(0, 0, 200, 160).unwrap(),
-        UiAppearanceClip::new(0, 0, 100, 100).unwrap(),
-        UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 128]),
-        UiMountedAppearanceOpacity::ONE,
-        None,
-        UiMountedBackdropAppearanceAttribution::from_runtime_transport(surface, placement, 31, 2)
-            .unwrap(),
-        31,
-    );
+        extent: worth_ui_host_contract::UiAppearanceBackdropExtent::new(0, 0, 200, 160).unwrap(),
+        clip: UiAppearanceClip::new(0, 0, 100, 100).unwrap(),
+        background: UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 128]),
+        appearance_opacity: UiMountedAppearanceOpacity::ONE,
+        motion_opacity: None,
+        attribution: UiMountedBackdropAppearanceAttribution::from_runtime_transport(
+            surface, placement, 31, 2,
+        )
+        .unwrap(),
+        semantic_digest: 31,
+    };
     let order = UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
         surface,
         presentation,
@@ -73,16 +75,16 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
             presentation,
             nodes: vec![node],
             backdrops: vec![backdrop],
-            overlay: UiMountedAppearanceOverlayInput::new(
-                surface,
+            overlay: UiMountedAppearanceOverlayInput {
+                semantic_surface: surface,
                 presentation,
-                7,
-                9,
-                [
+                portal_revision: 7,
+                backdrop_revision: 9,
+                bottom_to_top: Box::new([
                     UiOverlayParticipantIdentity::Backdrop(identity.clone()),
                     UiOverlayParticipantIdentity::Portal(portal),
-                ],
-            ),
+                ]),
+            },
         })
         .unwrap();
 

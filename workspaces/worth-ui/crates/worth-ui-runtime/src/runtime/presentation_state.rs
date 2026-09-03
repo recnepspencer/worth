@@ -10,7 +10,6 @@ mod theme_values;
 #[path = "presentation_state_tests.rs"]
 mod tests;
 
-pub(crate) use appearance_theme::UiAppearanceThemeBindingDenial;
 pub(crate) use overlay_export::UiApplicationPresentationOwnerExport;
 
 pub(crate) struct UiApplicationPresentationState {

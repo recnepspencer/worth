@@ -6,6 +6,7 @@ use crate::runtime::tests::source_ingress_boundary_test_support::{
 const ACTIVE_COMPONENT: &str = "workspace.component.active_session_current";
 const CANDIDATE_COMPONENT: &str = "workspace.component.active_session_candidate";
 pub(crate) const APPEARANCE_TOKEN: &str = "theme.appearance_consumer";
+pub(crate) const LEGACY_STATIC_PAINT_TOKEN: &str = "theme.legacy_static_paint";
 
 pub(crate) const APPEARANCE_NODE_A: &str = ACTIVE_COMPONENT;
 pub(crate) const APPEARANCE_NODE_B: &str = CANDIDATE_COMPONENT;
@@ -162,33 +163,53 @@ fn appearance_semantic_declaration(
 pub(crate) fn appearance_component_builder(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
-    appearance_component_builder_with_contract(role, component_appearance_contract())
+    appearance_component_builder_with_contract_and_static_token(
+        role,
+        component_appearance_contract(),
+        APPEARANCE_TOKEN,
+    )
+}
+
+pub(crate) fn legacy_static_paint_appearance_component_builder(
+    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
+) -> crate::facade::entry::WorthUiApplicationBuilder {
+    appearance_component_builder_with_contract_and_static_token(
+        role,
+        component_appearance_contract(),
+        LEGACY_STATIC_PAINT_TOKEN,
+    )
 }
 
 pub(crate) fn six_axis_appearance_component_builder(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
-    appearance_component_builder_with_contract(role, six_axis_component_appearance_contract())
-        .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
-        .with_selection_policy_defaults(crate::declaration::UiSelectionPolicy::single())
+    appearance_component_builder_with_contract_and_static_token(
+        role,
+        six_axis_component_appearance_contract(),
+        APPEARANCE_TOKEN,
+    )
+    .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
+    .with_selection_policy_defaults(crate::declaration::UiSelectionPolicy::single())
 }
 
-fn appearance_component_builder_with_contract(
+fn appearance_component_builder_with_contract_and_static_token(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
     appearance_contract: worth_ui_dsl::UiAppearanceAspectContract,
+    static_paint_token: &str,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
     let (_, _, world_profile) =
         crate::evidence::measurement::projection::fact_test_support::display_field_projection_context(
             "appearance-consumer-active-session",
         );
-    let token = crate::capability::ThemeTokenId::new(APPEARANCE_TOKEN).unwrap();
-    crate::facade::WorthUi::app()
+    let appearance_token = crate::capability::ThemeTokenId::new(APPEARANCE_TOKEN).unwrap();
+    let static_paint_token = crate::capability::ThemeTokenId::new(static_paint_token).unwrap();
+    let builder = crate::facade::WorthUi::app()
         .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
         .with_graph_world_profile(world_profile)
         .register_component(
             static_paint_component_with_contract(
                 ACTIVE_COMPONENT,
-                token.clone(),
+                static_paint_token.clone(),
                 appearance_contract.clone(),
             )
             .unwrap(),
@@ -196,16 +217,21 @@ fn appearance_component_builder_with_contract(
         .register_component(
             static_paint_component_with_contract(
                 CANDIDATE_COMPONENT,
-                token.clone(),
+                static_paint_token.clone(),
                 appearance_contract,
             )
             .unwrap(),
         )
         .register_appearance_role(role.clone())
         .unwrap()
-        .register_theme_token(appearance_theme_token(token))
+        .register_theme_token(appearance_theme_token(appearance_token))
         .register_mosaic_region_kind(source_backed_package_region())
-        .register_mosaic_sizing_contract(source_backed_package_sizing())
+        .register_mosaic_sizing_contract(source_backed_package_sizing());
+    if static_paint_token.as_str() != APPEARANCE_TOKEN {
+        builder.register_theme_token(appearance_theme_token(static_paint_token))
+    } else {
+        builder
+    }
 }
 
 fn component_appearance_contract() -> worth_ui_dsl::UiAppearanceAspectContract {

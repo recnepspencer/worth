@@ -46,6 +46,7 @@ impl super::UiApplicationPresentationState {
                     &binding.capability(),
                     themes,
                 )
+                .map(|view| view.with_value_overrides(std::sync::Arc::clone(&self.token_values)))
                 .map_err(UiAppearanceThemeBindingDenial::Resolution);
             }
         }
@@ -94,6 +95,7 @@ impl super::UiApplicationPresentationState {
             &binding.capability(),
             themes,
         )
+        .map(|view| view.with_value_overrides(std::sync::Arc::clone(&self.token_values)))
         .map_err(UiAppearanceThemeBindingDenial::Resolution)
     }
 }

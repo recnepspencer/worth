@@ -106,6 +106,20 @@ impl UiPreparedMountedFrame {
             .appearance_node_inputs(theme_values.canonical_consumers())
     }
 
+    pub(crate) fn stage_appearance_projection(
+        &mut self,
+        attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
+    ) {
+        self.candidate.stage_appearance_projection(attempt);
+    }
+
+    pub(crate) fn lower_appearance(
+        &mut self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
+        self.candidate.lower_appearance(presentation)
+    }
+
     pub fn receipt(&self) -> UiMountedFrameReceipt {
         UiMountedFrameReceipt {
             canonical_core: self.canonical_core,

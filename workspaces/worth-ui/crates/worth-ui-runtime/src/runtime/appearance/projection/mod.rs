@@ -1,4 +1,5 @@
 mod appearance_projection;
+mod attempt;
 mod backdrop;
 mod change_receipt;
 mod resolved_aspect;
@@ -22,6 +23,7 @@ pub(crate) use crate::runtime::overlay_composition::{
     UiBackdropInstanceIdentity, UiOverlayStackSnapshot,
 };
 pub(crate) use appearance_projection::UiAppearanceProjection;
+pub(crate) use attempt::{UiAppearanceAttemptContext, UiAppearanceProjectionAttempt};
 pub(crate) use backdrop::UiBackdropAppearanceProjection;
 pub(crate) use change_receipt::{
     UiAppearanceChangeOutcome, UiAppearanceChangeReceipt, UiAppearanceMountAffinity,

@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::denial;
 use worth_ui_dsl::UiAppearanceAspect;
 use worth_ui_inspection::{
     UiAppearanceInspectionCost, UiAppearanceInspectionDecisionCell, UiAppearanceInspectionEvidence,
@@ -18,6 +19,19 @@ pub(crate) enum UiAppearanceInspectionDenial {
     Resolution,
     MountAffinity,
     MountLowering,
+}
+
+pub(crate) enum UiAppearanceInspectionRecord {
+    Projection {
+        projection: super::super::projection::UiAppearanceProjection,
+        consumers_selected: u32,
+        receipt: super::super::projection::UiAppearanceChangeReceipt,
+    },
+    Denial {
+        context: super::super::projection::UiAppearanceAttemptContext,
+        denial: UiAppearanceInspectionDenial,
+        receipt: super::super::projection::UiAppearanceChangeReceipt,
+    },
 }
 
 #[derive(Clone)]
@@ -61,6 +75,26 @@ impl UiAppearanceInspectionProducer {
         );
     }
 
+    pub(crate) fn record_frame_attempts(
+        &mut self,
+        records: impl IntoIterator<Item = UiAppearanceInspectionRecord>,
+    ) {
+        for record in records {
+            match record {
+                UiAppearanceInspectionRecord::Projection {
+                    projection,
+                    consumers_selected,
+                    receipt,
+                } => self.record_projection(&projection, consumers_selected, receipt),
+                UiAppearanceInspectionRecord::Denial {
+                    context,
+                    denial,
+                    receipt,
+                } => denial::record_attempt_denial(self, &context, denial, receipt),
+            }
+        }
+    }
+
     pub(crate) fn record_projection_with_cause(
         &mut self,
         projection: &super::super::projection::UiAppearanceProjection,
@@ -75,22 +109,6 @@ impl UiAppearanceInspectionProducer {
             receipt.denied_before_effects(),
             mounted_mechanic(receipt),
             physical_suppression(receipt),
-        );
-    }
-
-    pub(crate) fn record_denial(
-        &mut self,
-        projection: &super::super::projection::UiAppearanceProjection,
-        consumers_selected: u32,
-        _denial: UiAppearanceInspectionDenial,
-    ) {
-        self.record_projection_values(
-            projection,
-            consumers_selected,
-            UiAppearanceInspectionInvalidationCause::DeniedBeforeEffects,
-            true,
-            UiAppearanceInspectionMountedMechanic::NotAttempted,
-            UiAppearanceInspectionPhysicalSuppression::NotAttempted,
         );
     }
 
@@ -253,7 +271,7 @@ impl UiAppearanceInspectionProducer {
     }
 }
 
-fn invalidation_cause(
+pub(super) fn invalidation_cause(
     receipt: super::super::projection::UiAppearanceChangeReceipt,
 ) -> UiAppearanceInspectionInvalidationCause {
     match receipt.outcome() {

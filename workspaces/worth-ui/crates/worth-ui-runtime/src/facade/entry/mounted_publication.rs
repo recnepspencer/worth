@@ -12,9 +12,13 @@ impl WorthUiActiveApplicationSession {
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> UiMountedFrameOutcome {
-        let transition =
-            self.mounted
-                .present_prepared_frame(&self.host_session, frame, deadline, now);
+        let transition = self.mounted.present_prepared_frame(
+            &self.host_session,
+            frame,
+            Some(&mut self.appearance_inspection),
+            deadline,
+            now,
+        );
         self.finish_mounted_transition(transition)
     }
 
@@ -29,6 +33,7 @@ impl WorthUiActiveApplicationSession {
             &self.host_session,
             frame,
             predecessor,
+            Some(&mut self.appearance_inspection),
             deadline,
             now,
         );
@@ -44,6 +49,7 @@ impl WorthUiActiveApplicationSession {
         let transition = self.mounted.present_current_for_reconciliation(
             &self.host_session,
             replacements,
+            Some(&mut self.appearance_inspection),
             deadline,
             now,
         )?;
@@ -61,6 +67,7 @@ impl WorthUiActiveApplicationSession {
             &self.host_session,
             frame,
             replacements,
+            Some(&mut self.appearance_inspection),
             deadline,
             now,
         )?;

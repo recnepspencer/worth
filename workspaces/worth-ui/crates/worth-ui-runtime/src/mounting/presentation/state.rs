@@ -126,6 +126,12 @@ impl UiMountedPresentationAdmission {
         &self.frame
     }
 
+    pub(crate) fn lower_appearance(
+        &mut self,
+    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
+        self.frame.lower_appearance(self.attempt)
+    }
+
     pub fn into_attempt(self) -> UiMountedPresentationAttempt {
         UiMountedPresentationAttempt { admission: self }
     }

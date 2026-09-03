@@ -66,8 +66,8 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let mut projection =
             self.begin_mounted_projection(request, lanes, semantic_content, theme_values, None)?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
-        let frame = projection.finish()?;
-        self.finish_appearance_projection(&frame, &appearance_theme_values);
+        let mut frame = projection.finish()?;
+        self.finish_appearance_projection(&mut frame, &appearance_theme_values);
         Ok(frame)
     }
 
@@ -93,8 +93,8 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
             Some(predecessor),
         )?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
-        let frame = projection.finish()?;
-        self.finish_appearance_projection(&frame, &appearance_theme_values);
+        let mut frame = projection.finish()?;
+        self.finish_appearance_projection(&mut frame, &appearance_theme_values);
         Ok(frame)
     }
 
@@ -115,8 +115,8 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let mut projection =
             self.begin_mounted_projection(request, lanes, semantic_content, theme_values, None)?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
-        let frame = projection.finish_for_reconciliation(replacements)?;
-        self.finish_appearance_projection(&frame, &appearance_theme_values);
+        let mut frame = projection.finish_for_reconciliation(replacements)?;
+        self.finish_appearance_projection(&mut frame, &appearance_theme_values);
         Ok(frame)
     }
 

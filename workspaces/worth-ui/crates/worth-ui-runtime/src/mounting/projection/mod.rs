@@ -15,7 +15,8 @@ mod semantic_text;
 mod static_paint;
 
 pub(crate) use appearance::{
-    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput, UiMountedAppearanceSidecar,
+    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
+    UiMountedAppearanceNodeInput,
 };
 pub use denial::UiMountedProjectionDenial;
 pub(crate) use focus_scope::UiMountedFocusScope;

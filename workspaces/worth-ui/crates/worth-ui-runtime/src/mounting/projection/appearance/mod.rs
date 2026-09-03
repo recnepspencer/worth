@@ -23,7 +23,6 @@ pub(crate) use fact::{
 pub(crate) enum UiMountedAppearanceLoweringDenial {
     NodeAllocationUnavailable,
     NodeProjectionUnavailable,
-    PresentationIdentityExhausted,
     NodeReceiptFrameMismatch,
     NodeProjectionIssuerMismatch,
     NodeSurfaceMismatch,

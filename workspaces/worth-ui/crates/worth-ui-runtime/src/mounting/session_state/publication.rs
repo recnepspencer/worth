@@ -39,6 +39,9 @@ impl WorthUiMountedSessionState {
         &mut self,
         host: &crate::facade::WorthUiHostSessionAuthority,
         frame: crate::mounting::UiPreparedMountedFrame,
+        appearance_inspection: Option<
+            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+        >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> UiMountedPublicationTransition {
@@ -68,6 +71,7 @@ impl WorthUiMountedSessionState {
             retained,
             capability_report,
             self.identity.view().current_frame(),
+            appearance_inspection,
             deadline,
             now,
         )
@@ -78,6 +82,9 @@ impl WorthUiMountedSessionState {
         host: &crate::facade::WorthUiHostSessionAuthority,
         frame: crate::mounting::UiPreparedMountedFrame,
         predecessor: crate::mounting::UiMountedSupersedingPresentationBasis,
+        appearance_inspection: Option<
+            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+        >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> UiMountedPublicationTransition {
@@ -124,6 +131,7 @@ impl WorthUiMountedSessionState {
             retained,
             capability_report,
             Some(predecessor.frame()),
+            appearance_inspection,
             deadline,
             now,
         )
@@ -135,10 +143,13 @@ impl WorthUiMountedSessionState {
         retained: crate::mounting::retention::UiRetentionPreparedMountedFrame,
         capability_report: worth_ui_host_contract::WorthUiHostCapabilityReport,
         publication_predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
+        mut appearance_inspection: Option<
+            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+        >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> UiMountedPublicationTransition {
-        let admission =
+        let mut admission =
             match self
                 .presentation
                 .admit_current(retained, &capability_report, deadline, now)
@@ -152,6 +163,9 @@ impl WorthUiMountedSessionState {
                     );
                 }
             };
+        if let Some(producer) = appearance_inspection.as_deref_mut() {
+            producer.record_frame_attempts(admission.lower_appearance());
+        }
         let reservation =
             UiMountedFramePublicationCandidate::reserve(&admission, publication_predecessor);
         let attempt = admission.attempt();

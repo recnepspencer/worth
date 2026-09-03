@@ -83,7 +83,8 @@ pub(crate) use projection::{
     UiPreparedMountedProjection,
 };
 pub(crate) use projection::{
-    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput, UiMountedAppearanceSidecar,
+    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
+    UiMountedAppearanceNodeInput,
 };
 pub use projection::{
     UiMountedNodeReceipt, UiMountedProjectionDenial, UiMountedProjectionFrame,

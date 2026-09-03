@@ -91,8 +91,6 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) intent_postures: crate::mounting::UiIntentPostureTable,
     pub(super) presentation: crate::runtime::presentation_state::UiApplicationPresentationState,
     pub(super) appearance_inspection: crate::runtime::appearance::UiAppearanceInspectionProducer,
-    pub(super) appearance_projection_transitions:
-        crate::runtime::appearance::UiAppearanceProjectionTransitionState,
     pub(super) appearance_owner_snapshot:
         Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
     pub(super) visual_inspection:
@@ -251,8 +249,6 @@ impl WorthUiActiveApplicationSession {
             intent_postures: crate::mounting::UiIntentPostureTable::new(),
             presentation,
             appearance_inspection: crate::runtime::appearance::UiAppearanceInspectionProducer::new(),
-            appearance_projection_transitions:
-                crate::runtime::appearance::UiAppearanceProjectionTransitionState::default(),
             appearance_owner_snapshot: None,
             visual_inspection,
             next_visual_capture_identity: 1,
@@ -393,7 +389,6 @@ impl WorthUiActiveApplicationSession {
             interaction: &mut self.interaction,
             presentation: &mut self.presentation,
             appearance_owner_snapshot: &self.appearance_owner_snapshot,
-            appearance_projection_transitions: &mut self.appearance_projection_transitions,
             appearance_inspection: &mut self.appearance_inspection,
         })
     }

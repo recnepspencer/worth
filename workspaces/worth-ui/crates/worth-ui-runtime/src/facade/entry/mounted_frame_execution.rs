@@ -198,6 +198,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 let transition = execution.mounted.present_prepared_frame(
                     execution.host_session,
                     frame,
+                    Some(execution.appearance_inspection),
                     deadline,
                     now,
                 );

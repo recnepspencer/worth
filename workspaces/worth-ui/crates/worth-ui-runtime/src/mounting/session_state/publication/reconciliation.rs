@@ -9,6 +9,9 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         &mut self,
         host: &crate::facade::WorthUiHostSessionAuthority,
         replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
+        appearance_inspection: Option<
+            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+        >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> Result<UiMountedPublicationTransition, crate::mounting::UiMountedIdentityDenial> {
@@ -23,6 +26,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             frame,
             replacements,
             capability_report,
+            appearance_inspection,
             deadline,
             now,
         ))
@@ -33,6 +37,9 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         host: &crate::facade::WorthUiHostSessionAuthority,
         frame: crate::mounting::UiPreparedMountedFrame,
         replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
+        appearance_inspection: Option<
+            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+        >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> Result<UiMountedPublicationTransition, crate::mounting::UiMountedIdentityDenial> {
@@ -52,6 +59,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             admitted,
             replacements,
             host.capability_report().clone(),
+            appearance_inspection,
             deadline,
             now,
         ))
@@ -63,6 +71,9 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         frame: crate::mounting::UiAuthorityAdmittedMountedFrame,
         replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
         capability_report: worth_ui_host_contract::WorthUiHostCapabilityReport,
+        mut appearance_inspection: Option<
+            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+        >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> UiMountedPublicationTransition {
@@ -79,7 +90,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
                 );
             }
         };
-        let admission = match self.presentation.admit_reconciliation(
+        let mut admission = match self.presentation.admit_reconciliation(
             retained,
             replacements,
             &capability_report,
@@ -93,6 +104,9 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
                 );
             }
         };
+        if let Some(producer) = appearance_inspection.as_deref_mut() {
+            producer.record_frame_attempts(admission.lower_appearance());
+        }
         let reservation =
             UiMountedFrameReconciliationCandidate::reserve(&admission, &current, replacements);
         let attempt = admission.attempt();

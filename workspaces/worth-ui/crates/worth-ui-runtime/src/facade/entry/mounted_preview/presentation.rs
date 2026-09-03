@@ -27,7 +27,7 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
         let publication =
             ports
                 .mounted
-                .present_prepared_frame(ports.host_session, frame, deadline, now);
+                .present_prepared_frame(ports.host_session, frame, None, deadline, now);
         let outcome = super::super::mounted_publication::finish_mounted_transition(
             ports.mounted,
             ports.focus.as_deref_mut(),

@@ -33,8 +33,6 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
         &'session mut crate::runtime::presentation_state::UiApplicationPresentationState,
     pub(super) appearance_owner_snapshot:
         &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
-    pub(super) appearance_projection_transitions:
-        &'session mut crate::runtime::appearance::UiAppearanceProjectionTransitionState,
     pub(super) appearance_inspection:
         &'session mut crate::runtime::appearance::UiAppearanceInspectionProducer,
 }
@@ -60,8 +58,6 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
         &'session mut crate::runtime::presentation_state::UiApplicationPresentationState,
     pub(super) appearance_owner_snapshot:
         &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
-    pub(super) appearance_projection_transitions:
-        &'session mut crate::runtime::appearance::UiAppearanceProjectionTransitionState,
     pub(super) appearance_inspection:
         &'session mut crate::runtime::appearance::UiAppearanceInspectionProducer,
     pub(super) host_protocol: worth_ui_host_contract::UiHostProtocolAgreement,
@@ -100,7 +96,6 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             interaction,
             presentation,
             appearance_owner_snapshot,
-            appearance_projection_transitions,
             appearance_inspection,
         } = self;
         let host_protocol = host_session.protocol();
@@ -123,7 +118,6 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
-                appearance_projection_transitions,
                 appearance_inspection,
                 host_protocol,
                 host_capability_generation: capability_report.observation_generation(),
@@ -147,7 +141,6 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
-                appearance_projection_transitions,
                 appearance_inspection,
             })),
         }

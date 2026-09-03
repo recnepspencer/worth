@@ -118,10 +118,13 @@ impl WorthUiActiveApplicationSession {
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
         execution.presentation.commit(&projection);
-        let transition =
-            execution
-                .mounted
-                .present_prepared_frame(execution.host_session, frame, deadline, now);
+        let transition = execution.mounted.present_prepared_frame(
+            execution.host_session,
+            frame,
+            Some(execution.appearance_inspection),
+            deadline,
+            now,
+        );
         Ok(finish_mounted_transition(
             execution.mounted,
             execution.focus,
@@ -163,10 +166,13 @@ impl WorthUiActiveApplicationSession {
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
         execution.presentation.commit(&projection);
-        let transition =
-            execution
-                .mounted
-                .present_prepared_frame(execution.host_session, frame, deadline, now);
+        let transition = execution.mounted.present_prepared_frame(
+            execution.host_session,
+            frame,
+            Some(execution.appearance_inspection),
+            deadline,
+            now,
+        );
         Ok(finish_mounted_transition(
             execution.mounted,
             execution.focus,

@@ -70,39 +70,45 @@ fn node_input_for(
     .unwrap();
     let projection =
         UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 11, 3).unwrap();
-    let node = UiMountedAppearanceNodeInput::new(
+    let node = UiMountedAppearanceNodeInput {
         issuer,
-        surface,
-        receipt,
+        semantic_surface: surface,
+        node_receipt: receipt,
         projection,
         bounds,
-        UiAppearanceClip::new(0, 0, 90, 70).unwrap(),
-        UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+        clip: UiAppearanceClip::new(0, 0, 90, 70).unwrap(),
+        layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
         radii,
-        Some(UiMountedSurfacePaint::Fill(
+        surface_paint: Some(UiMountedSurfacePaint::Fill(
             UiMountedAppearanceColor::from_straight_srgba(color),
         )),
-        include_outline.then_some(UiMountedAppearanceOutlineInput {
+        outline: include_outline.then_some(UiMountedAppearanceOutlineInput {
             geometry: outline,
             color: UiMountedAppearanceColor::from_straight_srgba([4, 5, 6, 255]),
         }),
-        vec![UiMountedAppearanceTextForegroundInput {
+        text_foregrounds: vec![UiMountedAppearanceTextForegroundInput {
             span: UiMountedTextPaintSpanIdentity::from_runtime_mounting([8; 32]),
             foreground: UiMountedAppearanceColor::from_straight_srgba([20, 30, 40, 255]),
         }]
         .into_boxed_slice(),
-        Some(UiMountedAppearancePointerInput {
+        pointer: Some(UiMountedAppearancePointerInput {
             pointer: UiHostPointerIdentity::new(5),
             surface,
             target: instance,
             family: UiPointerAffordanceFamily::Activation,
         }),
-        UiMountedAppearanceOpacity::from_units(40_000),
-        Some(UiMountedAppearanceOpacity::from_units(32_768)),
+        appearance_opacity: UiMountedAppearanceOpacity::from_units(40_000),
+        motion_opacity: Some(UiMountedAppearanceOpacity::from_units(32_768)),
         semantic_digest,
-        None,
-    );
-    let overlay = UiMountedAppearanceOverlayInput::new(surface, presentation, 1, 1, []);
+        portal_instance: None,
+    };
+    let overlay = UiMountedAppearanceOverlayInput {
+        semantic_surface: surface,
+        presentation,
+        portal_revision: 1,
+        backdrop_revision: 1,
+        bottom_to_top: Box::new([]),
+    };
     (
         UiMountedAppearanceLoweringInput {
             frame,

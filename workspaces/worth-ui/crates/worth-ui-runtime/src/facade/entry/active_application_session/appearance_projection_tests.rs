@@ -158,7 +158,7 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         explanation.value(),
         worth_ui_inspection::UiAppearanceInspectionValue::Resolved(
             worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
-                17, 34, 51, 255,
+                64, 80, 96, 255,
             ])),
         )
     );
@@ -178,7 +178,7 @@ fn theme_session(
             worth_ui_host_contract::WorthUiHostCapability::PortalAnchorObservation,
         ]),
     );
-    support::appearance_component_builder(role)
+    support::legacy_static_paint_appearance_component_builder(role)
         .register_appearance_theme_bundle(theme_bundle())
         .unwrap()
         .with_rust_authored_declaration_fixture(support::appearance_fixture(role))

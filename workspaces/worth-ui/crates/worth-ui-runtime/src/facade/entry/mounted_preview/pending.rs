@@ -25,7 +25,6 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             interaction,
             presentation,
             appearance_owner_snapshot,
-            appearance_projection_transitions,
             appearance_inspection,
         } = self;
         let preview_theme_observation = presentation.preview_theme_observation();
@@ -68,7 +67,6 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
-                appearance_projection_transitions,
                 appearance_inspection,
             })),
         }

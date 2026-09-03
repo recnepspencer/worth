@@ -5,6 +5,7 @@ use worth_ui_host_contract::{
 
 use super::UiMountedProjectionDenial;
 
+mod appearance_state;
 pub(in crate::mounting) mod diagnostic_source;
 mod drawable_order;
 mod lane_recording;
@@ -37,6 +38,9 @@ pub(in crate::mounting) use semantic_projection::UiMountedSemanticProjection;
 pub(super) use semantic_projection::{UiMountedProjectionNodeRecord, UiMountedProjectionSurface};
 use view::{UiMountedOrdinaryPaintSelector, UiMountedPlanIndexPaintSelector};
 
+pub(crate) use appearance_state::UiMountedAppearanceFrameState;
+
+#[derive(Clone)]
 pub(crate) struct UiMountedAppearanceNodeInputContext {
     pub(crate) frame: worth_ui_host_contract::UiMountedFrameIdentity,
     pub(crate) semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
@@ -47,30 +51,19 @@ pub(crate) struct UiMountedAppearanceNodeInputContext {
     issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
     plan_digest: u64,
     allocation: worth_ui_host_contract::UiMountedAllocationProjection,
-    static_paint: Option<super::static_paint::UiMountedStaticPaintSeed>,
 }
 
 impl UiMountedAppearanceNodeInputContext {
-    pub(crate) fn lower(
-        &self,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-    ) -> Result<super::UiMountedAppearanceLoweringInput, super::UiMountedAppearanceLoweringDenial>
-    {
-        let input_node = super::appearance::UiMountedAppearanceNodeInput::from_runtime_mounting(
-            self.issuer,
-            self.semantic_surface,
-            self.node_receipt,
-            self.graph_node,
-            self.plan_digest,
-            self.allocation,
-            self.static_paint,
-        )?;
-        Ok(super::UiMountedAppearanceLoweringInput::for_single_node(
-            self.frame,
-            self.semantic_surface,
-            presentation,
-            input_node,
-        ))
+    pub(crate) const fn issuer(&self) -> worth_ui_host_contract::UiMountedNodeReceiptIssuer {
+        self.issuer
+    }
+
+    pub(crate) const fn plan_digest(&self) -> u64 {
+        self.plan_digest
+    }
+
+    pub(crate) const fn allocation(&self) -> worth_ui_host_contract::UiMountedAllocationProjection {
+        self.allocation
     }
 }
 
@@ -112,6 +105,7 @@ pub struct UiMountedProjectionFrame {
     font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     text_profile_generation: worth_ui_host_contract::UiTextProfileGeneration,
     materialized_projection_rows: std::rc::Rc<std::cell::Cell<u64>>,
+    appearance_state: UiMountedAppearanceFrameState,
 }
 
 pub(super) struct UiMountedProjectionFrameInput {
@@ -167,6 +161,7 @@ impl UiMountedProjectionFrame {
             font_collection: input.font_collection,
             text_profile_generation: super::semantic_text::current_text_profile_generation(),
             materialized_projection_rows: std::rc::Rc::new(std::cell::Cell::new(0)),
+            appearance_state: UiMountedAppearanceFrameState::default(),
         }
     }
 
@@ -363,9 +358,27 @@ impl UiMountedProjectionFrame {
                     issuer: self.receipt_basis.issuer(),
                     plan_digest: receipt.plan_digest(),
                     allocation: receipt.allocation(),
-                    static_paint: node.static_paint,
                 }
             })
             .collect()
+    }
+
+    pub(crate) fn inherit_appearance_state(&mut self, predecessor: Option<&Self>) {
+        self.appearance_state
+            .inherit_from(predecessor.map(|frame| &frame.appearance_state));
+    }
+
+    pub(crate) fn stage_appearance_projection(
+        &mut self,
+        attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
+    ) {
+        self.appearance_state.stage(attempt);
+    }
+
+    pub(crate) fn lower_appearance(
+        &mut self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
+        self.appearance_state.lower(presentation)
     }
 }

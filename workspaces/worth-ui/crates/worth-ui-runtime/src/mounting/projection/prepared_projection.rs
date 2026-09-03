@@ -92,6 +92,20 @@ impl UiMountedPresentationDeltaSource<'_> {
 }
 
 impl UiProjectedMountedFrameCandidate {
+    pub(in crate::mounting) fn stage_appearance_projection(
+        &mut self,
+        attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
+    ) {
+        std::rc::Rc::make_mut(&mut self.frame).stage_appearance_projection(attempt);
+    }
+
+    pub(in crate::mounting) fn lower_appearance(
+        &mut self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
+        std::rc::Rc::make_mut(&mut self.frame).lower_appearance(presentation)
+    }
+
     pub(in crate::mounting) fn prepare_surface_reconstruction(
         &mut self,
         replacements: &[(
@@ -209,8 +223,8 @@ impl UiPreparedMountedProjection {
                     super::super::UiMountedIdentityDenial::IdentityExhausted,
                 )
             })?;
-        let predecessor = state
-            .current_projection()
+        let appearance_predecessor = state.current_projection();
+        let predecessor = appearance_predecessor
             .filter(|projection| projection.plan_digest() == self.plan_digest);
         let mechanics = predecessor
             .map(UiMountedProjectionFrame::mechanic_source)
@@ -243,6 +257,7 @@ impl UiPreparedMountedProjection {
             portal_overlays_changed: self.portal_overlays_changed,
             changed_instances: self.presentation_changed_instances.clone(),
         });
+        frame.inherit_appearance_state(appearance_predecessor);
         frame.complete_mechanics()?;
         if let Some(receipt) = self.ordinary.as_ref() {
             frame.record_ordinary(receipt)?;
