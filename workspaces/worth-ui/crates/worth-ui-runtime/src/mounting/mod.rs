@@ -77,6 +77,8 @@ pub(crate) use presentation::{
 #[allow(unused_imports)]
 pub(crate) use projection::compile_presentation_sources;
 pub(crate) use projection::UiMountedFocusScope;
+#[cfg(test)]
+pub(crate) use projection::{changed_test_work, unchanged_test_work};
 pub(crate) use projection::{
     prepare_projection, UiIntentPostureCommit, UiIntentPostureObservation, UiIntentPostureTable,
     UiMountedPresentationDeltaSource, UiMountedPreviewProjectionInput, UiMountedProjectionInput,

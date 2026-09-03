@@ -114,16 +114,20 @@ pub enum UiAppearanceInspectionInvalidationCause {
     GenerationRetired,
 }
 
-/// Mounted-mechanic posture. Gate 1 does not own mounted output.
+/// Mounted-mechanic posture reported by the bounded Gate 3 producer.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiAppearanceInspectionMountedMechanic {
-    NotEvaluated,
+    NotAttempted,
+    Unchanged,
+    Changed,
 }
 
-/// Physical-output suppression posture. Gate 1 does not publish mechanics.
+/// Physical-output posture reported by the bounded Gate 3 producer.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiAppearanceInspectionPhysicalSuppression {
-    NotEvaluated,
+    NotAttempted,
+    NotSuppressed,
+    Suppressed,
 }
 
 /// Bounded work evidence emitted by the runtime producer.

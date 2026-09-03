@@ -8,7 +8,7 @@ pub(crate) enum UiAppearanceChangeOutcome {
     DeniedBeforeEffects,
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiAppearanceChangeReceipt {
     input_evidence_changed: bool,
     semantic_projection_changed: bool,
@@ -16,19 +16,24 @@ pub(crate) struct UiAppearanceChangeReceipt {
     mounted_mechanical_output_changed: bool,
     equal_output_suppressed: bool,
     denied_before_effects: bool,
+    mounting_result_available: bool,
 }
 
 impl UiAppearanceChangeReceipt {
     pub(crate) fn compare(
         predecessor: Option<&super::UiAppearanceProjection>,
         successor: Option<&super::UiAppearanceProjection>,
+        mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
     ) -> Self {
         let (Some(predecessor), Some(successor)) = (predecessor, successor) else {
             return Self {
                 input_evidence_changed: predecessor.is_some() || successor.is_some(),
                 semantic_projection_changed: predecessor.is_some() || successor.is_some(),
                 resolved_aspect_value_changed: predecessor.is_some() || successor.is_some(),
-                ..Self::default()
+                mounted_mechanical_output_changed: mounted_mechanical_output_changed(mounting),
+                equal_output_suppressed: false,
+                denied_before_effects: false,
+                mounting_result_available: true,
             };
         };
         let input_evidence_changed = predecessor.state().basis() != successor.state().basis();
@@ -45,14 +50,16 @@ impl UiAppearanceChangeReceipt {
             });
         let equal_output_suppressed = semantic_projection_changed
             && !resolved_aspect_value_changed
-            && predecessor.physical_output_equivalent(successor);
+            && predecessor.physical_output_equivalent(successor)
+            && physical_output_suppressed(mounting);
         Self {
             input_evidence_changed,
             semantic_projection_changed,
             resolved_aspect_value_changed,
-            mounted_mechanical_output_changed: false,
+            mounted_mechanical_output_changed: mounted_mechanical_output_changed(mounting),
             equal_output_suppressed,
             denied_before_effects: false,
+            mounting_result_available: true,
         }
     }
 
@@ -64,12 +71,8 @@ impl UiAppearanceChangeReceipt {
             mounted_mechanical_output_changed: false,
             equal_output_suppressed: false,
             denied_before_effects: true,
+            mounting_result_available: false,
         }
-    }
-
-    pub(crate) const fn with_mounted_mechanical_output(mut self, changed: bool) -> Self {
-        self.mounted_mechanical_output_changed = changed;
-        self
     }
 
     pub(crate) const fn input_evidence_changed(self) -> bool {
@@ -91,6 +94,10 @@ impl UiAppearanceChangeReceipt {
         self.denied_before_effects
     }
 
+    pub(crate) const fn mounting_result_available(self) -> bool {
+        self.mounting_result_available
+    }
+
     pub(crate) const fn outcome(self) -> Option<UiAppearanceChangeOutcome> {
         if self.denied_before_effects {
             Some(UiAppearanceChangeOutcome::DeniedBeforeEffects)
@@ -108,6 +115,16 @@ impl UiAppearanceChangeReceipt {
             None
         }
     }
+}
+
+fn mounted_mechanical_output_changed(
+    mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
+) -> bool {
+    !mounting.changes().is_empty() || mounting.order_changed()
+}
+
+fn physical_output_suppressed(mounting: &worth_ui_host_contract::UiMountedAppearanceWork) -> bool {
+    mounting.posture() == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Unchanged
 }
 
 #[cfg(test)]

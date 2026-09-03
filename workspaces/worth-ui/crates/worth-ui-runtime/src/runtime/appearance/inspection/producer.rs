@@ -43,11 +43,13 @@ impl UiAppearanceInspectionProducer {
         &mut self,
         projection: &super::super::projection::UiAppearanceProjection,
         consumers_selected: u32,
+        receipt: super::super::projection::UiAppearanceChangeReceipt,
     ) {
         self.record_projection_with_cause(
             projection,
             consumers_selected,
-            UiAppearanceInspectionInvalidationCause::NotAttributed,
+            receipt,
+            invalidation_cause(receipt),
         );
     }
 
@@ -55,6 +57,7 @@ impl UiAppearanceInspectionProducer {
         &mut self,
         projection: &super::super::projection::UiAppearanceProjection,
         consumers_selected: u32,
+        receipt: super::super::projection::UiAppearanceChangeReceipt,
         invalidation_cause: UiAppearanceInspectionInvalidationCause,
     ) {
         let world = world_for_projection(projection);
@@ -79,10 +82,14 @@ impl UiAppearanceInspectionProducer {
                 aspect.provenance().selected_slot().as_str(),
                 aspect.provenance().terminal_slot().as_str(),
                 support(aspect.support()),
-                UiAppearanceInspectionValue::Resolved(aspect.value()),
+                if receipt.denied_before_effects() {
+                    UiAppearanceInspectionValue::Missing
+                } else {
+                    UiAppearanceInspectionValue::Resolved(aspect.value())
+                },
                 invalidation_cause,
-                UiAppearanceInspectionMountedMechanic::NotEvaluated,
-                UiAppearanceInspectionPhysicalSuppression::NotEvaluated,
+                mounted_mechanic(receipt),
+                physical_suppression(receipt),
                 aspect.semantic_digest(),
                 UiAppearanceInspectionEvidence::new(
                     projection.state().basis().source_basis(),
@@ -200,6 +207,56 @@ impl UiAppearanceInspectionProducer {
         } else {
             UiAppearanceInspectionOutcome::Unavailable
         }
+    }
+}
+
+fn invalidation_cause(
+    receipt: super::super::projection::UiAppearanceChangeReceipt,
+) -> UiAppearanceInspectionInvalidationCause {
+    match receipt.outcome() {
+        Some(super::super::projection::UiAppearanceChangeOutcome::InputEvidenceChanged) => {
+            UiAppearanceInspectionInvalidationCause::InputEvidenceChanged
+        }
+        Some(super::super::projection::UiAppearanceChangeOutcome::SemanticProjectionChanged) => {
+            UiAppearanceInspectionInvalidationCause::SemanticProjectionChanged
+        }
+        Some(super::super::projection::UiAppearanceChangeOutcome::ResolvedAspectValueChanged) => {
+            UiAppearanceInspectionInvalidationCause::ResolvedAspectValueChanged
+        }
+        Some(
+            super::super::projection::UiAppearanceChangeOutcome::MountedMechanicalOutputChanged,
+        ) => UiAppearanceInspectionInvalidationCause::MountedMechanicalOutputChanged,
+        Some(super::super::projection::UiAppearanceChangeOutcome::EqualOutputSuppressed) => {
+            UiAppearanceInspectionInvalidationCause::EqualOutputSuppressed
+        }
+        Some(super::super::projection::UiAppearanceChangeOutcome::DeniedBeforeEffects) => {
+            UiAppearanceInspectionInvalidationCause::DeniedBeforeEffects
+        }
+        None => UiAppearanceInspectionInvalidationCause::NotAttributed,
+    }
+}
+
+fn mounted_mechanic(
+    receipt: super::super::projection::UiAppearanceChangeReceipt,
+) -> UiAppearanceInspectionMountedMechanic {
+    if !receipt.mounting_result_available() {
+        UiAppearanceInspectionMountedMechanic::NotAttempted
+    } else if receipt.mounted_mechanical_output_changed() {
+        UiAppearanceInspectionMountedMechanic::Changed
+    } else {
+        UiAppearanceInspectionMountedMechanic::Unchanged
+    }
+}
+
+fn physical_suppression(
+    receipt: super::super::projection::UiAppearanceChangeReceipt,
+) -> UiAppearanceInspectionPhysicalSuppression {
+    if !receipt.mounting_result_available() {
+        UiAppearanceInspectionPhysicalSuppression::NotAttempted
+    } else if receipt.equal_output_suppressed() {
+        UiAppearanceInspectionPhysicalSuppression::Suppressed
+    } else {
+        UiAppearanceInspectionPhysicalSuppression::NotSuppressed
     }
 }
 

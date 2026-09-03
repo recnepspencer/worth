@@ -19,11 +19,14 @@ use super::{
 mod appearance_consumer_contract;
 mod appearance_slot_relation;
 mod appearance_state;
+mod canonical_entries;
 mod consumer;
 mod subsystem;
 
 use super::intent_posture::intent_posture_consumers;
 use appearance_consumer_contract::UiGraphAppearanceConsumerContract;
+use appearance_slot_relation::UiGraphAppearanceThemeSlotDomain;
+use canonical_entries::canonical_entries;
 use consumer::{consumer_identity, consumer_key};
 use subsystem::{build_subsystem_index, UiGraphSubsystemFactIndex};
 
@@ -31,6 +34,7 @@ use subsystem::{build_subsystem_index, UiGraphSubsystemFactIndex};
 pub struct UiGraphConsumedFactIndex {
     basis: UiGraphFactIndexBasis,
     appearance_consumers: UiGraphAppearanceConsumerContract,
+    appearance_theme_slots: UiGraphAppearanceThemeSlotDomain,
     authored_by_declaration: BTreeMap<Box<str>, Box<[UiGraphFactIndexEntry]>>,
     query_by_projection:
         BTreeMap<worth_ui_query_binding::WorthUiQueryViewIdentity, Box<[UiGraphFactIndexEntry]>>,
@@ -67,6 +71,10 @@ impl UiGraphConsumedFactIndex {
         );
         let appearance_consumers =
             UiGraphAppearanceConsumerContract::from_graph(snapshot, capabilities);
+        let appearance_theme_slots = UiGraphAppearanceThemeSlotDomain::from_capabilities(
+            capabilities,
+            authored_declarations,
+        );
         let authored_by_declaration = authored_by_declaration
             .into_iter()
             .map(|(identity, entries)| (identity, canonical_entries(entries)))
@@ -75,6 +83,7 @@ impl UiGraphConsumedFactIndex {
         Self {
             basis: UiGraphFactIndexBasis::from_generation(snapshot, capabilities),
             appearance_consumers,
+            appearance_theme_slots,
             authored_by_declaration,
             query_by_projection: query_projection_consumers(snapshot, projection_contents),
             intent_posture_by_node: intent_posture_consumers(snapshot),
@@ -379,20 +388,4 @@ fn add_authored_aspect_consumers(
             }
         }
     }
-}
-
-pub(super) fn canonical_entries(
-    mut entries: Vec<UiGraphFactIndexEntry>,
-) -> Box<[UiGraphFactIndexEntry]> {
-    entries.sort_by(|left, right| {
-        left.consumer_key()
-            .cmp(right.consumer_key())
-            .then_with(|| left.consumer().cmp(&right.consumer()))
-            .then_with(|| {
-                left.consumption_relation()
-                    .cmp(right.consumption_relation())
-            })
-    });
-    entries.dedup();
-    entries.into_boxed_slice()
 }

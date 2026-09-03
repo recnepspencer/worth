@@ -125,6 +125,22 @@ fn node_input_for(
     )
 }
 
+pub(crate) fn unchanged_test_work() -> worth_ui_host_contract::UiMountedAppearanceWork {
+    let (first, ids) = node_input([12, 34, 56, 255], 7, false);
+    let (second, _) = node_input_for([12, 34, 56, 255], 7, false, Some(&ids));
+    let mut sidecar = UiMountedAppearanceSidecar::default();
+    sidecar.mount(first).unwrap();
+    sidecar.mount(second).unwrap()
+}
+
+pub(crate) fn changed_test_work() -> worth_ui_host_contract::UiMountedAppearanceWork {
+    let (first, ids) = node_input([12, 34, 56, 255], 7, false);
+    let (second, _) = node_input_for([80, 90, 100, 255], 7, false, Some(&ids));
+    let mut sidecar = UiMountedAppearanceSidecar::default();
+    sidecar.mount(first).unwrap();
+    sidecar.mount(second).unwrap()
+}
+
 #[test]
 fn initial_mount_records_attribution_and_visual_bounds_without_host_commands() {
     let (input, ids) = node_input([12, 34, 56, 255], 7, true);

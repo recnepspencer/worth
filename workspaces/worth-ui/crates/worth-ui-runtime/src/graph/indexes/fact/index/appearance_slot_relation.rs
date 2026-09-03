@@ -19,6 +19,23 @@ impl super::UiGraphConsumedFactIndex {
         capability_identity: &str,
         authored_identity: &str,
     ) -> Result<Box<[crate::graph::UiGraphNodeIdentity]>, UiGraphFactLookupDenial> {
+        if requested_basis != self.basis() {
+            return Err(UiGraphFactLookupDenial::BasisMismatch {
+                index_basis: self.basis(),
+                requested_basis,
+            });
+        }
+        if !self
+            .appearance_theme_slots
+            .admits(capability_identity, authored_identity)
+        {
+            return Err(UiGraphFactLookupDenial::UnknownAuthoredDeclaration {
+                authored_identity: authored_identity.into(),
+            });
+        }
+        if !self.authored_by_declaration.contains_key(authored_identity) {
+            return Ok(Box::new([]));
+        }
         let fact = UiProducedFact::AuthoredSource(UiAuthoredChangedFact::new(
             UiAuthoredFactSelector::node(authored_identity),
             UiAuthoredFactKind::SemanticsChanged,
@@ -40,6 +57,43 @@ impl super::UiGraphConsumedFactIndex {
         consumers.sort_unstable();
         consumers.dedup();
         Ok(consumers.into_boxed_slice())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) struct UiGraphAppearanceThemeSlotDomain {
+    authored_by_capability: BTreeMap<Box<str>, Box<str>>,
+}
+
+impl UiGraphAppearanceThemeSlotDomain {
+    pub(super) fn from_capabilities(
+        capabilities: &CapabilitySnapshot,
+        authored_declarations: &UiAuthoredDeclarationLookup,
+    ) -> Self {
+        let authored_by_capability = capabilities
+            .theme_tokens()
+            .entries()
+            .iter()
+            .map(|entry| {
+                let capability_identity = entry.descriptor().id().as_str();
+                let authored_identity = authored_declarations
+                    .theme_token_declaration_identity(capability_identity)
+                    .unwrap_or(capability_identity);
+                (
+                    capability_identity.into(),
+                    authored_identity.to_owned().into_boxed_str(),
+                )
+            })
+            .collect();
+        Self {
+            authored_by_capability,
+        }
+    }
+
+    fn admits(&self, capability_identity: &str, authored_identity: &str) -> bool {
+        self.authored_by_capability
+            .get(capability_identity)
+            .is_some_and(|admitted| admitted.as_ref() == authored_identity)
     }
 }
 

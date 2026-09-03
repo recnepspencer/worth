@@ -9,10 +9,9 @@ impl WorthUiActiveApplicationSession {
         let mut canonical_selection =
             crate::runtime::appearance::UiAppearanceConsumerSelection::empty();
         for token in update.changed_tokens() {
-            let slot = worth_ui_dsl::UiThemeSlotIdentity::new(token.as_str()).ok_or(())?;
             canonical_selection.merge(
                 self.application
-                    .appearance_slot_consumers(&slot)
+                    .appearance_slot_consumers(token)
                     .map_err(|_| ())?,
             );
         }

@@ -313,9 +313,10 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         projection: &crate::runtime::appearance::UiAppearanceProjection,
         consumers_selected: u32,
+        receipt: crate::runtime::appearance::UiAppearanceChangeReceipt,
     ) {
         self.appearance_inspection
-            .record_projection(projection, consumers_selected);
+            .record_projection(projection, consumers_selected, receipt);
     }
 
     pub fn resolve_affected_scope(

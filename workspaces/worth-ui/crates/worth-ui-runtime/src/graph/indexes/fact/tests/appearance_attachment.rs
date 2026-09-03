@@ -108,11 +108,12 @@ fn appearance_consumer_queries_reconstruct_from_the_existing_index_without_host_
     );
     let role_selection =
         crate::runtime::appearance::UiAppearanceConsumerSelection::for_role(index, role.role());
-    let slot_selection = crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
+    let slot_selection = crate::runtime::appearance::UiAppearanceConsumerSelection::try_for_slot(
         index,
         slot.as_str(),
         slot.as_str(),
-    );
+    )
+    .expect("declared theme slot should resolve");
 
     for selection in [&state, &role_selection] {
         assert!(selection.is_reconstructible());
@@ -196,11 +197,12 @@ fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
         .all(|entry| entry.affected_aspect().is_none()));
 
     let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
-    let selection = crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
+    let selection = crate::runtime::appearance::UiAppearanceConsumerSelection::try_for_slot(
         index,
         slot.as_str(),
         slot.as_str(),
-    );
+    )
+    .expect("declared theme slot should resolve");
     assert!(selection.is_reconstructible());
     assert_eq!(selection.consumers(), [attached]);
     assert_ne!(attached, peer);
@@ -223,13 +225,18 @@ fn canonical_slot_selection_exposes_unknown_authored_fact_denial() {
             }
         )
     );
-    let selection = crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
-        index,
-        slot.as_str(),
-        "theme.pulse.missing",
+    assert_eq!(
+        crate::runtime::appearance::UiAppearanceConsumerSelection::try_for_slot(
+            index,
+            slot.as_str(),
+            "theme.pulse.missing",
+        ),
+        Err(
+            crate::graph::UiGraphFactLookupDenial::UnknownAuthoredDeclaration {
+                authored_identity: "theme.pulse.missing".into(),
+            }
+        )
     );
-    assert!(!selection.is_reconstructible());
-    assert_eq!(selection.selected_count(), 0);
 }
 
 #[test]

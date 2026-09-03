@@ -1,11 +1,10 @@
-#![allow(
-    dead_code,
-    reason = "Gate 1 retains appearance consumer projections for later mounting publication"
-)]
-
 use super::WorthUiApplicationSessionState;
 
 impl WorthUiApplicationSessionState {
+    #[allow(
+        dead_code,
+        reason = "Gate 1 retains the state-axis appearance projection for later mounting publication"
+    )]
     pub(crate) fn appearance_state_consumers(
         &self,
         axis: worth_ui_dsl::UiAppearanceStateAxis,
@@ -14,6 +13,10 @@ impl WorthUiApplicationSessionState {
         crate::runtime::appearance::UiAppearanceConsumerSelection::for_state(index, axis)
     }
 
+    #[allow(
+        dead_code,
+        reason = "Gate 1 retains the role appearance projection for later mounting publication"
+    )]
     pub(crate) fn appearance_role_consumers(
         &self,
         role: &worth_ui_dsl::UiAppearanceRoleIdentity,
@@ -24,7 +27,7 @@ impl WorthUiApplicationSessionState {
 
     pub(crate) fn appearance_slot_consumers(
         &self,
-        slot: &worth_ui_dsl::UiThemeSlotIdentity,
+        slot: &crate::capability::ThemeTokenId,
     ) -> Result<
         crate::runtime::appearance::UiAppearanceConsumerSelection,
         crate::graph::UiGraphFactLookupDenial,

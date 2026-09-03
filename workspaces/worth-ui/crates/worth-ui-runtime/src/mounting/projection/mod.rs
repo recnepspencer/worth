@@ -14,6 +14,8 @@ mod prepared_projection;
 mod semantic_text;
 mod static_paint;
 
+#[cfg(test)]
+pub(crate) use appearance::{changed_test_work, unchanged_test_work};
 pub(crate) use appearance::{
     UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput, UiMountedAppearanceSidecar,
 };

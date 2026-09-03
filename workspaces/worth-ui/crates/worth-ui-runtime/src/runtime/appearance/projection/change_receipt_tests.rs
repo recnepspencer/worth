@@ -7,6 +7,8 @@ fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
     super::super::tests::run_on_appearance_fixture_stack(|| {
         let (mut session, binding, _target, vector, theme) = super::super::tests::inputs();
         let resolver = super::super::UiAppearanceResolver::new();
+        let unchanged_mount = crate::mounting::unchanged_test_work();
+        let changed_mount = crate::mounting::changed_test_work();
         let base = resolver
             .resolve_node(
                 session.graph().snapshot(),
@@ -84,28 +86,43 @@ fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
         );
 
         assert_receipt(
-            UiAppearanceChangeReceipt::compare(Some(&base), Some(&evidence_successor)),
+            UiAppearanceChangeReceipt::compare(
+                Some(&base),
+                Some(&evidence_successor),
+                &unchanged_mount,
+            ),
             UiAppearanceChangeOutcome::InputEvidenceChanged,
             [true, false, false, false, false, false],
         );
         assert_receipt(
-            UiAppearanceChangeReceipt::compare(Some(&base), Some(&semantic_successor)),
+            UiAppearanceChangeReceipt::compare(
+                Some(&base),
+                Some(&semantic_successor),
+                &unchanged_mount,
+            ),
             UiAppearanceChangeOutcome::SemanticProjectionChanged,
             [false, true, false, false, false, false],
         );
         assert_receipt(
-            UiAppearanceChangeReceipt::compare(Some(&base), Some(&value_successor)),
+            UiAppearanceChangeReceipt::compare(
+                Some(&base),
+                Some(&value_successor),
+                &unchanged_mount,
+            ),
             UiAppearanceChangeOutcome::ResolvedAspectValueChanged,
             [false, true, true, false, false, false],
         );
         assert_receipt(
-            UiAppearanceChangeReceipt::compare(Some(&base), Some(&base))
-                .with_mounted_mechanical_output(true),
+            UiAppearanceChangeReceipt::compare(Some(&base), Some(&base), &changed_mount),
             UiAppearanceChangeOutcome::MountedMechanicalOutputChanged,
             [false, false, false, true, false, false],
         );
         assert_receipt(
-            UiAppearanceChangeReceipt::compare(Some(&base), Some(&equal_output_successor)),
+            UiAppearanceChangeReceipt::compare(
+                Some(&base),
+                Some(&equal_output_successor),
+                &unchanged_mount,
+            ),
             UiAppearanceChangeOutcome::EqualOutputSuppressed,
             [false, true, false, false, true, false],
         );
@@ -113,6 +130,66 @@ fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
             UiAppearanceChangeReceipt::denied(),
             UiAppearanceChangeOutcome::DeniedBeforeEffects,
             [false, false, false, false, false, true],
+        );
+        assert_inspection(
+            &mut session,
+            &evidence_successor,
+            UiAppearanceChangeReceipt::compare(
+                Some(&base),
+                Some(&evidence_successor),
+                &unchanged_mount,
+            ),
+            worth_ui_inspection::UiAppearanceInspectionInvalidationCause::InputEvidenceChanged,
+            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Unchanged,
+            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed,
+        );
+        assert_inspection(
+            &mut session,
+            &semantic_successor,
+            UiAppearanceChangeReceipt::compare(
+                Some(&base),
+                Some(&semantic_successor),
+                &unchanged_mount,
+            ),
+            worth_ui_inspection::UiAppearanceInspectionInvalidationCause::SemanticProjectionChanged,
+            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Unchanged,
+            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed,
+        );
+        assert_inspection(
+            &mut session,
+            &value_successor,
+            UiAppearanceChangeReceipt::compare(Some(&base), Some(&value_successor), &unchanged_mount),
+            worth_ui_inspection::UiAppearanceInspectionInvalidationCause::ResolvedAspectValueChanged,
+            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Unchanged,
+            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed,
+        );
+        assert_inspection(
+            &mut session,
+            &base,
+            UiAppearanceChangeReceipt::compare(Some(&base), Some(&base), &changed_mount),
+            worth_ui_inspection::UiAppearanceInspectionInvalidationCause::MountedMechanicalOutputChanged,
+            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Changed,
+            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed,
+        );
+        assert_inspection(
+            &mut session,
+            &equal_output_successor,
+            UiAppearanceChangeReceipt::compare(
+                Some(&base),
+                Some(&equal_output_successor),
+                &unchanged_mount,
+            ),
+            worth_ui_inspection::UiAppearanceInspectionInvalidationCause::EqualOutputSuppressed,
+            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Unchanged,
+            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::Suppressed,
+        );
+        assert_inspection(
+            &mut session,
+            &base,
+            UiAppearanceChangeReceipt::denied(),
+            worth_ui_inspection::UiAppearanceInspectionInvalidationCause::DeniedBeforeEffects,
+            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::NotAttempted,
+            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotAttempted,
         );
         assert!(
             session
@@ -123,6 +200,40 @@ fn receipt_exposes_each_gate_one_change_outcome_without_host_work() {
         );
         let _ = session.shutdown();
     });
+}
+
+fn assert_inspection(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    projection: &super::super::UiAppearanceProjection,
+    receipt: UiAppearanceChangeReceipt,
+    cause: worth_ui_inspection::UiAppearanceInspectionInvalidationCause,
+    mounted: worth_ui_inspection::UiAppearanceInspectionMountedMechanic,
+    physical: worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression,
+) {
+    let world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
+        projection.state().basis().session().as_u64(),
+        projection
+            .state()
+            .basis()
+            .generation()
+            .prepared_generation()
+            .semantic_package_identity()
+            .narrowing_fingerprint(),
+        projection.state().basis().surface().diagnostic_value(),
+    );
+    session.record_appearance_projection_for_inspection(projection, 1, receipt);
+    let worth_ui_inspection::UiAppearanceInspectionOutcome::Found(explanation) = session
+        .why_appearance(worth_ui_inspection::UiAppearanceInspectionQuery::new(
+            world,
+            projection.target().graph_node().digest(),
+            projection.aspects()[0].aspect(),
+        ))
+    else {
+        panic!("production why_appearance facade should expose recorded receipt");
+    };
+    assert_eq!(explanation.invalidation_cause(), cause);
+    assert_eq!(explanation.mounted_mechanic(), mounted);
+    assert_eq!(explanation.physical_suppression(), physical);
 }
 
 fn projection_with_aspect(

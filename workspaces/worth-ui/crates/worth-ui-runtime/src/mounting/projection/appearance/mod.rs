@@ -96,3 +96,6 @@ impl UiMountedAppearanceSidecar {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(crate) use tests::{changed_test_work, unchanged_test_work};

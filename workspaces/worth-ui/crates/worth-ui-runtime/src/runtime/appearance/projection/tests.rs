@@ -71,7 +71,10 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
                 .narrowing_fingerprint(),
             first.state().basis().surface().diagnostic_value(),
         );
-        session.record_appearance_projection_for_inspection(&first, 1);
+        let mounting = crate::mounting::unchanged_test_work();
+        let receipt =
+            super::super::UiAppearanceChangeReceipt::compare(Some(&first), Some(&first), &mounting);
+        session.record_appearance_projection_for_inspection(&first, 1, receipt);
         let inspection =
             session.why_appearance(worth_ui_inspection::UiAppearanceInspectionQuery::new(
                 inspection_world,
@@ -107,11 +110,11 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
         );
         assert_eq!(
             explanation.mounted_mechanic(),
-            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::NotEvaluated
+            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Unchanged
         );
         assert_eq!(
             explanation.physical_suppression(),
-            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotEvaluated
+            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed
         );
         assert_eq!(explanation.cost().consumers_selected(), 1);
         assert!(

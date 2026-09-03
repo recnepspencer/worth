@@ -19,15 +19,6 @@ impl UiAppearanceConsumerSelection {
         Self::from_nodes(index.appearance_role_consumer_nodes(role))
     }
 
-    pub(crate) fn for_slot(
-        index: &crate::graph::UiGraphConsumedFactIndex,
-        capability_identity: &str,
-        authored_identity: &str,
-    ) -> Self {
-        Self::try_for_slot(index, capability_identity, authored_identity)
-            .unwrap_or_else(|_| Self::unavailable())
-    }
-
     pub(crate) fn try_for_slot(
         index: &crate::graph::UiGraphConsumedFactIndex,
         capability_identity: &str,
@@ -61,13 +52,6 @@ impl UiAppearanceConsumerSelection {
         Self {
             consumers: consumers.into_boxed_slice(),
             reconstructible: true,
-        }
-    }
-
-    fn unavailable() -> Self {
-        Self {
-            consumers: Box::new([]),
-            reconstructible: false,
         }
     }
 
