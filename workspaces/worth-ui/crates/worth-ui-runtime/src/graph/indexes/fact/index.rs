@@ -110,8 +110,7 @@ impl UiGraphConsumedFactIndex {
         self.appearance_consumers == other.appearance_consumers
     }
 
-    #[cfg(any(test, feature = "certification-support"))]
-    pub const fn basis(&self) -> UiGraphFactIndexBasis {
+    pub(crate) const fn basis(&self) -> UiGraphFactIndexBasis {
         self.basis
     }
 

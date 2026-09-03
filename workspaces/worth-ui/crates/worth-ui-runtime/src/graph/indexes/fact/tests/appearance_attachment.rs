@@ -206,6 +206,50 @@ fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
     assert_ne!(attached, peer);
 }
 
+#[test]
+fn canonical_slot_selection_exposes_unknown_authored_fact_denial() {
+    let app = role_only_app();
+    let authority = app.prepared_authority();
+    let index = authority.consumed_fact_index();
+    let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
+    let denial =
+        index.select_appearance_slot_consumers(index.basis(), slot.as_str(), "theme.pulse.missing");
+
+    assert_eq!(
+        denial,
+        Err(
+            crate::graph::UiGraphFactLookupDenial::UnknownAuthoredDeclaration {
+                authored_identity: "theme.pulse.missing".into(),
+            }
+        )
+    );
+    let selection = crate::runtime::appearance::UiAppearanceConsumerSelection::for_slot(
+        index,
+        slot.as_str(),
+        "theme.pulse.missing",
+    );
+    assert!(!selection.is_reconstructible());
+    assert_eq!(selection.selected_count(), 0);
+}
+
+#[test]
+fn canonical_slot_selection_rejects_a_foreign_requested_basis() {
+    let app = role_only_app();
+    let foreign = super::foreign_indexed_app();
+    let authority = app.prepared_authority();
+    let index = authority.consumed_fact_index();
+    let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
+    let requested_basis = foreign.prepared_authority().consumed_fact_index().basis();
+
+    assert_eq!(
+        index.select_appearance_slot_consumers(requested_basis, slot.as_str(), slot.as_str()),
+        Err(crate::graph::UiGraphFactLookupDenial::BasisMismatch {
+            index_basis: index.basis(),
+            requested_basis,
+        })
+    );
+}
+
 fn role_only_app() -> crate::facade::WorthUiApp {
     crate::declaration::appearance_fact_index_test_support::role_only_fact_index_app(
         "role-only-fact-index",

@@ -7,6 +7,8 @@ use worth_ui_dsl::{
 
 #[path = "tests/appearance_attachment.rs"]
 mod appearance_attachment;
+#[path = "tests/appearance_slot_oracle.rs"]
+mod appearance_slot_oracle;
 #[path = "tests/appearance_state.rs"]
 mod appearance_state;
 

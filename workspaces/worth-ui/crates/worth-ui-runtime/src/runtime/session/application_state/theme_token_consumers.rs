@@ -10,36 +10,9 @@ impl WorthUiApplicationSessionState {
         let declaration = declarations
             .theme_token_declaration_identity(token.as_str())
             .unwrap_or(token.as_str());
-        let fact = crate::fact_contract::UiProducedFact::AuthoredSource(
-            crate::fact_contract::UiAuthoredChangedFact::new(
-                crate::fact_contract::UiAuthoredFactSelector::node(declaration),
-                crate::fact_contract::UiAuthoredFactKind::SemanticsChanged,
-            ),
-        );
         let index = prepared.consumed_fact_index();
-        let mut consumers = match index.lookup_retained(&fact) {
-            Ok(receipt) => receipt
-                .entries()
-                .iter()
-                .filter(|entry| {
-                    entry
-                        .consumption_relation()
-                        .matches_theme_token(token.as_str(), declaration)
-                })
-                .filter_map(|entry| match entry.consumer() {
-                    crate::graph::UiGraphFactConsumerIdentity::GraphNode(node) => Some(node),
-                    crate::graph::UiGraphFactConsumerIdentity::MountEligibilitySlot(_) => None,
-                })
-                .collect::<Vec<_>>(),
-            Err(crate::graph::UiGraphFactLookupDenial::UnknownAuthoredDeclaration { .. }) => {
-                Vec::new()
-            }
-            Err(crate::graph::UiGraphFactLookupDenial::BasisMismatch { .. }) => {
-                unreachable!("an index always accepts its own retained basis")
-            }
-        };
-        consumers.sort();
-        consumers.dedup();
-        consumers.into_boxed_slice()
+        index
+            .select_appearance_slot_consumers(index.basis(), token.as_str(), declaration)
+            .unwrap_or_else(|_| Box::new([]))
     }
 }

@@ -1,12 +1,47 @@
 use std::collections::BTreeMap;
 
 use crate::capability::{CapabilitySnapshot, ThemeTokenId};
-use crate::fact_contract::UiConsumedFactContract;
+use crate::fact_contract::{
+    UiAuthoredChangedFact, UiAuthoredFactKind, UiAuthoredFactSelector, UiConsumedFactContract,
+    UiProducedFact,
+};
 use crate::graph::UiGraphSnapshot;
 
 use super::super::{
-    UiAuthoredDeclarationLookup, UiGraphFactConsumptionRelation, UiGraphFactIndexEntry,
+    UiAuthoredDeclarationLookup, UiGraphFactConsumptionRelation, UiGraphFactIndexBasis,
+    UiGraphFactIndexEntry, UiGraphFactLookupDenial,
 };
+
+impl super::UiGraphConsumedFactIndex {
+    pub(crate) fn select_appearance_slot_consumers(
+        &self,
+        requested_basis: UiGraphFactIndexBasis,
+        capability_identity: &str,
+        authored_identity: &str,
+    ) -> Result<Box<[crate::graph::UiGraphNodeIdentity]>, UiGraphFactLookupDenial> {
+        let fact = UiProducedFact::AuthoredSource(UiAuthoredChangedFact::new(
+            UiAuthoredFactSelector::node(authored_identity),
+            UiAuthoredFactKind::SemanticsChanged,
+        ));
+        let receipt = self.lookup(requested_basis, &fact)?;
+        let mut consumers = receipt
+            .entries()
+            .iter()
+            .filter(|entry| {
+                entry
+                    .consumption_relation()
+                    .matches_theme_token(capability_identity, authored_identity)
+            })
+            .filter_map(|entry| match entry.consumer() {
+                crate::graph::UiGraphFactConsumerIdentity::GraphNode(node) => Some(node),
+                crate::graph::UiGraphFactConsumerIdentity::MountEligibilitySlot(_) => None,
+            })
+            .collect::<Vec<_>>();
+        consumers.sort_unstable();
+        consumers.dedup();
+        Ok(consumers.into_boxed_slice())
+    }
+}
 
 pub(super) fn add_role_slot_consumers(
     snapshot: &UiGraphSnapshot,
