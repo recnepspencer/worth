@@ -105,7 +105,7 @@ impl WorthUiActiveApplicationSession {
         let completion = self
             .execute_framework_turn(|_| {})
             .map_err(WorthUiMountedFrameExecutionStop::PublicationLease)?;
-        let execution = completion.into_execution().map_err(|completion| {
+        let mut execution = completion.into_execution().map_err(|completion| {
             WorthUiMountedFrameExecutionStop::FrameworkTransition(
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
@@ -149,7 +149,7 @@ impl WorthUiActiveApplicationSession {
         let completion = self
             .execute_framework_turn(|_| {})
             .map_err(WorthUiMountedFrameExecutionStop::PublicationLease)?;
-        let execution = completion.into_execution().map_err(|completion| {
+        let mut execution = completion.into_execution().map_err(|completion| {
             WorthUiMountedFrameExecutionStop::FrameworkTransition(
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )

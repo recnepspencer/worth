@@ -97,6 +97,15 @@ impl UiPreparedMountedFrame {
         self.candidate.frame().semantic_projection()
     }
 
+    pub(crate) fn appearance_node_inputs(
+        &self,
+        theme_values: &crate::mounting::UiMountedThemeValueSource,
+    ) -> Vec<super::super::projection::UiMountedAppearanceNodeInputContext> {
+        self.candidate
+            .frame()
+            .appearance_node_inputs(theme_values.canonical_consumers())
+    }
+
     pub fn receipt(&self) -> UiMountedFrameReceipt {
         UiMountedFrameReceipt {
             canonical_core: self.canonical_core,

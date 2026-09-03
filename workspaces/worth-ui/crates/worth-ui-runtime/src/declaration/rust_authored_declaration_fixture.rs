@@ -9,12 +9,22 @@ use worth_ui_dsl::{
 
 #[derive(Clone)]
 pub(crate) struct WorthUiRustAuthoredDeclarationFixture {
+    appearance_roles: Vec<(String, worth_ui_dsl::UiAppearanceRoleDeclaration)>,
+    components: Vec<(
+        String,
+        String,
+        Option<worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration>,
+    )>,
     specs: Vec<UiDslSemanticArtifactSpec>,
 }
 
 impl WorthUiRustAuthoredDeclarationFixture {
     pub(crate) fn empty() -> Self {
-        Self { specs: Vec::new() }
+        Self {
+            appearance_roles: Vec::new(),
+            components: Vec::new(),
+            specs: Vec::new(),
+        }
     }
 
     pub(crate) fn named(_diagnostic_name: impl Into<String>) -> Self {
@@ -23,6 +33,26 @@ impl WorthUiRustAuthoredDeclarationFixture {
 
     pub(crate) fn with_semantic_artifact_spec(mut self, spec: UiDslSemanticArtifactSpec) -> Self {
         self.specs.push(spec);
+        self
+    }
+
+    pub(crate) fn with_appearance_role(
+        mut self,
+        module_path: impl Into<String>,
+        role: worth_ui_dsl::UiAppearanceRoleDeclaration,
+    ) -> Self {
+        self.appearance_roles.push((module_path.into(), role));
+        self
+    }
+
+    pub(crate) fn with_component_appearance_role(
+        mut self,
+        module_path: impl Into<String>,
+        name_text: impl Into<String>,
+        attachment: worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration,
+    ) -> Self {
+        self.components
+            .push((module_path.into(), name_text.into(), Some(attachment)));
         self
     }
 
@@ -43,14 +73,41 @@ impl WorthUiRustAuthoredDeclarationFixture {
     }
 
     pub(crate) fn into_input(self) -> WorthUiRustAuthoredArtifactInput {
-        rust_authored_input_from_semantic_specs(self.specs)
+        rust_authored_input_from_declarations(self.appearance_roles, self.components, self.specs)
     }
 }
 
-fn rust_authored_input_from_semantic_specs(
+fn rust_authored_input_from_declarations(
+    appearance_roles: impl IntoIterator<Item = (String, worth_ui_dsl::UiAppearanceRoleDeclaration)>,
+    components: impl IntoIterator<
+        Item = (
+            String,
+            String,
+            Option<worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration>,
+        ),
+    >,
     specs: impl IntoIterator<Item = UiDslSemanticArtifactSpec>,
 ) -> WorthUiRustAuthoredArtifactInput {
     let mut modules = BTreeMap::<String, WorthUiRustAuthoredArtifactInputModule>::new();
+    for (module_path, role) in appearance_roles {
+        let module = modules
+            .remove(&module_path)
+            .unwrap_or_else(|| WorthUiRustAuthoredArtifactInputModule::new(&module_path))
+            .with_appearance_role(role);
+        modules.insert(module_path, module);
+    }
+    for (module_path, name_text, attachment) in components {
+        let module = modules
+            .remove(&module_path)
+            .unwrap_or_else(|| WorthUiRustAuthoredArtifactInputModule::new(&module_path));
+        let module = match attachment {
+            Some(attachment) => module
+                .with_component_appearance_role(name_text, attachment)
+                .expect("one fixture component carries at most one appearance attachment"),
+            None => module.with_component(name_text),
+        };
+        modules.insert(module_path, module);
+    }
     for spec in specs {
         let artifact = spec.into_semantic_artifact();
         push_artifact(&mut modules, &artifact);

@@ -34,6 +34,15 @@ impl<ChangeProfileState, IntentWiringState>
         Ok(self)
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
+    pub(crate) fn register_appearance_theme_bundle(
+        mut self,
+        bundle: crate::capability::FrozenAppearanceThemeCapabilities,
+    ) -> Result<Self, crate::capability::FrozenAppearanceThemeCapabilitiesDenial> {
+        self.inner = self.inner.register_appearance_theme_bundle(bundle)?;
+        Ok(self)
+    }
+
     pub fn register_icon(mut self, descriptor: IconDescriptor) -> Self {
         self.inner = self.inner.register_icon(descriptor);
         self

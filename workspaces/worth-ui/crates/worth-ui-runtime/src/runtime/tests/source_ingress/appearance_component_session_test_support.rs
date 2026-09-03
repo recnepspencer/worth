@@ -294,22 +294,8 @@ pub(crate) fn appearance_fixture(
         role.revision(),
     );
     crate::facade::WorthUiRustAuthoredDeclarationFixture::named("appearance-consumer-current")
-        .with_semantic_artifact_spec(
-            worth_ui_dsl::UiDslSemanticArtifactSpec::new(
-                worth_ui_dsl::UiDslSemanticKey::new(ACTIVE_COMPONENT),
-                worth_ui_dsl::UiDslSemanticFamily::Control,
-                worth_ui_dsl::UiDslSourceProvenance::rust_authored("appearance/consumer", 0),
-            )
-            .with_structural_token(worth_ui_dsl::UiDslStructuralToken::new(
-                "control:appearance-consumer",
-            ))
-            .with_component_reference(
-                worth_ui_dsl::UiDslComponentReference::new(ACTIVE_COMPONENT).unwrap(),
-            )
-            .unwrap()
-            .with_appearance_role_attachment(attachment)
-            .unwrap(),
-        )
+        .with_appearance_role("appearance/consumer", role.clone())
+        .with_component_appearance_role("appearance/consumer", ACTIVE_COMPONENT, attachment)
 }
 
 fn appearance_fixture_without_attachment() -> crate::facade::WorthUiRustAuthoredDeclarationFixture {

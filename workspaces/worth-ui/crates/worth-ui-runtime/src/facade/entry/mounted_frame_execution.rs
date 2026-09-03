@@ -64,7 +64,7 @@ impl WorthUiActiveApplicationSession {
         let completion = self
             .execute_framework_turn(collect_sources)
             .map_err(WorthUiMountedFrameExecutionStop::PublicationLease)?;
-        let execution = completion.into_execution().map_err(|completion| {
+        let mut execution = completion.into_execution().map_err(|completion| {
             WorthUiMountedFrameExecutionStop::FrameworkTransition(
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
@@ -95,7 +95,7 @@ impl WorthUiActiveApplicationSession {
         let completion = self
             .execute_framework_turn(collect_sources)
             .map_err(WorthUiMountedFrameExecutionStop::PublicationLease)?;
-        let execution = completion.into_execution().map_err(|completion| {
+        let mut execution = completion.into_execution().map_err(|completion| {
             WorthUiMountedFrameExecutionStop::FrameworkTransition(
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
@@ -124,7 +124,7 @@ impl WorthUiActiveApplicationSession {
         let completion = self
             .execute_framework_turn(collect_sources)
             .map_err(WorthUiMountedFrameExecutionStop::PublicationLease)?;
-        let execution = completion.into_execution().map_err(|completion| {
+        let mut execution = completion.into_execution().map_err(|completion| {
             WorthUiMountedFrameExecutionStop::FrameworkTransition(
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
@@ -153,7 +153,7 @@ impl WorthUiActiveApplicationSession {
         let completion = self
             .execute_framework_turn(collect_sources)
             .map_err(WorthUiMountedFrameExecutionStop::PublicationLease)?;
-        let execution = completion.into_execution().map_err(|completion| {
+        let mut execution = completion.into_execution().map_err(|completion| {
             WorthUiMountedFrameExecutionStop::FrameworkTransition(
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
@@ -178,7 +178,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
         deadline: UiPresentationDeadline,
         now: u64,
     ) -> Result<UiMountedFrameOutcome, WorthUiMountedFrameExecutionStop<'session>> {
-        let execution = self.into_execution().map_err(|completion| {
+        let mut execution = self.into_execution().map_err(|completion| {
             WorthUiMountedFrameExecutionStop::FrameworkTransition(
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )

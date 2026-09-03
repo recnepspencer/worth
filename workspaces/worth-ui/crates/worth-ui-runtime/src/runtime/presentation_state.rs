@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
+mod appearance_theme;
 mod overlay_export;
 #[path = "presentation_state/theme_values.rs"]
 mod theme_values;
@@ -9,6 +10,7 @@ mod theme_values;
 #[path = "presentation_state_tests.rs"]
 mod tests;
 
+pub(crate) use appearance_theme::UiAppearanceThemeBindingDenial;
 pub(crate) use overlay_export::UiApplicationPresentationOwnerExport;
 
 pub(crate) struct UiApplicationPresentationState {

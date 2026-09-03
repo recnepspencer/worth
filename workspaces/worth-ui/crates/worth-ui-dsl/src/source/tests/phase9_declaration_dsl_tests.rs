@@ -140,19 +140,39 @@ fn rust_and_file_component_authoring_keep_explicit_role_attachment() {
         "#,
     )
     .expect("file declaration should compile");
+    let expected_attachment = UiAppearanceRoleAttachmentDeclaration::new(
+        UiAppearanceRoleIdentity::new("action.primary").unwrap(),
+        UiAppearanceRoleRevision::new(1).unwrap(),
+    );
+    let expected_component_reference =
+        UiDslComponentReference::new("platform.control.activation").unwrap();
     let rust = compile_rust(
         WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
             .with_appearance_role(component_role())
             .with_component_appearance_role(
                 "platform.control.activation",
-                UiAppearanceRoleAttachmentDeclaration::new(
-                    UiAppearanceRoleIdentity::new("action.primary").unwrap(),
-                    UiAppearanceRoleRevision::new(1).unwrap(),
-                ),
+                expected_attachment.clone(),
             )
             .expect("Rust component attachment should be unique"),
     )
     .expect("Rust declaration should compile");
+    let component_receipt = rust
+        .declaration_lowering_receipts()
+        .into_iter()
+        .find(|receipt| {
+            receipt.semantic_artifact().key().as_str() == "component:platform.control.activation"
+        })
+        .expect("component declaration should have a lowering receipt");
+    assert_eq!(
+        component_receipt.semantic_artifact().component_reference(),
+        Some(&expected_component_reference)
+    );
+    assert_eq!(
+        component_receipt
+            .semantic_artifact()
+            .appearance_role_attachment(),
+        Some(&expected_attachment)
+    );
     let has_attachment = file
         .declaration_lowering_receipts()
         .into_iter()

@@ -14,8 +14,6 @@ mod prepared_projection;
 mod semantic_text;
 mod static_paint;
 
-#[cfg(test)]
-pub(crate) use appearance::{changed_test_work, unchanged_test_work};
 pub(crate) use appearance::{
     UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput, UiMountedAppearanceSidecar,
 };
@@ -23,6 +21,7 @@ pub use denial::UiMountedProjectionDenial;
 pub(crate) use focus_scope::UiMountedFocusScope;
 pub(in crate::mounting) use frame_storage::diagnostic_source::UiMountedDiagnosticSource;
 pub(crate) use frame_storage::presentation_sources::compile as compile_presentation_sources;
+pub(crate) use frame_storage::UiMountedAppearanceNodeInputContext;
 pub use frame_storage::UiMountedProjectionFrame;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticMechanicSource;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticProjection;

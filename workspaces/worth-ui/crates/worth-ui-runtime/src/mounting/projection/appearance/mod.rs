@@ -12,14 +12,18 @@ mod opacity_composition;
 mod outline;
 mod overlay_order;
 mod pointer_affordance;
-mod reconstruction;
 mod surface;
 mod text_foreground;
 
 pub(crate) use delta::UiMountedAppearanceDeltaSummary;
-pub(crate) use fact::{UiMountedAppearanceFacts, UiMountedAppearanceLoweringInput};
+pub(crate) use fact::{
+    UiMountedAppearanceFacts, UiMountedAppearanceLoweringInput, UiMountedAppearanceNodeInput,
+};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UiMountedAppearanceLoweringDenial {
+    NodeAllocationUnavailable,
+    NodeProjectionUnavailable,
+    PresentationIdentityExhausted,
     NodeReceiptFrameMismatch,
     NodeProjectionIssuerMismatch,
     NodeSurfaceMismatch,
@@ -38,6 +42,30 @@ pub(crate) enum UiMountedAppearanceLoweringDenial {
     OverlayOrder(worth_ui_host_contract::UiMountedOverlayOrderMechanicDenial),
     Frame(worth_ui_host_contract::UiMountedAppearanceFrameDenial),
     WorkConstruction,
+}
+
+impl UiMountedAppearanceLoweringInput {
+    pub(crate) fn for_single_node(
+        frame: worth_ui_host_contract::UiMountedFrameIdentity,
+        semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        node: UiMountedAppearanceNodeInput,
+    ) -> Self {
+        Self {
+            frame,
+            semantic_surface,
+            presentation,
+            nodes: vec![node],
+            backdrops: Vec::new(),
+            overlay: fact::UiMountedAppearanceOverlayInput {
+                semantic_surface,
+                presentation,
+                portal_revision: 0,
+                backdrop_revision: 0,
+                bottom_to_top: Box::new([]),
+            },
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -59,19 +87,6 @@ impl UiMountedAppearanceSidecar {
         self.last_delta = Some(delta.summary);
         self.current = Some(successor);
         Ok(delta.work)
-    }
-
-    pub(crate) fn reconstruct(
-        &mut self,
-        input: UiMountedAppearanceLoweringInput,
-    ) -> Result<worth_ui_host_contract::UiMountedAppearanceWork, UiMountedAppearanceLoweringDenial>
-    {
-        reconstruction::rebuild(self.current.as_ref(), input).map(|(delta, facts)| {
-            self.counters.observe(&delta.work, delta.summary);
-            self.last_delta = Some(delta.summary);
-            self.current = Some(facts);
-            delta.work
-        })
     }
 
     #[cfg(test)]
@@ -96,6 +111,3 @@ impl UiMountedAppearanceSidecar {
 
 #[cfg(test)]
 mod tests;
-
-#[cfg(test)]
-pub(crate) use tests::{changed_test_work, unchanged_test_work};

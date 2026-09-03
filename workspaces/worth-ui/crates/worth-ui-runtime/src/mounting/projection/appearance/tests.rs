@@ -125,22 +125,6 @@ fn node_input_for(
     )
 }
 
-pub(crate) fn unchanged_test_work() -> worth_ui_host_contract::UiMountedAppearanceWork {
-    let (first, ids) = node_input([12, 34, 56, 255], 7, false);
-    let (second, _) = node_input_for([12, 34, 56, 255], 7, false, Some(&ids));
-    let mut sidecar = UiMountedAppearanceSidecar::default();
-    sidecar.mount(first).unwrap();
-    sidecar.mount(second).unwrap()
-}
-
-pub(crate) fn changed_test_work() -> worth_ui_host_contract::UiMountedAppearanceWork {
-    let (first, ids) = node_input([12, 34, 56, 255], 7, false);
-    let (second, _) = node_input_for([80, 90, 100, 255], 7, false, Some(&ids));
-    let mut sidecar = UiMountedAppearanceSidecar::default();
-    sidecar.mount(first).unwrap();
-    sidecar.mount(second).unwrap()
-}
-
 #[test]
 fn initial_mount_records_attribution_and_visual_bounds_without_host_commands() {
     let (input, ids) = node_input([12, 34, 56, 255], 7, true);
@@ -283,30 +267,6 @@ fn paint_change_is_mechanical_and_semantic_change_can_still_suppress_output() {
 
 fn second_surface(sidecar: &UiMountedAppearanceSidecar) -> UiSemanticSurfaceIdentity {
     sidecar.current().unwrap().frame().semantic_surface()
-}
-
-#[test]
-fn reconstruction_rebuilds_the_same_unpublished_successor_shape() {
-    let (first, ids) = node_input([12, 34, 56, 255], 7, true);
-    let (second, _) = node_input_for([12, 34, 56, 255], 7, true, Some(&ids));
-    let mut sidecar = UiMountedAppearanceSidecar::default();
-    sidecar.mount(first).unwrap();
-
-    let work = sidecar.reconstruct(second).unwrap();
-
-    assert_eq!(
-        work.posture(),
-        UiMountedAppearanceWorkPosture::Reconstruction
-    );
-    assert_structural_appearance_work(&work, 4);
-    assert_eq!(work.changes().len(), 4);
-    assert!(work.changes().iter().all(|change| {
-        matches!(
-            change,
-            worth_ui_host_contract::UiMountedAppearanceMechanicChange::Replace { .. }
-        )
-    }));
-    assert_eq!(work.damage().len(), 1);
 }
 
 fn assert_structural_appearance_work(

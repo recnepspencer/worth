@@ -37,6 +37,43 @@ pub(in crate::mounting) use semantic_projection::UiMountedSemanticProjection;
 pub(super) use semantic_projection::{UiMountedProjectionNodeRecord, UiMountedProjectionSurface};
 use view::{UiMountedOrdinaryPaintSelector, UiMountedPlanIndexPaintSelector};
 
+pub(crate) struct UiMountedAppearanceNodeInputContext {
+    pub(crate) frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    pub(crate) semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    pub(crate) mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    pub(crate) graph_node: crate::graph::UiGraphNodeIdentity,
+    pub(crate) incarnation: worth_ui_host_contract::UiMountIncarnation,
+    pub(crate) node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+    issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
+    plan_digest: u64,
+    allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+    static_paint: Option<super::static_paint::UiMountedStaticPaintSeed>,
+}
+
+impl UiMountedAppearanceNodeInputContext {
+    pub(crate) fn lower(
+        &self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    ) -> Result<super::UiMountedAppearanceLoweringInput, super::UiMountedAppearanceLoweringDenial>
+    {
+        let input_node = super::appearance::UiMountedAppearanceNodeInput::from_runtime_mounting(
+            self.issuer,
+            self.semantic_surface,
+            self.node_receipt,
+            self.graph_node,
+            self.plan_digest,
+            self.allocation,
+            self.static_paint,
+        )?;
+        Ok(super::UiMountedAppearanceLoweringInput::for_single_node(
+            self.frame,
+            self.semantic_surface,
+            presentation,
+            input_node,
+        ))
+    }
+}
+
 const TABLE_LIMIT: usize = 2_048;
 const RESOURCE_LIMIT: usize = 1_024;
 
@@ -48,7 +85,6 @@ pub struct UiMountedProjectionFrame {
     plan_digest: u64,
     semantic: UiMountedSemanticProjection,
     mechanics: UiMountedMechanicSource,
-    appearance: super::UiMountedAppearanceSidecar,
     presentation_effects: UiMountedPresentationEffectSource,
     diagnostics: UiMountedDiagnosticSource,
     changed_instances: std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
@@ -105,7 +141,6 @@ impl UiMountedProjectionFrame {
             plan_digest: input.plan_digest,
             semantic: input.semantic,
             mechanics: input.mechanics,
-            appearance: super::UiMountedAppearanceSidecar::default(),
             presentation_effects: input.presentation_effects,
             diagnostics: input.diagnostics,
             changed_instances: input.changed_instances,
@@ -236,45 +271,6 @@ impl UiMountedProjectionFrame {
         self.mechanics.clone()
     }
 
-    pub(in crate::mounting) fn appearance_sidecar(&self) -> &super::UiMountedAppearanceSidecar {
-        &self.appearance
-    }
-
-    pub(in crate::mounting) fn inherit_unpublished_appearance(
-        &mut self,
-        predecessor: &super::UiMountedAppearanceSidecar,
-    ) {
-        self.appearance = predecessor.clone();
-    }
-
-    #[allow(
-        dead_code,
-        reason = "Gate 1 retains this named unpublished mounting seam until appearance cutover"
-    )]
-    pub(in crate::mounting) fn mount_unpublished_appearance(
-        &mut self,
-        input: super::UiMountedAppearanceLoweringInput,
-    ) -> Result<
-        worth_ui_host_contract::UiMountedAppearanceWork,
-        super::UiMountedAppearanceLoweringDenial,
-    > {
-        self.appearance.mount(input)
-    }
-
-    #[allow(
-        dead_code,
-        reason = "Gate 1 retains this named unpublished reconstruction seam until cutover"
-    )]
-    pub(in crate::mounting) fn reconstruct_unpublished_appearance(
-        &mut self,
-        input: super::UiMountedAppearanceLoweringInput,
-    ) -> Result<
-        worth_ui_host_contract::UiMountedAppearanceWork,
-        super::UiMountedAppearanceLoweringDenial,
-    > {
-        self.appearance.reconstruct(input)
-    }
-
     pub(in crate::mounting) fn input_text_profile(
         &self,
     ) -> worth_ui_host_contract::UiTextProfileGeneration {
@@ -342,5 +338,34 @@ impl UiMountedProjectionFrame {
 
     pub(in crate::mounting) fn semantic_projection(&self) -> &UiMountedSemanticProjection {
         &self.semantic
+    }
+
+    pub(crate) fn appearance_node_inputs(
+        &self,
+        selected_graph_nodes: &[crate::graph::UiGraphNodeIdentity],
+    ) -> Vec<UiMountedAppearanceNodeInputContext> {
+        self.semantic
+            .nodes_in_mounted_order()
+            .filter(|node| selected_graph_nodes.contains(&node.receipt.graph_node()))
+            .map(|node| {
+                let receipt = node.receipt();
+                let node_receipt = self
+                    .receipt_basis
+                    .receipt_for(receipt.mounted_instance())
+                    .expect("mounted projection node belongs to its receipt basis");
+                UiMountedAppearanceNodeInputContext {
+                    frame: self.frame,
+                    semantic_surface: receipt.semantic_surface(),
+                    mounted_instance: receipt.mounted_instance(),
+                    graph_node: receipt.graph_node(),
+                    incarnation: receipt.incarnation(),
+                    node_receipt,
+                    issuer: self.receipt_basis.issuer(),
+                    plan_digest: receipt.plan_digest(),
+                    allocation: receipt.allocation(),
+                    static_paint: node.static_paint,
+                }
+            })
+            .collect()
     }
 }

@@ -10,12 +10,17 @@ mod appearance_axis_close_tests;
 #[cfg(test)]
 #[path = "active_application_session/appearance_observation_close_tests.rs"]
 mod appearance_observation_close_tests;
+#[cfg(test)]
+#[path = "active_application_session/appearance_projection_tests.rs"]
+mod appearance_projection_tests;
 #[path = "active_application_session/command_context.rs"]
 mod command_context;
 #[path = "active_application_session/command_observation.rs"]
 mod command_observation;
 #[path = "active_application_session/focus_observation.rs"]
 mod focus_observation;
+#[path = "active_application_session/host_session_identity.rs"]
+mod host_session_identity;
 #[path = "active_application_session/motion_sampling.rs"]
 mod motion_sampling;
 #[path = "active_application_session/portal_exit_publication.rs"]
@@ -86,6 +91,8 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) intent_postures: crate::mounting::UiIntentPostureTable,
     pub(super) presentation: crate::runtime::presentation_state::UiApplicationPresentationState,
     pub(super) appearance_inspection: crate::runtime::appearance::UiAppearanceInspectionProducer,
+    pub(super) appearance_projection_transitions:
+        crate::runtime::appearance::UiAppearanceProjectionTransitionState,
     pub(super) appearance_owner_snapshot:
         Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
     pub(super) visual_inspection:
@@ -244,6 +251,8 @@ impl WorthUiActiveApplicationSession {
             intent_postures: crate::mounting::UiIntentPostureTable::new(),
             presentation,
             appearance_inspection: crate::runtime::appearance::UiAppearanceInspectionProducer::new(),
+            appearance_projection_transitions:
+                crate::runtime::appearance::UiAppearanceProjectionTransitionState::default(),
             appearance_owner_snapshot: None,
             visual_inspection,
             next_visual_capture_identity: 1,
@@ -308,17 +317,6 @@ impl WorthUiActiveApplicationSession {
         self.appearance_owner_snapshot.as_ref()
     }
 
-    #[allow(dead_code, reason = "Gate 1 staged appearance inspection recording")]
-    pub(crate) fn record_appearance_projection_for_inspection(
-        &mut self,
-        projection: &crate::runtime::appearance::UiAppearanceProjection,
-        consumers_selected: u32,
-        receipt: crate::runtime::appearance::UiAppearanceChangeReceipt,
-    ) {
-        self.appearance_inspection
-            .record_projection(projection, consumers_selected, receipt);
-    }
-
     pub fn resolve_affected_scope(
         &self,
         change: crate::facade::observation::UiClassifiedChange,
@@ -369,8 +367,14 @@ impl WorthUiActiveApplicationSession {
         let host_session_identity = self.host_session.identity();
         let font_collection = std::sync::Arc::clone(self.application.font_collection());
         let turn = self.application.execute_framework_turn(collect_sources);
-        let (generation_identity, visual_trace_source, graph, active_plan_digest, completion) =
-            turn.into_parts();
+        let (
+            generation_identity,
+            visual_trace_source,
+            graph,
+            active_plan_digest,
+            completion,
+            capabilities,
+        ) = turn.into_parts();
         Ok(WorthUiActiveFrameworkTurnCompletion {
             application_session_identity: self.identity,
             generation_identity,
@@ -380,6 +384,7 @@ impl WorthUiActiveApplicationSession {
             active_plan_digest,
             host_session_identity,
             completion,
+            capabilities,
             mounted: &mut self.mounted,
             host_session: &self.host_session,
             host_exchange: &mut self.host_exchange,
@@ -387,10 +392,9 @@ impl WorthUiActiveApplicationSession {
             portal: self.portal.as_mut(),
             interaction: &mut self.interaction,
             presentation: &mut self.presentation,
+            appearance_owner_snapshot: &self.appearance_owner_snapshot,
+            appearance_projection_transitions: &mut self.appearance_projection_transitions,
+            appearance_inspection: &mut self.appearance_inspection,
         })
-    }
-
-    pub fn host_session_identity(&self) -> crate::facade::WorthUiHostSessionIdentity {
-        self.host_session.identity()
     }
 }

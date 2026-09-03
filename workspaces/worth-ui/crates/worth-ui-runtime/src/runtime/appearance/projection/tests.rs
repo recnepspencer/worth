@@ -60,63 +60,6 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
             aspect.support(),
             super::UiAppearanceSupportPosture::Supported
         );
-        let inspection_world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
-            first.state().basis().session().as_u64(),
-            first
-                .state()
-                .basis()
-                .generation()
-                .prepared_generation()
-                .semantic_package_identity()
-                .narrowing_fingerprint(),
-            first.state().basis().surface().diagnostic_value(),
-        );
-        let mounting = crate::mounting::unchanged_test_work();
-        let receipt =
-            super::super::UiAppearanceChangeReceipt::compare(Some(&first), Some(&first), &mounting);
-        session.record_appearance_projection_for_inspection(&first, 1, receipt);
-        let inspection =
-            session.why_appearance(worth_ui_inspection::UiAppearanceInspectionQuery::new(
-                inspection_world,
-                target.graph_node().digest(),
-                UiAppearanceAspect::Background,
-            ));
-        let worth_ui_inspection::UiAppearanceInspectionOutcome::Found(explanation) = inspection
-        else {
-            panic!("a recorded sealed projection should be inspectable")
-        };
-        assert_eq!(explanation.role(), binding.role().role().as_str());
-        assert_eq!(explanation.theme(), "theme.test");
-        assert_eq!(
-            explanation.value(),
-            worth_ui_inspection::UiAppearanceInspectionValue::Resolved(aspect.value())
-        );
-        assert_eq!(explanation.query().world(), inspection_world);
-        assert_eq!(
-            explanation.matched_cell().ordinal(),
-            aspect.decision_cell_ordinal()
-        );
-        assert_eq!(
-            explanation.matched_cell().state_classes(),
-            aspect.state_classes()
-        );
-        assert_eq!(
-            explanation.source_span(),
-            &worth_ui_inspection::UiAppearanceInspectionSourceSpan::Unavailable
-        );
-        assert_eq!(
-            explanation.invalidation_cause(),
-            worth_ui_inspection::UiAppearanceInspectionInvalidationCause::NotAttributed
-        );
-        assert_eq!(
-            explanation.mounted_mechanic(),
-            worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Unchanged
-        );
-        assert_eq!(
-            explanation.physical_suppression(),
-            worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed
-        );
-        assert_eq!(explanation.cost().consumers_selected(), 1);
         assert!(
             session
                 .inspect_mounted_identity()

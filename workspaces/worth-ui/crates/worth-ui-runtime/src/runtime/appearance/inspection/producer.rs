@@ -12,6 +12,14 @@ use worth_ui_inspection::{
 
 const UI_APPEARANCE_INSPECTION_CAPACITY: usize = 64;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum UiAppearanceInspectionDenial {
+    Basis,
+    Resolution,
+    MountAffinity,
+    MountLowering,
+}
+
 #[derive(Clone)]
 struct Entry {
     explanation: UiAppearanceInspectionExplanation,
@@ -60,6 +68,41 @@ impl UiAppearanceInspectionProducer {
         receipt: super::super::projection::UiAppearanceChangeReceipt,
         invalidation_cause: UiAppearanceInspectionInvalidationCause,
     ) {
+        self.record_projection_values(
+            projection,
+            consumers_selected,
+            invalidation_cause,
+            receipt.denied_before_effects(),
+            mounted_mechanic(receipt),
+            physical_suppression(receipt),
+        );
+    }
+
+    pub(crate) fn record_denial(
+        &mut self,
+        projection: &super::super::projection::UiAppearanceProjection,
+        consumers_selected: u32,
+        _denial: UiAppearanceInspectionDenial,
+    ) {
+        self.record_projection_values(
+            projection,
+            consumers_selected,
+            UiAppearanceInspectionInvalidationCause::DeniedBeforeEffects,
+            true,
+            UiAppearanceInspectionMountedMechanic::NotAttempted,
+            UiAppearanceInspectionPhysicalSuppression::NotAttempted,
+        );
+    }
+
+    fn record_projection_values(
+        &mut self,
+        projection: &super::super::projection::UiAppearanceProjection,
+        consumers_selected: u32,
+        invalidation_cause: UiAppearanceInspectionInvalidationCause,
+        value_missing: bool,
+        mounted_mechanic: UiAppearanceInspectionMountedMechanic,
+        physical_suppression: UiAppearanceInspectionPhysicalSuppression,
+    ) {
         let world = world_for_projection(projection);
         for aspect in projection.aspects() {
             let query = UiAppearanceInspectionQuery::new(
@@ -82,14 +125,14 @@ impl UiAppearanceInspectionProducer {
                 aspect.provenance().selected_slot().as_str(),
                 aspect.provenance().terminal_slot().as_str(),
                 support(aspect.support()),
-                if receipt.denied_before_effects() {
+                if value_missing {
                     UiAppearanceInspectionValue::Missing
                 } else {
                     UiAppearanceInspectionValue::Resolved(aspect.value())
                 },
                 invalidation_cause,
-                mounted_mechanic(receipt),
-                physical_suppression(receipt),
+                mounted_mechanic,
+                physical_suppression,
                 aspect.semantic_digest(),
                 UiAppearanceInspectionEvidence::new(
                     projection.state().basis().source_basis(),

@@ -23,7 +23,10 @@ pub(crate) use crate::runtime::overlay_composition::{
 };
 pub(crate) use appearance_projection::UiAppearanceProjection;
 pub(crate) use backdrop::UiBackdropAppearanceProjection;
-pub(crate) use change_receipt::{UiAppearanceChangeOutcome, UiAppearanceChangeReceipt};
+pub(crate) use change_receipt::{
+    UiAppearanceChangeOutcome, UiAppearanceChangeReceipt, UiAppearanceMountAffinity,
+    UiAppearanceMountAffinityDenial,
+};
 pub(crate) use resolved_aspect::{
     UiAppearanceProvenance, UiAppearanceSupportPosture, UiResolvedAppearanceAspect,
 };

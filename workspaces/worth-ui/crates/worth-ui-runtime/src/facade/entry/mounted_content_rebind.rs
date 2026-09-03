@@ -182,7 +182,7 @@ impl WorthUiDetachedPreparedMountedContentRebind {
         let completion = session.execute_framework_turn(|_| {}).map_err(|_| {
             crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
         })?;
-        let execution = completion.into_execution().map_err(|_| {
+        let mut execution = completion.into_execution().map_err(|_| {
             crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
         })?;
         let theme_values = execution.presentation.theme_values_source();

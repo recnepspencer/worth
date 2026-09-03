@@ -1,6 +1,7 @@
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 use crate::runtime::WorthUiFrameworkTurnCompletion;
 
+mod appearance_projection;
 mod frame_completion;
 mod mounted_projection;
 
@@ -21,6 +22,7 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
     pub(super) active_plan_digest: u64,
     pub(super) host_session_identity: crate::facade::WorthUiHostSessionIdentity,
     pub(super) completion: WorthUiFrameworkTurnCompletion<'session>,
+    pub(super) capabilities: &'session crate::capability::CapabilitySnapshot,
     pub(super) mounted: &'session mut crate::mounting::WorthUiMountedSessionState,
     pub(super) host_session: &'session crate::facade::WorthUiHostSessionAuthority,
     pub(super) host_exchange: &'session mut crate::host_exchange::WorthUiHostExchangeSessionState,
@@ -29,6 +31,12 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
     pub(super) interaction: &'session mut crate::runtime::interaction::UiInteractionRuntimeState,
     pub(super) presentation:
         &'session mut crate::runtime::presentation_state::UiApplicationPresentationState,
+    pub(super) appearance_owner_snapshot:
+        &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    pub(super) appearance_projection_transitions:
+        &'session mut crate::runtime::appearance::UiAppearanceProjectionTransitionState,
+    pub(super) appearance_inspection:
+        &'session mut crate::runtime::appearance::UiAppearanceInspectionProducer,
 }
 
 /// Executable framework-turn authority lent by one active application session.
@@ -41,6 +49,7 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
     pub(super) font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     pub(super) host_session_identity: crate::facade::WorthUiHostSessionIdentity,
     pub(super) execution: crate::runtime::WorthUiFrameworkTurnExecution<'session>,
+    pub(super) capabilities: &'session crate::capability::CapabilitySnapshot,
     pub(super) mounted: &'session mut crate::mounting::WorthUiMountedSessionState,
     pub(super) host_session: &'session crate::facade::WorthUiHostSessionAuthority,
     pub(super) host_exchange: &'session mut crate::host_exchange::WorthUiHostExchangeSessionState,
@@ -49,6 +58,12 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
     pub(super) interaction: &'session mut crate::runtime::interaction::UiInteractionRuntimeState,
     pub(super) presentation:
         &'session mut crate::runtime::presentation_state::UiApplicationPresentationState,
+    pub(super) appearance_owner_snapshot:
+        &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    pub(super) appearance_projection_transitions:
+        &'session mut crate::runtime::appearance::UiAppearanceProjectionTransitionState,
+    pub(super) appearance_inspection:
+        &'session mut crate::runtime::appearance::UiAppearanceInspectionProducer,
     pub(super) host_protocol: worth_ui_host_contract::UiHostProtocolAgreement,
     pub(super) host_capability_generation:
         worth_ui_host_contract::WorthUiHostCapabilityObservationGeneration,
@@ -76,6 +91,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             active_plan_digest,
             host_session_identity,
             completion,
+            capabilities,
             mounted,
             host_session,
             host_exchange,
@@ -83,6 +99,9 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             portal,
             interaction,
             presentation,
+            appearance_owner_snapshot,
+            appearance_projection_transitions,
+            appearance_inspection,
         } = self;
         let host_protocol = host_session.protocol();
         let capability_report = host_session.capability_report();
@@ -95,6 +114,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 font_collection: std::sync::Arc::clone(&font_collection),
                 host_session_identity,
                 execution,
+                capabilities,
                 mounted,
                 host_session,
                 host_exchange,
@@ -102,6 +122,9 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 portal,
                 interaction,
                 presentation,
+                appearance_owner_snapshot,
+                appearance_projection_transitions,
+                appearance_inspection,
                 host_protocol,
                 host_capability_generation: capability_report.observation_generation(),
                 host_capability_profile_digest: capability_report.profile_identity_digest(),
@@ -115,6 +138,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 active_plan_digest,
                 host_session_identity,
                 completion: *completion,
+                capabilities,
                 mounted,
                 host_session,
                 host_exchange,
@@ -122,6 +146,9 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 portal,
                 interaction,
                 presentation,
+                appearance_owner_snapshot,
+                appearance_projection_transitions,
+                appearance_inspection,
             })),
         }
     }

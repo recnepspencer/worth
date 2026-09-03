@@ -220,7 +220,7 @@ fn second_frame_prepared_from_one_predecessor_is_stale_before_host_effects() {
         .session
         .execute_framework_turn(|_| {})
         .expect("framework turn should be available");
-    let execution = completion
+    let mut execution = completion
         .into_execution()
         .unwrap_or_else(|_| panic!("framework turn should execute"));
     let request = crate::mounting::UiMountedFrameRequest::all_bound_surfaces();

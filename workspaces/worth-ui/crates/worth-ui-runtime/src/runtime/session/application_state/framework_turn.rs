@@ -1,5 +1,6 @@
 use super::WorthUiApplicationSessionState;
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
+use crate::facade::registry::snapshot::CapabilitySnapshot;
 use crate::graph::UiGraphAuthority;
 use crate::runtime::{WorthUiFrameworkTurn, WorthUiFrameworkTurnCompletion};
 
@@ -10,6 +11,7 @@ pub(crate) struct WorthUiApplicationFrameworkTurnCompletion<'session> {
     graph: UiGraphAuthority<'session>,
     active_plan_digest: u64,
     completion: WorthUiFrameworkTurnCompletion<'session>,
+    capabilities: &'session CapabilitySnapshot,
 }
 
 impl WorthUiApplicationSessionState {
@@ -20,6 +22,7 @@ impl WorthUiApplicationSessionState {
         let generation_identity = self.app.generation_identity().clone();
         let visual_trace_source = self.app.visual_trace_source();
         let graph = self.app.graph();
+        let capabilities = self.app.capabilities();
         let active_plan_digest = self.runtime.active.active_plan_ref().digest().as_u64();
         let completion = self.runtime.execute_framework_turn(collect_sources);
         WorthUiApplicationFrameworkTurnCompletion {
@@ -28,6 +31,7 @@ impl WorthUiApplicationSessionState {
             graph,
             active_plan_digest,
             completion,
+            capabilities,
         }
     }
 
@@ -51,6 +55,7 @@ impl<'session> WorthUiApplicationFrameworkTurnCompletion<'session> {
         UiGraphAuthority<'session>,
         u64,
         WorthUiFrameworkTurnCompletion<'session>,
+        &'session CapabilitySnapshot,
     ) {
         (
             self.generation_identity,
@@ -58,6 +63,7 @@ impl<'session> WorthUiApplicationFrameworkTurnCompletion<'session> {
             self.graph,
             self.active_plan_digest,
             self.completion,
+            self.capabilities,
         )
     }
 }

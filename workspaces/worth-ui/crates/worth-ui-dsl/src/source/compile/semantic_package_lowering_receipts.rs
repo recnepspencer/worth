@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    UiDslLoweringReceipt, UiDslPostureToken, UiDslSemanticArtifact, UiDslSemanticArtifactSpec,
-    UiDslSemanticFamily, UiDslSemanticKey, UiDslSourceProvenance, UiDslStructuralToken,
-    WorthUiArtifactInputProvenance,
+    UiDslComponentReference, UiDslLoweringReceipt, UiDslPostureToken, UiDslSemanticArtifact,
+    UiDslSemanticArtifactSpec, UiDslSemanticFamily, UiDslSemanticKey, UiDslSourceProvenance,
+    UiDslStructuralToken, WorthUiArtifactInputProvenance,
 };
 
 use super::{
@@ -44,13 +44,13 @@ fn lower_declaration(view: WorthUiSemanticDeclarationView<'_>) -> Option<Lowerin
     let provenance = dsl_provenance(view.provenance());
     let spec = match view.declaration() {
         WorthUiSemanticDeclaration::Component(block) => {
-            structural_spec("component", block, provenance.clone())
+            structural_spec("component", block, provenance.clone(), true)
         }
         WorthUiSemanticDeclaration::Surface(block) => {
-            structural_spec("surface", block, provenance.clone())
+            structural_spec("surface", block, provenance.clone(), false)
         }
         WorthUiSemanticDeclaration::Binding(block) => {
-            structural_spec("binding", block, provenance.clone())
+            structural_spec("binding", block, provenance.clone(), false)
         }
         WorthUiSemanticDeclaration::SemanticArtifact(artifact) => {
             if artifact.declaration().service_declaration().is_some() {
@@ -113,6 +113,7 @@ fn structural_spec(
     family: &str,
     block: &WorthUiSemanticBlock,
     provenance: UiDslSourceProvenance,
+    add_component_reference: bool,
 ) -> UiDslSemanticArtifactSpec {
     let identity = match block.authored_identity() {
         Some(identity) => format!("{family}:authored:{identity}"),
@@ -131,6 +132,14 @@ fn structural_spec(
         spec = spec.with_posture_token(UiDslPostureToken::new(
             "intent:attached:canonical-route-catalog",
         ));
+    }
+    if add_component_reference && block.appearance_role_attachment().is_some() {
+        spec = spec
+            .with_component_reference(
+                UiDslComponentReference::new(block.name_text())
+                    .expect("component declaration name is a valid component reference"),
+            )
+            .expect("one component declaration carries at most one component reference");
     }
     if let Some(attachment) = block.appearance_role_attachment() {
         spec = spec

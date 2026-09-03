@@ -4,4 +4,4 @@ mod producer;
 #[path = "producer_tests.rs"]
 mod producer_tests;
 
-pub(crate) use producer::UiAppearanceInspectionProducer;
+pub(crate) use producer::{UiAppearanceInspectionDenial, UiAppearanceInspectionProducer};

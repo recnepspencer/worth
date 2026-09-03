@@ -37,7 +37,7 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
     }
 
     pub(crate) fn prepare_mounted_frame_internal(
-        &self,
+        &mut self,
         request: crate::mounting::UiMountedFrameRequest,
     ) -> Result<
         crate::mounting::UiPreparedMountedFrame,
@@ -51,7 +51,7 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
     }
 
     pub(crate) fn prepare_mounted_frame_with_content_internal(
-        &self,
+        &mut self,
         request: crate::mounting::UiMountedFrameRequest,
         semantic_content: crate::mounting::UiMountedSemanticContentInput,
         theme_values: crate::mounting::UiMountedThemeValueSource,
@@ -62,14 +62,17 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
+        let appearance_theme_values = theme_values.clone();
         let mut projection =
             self.begin_mounted_projection(request, lanes, semantic_content, theme_values, None)?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
-        projection.finish()
+        let frame = projection.finish()?;
+        self.finish_appearance_projection(&frame, &appearance_theme_values);
+        Ok(frame)
     }
 
     pub(crate) fn prepare_mounted_superseding_frame_with_content_internal(
-        &self,
+        &mut self,
         request: crate::mounting::UiMountedFrameRequest,
         semantic_content: crate::mounting::UiMountedSemanticContentInput,
         theme_values: crate::mounting::UiMountedThemeValueSource,
@@ -81,6 +84,7 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
+        let appearance_theme_values = theme_values.clone();
         let mut projection = self.begin_mounted_projection(
             request,
             lanes,
@@ -89,11 +93,13 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
             Some(predecessor),
         )?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
-        projection.finish()
+        let frame = projection.finish()?;
+        self.finish_appearance_projection(&frame, &appearance_theme_values);
+        Ok(frame)
     }
 
     pub(crate) fn prepare_mounted_reconciliation_frame_with_content_internal(
-        &self,
+        &mut self,
         request: crate::mounting::UiMountedFrameRequest,
         semantic_content: crate::mounting::UiMountedSemanticContentInput,
         theme_values: crate::mounting::UiMountedThemeValueSource,
@@ -105,10 +111,13 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
+        let appearance_theme_values = theme_values.clone();
         let mut projection =
             self.begin_mounted_projection(request, lanes, semantic_content, theme_values, None)?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
-        projection.finish_for_reconciliation(replacements)
+        let frame = projection.finish_for_reconciliation(replacements)?;
+        self.finish_appearance_projection(&frame, &appearance_theme_values);
+        Ok(frame)
     }
 
     fn begin_mounted_projection<'frame>(

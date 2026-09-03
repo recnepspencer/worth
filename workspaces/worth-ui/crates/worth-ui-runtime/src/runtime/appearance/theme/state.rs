@@ -63,6 +63,22 @@ impl UiAppearanceThemeState {
         Ok(())
     }
 
+    pub(crate) fn install_for_generation(&mut self, capability: super::UiThemeCapabilityReceipt) {
+        let surface = capability.surface();
+        let binding_generation = self
+            .bindings
+            .get(&surface)
+            .map_or(1, |binding| binding.binding_generation.saturating_add(1));
+        self.bindings.insert(
+            surface,
+            super::UiActiveThemeBinding {
+                surface,
+                binding_generation,
+                capability,
+            },
+        );
+    }
+
     pub(crate) fn prepare_theme_switch(
         &mut self,
         request: super::UiThemeSwitchRequest,

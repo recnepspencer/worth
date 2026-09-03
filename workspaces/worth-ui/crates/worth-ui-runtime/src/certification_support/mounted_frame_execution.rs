@@ -56,7 +56,8 @@ impl<'session> WorthUiMountedFrameExecutionCertificationExt
         crate::mounting::UiPreparedMountedFrame,
         crate::mounting::UiMountedFramePreparationDenial,
     > {
-        self.prepare_mounted_frame_internal(request)
+        let mut execution = self;
+        execution.prepare_mounted_frame_internal(request)
     }
 }
 

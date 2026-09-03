@@ -16,6 +16,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             active_plan_digest,
             host_session_identity,
             completion,
+            capabilities,
             mounted,
             host_session,
             host_exchange,
@@ -23,6 +24,9 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             portal,
             interaction,
             presentation,
+            appearance_owner_snapshot,
+            appearance_projection_transitions,
+            appearance_inspection,
         } = self;
         let preview_theme_observation = presentation.preview_theme_observation();
         match completion.into_pending_mounted_preview() {
@@ -55,6 +59,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 active_plan_digest,
                 host_session_identity,
                 completion: *completion,
+                capabilities,
                 mounted,
                 host_session,
                 host_exchange,
@@ -62,6 +67,9 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 portal,
                 interaction,
                 presentation,
+                appearance_owner_snapshot,
+                appearance_projection_transitions,
+                appearance_inspection,
             })),
         }
     }

@@ -27,6 +27,10 @@ impl UiMountedNodeReceiptBasis {
         self.issuer.frame_identity()
     }
 
+    pub(crate) const fn issuer(&self) -> UiMountedNodeReceiptIssuer {
+        self.issuer
+    }
+
     pub(crate) fn affinity(&self) -> Option<UiMountedNodeReceiptAffinity> {
         (!self.presented_instances.is_empty()).then(|| self.issuer.receipt_affinity())
     }

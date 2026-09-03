@@ -15,7 +15,9 @@ pub(crate) use active_binding::UiActiveThemeBinding;
     unused_imports,
     reason = "Gate 0 retains the non-current theme admission boundary"
 )]
-pub(crate) use capability::{UiThemeCapabilityAdmission, UiThemeCapabilityReceipt};
+pub(crate) use capability::{
+    UiThemeCapabilityAdmission, UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial,
+};
 pub(crate) use prepared_switch::UiPreparedThemeSwitch;
 pub(crate) use resolution_view::{
     UiResolvedThemeSlot, UiThemeResolutionDenial, UiThemeResolutionView,

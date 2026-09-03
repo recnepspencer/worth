@@ -4,6 +4,10 @@ use worth_ui_host_contract::{
     UiMountedNodeReceiptIdentity, UiSemanticSurfaceIdentity,
 };
 
+#[cfg(test)]
+#[path = "coherent_basis_test_support.rs"]
+mod test_support;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiAppearanceCoherentBasisDenial {
     ConsumerTargetMismatch,
@@ -56,11 +60,36 @@ impl UiAppearanceCoherentBasis {
         themes: &crate::runtime::appearance::UiAppearanceThemeState,
         input: UiAppearanceCoherentBasisInput,
     ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
+        Self::admit_with_target_validation(snapshot, consumer, mounted, themes, input, true)
+    }
+
+    pub(crate) fn admit_prepared(
+        snapshot: &super::UiAppearanceOwnerSnapshot,
+        consumer: &super::UiAppearanceStateConsumer,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        themes: &crate::runtime::appearance::UiAppearanceThemeState,
+        input: UiAppearanceCoherentBasisInput,
+    ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
+        Self::admit_with_target_validation(snapshot, consumer, mounted, themes, input, false)
+    }
+
+    fn admit_with_target_validation(
+        snapshot: &super::UiAppearanceOwnerSnapshot,
+        consumer: &super::UiAppearanceStateConsumer,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        themes: &crate::runtime::appearance::UiAppearanceThemeState,
+        input: UiAppearanceCoherentBasisInput,
+        require_current_receipt: bool,
+    ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
         let identity = &input.mounted_identity;
         if consumer.graph_node() != identity.graph_node_identity() {
             return Err(UiAppearanceCoherentBasisDenial::ConsumerTargetMismatch);
         }
-        validate_mounted_target(mounted, &input)?;
+        if require_current_receipt {
+            validate_mounted_target(mounted, &input)?;
+        } else {
+            validate_prepared_target(mounted, &input)?;
+        }
         for axis in axes() {
             if consumer.consumes(axis) && !snapshot.demand().contains(axis) {
                 return Err(UiAppearanceCoherentBasisDenial::AxisNotDemanded(axis));
@@ -242,44 +271,6 @@ impl UiAppearanceCoherentBasis {
         }
         digest
     }
-
-    #[cfg(test)]
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "test basis carries the exact identity fields consumed by direct adapters"
-    )]
-    pub(crate) fn for_test(
-        snapshot: &super::UiAppearanceOwnerSnapshot,
-        consumer: super::UiAppearanceStateConsumer,
-        mounted_instance: UiMountedInstanceIdentity,
-        incarnation: UiMountIncarnation,
-        node_receipt: UiMountedNodeReceiptIdentity,
-        surface: UiSemanticSurfaceIdentity,
-        presentation: Option<UiHostObservationPresentationBasis>,
-        selection: Option<super::UiAppearanceSelectionSelector>,
-        operability_route: Option<Box<str>>,
-    ) -> Self {
-        Self {
-            turn: snapshot.turn(),
-            session: snapshot.session(),
-            source_basis: snapshot.source_basis(),
-            generation: snapshot.generation().clone(),
-            graph_node: consumer.graph_node(),
-            consumer,
-            mounted_instance,
-            incarnation,
-            node_receipt,
-            surface,
-            theme: crate::runtime::appearance::UiActiveThemeBinding::for_test(
-                surface,
-                snapshot.generation().clone(),
-            ),
-            presentation,
-            selection,
-            operability_route,
-            owner_revisions: owner_revisions(snapshot),
-        }
-    }
 }
 
 fn validate_mounted_target(
@@ -293,6 +284,21 @@ fn validate_mounted_target(
         || mounted
             .validate_current_receipt(input.mounted_instance, input.node_receipt)
             .is_err()
+    {
+        return Err(UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent);
+    }
+    Ok(())
+}
+
+fn validate_prepared_target(
+    mounted: &crate::mounting::WorthUiMountedSessionState,
+    input: &UiAppearanceCoherentBasisInput,
+) -> Result<(), UiAppearanceCoherentBasisDenial> {
+    if mounted
+        .current_mounted_identity_basis(input.mounted_instance)
+        .as_ref()
+        != Some(&input.mounted_identity)
+        || input.node_receipt.mounted_instance() != input.mounted_instance
     {
         return Err(UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent);
     }

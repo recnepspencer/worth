@@ -6,7 +6,9 @@ use super::UiMountedAppearanceLoweringDenial;
 pub(super) fn lower(
     input: &UiMountedAppearanceOverlayInput,
 ) -> Result<UiMountedOverlayOrderMechanic, UiMountedAppearanceLoweringDenial> {
-    if input.portal_revision == 0 || input.backdrop_revision == 0 {
+    if (input.portal_revision == 0 || input.backdrop_revision == 0)
+        && !input.bottom_to_top.is_empty()
+    {
         return Err(UiMountedAppearanceLoweringDenial::OverlayRevisionMissing);
     }
     UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(

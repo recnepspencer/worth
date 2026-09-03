@@ -102,6 +102,14 @@ impl UiAppearanceStateVector {
         })
     }
 
+    pub(crate) fn seal_for_current_binding(
+        snapshot: &super::UiAppearanceOwnerSnapshot,
+        basis: &super::UiAppearanceCoherentBasis,
+        binding: &super::UiAppearanceNodeRoleBinding,
+    ) -> Result<Self, UiAppearanceStateVectorDenial> {
+        Self::seal_from_basis(snapshot, basis, Some(binding.basis().clone()))
+    }
+
     #[cfg(test)]
     pub(crate) fn seal_for_binding(
         snapshot: &super::UiAppearanceOwnerSnapshot,
