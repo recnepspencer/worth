@@ -300,7 +300,9 @@ impl UiApplicationPresentationState {
         self.theme_values_source_with_graph_nodes(self.pending_theme_graph_nodes.iter().copied())
     }
 
-    pub(crate) fn preview_theme_observation(&self) -> crate::mounting::UiMountedPreviewThemeObservation {
+    pub(crate) fn preview_theme_observation(
+        &self,
+    ) -> crate::mounting::UiMountedPreviewThemeObservation {
         crate::mounting::UiMountedPreviewThemeObservation::admit_from_presentation(
             self.theme_revision,
             Arc::clone(&self.token_values),
