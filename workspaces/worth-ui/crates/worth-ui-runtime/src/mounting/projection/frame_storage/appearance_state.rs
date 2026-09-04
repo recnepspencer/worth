@@ -1,6 +1,13 @@
+use std::collections::HashMap;
+
 use crate::runtime::appearance::{
     UiAppearanceChangeReceipt, UiAppearanceInspectionDenial, UiAppearanceInspectionRecord,
     UiAppearanceInvalidationBatch, UiAppearanceMountAffinity, UiAppearanceProjectionAttempt,
+};
+
+use super::appearance_state_membership::{
+    self, UiMountedAppearanceStateEntry, UiMountedAppearanceStateMembers,
+    UiMountedAppearanceStateMembership,
 };
 
 pub(crate) const APPEARANCE_STATE_CAPACITY: usize = 4_096;
@@ -11,6 +18,10 @@ pub struct UiAppearanceStateCapacityExceeded {
 }
 
 impl UiAppearanceStateCapacityExceeded {
+    pub(super) const fn new(capacity: usize) -> Self {
+        Self { capacity }
+    }
+
     pub const fn capacity(self) -> usize {
         self.capacity
     }
@@ -18,47 +29,30 @@ impl UiAppearanceStateCapacityExceeded {
 
 #[derive(Clone, Default)]
 pub(crate) struct UiMountedAppearanceFrameState {
-    entries: Vec<UiMountedAppearanceStateEntry>,
-    staged: Vec<UiAppearanceProjectionAttempt>,
-    reserved: Vec<UiMountedAppearanceStateKey>,
+    members: UiMountedAppearanceStateMembers,
     batch: Option<UiAppearanceInvalidationBatch>,
     capacity_error: Option<UiAppearanceStateCapacityExceeded>,
-    reconstruction: bool,
-}
-
-#[derive(Clone)]
-struct UiMountedAppearanceStateEntry {
-    key: UiMountedAppearanceStateKey,
-    projection: crate::runtime::appearance::UiAppearanceProjection,
-    sidecar: super::super::appearance::UiMountedAppearanceSidecar,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-struct UiMountedAppearanceStateKey {
-    session: crate::facade::WorthUiActiveApplicationSessionIdentity,
-    generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    graph_node: crate::graph::UiGraphNodeIdentity,
-    mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    incarnation: worth_ui_host_contract::UiMountIncarnation,
+    reconstruction_nodes: Option<Vec<super::UiMountedAppearanceNodeInputContext>>,
 }
 
 impl UiMountedAppearanceFrameState {
     pub(crate) fn inherit_from(&mut self, predecessor: Option<&Self>) {
-        self.entries = predecessor.map_or_else(Vec::new, |state| state.entries.clone());
-        self.staged.clear();
-        self.reserved.clear();
+        self.members
+            .inherit_from(predecessor.map(|state| &state.members));
         self.batch = None;
         self.capacity_error = None;
-        self.reconstruction = false;
+        self.reconstruction_nodes = None;
     }
 
     pub(crate) fn set_batch(&mut self, batch: UiAppearanceInvalidationBatch) {
         self.batch = Some(batch);
     }
 
-    pub(crate) fn begin_reconstruction(&mut self) {
-        self.reconstruction = true;
+    pub(crate) fn prepare_reconstruction(
+        &mut self,
+        nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
+    ) {
+        self.reconstruction_nodes = Some(nodes);
     }
 
     pub(crate) fn batch(&self) -> Option<&UiAppearanceInvalidationBatch> {
@@ -71,71 +65,29 @@ impl UiMountedAppearanceFrameState {
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
         nodes: &[super::UiMountedAppearanceNodeInputContext],
     ) {
-        self.entries.retain(|entry| {
-            entry.key.session == session
-                && entry.key.generation == *generation
-                && nodes.iter().any(|node| {
-                    entry.key.surface == node.semantic_surface
-                        && entry.key.graph_node == node.graph_node
-                        && entry.key.mounted_instance == node.mounted_instance
-                        && entry.key.incarnation == node.incarnation
-                })
-        });
+        self.members
+            .prune_to_current_nodes(session, generation, nodes);
     }
 
     pub(crate) fn reserve(
         &mut self,
         context: &crate::runtime::appearance::UiAppearanceAttemptContext,
     ) -> Result<(), UiAppearanceStateCapacityExceeded> {
-        let key = state_key(context);
-        if self.entries.iter().any(|entry| entry.key == key)
-            || self
-                .staged
-                .iter()
-                .any(|attempt| state_key(attempt.context()) == key)
-            || self.reserved.contains(&key)
-        {
-            return Ok(());
+        let result = self.members.reserve(context, APPEARANCE_STATE_CAPACITY);
+        if let Err(error) = result {
+            self.capacity_error = Some(error);
         }
-        if self.membership_count() >= APPEARANCE_STATE_CAPACITY {
-            return Err(UiAppearanceStateCapacityExceeded {
-                capacity: APPEARANCE_STATE_CAPACITY,
-            });
-        }
-        self.reserved.push(key);
-        Ok(())
-    }
-
-    fn membership_count(&self) -> usize {
-        let mut keys = self
-            .entries
-            .iter()
-            .map(|entry| entry.key.clone())
-            .collect::<Vec<_>>();
-        for key in self
-            .staged
-            .iter()
-            .map(|attempt| state_key(attempt.context()))
-            .chain(self.reserved.iter().cloned())
-        {
-            if !keys.iter().any(|existing| existing == &key) {
-                keys.push(key);
-            }
-        }
-        keys.len()
+        result
     }
 
     pub(crate) fn stage(
         &mut self,
         attempt: UiAppearanceProjectionAttempt,
     ) -> Result<(), UiAppearanceStateCapacityExceeded> {
-        if let Err(error) = self.reserve(attempt.context()) {
+        if let Err(error) = self.members.stage(attempt, APPEARANCE_STATE_CAPACITY) {
             self.capacity_error = Some(error);
             return Err(error);
         }
-        let key = state_key(attempt.context());
-        self.reserved.retain(|reserved| reserved != &key);
-        self.staged.push(attempt);
         Ok(())
     }
 
@@ -143,148 +95,238 @@ impl UiMountedAppearanceFrameState {
         self.capacity_error
     }
 
+    #[cfg(test)]
+    pub(super) fn membership_counts(&self) -> (usize, usize, usize) {
+        self.members.membership_counts()
+    }
+
+    #[cfg(test)]
+    pub(super) fn retained_entry_for_test(
+        &self,
+        context: &crate::runtime::appearance::UiAppearanceAttemptContext,
+    ) -> Option<&UiMountedAppearanceStateEntry> {
+        let key = appearance_state_membership::state_key(context);
+        self.members.retained_entry(&key)
+    }
+
+    #[cfg(test)]
+    pub(super) fn retain_projection_for_test(
+        &mut self,
+        context: &crate::runtime::appearance::UiAppearanceAttemptContext,
+        projection: crate::runtime::appearance::UiAppearanceProjection,
+    ) {
+        let key = appearance_state_membership::state_key(context);
+        self.members.insert_retained(UiMountedAppearanceStateEntry {
+            key,
+            context: context.clone(),
+            projection,
+            sidecar: Default::default(),
+        });
+    }
+
+    #[cfg(test)]
+    pub(super) fn replace_sidecar_for_test(
+        &mut self,
+        context: &crate::runtime::appearance::UiAppearanceAttemptContext,
+        sidecar: super::super::appearance::UiMountedAppearanceSidecar,
+    ) {
+        let key = appearance_state_membership::state_key(context);
+        let entry = self
+            .members
+            .retained_entry(&key)
+            .expect("test state entry should exist before sidecar replacement");
+        let mut replacement = entry.clone();
+        replacement.sidecar = sidecar;
+        self.members.insert_retained(replacement);
+    }
+
     pub(crate) fn lower(
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
     ) -> Vec<UiAppearanceInspectionRecord> {
-        if self.reconstruction {
-            return self.lower_reconstruction();
+        if let Some(nodes) = self.reconstruction_nodes.take() {
+            return self.lower_reconstruction(presentation, &nodes);
         }
-        let staged = std::mem::take(&mut self.staged);
-        let mut records = Vec::with_capacity(staged.len());
-        for attempt in staged {
-            let context = attempt.context();
-            let Some(projection) = attempt.projection() else {
+        let mut records = Vec::new();
+        for key in self.members.take_pending_keys_for_lowering() {
+            let Some(membership) = self.members.remove(&key) else {
+                continue;
+            };
+            match membership {
+                UiMountedAppearanceStateMembership::Retained(entry) => {
+                    self.members.insert_retained(entry);
+                }
+                UiMountedAppearanceStateMembership::Reserved => {}
+                UiMountedAppearanceStateMembership::Staged {
+                    attempt,
+                    predecessor,
+                } => self.lower_staged(key, attempt, predecessor, presentation, &mut records),
+            }
+        }
+        records
+    }
+
+    fn lower_staged(
+        &mut self,
+        key: appearance_state_membership::UiMountedAppearanceStateKey,
+        attempt: UiAppearanceProjectionAttempt,
+        mut predecessor: Option<UiMountedAppearanceStateEntry>,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        records: &mut Vec<UiAppearanceInspectionRecord>,
+    ) {
+        let context = attempt.context();
+        let Some(projection) = attempt.projection() else {
+            records.push(denial_record(
+                context.clone(),
+                attempt
+                    .denial()
+                    .unwrap_or(UiAppearanceInspectionDenial::Basis),
+            ));
+            restore_predecessor(&mut self.members, &mut predecessor);
+            return;
+        };
+        let mut sidecar = predecessor
+            .as_ref()
+            .map_or_else(Default::default, |entry| entry.sidecar.clone());
+        let input = match context.lower_resolved(projection, presentation) {
+            Ok(input) => input,
+            Err(_) => {
                 records.push(denial_record(
                     context.clone(),
-                    attempt
-                        .denial()
-                        .unwrap_or(UiAppearanceInspectionDenial::Basis),
+                    UiAppearanceInspectionDenial::MountLowering,
+                ));
+                restore_predecessor(&mut self.members, &mut predecessor);
+                return;
+            }
+        };
+        let affinity = UiAppearanceMountAffinity {
+            session: context.target().session(),
+            generation: context.generation().clone(),
+            frame: context.frame(),
+            surface: context.semantic_surface(),
+            graph_node: context.graph_node(),
+            mounted_instance: context.mounted_instance(),
+            incarnation: context.incarnation(),
+            node_receipt: context.node_receipt(),
+            issuer: context.issuer(),
+            presentation,
+        };
+        let work = match sidecar.mount(input) {
+            Ok(work) => work,
+            Err(_) => {
+                records.push(denial_record(
+                    context.clone(),
+                    UiAppearanceInspectionDenial::MountLowering,
+                ));
+                restore_predecessor(&mut self.members, &mut predecessor);
+                return;
+            }
+        };
+        let predecessor_projection = predecessor.as_ref().map(|entry| &entry.projection);
+        let receipt = match UiAppearanceChangeReceipt::from_resolved_mount(
+            predecessor_projection,
+            projection,
+            &work,
+            affinity,
+        ) {
+            Ok(receipt) => receipt,
+            Err(_) => {
+                records.push(denial_record(
+                    context.clone(),
+                    UiAppearanceInspectionDenial::MountAffinity,
+                ));
+                restore_predecessor(&mut self.members, &mut predecessor);
+                return;
+            }
+        };
+        self.members.insert_retained(UiMountedAppearanceStateEntry {
+            key,
+            context: context.clone(),
+            projection: projection.clone(),
+            sidecar,
+        });
+        records.push(UiAppearanceInspectionRecord::Projection {
+            projection: projection.clone(),
+            consumers_selected: context.consumers_selected(),
+            receipt,
+        });
+    }
+
+    fn lower_reconstruction(
+        &mut self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        nodes: &[super::UiMountedAppearanceNodeInputContext],
+    ) -> Vec<UiAppearanceInspectionRecord> {
+        let mut node_by_identity =
+            HashMap::with_capacity(nodes.len().min(APPEARANCE_STATE_CAPACITY));
+        node_by_identity.extend(
+            nodes
+                .iter()
+                .map(|node| (appearance_state_membership::local_node_key(node), node)),
+        );
+        let mut records = Vec::new();
+        let keys = self.members.retained_keys_for_reconstruction();
+        for key in keys {
+            let Some(entry) = self.members.retained_entry_mut(&key) else {
+                continue;
+            };
+            let Some(node) = node_by_identity.get(key.local_node()).copied() else {
+                records.push(denial_record(
+                    entry.context.clone(),
+                    UiAppearanceInspectionDenial::Basis,
                 ));
                 continue;
             };
-            let key = state_key(context);
-            let predecessor = self
-                .entries
-                .iter()
-                .find(|entry| entry.key == key)
-                .map(|entry| (entry.projection.clone(), entry.sidecar.clone()));
-            let mut sidecar = predecessor
-                .as_ref()
-                .map_or_else(Default::default, |(_, sidecar)| sidecar.clone());
-            let input = match context.lower_resolved(projection, presentation) {
+            let input = match node.lower_retained_projection(&entry.projection, presentation) {
                 Ok(input) => input,
                 Err(_) => {
                     records.push(denial_record(
-                        context.clone(),
+                        entry.context.clone(),
                         UiAppearanceInspectionDenial::MountLowering,
                     ));
                     continue;
                 }
             };
-            let affinity = UiAppearanceMountAffinity {
-                session: context.target().session(),
-                generation: context.generation().clone(),
-                frame: context.frame(),
-                surface: context.semantic_surface(),
-                graph_node: context.graph_node(),
-                mounted_instance: context.mounted_instance(),
-                incarnation: context.incarnation(),
-                node_receipt: context.node_receipt(),
-                issuer: context.issuer(),
-                presentation,
-            };
-            let work = match sidecar.mount(input) {
+            let work = match entry.sidecar.reconstruct(input) {
                 Ok(work) => work,
                 Err(_) => {
                     records.push(denial_record(
-                        context.clone(),
+                        entry.context.clone(),
                         UiAppearanceInspectionDenial::MountLowering,
                     ));
                     continue;
                 }
             };
-            let predecessor_projection = predecessor.as_ref().map(|(projection, _)| projection);
-            let receipt = match UiAppearanceChangeReceipt::from_resolved_mount(
-                predecessor_projection,
-                projection,
-                &work,
-                affinity,
-            ) {
-                Ok(receipt) => receipt,
-                Err(_) => {
-                    records.push(denial_record(
-                        context.clone(),
-                        UiAppearanceInspectionDenial::MountAffinity,
-                    ));
-                    continue;
-                }
+            let Some(receipt) = UiAppearanceChangeReceipt::from_reconstruction_mount(&work) else {
+                records.push(denial_record(
+                    entry.context.clone(),
+                    UiAppearanceInspectionDenial::MountAffinity,
+                ));
+                continue;
             };
-            replace_entry(
-                &mut self.entries,
-                UiMountedAppearanceStateEntry {
-                    key,
-                    projection: projection.clone(),
-                    sidecar,
-                },
-            )
-            .expect("appearance state reservation admits the staged successor");
             records.push(UiAppearanceInspectionRecord::Projection {
-                projection: projection.clone(),
-                consumers_selected: context.consumers_selected(),
+                projection: entry.projection.clone(),
+                consumers_selected: 0,
                 receipt,
             });
         }
         records
     }
+}
 
-    fn lower_reconstruction(&self) -> Vec<UiAppearanceInspectionRecord> {
-        self.entries
-            .iter()
-            .map(|entry| {
-                let work = entry
-                    .sidecar
-                    .reconstruction_work()
-                    .expect("retained appearance state has mounted facts");
-                let receipt = UiAppearanceChangeReceipt::from_reconstruction_mount(&work)
-                    .expect("retained appearance facts produce reconstruction work");
-                UiAppearanceInspectionRecord::Projection {
-                    projection: entry.projection.clone(),
-                    consumers_selected: 0,
-                    receipt,
-                }
-            })
-            .collect()
+fn restore_predecessor(
+    members: &mut UiMountedAppearanceStateMembers,
+    predecessor: &mut Option<UiMountedAppearanceStateEntry>,
+) {
+    if let Some(entry) = predecessor.take() {
+        members.insert_retained(entry);
     }
 }
 
-fn state_key(
+pub(super) fn state_key(
     context: &crate::runtime::appearance::UiAppearanceAttemptContext,
-) -> UiMountedAppearanceStateKey {
-    UiMountedAppearanceStateKey {
-        session: context.target().session(),
-        generation: context.generation().clone(),
-        surface: context.semantic_surface(),
-        graph_node: context.graph_node(),
-        mounted_instance: context.mounted_instance(),
-        incarnation: context.incarnation(),
-    }
-}
-
-fn replace_entry(
-    entries: &mut Vec<UiMountedAppearanceStateEntry>,
-    successor: UiMountedAppearanceStateEntry,
-) -> Result<(), UiAppearanceStateCapacityExceeded> {
-    if let Some(entry) = entries.iter_mut().find(|entry| entry.key == successor.key) {
-        *entry = successor;
-    } else if entries.len() < APPEARANCE_STATE_CAPACITY {
-        entries.push(successor);
-    } else {
-        return Err(UiAppearanceStateCapacityExceeded {
-            capacity: APPEARANCE_STATE_CAPACITY,
-        });
-    }
-    Ok(())
+) -> appearance_state_membership::UiMountedAppearanceStateKey {
+    appearance_state_membership::state_key(context)
 }
 
 fn denial_record(
@@ -297,3 +339,11 @@ fn denial_record(
         receipt: UiAppearanceChangeReceipt::for_denial(),
     }
 }
+
+#[cfg(test)]
+#[path = "appearance_state_tests.rs"]
+mod tests;
+
+#[cfg(test)]
+#[path = "appearance_state_reconstruction_tests.rs"]
+mod reconstruction_tests;

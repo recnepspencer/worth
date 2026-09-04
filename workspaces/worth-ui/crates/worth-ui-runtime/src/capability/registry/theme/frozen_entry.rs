@@ -1,6 +1,7 @@
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct FrozenAppearanceThemeCapabilities {
     catalog: super::UiThemeSlotCatalog,
+    initial_definition: super::UiThemeDefinitionIdentity,
     definitions: Box<[super::UiThemeDefinition]>,
 }
 
@@ -11,12 +12,14 @@ pub(crate) enum FrozenAppearanceThemeCapabilitiesDenial {
     CatalogBasisMismatch,
     BundleAlreadyInstalled,
     DefinitionCapacityExceeded,
+    MissingInitialDefinition,
 }
 
 impl FrozenAppearanceThemeCapabilities {
     pub(crate) const DEFINITION_CAPACITY: usize = 32;
     pub(crate) fn admit(
         catalog: super::UiThemeSlotCatalog,
+        initial_definition: super::UiThemeDefinitionIdentity,
         mut definitions: Vec<super::UiThemeDefinition>,
     ) -> Result<Self, FrozenAppearanceThemeCapabilitiesDenial> {
         if definitions.is_empty() {
@@ -38,8 +41,15 @@ impl FrozenAppearanceThemeCapabilities {
         {
             return Err(FrozenAppearanceThemeCapabilitiesDenial::DuplicateDefinition);
         }
+        if definitions
+            .binary_search_by(|definition| definition.identity().cmp(&initial_definition))
+            .is_err()
+        {
+            return Err(FrozenAppearanceThemeCapabilitiesDenial::MissingInitialDefinition);
+        }
         Ok(Self {
             catalog,
+            initial_definition,
             definitions: definitions.into_boxed_slice(),
         })
     }
@@ -49,6 +59,9 @@ impl FrozenAppearanceThemeCapabilities {
     }
     pub(crate) fn definitions(&self) -> &[super::UiThemeDefinition] {
         &self.definitions
+    }
+    pub(crate) fn initial_definition_identity(&self) -> &super::UiThemeDefinitionIdentity {
+        &self.initial_definition
     }
     pub(crate) fn get(
         &self,
@@ -83,6 +96,11 @@ impl FrozenAppearanceThemeCapabilities {
                 }
                 digest
             });
+        let catalog = self
+            .initial_definition
+            .as_str()
+            .bytes()
+            .fold(catalog, |digest, byte| fold(digest, u64::from(byte)));
         self.definitions
             .iter()
             .fold(catalog, |mut digest, definition| {
@@ -156,7 +174,11 @@ mod tests {
         let second = catalog("surface.second");
         let definition = definition("theme.first", &first, [1, 2, 3, 255]);
         assert_eq!(
-            FrozenAppearanceThemeCapabilities::admit(second, vec![definition]),
+            FrozenAppearanceThemeCapabilities::admit(
+                second,
+                UiThemeDefinitionIdentity::new("theme.first").unwrap(),
+                vec![definition],
+            ),
             Err(FrozenAppearanceThemeCapabilitiesDenial::CatalogBasisMismatch)
         );
     }
@@ -166,11 +188,13 @@ mod tests {
         let catalog = catalog("surface.base");
         let first = FrozenAppearanceThemeCapabilities::admit(
             catalog.clone(),
+            UiThemeDefinitionIdentity::new("theme.first").unwrap(),
             vec![definition("theme.first", &catalog, [1, 2, 3, 255])],
         )
         .unwrap();
         let second = FrozenAppearanceThemeCapabilities::admit(
             catalog.clone(),
+            UiThemeDefinitionIdentity::new("theme.second").unwrap(),
             vec![definition("theme.second", &catalog, [3, 2, 1, 255])],
         )
         .unwrap();
@@ -190,17 +214,23 @@ mod tests {
             .map(|index| definition(&format!("theme.{index}"), &catalog, [1, 2, 3, 255]))
             .collect();
         assert_eq!(
-            FrozenAppearanceThemeCapabilities::admit(catalog.clone(), definitions),
+            FrozenAppearanceThemeCapabilities::admit(
+                catalog.clone(),
+                UiThemeDefinitionIdentity::new("theme.0").unwrap(),
+                definitions,
+            ),
             Err(FrozenAppearanceThemeCapabilitiesDenial::DefinitionCapacityExceeded)
         );
 
         let first = FrozenAppearanceThemeCapabilities::admit(
             catalog.clone(),
+            UiThemeDefinitionIdentity::new("theme.first").unwrap(),
             vec![definition("theme.first", &catalog, [1, 2, 3, 255])],
         )
         .unwrap();
         let changed = FrozenAppearanceThemeCapabilities::admit(
             catalog.clone(),
+            UiThemeDefinitionIdentity::new("theme.first").unwrap(),
             vec![definition("theme.first", &catalog, [3, 2, 1, 255])],
         )
         .unwrap();

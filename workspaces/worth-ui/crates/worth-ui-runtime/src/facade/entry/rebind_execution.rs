@@ -7,6 +7,8 @@ pub(crate) struct WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
     session: &'session mut WorthUiActiveApplicationSession,
     successor_authority:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
+    appearance_succession:
+        Option<crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession>,
     _admitted_candidate: crate::runtime::WorthUiAdmittedReplacementCandidate,
     _comparison: crate::runtime::WorthUiRuntimeArtifactComparison,
 }
@@ -24,9 +26,26 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
         else {
             return Err(crate::runtime::rebind::UiRebindPreparationDenial::InvalidSemanticProof);
         };
+        let predecessor = session.active_generation_identity();
+        let successor = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+            session.session_identity(),
+            successor_authority.generation_identity(),
+        );
+        let generation_succession = crate::facade::prepared_application_authority::
+            WorthUiPreparedApplicationGenerationSuccession::new(
+                predecessor.prepared_generation().clone(),
+                successor.prepared_generation().clone(),
+            );
+        let appearance_succession = session
+            .prepare_appearance_generation_succession(&generation_succession)
+            .map(Some)
+            .map_err(
+                crate::runtime::rebind::UiRebindPreparationDenial::AppearanceThemeSuccession,
+            )?;
         Ok(Self {
             session,
             successor_authority,
+            appearance_succession,
             _admitted_candidate: admitted_candidate,
             _comparison: comparison,
         })
@@ -38,9 +57,20 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
     ) {
-        self.session
+        let Self {
+            session,
+            successor_authority,
+            appearance_succession,
+            _admitted_candidate: _,
+            _comparison: _,
+        } = self;
+        let generations = session
             .application
-            .commit_evidence_only_rebind(self.successor_authority)
+            .commit_evidence_only_rebind(successor_authority);
+        if let Some(appearance_succession) = appearance_succession {
+            session.commit_appearance_generation_succession(appearance_succession);
+        }
+        generations
     }
 
     pub(crate) fn generation_identity(

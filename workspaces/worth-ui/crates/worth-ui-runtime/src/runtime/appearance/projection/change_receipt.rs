@@ -149,18 +149,18 @@ impl UiAppearanceChangeReceipt {
         mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
     ) -> Option<Self> {
         (mounting.posture()
-            == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction
-            && mounting.changes().is_empty()
-            && !mounting.order_changed())
-        .then_some(Self {
-            input_evidence_changed: false,
-            semantic_projection_changed: false,
-            resolved_aspect_value_changed: false,
-            mounted_mechanical_output_changed: false,
-            equal_output_suppressed: false,
-            denied_before_effects: false,
-            mounting_result_available: true,
-        })
+            == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction)
+            .then_some(Self {
+                input_evidence_changed: false,
+                semantic_projection_changed: false,
+                resolved_aspect_value_changed: false,
+                mounted_mechanical_output_changed: !mounting.changes().is_empty()
+                    || mounting.order_changed(),
+                equal_output_suppressed: mounting.posture()
+                    == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Unchanged,
+                denied_before_effects: false,
+                mounting_result_available: true,
+            })
     }
 
     pub(crate) const fn input_evidence_changed(self) -> bool {

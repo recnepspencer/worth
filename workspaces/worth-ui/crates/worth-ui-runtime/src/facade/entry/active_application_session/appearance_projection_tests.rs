@@ -8,16 +8,6 @@ use test_support::theme_session;
 fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
     let role = support::validation_background_role(support::APPEARANCE_TOKEN);
     let (mut session, host) = theme_session(&role);
-    let initial_observation = support::attached_appearance_candidate_submission(
-        &session,
-        "appearance-production-initial",
-        "workspace.component.active_session_current",
-    );
-    let mut initial_turn = session.begin_observation_turn().unwrap();
-    initial_turn.admit_source(initial_observation).unwrap();
-    let initial_admitted = initial_turn.seal().unwrap();
-    session.classify_observations(initial_admitted).unwrap();
-    assert!(session.has_appearance_owner_snapshot_for_test());
     let surface = session.create_semantic_surface().unwrap();
     session
         .register_host_surface(
@@ -98,6 +88,16 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         graph_node,
         committed_nodes
     );
+    let initial_observation = support::attached_appearance_candidate_submission(
+        &session,
+        "appearance-production-initial",
+        "workspace.component.active_session_current",
+    );
+    let mut initial_turn = session.begin_observation_turn().unwrap();
+    initial_turn.admit_source(initial_observation).unwrap();
+    let initial_admitted = initial_turn.seal().unwrap();
+    session.classify_observations(initial_admitted).unwrap();
+    assert!(session.has_appearance_owner_snapshot_for_test());
     session.advance_mounted_identity_frame().unwrap();
     host.push_native_display_presented();
     test_support::publish_frame(&mut session, 0);
@@ -183,16 +183,6 @@ fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
         worth_ui_dsl::UiAppearanceStateAxis::Hover,
     );
     let (mut session, _host) = theme_session(&role);
-    let initial_observation = support::appearance_candidate_submission(
-        &session,
-        "appearance-production-denial",
-        Some(&role),
-    );
-    let mut initial_turn = session.begin_observation_turn().unwrap();
-    initial_turn.admit_source(initial_observation).unwrap();
-    let initial_admitted = initial_turn.seal().unwrap();
-    session.classify_observations(initial_admitted).unwrap();
-    assert!(session.has_appearance_owner_snapshot_for_test());
     let surface = session.create_semantic_surface().unwrap();
     session
         .register_host_surface(
@@ -266,6 +256,16 @@ fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
         .receipts()
         .iter()
         .any(|receipt| receipt.identity().graph_node_identity() == graph_node));
+    let initial_observation = support::appearance_candidate_submission(
+        &session,
+        "appearance-production-denial",
+        Some(&role),
+    );
+    let mut initial_turn = session.begin_observation_turn().unwrap();
+    initial_turn.admit_source(initial_observation).unwrap();
+    let initial_admitted = initial_turn.seal().unwrap();
+    session.classify_observations(initial_admitted).unwrap();
+    assert!(session.has_appearance_owner_snapshot_for_test());
     session.advance_mounted_identity_frame().unwrap();
 
     let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();

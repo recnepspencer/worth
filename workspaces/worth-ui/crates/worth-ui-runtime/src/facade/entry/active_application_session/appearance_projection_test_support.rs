@@ -8,14 +8,7 @@ pub(super) fn theme_session(
 ) {
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     let host_observer = host.clone();
-    host.set_capabilities(
-        worth_ui_host_contract::WorthUiHostCapabilityReport::available(vec![
-            worth_ui_host_contract::WorthUiHostCapability::NativePaint,
-            worth_ui_host_contract::WorthUiHostCapability::ViewportObservation,
-            worth_ui_host_contract::WorthUiHostCapability::DpiObservation,
-            worth_ui_host_contract::WorthUiHostCapability::PortalAnchorObservation,
-        ]),
-    );
+    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
     let session = support::legacy_static_paint_appearance_component_builder(role)
         .register_appearance_theme_bundle(theme_bundle())
         .unwrap()
@@ -79,5 +72,10 @@ fn theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabilities {
         )],
     )
     .unwrap();
-    crate::capability::FrozenAppearanceThemeCapabilities::admit(catalog, vec![definition]).unwrap()
+    crate::capability::FrozenAppearanceThemeCapabilities::admit(
+        catalog,
+        crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.production").unwrap(),
+        vec![definition],
+    )
+    .unwrap()
 }

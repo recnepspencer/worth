@@ -5,12 +5,24 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         changes: &[super::super::UiNativeThemeTokenValueChange],
     ) -> Result<(), ()> {
-        let themes = self.capabilities().appearance_themes().ok_or(())?;
-        let update = self.presentation.prepare_theme_values_for_appearance(
-            changes,
-            themes,
-            &self.active_generation_identity(),
-        )?;
+        if changes.is_empty() {
+            return Ok(());
+        }
+        let update = if self
+            .application
+            .prepared_authority()
+            .consumed_fact_index()
+            .has_appearance_consumers()
+        {
+            let themes = self.capabilities().appearance_themes().ok_or(())?;
+            self.presentation.prepare_theme_values_for_appearance(
+                changes,
+                themes,
+                &self.active_generation_identity(),
+            )?
+        } else {
+            self.presentation.prepare_theme_values(changes)?
+        };
         let mut invalidation: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch> =
             None;
         for token in update.changed_tokens() {
@@ -24,18 +36,7 @@ impl WorthUiActiveApplicationSession {
                 invalidation = Some(batch);
             }
         }
-        let Some(invalidation) = invalidation else {
-            return self.presentation.commit_theme_values(
-                update,
-                Some(
-                    crate::runtime::appearance::UiAppearanceInvalidationBatch::empty(
-                        self.application.prepared_authority().consumed_fact_index(),
-                    ),
-                ),
-            );
-        };
-        self.presentation
-            .commit_theme_values(update, Some(invalidation))
+        self.presentation.commit_theme_values(update, invalidation)
     }
 
     pub(crate) fn complete_application_theme_values_source(

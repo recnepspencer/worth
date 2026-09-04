@@ -5,13 +5,13 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
         &mut self,
         frame: &mut crate::mounting::UiPreparedMountedFrame,
     ) -> Result<(), crate::mounting::UiMountedFramePreparationDenial> {
-        let Some(snapshot) = self.appearance_owner_snapshot.as_ref() else {
-            return Ok(());
-        };
         let Some(invalidation) = self.presentation.appearance_invalidation_batch() else {
             return Ok(());
         };
         frame.set_appearance_invalidation_batch(invalidation.clone());
+        let Some(snapshot) = self.appearance_owner_snapshot.as_ref() else {
+            return Ok(());
+        };
         let generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
             self.application_session_identity,
             &self.generation_identity,

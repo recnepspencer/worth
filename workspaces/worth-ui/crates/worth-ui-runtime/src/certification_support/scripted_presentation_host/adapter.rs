@@ -243,6 +243,10 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
                 clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::Presented(completion)
             }
+            Some(ScriptedSurfaceCompletion::Superseded(observation)) => {
+                clear_token_state(&mut state, identity);
+                UiHostSurfaceInFlightCompletion::Superseded(observation)
+            }
             Some(ScriptedSurfaceCompletion::PresentationIndeterminate) | None => {
                 clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::PresentationIndeterminate

@@ -1,7 +1,12 @@
+use crate::runtime::tests::appearance_theme_test_support;
 use crate::runtime::tests::source_ingress_boundary_test_support::{
     lower_rust_submission, source_backed_package_component, source_backed_package_region,
     source_backed_package_sizing,
 };
+
+#[cfg(test)]
+#[path = "appearance_component_session_contract_tests.rs"]
+mod contract_tests;
 
 #[path = "appearance_role_test_support.rs"]
 mod role_support;
@@ -19,9 +24,11 @@ pub(crate) fn source_backed_static_paint_consumer_session(
 ) -> crate::facade::WorthUiActiveApplicationSession {
     let role = validation_background_role(APPEARANCE_TOKEN);
     appearance_component_builder(&role)
+        .register_appearance_theme_bundle(appearance_theme_test_support::bundle())
+        .unwrap()
         .with_rust_authored_declaration_fixture(appearance_fixture(&role))
         .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
+        .map(appearance_theme_test_support::activate)
         .expect("appearance consumer source application should prepare")
         .launch()
         .expect("appearance consumer source application should launch")
@@ -31,9 +38,11 @@ pub(crate) fn source_backed_static_paint_role_capable_session(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::WorthUiActiveApplicationSession {
     appearance_component_builder(role)
+        .register_appearance_theme_bundle(appearance_theme_test_support::bundle())
+        .unwrap()
         .with_rust_authored_declaration_fixture(appearance_fixture_without_attachment())
         .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
+        .map(appearance_theme_test_support::activate)
         .expect("appearance-capable source application should prepare")
         .launch()
         .expect("appearance-capable source application should launch")
@@ -43,10 +52,14 @@ pub(crate) fn source_backed_two_node_appearance_session(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::WorthUiActiveApplicationSession {
     let snapshot = appearance_component_builder(role)
+        .register_appearance_theme_bundle(appearance_theme_test_support::bundle())
+        .unwrap()
         .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
+        .map(appearance_theme_test_support::activate)
         .expect("two-node appearance capability snapshot should prepare");
     appearance_component_builder(role)
+        .register_appearance_theme_bundle(appearance_theme_test_support::bundle())
+        .unwrap()
         .with_candidate_submission(two_node_appearance_submission(
             "two-node-appearance-current",
             role,
@@ -54,7 +67,7 @@ pub(crate) fn source_backed_two_node_appearance_session(
             snapshot.capabilities(),
         ))
         .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
+        .map(appearance_theme_test_support::activate)
         .expect("two-node appearance source application should prepare")
         .launch()
         .expect("two-node appearance source application should launch")
@@ -217,6 +230,27 @@ pub(crate) fn single_aspect_appearance_component_builder(
     )
 }
 
+pub(crate) fn radius_appearance_component_builder_with_legacy_static_paint(
+    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
+) -> crate::facade::entry::WorthUiApplicationBuilder {
+    appearance_component_builder_with_contract_and_static_token(
+        role,
+        worth_ui_dsl::UiAppearanceAspectContract::component(
+            [
+                worth_ui_dsl::UiAppearanceAspect::Background,
+                worth_ui_dsl::UiAppearanceAspect::Radius,
+            ],
+            [],
+        )
+        .unwrap(),
+        LEGACY_STATIC_PAINT_TOKEN,
+    )
+    .register_theme_token(appearance_theme_token_with_color(
+        crate::capability::ThemeTokenId::new("theme.appearance_radius.background").unwrap(),
+        "#112233",
+    ))
+}
+
 fn appearance_component_builder_with_contract_and_static_token(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
     appearance_contract: worth_ui_dsl::UiAppearanceAspectContract,
@@ -338,22 +372,6 @@ pub(crate) fn appearance_fixture(
     crate::facade::WorthUiRustAuthoredDeclarationFixture::named("appearance-consumer-current")
         .with_appearance_role("appearance/consumer", role.clone())
         .with_component_appearance_role("appearance/consumer", ACTIVE_COMPONENT, attachment)
-}
-
-#[test]
-fn component_descriptor_rejects_the_actual_backdrop_contract() {
-    let token = crate::capability::ThemeTokenId::new(APPEARANCE_TOKEN).unwrap();
-    let result = static_paint_component_with_contract(
-        ACTIVE_COMPONENT,
-        token,
-        worth_ui_dsl::UiAppearanceAspectContract::backdrop(),
-    );
-    assert_eq!(
-        result,
-        Err(
-            crate::capability::ComponentAppearanceAspectContractDenial::BackdropContractOnComponent
-        )
-    );
 }
 
 fn appearance_fixture_without_attachment() -> crate::facade::WorthUiRustAuthoredDeclarationFixture {

@@ -19,8 +19,9 @@ impl UiMountedProjectionFrame {
         self.appearance_state.batch().cloned()
     }
 
-    pub(crate) fn begin_appearance_reconstruction(&mut self) {
-        self.appearance_state.begin_reconstruction();
+    pub(crate) fn prepare_appearance_reconstruction(&mut self) {
+        self.appearance_state
+            .prepare_reconstruction(self.appearance_node_inputs());
     }
 
     pub(crate) fn prune_appearance_state(

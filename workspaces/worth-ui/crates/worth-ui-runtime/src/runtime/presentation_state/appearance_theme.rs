@@ -10,6 +10,88 @@ pub(crate) enum UiAppearanceThemeBindingDenial {
 }
 
 impl super::UiApplicationPresentationState {
+    #[allow(
+        dead_code,
+        reason = "milestone 3.16 Gate 0 installs the future presentation CAS without activating it"
+    )]
+    pub(crate) fn prepare_appearance_theme_switch(
+        &mut self,
+        request: crate::runtime::appearance::UiThemeSwitchRequest,
+    ) -> Result<
+        crate::runtime::appearance::UiPreparedThemeSwitch,
+        crate::runtime::appearance::UiThemeSwitchDenial,
+    > {
+        self.appearance_theme_state
+            .as_mut()
+            .ok_or(crate::runtime::appearance::UiThemeSwitchDenial::MissingActiveBinding)?
+            .prepare_theme_switch(request)
+    }
+
+    pub(crate) fn materialize_initial_appearance_theme_binding(
+        &mut self,
+        capability: crate::runtime::appearance::UiThemeCapabilityReceipt,
+    ) -> Result<(), crate::runtime::appearance::UiThemeInitialBindingDenial> {
+        let result = self
+            .appearance_theme_state
+            .get_or_insert_with(crate::runtime::appearance::UiAppearanceThemeState::default)
+            .install_initial(capability);
+        result
+    }
+
+    #[allow(
+        dead_code,
+        reason = "milestone 3.16 Gate 0 installs the future presentation CAS without activating it"
+    )]
+    pub(crate) fn commit_published_appearance_theme_switch(
+        &mut self,
+        prepared: crate::runtime::appearance::UiPreparedThemeSwitch,
+    ) -> Result<(), crate::runtime::appearance::UiThemeSwitchDenial> {
+        let result = self
+            .appearance_theme_state
+            .as_mut()
+            .ok_or(crate::runtime::appearance::UiThemeSwitchDenial::UnknownPreparedSwitch)?
+            .commit_published_switch(prepared);
+        if result.is_ok() {
+            self.appearance_theme_values.clear();
+        }
+        result
+    }
+
+    #[allow(
+        dead_code,
+        reason = "milestone 3.16 Gate 0 installs affine switch cancellation without activating switching"
+    )]
+    pub(crate) fn cancel_prepared_appearance_theme_switch(
+        &mut self,
+        prepared: crate::runtime::appearance::UiPreparedThemeSwitch,
+    ) -> Result<(), crate::runtime::appearance::UiThemeSwitchDenial> {
+        self.appearance_theme_state
+            .as_mut()
+            .ok_or(crate::runtime::appearance::UiThemeSwitchDenial::UnknownPreparedSwitch)?
+            .cancel_prepared_switch(prepared)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn replace_appearance_theme_binding_for_test(
+        &mut self,
+        capability: crate::runtime::appearance::UiThemeCapabilityReceipt,
+    ) {
+        self.appearance_theme_state
+            .as_mut()
+            .expect("appearance theme state should be installed")
+            .replace_for_test(capability);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn remove_appearance_theme_binding_for_test(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> bool {
+        self.appearance_theme_state
+            .as_mut()
+            .is_some_and(|state| state.remove_for_test(surface))
+    }
+
     pub(crate) fn active_appearance_theme_binding(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,

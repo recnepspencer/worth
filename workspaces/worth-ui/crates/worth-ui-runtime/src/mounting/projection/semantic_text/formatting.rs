@@ -136,9 +136,10 @@ fn resolve_directive_color(
     directive: &crate::mounting::UiMountedSemanticTextFormattingDirective,
     token: &crate::capability::ThemeTokenId,
 ) -> Result<UiMountedRgba8, UiMountedProjectionDenial> {
-    let crate::capability::ThemeTokenValue::Color(color) = directive
-        .token_value(token)
-        .ok_or(UiMountedProjectionDenial::MissingSemanticTextToken)?;
+    let Some(crate::capability::ThemeTokenValue::Color(color)) = directive.token_value(token)
+    else {
+        return Err(UiMountedProjectionDenial::MissingSemanticTextToken);
+    };
     super::super::static_paint::parse_rgba(color.as_str())
         .map_err(|_| UiMountedProjectionDenial::InvalidSemanticTextColor)
 }
@@ -148,9 +149,10 @@ fn resolve_color(
     theme_values: &crate::mounting::UiMountedThemeValueSource,
     token_id: &crate::capability::ThemeTokenId,
 ) -> Result<UiMountedRgba8, UiMountedProjectionDenial> {
-    if let Some(crate::capability::ThemeTokenValue::Color(color)) =
-        theme_values.current_value(token_id)
-    {
+    if let Some(value) = theme_values.current_value(token_id) {
+        let crate::capability::ThemeTokenValue::Color(color) = value else {
+            return Err(UiMountedProjectionDenial::MissingSemanticTextToken);
+        };
         return super::super::static_paint::parse_rgba(color.as_str())
             .map_err(|_| UiMountedProjectionDenial::InvalidSemanticTextColor);
     }

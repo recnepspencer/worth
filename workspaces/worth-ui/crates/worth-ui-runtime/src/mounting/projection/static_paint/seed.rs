@@ -34,6 +34,9 @@ pub(in crate::mounting::projection) fn lower_static_paint_seed(
     let color = match theme_values.current_value(token_id) {
         Some(crate::capability::ThemeTokenValue::Color(color)) => parse_rgba(color.as_str())
             .map_err(|_| UiMountedProjectionDenial::InvalidStaticPaintColor)?,
+        Some(crate::capability::ThemeTokenValue::Typed(_)) => {
+            return Err(UiMountedProjectionDenial::InvalidStaticPaintColor)
+        }
         None if theme_values.uses_frozen_plan() => frozen_plan_color(plan, component)?,
         None => return Err(UiMountedProjectionDenial::MissingStaticPaintColor),
     };

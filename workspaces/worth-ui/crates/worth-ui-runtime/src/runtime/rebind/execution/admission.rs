@@ -36,6 +36,9 @@ pub enum UiRebindPreparationDenial {
     PlannedChangeBecameSemanticNoOp,
     UnsupportedNonSourcePlan,
     InvalidSemanticProof,
+    AppearanceThemeSuccession(
+        crate::runtime::presentation_state::UiAppearanceGenerationSuccessionDenial,
+    ),
 }
 
 impl UiRebindExecutionRequest {

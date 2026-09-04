@@ -50,6 +50,20 @@ impl UiAppearanceThemeState {
         self.bindings.get(&surface)
     }
 
+    pub(crate) fn has_prepared_switches(&self) -> bool {
+        !self.prepared.is_empty()
+    }
+
+    pub(crate) fn replace_carried_bindings(
+        &mut self,
+        bindings: impl IntoIterator<Item = super::UiActiveThemeBinding>,
+    ) {
+        self.bindings = bindings
+            .into_iter()
+            .map(|binding| (binding.surface(), binding))
+            .collect();
+    }
+
     pub(crate) fn install_initial(
         &mut self,
         capability: super::UiThemeCapabilityReceipt,
@@ -69,12 +83,50 @@ impl UiAppearanceThemeState {
         Ok(())
     }
 
-    pub(crate) fn install_for_generation(&mut self, capability: super::UiThemeCapabilityReceipt) {
+    pub(crate) fn prepare_generation_rebinding(
+        &self,
+        prepared: &super::UiPreparedThemeGenerationRebinding,
+    ) -> Result<Box<[super::UiActiveThemeBinding]>, super::UiThemeCapabilityReceiptDenial> {
+        if prepared.replacements().len() != self.bindings.len() {
+            return Err(super::UiThemeCapabilityReceiptDenial::StaleBinding);
+        }
+        let mut successors = Vec::with_capacity(prepared.replacements().len());
+        for replacement in prepared.replacements() {
+            let current = self
+                .bindings
+                .get(&replacement.surface())
+                .ok_or(super::UiThemeCapabilityReceiptDenial::StaleBinding)?;
+            if current.binding_generation != replacement.predecessor_generation() {
+                return Err(super::UiThemeCapabilityReceiptDenial::StaleBinding);
+            }
+            if current.capability.application() != prepared.predecessor() {
+                return Err(super::UiThemeCapabilityReceiptDenial::GenerationMismatch);
+            }
+            if replacement.capability().application() != prepared.successor() {
+                return Err(super::UiThemeCapabilityReceiptDenial::GenerationMismatch);
+            }
+            let binding_generation = current
+                .binding_generation
+                .checked_add(1)
+                .ok_or(super::UiThemeCapabilityReceiptDenial::BindingGenerationExhausted)?;
+            successors.push(super::UiActiveThemeBinding {
+                surface: replacement.surface(),
+                binding_generation,
+                capability: replacement.capability().clone(),
+            });
+        }
+        Ok(successors.into_boxed_slice())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn replace_for_test(&mut self, capability: super::UiThemeCapabilityReceipt) {
         let surface = capability.surface();
-        let binding_generation = self
-            .bindings
-            .get(&surface)
-            .map_or(1, |binding| binding.binding_generation.saturating_add(1));
+        let binding_generation = self.bindings.get(&surface).map_or(1, |binding| {
+            binding
+                .binding_generation
+                .checked_add(1)
+                .expect("test binding generation must not exhaust")
+        });
         self.bindings.insert(
             surface,
             super::UiActiveThemeBinding {
@@ -83,6 +135,14 @@ impl UiAppearanceThemeState {
                 capability,
             },
         );
+    }
+
+    #[cfg(test)]
+    pub(crate) fn remove_for_test(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> bool {
+        self.bindings.remove(&surface).is_some()
     }
 
     pub(crate) fn prepare_theme_switch(

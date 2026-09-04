@@ -274,9 +274,12 @@ fn capability(
         )],
     )
     .unwrap();
-    let bundle =
-        crate::capability::FrozenAppearanceThemeCapabilities::admit(catalog, vec![definition])
-            .unwrap();
+    let bundle = crate::capability::FrozenAppearanceThemeCapabilities::admit(
+        catalog,
+        definition_identity.clone(),
+        vec![definition],
+    )
+    .unwrap();
     let registered = crate::facade::entry::CapabilityRegistrationBuilder::new()
         .register_appearance_role(role)
         .unwrap()
@@ -296,7 +299,19 @@ fn capability(
     let host_profile = worth_ui_host_contract::UiHostAppearanceProfileContract::admit(
         "test-host",
         1,
-        worth_ui_host_contract::UiHostAppearanceMechanicFamily::ALL,
+        [
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceFill,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceBorder,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::CornerRadii,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Outline,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::TextRangeForeground,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::PortalSurface,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Backdrop,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::OverlayOrder,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::PointerAffordance,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Damage,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Clip,
+        ],
         Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
     )
     .unwrap();

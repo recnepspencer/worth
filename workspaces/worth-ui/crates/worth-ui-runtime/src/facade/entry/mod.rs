@@ -7,6 +7,7 @@ mod active_framework_turn;
 mod app;
 mod app_builder;
 mod app_inspection_routing;
+mod appearance_generation_succession;
 mod application_replacement;
 mod builder;
 #[cfg(any(test, feature = "certification-support"))]

@@ -16,7 +16,8 @@ mod derivation;
 mod graph_successor;
 use derivation::derive_prepared_application_authorities;
 pub(crate) use graph_successor::{
-    WorthUiPreparedApplicationGraphSuccessor, WorthUiPreparedApplicationGraphSuccessorDenial,
+    WorthUiPreparedApplicationGenerationSuccession, WorthUiPreparedApplicationGraphSuccessor,
+    WorthUiPreparedApplicationGraphSuccessorDenial,
 };
 
 pub(crate) struct WorthUiPreparedApplicationAuthorityInput {

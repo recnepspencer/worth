@@ -32,6 +32,7 @@ pub enum ScriptedSurfaceCompletion {
     Pending,
     RejectedBeforeEffects(worth_ui_host_contract::UiHostSurfacePresentationDenial),
     Presented(worth_ui_host_contract::UiMountedSurfacePresentationCompletion),
+    Superseded(worth_ui_host_contract::UiMountedSurfacePresentationSupersession),
     PresentationIndeterminate,
 }
 

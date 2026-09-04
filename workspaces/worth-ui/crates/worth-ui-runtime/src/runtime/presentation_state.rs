@@ -1,8 +1,10 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
+mod appearance_generation_succession;
 mod appearance_theme;
 mod overlay_export;
+mod projection;
 #[path = "presentation_state/theme_values.rs"]
 mod theme_values;
 
@@ -10,6 +12,11 @@ mod theme_values;
 #[path = "presentation_state_tests.rs"]
 mod tests;
 
+pub(crate) use appearance_generation_succession::{
+    UiAppearanceGenerationSuccessionDenial, UiPreparedAppearanceGenerationSuccession,
+};
+#[cfg(test)]
+pub(crate) use appearance_theme::UiAppearanceThemeBindingDenial;
 pub(crate) use overlay_export::UiApplicationPresentationOwnerExport;
 
 pub(crate) struct UiApplicationPresentationState {
@@ -103,74 +110,6 @@ impl UiApplicationPresentationState {
             appearance_theme_values: BTreeMap::new(),
             appearance_theme_state: None,
         }
-    }
-
-    #[allow(
-        dead_code,
-        reason = "milestone 3.16 Gate 0 installs the future presentation CAS without activating it"
-    )]
-    pub(crate) fn prepare_appearance_theme_switch(
-        &mut self,
-        request: crate::runtime::appearance::UiThemeSwitchRequest,
-    ) -> Result<
-        crate::runtime::appearance::UiPreparedThemeSwitch,
-        crate::runtime::appearance::UiThemeSwitchDenial,
-    > {
-        self.appearance_theme_state
-            .as_mut()
-            .ok_or(crate::runtime::appearance::UiThemeSwitchDenial::MissingActiveBinding)?
-            .prepare_theme_switch(request)
-    }
-
-    #[allow(
-        dead_code,
-        reason = "milestone 3.16 Gate 0 installs the future presentation CAS without activating it"
-    )]
-    pub(crate) fn install_initial_appearance_theme_binding(
-        &mut self,
-        capability: crate::runtime::appearance::UiThemeCapabilityReceipt,
-    ) -> Result<(), crate::runtime::appearance::UiThemeInitialBindingDenial> {
-        let result = self
-            .appearance_theme_state
-            .get_or_insert_with(crate::runtime::appearance::UiAppearanceThemeState::default)
-            .install_initial(capability);
-        if result.is_ok() {
-            self.appearance_theme_values.clear();
-        }
-        result
-    }
-
-    #[allow(
-        dead_code,
-        reason = "milestone 3.16 Gate 0 installs the future presentation CAS without activating it"
-    )]
-    pub(crate) fn commit_published_appearance_theme_switch(
-        &mut self,
-        prepared: crate::runtime::appearance::UiPreparedThemeSwitch,
-    ) -> Result<(), crate::runtime::appearance::UiThemeSwitchDenial> {
-        let result = self
-            .appearance_theme_state
-            .as_mut()
-            .ok_or(crate::runtime::appearance::UiThemeSwitchDenial::UnknownPreparedSwitch)?
-            .commit_published_switch(prepared);
-        if result.is_ok() {
-            self.appearance_theme_values.clear();
-        }
-        result
-    }
-
-    #[allow(
-        dead_code,
-        reason = "milestone 3.16 Gate 0 installs affine switch cancellation without activating switching"
-    )]
-    pub(crate) fn cancel_prepared_appearance_theme_switch(
-        &mut self,
-        prepared: crate::runtime::appearance::UiPreparedThemeSwitch,
-    ) -> Result<(), crate::runtime::appearance::UiThemeSwitchDenial> {
-        self.appearance_theme_state
-            .as_mut()
-            .ok_or(crate::runtime::appearance::UiThemeSwitchDenial::UnknownPreparedSwitch)?
-            .cancel_prepared_switch(prepared)
     }
 
     pub(crate) fn register_semantic_text(
@@ -289,7 +228,7 @@ impl UiApplicationPresentationState {
                         .get(token)
                         .cloned()
                         .map(|value| (token.clone(), value))
-                        .ok_or_else(unknown_graph_node)
+                        .ok_or_else(projection::unknown_graph_node)
                 })
                 .collect::<Result<BTreeMap<_, _>, _>>()?;
             content
@@ -306,7 +245,7 @@ impl UiApplicationPresentationState {
                         ),
                     ),
                 )
-                .map_err(|_| unknown_graph_node())?;
+                .map_err(|_| projection::unknown_graph_node())?;
             revisions.push((identity.clone(), row.presentation_revision));
         }
         Ok(UiApplicationPresentationProjection {
@@ -334,19 +273,42 @@ impl UiApplicationPresentationState {
         &mut self,
         batch: crate::runtime::appearance::UiAppearanceInvalidationBatch,
     ) -> Result<(), ()> {
+        let (pending, next_revision) = self.prepare_appearance_invalidation(Some(batch))?;
+        self.pending_appearance_invalidation = pending;
+        self.next_appearance_batch_revision = next_revision;
+        Ok(())
+    }
+
+    pub(crate) fn prepare_appearance_invalidation(
+        &self,
+        batch: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
+    ) -> Result<
+        (
+            Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
+            u64,
+        ),
+        (),
+    > {
+        let Some(batch) = batch else {
+            return Ok((
+                self.pending_appearance_invalidation.clone(),
+                self.next_appearance_batch_revision,
+            ));
+        };
         let revision = self.next_appearance_batch_revision;
-        self.next_appearance_batch_revision = revision.checked_add(1).ok_or(())?;
+        let next_revision = revision.checked_add(1).ok_or(())?;
         let batch = batch.with_revision(revision);
-        if let Some(pending) = self.pending_appearance_invalidation.as_mut() {
-            if pending.basis() == batch.basis() {
-                pending.merge(batch);
+        let mut pending = self.pending_appearance_invalidation.clone();
+        if let Some(current) = pending.as_mut() {
+            if current.basis() == batch.basis() {
+                current.merge(batch);
             } else {
-                *pending = batch;
+                *current = batch;
             }
         } else {
-            self.pending_appearance_invalidation = Some(batch);
+            pending = Some(batch);
         }
-        Ok(())
+        Ok((pending, next_revision))
     }
 
     pub(crate) fn settle_appearance_invalidation(
@@ -381,20 +343,4 @@ impl UiApplicationPresentationState {
             }
         }
     }
-}
-
-impl UiApplicationPresentationProjection {
-    pub(crate) fn content(&self) -> crate::mounting::UiMountedSemanticContentInput {
-        self.content.clone()
-    }
-
-    pub(crate) fn theme_values(&self) -> crate::mounting::UiMountedThemeValueSource {
-        self.theme_values.clone()
-    }
-}
-
-fn unknown_graph_node() -> crate::mounting::UiMountedFramePreparationDenial {
-    crate::mounting::UiMountedFramePreparationDenial::Projection(
-        crate::mounting::UiMountedProjectionDenial::UnknownGraphNode,
-    )
 }

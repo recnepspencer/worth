@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use crate::capability::{CapabilitySnapshot, ComponentId};
 use crate::declaration::{UiAspectName, UiAspectSemanticSlice};
 use crate::fact_contract::{UiAuthoredFactSelector, UiConsumedFactContract, UiProducedFact};
-use crate::graph::{UiGraphAspectPublisherKind, UiGraphSnapshot};
+use crate::graph::UiGraphSnapshot;
 
 use super::{
     UiAuthoredDeclarationLookup, UiGraphFactConsumerIdentity, UiGraphFactConsumerKey,
@@ -19,6 +19,7 @@ use super::{
 mod appearance_consumer_contract;
 mod appearance_slot_relation;
 mod appearance_state;
+mod authored_aspect_consumers;
 mod canonical_entries;
 mod consumer;
 mod subsystem;
@@ -52,7 +53,7 @@ impl UiGraphConsumedFactIndex {
     ) -> Self {
         let mut authored_by_declaration =
             direct_authored_consumers(snapshot, authored_declarations);
-        add_authored_aspect_consumers(
+        authored_aspect_consumers::add_authored_aspect_consumers(
             snapshot,
             authored_declarations,
             &mut authored_by_declaration,
@@ -119,6 +120,12 @@ impl UiGraphConsumedFactIndex {
         &self,
     ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
         self.appearance_consumers.attached_consumer_nodes()
+    }
+
+    pub(crate) fn appearance_required_role_identities(
+        &self,
+    ) -> Box<[worth_ui_dsl::UiAppearanceRoleIdentity]> {
+        self.appearance_consumers.required_role_identities()
     }
 
     pub(crate) fn has_same_appearance_consumer_contract(&self, other: &Self) -> bool {
@@ -358,40 +365,4 @@ fn direct_authored_consumers(
         }
     }
     by_declaration
-}
-
-fn add_authored_aspect_consumers(
-    snapshot: &UiGraphSnapshot,
-    authored_declarations: &UiAuthoredDeclarationLookup,
-    by_declaration: &mut BTreeMap<Box<str>, Vec<UiGraphFactIndexEntry>>,
-) {
-    let indexes = snapshot.core_indexes();
-    for (aspect, publishers) in indexes.published_aspects().iter() {
-        for publisher in publishers {
-            let UiGraphAspectPublisherKind::GraphNode(publisher_node) = publisher.kind() else {
-                continue;
-            };
-            let publisher_lookup = snapshot
-                .lookup()
-                .graph_node(publisher_node)
-                .expect("every published graph node remains indexed");
-            let publisher = publisher_lookup.value();
-            let selector_identity: Box<str> = fact_selector_identity(
-                publisher.authored_provenance_digest(),
-                publisher.declaration_identity().authored_semantic_name(),
-                authored_declarations,
-            )
-            .into();
-            let contract = UiConsumedFactContract::authored(selector_identity.clone());
-            let entries = by_declaration.entry(selector_identity).or_default();
-            for consumer in indexes.consumed_aspects().consumers_for(aspect) {
-                entries.push(UiGraphFactIndexEntry::new(
-                    consumer_key(snapshot, consumer.kind()),
-                    consumer_identity(consumer.kind()),
-                    Some(aspect.clone()),
-                    contract.clone(),
-                ));
-            }
-        }
-    }
 }

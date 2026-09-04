@@ -12,6 +12,7 @@ mod opacity_composition;
 mod outline;
 mod overlay_order;
 mod pointer_affordance;
+mod reconstruction;
 mod surface;
 mod text_foreground;
 
@@ -88,37 +89,60 @@ impl UiMountedAppearanceSidecar {
         Ok(delta.work)
     }
 
-    pub(crate) fn reconstruction_work(
-        &self,
-    ) -> Option<worth_ui_host_contract::UiMountedAppearanceWork> {
-        let facts = self.current.as_ref()?;
-        let predecessor_manifest =
-            worth_ui_host_contract::UiMountedAppearancePredecessorManifest::from_runtime_mounting(
-                facts
-                    .records()
-                    .iter()
-                    .map(|record| record.identity().clone()),
-                facts
-                    .frame()
-                    .overlay_order()
-                    .bottom_to_top()
-                    .iter()
-                    .cloned(),
-            )?;
-        worth_ui_host_contract::UiMountedAppearanceWork::from_runtime_mounting(
-            worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction,
-            Some(facts.frame().frame()),
-            Some(predecessor_manifest),
-            facts.frame().clone(),
-            [],
-            [],
-            false,
-        )
+    pub(crate) fn reconstruct(
+        &mut self,
+        input: UiMountedAppearanceLoweringInput,
+    ) -> Result<worth_ui_host_contract::UiMountedAppearanceWork, UiMountedAppearanceLoweringDenial>
+    {
+        reconstruction::rebuild(self.current.as_ref(), input).map(|(delta, facts)| {
+            self.counters.observe(&delta.work, delta.summary);
+            self.last_delta = Some(delta.summary);
+            self.current = Some(facts);
+            delta.work
+        })
     }
 
     #[cfg(test)]
     pub(crate) fn current(&self) -> Option<&UiMountedAppearanceFacts> {
         self.current.as_ref()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn current_frame_identity(
+        &self,
+    ) -> Option<worth_ui_host_contract::UiMountedFrameIdentity> {
+        self.current.as_ref().map(|facts| facts.frame().frame())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn current_overlay_order(
+        &self,
+    ) -> Option<Box<[worth_ui_host_contract::UiOverlayParticipantIdentity]>> {
+        self.current.as_ref().map(|facts| {
+            facts
+                .frame()
+                .overlay_order()
+                .bottom_to_top()
+                .to_vec()
+                .into_boxed_slice()
+        })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn current_node_receipts(
+        &self,
+    ) -> Box<[worth_ui_host_contract::UiMountedNodeReceiptIdentity]> {
+        self.current
+            .as_ref()
+            .map(|facts| {
+                facts
+                    .records()
+                    .iter()
+                    .filter_map(|record| record.node_receipt())
+                    .collect::<Vec<_>>()
+                    .into_boxed_slice()
+            })
+            .unwrap_or_default()
     }
 
     #[cfg(test)]
@@ -134,7 +158,16 @@ impl UiMountedAppearanceSidecar {
     pub(crate) const fn last_delta(&self) -> Option<UiMountedAppearanceDeltaSummary> {
         self.last_delta
     }
+
+    #[cfg(test)]
+    pub(crate) fn last_delta_mechanics_changed(&self) -> Option<bool> {
+        self.last_delta.map(|delta| delta.mechanics_changed())
+    }
 }
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(crate) use tests::mounted_sidecar_with_retained_facts_for_test;
+#[cfg(test)]
+pub(crate) use tests::MountedAppearanceReconstructionTestFixture;

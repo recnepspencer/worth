@@ -7,6 +7,7 @@ use super::UiMountedProjectionDenial;
 
 mod appearance_frame;
 mod appearance_state;
+mod appearance_state_membership;
 pub(in crate::mounting) mod diagnostic_source;
 mod drawable_order;
 mod lane_recording;
@@ -67,6 +68,29 @@ impl UiMountedAppearanceNodeInputContext {
 
     pub(crate) const fn allocation(&self) -> worth_ui_host_contract::UiMountedAllocationProjection {
         self.allocation
+    }
+
+    pub(crate) fn lower_retained_projection(
+        &self,
+        projection: &crate::runtime::appearance::UiAppearanceProjection,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    ) -> Result<super::UiMountedAppearanceLoweringInput, super::UiMountedAppearanceLoweringDenial>
+    {
+        let input = super::UiMountedAppearanceNodeInput::from_resolved_projection(
+            self.issuer,
+            self.semantic_surface,
+            self.node_receipt,
+            self.graph_node,
+            self.plan_digest,
+            self.allocation,
+            projection,
+        )?;
+        Ok(super::UiMountedAppearanceLoweringInput::for_single_node(
+            self.frame,
+            self.semantic_surface,
+            presentation,
+            input,
+        ))
     }
 }
 

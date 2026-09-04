@@ -40,14 +40,26 @@ fn presentation_attribution_follows_the_latest_physical_publication() {
         .expect("physical paint must expose retained attribution");
     assert_publication_matches(&predecessor, predecessor_attribution);
 
+    let token = ThemeTokenId::new(TOKEN).expect("fixture token id");
+    let successor_value =
+        ThemeTokenValue::color(ThemeColorValue::hex("#405060").expect("fixture color"));
     shell
         .apply_theme_token_values(&[super::UiNativeThemeTokenValueChange::new(
-            ThemeTokenId::new(TOKEN).expect("fixture token id"),
-            ThemeTokenValue::color(ThemeColorValue::hex("#405060").expect("fixture color")),
+            token.clone(),
+            successor_value.clone(),
         )
         .expect("application-owned token successor")])
         .expect("theme successor should be admitted");
+
+    let source = shell.session.complete_application_theme_values_source();
+    assert_eq!(source.current_value(&token), Some(&successor_value));
+    assert!(source.has_theme_changes());
+
     let successor = frame_receipt(completed(shell.present_frame(200, 2)));
+    assert_eq!(
+        successor.cost_report().work_class(),
+        crate::mounting::UiMountWorkClass::SemanticDelta
+    );
     let successor_attribution = shell
         .current_presentation_attribution()
         .expect("successor physical paint must replace attribution");
@@ -56,6 +68,10 @@ fn presentation_attribution_follows_the_latest_physical_publication() {
         successor_attribution.frame(),
         predecessor_attribution.frame()
     );
+    assert!(!shell
+        .session
+        .complete_application_theme_values_source()
+        .has_theme_changes());
     assert!(shell.shutdown().host_session_released());
 }
 

@@ -46,6 +46,8 @@ pub(crate) mod appearance_component_session_test_support;
 pub(crate) mod appearance_owner_availability_test_support;
 #[path = "source_ingress/appearance_owner_availability_tests.rs"]
 mod appearance_owner_availability_tests;
+#[path = "source_ingress/appearance_theme_test_support.rs"]
+pub(crate) mod appearance_theme_test_support;
 #[path = "source_ingress/application_semantic_no_op_tests.rs"]
 mod application_semantic_no_op_tests;
 #[path = "replacement/artifact_equivalence_boundary_tests.rs"]

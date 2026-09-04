@@ -22,6 +22,7 @@ mod overlay;
 
 struct NodeIds {
     frame: UiMountedFrameIdentity,
+    issuer: UiMountedNodeReceiptIssuer,
     surface: UiSemanticSurfaceIdentity,
     presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
     instance: UiMountedInstanceIdentity,
@@ -120,6 +121,7 @@ fn node_input_for(
         },
         NodeIds {
             frame,
+            issuer,
             surface,
             presentation,
             instance,
@@ -129,6 +131,48 @@ fn node_input_for(
             outline,
         },
     )
+}
+
+pub(crate) struct MountedAppearanceReconstructionTestFixture {
+    pub(crate) sidecar: UiMountedAppearanceSidecar,
+    pub(crate) frame: UiMountedFrameIdentity,
+    pub(crate) issuer: UiMountedNodeReceiptIssuer,
+    pub(crate) surface: UiSemanticSurfaceIdentity,
+    pub(crate) instance: UiMountedInstanceIdentity,
+    pub(crate) receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+    pub(crate) graph_node: crate::graph::UiGraphNodeIdentity,
+}
+
+pub(crate) fn mounted_sidecar_with_retained_facts_for_test(
+) -> MountedAppearanceReconstructionTestFixture {
+    let (mut input, ids) = node_input([1, 2, 3, 255], 7, false);
+    let node = &mut input.nodes[0];
+    node.clip = UiAppearanceClip::new(10, 20, 100, 80).unwrap();
+    node.layer = UiMountedLayerProjection::Omitted(
+        worth_ui_host_contract::UiMountedOmissionReason::NotDefinedByCurrentRuntime,
+    );
+    node.text_foregrounds = Box::new([]);
+    node.pointer = None;
+    node.appearance_opacity = UiMountedAppearanceOpacity::ONE;
+    node.motion_opacity = None;
+    node.surface_paint = Some(UiMountedSurfacePaint::Fill(
+        UiMountedAppearanceColor::from_straight_srgba([1, 2, 3, 255]),
+    ));
+    input.overlay.portal_revision = 0;
+    input.overlay.backdrop_revision = 0;
+    let mut sidecar = UiMountedAppearanceSidecar::default();
+    sidecar
+        .mount(input)
+        .expect("test appearance facts should mount before reconstruction");
+    MountedAppearanceReconstructionTestFixture {
+        sidecar,
+        frame: ids.frame,
+        issuer: ids.issuer,
+        surface: ids.surface,
+        instance: ids.instance,
+        receipt: ids.receipt,
+        graph_node: crate::graph::UiGraphNodeIdentity::new(11),
+    }
 }
 
 #[test]
@@ -269,6 +313,57 @@ fn paint_change_is_mechanical_and_semantic_change_can_still_suppress_output() {
     assert!(!semantic_summary.mechanics_changed());
     assert!(semantic_summary.output_suppressed());
     assert_eq!(ids.surface, second_surface(&sidecar));
+}
+
+#[test]
+fn reconstruction_rebuilds_from_current_receipt_without_semantic_replay() {
+    let (input, ids) = node_input([12, 34, 56, 255], 7, true);
+    let (successor, successor_ids) = node_input_for([12, 34, 56, 255], 7, true, Some(&ids));
+    let mut sidecar = UiMountedAppearanceSidecar::default();
+    sidecar.mount(input).unwrap();
+
+    let work = sidecar
+        .reconstruct(successor)
+        .expect("current receipt should rebuild retained appearance facts");
+    let manifest = work
+        .predecessor_manifest()
+        .expect("reconstruction keeps the retained predecessor manifest");
+    let retained_identities = sidecar
+        .current()
+        .unwrap()
+        .records()
+        .iter()
+        .map(|record| record.identity().clone())
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        work.posture(),
+        UiMountedAppearanceWorkPosture::Reconstruction
+    );
+    assert_eq!(work.predecessor(), Some(ids.frame));
+    assert_eq!(work.successor().frame(), successor_ids.frame);
+    assert_eq!(
+        manifest.mechanic_identities(),
+        retained_identities.as_slice()
+    );
+    assert_eq!(
+        manifest.overlay_order(),
+        work.successor().overlay_order().bottom_to_top()
+    );
+    assert!(work.changes().is_empty());
+    assert!(work.damage().is_empty());
+    assert!(!work.order_changed());
+    assert_eq!(
+        sidecar
+            .current()
+            .unwrap()
+            .record(&UiMountedAppearanceMechanicIdentity::Surface(
+                successor_ids.instance,
+            ))
+            .unwrap()
+            .node_receipt(),
+        Some(successor_ids.receipt)
+    );
 }
 
 fn second_surface(sidecar: &UiMountedAppearanceSidecar) -> UiSemanticSurfaceIdentity {

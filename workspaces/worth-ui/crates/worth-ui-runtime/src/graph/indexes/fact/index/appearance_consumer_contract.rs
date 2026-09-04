@@ -170,6 +170,10 @@ impl UiGraphAppearanceConsumerContract {
         nodes.dedup();
         nodes.into_boxed_slice()
     }
+
+    pub(super) fn required_role_identities(&self) -> Box<[worth_ui_dsl::UiAppearanceRoleIdentity]> {
+        self.roles.iter().map(|role| role.role().clone()).collect()
+    }
 }
 
 fn append_state_consumer(

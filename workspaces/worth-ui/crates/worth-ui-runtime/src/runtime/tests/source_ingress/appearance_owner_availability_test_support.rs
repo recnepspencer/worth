@@ -1,13 +1,16 @@
 use super::appearance_component_session_test_support::{
     appearance_component_builder, appearance_fixture, APPEARANCE_TOKEN,
 };
+use crate::runtime::tests::appearance_theme_test_support;
 
 pub(crate) fn ownerless_focus_consumer_app() -> crate::facade::WorthUiApp {
     let role = focus_background_role();
     appearance_component_builder(&role)
+        .register_appearance_theme_bundle(appearance_theme_test_support::bundle())
+        .unwrap()
         .with_rust_authored_declaration_fixture(appearance_fixture(&role))
         .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
+        .map(appearance_theme_test_support::activate)
         .expect("ownerless Focus consumer should prepare before launch admission")
 }
 

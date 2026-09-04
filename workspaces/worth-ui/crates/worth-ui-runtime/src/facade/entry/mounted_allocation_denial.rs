@@ -25,6 +25,10 @@ pub enum WorthUiMountedAllocationEstablishmentDenial {
     },
     CatalogAdmission(crate::graph::UiAllocationCatalogBasisAdmissionDenial),
     CandidateCatalogAdmission(crate::graph::UiAllocationCatalogDeltaAdmissionDenial),
+    AppearanceTheme(crate::runtime::appearance::UiThemeCapabilityReceiptDenial),
+    AppearanceThemeSuccession(
+        crate::runtime::presentation_state::UiAppearanceGenerationSuccessionDenial,
+    ),
     Activation(crate::runtime::WorthUiAllocationCatalogActivationDenial),
     Runtime(WorthUiMountedAllocationRuntimeStage),
 }

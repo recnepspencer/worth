@@ -18,6 +18,17 @@ impl UiActiveThemeBinding {
         &self.capability
     }
 
+    pub(crate) fn for_successor_application(
+        &self,
+        application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Self {
+        Self {
+            surface: self.surface,
+            binding_generation: self.binding_generation,
+            capability: self.capability.for_successor_application(application),
+        }
+    }
+
     #[cfg(test)]
     pub(crate) fn for_test(
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,

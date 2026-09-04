@@ -29,6 +29,16 @@ impl UiApplicationThemeTypedValues {
     ) -> Arc<BTreeMap<crate::capability::ThemeTokenId, worth_ui_dsl::UiThemeValue>> {
         Arc::clone(&self.values)
     }
+
+    pub(super) fn for_successor_application(
+        &self,
+        capability: &crate::runtime::appearance::UiThemeCapabilityReceipt,
+    ) -> Self {
+        Self {
+            capability: capability.clone(),
+            values: Arc::clone(&self.values),
+        }
+    }
 }
 
 pub(crate) struct UiApplicationThemeValueUpdate {
@@ -87,6 +97,7 @@ impl UiApplicationPresentationState {
                             .map(worth_ui_dsl::UiThemeValue::Color)
                             .map_err(|_| ())?
                     }
+                    crate::capability::ThemeTokenValue::Typed(value) => *value,
                 };
                 Ok((change.token().clone(), value))
             })
@@ -203,22 +214,29 @@ impl UiApplicationPresentationState {
         if update.predecessor_theme_revision != self.theme_revision {
             return Err(());
         }
+        let prepared_invalidation = if update.theme_revision != self.theme_revision {
+            match invalidation.filter(|batch| batch.selected_count() != 0) {
+                Some(batch) => Some(self.prepare_appearance_invalidation(Some(batch))?),
+                None => None,
+            }
+        } else {
+            None
+        };
         self.token_values = update.token_values;
         self.mutable_token_revisions = update.mutable_token_revisions;
-        if update.theme_revision != self.theme_revision {
-            for (identity, revision) in update.semantic_presentation_revisions {
-                self.rows
-                    .get_mut(identity.as_ref())
-                    .expect("prepared semantic theme consumer remains installed")
-                    .presentation_revision = revision;
-            }
-            self.theme_revision = update.theme_revision;
-            self.appearance_theme_values = update.appearance_theme_values;
+        for (identity, revision) in update.semantic_presentation_revisions {
+            self.rows
+                .get_mut(identity.as_ref())
+                .expect("prepared semantic theme consumer remains installed")
+                .presentation_revision = revision;
+        }
+        self.theme_revision = update.theme_revision;
+        self.appearance_theme_values = update.appearance_theme_values;
+        if let Some((pending_invalidation, next_batch_revision)) = prepared_invalidation {
             self.pending_theme_tokens
                 .extend(update.changed_tokens.iter().cloned());
-            if let Some(invalidation) = invalidation {
-                self.queue_appearance_invalidation(invalidation)?;
-            }
+            self.pending_appearance_invalidation = pending_invalidation;
+            self.next_appearance_batch_revision = next_batch_revision;
         }
         Ok(())
     }

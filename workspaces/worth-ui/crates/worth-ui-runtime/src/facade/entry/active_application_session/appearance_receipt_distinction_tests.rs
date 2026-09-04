@@ -3,62 +3,41 @@ use crate::runtime::tests::appearance_component_session_test_support as support;
 #[path = "appearance_receipt_role_test_support.rs"]
 mod role_support;
 use role_support::{
-    single_aspect_role, switched_validation_role, theme_bundle, update_theme,
-    update_theme_at_revision, SWITCHED_SLOT,
+    radius_role, radius_theme_bundle, radius_value_from, single_aspect_role,
+    switched_validation_role, theme_bundle, update_radius_at_revision, update_theme, SWITCHED_SLOT,
 };
 
 #[path = "appearance_receipt_query_test_support.rs"]
 mod query_support;
 use query_support::{shutdown, why, why_for};
 
+#[path = "appearance_receipt_frame_test_support.rs"]
+mod frame_support;
+use frame_support::{publish_frame, publish_validation_class};
+
 #[cfg(test)]
 #[path = "appearance_receipt_basis_tests.rs"]
 mod basis_tests;
+#[cfg(test)]
+#[path = "appearance_receipt_binding_tests.rs"]
+mod binding_tests;
+#[cfg(test)]
+#[path = "appearance_receipt_provenance_tests.rs"]
+mod provenance_tests;
+#[cfg(test)]
+#[path = "appearance_receipt_replacement_tests.rs"]
+mod replacement_tests;
+#[cfg(test)]
+#[path = "appearance_receipt_settlement_tests.rs"]
+mod settlement_tests;
 
 struct MountedAppearanceFixture {
     session: crate::facade::WorthUiActiveApplicationSession,
+    host: crate::certification_support::ScriptedPresentationHost,
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     graph_node: crate::graph::UiGraphNodeIdentity,
-}
-
-#[test]
-fn real_source_turn_reports_input_evidence_changed() {
-    let role = single_aspect_role(
-        "test.receipt-input",
-        worth_ui_dsl::UiAppearanceAspect::Background,
-        support::APPEARANCE_TOKEN,
-    );
-    let mut fixture = mounted_fixture(&role, &[], false);
-    update_theme(&mut fixture.session, "#405060");
-    let first_revision = publish_validation_class(
-        &mut fixture.session,
-        fixture.graph_node,
-        crate::runtime::intent::UiValidationAppearanceClass::Valid,
-        None,
-    );
-    refresh_appearance_owner_snapshot(&mut fixture.session, &role, "appearance-receipt-input-a");
-    publish_frame(&mut fixture.session, 1);
-    let second_revision = publish_validation_class(
-        &mut fixture.session,
-        fixture.graph_node,
-        crate::runtime::intent::UiValidationAppearanceClass::Valid,
-        Some(first_revision),
-    );
-    assert_eq!(second_revision, first_revision + 1);
-    refresh_appearance_owner_snapshot(&mut fixture.session, &role, "appearance-receipt-input-b");
-    publish_frame(&mut fixture.session, 2);
-
-    let explanation = why(&fixture);
-    assert_eq!(explanation.denial_posture(), None,);
-    assert_eq!(
-        explanation.state_classes(),
-        &[worth_ui_dsl::UiAppearanceAxisClass::ValidationValid]
-    );
-    assert_eq!(
-        explanation.invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::InputEvidenceChanged
-    );
-    shutdown(fixture.session);
+    generation_before_allocation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    binding_generation_before_allocation: u64,
 }
 
 #[test]
@@ -135,20 +114,54 @@ fn real_validation_transition_reports_equal_output_suppressed() {
 
 #[test]
 fn real_theme_transition_reports_resolved_aspect_value_changed() {
-    let role = single_aspect_role(
-        "test.receipt-resolved",
-        worth_ui_dsl::UiAppearanceAspect::Foreground,
-        support::APPEARANCE_TOKEN,
-    );
+    let role = radius_role("test.receipt-resolved");
     let mut fixture = mounted_fixture(&role, &[], true);
-    update_theme(&mut fixture.session, "#304050");
+    update_radius_at_revision(&mut fixture.session, [i32::MAX - 1; 4], 0);
     publish_frame(&mut fixture.session, 1);
-    update_theme_at_revision(&mut fixture.session, "#405060", 1);
+    update_radius_at_revision(&mut fixture.session, [i32::MAX - 2; 4], 1);
     publish_frame(&mut fixture.session, 2);
 
     assert_eq!(
-        why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Foreground).invalidation_cause(),
+        why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius).invalidation_cause(),
         worth_ui_inspection::UiAppearanceInspectionInvalidationCause::ResolvedAspectValueChanged
+    );
+    assert_eq!(
+        why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius).value(),
+        worth_ui_inspection::UiAppearanceInspectionValue::Resolved(radius_value_from([
+            i32::MAX - 2,
+            i32::MAX - 2,
+            i32::MAX - 2,
+            i32::MAX - 2,
+        ]))
+    );
+    assert_eq!(
+        why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius).mounted_mechanic(),
+        worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Unchanged
+    );
+    shutdown(fixture.session);
+}
+
+#[test]
+fn real_theme_transition_reports_fully_lowered_radius_mechanical_delta() {
+    let role = radius_role("test.receipt-radius-delta");
+    let mut fixture = mounted_fixture(&role, &[], true);
+    update_radius_at_revision(&mut fixture.session, [1; 4], 0);
+    publish_frame(&mut fixture.session, 1);
+    update_radius_at_revision(&mut fixture.session, [2; 4], 1);
+    publish_frame(&mut fixture.session, 2);
+
+    let explanation = why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius);
+    assert_eq!(
+        explanation.invalidation_cause(),
+        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::MountedMechanicalOutputChanged
+    );
+    assert_eq!(
+        explanation.mounted_mechanic(),
+        worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Changed
+    );
+    assert_eq!(
+        explanation.physical_suppression(),
+        worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed
     );
     shutdown(fixture.session);
 }
@@ -159,18 +172,17 @@ fn mounted_fixture(
     six_axis: bool,
 ) -> MountedAppearanceFixture {
     let base = if six_axis {
-        support::single_aspect_appearance_component_builder(
-            role,
-            worth_ui_dsl::UiAppearanceAspect::Foreground,
-        )
+        support::radius_appearance_component_builder_with_legacy_static_paint(role)
     } else {
         support::legacy_static_paint_appearance_component_builder(role)
     };
+    let appearance_theme = if six_axis {
+        radius_theme_bundle()
+    } else {
+        theme_bundle(extra, extra.contains(&SWITCHED_SLOT).then_some("#405060"))
+    };
     let mut builder = base
-        .register_appearance_theme_bundle(theme_bundle(
-            extra,
-            extra.contains(&SWITCHED_SLOT).then_some("#405060"),
-        ))
+        .register_appearance_theme_bundle(appearance_theme)
         .unwrap();
     let extra_initial_color = extra.contains(&SWITCHED_SLOT).then_some("#405060");
     for slot in extra {
@@ -180,14 +192,7 @@ fn mounted_fixture(
         ));
     }
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(
-        worth_ui_host_contract::WorthUiHostCapabilityReport::available(vec![
-            worth_ui_host_contract::WorthUiHostCapability::NativePaint,
-            worth_ui_host_contract::WorthUiHostCapability::ViewportObservation,
-            worth_ui_host_contract::WorthUiHostCapability::DpiObservation,
-            worth_ui_host_contract::WorthUiHostCapability::PortalAnchorObservation,
-        ]),
-    );
+    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
     host.push_native_display_presented();
     if six_axis {
         host.push_native_display_presented();
@@ -196,6 +201,7 @@ fn mounted_fixture(
         host.push_native_display_settled_without_effects();
         host.push_native_display_settled_without_effects();
     }
+    let fixture_host = host.clone();
     let mut session = builder
         .with_rust_authored_declaration_fixture(support::appearance_fixture(role))
         .freeze()
@@ -259,6 +265,12 @@ fn mounted_fixture(
         3,
         4,
     );
+    let generation_before_allocation = session.active_generation_identity();
+    let binding_generation_before_allocation = session
+        .presentation
+        .active_appearance_theme_binding(surface)
+        .expect("appearance surface has a binding before allocation")
+        .binding_generation();
     let allocation = session
         .establish_mounted_allocation_catalog(
             1,
@@ -281,45 +293,19 @@ fn mounted_fixture(
         .iter()
         .any(|receipt| receipt.identity().graph_node_identity() == graph_node));
     refresh_appearance_owner_snapshot(&mut session, role, "appearance-receipt-mounted");
-    let themes = session
-        .capabilities()
-        .appearance_themes()
-        .expect("receipt fixture has an appearance theme bundle");
-    let definition = themes
-        .definitions()
-        .first()
-        .expect("receipt fixture has a theme definition");
-    let host_profile = worth_ui_host_contract::UiHostAppearanceProfileContract::admit(
-        "appearance-receipt-test-host",
-        1,
-        worth_ui_host_contract::UiHostAppearanceMechanicFamily::ALL,
-        Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
-    )
-    .unwrap();
-    let capability =
-        crate::runtime::appearance::UiThemeCapabilityAdmission::from_frozen_capabilities(
-            themes,
-            definition.identity(),
-            session.capabilities().appearance_roles(),
-            &host_profile,
-        )
-        .unwrap()
-        .issue(
-            [role.role().clone()],
-            surface,
-            session.active_generation_identity(),
-        )
-        .unwrap();
-    session
+    assert!(session
         .presentation
-        .install_initial_appearance_theme_binding(capability)
-        .unwrap();
+        .active_appearance_theme_binding(surface)
+        .is_some());
     session.advance_mounted_identity_frame().unwrap();
     publish_frame(&mut session, 0);
     MountedAppearanceFixture {
         session,
+        host: fixture_host,
         surface,
         graph_node,
+        generation_before_allocation,
+        binding_generation_before_allocation,
     }
 }
 
@@ -345,55 +331,4 @@ fn refresh_appearance_owner_snapshot(
     turn.admit_source(candidate).unwrap();
     let observations = turn.seal().unwrap();
     session.classify_observations(observations).unwrap();
-}
-
-fn publish_validation_class(
-    session: &mut crate::facade::WorthUiActiveApplicationSession,
-    graph_node: crate::graph::UiGraphNodeIdentity,
-    class: crate::runtime::intent::UiValidationAppearanceClass,
-    expected_revision: Option<u64>,
-) -> u64 {
-    let identity = session.inspect_mounted_identity();
-    let row = identity
-        .mounted_instances()
-        .iter()
-        .find(|row| row.graph_node_identity() == graph_node)
-        .expect("validation transition has a mounted appearance instance");
-    let instance = row.identity();
-    let receipt = session
-        .inspect_mounted_identity()
-        .frame_receipts()
-        .iter()
-        .find(|row| row.mounted_instance_identity() == instance)
-        .expect("validation transition has a current node receipt")
-        .node_receipt_identity();
-    let target = crate::runtime::intent::UiAdmittedValidationAppearanceTarget::admit(
-        session, graph_node, instance, receipt,
-    )
-    .unwrap();
-    session
-        .intent_application_facts
-        .publish_validation_appearance_fact(target, expected_revision, class)
-        .unwrap();
-    session
-        .intent_application_facts
-        .validation_appearance_snapshot()
-        .and_then(|snapshot| snapshot.fact_basis_for(graph_node, instance))
-        .expect("validation publication should retain its fact revision")
-        .1
-}
-
-fn publish_frame(session: &mut crate::facade::WorthUiActiveApplicationSession, now: u64) {
-    let outcome = session
-        .execute_mounted_frame(
-            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
-            worth_ui_host_contract::UiPresentationDeadline::at_tick(100),
-            now,
-            |_| {},
-        )
-        .unwrap_or_else(|_| panic!("receipt frame should publish"));
-    assert!(matches!(
-        outcome,
-        crate::mounting::UiMountedFrameOutcome::Published(_)
-    ));
 }

@@ -325,6 +325,9 @@ fn project_rebind_preparation_denial(
         }
         UiRebindPreparationDenial::UnsupportedNonSourcePlan => Projected::UnsupportedNonSourcePlan,
         UiRebindPreparationDenial::InvalidSemanticProof => Projected::InvalidSemanticProof,
+        UiRebindPreparationDenial::AppearanceThemeSuccession(_) => {
+            Projected::CandidateCutoverPreparation
+        }
     }
 }
 

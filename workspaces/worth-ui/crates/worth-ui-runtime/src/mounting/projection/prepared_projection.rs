@@ -143,7 +143,7 @@ impl UiProjectedMountedFrameCandidate {
     ) -> Result<(), UiMountedProjectionDenial> {
         let frame = std::rc::Rc::make_mut(&mut self.frame);
         frame.rebind_retained_mechanics(replacements)?;
-        frame.begin_appearance_reconstruction();
+        frame.prepare_appearance_reconstruction();
         self.presentation_changed_instances = frame.mounted_instances().collect::<Vec<_>>().into();
         self.presentation_node_changed_instances = self.presentation_changed_instances.clone();
         Ok(())

@@ -133,6 +133,9 @@ impl WorthUiActiveApplicationSession {
             .application
             .prepare_graph_successor(graph_commit)
             .map_err(|_| WorthUiMountedAllocationEstablishmentDenial::StaleGraphSuccessor)?;
+        let appearance_succession = self
+            .prepare_appearance_generation_succession(&graph_successor.generation_succession())
+            .map_err(WorthUiMountedAllocationEstablishmentDenial::AppearanceThemeSuccession)?;
         let entries = self.collect_mounted_measurement_entries(
             graph_successor.graph_snapshot(),
             &candidates,
@@ -155,6 +158,7 @@ impl WorthUiActiveApplicationSession {
             .application
             .activate_initial_mounted_allocation_catalog(graph_successor, admitted, boundary)
             .map_err(map_initial_activation_denial)?;
+        self.commit_appearance_generation_succession(appearance_succession);
         Ok(WorthUiMountedAllocationEstablishmentReceipt { committed })
     }
 

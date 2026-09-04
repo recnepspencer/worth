@@ -1,3 +1,5 @@
+use super::UiActiveThemeBinding;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiThemeCapabilityReceipt {
     definition: super::UiThemeDefinitionIdentity,
@@ -10,13 +12,25 @@ pub(crate) struct UiThemeCapabilityReceipt {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct UiPreparedThemeBindingAdmission {
+    definition: super::UiThemeDefinitionIdentity,
+    definition_revision: u64,
+    slot_catalog_revision: u64,
+    required_roles: Box<[UiThemeRequiredRoleBasis]>,
+    application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    host_profile: worth_ui_host_contract::UiHostAppearanceProfileContract,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiThemeRequiredRoleBasis {
     identity: worth_ui_dsl::UiAppearanceRoleIdentity,
     revision: worth_ui_dsl::UiAppearanceRoleRevision,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiThemeCapabilityReceiptDenial {
+pub enum UiThemeCapabilityReceiptDenial {
+    MissingBundle,
+    MissingHostProfile,
     CatalogRevisionMismatch,
     EmptyRequiredRoleSet,
     DuplicateRequiredRole,
@@ -25,6 +39,11 @@ pub(crate) enum UiThemeCapabilityReceiptDenial {
     RequiredSlotKindMismatch,
     MissingDefinitionValue,
     MissingDefinition,
+    RequiredRoleRevisionMismatch,
+    HostProfileMismatch,
+    BindingGenerationExhausted,
+    StaleBinding,
+    GenerationMismatch,
 }
 
 pub(crate) struct UiThemeCapabilityAdmission<'basis> {
@@ -32,6 +51,20 @@ pub(crate) struct UiThemeCapabilityAdmission<'basis> {
     catalog: &'basis crate::capability::UiThemeSlotCatalog,
     registered_roles: &'basis crate::capability::FrozenAppearanceRoleCapabilities,
     host_profile: &'basis worth_ui_host_contract::UiHostAppearanceProfileContract,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct UiPreparedThemeGenerationRebinding {
+    predecessor: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    successor: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    replacements: Box<[UiPreparedThemeBindingReplacement]>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct UiPreparedThemeBindingReplacement {
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    predecessor_generation: u64,
+    capability: UiThemeCapabilityReceipt,
 }
 
 impl<'basis> UiThemeCapabilityAdmission<'basis> {
@@ -58,6 +91,16 @@ impl<'basis> UiThemeCapabilityAdmission<'basis> {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     ) -> Result<UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial> {
+        Ok(self
+            .prepare(required_roles, application)?
+            .materialize(surface))
+    }
+
+    pub(crate) fn prepare(
+        &self,
+        required_roles: impl IntoIterator<Item = worth_ui_dsl::UiAppearanceRoleIdentity>,
+        application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Result<UiPreparedThemeBindingAdmission, UiThemeCapabilityReceiptDenial> {
         if self.definition.catalog_revision() != self.catalog.revision() {
             return Err(UiThemeCapabilityReceiptDenial::CatalogRevisionMismatch);
         }
@@ -100,19 +143,118 @@ impl<'basis> UiThemeCapabilityAdmission<'basis> {
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(UiThemeCapabilityReceipt {
+        Ok(UiPreparedThemeBindingAdmission {
             definition: self.definition.identity().clone(),
             definition_revision: self.definition.revision(),
             slot_catalog_revision: self.catalog.revision(),
             required_roles: roles.into_boxed_slice(),
-            surface,
             application,
             host_profile: self.host_profile.clone(),
         })
     }
 }
 
+pub(crate) fn prepare_theme_generation_rebinding<'binding>(
+    themes: &crate::capability::FrozenAppearanceThemeCapabilities,
+    registered_roles: &crate::capability::FrozenAppearanceRoleCapabilities,
+    host_profile: &worth_ui_host_contract::UiHostAppearanceProfileContract,
+    predecessor: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    successor: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    bindings: impl IntoIterator<Item = &'binding UiActiveThemeBinding>,
+) -> Result<UiPreparedThemeGenerationRebinding, UiThemeCapabilityReceiptDenial> {
+    let mut replacements = Vec::new();
+    for binding in bindings {
+        if binding.capability().application() != predecessor {
+            return Err(UiThemeCapabilityReceiptDenial::GenerationMismatch);
+        }
+        if binding.capability().host_profile() != host_profile {
+            return Err(UiThemeCapabilityReceiptDenial::HostProfileMismatch);
+        }
+        if binding.binding_generation() == u64::MAX {
+            return Err(UiThemeCapabilityReceiptDenial::BindingGenerationExhausted);
+        }
+        let required_roles = binding
+            .capability()
+            .required_roles()
+            .iter()
+            .map(|role| role.identity().clone())
+            .collect::<Vec<_>>();
+        let admission = UiThemeCapabilityAdmission::from_frozen_capabilities(
+            themes,
+            binding.capability().definition(),
+            registered_roles,
+            host_profile,
+        )?;
+        let prepared = admission.prepare(required_roles.iter().cloned(), successor.clone())?;
+        if prepared.required_roles.as_ref() != binding.capability().required_roles() {
+            return Err(UiThemeCapabilityReceiptDenial::RequiredRoleRevisionMismatch);
+        }
+        replacements.push(UiPreparedThemeBindingReplacement {
+            surface: binding.surface(),
+            predecessor_generation: binding.binding_generation(),
+            capability: prepared.materialize(binding.surface()),
+        });
+    }
+    Ok(UiPreparedThemeGenerationRebinding {
+        predecessor: predecessor.clone(),
+        successor,
+        replacements: replacements.into_boxed_slice(),
+    })
+}
+
+impl UiPreparedThemeBindingAdmission {
+    pub(crate) fn materialize(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> UiThemeCapabilityReceipt {
+        UiThemeCapabilityReceipt {
+            definition: self.definition.clone(),
+            definition_revision: self.definition_revision,
+            slot_catalog_revision: self.slot_catalog_revision,
+            required_roles: self.required_roles.clone(),
+            surface,
+            application: self.application.clone(),
+            host_profile: self.host_profile.clone(),
+        }
+    }
+
+    pub(crate) fn application(
+        &self,
+    ) -> &crate::runtime::WorthUiActiveApplicationGenerationIdentity {
+        &self.application
+    }
+
+    pub(crate) fn for_successor_application(
+        &self,
+        application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Self {
+        Self {
+            definition: self.definition.clone(),
+            definition_revision: self.definition_revision,
+            slot_catalog_revision: self.slot_catalog_revision,
+            required_roles: self.required_roles.clone(),
+            application,
+            host_profile: self.host_profile.clone(),
+        }
+    }
+}
+
 impl UiThemeCapabilityReceipt {
+    pub(crate) fn for_successor_application(
+        &self,
+        application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Self {
+        Self {
+            definition: self.definition.clone(),
+            definition_revision: self.definition_revision,
+            slot_catalog_revision: self.slot_catalog_revision,
+            required_roles: self.required_roles.clone(),
+            surface: self.surface,
+            application,
+            host_profile: self.host_profile.clone(),
+        }
+    }
+
     pub(crate) fn definition(&self) -> &super::UiThemeDefinitionIdentity {
         &self.definition
     }
@@ -155,7 +297,19 @@ impl UiThemeCapabilityReceipt {
             host_profile: worth_ui_host_contract::UiHostAppearanceProfileContract::admit(
                 "appearance-state-test-host",
                 1,
-                worth_ui_host_contract::UiHostAppearanceMechanicFamily::ALL,
+                [
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceFill,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceBorder,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::CornerRadii,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::Outline,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::TextRangeForeground,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::PortalSurface,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::Backdrop,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::OverlayOrder,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::PointerAffordance,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::Damage,
+                    worth_ui_host_contract::UiHostAppearanceMechanicFamily::Clip,
+                ],
                 Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
             )
             .expect("test host appearance profile"),
@@ -169,5 +323,35 @@ impl UiThemeRequiredRoleBasis {
     }
     pub(crate) const fn revision(&self) -> worth_ui_dsl::UiAppearanceRoleRevision {
         self.revision
+    }
+}
+
+impl UiPreparedThemeGenerationRebinding {
+    pub(crate) fn predecessor(
+        &self,
+    ) -> &crate::runtime::WorthUiActiveApplicationGenerationIdentity {
+        &self.predecessor
+    }
+
+    pub(crate) fn successor(&self) -> &crate::runtime::WorthUiActiveApplicationGenerationIdentity {
+        &self.successor
+    }
+
+    pub(crate) fn replacements(&self) -> &[UiPreparedThemeBindingReplacement] {
+        &self.replacements
+    }
+}
+
+impl UiPreparedThemeBindingReplacement {
+    pub(crate) fn surface(&self) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
+        self.surface
+    }
+
+    pub(crate) fn predecessor_generation(&self) -> u64 {
+        self.predecessor_generation
+    }
+
+    pub(crate) fn capability(&self) -> &UiThemeCapabilityReceipt {
+        &self.capability
     }
 }

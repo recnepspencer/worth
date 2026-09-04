@@ -171,7 +171,7 @@ fn resolver_uses_the_canonical_node_index_without_linear_fallback() {
     });
 }
 
-pub(super) fn inputs() -> (
+pub(crate) fn inputs() -> (
     crate::facade::WorthUiActiveApplicationSession,
     UiAppearanceNodeRoleBinding,
     UiAppearanceTarget,
@@ -280,13 +280,28 @@ fn theme_view(
         )],
     )
     .unwrap();
-    let bundle =
-        crate::capability::FrozenAppearanceThemeCapabilities::admit(catalog, vec![definition])
-            .unwrap();
+    let bundle = crate::capability::FrozenAppearanceThemeCapabilities::admit(
+        catalog,
+        definition_identity.clone(),
+        vec![definition],
+    )
+    .unwrap();
     let host_profile = worth_ui_host_contract::UiHostAppearanceProfileContract::admit(
         "resolver-test-host",
         1,
-        worth_ui_host_contract::UiHostAppearanceMechanicFamily::ALL,
+        [
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceFill,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceBorder,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::CornerRadii,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Outline,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::TextRangeForeground,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::PortalSurface,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Backdrop,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::OverlayOrder,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::PointerAffordance,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Damage,
+            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Clip,
+        ],
         Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
     )
     .unwrap();

@@ -15,6 +15,9 @@ mod backdrop_digest_tests;
 #[path = "tests.rs"]
 mod tests;
 
+#[cfg(test)]
+pub(crate) use tests::inputs as projection_test_inputs;
+
 #[allow(
     unused_imports,
     reason = "Gate 1 retains sealed overlay snapshot re-exports for later appearance projection"

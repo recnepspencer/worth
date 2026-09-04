@@ -139,6 +139,8 @@ pub(super) struct WorthUiPreparedApplicationActivation {
     candidate_application_authority:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationLoweringAuthority,
     candidate_service_policy_plan: crate::declaration::UiNormalizedServicePolicyPlan,
+    appearance_theme_succession:
+        Option<crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession>,
     reload_cost: Result<
         crate::runtime::WorthUiReloadLoweringCounterReceipt,
         crate::runtime::WorthUiReloadCounterBoundaryDenial,
@@ -184,6 +186,10 @@ pub enum WorthUiApplicationCutoverDenial {
     MountedPresentationInFlight,
     ForeignActiveApplicationSession,
     AppearanceOwnerUnavailable(worth_ui_dsl::UiAppearanceStateAxis),
+    AppearanceThemeAdmission(crate::runtime::appearance::UiThemeCapabilityReceiptDenial),
+    AppearanceThemeSuccession(
+        crate::runtime::presentation_state::UiAppearanceGenerationSuccessionDenial,
+    ),
     PreparedApplicationGraphMismatch,
     PreparedApplicationAuthorityMismatch,
     FrameBoundaryUnavailable {

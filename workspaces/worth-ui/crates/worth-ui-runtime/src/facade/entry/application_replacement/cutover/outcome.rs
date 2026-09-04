@@ -38,6 +38,7 @@ pub(super) fn seal_prepared_activation(
             candidate_graph: evidence.candidate_graph,
             candidate_application_authority: evidence.candidate_application_authority,
             candidate_service_policy_plan: evidence.candidate_service_policy_plan,
+            appearance_theme_succession: Some(evidence.appearance_theme),
             reload_cost,
             transition: Some(WorthUiApplicationCutoverTransition::Prepared(activation)),
         },
