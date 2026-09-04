@@ -1,5 +1,5 @@
 use super::super::frame_storage::{UiMountedProjectionSurface, UiMountedSemanticProjection};
-use super::super::UiMountedProjectionDenial;
+use super::super::{UiMountedAppearanceProjectionSelection, UiMountedProjectionDenial};
 use super::{UiMountedNodeLoweringContext, UiMountedProjectionBuild};
 
 pub(super) struct UiMountedDeltaProjectionInput<'borrow, 'input, 'graph> {
@@ -9,6 +9,7 @@ pub(super) struct UiMountedDeltaProjectionInput<'borrow, 'input, 'graph> {
     pub(super) requested_surfaces: &'borrow [worth_ui_host_contract::UiSemanticSurfaceIdentity],
     pub(super) changes: &'borrow super::super::super::UiMountedProjectionChangeSnapshot,
     pub(super) allocation_delta: &'borrow crate::runtime::UiMountedAllocationExactDelta,
+    pub(super) appearance_selection: &'borrow UiMountedAppearanceProjectionSelection,
 }
 
 struct UiMountedDeltaScope {
@@ -65,23 +66,13 @@ impl UiMountedDeltaScope {
             .state
             .try_projection_instances_for_graph_nodes(&content_graph_nodes)
             .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
-        let theme_affected = input
-            .lowering
-            .appearance_invalidation
-            .as_ref()
-            .filter(|_| input.lowering.theme_values.has_theme_changes())
-            .map(|batch| {
-                input
-                    .state
-                    .try_projection_instances_for_graph_nodes(batch.consumers())
-                    .ok_or(UiMountedProjectionDenial::CostCounterOverflow)
-            })
-            .transpose()?;
+        let theme_changed = input.lowering.theme_values.has_theme_changes()
+            && !input.appearance_selection.selected_instances().is_empty();
         let mut changed = input.changes.changed_instances().collect::<Vec<_>>();
         changed.extend_from_slice(allocation_affected.instances());
         changed.extend_from_slice(content_affected.instances());
-        if let Some(theme_affected) = &theme_affected {
-            changed.extend_from_slice(theme_affected.instances());
+        if theme_changed {
+            changed.extend_from_slice(input.appearance_selection.selected_instances());
         }
         changed.sort();
         changed.dedup();
@@ -90,15 +81,8 @@ impl UiMountedDeltaScope {
             .journal_entries_touched()
             .checked_add(allocation_affected.index_entries_touched())
             .and_then(|count| count.checked_add(content_affected.index_entries_touched()))
-            .and_then(|count| {
-                theme_affected.as_ref().map_or(Some(count), |affected| {
-                    count.checked_add(affected.index_entries_touched())
-                })
-            })
+            .and_then(|count| count.checked_add(input.appearance_selection.index_entries_touched()))
             .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
-        let theme_changed = theme_affected
-            .as_ref()
-            .is_some_and(|affected| !affected.instances().is_empty());
         Ok(Self {
             changed,
             retired: input.changes.retired_instances().collect(),
@@ -317,6 +301,7 @@ impl UiMountedDeltaApplication {
             },
             replaced_order_rows,
             presentation_changed_instances: presentation_changed_instances(scope),
+            retired_appearance_instances: scope.retired.clone(),
         })
     }
 }

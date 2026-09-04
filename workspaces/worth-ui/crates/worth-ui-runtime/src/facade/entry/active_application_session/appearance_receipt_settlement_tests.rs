@@ -197,6 +197,94 @@ fn explicit_supersede_before_effects_preserves_newer_invalidation() {
     super::query_support::shutdown(fixture.session);
 }
 
+#[test]
+fn older_publication_does_not_settle_a_newer_theme_revision() {
+    let role = radius_role("test.receipt-currentness");
+    let mut fixture = super::mounted_fixture(&role, &[], true);
+    update_radius_at_revision(&mut fixture.session, [1; 4], 0);
+    super::publish_frame(&mut fixture.session, 1);
+    update_radius_at_revision(&mut fixture.session, [2; 4], 1);
+    super::publish_frame(&mut fixture.session, 2);
+
+    fixture.session.appearance_owner_snapshot = None;
+    update_radius_at_revision(&mut fixture.session, [3; 4], 2);
+    assert!(fixture
+        .session
+        .complete_application_theme_values_source()
+        .has_theme_changes());
+    assert!(fixture
+        .session
+        .presentation
+        .appearance_invalidation_batch()
+        .is_some());
+    fixture.host.push_in_flight(
+        vec![
+            crate::certification_support::ScriptedSurfaceCompletion::Pending,
+            native_completion(),
+        ],
+        worth_ui_host_contract::UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
+    );
+    let in_flight = match execute(&mut fixture, 3) {
+        crate::mounting::UiMountedFrameOutcome::InFlight(in_flight) => in_flight,
+        _ => panic!("expected update A to remain in flight"),
+    };
+
+    update_radius_at_revision(&mut fixture.session, [4; 4], 3);
+    let in_flight = match fixture.session.complete_mounted_presentation(in_flight, 4) {
+        crate::mounting::UiMountedFrameOutcome::InFlight(in_flight) => in_flight,
+        _ => panic!("the first completion poll must remain in flight"),
+    };
+    assert!(matches!(
+        fixture.session.complete_mounted_presentation(in_flight, 5),
+        crate::mounting::UiMountedFrameOutcome::Published(_)
+    ));
+    let token = crate::capability::ThemeTokenId::new(
+        crate::runtime::tests::appearance_component_session_test_support::APPEARANCE_TOKEN,
+    )
+    .unwrap();
+    let expected_b = crate::capability::ThemeTokenValue::typed(radius_value_from([4; 4]));
+    let source = fixture.session.complete_application_theme_values_source();
+    assert_eq!(source.current_value(&token), Some(&expected_b));
+    assert!(source.has_theme_changes());
+    assert!(fixture
+        .session
+        .presentation
+        .appearance_invalidation_batch()
+        .is_some());
+
+    fixture.host.push_native_display_presented();
+    assert!(matches!(
+        execute(&mut fixture, 6),
+        crate::mounting::UiMountedFrameOutcome::Published(_)
+    ));
+    assert!(!fixture
+        .session
+        .complete_application_theme_values_source()
+        .has_theme_changes());
+    assert!(fixture
+        .session
+        .presentation
+        .appearance_invalidation_batch()
+        .is_some());
+
+    super::refresh_appearance_owner_snapshot(
+        &mut fixture.session,
+        &role,
+        "appearance-receipt-current-owner",
+    );
+    fixture.host.push_native_display_settled_without_effects();
+    assert!(matches!(
+        execute(&mut fixture, 7),
+        crate::mounting::UiMountedFrameOutcome::Published(_)
+    ));
+    assert!(fixture
+        .session
+        .presentation
+        .appearance_invalidation_batch()
+        .is_none());
+    super::query_support::shutdown(fixture.session);
+}
+
 fn settled_fixture() -> MountedAppearanceFixture {
     let role = radius_role("test.receipt-settlement");
     let mut fixture = super::mounted_fixture(&role, &[], true);

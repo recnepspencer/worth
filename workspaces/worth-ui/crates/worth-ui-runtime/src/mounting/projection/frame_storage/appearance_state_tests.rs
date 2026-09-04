@@ -1,8 +1,9 @@
 use super::UiMountedAppearanceFrameState;
-use crate::mounting::projection::frame_storage::UiMountedAppearanceNodeInputContext;
 
 #[path = "appearance_state_capacity_tests.rs"]
 mod capacity_tests;
+#[path = "appearance_state_persistent_tests.rs"]
+mod persistent_tests;
 
 #[derive(Clone, Copy)]
 struct ContextIdentities {
@@ -11,7 +12,6 @@ struct ContextIdentities {
     instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     incarnation: worth_ui_host_contract::UiMountIncarnation,
-    node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
 }
 
 fn context_identities() -> ContextIdentities {
@@ -24,7 +24,6 @@ fn context_identities() -> ContextIdentities {
         instance,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
         incarnation: worth_ui_host_contract::UiMountIncarnation::mint_unbound().unwrap(),
-        node_receipt: issuer.receipt_for(instance),
     }
 }
 
@@ -40,7 +39,7 @@ fn context(
         crate::graph::UiGraphNodeIdentity::new(ordinal),
         identities.instance,
         identities.incarnation,
-        identities.node_receipt,
+        identities.issuer.receipt_for(identities.instance),
     )
     .unwrap();
     crate::runtime::appearance::UiAppearanceAttemptContext::new(
@@ -57,26 +56,8 @@ fn context(
     )
 }
 
-fn node_for(
-    context: &crate::runtime::appearance::UiAppearanceAttemptContext,
-) -> UiMountedAppearanceNodeInputContext {
-    UiMountedAppearanceNodeInputContext {
-        frame: context.frame(),
-        semantic_surface: context.semantic_surface(),
-        mounted_instance: context.mounted_instance(),
-        graph_node: context.graph_node(),
-        incarnation: context.incarnation(),
-        node_receipt: context.node_receipt(),
-        issuer: context.issuer(),
-        plan_digest: 0,
-        allocation: worth_ui_host_contract::UiMountedAllocationProjection::Omitted(
-            worth_ui_host_contract::UiMountedOmissionReason::NoCommittedAllocation,
-        ),
-    }
-}
-
 #[test]
-fn appearance_state_prunes_stale_foreign_and_retired_membership_before_replacement_reservation() {
+fn appearance_state_retirement_and_epoch_succession_preserve_exact_membership() {
     let (session, binding, target, vector, theme) =
         crate::runtime::appearance::projection_test_inputs();
     let projection = crate::runtime::appearance::UiAppearanceResolver::new()
@@ -104,49 +85,41 @@ fn appearance_state_prunes_stale_foreign_and_retired_membership_before_replaceme
         stale_source.generation_identity(),
     );
     let stale_generation_entry = context(
-        identities,
+        ContextIdentities {
+            instance: worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
+            ..identities
+        },
         session_identity,
         &stale_generation,
         live.graph_node().digest(),
     );
-    let changed_incarnation = worth_ui_host_contract::UiMountIncarnation::mint_unbound().unwrap();
+    let changed_identities = context_identities();
     let changed_incarnation_entry = context(
         ContextIdentities {
-            incarnation: changed_incarnation,
-            ..identities
+            instance: worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
+            incarnation: worth_ui_host_contract::UiMountIncarnation::mint_unbound().unwrap(),
+            ..changed_identities
         },
         session_identity,
         &generation,
         live.graph_node().digest(),
     );
+    let retired_identities = context_identities();
     let retired = context(
-        identities,
+        retired_identities,
         session_identity,
         &generation,
         live.graph_node().digest() + 1,
     );
-    let foreign_session =
-        crate::lifecycle::WorthUiActiveApplicationSessionIdentity::from_host_session_value(99_001);
-    let foreign_generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
-        foreign_session,
-        session.generation_identity(),
-    );
-    let foreign = context(
-        identities,
-        foreign_session,
-        &foreign_generation,
-        live.graph_node().digest() + 2,
-    );
     let mut state = UiMountedAppearanceFrameState::default();
+    state.begin_epoch(session_identity, &generation, &[]);
     state.retain_projection_for_test(&live, projection.clone());
     state.retain_projection_for_test(&stale_generation_entry, projection.clone());
     state.retain_projection_for_test(&changed_incarnation_entry, projection.clone());
     state.retain_projection_for_test(&retired, projection.clone());
-    state.retain_projection_for_test(&foreign, projection);
+    state.begin_epoch(session_identity, &generation, &[retired.mounted_instance()]);
 
-    state.prune_to_current_nodes(session_identity, &generation, &[node_for(&live)]);
-
-    assert_eq!(state.membership_counts(), (1, 0, 0));
+    assert_eq!(state.membership_counts(), (3, 0, 0));
     assert_eq!(
         state
             .retained_entry_for_test(&live)
@@ -155,15 +128,19 @@ fn appearance_state_prunes_stale_foreign_and_retired_membership_before_replaceme
         super::state_key(&live)
     );
     assert!(state.retained_entry_for_test(&retired).is_none());
-    assert!(state.retained_entry_for_test(&foreign).is_none());
     assert!(state
         .retained_entry_for_test(&stale_generation_entry)
-        .is_none());
+        .is_some());
     assert!(state
         .retained_entry_for_test(&changed_incarnation_entry)
-        .is_none());
+        .is_some());
     state.reserve(&retired).unwrap();
-    assert_eq!(state.membership_counts(), (1, 1, 0));
+    assert_eq!(state.membership_counts(), (3, 1, 0));
+
+    state.begin_epoch(session_identity, &stale_generation, &[]);
+    assert_eq!(state.membership_counts(), (0, 0, 0));
+    state.reserve(&stale_generation_entry).unwrap();
+    assert_eq!(state.membership_counts(), (0, 1, 0));
 
     let _ = stale_source.shutdown();
     let _ = session.shutdown();
@@ -186,9 +163,18 @@ fn appearance_state_duplicate_stage_and_lower_release_preserve_replacement_capac
     let generation = session.active_generation_identity();
     let identities = context_identities();
     let first = context(identities, session_identity, &generation, 1);
-    let second = context(identities, session_identity, &generation, 2);
+    let second = context(
+        ContextIdentities {
+            instance: worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
+            ..identities
+        },
+        session_identity,
+        &generation,
+        2,
+    );
 
     let mut state = UiMountedAppearanceFrameState::default();
+    state.begin_epoch(session_identity, &generation, &[]);
     state.reserve(&first).unwrap();
     state.reserve(&first).unwrap();
     state
@@ -291,6 +277,7 @@ fn duplicate_denial_on_retained_entry_emits_latest_denial_and_preserves_predeces
     let predecessor_receipts = retained_fixture.sidecar.current_node_receipts();
 
     let mut state = UiMountedAppearanceFrameState::default();
+    state.begin_epoch(session_identity, &generation, &[]);
     state.retain_projection_for_test(&retained, projection.clone());
     state.replace_sidecar_for_test(&retained, std::mem::take(&mut retained_fixture.sidecar));
     state
@@ -353,8 +340,31 @@ fn one_staged_entry_lowers_without_scanning_or_disturbing_many_retained_entries(
     let generation = session.active_generation_identity();
     let identities = context_identities();
     let mut state = UiMountedAppearanceFrameState::default();
+    state.begin_epoch(session_identity, &generation, &[]);
+    let first_retained = context(
+        ContextIdentities {
+            instance: worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
+            ..identities
+        },
+        session_identity,
+        &generation,
+        10,
+    );
     for ordinal in 10..42 {
-        let retained = context(identities, session_identity, &generation, ordinal);
+        let retained = if ordinal == 10 {
+            first_retained.clone()
+        } else {
+            context(
+                ContextIdentities {
+                    instance: worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound()
+                        .unwrap(),
+                    ..identities
+                },
+                session_identity,
+                &generation,
+                ordinal,
+            )
+        };
         state.retain_projection_for_test(&retained, projection.clone());
     }
     let staged = context(identities, session_identity, &generation, 100);
@@ -379,8 +389,6 @@ fn one_staged_entry_lowers_without_scanning_or_disturbing_many_retained_entries(
         }
     ));
     assert_eq!(state.membership_counts(), (32, 0, 0));
-    assert!(state
-        .retained_entry_for_test(&context(identities, session_identity, &generation, 10))
-        .is_some());
+    assert!(state.retained_entry_for_test(&first_retained).is_some());
     let _ = session.shutdown();
 }

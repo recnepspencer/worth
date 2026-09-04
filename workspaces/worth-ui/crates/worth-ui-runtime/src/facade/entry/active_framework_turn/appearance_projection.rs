@@ -5,23 +5,32 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
         &mut self,
         frame: &mut crate::mounting::UiPreparedMountedFrame,
     ) -> Result<(), crate::mounting::UiMountedFramePreparationDenial> {
-        let Some(invalidation) = self.presentation.appearance_invalidation_batch() else {
-            return Ok(());
-        };
-        frame.set_appearance_invalidation_batch(invalidation.clone());
-        let Some(snapshot) = self.appearance_owner_snapshot.as_ref() else {
-            return Ok(());
-        };
         let generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
             self.application_session_identity,
             &self.generation_identity,
         );
-        frame.prune_appearance_state(self.application_session_identity, &generation);
+        frame
+            .validate_appearance_owner(self.application_session_identity, &generation)
+            .map_err(crate::mounting::UiMountedFramePreparationDenial::Projection)?;
+        let invalidation = self.presentation.appearance_invalidation_batch();
+        if let Some(invalidation) = invalidation.as_ref() {
+            frame
+                .validate_appearance_selection(invalidation)
+                .map_err(crate::mounting::UiMountedFramePreparationDenial::Projection)?;
+        }
+        frame.begin_appearance_lifecycle(self.application_session_identity, &generation);
+        let Some(invalidation) = invalidation else {
+            return Ok(());
+        };
+        let Some(snapshot) = self.appearance_owner_snapshot.as_ref() else {
+            return Ok(());
+        };
+        frame.set_appearance_invalidation_batch(invalidation.clone());
         let consumers_selected = invalidation.selected_count();
-        for mounted_context in frame.appearance_node_inputs() {
-            if !invalidation.selects(mounted_context.graph_node) {
-                continue;
-            }
+        for mounted_context in frame
+            .appearance_attempt_inputs(&invalidation)
+            .map_err(crate::mounting::UiMountedFramePreparationDenial::Projection)?
+        {
             let target = match crate::runtime::appearance::UiAppearanceTarget::new(
                 self.application_session_identity,
                 mounted_context.semantic_surface,
@@ -45,11 +54,7 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
             );
             context.set_invalidation_batch(&invalidation);
             if let Err(error) = frame.reserve_appearance_state(&context) {
-                return Err(
-                    crate::mounting::UiMountedFramePreparationDenial::AppearanceStateCapacityExceeded(
-                        error,
-                    ),
-                );
+                return Err(map_appearance_state_denial(error));
             }
             let binding =
                 match crate::runtime::appearance::UiAppearanceNodeRoleBinding::from_current_graph(
@@ -194,14 +199,13 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
                     continue;
                 }
             };
-            frame.stage_appearance_projection(
-                crate::runtime::appearance::UiAppearanceProjectionAttempt::resolved(
-                    context, projection,
-                ),
-            )
-            .map_err(
-                crate::mounting::UiMountedFramePreparationDenial::AppearanceStateCapacityExceeded,
-            )?;
+            frame
+                .stage_appearance_projection(
+                    crate::runtime::appearance::UiAppearanceProjectionAttempt::resolved(
+                        context, projection,
+                    ),
+                )
+                .map_err(map_appearance_state_denial)?;
         }
         if let Some(error) = frame.appearance_state_capacity_error() {
             return Err(
@@ -223,5 +227,22 @@ fn stage_denial(
         .stage_appearance_projection(
             crate::runtime::appearance::UiAppearanceProjectionAttempt::denied(context, denial),
         )
-        .map_err(crate::mounting::UiMountedFramePreparationDenial::AppearanceStateCapacityExceeded)
+        .map_err(map_appearance_state_denial)
 }
+
+fn map_appearance_state_denial(
+    denial: crate::mounting::UiMountedAppearanceStateMutationDenial,
+) -> crate::mounting::UiMountedFramePreparationDenial {
+    match denial {
+        crate::mounting::UiMountedAppearanceStateMutationDenial::Capacity(error) => {
+            crate::mounting::UiMountedFramePreparationDenial::AppearanceStateCapacityExceeded(error)
+        }
+        crate::mounting::UiMountedAppearanceStateMutationDenial::LocalIdentityMismatch => {
+            crate::mounting::UiMountedFramePreparationDenial::AppearanceStateIdentityMismatch
+        }
+    }
+}
+
+#[cfg(test)]
+#[path = "appearance_projection_locality_tests.rs"]
+mod locality_tests;

@@ -1,14 +1,21 @@
-use std::collections::{HashMap, HashSet};
-use std::hash::{Hash, Hasher};
-
 use super::super::appearance::UiMountedAppearanceSidecar;
+use super::appearance_state_membership_work::UiMountedAppearanceMembershipWork;
+use crate::runtime::persistent_index::UiPersistentOrdMap;
 
-const MEMBERSHIP_CAPACITY: usize = 4_096;
+type Mutation<T> = (
+    Result<T, super::UiMountedAppearanceStateMutationDenial>,
+    UiMountedAppearanceMembershipWork,
+);
 
 #[derive(Clone)]
 pub(super) struct UiMountedAppearanceStateMembers {
-    map: HashMap<UiMountedAppearanceStateKey, UiMountedAppearanceStateMembership>,
-    pending_keys: Vec<UiMountedAppearanceStateKey>,
+    primary:
+        UiPersistentOrdMap<UiMountedAppearanceLocalNodeKey, UiMountedAppearanceStateMembership>,
+    reverse: UiPersistentOrdMap<
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+        UiMountedAppearanceLocalNodeKey,
+    >,
+    pending_keys: Vec<UiMountedAppearanceLocalNodeKey>,
 }
 
 #[derive(Clone)]
@@ -44,8 +51,8 @@ pub(super) struct UiMountedAppearanceStateKey {
     pub(super) local_node: UiMountedAppearanceLocalNodeKey,
 }
 
-impl Hash for UiMountedAppearanceStateKey {
-    fn hash<H: Hasher>(&self, state: &mut H) {
+impl std::hash::Hash for UiMountedAppearanceStateKey {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.session.as_u64().hash(state);
         self.generation.hash(state);
         self.local_node.hash(state);
@@ -67,69 +74,122 @@ impl Default for UiMountedAppearanceStateMembers {
 impl UiMountedAppearanceStateMembers {
     pub(super) fn new() -> Self {
         Self {
-            map: HashMap::with_capacity(MEMBERSHIP_CAPACITY),
-            pending_keys: Vec::with_capacity(MEMBERSHIP_CAPACITY),
+            primary: UiPersistentOrdMap::default(),
+            reverse: UiPersistentOrdMap::default(),
+            pending_keys: Vec::new(),
         }
     }
 
-    pub(super) fn inherit_from(&mut self, predecessor: Option<&Self>) {
-        let mut map = HashMap::with_capacity(MEMBERSHIP_CAPACITY);
-        if let Some(state) = predecessor {
-            for (key, membership) in &state.map {
-                if let UiMountedAppearanceStateMembership::Retained(entry) = membership {
-                    map.insert(
-                        key.clone(),
-                        UiMountedAppearanceStateMembership::Retained(entry.clone()),
-                    );
-                }
+    pub(super) fn fork(&self) -> Self {
+        Self {
+            primary: self.primary.clone(),
+            reverse: self.reverse.clone(),
+            pending_keys: Vec::new(),
+        }
+    }
+
+    pub(super) fn clear_for_epoch(&mut self) -> (usize, UiMountedAppearanceMembershipWork) {
+        let retired = self.primary.len();
+        let mut work = UiMountedAppearanceMembershipWork::default();
+        // Dropping the two persistent roots is logically constant-time, while
+        // releasing their bounded nodes is charged to lifecycle retirement.
+        work.add_traversal(retired);
+        self.primary = UiPersistentOrdMap::default();
+        self.reverse = UiPersistentOrdMap::default();
+        self.pending_keys.clear();
+        (retired, work)
+    }
+
+    pub(super) fn retire_instances(
+        &mut self,
+        instances: &[worth_ui_host_contract::UiMountedInstanceIdentity],
+    ) -> (usize, UiMountedAppearanceMembershipWork) {
+        let mut retired = 0;
+        let mut work = UiMountedAppearanceMembershipWork::default();
+        for instance in instances {
+            let (local_key, reverse_probes) = self.reverse.get_with_probes(instance);
+            work.add_lookup(reverse_probes);
+            let Some(local_key) = local_key.cloned() else {
+                continue;
+            };
+            if local_key.mounted_instance != *instance {
+                continue;
+            }
+            let (membership, remove_work) = self.remove(&local_key);
+            work.merge(remove_work);
+            if membership.is_some() {
+                retired += 1;
             }
         }
-        self.map = map;
-        self.pending_keys.clear();
-    }
-
-    pub(super) fn prune_to_current_nodes(
-        &mut self,
-        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
-        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-        nodes: &[super::super::UiMountedAppearanceNodeInputContext],
-    ) {
-        let mut current_nodes = HashSet::with_capacity(nodes.len().min(MEMBERSHIP_CAPACITY));
-        current_nodes.extend(nodes.iter().map(local_node_key));
-        self.map.retain(|key, _| {
-            key.session == session
-                && key.generation == *generation
-                && current_nodes.contains(key.local_node())
-        });
-        self.pending_keys.retain(|key| self.map.contains_key(key));
+        (retired, work)
     }
 
     pub(super) fn reserve(
         &mut self,
         context: &crate::runtime::appearance::UiAppearanceAttemptContext,
         capacity: usize,
-    ) -> Result<(), super::UiAppearanceStateCapacityExceeded> {
-        let key = state_key(context);
-        if self.map.contains_key(&key) {
-            return Ok(());
+    ) -> Mutation<()> {
+        let key = state_key(context).local_node;
+        let mut work = UiMountedAppearanceMembershipWork::default();
+        let (reverse_key, reverse_probes) = self.reverse.get_with_probes(&key.mounted_instance);
+        work.add_lookup(reverse_probes);
+        if reverse_key.is_some_and(|existing| existing != &key) {
+            return (
+                Err(super::UiMountedAppearanceStateMutationDenial::LocalIdentityMismatch),
+                work,
+            );
         }
-        if self.map.len() >= capacity {
-            return Err(super::UiAppearanceStateCapacityExceeded::new(capacity));
+        let (existing, primary_probes) = self.primary.get_with_probes(&key);
+        work.add_lookup(primary_probes);
+        if existing.is_some() {
+            return if reverse_key.is_some() {
+                (Ok(()), work)
+            } else {
+                (
+                    Err(super::UiMountedAppearanceStateMutationDenial::LocalIdentityMismatch),
+                    work,
+                )
+            };
         }
-        self.map
-            .insert(key.clone(), UiMountedAppearanceStateMembership::Reserved);
+        if reverse_key.is_some() {
+            return (
+                Err(super::UiMountedAppearanceStateMutationDenial::LocalIdentityMismatch),
+                work,
+            );
+        }
+        if self.primary.len() >= capacity {
+            return (
+                Err(super::UiMountedAppearanceStateMutationDenial::Capacity(
+                    super::UiAppearanceStateCapacityExceeded::new(capacity),
+                )),
+                work,
+            );
+        }
+        let primary_work = self
+            .primary
+            .insert_with_work(key.clone(), UiMountedAppearanceStateMembership::Reserved);
+        work.add_mutation(primary_work);
+        let reverse_work = self
+            .reverse
+            .insert_with_work(key.mounted_instance, key.clone());
+        work.add_mutation(reverse_work);
         self.pending_keys.push(key);
-        Ok(())
+        (Ok(()), work)
     }
 
     pub(super) fn stage(
         &mut self,
         attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
         capacity: usize,
-    ) -> Result<(), super::UiAppearanceStateCapacityExceeded> {
-        self.reserve(attempt.context(), capacity)?;
-        let key = state_key(attempt.context());
-        let predecessor = match self.map.remove(&key) {
+    ) -> Mutation<()> {
+        let (reserved, mut work) = self.reserve(attempt.context(), capacity);
+        if let Err(error) = reserved {
+            return (Err(error), work);
+        }
+        let key = state_key(attempt.context()).local_node;
+        let (membership, remove_work) = self.remove(&key);
+        work.merge(remove_work);
+        let predecessor = match membership {
             Some(UiMountedAppearanceStateMembership::Retained(entry)) => {
                 self.pending_keys.push(key.clone());
                 Some(entry)
@@ -138,92 +198,155 @@ impl UiMountedAppearanceStateMembers {
             Some(UiMountedAppearanceStateMembership::Staged { predecessor, .. }) => predecessor,
             None => unreachable!("reserved appearance key must be present before staging"),
         };
-        // A duplicate stage replaces the older attempt for the same key. It
-        // retains one membership slot and therefore cannot create duplicate work.
-        self.map.insert(
+        let (inserted, insert_work) = self.insert_membership(
             key,
             UiMountedAppearanceStateMembership::Staged {
                 attempt,
                 predecessor,
             },
         );
-        Ok(())
+        work.merge(insert_work);
+        (inserted.map(|_| ()), work)
     }
 
-    pub(super) fn take_pending_keys_for_lowering(&mut self) -> Vec<UiMountedAppearanceStateKey> {
+    pub(super) fn take_pending_keys_for_lowering(
+        &mut self,
+    ) -> Vec<UiMountedAppearanceLocalNodeKey> {
         let mut pending = std::mem::take(&mut self.pending_keys);
-        pending.sort_by(|left, right| left.local_node().cmp(right.local_node()));
+        pending.sort();
         pending
     }
 
     pub(super) fn remove(
         &mut self,
-        key: &UiMountedAppearanceStateKey,
-    ) -> Option<UiMountedAppearanceStateMembership> {
-        self.map.remove(key)
+        key: &UiMountedAppearanceLocalNodeKey,
+    ) -> (
+        Option<UiMountedAppearanceStateMembership>,
+        UiMountedAppearanceMembershipWork,
+    ) {
+        let mut work = UiMountedAppearanceMembershipWork::default();
+        let (membership, primary_probes) = self.primary.get_with_probes(key);
+        work.add_lookup(primary_probes);
+        let Some(membership) = membership.cloned() else {
+            return (None, work);
+        };
+        let (removed, primary_work) = self.primary.remove_with_work(key);
+        debug_assert!(removed);
+        work.add_mutation(primary_work);
+        let (reverse_key, reverse_probes) = self.reverse.get_with_probes(&key.mounted_instance);
+        work.add_lookup(reverse_probes);
+        if reverse_key.is_some_and(|existing| existing == key) {
+            let (removed, reverse_work) = self.reverse.remove_with_work(&key.mounted_instance);
+            debug_assert!(removed);
+            work.add_mutation(reverse_work);
+        }
+        (Some(membership), work)
     }
 
     pub(super) fn insert_retained(
         &mut self,
         entry: UiMountedAppearanceStateEntry,
-    ) -> Option<UiMountedAppearanceStateMembership> {
-        self.map.insert(
-            entry.key.clone(),
+    ) -> Mutation<Option<UiMountedAppearanceStateMembership>> {
+        self.insert_membership(
+            entry.key.local_node.clone(),
             UiMountedAppearanceStateMembership::Retained(entry),
         )
     }
 
-    pub(super) fn retained_entry_mut(
+    fn insert_membership(
         &mut self,
-        key: &UiMountedAppearanceStateKey,
-    ) -> Option<&mut UiMountedAppearanceStateEntry> {
-        match self.map.get_mut(key) {
-            Some(UiMountedAppearanceStateMembership::Retained(entry)) => Some(entry),
-            Some(UiMountedAppearanceStateMembership::Reserved)
-            | Some(UiMountedAppearanceStateMembership::Staged { .. })
-            | None => None,
+        key: UiMountedAppearanceLocalNodeKey,
+        membership: UiMountedAppearanceStateMembership,
+    ) -> Mutation<Option<UiMountedAppearanceStateMembership>> {
+        let mut work = UiMountedAppearanceMembershipWork::default();
+        let (reverse_key, reverse_probes) = self.reverse.get_with_probes(&key.mounted_instance);
+        work.add_lookup(reverse_probes);
+        if reverse_key.is_some_and(|existing| existing != &key) {
+            return (
+                Err(super::UiMountedAppearanceStateMutationDenial::LocalIdentityMismatch),
+                work,
+            );
         }
+        let (existing, primary_probes) = self.primary.get_with_probes(&key);
+        work.add_lookup(primary_probes);
+        if reverse_key.is_none() && existing.is_some() {
+            return (
+                Err(super::UiMountedAppearanceStateMutationDenial::LocalIdentityMismatch),
+                work,
+            );
+        }
+        let old = existing.cloned();
+        let primary_work = self.primary.insert_with_work(key.clone(), membership);
+        work.add_mutation(primary_work);
+        if reverse_key.is_none() {
+            let reverse_work = self.reverse.insert_with_work(key.mounted_instance, key);
+            work.add_mutation(reverse_work);
+        }
+        (Ok(old), work)
     }
 
-    pub(super) fn retained_keys_for_reconstruction(&self) -> Vec<UiMountedAppearanceStateKey> {
-        let mut keys = self
-            .map
-            .iter()
-            .filter_map(|(key, membership)| match membership {
-                UiMountedAppearanceStateMembership::Retained(_) => Some(key.clone()),
-                UiMountedAppearanceStateMembership::Reserved
-                | UiMountedAppearanceStateMembership::Staged { .. } => None,
-            })
-            .collect::<Vec<_>>();
-        keys.sort_by(|left, right| left.local_node().cmp(right.local_node()));
-        keys
-    }
-
-    #[cfg(test)]
     pub(super) fn retained_entry(
         &self,
         key: &UiMountedAppearanceStateKey,
     ) -> Option<&UiMountedAppearanceStateEntry> {
-        match self.map.get(key) {
-            Some(UiMountedAppearanceStateMembership::Retained(entry)) => Some(entry),
-            Some(UiMountedAppearanceStateMembership::Reserved)
-            | Some(UiMountedAppearanceStateMembership::Staged { .. })
-            | None => None,
+        match self.primary.get(key.local_node()) {
+            Some(membership) => match membership {
+                UiMountedAppearanceStateMembership::Retained(entry) => Some(entry),
+                UiMountedAppearanceStateMembership::Reserved
+                | UiMountedAppearanceStateMembership::Staged { .. } => None,
+            },
+            None => None,
         }
+    }
+
+    pub(super) fn retained_keys_for_reconstruction(
+        &self,
+    ) -> (
+        Vec<UiMountedAppearanceStateKey>,
+        UiMountedAppearanceMembershipWork,
+    ) {
+        let mut work = UiMountedAppearanceMembershipWork::default();
+        work.add_traversal(self.primary.len());
+        let mut keys = self
+            .primary
+            .iter()
+            .filter_map(|(local_key, membership)| match membership {
+                UiMountedAppearanceStateMembership::Retained(entry) => Some(entry.key.clone()),
+                UiMountedAppearanceStateMembership::Reserved
+                | UiMountedAppearanceStateMembership::Staged { .. } => {
+                    let _ = local_key;
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        keys.sort_by(|left, right| left.local_node().cmp(right.local_node()));
+        (keys, work)
     }
 
     #[cfg(test)]
     pub(super) fn membership_counts(&self) -> (usize, usize, usize) {
-        self.map.values().fold((0, 0, 0), |counts, membership| {
-            let (retained, reserved, staged) = counts;
-            match membership {
-                UiMountedAppearanceStateMembership::Retained(_) => (retained + 1, reserved, staged),
-                UiMountedAppearanceStateMembership::Reserved => (retained, reserved + 1, staged),
-                UiMountedAppearanceStateMembership::Staged { .. } => {
-                    (retained, reserved, staged + 1)
+        self.primary
+            .iter()
+            .fold((0, 0, 0), |counts, (_, membership)| {
+                let (retained, reserved, staged) = counts;
+                match membership {
+                    UiMountedAppearanceStateMembership::Retained(_) => {
+                        (retained + 1, reserved, staged)
+                    }
+                    UiMountedAppearanceStateMembership::Reserved => {
+                        (retained, reserved + 1, staged)
+                    }
+                    UiMountedAppearanceStateMembership::Staged { .. } => {
+                        (retained, reserved, staged + 1)
+                    }
                 }
-            }
-        })
+            })
+    }
+
+    #[cfg(test)]
+    pub(super) fn roots_shared_with(&self, other: &Self) -> bool {
+        self.primary.root_is_shared_with(&other.primary)
+            && self.reverse.root_is_shared_with(&other.reverse)
     }
 }
 

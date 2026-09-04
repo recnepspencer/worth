@@ -6,6 +6,13 @@ use crate::mounting::{
 use super::WorthUiActiveApplicationSession;
 
 impl WorthUiActiveApplicationSession {
+    #[cfg(test)]
+    pub(crate) fn current_mounted_projection_rc_for_test(
+        &self,
+    ) -> Option<std::rc::Rc<crate::mounting::UiMountedProjectionFrame>> {
+        self.mounted.current_projection_rc_for_test()
+    }
+
     pub(crate) fn present_prepared_mounted_frame_internal(
         &mut self,
         frame: crate::mounting::UiPreparedMountedFrame,
@@ -253,7 +260,7 @@ fn finish_mounted_transition_with_ports(
     mut appearance_inspection: Option<
         &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
     >,
-    appearance_presentation: Option<
+    mut appearance_presentation: Option<
         &mut crate::runtime::presentation_state::UiApplicationPresentationState,
     >,
 ) -> UiMountedFrameOutcome {
@@ -267,6 +274,19 @@ fn finish_mounted_transition_with_ports(
         }
         _ => {}
     }
+    match &outcome {
+        UiMountedFrameOutcome::Published(receipt) | UiMountedFrameOutcome::Reconciled(receipt) => {
+            if let Some(expected_revision) = ports
+                .mounted
+                .current_theme_revision_for_frame(receipt.frame())
+            {
+                if let Some(presentation) = appearance_presentation.as_deref_mut() {
+                    presentation.settle_published_theme_values(expected_revision);
+                }
+            }
+        }
+        _ => {}
+    }
     if let Some(observation) = observation {
         record_mounted_observation(ports.host_exchange, observation);
     }
@@ -277,9 +297,10 @@ fn finish_mounted_transition_with_ports(
                 if let Some(producer) = appearance_inspection.as_deref_mut() {
                     producer.record_frame_attempts(records);
                 }
-                if let (Some(presentation), Some(invalidation)) =
-                    (appearance_presentation, invalidation.as_ref())
-                {
+                if let (Some(presentation), Some(invalidation)) = (
+                    appearance_presentation.as_deref_mut(),
+                    invalidation.as_ref(),
+                ) {
                     presentation.settle_appearance_invalidation(invalidation);
                 }
             }
