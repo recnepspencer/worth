@@ -128,7 +128,7 @@ fn admitted_zero_consumer_theme_slot_commits_without_mounted_work() {
         shell
             .session
             .application
-            .appearance_slot_consumers(&unknown),
+            .appearance_theme_invalidation_batch_for_slot(&unknown),
         Err(
             crate::graph::UiGraphFactLookupDenial::UnknownAuthoredDeclaration {
                 authored_identity: unknown.as_str().into(),

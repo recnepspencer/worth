@@ -91,7 +91,7 @@ fn unattached_node_does_not_infer_appearance_demand_from_its_component() {
 }
 
 #[test]
-fn appearance_consumer_queries_reconstruct_from_the_existing_index_without_host_work() {
+fn appearance_invalidation_batches_select_from_the_existing_index_without_host_work() {
     let app = super::static_paint_app();
     let authority = app.prepared_authority();
     let index = authority.consumed_fact_index();
@@ -102,28 +102,28 @@ fn appearance_consumer_queries_reconstruct_from_the_existing_index_without_host_
     let node = super::graph_node_named(authority.graph_snapshot(), super::STATIC_PAINT_COMPONENT)
         .graph_node_identity();
 
-    let state = crate::runtime::appearance::UiAppearanceConsumerSelection::for_state(
+    let state_batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::owner_state(
         index,
         worth_ui_dsl::UiAppearanceStateAxis::Validation,
     );
-    let role_selection =
-        crate::runtime::appearance::UiAppearanceConsumerSelection::for_role(index, role.role());
-    let slot_selection = crate::runtime::appearance::UiAppearanceConsumerSelection::try_for_slot(
+    let role_batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::role_replacement(
+        index,
+        role.role(),
+    );
+    let slot_batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_slot(
         index,
         slot.as_str(),
         slot.as_str(),
     )
     .expect("declared theme slot should resolve");
 
-    for selection in [&state, &role_selection] {
-        assert!(selection.is_reconstructible());
-        assert_eq!(selection.selected_count(), 1);
-        assert_eq!(selection.consumers(), [node]);
+    for batch in [&state_batch, &role_batch] {
+        assert_eq!(batch.selected_count(), 1);
+        assert_eq!(batch.consumers(), [node]);
     }
-    assert!(slot_selection.is_reconstructible());
-    assert_eq!(slot_selection.selected_count(), 2);
+    assert_eq!(slot_batch.selected_count(), 2);
     assert_eq!(
-        slot_selection
+        slot_batch
             .consumers()
             .iter()
             .copied()
@@ -197,14 +197,13 @@ fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
         .all(|entry| entry.affected_aspect().is_none()));
 
     let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
-    let selection = crate::runtime::appearance::UiAppearanceConsumerSelection::try_for_slot(
+    let batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_slot(
         index,
         slot.as_str(),
         slot.as_str(),
     )
     .expect("declared theme slot should resolve");
-    assert!(selection.is_reconstructible());
-    assert_eq!(selection.consumers(), [attached]);
+    assert_eq!(batch.consumers(), [attached]);
     assert_ne!(attached, peer);
 }
 
@@ -226,7 +225,7 @@ fn canonical_slot_selection_exposes_unknown_authored_fact_denial() {
         )
     );
     assert_eq!(
-        crate::runtime::appearance::UiAppearanceConsumerSelection::try_for_slot(
+        crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_slot(
             index,
             slot.as_str(),
             "theme.pulse.missing",

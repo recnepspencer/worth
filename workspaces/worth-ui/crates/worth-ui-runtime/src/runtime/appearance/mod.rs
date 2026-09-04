@@ -15,7 +15,7 @@ pub(crate) use inspection::{
     UiAppearanceInspectionAttemptBatch, UiAppearanceInspectionDenial,
     UiAppearanceInspectionProducer, UiAppearanceInspectionRecord,
 };
-pub(crate) use invalidation::{UiAppearanceConsumerSelection, UiAppearanceInvalidationBatch};
+pub(crate) use invalidation::UiAppearanceInvalidationBatch;
 #[cfg(test)]
 pub(crate) use projection::projection_test_inputs;
 #[allow(
