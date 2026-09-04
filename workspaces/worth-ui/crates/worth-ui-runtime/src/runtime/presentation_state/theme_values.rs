@@ -3,7 +3,14 @@ use std::sync::Arc;
 
 use super::UiApplicationPresentationState;
 
-#[derive(Clone)]
+#[path = "theme_values/appearance_effect.rs"]
+mod appearance_effect;
+
+#[cfg(test)]
+#[path = "theme_values/tests.rs"]
+mod tests;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiApplicationThemeTypedValues {
     capability: crate::runtime::appearance::UiThemeCapabilityReceipt,
     values: Arc<BTreeMap<crate::capability::ThemeTokenId, worth_ui_dsl::UiThemeValue>>,
@@ -110,7 +117,7 @@ impl UiApplicationPresentationState {
                 return Err(());
             }
             let revision = self.mutable_token_revisions.get(change.token()).ok_or(())?;
-            if *revision != change.expected_revision() {
+            if *revision != change.expected_revision() || revision.checked_add(1).is_none() {
                 return Err(());
             }
         }
@@ -127,7 +134,21 @@ impl UiApplicationPresentationState {
                 };
                 Ok((change.token().clone(), value))
             })
-            .collect::<Result<BTreeMap<_, _>, ()>>()?;
+            .collect::<Result<Vec<_>, ()>>()?;
+
+        let appearance_effect = match appearance {
+            Some((themes, generation)) => {
+                let state = self.appearance_theme_state.as_ref().ok_or(())?;
+                Some(appearance_effect::prepare_successor(
+                    state,
+                    &self.appearance_theme_values,
+                    themes,
+                    generation,
+                    &typed_changes,
+                )?)
+            }
+            None => None,
+        };
 
         let mut token_values = Arc::clone(&self.token_values);
         let mut mutable_token_revisions = self.mutable_token_revisions.clone();
@@ -138,13 +159,7 @@ impl UiApplicationPresentationState {
                 .get_mut(change.token())
                 .expect("validated mutable theme token remains installed");
             *revision = revision.checked_add(1).ok_or(())?;
-            let affected = self
-                .resolved_targets
-                .iter()
-                .filter_map(|(token, resolved)| {
-                    (resolved == change.token()).then_some(token.clone())
-                })
-                .collect::<Vec<_>>();
+            let affected = self.aliases_for_terminal(change.token());
             if affected
                 .iter()
                 .any(|token| token_values.get(token) != Some(change.value()))
@@ -157,43 +172,17 @@ impl UiApplicationPresentationState {
                 changed_targets.push(change.token().clone());
             }
         }
-        changed_tokens.sort();
-        changed_tokens.dedup();
         changed_targets.sort();
         changed_targets.dedup();
-        let mut appearance_theme_values = self.appearance_theme_values.clone();
-        if let Some((themes, generation)) = appearance {
-            let Some(theme_state) = self.appearance_theme_state.as_ref() else {
-                return Err(());
-            };
-            for binding in theme_state.active_bindings() {
-                if binding.capability().application() != generation {
-                    return Err(());
-                }
-                let view = crate::runtime::appearance::UiThemeResolutionView::from_capability(
-                    binding.capability(),
-                    themes,
-                )
-                .map_err(|_| ())?;
-                let mut values = appearance_theme_values
-                    .get(&binding.surface())
-                    .filter(|current| current.capability == *binding.capability())
-                    .map_or_else(BTreeMap::new, |current| (*current.values).clone());
-                for (token, value) in &typed_changes {
-                    let requested =
-                        worth_ui_dsl::UiThemeSlotIdentity::new(token.as_str()).ok_or(())?;
-                    let resolved = view.resolve(&requested, value.kind()).map_err(|_| ())?;
-                    let terminal =
-                        crate::capability::ThemeTokenId::new(resolved.terminal().as_str())
-                            .map_err(|_| ())?;
-                    values.insert(terminal, *value);
-                }
-                appearance_theme_values.insert(
-                    binding.surface(),
-                    UiApplicationThemeTypedValues::new(binding.capability(), values),
-                );
-            }
+        let (appearance_theme_values, appearance_changed_terminals) = match appearance_effect {
+            Some(effect) => (effect.values, effect.changed_terminals),
+            None => (self.appearance_theme_values.clone(), Vec::new()),
+        };
+        for terminal in appearance_changed_terminals {
+            changed_tokens.extend(self.aliases_for_terminal(&terminal));
         }
+        changed_tokens.sort();
+        changed_tokens.dedup();
         let semantic_presentation_revisions = self
             .rows
             .iter()
@@ -230,6 +219,16 @@ impl UiApplicationPresentationState {
             theme_revision,
             appearance_theme_values,
         })
+    }
+
+    fn aliases_for_terminal(
+        &self,
+        terminal: &crate::capability::ThemeTokenId,
+    ) -> Vec<crate::capability::ThemeTokenId> {
+        self.resolved_targets
+            .iter()
+            .filter_map(|(token, resolved)| (resolved == terminal).then_some(token.clone()))
+            .collect()
     }
 
     pub(crate) fn commit_theme_values(
