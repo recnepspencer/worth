@@ -9,7 +9,10 @@ use worth_ui_host_contract::{UiMountedTextSchemaVersion, WorthUiHostMechanicsAda
 use crate::native::STAGED_APPEARANCE_MECHANICS;
 
 #[cfg(feature = "certification-support")]
-use worth_ui_host_contract::{UiHostAppearanceProfilePosture, UiHostPrimaryPointerKind};
+use worth_ui_host_contract::{
+    UiHostAppearanceGeometryQualificationBasis, UiHostAppearanceProfilePosture,
+    UiHostAppearanceScaleDenial, UiHostPrimaryPointerKind,
+};
 
 #[test]
 fn staged_v2_profile_is_exactly_non_current_and_carries_the_native_long_pole() {
@@ -122,6 +125,40 @@ fn certification_report_uses_the_explicit_host_owned_staged_mechanic_qualificati
     assert_eq!(
         profile.primary_pointer(),
         Some(UiHostPrimaryPointerKind::Mouse)
+    );
+}
+
+#[cfg(feature = "certification-support")]
+#[test]
+fn certification_report_carries_each_native_scale_fringe_enclosure_without_fallback() {
+    let report = crate::staged_appearance_capability_report();
+    let profile = report
+        .appearance_profile()
+        .expect("certification report must carry the staged appearance profile");
+    let rows = profile.geometry_qualification().rows();
+    assert_eq!(
+        rows.iter()
+            .map(|row| row.device_scale_milli())
+            .collect::<Vec<_>>(),
+        vec![1_000, 1_250, 1_500, 2_000]
+    );
+    assert_eq!(
+        rows.iter()
+            .map(|row| row.anti_alias_fringe_physical_pixels())
+            .collect::<Vec<_>>(),
+        vec![1, 1, 1, 1]
+    );
+    assert_eq!(
+        rows.iter()
+            .map(|row| row.anti_alias_fringe_logical_subpixels().subpixels())
+            .collect::<Vec<_>>(),
+        vec![1_000, 800, 667, 500]
+    );
+    assert!(rows.iter().all(|row| row.basis()
+        == UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter));
+    assert_eq!(
+        profile.geometry_qualification().row_for_scale(1_333),
+        Err(UiHostAppearanceScaleDenial::UnsupportedScale(1_333))
     );
 }
 

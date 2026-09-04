@@ -304,6 +304,15 @@ fn theme_view(
             worth_ui_host_contract::UiHostAppearanceMechanicFamily::Clip,
         ],
         Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
+        worth_ui_host_contract::UiHostAppearanceGeometryQualification::admit([
+            worth_ui_host_contract::UiHostAppearanceScaleGeometryQualification::new(
+                1_000,
+                1,
+                worth_ui_host_contract::UiAppearanceLogicalLength::new(1_000).unwrap(),
+                worth_ui_host_contract::UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter,
+            ),
+        ])
+        .expect("the test geometry qualification must admit"),
     )
     .unwrap();
     let capability =

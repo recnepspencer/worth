@@ -9,13 +9,15 @@ mod surface;
 mod text_foreground;
 pub(crate) mod work;
 
+pub use work::UiHeadlessAppearanceMechanicChange;
+
 use worth_ui_host_contract::{
     UiAppearanceDamageRegion, UiMountedAppearanceFrame, UiMountedAppearanceMechanic,
     UiMountedAppearancePredecessorManifest, UiMountedOverlayOrderMechanic,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum UiHeadlessAppearanceMechanic {
+pub enum UiHeadlessAppearanceMechanic {
     Surface(worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic),
     PortalSurface(worth_ui_host_contract::UiMountedPortalSurfaceAppearanceMechanic),
     Outline(worth_ui_host_contract::UiMountedOutlineAppearanceMechanic),
@@ -25,7 +27,7 @@ pub(crate) enum UiHeadlessAppearanceMechanic {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiHeadlessAppearanceFrameTranscript {
+pub struct UiHeadlessAppearanceFrameTranscript {
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
     semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     mechanics: Box<[UiHeadlessAppearanceMechanic]>,
@@ -34,14 +36,30 @@ pub(crate) struct UiHeadlessAppearanceFrameTranscript {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiHeadlessAppearanceWorkTranscript {
+pub struct UiHeadlessAppearanceWorkTranscript {
     posture: worth_ui_host_contract::UiMountedAppearanceWorkPosture,
     predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
     predecessor_manifest: Option<UiMountedAppearancePredecessorManifest>,
     successor: UiHeadlessAppearanceFrameTranscript,
-    changes: Box<[work::UiHeadlessAppearanceMechanicChange]>,
+    changes: Box<[UiHeadlessAppearanceMechanicChange]>,
     damage: Box<[UiAppearanceDamageRegion]>,
     order_changed: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct UiHeadlessUnpublishedAppearanceFragmentTranscript {
+    identity: worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity,
+    work: UiHeadlessAppearanceWorkTranscript,
+    text_candidates: Box<[worth_ui_host_contract::UiMountedSemanticTextMechanic]>,
+    surface_binding: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
+    presentation_affinity: worth_ui_host_contract::UiMountedPresentationAffinity,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct UiHeadlessUnpublishedAppearanceFrameTranscript {
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    fragments: Box<[UiHeadlessUnpublishedAppearanceFragmentTranscript]>,
 }
 
 impl UiHeadlessAppearanceMechanic {
@@ -95,27 +113,23 @@ impl UiHeadlessAppearanceFrameTranscript {
         })
     }
 
-    pub(crate) const fn frame(&self) -> worth_ui_host_contract::UiMountedFrameIdentity {
+    pub const fn frame(&self) -> worth_ui_host_contract::UiMountedFrameIdentity {
         self.frame
     }
 
-    pub(crate) const fn semantic_surface(
-        &self,
-    ) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
+    pub const fn semantic_surface(&self) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
         self.semantic_surface
     }
 
-    pub(crate) fn mechanics(&self) -> &[UiHeadlessAppearanceMechanic] {
+    pub fn mechanics(&self) -> &[UiHeadlessAppearanceMechanic] {
         &self.mechanics
     }
 
-    pub(crate) const fn overlay_order(&self) -> &UiMountedOverlayOrderMechanic {
+    pub const fn overlay_order(&self) -> &UiMountedOverlayOrderMechanic {
         &self.overlay_order
     }
 
-    pub(crate) const fn reference_source_over(
-        &self,
-    ) -> worth_ui_host_contract::UiMountedAppearanceColor {
+    pub const fn reference_source_over(&self) -> worth_ui_host_contract::UiMountedAppearanceColor {
         self.reference_source_over
     }
 }
@@ -135,33 +149,99 @@ impl UiHeadlessAppearanceWorkTranscript {
         })
     }
 
-    pub(crate) const fn posture(&self) -> worth_ui_host_contract::UiMountedAppearanceWorkPosture {
+    pub const fn posture(&self) -> worth_ui_host_contract::UiMountedAppearanceWorkPosture {
         self.posture
     }
 
-    pub(crate) const fn predecessor(
-        &self,
-    ) -> Option<worth_ui_host_contract::UiMountedFrameIdentity> {
+    pub const fn predecessor(&self) -> Option<worth_ui_host_contract::UiMountedFrameIdentity> {
         self.predecessor
     }
 
-    pub(crate) fn predecessor_manifest(&self) -> Option<&UiMountedAppearancePredecessorManifest> {
+    pub fn predecessor_manifest(&self) -> Option<&UiMountedAppearancePredecessorManifest> {
         self.predecessor_manifest.as_ref()
     }
 
-    pub(crate) fn successor(&self) -> &UiHeadlessAppearanceFrameTranscript {
+    pub fn successor(&self) -> &UiHeadlessAppearanceFrameTranscript {
         &self.successor
     }
 
-    pub(crate) fn changes(&self) -> &[work::UiHeadlessAppearanceMechanicChange] {
+    pub fn changes(&self) -> &[UiHeadlessAppearanceMechanicChange] {
         &self.changes
     }
 
-    pub(crate) fn damage(&self) -> &[UiAppearanceDamageRegion] {
+    pub fn damage(&self) -> &[UiAppearanceDamageRegion] {
         &self.damage
     }
 
-    pub(crate) const fn order_changed(&self) -> bool {
+    pub const fn order_changed(&self) -> bool {
         self.order_changed
+    }
+}
+
+impl UiHeadlessUnpublishedAppearanceFragmentTranscript {
+    pub(crate) fn from_source(
+        source: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
+        work: UiHeadlessAppearanceWorkTranscript,
+    ) -> Self {
+        Self {
+            identity: source.identity(),
+            work,
+            text_candidates: source.text_candidates().to_vec().into_boxed_slice(),
+            surface_binding: source.surface_binding(),
+            presentation_affinity: source.presentation_affinity(),
+        }
+    }
+
+    pub const fn identity(
+        &self,
+    ) -> worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity {
+        self.identity
+    }
+
+    pub const fn work(&self) -> &UiHeadlessAppearanceWorkTranscript {
+        &self.work
+    }
+
+    pub fn text_candidates(&self) -> &[worth_ui_host_contract::UiMountedSemanticTextMechanic] {
+        &self.text_candidates
+    }
+
+    pub const fn surface_binding(
+        &self,
+    ) -> worth_ui_host_contract::UiMountedSurfaceBindingRequirement {
+        self.surface_binding
+    }
+
+    pub const fn presentation_affinity(
+        &self,
+    ) -> worth_ui_host_contract::UiMountedPresentationAffinity {
+        self.presentation_affinity
+    }
+}
+
+impl UiHeadlessUnpublishedAppearanceFrameTranscript {
+    pub(crate) fn from_source(
+        source: &worth_ui_host_contract::UiUnpublishedAppearanceFrameProjection,
+        fragments: Vec<UiHeadlessUnpublishedAppearanceFragmentTranscript>,
+    ) -> Self {
+        Self {
+            frame: source.frame(),
+            presentation: source.presentation(),
+            fragments: fragments.into_boxed_slice(),
+        }
+    }
+
+    pub const fn frame(&self) -> worth_ui_host_contract::UiMountedFrameIdentity {
+        self.frame
+    }
+
+    pub const fn presentation(
+        &self,
+    ) -> worth_ui_host_contract::UiMountedPresentationAttemptIdentity {
+        self.presentation
+    }
+
+    pub fn fragments(&self) -> &[UiHeadlessUnpublishedAppearanceFragmentTranscript] {
+        &self.fragments
     }
 }

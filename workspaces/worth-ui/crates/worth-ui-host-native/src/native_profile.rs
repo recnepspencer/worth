@@ -35,6 +35,7 @@ pub(crate) struct UiNativeStagedAppearanceProfile {
     pub(crate) version: u16,
     pub(crate) scales_milli: &'static [u16; 4],
     pub(crate) anti_alias_fringe_physical_pixels: u8,
+    pub(crate) geometry_basis: worth_ui_host_contract::UiHostAppearanceGeometryQualificationBasis,
     pub(crate) retained_commands: u16,
     pub(crate) surface_commands: u16,
     pub(crate) outline_commands: u16,
@@ -52,6 +53,8 @@ pub(crate) const STAGED_APPEARANCE_PROFILE: UiNativeStagedAppearanceProfile =
         version: 2,
         scales_milli: &[1_000, 1_250, 1_500, 2_000],
         anti_alias_fringe_physical_pixels: 1,
+        geometry_basis:
+            worth_ui_host_contract::UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter,
         retained_commands: 4_096,
         surface_commands: 2_048,
         outline_commands: 1_024,

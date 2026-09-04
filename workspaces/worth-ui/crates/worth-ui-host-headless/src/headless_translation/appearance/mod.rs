@@ -14,7 +14,7 @@ use super::super::headless_transcript::appearance::reference_raster;
 use super::super::headless_transcript::appearance::UiHeadlessAppearanceWorkTranscript;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiHeadlessAppearanceTranslationDenial {
+pub enum UiHeadlessAppearanceTranslationDenial {
     InvalidMechanic,
     StructuralMismatch,
 }

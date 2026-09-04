@@ -170,8 +170,10 @@ impl WorthUiHostCapabilityDigest {
 mod tests {
     use super::{WorthUiHostCapability, WorthUiHostCapabilityReport};
     use crate::{
-        UiHostAppearanceMechanicFamily, UiHostAppearanceProfileContract,
-        UiHostAppearanceProfilePosture, UiHostPrimaryPointerKind,
+        UiAppearanceLogicalLength, UiHostAppearanceGeometryQualification,
+        UiHostAppearanceGeometryQualificationBasis, UiHostAppearanceMechanicFamily,
+        UiHostAppearanceProfileContract, UiHostAppearanceProfilePosture,
+        UiHostAppearanceScaleGeometryQualification, UiHostPrimaryPointerKind,
     };
 
     const EXPLICIT_MECHANICS: [UiHostAppearanceMechanicFamily; 11] = [
@@ -292,12 +294,38 @@ mod tests {
                 Some(UiHostPrimaryPointerKind::Pen),
             ))
             .profile_identity_digest();
+        let different_geometry = WorthUiHostCapabilityReport::available(vec![])
+            .with_appearance_profile(
+                UiHostAppearanceProfileContract::admit(
+                    "worth-ui-windows-dx12-v2",
+                    2,
+                    EXPLICIT_MECHANICS,
+                    Some(UiHostPrimaryPointerKind::Mouse),
+                    geometry(2_000, 1, 500),
+                )
+                .unwrap(),
+            )
+            .profile_identity_digest();
+        let different_fringe = WorthUiHostCapabilityReport::available(vec![])
+            .with_appearance_profile(
+                UiHostAppearanceProfileContract::admit(
+                    "worth-ui-windows-dx12-v2",
+                    2,
+                    EXPLICIT_MECHANICS,
+                    Some(UiHostPrimaryPointerKind::Mouse),
+                    geometry(1_000, 2, 2_000),
+                )
+                .unwrap(),
+            )
+            .profile_identity_digest();
 
         assert_ne!(baseline, different_identity);
         assert_ne!(baseline, different_version);
         assert_ne!(baseline, no_pointer);
         assert_ne!(baseline, pen_pointer);
         assert_ne!(no_pointer, pen_pointer);
+        assert_ne!(baseline, different_geometry);
+        assert_ne!(baseline, different_fringe);
     }
 
     fn appearance_profile(
@@ -306,7 +334,29 @@ mod tests {
         mechanics: impl IntoIterator<Item = UiHostAppearanceMechanicFamily>,
         pointer: Option<UiHostPrimaryPointerKind>,
     ) -> UiHostAppearanceProfileContract {
-        UiHostAppearanceProfileContract::admit(identity, version, mechanics, pointer)
-            .expect("the explicit complete appearance mechanic list must admit")
+        UiHostAppearanceProfileContract::admit(
+            identity,
+            version,
+            mechanics,
+            pointer,
+            geometry(1_000, 1, 1_000),
+        )
+        .expect("the explicit complete appearance mechanic list must admit")
+    }
+
+    fn geometry(
+        scale: u32,
+        physical_pixels: u32,
+        logical_subpixels: u32,
+    ) -> UiHostAppearanceGeometryQualification {
+        UiHostAppearanceGeometryQualification::admit([
+            UiHostAppearanceScaleGeometryQualification::new(
+                scale,
+                physical_pixels,
+                UiAppearanceLogicalLength::new(logical_subpixels as i32).unwrap(),
+                UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter,
+            ),
+        ])
+        .unwrap()
     }
 }
