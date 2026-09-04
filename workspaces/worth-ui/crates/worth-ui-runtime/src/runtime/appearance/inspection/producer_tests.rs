@@ -1,11 +1,11 @@
 use worth_ui_dsl::{UiAppearanceAspect, UiAppearanceAxisClass, UiThemeColor, UiThemeValue};
 use worth_ui_inspection::{
-    UiAppearanceInspectionCost, UiAppearanceInspectionDecisionCell, UiAppearanceInspectionEvidence,
-    UiAppearanceInspectionExplanation, UiAppearanceInspectionInvalidationCause,
-    UiAppearanceInspectionMountedMechanic, UiAppearanceInspectionOutcome,
-    UiAppearanceInspectionPhysicalSuppression, UiAppearanceInspectionQuery,
-    UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport, UiAppearanceInspectionValue,
-    UiAppearanceInspectionWorld,
+    UiAppearanceInspectionChangeDistinctions, UiAppearanceInspectionCost,
+    UiAppearanceInspectionDecisionCell, UiAppearanceInspectionEvidence,
+    UiAppearanceInspectionExplanation, UiAppearanceInspectionMountedMechanic,
+    UiAppearanceInspectionOutcome, UiAppearanceInspectionPhysicalSuppression,
+    UiAppearanceInspectionQuery, UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport,
+    UiAppearanceInspectionValue, UiAppearanceInspectionWorld,
 };
 
 use super::producer::UiAppearanceInspectionProducer;
@@ -125,7 +125,7 @@ fn explanation(
         UiAppearanceInspectionValue::Resolved(UiThemeValue::Color(UiThemeColor::from_channels([
             1, 2, 3, 255,
         ]))),
-        UiAppearanceInspectionInvalidationCause::NotAttributed,
+        UiAppearanceInspectionChangeDistinctions::new(false, false, false, false, false, false),
         UiAppearanceInspectionMountedMechanic::NotAttempted,
         UiAppearanceInspectionPhysicalSuppression::NotAttempted,
         query.graph_node_digest(),

@@ -1,3 +1,6 @@
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
 use worth_ui_dsl::{UiBackdropIdentity, UiSemanticSurfaceDeclarationIdentity};
 
 use super::backdrop_digest_support::{
@@ -82,6 +85,47 @@ fn backdrop_denial_evidence_is_resolver_owned_and_effect_free() {
             session.inspect_mounted_identity().frame_receipts().len(),
             before_frames
         );
+        let _ = session.shutdown();
+    });
+}
+
+#[test]
+fn partial_backdrop_denial_carries_prior_theme_comparison_work() {
+    super::tests::run_on_appearance_fixture_stack(|| {
+        let (session, role, surface, vector, theme) = inputs();
+        let opacity = crate::capability::ThemeTokenId::new("backdrop.opacity").unwrap();
+        let theme = theme.with_typed_values(Arc::new(BTreeMap::from([(
+            opacity,
+            worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
+                9, 9, 9, 255,
+            ])),
+        )])));
+        let declaration_surface = UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
+        let identity = UiBackdropIdentity::new(12).unwrap();
+        let declaration = declaration(&role, identity, declaration_surface);
+        let instance = UiBackdropInstanceIdentity::surface_singleton(identity);
+        let overlay = overlay(
+            &session,
+            surface,
+            declaration_surface,
+            &declaration,
+            instance,
+            true,
+            1,
+            1,
+        );
+
+        let evidence = UiAppearanceResolver::new()
+            .resolve_backdrop(instance, &declaration, &role, &vector, &theme, &overlay)
+            .expect_err("the later opacity slot should deny after background resolution");
+
+        assert_eq!(
+            evidence.denial(),
+            UiAppearanceResolutionDenial::ThemeResolution(
+                crate::runtime::appearance::theme::UiThemeResolutionDenial::ValueKindMismatch,
+            )
+        );
+        assert_eq!(evidence.theme_slots_compared(), 2);
         let _ = session.shutdown();
     });
 }

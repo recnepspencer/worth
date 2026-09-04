@@ -151,10 +151,7 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         worth_ui_inspection::UiAppearanceInspectionOutcome::Found(explanation) => explanation,
         outcome => panic!("production appearance receipt was not inspected: {outcome:?}"),
     };
-    assert_eq!(
-        explanation.invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::MountedMechanicalOutputChanged
-    );
+    assert!(explanation.mounted_mechanical_output_changed());
     assert_eq!(
         explanation.mounted_mechanic(),
         worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Changed
@@ -164,6 +161,7 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed
     );
     assert!(explanation.cost().consumers_selected() > 0);
+    assert_eq!(explanation.cost().theme_slots_compared(), 1);
     assert_eq!(
         explanation.value(),
         worth_ui_inspection::UiAppearanceInspectionValue::Resolved(
@@ -310,10 +308,12 @@ fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
         worth_ui_inspection::UiAppearanceInspectionOutcome::Found(explanation) => explanation,
         outcome => panic!("first appearance denial was not inspected: {outcome:?}"),
     };
-    assert_eq!(
-        explanation.invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::DeniedBeforeEffects
-    );
+    assert!(!explanation.input_evidence_changed());
+    assert!(!explanation.semantic_projection_changed());
+    assert!(!explanation.resolved_aspect_value_changed());
+    assert!(!explanation.mounted_mechanical_output_changed());
+    assert!(!explanation.equal_output_suppressed());
+    assert!(explanation.denied_before_effects());
     assert_eq!(
         explanation.value(),
         worth_ui_inspection::UiAppearanceInspectionValue::Missing
@@ -330,6 +330,7 @@ fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
         explanation.denial_posture(),
         Some(worth_ui_inspection::UiAppearanceInspectionDenialPosture::Basis)
     );
+    assert_eq!(explanation.cost().theme_slots_compared(), 0);
 
     let _ = session.shutdown();
 }

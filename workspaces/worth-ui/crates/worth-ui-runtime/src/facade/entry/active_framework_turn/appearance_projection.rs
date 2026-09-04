@@ -184,7 +184,8 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
                     &theme,
                 ) {
                 Ok(projection) => projection,
-                Err(_) => {
+                Err(evidence) => {
+                    context.set_theme_slots_compared(evidence.theme_slots_compared());
                     stage_denial(
                         frame,
                         context,

@@ -330,7 +330,7 @@ impl super::UiApplicationPresentationState {
                 )?;
                 let resolved = view
                     .resolve(&requested, value.kind())
-                    .map_err(|denial| map_successor_value_denial(*surface, denial))?;
+                    .map_err(|failure| map_successor_value_denial(*surface, failure.denial()))?;
                 if resolved.terminal() != &requested {
                     return Err(
                         UiAppearanceGenerationSuccessionDenial::SuccessorValueAliasTerminalChanged(

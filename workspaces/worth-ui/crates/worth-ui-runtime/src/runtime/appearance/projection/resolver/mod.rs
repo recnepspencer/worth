@@ -33,6 +33,45 @@ pub(crate) enum UiAppearanceResolutionDenial {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct UiAppearanceResolutionFailure {
+    denial: UiAppearanceResolutionDenial,
+    theme_slots_compared: u32,
+}
+
+impl UiAppearanceResolutionFailure {
+    fn without_theme_work(denial: UiAppearanceResolutionDenial) -> Self {
+        Self {
+            denial,
+            theme_slots_compared: 0,
+        }
+    }
+
+    fn with_theme_work(denial: UiAppearanceResolutionDenial, theme_slots_compared: u32) -> Self {
+        Self {
+            denial,
+            theme_slots_compared,
+        }
+    }
+
+    fn with_prior_theme_work(self, prior: u32) -> Self {
+        Self::with_theme_work(
+            self.denial,
+            prior
+                .checked_add(self.theme_slots_compared)
+                .expect("appearance theme traversal count fits its bounded catalog"),
+        )
+    }
+
+    pub(crate) const fn denial(self) -> UiAppearanceResolutionDenial {
+        self.denial
+    }
+
+    pub(crate) const fn theme_slots_compared(self) -> u32 {
+        self.theme_slots_compared
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiAppearanceResolutionSubject {
     GraphNode(crate::graph::UiGraphNodeIdentity),
     Backdrop(UiBackdropInstanceIdentity),
@@ -43,30 +82,33 @@ pub(crate) struct UiAppearanceResolutionDenialEvidence {
     subject: UiAppearanceResolutionSubject,
     denial: UiAppearanceResolutionDenial,
     input_digest: u64,
+    theme_slots_compared: u32,
 }
 
 impl UiAppearanceResolutionDenialEvidence {
     fn for_node(
         subject: UiAppearanceResolutionSubject,
-        denial: UiAppearanceResolutionDenial,
+        failure: UiAppearanceResolutionFailure,
         input_digest: u64,
     ) -> Self {
         Self {
             subject,
-            denial,
+            denial: failure.denial(),
             input_digest,
+            theme_slots_compared: failure.theme_slots_compared(),
         }
     }
 
     fn for_backdrop(
         subject: UiAppearanceResolutionSubject,
-        denial: UiAppearanceResolutionDenial,
+        failure: UiAppearanceResolutionFailure,
         input_digest: u64,
     ) -> Self {
         Self {
             subject,
-            denial,
+            denial: failure.denial(),
             input_digest,
+            theme_slots_compared: failure.theme_slots_compared(),
         }
     }
 
@@ -80,6 +122,10 @@ impl UiAppearanceResolutionDenialEvidence {
 
     pub(crate) const fn input_digest(self) -> u64 {
         self.input_digest
+    }
+
+    pub(crate) const fn theme_slots_compared(self) -> u32 {
+        self.theme_slots_compared
     }
 }
 
@@ -102,8 +148,8 @@ impl UiAppearanceResolver {
             theme.semantic_digest(),
         );
         self.resolve_node_projection(graph, capabilities, binding, vector, theme)
-            .map_err(|denial| {
-                UiAppearanceResolutionDenialEvidence::for_node(subject, denial, input_digest)
+            .map_err(|failure| {
+                UiAppearanceResolutionDenialEvidence::for_node(subject, failure, input_digest)
             })
     }
 
@@ -114,24 +160,35 @@ impl UiAppearanceResolver {
         binding: &UiAppearanceNodeRoleBinding,
         vector: &UiAppearanceStateVector,
         theme: &UiThemeResolutionView,
-    ) -> Result<UiAppearanceProjection, UiAppearanceResolutionDenial> {
+    ) -> Result<UiAppearanceProjection, UiAppearanceResolutionFailure> {
         binding
             .validate_current(graph, capabilities)
-            .map_err(UiAppearanceResolutionDenial::NodeRoleBinding)?;
+            .map_err(|denial| {
+                UiAppearanceResolutionFailure::without_theme_work(
+                    UiAppearanceResolutionDenial::NodeRoleBinding(denial),
+                )
+            })?;
         if vector.binding() != Some(binding.basis()) {
-            return Err(UiAppearanceResolutionDenial::VectorRoleBindingMismatch);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::VectorRoleBindingMismatch,
+            ));
         }
         let target = binding.target();
         let role = binding.role();
-        ensure_world(target, vector, theme)?;
+        ensure_world(target, vector, theme)
+            .map_err(UiAppearanceResolutionFailure::without_theme_work)?;
         if !theme.admits_role(role) {
-            return Err(UiAppearanceResolutionDenial::MissingRoleCapability);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::MissingRoleCapability,
+            ));
         }
         if matches!(
             role.applicability(),
             worth_ui_dsl::UiAppearanceRoleApplicability::Backdrop
         ) {
-            return Err(UiAppearanceResolutionDenial::WrongRoleApplicability);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::WrongRoleApplicability,
+            ));
         }
         if let worth_ui_dsl::UiAppearanceRoleApplicability::Component(component) =
             role.applicability()
@@ -140,16 +197,24 @@ impl UiAppearanceResolver {
                 .component_reference()
                 .is_none_or(|target| target.as_str() != component.as_str())
             {
-                return Err(UiAppearanceResolutionDenial::WrongRoleApplicability);
+                return Err(UiAppearanceResolutionFailure::without_theme_work(
+                    UiAppearanceResolutionDenial::WrongRoleApplicability,
+                ));
             }
         }
-        let aspects = role
-            .partitions()
-            .iter()
-            .map(|(aspect, partition)| {
-                aspect_resolution::resolve(*aspect, partition, vector, theme)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+        let mut aspects = Vec::with_capacity(role.partitions().len());
+        let mut theme_slots_compared = 0_u32;
+        for (aspect, partition) in role.partitions() {
+            match aspect_resolution::resolve(*aspect, partition, vector, theme) {
+                Ok(resolved) => {
+                    theme_slots_compared = theme_slots_compared
+                        .checked_add(resolved.theme_slots_compared())
+                        .expect("appearance theme traversal count fits its bounded catalog");
+                    aspects.push(resolved);
+                }
+                Err(failure) => return Err(failure.with_prior_theme_work(theme_slots_compared)),
+            }
+        }
         Ok(UiAppearanceProjection::seal(
             target,
             binding.role(),
@@ -180,8 +245,8 @@ impl UiAppearanceResolver {
             fold(theme.semantic_digest(), overlay.semantic_digest()),
         );
         self.resolve_backdrop_projection(instance, declaration, role, vector, theme, overlay)
-            .map_err(|denial| {
-                UiAppearanceResolutionDenialEvidence::for_backdrop(subject, denial, input_digest)
+            .map_err(|failure| {
+                UiAppearanceResolutionDenialEvidence::for_backdrop(subject, failure, input_digest)
             })
     }
 
@@ -193,49 +258,73 @@ impl UiAppearanceResolver {
         vector: &UiBackdropAppearanceStateVector,
         theme: &UiThemeResolutionView,
         overlay: &UiOverlayStackSnapshot,
-    ) -> Result<UiBackdropAppearanceProjection, UiAppearanceResolutionDenial> {
+    ) -> Result<UiBackdropAppearanceProjection, UiAppearanceResolutionFailure> {
         if vector.surface() != theme.surface() {
-            return Err(UiAppearanceResolutionDenial::WrongSurface);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::WrongSurface,
+            ));
         }
         if vector.generation() != theme.application() {
-            return Err(UiAppearanceResolutionDenial::WrongApplicationGeneration);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::WrongApplicationGeneration,
+            ));
         }
         if vector.session() != theme.application().session_identity() {
-            return Err(UiAppearanceResolutionDenial::WrongApplicationGeneration);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::WrongApplicationGeneration,
+            ));
         }
         if !theme.admits_role(role)
             || declaration.role() != role.role()
             || declaration.role_revision() != role.revision()
         {
-            return Err(UiAppearanceResolutionDenial::MissingRoleCapability);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::MissingRoleCapability,
+            ));
         }
         if overlay.surface() != theme.surface()
             || overlay.declaration_surface() != declaration.surface()
         {
-            return Err(UiAppearanceResolutionDenial::OverlaySurfaceMismatch);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::OverlaySurfaceMismatch,
+            ));
         }
         if overlay.application() != Some(theme.application().prepared_generation()) {
-            return Err(UiAppearanceResolutionDenial::OverlayApplicationMismatch);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::OverlayApplicationMismatch,
+            ));
         }
         if !overlay.contains(instance, declaration.identity()) {
-            return Err(UiAppearanceResolutionDenial::OverlayParticipantMissing);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::OverlayParticipantMissing,
+            ));
         }
         if instance.declaration() != declaration.identity() {
-            return Err(UiAppearanceResolutionDenial::OverlayParticipantMissing);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::OverlayParticipantMissing,
+            ));
         }
         if !matches!(
             role.applicability(),
             worth_ui_dsl::UiAppearanceRoleApplicability::Backdrop
         ) {
-            return Err(UiAppearanceResolutionDenial::WrongRoleApplicability);
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::WrongRoleApplicability,
+            ));
         }
-        let aspects = role
-            .partitions()
-            .iter()
-            .map(|(aspect, partition)| {
-                aspect_resolution::resolve_backdrop(*aspect, partition, theme)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+        let mut aspects = Vec::with_capacity(role.partitions().len());
+        let mut theme_slots_compared = 0_u32;
+        for (aspect, partition) in role.partitions() {
+            match aspect_resolution::resolve_backdrop(*aspect, partition, theme) {
+                Ok(resolved) => {
+                    theme_slots_compared = theme_slots_compared
+                        .checked_add(resolved.theme_slots_compared())
+                        .expect("appearance theme traversal count fits its bounded catalog");
+                    aspects.push(resolved);
+                }
+                Err(failure) => return Err(failure.with_prior_theme_work(theme_slots_compared)),
+            }
+        }
         Ok(UiBackdropAppearanceProjection::seal(
             instance,
             declaration,

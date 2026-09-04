@@ -193,17 +193,17 @@ fn appearance_state_duplicate_stage_and_lower_release_preserve_replacement_capac
     state.reserve(&first).unwrap();
     state
         .stage(
-            crate::runtime::appearance::UiAppearanceProjectionAttempt::denied(
+            crate::runtime::appearance::UiAppearanceProjectionAttempt::resolved(
                 first.clone(),
-                crate::runtime::appearance::UiAppearanceInspectionDenial::Basis,
+                projection.clone(),
             ),
         )
         .unwrap();
     state
         .stage(
-            crate::runtime::appearance::UiAppearanceProjectionAttempt::denied(
+            crate::runtime::appearance::UiAppearanceProjectionAttempt::resolved(
                 first.clone(),
-                crate::runtime::appearance::UiAppearanceInspectionDenial::MountLowering,
+                projection.clone(),
             ),
         )
         .unwrap();
@@ -213,13 +213,15 @@ fn appearance_state_duplicate_stage_and_lower_release_preserve_replacement_capac
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
     let records = state.lower(presentation);
     assert_eq!(records.len(), 1);
-    assert!(matches!(
-        records[0],
-        crate::runtime::appearance::UiAppearanceInspectionRecord::Denial {
-            denial: crate::runtime::appearance::UiAppearanceInspectionDenial::MountLowering,
-            ..
-        }
-    ));
+    let crate::runtime::appearance::UiAppearanceInspectionRecord::Denial {
+        context,
+        denial: crate::runtime::appearance::UiAppearanceInspectionDenial::MountLowering,
+        ..
+    } = &records[0]
+    else {
+        panic!("an already-resolved attempt with omitted allocation must deny at lowering");
+    };
+    assert!(context.theme_slots_compared() > 0);
     assert_eq!(state.membership_counts(), (0, 0, 0));
 
     state.retain_projection_for_test(&first, projection.clone());

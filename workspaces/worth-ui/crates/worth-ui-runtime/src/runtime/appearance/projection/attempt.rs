@@ -13,6 +13,7 @@ pub(crate) struct UiAppearanceAttemptContext {
     state: Option<super::super::state::UiAppearanceStateVector>,
     aspects: Box<[super::UiResolvedAppearanceAspect]>,
     aspect_hints: Box<[worth_ui_dsl::UiAppearanceAspect]>,
+    theme_slots_compared: u32,
     consumers_selected: u32,
     owner_evidence: u64,
     invalidation_batch: Option<super::super::invalidation::UiAppearanceInvalidationBatch>,
@@ -43,6 +44,7 @@ impl UiAppearanceAttemptContext {
             state: None,
             aspects: Box::new([]),
             aspect_hints: Box::new([]),
+            theme_slots_compared: 0,
             consumers_selected,
             owner_evidence,
             invalidation_batch: None,
@@ -79,6 +81,16 @@ impl UiAppearanceAttemptContext {
 
     pub(crate) fn set_projection(&mut self, projection: &super::UiAppearanceProjection) {
         self.aspects = projection.aspects().to_vec().into_boxed_slice();
+        self.theme_slots_compared = projection
+            .aspects()
+            .iter()
+            .map(|aspect| aspect.theme_slots_compared())
+            .try_fold(0_u32, |total, compared| total.checked_add(compared))
+            .expect("appearance theme traversal count fits its bounded catalog");
+    }
+
+    pub(crate) fn set_theme_slots_compared(&mut self, compared: u32) {
+        self.theme_slots_compared = compared;
     }
 
     pub(crate) const fn target(&self) -> &super::super::state::UiAppearanceTarget {
@@ -182,6 +194,10 @@ impl UiAppearanceAttemptContext {
 
     pub(crate) const fn consumers_selected(&self) -> u32 {
         self.consumers_selected
+    }
+
+    pub(crate) const fn theme_slots_compared(&self) -> u32 {
+        self.theme_slots_compared
     }
 
     pub(crate) const fn owner_evidence(&self) -> u64 {

@@ -1,16 +1,6 @@
 use crate::graph::UiGraphNodeIdentity;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiAppearanceChangeOutcome {
-    InputEvidenceChanged,
-    SemanticProjectionChanged,
-    ResolvedAspectValueChanged,
-    MountedMechanicalOutputChanged,
-    EqualOutputSuppressed,
-    DeniedBeforeEffects,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiAppearanceChangeReceipt {
     input_evidence_changed: bool,
     semantic_projection_changed: bool,
@@ -156,8 +146,7 @@ impl UiAppearanceChangeReceipt {
                 resolved_aspect_value_changed: false,
                 mounted_mechanical_output_changed: !mounting.changes().is_empty()
                     || mounting.order_changed(),
-                equal_output_suppressed: mounting.posture()
-                    == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Unchanged,
+                equal_output_suppressed: false,
                 denied_before_effects: false,
                 mounting_result_available: true,
             })
@@ -182,26 +171,21 @@ impl UiAppearanceChangeReceipt {
         self.denied_before_effects
     }
 
-    pub(crate) const fn mounting_result_available(self) -> bool {
-        self.mounting_result_available
+    pub(crate) fn change_distinctions(
+        self,
+    ) -> worth_ui_inspection::UiAppearanceInspectionChangeDistinctions {
+        worth_ui_inspection::UiAppearanceInspectionChangeDistinctions::new(
+            self.input_evidence_changed,
+            self.semantic_projection_changed,
+            self.resolved_aspect_value_changed,
+            self.mounted_mechanical_output_changed,
+            self.equal_output_suppressed,
+            self.denied_before_effects,
+        )
     }
 
-    pub(crate) const fn outcome(self) -> Option<UiAppearanceChangeOutcome> {
-        if self.denied_before_effects {
-            Some(UiAppearanceChangeOutcome::DeniedBeforeEffects)
-        } else if self.mounted_mechanical_output_changed {
-            Some(UiAppearanceChangeOutcome::MountedMechanicalOutputChanged)
-        } else if self.equal_output_suppressed {
-            Some(UiAppearanceChangeOutcome::EqualOutputSuppressed)
-        } else if self.resolved_aspect_value_changed {
-            Some(UiAppearanceChangeOutcome::ResolvedAspectValueChanged)
-        } else if self.semantic_projection_changed {
-            Some(UiAppearanceChangeOutcome::SemanticProjectionChanged)
-        } else if self.input_evidence_changed {
-            Some(UiAppearanceChangeOutcome::InputEvidenceChanged)
-        } else {
-            None
-        }
+    pub(crate) const fn mounting_result_available(self) -> bool {
+        self.mounting_result_available
     }
 }
 

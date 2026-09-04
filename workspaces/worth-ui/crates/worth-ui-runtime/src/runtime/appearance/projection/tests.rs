@@ -44,6 +44,7 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
         assert_eq!(first.aspects().len(), 1);
         let aspect = &first.aspects()[0];
         assert_eq!(aspect.aspect(), UiAppearanceAspect::Background);
+        assert_eq!(aspect.theme_slots_compared(), 1);
         assert_eq!(
             aspect.value(),
             UiThemeValue::Color(UiThemeColor::from_channels([1, 2, 3, 255]))

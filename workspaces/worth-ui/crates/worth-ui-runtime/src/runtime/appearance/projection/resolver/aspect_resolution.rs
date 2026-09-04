@@ -3,8 +3,9 @@ pub(crate) fn resolve(
     partition: &worth_ui_dsl::UiAppearanceDecisionPartition,
     vector: &super::super::super::state::UiAppearanceStateVector,
     theme: &super::super::super::theme::UiThemeResolutionView,
-) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionDenial> {
-    let lookup = super::cell_lookup::lookup(partition, vector, aspect)?;
+) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionFailure> {
+    let lookup = super::cell_lookup::lookup(partition, vector, aspect)
+        .map_err(|denial| super::UiAppearanceResolutionFailure::without_theme_work(denial))?;
     finish(aspect, lookup, theme)
 }
 
@@ -12,8 +13,9 @@ pub(crate) fn resolve_backdrop(
     aspect: worth_ui_dsl::UiAppearanceAspect,
     partition: &worth_ui_dsl::UiAppearanceDecisionPartition,
     theme: &super::super::super::theme::UiThemeResolutionView,
-) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionDenial> {
-    let lookup = super::cell_lookup::lookup_without_state(partition, aspect)?;
+) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionFailure> {
+    let lookup = super::cell_lookup::lookup_without_state(partition, aspect)
+        .map_err(|denial| super::UiAppearanceResolutionFailure::without_theme_work(denial))?;
     finish(aspect, lookup, theme)
 }
 
@@ -21,17 +23,20 @@ fn finish(
     aspect: worth_ui_dsl::UiAppearanceAspect,
     lookup: super::cell_lookup::UiAppearanceCellLookup,
     theme: &super::super::super::theme::UiThemeResolutionView,
-) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionDenial> {
-    let slot =
-        lookup
-            .result
-            .slot()
-            .ok_or(super::UiAppearanceResolutionDenial::MissingDecisionCell(
-                aspect,
-            ))?;
+) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionFailure> {
+    let slot = lookup.result.slot().ok_or_else(|| {
+        super::UiAppearanceResolutionFailure::without_theme_work(
+            super::UiAppearanceResolutionDenial::MissingDecisionCell(aspect),
+        )
+    })?;
     let resolved = theme
         .resolve(slot, lookup.result.value_kind())
-        .map_err(super::UiAppearanceResolutionDenial::ThemeResolution)?;
+        .map_err(|failure| {
+            super::UiAppearanceResolutionFailure::with_theme_work(
+                super::UiAppearanceResolutionDenial::ThemeResolution(failure.denial()),
+                failure.work().theme_slots_compared(),
+            )
+        })?;
     let support = super::support::for_aspect(aspect, theme);
     let provenance = super::provenance::from_theme(&resolved, theme);
     let digest = super::provenance::semantic_digest(
@@ -50,6 +55,6 @@ fn finish(
         support,
         digest,
         lookup.visited,
-        u32::from(resolved.aliases_compared()).saturating_add(1),
+        resolved.work().theme_slots_compared(),
     ))
 }

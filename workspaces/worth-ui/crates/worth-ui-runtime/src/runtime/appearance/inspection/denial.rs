@@ -32,6 +32,7 @@ pub(super) fn record_attempt_denial(
     } else {
         context.aspect_hints().to_vec()
     };
+    let distinctions = receipt.change_distinctions();
     for aspect in aspects {
         let query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
             world,
@@ -54,7 +55,7 @@ pub(super) fn record_attempt_denial(
             "unresolved",
             worth_ui_inspection::UiAppearanceInspectionSupport::Supported,
             worth_ui_inspection::UiAppearanceInspectionValue::Missing,
-            super::producer::invalidation_cause(receipt),
+            distinctions,
             worth_ui_inspection::UiAppearanceInspectionMountedMechanic::NotAttempted,
             worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotAttempted,
             context.owner_evidence(),
@@ -67,7 +68,7 @@ pub(super) fn record_attempt_denial(
                 state_classes.len() as u8,
                 0,
                 0,
-                context.catalog_revision() as u32,
+                context.theme_slots_compared(),
                 context.consumers_selected(),
             ),
         )

@@ -101,19 +101,6 @@ pub enum UiAppearanceInspectionSourceSpan {
     Unavailable,
 }
 
-/// Typed cause supplied by the runtime when it can attribute a change.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum UiAppearanceInspectionInvalidationCause {
-    NotAttributed,
-    InputEvidenceChanged,
-    SemanticProjectionChanged,
-    ResolvedAspectValueChanged,
-    MountedMechanicalOutputChanged,
-    EqualOutputSuppressed,
-    DeniedBeforeEffects,
-    GenerationRetired,
-}
-
 /// Typed posture for an appearance attempt denied before mounting effects.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiAppearanceInspectionDenialPosture {
@@ -246,7 +233,7 @@ pub struct UiAppearanceInspectionExplanation {
     terminal_slot: Box<str>,
     support: UiAppearanceInspectionSupport,
     value: UiAppearanceInspectionValue,
-    invalidation_cause: UiAppearanceInspectionInvalidationCause,
+    change_distinctions: super::UiAppearanceInspectionChangeDistinctions,
     denial_posture: Option<UiAppearanceInspectionDenialPosture>,
     mounted_mechanic: UiAppearanceInspectionMountedMechanic,
     physical_suppression: UiAppearanceInspectionPhysicalSuppression,
@@ -270,7 +257,7 @@ impl UiAppearanceInspectionExplanation {
         terminal_slot: impl Into<Box<str>>,
         support: UiAppearanceInspectionSupport,
         value: UiAppearanceInspectionValue,
-        invalidation_cause: UiAppearanceInspectionInvalidationCause,
+        change_distinctions: super::UiAppearanceInspectionChangeDistinctions,
         mounted_mechanic: UiAppearanceInspectionMountedMechanic,
         physical_suppression: UiAppearanceInspectionPhysicalSuppression,
         semantic_digest: u64,
@@ -290,7 +277,7 @@ impl UiAppearanceInspectionExplanation {
             terminal_slot: terminal_slot.into(),
             support,
             value,
-            invalidation_cause,
+            change_distinctions,
             denial_posture: None,
             mounted_mechanic,
             physical_suppression,
@@ -336,8 +323,26 @@ impl UiAppearanceInspectionExplanation {
     pub const fn value(&self) -> UiAppearanceInspectionValue {
         self.value
     }
-    pub const fn invalidation_cause(&self) -> UiAppearanceInspectionInvalidationCause {
-        self.invalidation_cause
+    pub const fn change_distinctions(&self) -> super::UiAppearanceInspectionChangeDistinctions {
+        self.change_distinctions
+    }
+    pub const fn input_evidence_changed(&self) -> bool {
+        self.change_distinctions.input_evidence_changed()
+    }
+    pub const fn semantic_projection_changed(&self) -> bool {
+        self.change_distinctions.semantic_projection_changed()
+    }
+    pub const fn resolved_aspect_value_changed(&self) -> bool {
+        self.change_distinctions.resolved_aspect_value_changed()
+    }
+    pub const fn mounted_mechanical_output_changed(&self) -> bool {
+        self.change_distinctions.mounted_mechanical_output_changed()
+    }
+    pub const fn equal_output_suppressed(&self) -> bool {
+        self.change_distinctions.equal_output_suppressed()
+    }
+    pub const fn denied_before_effects(&self) -> bool {
+        self.change_distinctions.denied_before_effects()
     }
     pub const fn denial_posture(&self) -> Option<UiAppearanceInspectionDenialPosture> {
         self.denial_posture

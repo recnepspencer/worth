@@ -41,6 +41,32 @@ impl UiApplicationThemeTypedValues {
     }
 }
 
+#[cfg(test)]
+impl UiApplicationPresentationState {
+    pub(crate) fn replace_appearance_theme_values_for_test(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        values: BTreeMap<crate::capability::ThemeTokenId, worth_ui_dsl::UiThemeValue>,
+    ) {
+        let capability = self
+            .active_appearance_theme_binding(surface)
+            .expect("the test fault must retain an active owner binding")
+            .capability()
+            .clone();
+        self.appearance_theme_values.insert(
+            surface,
+            UiApplicationThemeTypedValues::new(&capability, values),
+        );
+    }
+
+    pub(crate) fn remove_appearance_theme_values_for_test(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) {
+        self.appearance_theme_values.remove(&surface);
+    }
+}
+
 pub(crate) struct UiApplicationThemeValueUpdate {
     predecessor_theme_revision: u64,
     token_values:

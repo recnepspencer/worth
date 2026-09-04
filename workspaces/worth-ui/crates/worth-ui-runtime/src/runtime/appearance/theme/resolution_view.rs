@@ -23,12 +23,51 @@ pub(crate) enum UiThemeResolutionDenial {
     ValueKindMismatch,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) struct UiThemeResolutionWorkEvidence {
+    theme_slots_compared: u32,
+}
+
+impl UiThemeResolutionWorkEvidence {
+    pub(crate) const fn theme_slots_compared(self) -> u32 {
+        self.theme_slots_compared
+    }
+
+    fn record_catalog_entry(&mut self) {
+        self.theme_slots_compared = self
+            .theme_slots_compared
+            .checked_add(1)
+            .expect("theme catalog traversal count fits its bounded catalog");
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct UiThemeResolutionFailure {
+    denial: UiThemeResolutionDenial,
+    work: UiThemeResolutionWorkEvidence,
+}
+
+impl UiThemeResolutionFailure {
+    fn new(denial: UiThemeResolutionDenial, work: UiThemeResolutionWorkEvidence) -> Self {
+        Self { denial, work }
+    }
+
+    pub(crate) const fn denial(self) -> UiThemeResolutionDenial {
+        self.denial
+    }
+
+    pub(crate) const fn work(self) -> UiThemeResolutionWorkEvidence {
+        self.work
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiResolvedThemeSlot {
     requested: UiThemeSlotIdentity,
     terminal: UiThemeSlotIdentity,
     value: UiThemeValue,
     aliases_compared: u8,
+    work: UiThemeResolutionWorkEvidence,
 }
 
 impl UiThemeResolutionView {
@@ -67,37 +106,67 @@ impl UiThemeResolutionView {
         &self,
         requested: &UiThemeSlotIdentity,
         expected_kind: UiThemeValueKind,
-    ) -> Result<UiResolvedThemeSlot, UiThemeResolutionDenial> {
-        let requested_id = crate::capability::ThemeTokenId::new(requested.as_str())
-            .map_err(|_| UiThemeResolutionDenial::InvalidSlotIdentity)?;
-        let declaration = self
-            .catalog
-            .get(&requested_id)
-            .ok_or(UiThemeResolutionDenial::MissingSlot)?;
+    ) -> Result<UiResolvedThemeSlot, UiThemeResolutionFailure> {
+        let mut work = UiThemeResolutionWorkEvidence::default();
+        let requested_id =
+            crate::capability::ThemeTokenId::new(requested.as_str()).map_err(|_| {
+                UiThemeResolutionFailure::new(UiThemeResolutionDenial::InvalidSlotIdentity, work)
+            })?;
+        let Some(mut declaration) = self.catalog.get(&requested_id) else {
+            return Err(UiThemeResolutionFailure::new(
+                UiThemeResolutionDenial::MissingSlot,
+                work,
+            ));
+        };
+        work.record_catalog_entry();
         if declaration.kind() != expected_kind {
-            return Err(UiThemeResolutionDenial::ValueKindMismatch);
+            return Err(UiThemeResolutionFailure::new(
+                UiThemeResolutionDenial::ValueKindMismatch,
+                work,
+            ));
         }
-        let terminal_id = self
-            .catalog
-            .resolved_target(&requested_id)
-            .ok_or(UiThemeResolutionDenial::MissingAliasTarget)?;
-        let terminal = UiThemeSlotIdentity::new(terminal_id.as_str())
-            .ok_or(UiThemeResolutionDenial::InvalidSlotIdentity)?;
+        let mut current_id = requested_id.clone();
+        let mut aliases_compared = 0_u8;
+        loop {
+            let Some(target) = declaration.alias_target().cloned() else {
+                break;
+            };
+            aliases_compared = aliases_compared.checked_add(1).ok_or_else(|| {
+                UiThemeResolutionFailure::new(UiThemeResolutionDenial::MissingAliasTarget, work)
+            })?;
+            current_id = target;
+            let Some(next) = self.catalog.get(&current_id) else {
+                return Err(UiThemeResolutionFailure::new(
+                    UiThemeResolutionDenial::MissingAliasTarget,
+                    work,
+                ));
+            };
+            work.record_catalog_entry();
+            declaration = next;
+        }
+        let terminal = UiThemeSlotIdentity::new(current_id.as_str()).ok_or_else(|| {
+            UiThemeResolutionFailure::new(UiThemeResolutionDenial::InvalidSlotIdentity, work)
+        })?;
         let value = self
             .typed_values
             .as_ref()
-            .and_then(|values| values.get(terminal_id).copied())
-            .or_else(|| self.definition.value(terminal_id))
-            .ok_or(UiThemeResolutionDenial::MissingValue)?;
+            .and_then(|values| values.get(&current_id).copied())
+            .or_else(|| self.definition.value(&current_id))
+            .ok_or_else(|| {
+                UiThemeResolutionFailure::new(UiThemeResolutionDenial::MissingValue, work)
+            })?;
         if value.kind() != expected_kind {
-            return Err(UiThemeResolutionDenial::ValueKindMismatch);
+            return Err(UiThemeResolutionFailure::new(
+                UiThemeResolutionDenial::ValueKindMismatch,
+                work,
+            ));
         }
-        let aliases_compared = alias_depth(&self.catalog, &requested_id)?;
         Ok(UiResolvedThemeSlot {
             requested: requested.clone(),
             terminal,
             value,
             aliases_compared,
+            work,
         })
     }
 
@@ -193,25 +262,10 @@ impl UiResolvedThemeSlot {
     pub(crate) const fn aliases_compared(&self) -> u8 {
         self.aliases_compared
     }
-}
 
-fn alias_depth(
-    catalog: &crate::capability::UiThemeSlotCatalog,
-    requested: &crate::capability::ThemeTokenId,
-) -> Result<u8, UiThemeResolutionDenial> {
-    let mut current = requested;
-    let mut depth = 0_u8;
-    while let Some(target) = catalog
-        .get(current)
-        .ok_or(UiThemeResolutionDenial::MissingSlot)?
-        .alias_target()
-    {
-        depth = depth
-            .checked_add(1)
-            .ok_or(UiThemeResolutionDenial::MissingAliasTarget)?;
-        current = target;
+    pub(crate) const fn work(&self) -> UiThemeResolutionWorkEvidence {
+        self.work
     }
-    Ok(depth)
 }
 
 fn fold(digest: u64, value: u64) -> u64 {

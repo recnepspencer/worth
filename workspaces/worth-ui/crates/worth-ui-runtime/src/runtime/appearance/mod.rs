@@ -23,10 +23,10 @@ pub(crate) use projection::projection_test_inputs;
     reason = "Gate 1 retains sealed appearance projection re-exports for later mounting consumers"
 )]
 pub(crate) use projection::{
-    UiAppearanceAttemptContext, UiAppearanceChangeOutcome, UiAppearanceChangeReceipt,
-    UiAppearanceMountAffinity, UiAppearanceMountAffinityDenial, UiAppearanceProjection,
-    UiAppearanceProjectionAttempt, UiAppearanceResolutionDenial, UiAppearanceResolver,
-    UiAppearanceSupportPosture, UiBackdropAppearanceProjection, UiOverlayStackSnapshot,
+    UiAppearanceAttemptContext, UiAppearanceChangeReceipt, UiAppearanceMountAffinity,
+    UiAppearanceMountAffinityDenial, UiAppearanceProjection, UiAppearanceProjectionAttempt,
+    UiAppearanceResolutionDenial, UiAppearanceResolver, UiAppearanceSupportPosture,
+    UiBackdropAppearanceProjection, UiOverlayStackSnapshot,
 };
 #[cfg(test)]
 pub(crate) use state::validate_presentation_for_test;

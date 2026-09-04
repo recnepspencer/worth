@@ -1,5 +1,6 @@
 mod denial;
 mod producer;
+mod projection_record;
 
 #[cfg(test)]
 #[path = "producer_tests.rs"]

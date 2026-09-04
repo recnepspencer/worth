@@ -53,9 +53,13 @@ pub(super) fn backdrop_session(
     appearance_component_builder(&component_role)
         .register_appearance_role(backdrop_role.clone())
         .unwrap()
+        .register_appearance_theme_bundle(
+            crate::runtime::tests::appearance_theme_test_support::bundle(),
+        )
+        .unwrap()
         .with_rust_authored_declaration_fixture(appearance_fixture(&component_role))
         .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
+        .map(crate::runtime::tests::appearance_theme_test_support::activate)
         .expect("backdrop resolver fixture should prepare")
         .launch()
         .expect("backdrop resolver fixture should launch")

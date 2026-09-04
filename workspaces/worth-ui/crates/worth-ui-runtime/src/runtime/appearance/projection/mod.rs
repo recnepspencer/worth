@@ -29,8 +29,7 @@ pub(crate) use appearance_projection::UiAppearanceProjection;
 pub(crate) use attempt::{UiAppearanceAttemptContext, UiAppearanceProjectionAttempt};
 pub(crate) use backdrop::UiBackdropAppearanceProjection;
 pub(crate) use change_receipt::{
-    UiAppearanceChangeOutcome, UiAppearanceChangeReceipt, UiAppearanceMountAffinity,
-    UiAppearanceMountAffinityDenial,
+    UiAppearanceChangeReceipt, UiAppearanceMountAffinity, UiAppearanceMountAffinityDenial,
 };
 pub(crate) use resolved_aspect::{
     UiAppearanceProvenance, UiAppearanceSupportPosture, UiResolvedAppearanceAspect,

@@ -3,12 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::denial;
 use worth_ui_dsl::UiAppearanceAspect;
 use worth_ui_inspection::{
-    UiAppearanceInspectionCost, UiAppearanceInspectionDecisionCell, UiAppearanceInspectionEvidence,
-    UiAppearanceInspectionExplanation, UiAppearanceInspectionInvalidationCause,
-    UiAppearanceInspectionMountedMechanic, UiAppearanceInspectionOutcome,
-    UiAppearanceInspectionPhysicalSuppression, UiAppearanceInspectionQuery,
-    UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport, UiAppearanceInspectionValue,
-    UiAppearanceInspectionWorld,
+    UiAppearanceInspectionExplanation, UiAppearanceInspectionOutcome, UiAppearanceInspectionQuery,
+    UiAppearanceInspectionSupport, UiAppearanceInspectionWorld,
 };
 
 const UI_APPEARANCE_INSPECTION_CAPACITY: usize = 64;
@@ -93,12 +89,7 @@ impl UiAppearanceInspectionProducer {
         consumers_selected: u32,
         receipt: super::super::projection::UiAppearanceChangeReceipt,
     ) {
-        self.record_projection_with_cause(
-            projection,
-            consumers_selected,
-            receipt,
-            invalidation_cause(receipt),
-        );
+        super::projection_record::record_projection(self, projection, consumers_selected, receipt);
     }
 
     pub(crate) fn record_frame_attempts(
@@ -134,80 +125,6 @@ impl UiAppearanceInspectionProducer {
             {
                 denial::record_attempt_denial(self, &context, denial, receipt);
             }
-        }
-    }
-
-    pub(crate) fn record_projection_with_cause(
-        &mut self,
-        projection: &super::super::projection::UiAppearanceProjection,
-        consumers_selected: u32,
-        receipt: super::super::projection::UiAppearanceChangeReceipt,
-        invalidation_cause: UiAppearanceInspectionInvalidationCause,
-    ) {
-        self.record_projection_values(
-            projection,
-            consumers_selected,
-            invalidation_cause,
-            receipt.denied_before_effects(),
-            mounted_mechanic(receipt),
-            physical_suppression(receipt),
-        );
-    }
-
-    fn record_projection_values(
-        &mut self,
-        projection: &super::super::projection::UiAppearanceProjection,
-        consumers_selected: u32,
-        invalidation_cause: UiAppearanceInspectionInvalidationCause,
-        value_missing: bool,
-        mounted_mechanic: UiAppearanceInspectionMountedMechanic,
-        physical_suppression: UiAppearanceInspectionPhysicalSuppression,
-    ) {
-        let world = world_for_projection(projection);
-        for aspect in projection.aspects() {
-            let query = UiAppearanceInspectionQuery::new(
-                world,
-                projection.target().graph_node().digest(),
-                aspect.aspect(),
-            );
-            let explanation = UiAppearanceInspectionExplanation::new(
-                query,
-                projection.role().as_str(),
-                projection.role_revision().value(),
-                projection.theme(),
-                projection.theme_revision(),
-                aspect.state_classes().to_vec().into_boxed_slice(),
-                UiAppearanceInspectionDecisionCell::new(
-                    aspect.decision_cell_ordinal(),
-                    aspect.state_classes().to_vec().into_boxed_slice(),
-                ),
-                UiAppearanceInspectionSourceSpan::Unavailable,
-                aspect.provenance().selected_slot().as_str(),
-                aspect.provenance().terminal_slot().as_str(),
-                support(aspect.support()),
-                if value_missing {
-                    UiAppearanceInspectionValue::Missing
-                } else {
-                    UiAppearanceInspectionValue::Resolved(aspect.value())
-                },
-                invalidation_cause,
-                mounted_mechanic,
-                physical_suppression,
-                aspect.semantic_digest(),
-                UiAppearanceInspectionEvidence::new(
-                    projection.state().basis().source_basis(),
-                    projection.state().basis().turn().as_u64(),
-                    *projection.state().basis().owner_revisions(),
-                ),
-                UiAppearanceInspectionCost::new(
-                    projection.state().classes().count() as u8,
-                    1,
-                    aspect.decision_cells_visited(),
-                    aspect.theme_slots_compared(),
-                    consumers_selected,
-                ),
-            );
-            self.record(query, explanation);
         }
     }
 
@@ -313,88 +230,8 @@ impl UiAppearanceInspectionProducer {
     }
 }
 
-pub(super) fn invalidation_cause(
-    receipt: super::super::projection::UiAppearanceChangeReceipt,
-) -> UiAppearanceInspectionInvalidationCause {
-    match receipt.outcome() {
-        Some(super::super::projection::UiAppearanceChangeOutcome::InputEvidenceChanged) => {
-            UiAppearanceInspectionInvalidationCause::InputEvidenceChanged
-        }
-        Some(super::super::projection::UiAppearanceChangeOutcome::SemanticProjectionChanged) => {
-            UiAppearanceInspectionInvalidationCause::SemanticProjectionChanged
-        }
-        Some(super::super::projection::UiAppearanceChangeOutcome::ResolvedAspectValueChanged) => {
-            UiAppearanceInspectionInvalidationCause::ResolvedAspectValueChanged
-        }
-        Some(
-            super::super::projection::UiAppearanceChangeOutcome::MountedMechanicalOutputChanged,
-        ) => UiAppearanceInspectionInvalidationCause::MountedMechanicalOutputChanged,
-        Some(super::super::projection::UiAppearanceChangeOutcome::EqualOutputSuppressed) => {
-            UiAppearanceInspectionInvalidationCause::EqualOutputSuppressed
-        }
-        Some(super::super::projection::UiAppearanceChangeOutcome::DeniedBeforeEffects) => {
-            UiAppearanceInspectionInvalidationCause::DeniedBeforeEffects
-        }
-        None => UiAppearanceInspectionInvalidationCause::NotAttributed,
-    }
-}
-
-fn mounted_mechanic(
-    receipt: super::super::projection::UiAppearanceChangeReceipt,
-) -> UiAppearanceInspectionMountedMechanic {
-    if !receipt.mounting_result_available() {
-        UiAppearanceInspectionMountedMechanic::NotAttempted
-    } else if receipt.mounted_mechanical_output_changed() {
-        UiAppearanceInspectionMountedMechanic::Changed
-    } else {
-        UiAppearanceInspectionMountedMechanic::Unchanged
-    }
-}
-
-fn physical_suppression(
-    receipt: super::super::projection::UiAppearanceChangeReceipt,
-) -> UiAppearanceInspectionPhysicalSuppression {
-    if !receipt.mounting_result_available() {
-        UiAppearanceInspectionPhysicalSuppression::NotAttempted
-    } else if receipt.equal_output_suppressed() {
-        UiAppearanceInspectionPhysicalSuppression::Suppressed
-    } else {
-        UiAppearanceInspectionPhysicalSuppression::NotSuppressed
-    }
-}
 impl Default for UiAppearanceInspectionProducer {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn support(
-    support: super::super::projection::UiAppearanceSupportPosture,
-) -> UiAppearanceInspectionSupport {
-    match support {
-        super::super::projection::UiAppearanceSupportPosture::Supported => {
-            UiAppearanceInspectionSupport::Supported
-        }
-        super::super::projection::UiAppearanceSupportPosture::Unsupported => {
-            UiAppearanceInspectionSupport::Unsupported
-        }
-        super::super::projection::UiAppearanceSupportPosture::Inapplicable => {
-            UiAppearanceInspectionSupport::Inapplicable
-        }
-    }
-}
-
-fn world_for_projection(
-    projection: &super::super::projection::UiAppearanceProjection,
-) -> UiAppearanceInspectionWorld {
-    let basis = projection.state().basis();
-    UiAppearanceInspectionWorld::new(
-        basis.session().as_u64(),
-        basis
-            .generation()
-            .prepared_generation()
-            .semantic_package_identity()
-            .narrowing_fingerprint(),
-        basis.surface().diagnostic_value(),
-    )
 }

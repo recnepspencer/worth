@@ -41,10 +41,8 @@ fn rejected_appearance_attempt_stays_inspectable_without_settlement() {
         .is_some());
     let explanation =
         super::query_support::why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius);
-    assert_eq!(
-        explanation.invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::MountedMechanicalOutputChanged
-    );
+    assert!(explanation.mounted_mechanical_output_changed());
+    assert!(!explanation.denied_before_effects());
     assert_eq!(
         explanation.value(),
         worth_ui_inspection::UiAppearanceInspectionValue::Resolved(radius_value_from([2; 4]))

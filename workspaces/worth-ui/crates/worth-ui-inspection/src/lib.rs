@@ -3,6 +3,8 @@
 
 mod allocation;
 mod appearance;
+#[path = "appearance/change_distinctions.rs"]
+mod appearance_change_distinctions;
 mod evidence_contract;
 mod facade;
 mod intent;
@@ -24,12 +26,12 @@ pub use target::{
 pub use appearance::{
     UiAppearanceInspectionCost, UiAppearanceInspectionDecisionCell,
     UiAppearanceInspectionDenialPosture, UiAppearanceInspectionEvidence,
-    UiAppearanceInspectionExplanation, UiAppearanceInspectionInvalidationCause,
-    UiAppearanceInspectionMountedMechanic, UiAppearanceInspectionOutcome,
-    UiAppearanceInspectionPhysicalSuppression, UiAppearanceInspectionQuery,
-    UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport, UiAppearanceInspectionValue,
-    UiAppearanceInspectionWorld,
+    UiAppearanceInspectionExplanation, UiAppearanceInspectionMountedMechanic,
+    UiAppearanceInspectionOutcome, UiAppearanceInspectionPhysicalSuppression,
+    UiAppearanceInspectionQuery, UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport,
+    UiAppearanceInspectionValue, UiAppearanceInspectionWorld,
 };
+pub use appearance_change_distinctions::UiAppearanceInspectionChangeDistinctions;
 
 // Evidence contract lane
 pub use allocation::{

@@ -67,10 +67,12 @@ fn real_validation_transition_reports_provenance_changed_byte_equivalent_suppres
         explanation.state_classes(),
         &[worth_ui_dsl::UiAppearanceAxisClass::ValidationInvalid]
     );
-    assert_eq!(
-        explanation.invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::EqualOutputSuppressed
-    );
+    assert!(explanation.input_evidence_changed());
+    assert!(explanation.semantic_projection_changed());
+    assert!(!explanation.resolved_aspect_value_changed());
+    assert!(!explanation.mounted_mechanical_output_changed());
+    assert!(explanation.equal_output_suppressed());
+    assert!(!explanation.denied_before_effects());
     shutdown(fixture.session);
 }
 
@@ -101,10 +103,12 @@ fn real_validation_transition_reports_equal_output_suppressed() {
     publish_frame(&mut fixture.session, 2);
 
     let explanation = why(&fixture);
-    assert_eq!(
-        explanation.invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::EqualOutputSuppressed
-    );
+    assert!(explanation.input_evidence_changed());
+    assert!(explanation.semantic_projection_changed());
+    assert!(!explanation.resolved_aspect_value_changed());
+    assert!(!explanation.mounted_mechanical_output_changed());
+    assert!(explanation.equal_output_suppressed());
+    assert!(!explanation.denied_before_effects());
     assert_eq!(
         explanation.physical_suppression(),
         worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::Suppressed
@@ -121,10 +125,13 @@ fn real_theme_transition_reports_resolved_aspect_value_changed() {
     update_radius_at_revision(&mut fixture.session, [i32::MAX - 2; 4], 1);
     publish_frame(&mut fixture.session, 2);
 
-    assert_eq!(
-        why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius).invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::ResolvedAspectValueChanged
-    );
+    let explanation = why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius);
+    assert!(!explanation.input_evidence_changed());
+    assert!(explanation.semantic_projection_changed());
+    assert!(explanation.resolved_aspect_value_changed());
+    assert!(!explanation.mounted_mechanical_output_changed());
+    assert!(!explanation.equal_output_suppressed());
+    assert!(!explanation.denied_before_effects());
     assert_eq!(
         why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius).value(),
         worth_ui_inspection::UiAppearanceInspectionValue::Resolved(radius_value_from([
@@ -151,10 +158,12 @@ fn real_theme_transition_reports_fully_lowered_radius_mechanical_delta() {
     publish_frame(&mut fixture.session, 2);
 
     let explanation = why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Radius);
-    assert_eq!(
-        explanation.invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::MountedMechanicalOutputChanged
-    );
+    assert!(!explanation.input_evidence_changed());
+    assert!(explanation.semantic_projection_changed());
+    assert!(explanation.resolved_aspect_value_changed());
+    assert!(explanation.mounted_mechanical_output_changed());
+    assert!(!explanation.equal_output_suppressed());
+    assert!(!explanation.denied_before_effects());
     assert_eq!(
         explanation.mounted_mechanic(),
         worth_ui_inspection::UiAppearanceInspectionMountedMechanic::Changed
