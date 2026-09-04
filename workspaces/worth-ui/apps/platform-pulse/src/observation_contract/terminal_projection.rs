@@ -328,6 +328,9 @@ fn project_rebind_preparation_denial(
         UiRebindPreparationDenial::AppearanceThemeSuccession(_) => {
             Projected::CandidateCutoverPreparation
         }
+        UiRebindPreparationDenial::AppearanceInspectionSuccession(_) => {
+            Projected::CandidateCutoverPreparation
+        }
     }
 }
 
@@ -351,13 +354,28 @@ fn watcher_backend(
 mod tests {
     use super::project_rebind_preparation_denial;
     use crate::observation_contract::PlatformPulseNativeRebindPreparationDenial;
-    use worth_ui::facade::rebind::UiRebindPreparationDenial;
+    use worth_ui::facade::{
+        appearance::UiAppearanceInspectionGenerationSuccessionDenial,
+        rebind::UiRebindPreparationDenial,
+    };
 
     #[test]
     fn terminal_projection_preserves_the_exact_preparation_denial() {
         assert_eq!(
             project_rebind_preparation_denial(&UiRebindPreparationDenial::CandidateAllocation),
             PlatformPulseNativeRebindPreparationDenial::CandidateAllocation
+        );
+    }
+
+    #[test]
+    fn terminal_projection_groups_appearance_inspection_succession_under_candidate_cutover() {
+        assert_eq!(
+            project_rebind_preparation_denial(
+                &UiRebindPreparationDenial::AppearanceInspectionSuccession(
+                    UiAppearanceInspectionGenerationSuccessionDenial::StaleInspectionGeneration,
+                ),
+            ),
+            PlatformPulseNativeRebindPreparationDenial::CandidateCutoverPreparation
         );
     }
 }
