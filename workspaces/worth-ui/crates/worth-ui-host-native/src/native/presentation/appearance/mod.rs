@@ -14,12 +14,19 @@ mod backdrop_pipeline;
 mod command;
 mod damage;
 mod damage_candidate;
+#[cfg(feature = "certification-support")]
+mod certification_profile;
 mod geometry;
 mod outline_pipeline;
 mod retained;
 mod surface_pipeline;
 
 pub(crate) mod cursor;
+
+#[cfg(feature = "certification-support")]
+pub(crate) use certification_profile::{
+    staged_appearance_profile_contract, STAGED_APPEARANCE_MECHANICS,
+};
 
 #[cfg(test)]
 mod backdrop_tests;

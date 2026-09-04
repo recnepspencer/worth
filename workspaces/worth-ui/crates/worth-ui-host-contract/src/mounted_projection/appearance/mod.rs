@@ -49,6 +49,7 @@ pub use logical_length::{
 };
 pub use native_profile::{
     UiHostAppearanceMechanicFamily, UiHostAppearanceProfileContract, UiHostAppearanceProfileDenial,
+    UiHostAppearanceProfilePosture,
 };
 pub use node_attribution::UiMountedNodeAppearanceAttribution;
 pub use opacity::UiMountedAppearanceOpacity;

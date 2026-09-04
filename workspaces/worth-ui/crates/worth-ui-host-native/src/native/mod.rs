@@ -91,6 +91,10 @@ pub use lifecycle_protocol::{
     UiNativeLifecycleRequiredAction, UiNativeLifecycleTransition,
 };
 pub(crate) use mechanics_adapter::WorthUiNativeMechanicsAdapter;
+#[cfg(feature = "certification-support")]
+pub use mechanics_adapter::staged_appearance_report as staged_appearance_capability_report;
+#[cfg(feature = "certification-support")]
+pub(crate) use presentation::appearance::STAGED_APPEARANCE_MECHANICS;
 pub(crate) use observation::UiNativePresentationInput;
 pub use observation::{
     UiNativeGlyphObservation, UiNativeGraphicsObservation, UiNativePresentationObservation,

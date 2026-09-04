@@ -18,6 +18,8 @@ pub use native::{
     UiNativePresentationFault, UiNativePresentationFaultDisposition,
     UiNativePresentationRecoveryClass,
 };
+#[cfg(feature = "certification-support")]
+pub use native::staged_appearance_capability_report;
 pub use native::{
     UiNativeApplicationReadinessGrant, UiNativeApplicationReadinessOwnerCount,
     UiNativeApplicationReadinessOwnerCountDenial, UiNativeApplicationReadinessPort,

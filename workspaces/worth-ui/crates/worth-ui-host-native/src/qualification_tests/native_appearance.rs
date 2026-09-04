@@ -1,7 +1,15 @@
 use super::super::native_profile::{
-    UiNativePlatformProfileIdentity, STAGED_APPEARANCE_PROFILE,
-    WORTH_UI_NATIVE_NEXT_PROFILE_MANIFEST, WORTH_UI_NATIVE_PROFILE_MANIFEST,
+    UiNativePlatformProfileIdentity, STAGED_APPEARANCE_PROFILE, WORTH_UI_NATIVE_NEXT_PROFILE_MANIFEST,
+    WORTH_UI_NATIVE_PROFILE_MANIFEST,
 };
+
+use worth_ui_host_contract::{UiMountedTextSchemaVersion, WorthUiHostMechanicsAdapter};
+
+#[cfg(feature = "certification-support")]
+use crate::native::STAGED_APPEARANCE_MECHANICS;
+
+#[cfg(feature = "certification-support")]
+use worth_ui_host_contract::{UiHostAppearanceProfilePosture, UiHostPrimaryPointerKind};
 
 #[test]
 fn staged_v2_profile_is_exactly_non_current_and_carries_the_native_long_pole() {
@@ -90,6 +98,56 @@ fn staged_profile_capacity_and_scale_constants_match_the_checked_manifest() {
         STAGED_APPEARANCE_PROFILE.anti_alias_fringe_physical_pixels,
         1
     );
+}
+
+#[cfg(feature = "certification-support")]
+#[test]
+fn certification_report_uses_the_explicit_host_owned_staged_mechanic_qualification() {
+    let report = crate::staged_appearance_capability_report();
+    let profile = report
+        .appearance_profile()
+        .expect("certification report must carry the staged appearance profile");
+
+    assert_eq!(
+        profile.posture(),
+        UiHostAppearanceProfilePosture::StagedNonCurrent
+    );
+    assert_eq!(profile.identity(), STAGED_APPEARANCE_PROFILE.identity);
+    assert_eq!(profile.version(), STAGED_APPEARANCE_PROFILE.version);
+    assert_eq!(
+        profile.mechanics(),
+        &STAGED_APPEARANCE_MECHANICS,
+        "native qualification must enumerate each supported mechanic explicitly"
+    );
+    assert_eq!(
+        profile.primary_pointer(),
+        Some(UiHostPrimaryPointerKind::Mouse)
+    );
+}
+
+#[test]
+fn live_native_preparation_remains_v1_without_staged_appearance_or_cutover_protocol() {
+    let (mechanics, _event_loop) = crate::WorthUiPreparedNativeHost::prepare_qualified().into_parts(
+        crate::UiNativeWindowConfiguration::qualified("host-admission", [800, 600]),
+    );
+    let report = WorthUiHostMechanicsAdapter::mechanical_capability_report(&mechanics);
+    let protocol = WorthUiHostMechanicsAdapter::mechanical_protocol_contract(&mechanics);
+
+    assert!(report.appearance_profile().is_none());
+    assert_eq!(
+        WORTH_UI_NATIVE_PROFILE_MANIFEST
+            .parse::<toml::Value>()
+            .expect("live native profile manifest parses")["identity"]
+            .as_str(),
+        Some(UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1.as_str())
+    );
+    assert_eq!(protocol.protocol().revision(), 6);
+    assert_eq!(protocol.mounted_frame().revision(), 5);
+    assert_eq!(protocol.mounted_presentation().revision(), 5);
+    assert_eq!(protocol.observation().revision(), 7);
+    assert_eq!(protocol.measurement().revision(), 5);
+    assert_eq!(protocol.solicited_effect().revision(), 1);
+    assert_eq!(UiMountedTextSchemaVersion::current().revision(), 3);
 }
 
 fn parse(manifest: &str) -> toml::Value {

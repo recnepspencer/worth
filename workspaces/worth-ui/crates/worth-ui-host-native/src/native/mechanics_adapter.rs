@@ -11,6 +11,8 @@ use worth_ui_host_contract::{
 use super::UiNativeHostState;
 
 mod capability;
+#[cfg(feature = "certification-support")]
+pub use capability::staged_appearance_report;
 mod construction;
 mod measurement;
 mod presentation;

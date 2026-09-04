@@ -58,6 +58,7 @@ pub use mounted_projection::{
     UiAppearanceOutlineGeometryDenial, UiAppearanceVisualBounds,
     UiHeadlessMountedParticipationRecord, UiHeadlessMountedResourceHandle,
     UiHostAppearanceMechanicFamily, UiHostAppearanceProfileContract, UiHostAppearanceProfileDenial,
+    UiHostAppearanceProfilePosture,
     UiHostPrimaryPointerKind, UiMountedAccessibilityProjection, UiMountedAllocationBasis,
     UiMountedAllocationProjection, UiMountedAppearanceColor, UiMountedAppearanceFrame,
     UiMountedAppearanceFrameDenial, UiMountedAppearanceMechanic, UiMountedAppearanceMechanicChange,

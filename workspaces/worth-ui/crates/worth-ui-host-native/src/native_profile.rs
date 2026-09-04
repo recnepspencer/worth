@@ -32,6 +32,7 @@ pub(crate) const QUALIFIED_WHEEL_LINE_LOGICAL_SUBPIXELS: i64 = 40_000;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiNativeStagedAppearanceProfile {
     pub(crate) identity: &'static str,
+    pub(crate) version: u16,
     pub(crate) scales_milli: &'static [u16; 4],
     pub(crate) anti_alias_fringe_physical_pixels: u8,
     pub(crate) retained_commands: u16,
@@ -42,11 +43,13 @@ pub(crate) struct UiNativeStagedAppearanceProfile {
     pub(crate) pointer_affordance_commands: u16,
     pub(crate) text_foreground_commands: u16,
     pub(crate) damage_regions: u16,
+    pub(crate) primary_pointer: Option<worth_ui_host_contract::UiHostPrimaryPointerKind>,
 }
 
 pub(crate) const STAGED_APPEARANCE_PROFILE: UiNativeStagedAppearanceProfile =
     UiNativeStagedAppearanceProfile {
         identity: "worth-ui-windows-dx12-v2",
+        version: 2,
         scales_milli: &[1_000, 1_250, 1_500, 2_000],
         anti_alias_fringe_physical_pixels: 1,
         retained_commands: 4_096,
@@ -57,6 +60,7 @@ pub(crate) const STAGED_APPEARANCE_PROFILE: UiNativeStagedAppearanceProfile =
         pointer_affordance_commands: 64,
         text_foreground_commands: 2_048,
         damage_regions: 4_096,
+        primary_pointer: Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
     };
 
 impl UiNativePlatformProfileIdentity {

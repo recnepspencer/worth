@@ -1,3 +1,5 @@
+use crate::runtime::WorthUiHostCapabilityDigest;
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum UiHostAppearanceMechanicFamily {
     SurfaceFill,
@@ -29,8 +31,14 @@ impl UiHostAppearanceMechanicFamily {
     ];
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiHostAppearanceProfilePosture {
+    StagedNonCurrent,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiHostAppearanceProfileContract {
+    posture: UiHostAppearanceProfilePosture,
     identity: Box<str>,
     version: u16,
     mechanics: Box<[UiHostAppearanceMechanicFamily]>,
@@ -66,11 +74,16 @@ impl UiHostAppearanceProfileContract {
             return Err(UiHostAppearanceProfileDenial::MissingRequiredMechanic);
         }
         Ok(Self {
+            posture: UiHostAppearanceProfilePosture::StagedNonCurrent,
             identity,
             version,
             mechanics: mechanics.into_boxed_slice(),
             primary_pointer,
         })
+    }
+
+    pub const fn posture(&self) -> UiHostAppearanceProfilePosture {
+        self.posture
     }
 
     pub fn identity(&self) -> &str {
@@ -85,18 +98,67 @@ impl UiHostAppearanceProfileContract {
     pub const fn primary_pointer(&self) -> Option<super::UiHostPrimaryPointerKind> {
         self.primary_pointer
     }
+
+    pub(crate) fn append_canonical_encoding(&self, digest: &mut WorthUiHostCapabilityDigest) {
+        digest.update_byte(match self.posture {
+            UiHostAppearanceProfilePosture::StagedNonCurrent => 1,
+        });
+        digest.update_text(self.identity.as_bytes());
+        digest.update_u16(self.version);
+        digest.update_u64(self.mechanics.len() as u64);
+        for mechanic in &self.mechanics {
+            digest.update_byte(mechanic.canonical_tag());
+        }
+        digest.update_byte(match self.primary_pointer {
+            None => 0,
+            Some(super::UiHostPrimaryPointerKind::Mouse) => 1,
+            Some(super::UiHostPrimaryPointerKind::Pen) => 2,
+        });
+    }
+}
+
+impl UiHostAppearanceMechanicFamily {
+    const fn canonical_tag(self) -> u8 {
+        match self {
+            Self::SurfaceFill => 1,
+            Self::SurfaceBorder => 2,
+            Self::CornerRadii => 3,
+            Self::Outline => 4,
+            Self::TextRangeForeground => 5,
+            Self::PortalSurface => 6,
+            Self::Backdrop => 7,
+            Self::OverlayOrder => 8,
+            Self::PointerAffordance => 9,
+            Self::Damage => 10,
+            Self::Clip => 11,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    const EXPLICIT_MECHANICS: [UiHostAppearanceMechanicFamily; 11] = [
+        UiHostAppearanceMechanicFamily::SurfaceFill,
+        UiHostAppearanceMechanicFamily::SurfaceBorder,
+        UiHostAppearanceMechanicFamily::CornerRadii,
+        UiHostAppearanceMechanicFamily::Outline,
+        UiHostAppearanceMechanicFamily::TextRangeForeground,
+        UiHostAppearanceMechanicFamily::PortalSurface,
+        UiHostAppearanceMechanicFamily::Backdrop,
+        UiHostAppearanceMechanicFamily::OverlayOrder,
+        UiHostAppearanceMechanicFamily::PointerAffordance,
+        UiHostAppearanceMechanicFamily::Damage,
+        UiHostAppearanceMechanicFamily::Clip,
+    ];
+
     #[test]
     fn profile_requires_the_exhaustive_typed_mechanic_family() {
         assert!(UiHostAppearanceProfileContract::admit(
             "worth-ui-windows-dx12-v2",
             2,
-            UiHostAppearanceMechanicFamily::ALL,
+            EXPLICIT_MECHANICS,
             Some(super::super::UiHostPrimaryPointerKind::Mouse),
         )
         .is_ok());
