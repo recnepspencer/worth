@@ -78,14 +78,13 @@ fn observed_slot_consumers(
     let authored_identity = declarations
         .theme_token_declaration_identity(capability_identity)
         .unwrap_or(capability_identity);
-    let selection = crate::runtime::appearance::UiAppearanceConsumerSelection::try_for_slot(
+    let batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_slot(
         index,
         capability_identity,
         authored_identity,
     )
     .expect("declared theme slot should resolve");
-    assert!(selection.is_reconstructible());
-    selection.consumers().iter().copied().collect()
+    batch.consumers().iter().copied().collect()
 }
 
 fn authoritative_role_slot_consumers(
