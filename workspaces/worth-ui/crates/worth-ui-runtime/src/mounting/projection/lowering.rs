@@ -3,7 +3,7 @@ use super::geometry::lower_allocation;
 use super::mechanical_role::mechanical_role;
 use super::participation::lower_participation;
 use super::prepared_projection::{UiPreparedMountedProjection, UiPreparedMountedProjectionInput};
-use super::UiMountedProjectionDenial;
+use super::{UiMountedAppearanceProjectionSelection, UiMountedProjectionDenial};
 
 mod delta;
 #[path = "lowering/node_draft.rs"]
@@ -76,6 +76,7 @@ struct UiMountedFullProjectionInput<'basis, 'input, 'graph> {
     state: &'basis super::super::UiMountedIdentityState,
     lowering: &'basis UiMountedNodeLoweringContext<'input, 'graph>,
     requested_surfaces: &'basis [worth_ui_host_contract::UiSemanticSurfaceIdentity],
+    appearance_selection: &'basis UiMountedAppearanceProjectionSelection,
     has_published_frame: bool,
     changes: &'basis super::super::UiMountedProjectionChangeSnapshot,
 }
@@ -86,12 +87,19 @@ struct UiMountedProjectionBuild {
     replaced_order_rows: usize,
     presentation_changed_instances:
         std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
+    retired_appearance_instances: Vec<worth_ui_host_contract::UiMountedInstanceIdentity>,
 }
 
 pub(crate) fn prepare_projection(
     state: &super::super::UiMountedIdentityState,
     input: UiMountedProjectionInput<'_, '_>,
 ) -> Result<UiPreparedMountedProjection, UiMountedProjectionDenial> {
+    let mut appearance_selection = UiMountedAppearanceProjectionSelection::derive(
+        state,
+        input.requested_surfaces,
+        input.appearance_invalidation.as_ref(),
+    )
+    .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
     let lowering = UiMountedNodeLoweringContext {
         graph: input.graph,
         plan: input.plan,
@@ -128,6 +136,7 @@ pub(crate) fn prepare_projection(
             requested_surfaces: input.requested_surfaces,
             changes: &projection_changes,
             allocation_delta,
+            appearance_selection: &appearance_selection,
         })?,
         _ => None,
     };
@@ -137,10 +146,12 @@ pub(crate) fn prepare_projection(
             state,
             lowering: &lowering,
             requested_surfaces: input.requested_surfaces,
+            appearance_selection: &appearance_selection,
             has_published_frame: state.has_published_frame(),
             changes: &projection_changes,
         })?,
     };
+    appearance_selection.set_retired_instances(build.retired_appearance_instances.clone());
     build
         .semantic
         .apply_projection_inputs(input.semantic_content);
@@ -166,6 +177,8 @@ pub(crate) fn prepare_projection(
             portal_overlays: input.portal_overlays,
             projection_changes,
             presentation_changed_instances: build.presentation_changed_instances,
+            appearance_selection: std::rc::Rc::new(appearance_selection),
+            theme_revision: input.theme_values.active_theme_revision(),
             portal_overlays_changed,
             counters,
             capability_generation: input.capability_generation,
@@ -229,10 +242,12 @@ fn build_full_projection(
         .into_iter()
         .flat_map(UiMountedSemanticProjection::mounted_instances)
         .collect::<Vec<_>>();
-    let retired = predecessor_instances
+    let retired_instances = predecessor_instances
         .iter()
         .filter(|instance| !current_instances.contains(instance))
-        .count();
+        .copied()
+        .collect::<Vec<_>>();
+    let retired = retired_instances.len();
     let mut presentation_changed_instances = current_instances.iter().copied().collect::<Vec<_>>();
     presentation_changed_instances.extend(predecessor_instances.iter().copied());
     presentation_changed_instances.sort_unstable();
@@ -268,6 +283,9 @@ fn build_full_projection(
                 .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?,
             index_entries: node_count
                 .checked_mul(2)
+                .and_then(|count| {
+                    count.checked_add(input.appearance_selection.index_entries_touched())
+                })
                 .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?,
             projected_instances: node_count,
             surface_instance_pairs: node_count,
@@ -279,6 +297,7 @@ fn build_full_projection(
         },
         replaced_order_rows: node_count,
         presentation_changed_instances: presentation_changed_instances.into(),
+        retired_appearance_instances: retired_instances,
     })
 }
 

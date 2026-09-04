@@ -80,11 +80,16 @@ pub(crate) use presentation::{
 };
 #[allow(unused_imports)]
 pub(crate) use projection::compile_presentation_sources;
+pub(crate) use projection::UiMountedAppearanceProjectionSelection;
 pub(crate) use projection::UiMountedFocusScope;
 pub(crate) use projection::{
     prepare_projection, UiIntentPostureCommit, UiIntentPostureObservation, UiIntentPostureTable,
     UiMountedPresentationDeltaSource, UiMountedPreviewProjectionInput, UiMountedProjectionInput,
     UiPreparedMountedProjection,
+};
+pub(crate) use projection::{
+    UiMountedAppearanceFrameState, UiMountedAppearanceStateMutationDenial,
+    UiMountedProjectionFrameOwner,
 };
 pub(crate) use projection::{
     UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,

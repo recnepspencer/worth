@@ -31,7 +31,7 @@ impl UiPreparedMountedFrame {
             .map(|requirement| {
                 Ok(UiMountedSurfaceReceipt {
                     requirement: *requirement,
-                    projection_frame: std::rc::Rc::clone(&candidate.frame),
+                    projection_frame: candidate.projection_rc(),
                     projection: std::cell::OnceCell::new(),
                 })
             })
@@ -97,10 +97,64 @@ impl UiPreparedMountedFrame {
         self.candidate.frame().semantic_projection()
     }
 
-    pub(crate) fn appearance_node_inputs(
+    pub(crate) fn appearance_attempt_inputs(
+        &mut self,
+        batch: &crate::runtime::appearance::UiAppearanceInvalidationBatch,
+    ) -> Result<
+        Vec<super::super::projection::UiMountedAppearanceNodeInputContext>,
+        super::super::projection::UiMountedProjectionDenial,
+    > {
+        self.candidate.appearance_attempt_inputs(batch)
+    }
+
+    pub(crate) fn begin_appearance_lifecycle(
+        &mut self,
+        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) {
+        self.candidate
+            .begin_appearance_lifecycle(session, generation);
+    }
+
+    pub(crate) fn validate_appearance_owner(
+        &self,
+        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Result<(), super::super::projection::UiMountedProjectionDenial> {
+        (generation.session_identity() == session
+            && self.generation == *generation.prepared_generation())
+        .then_some(())
+        .ok_or(
+            super::super::projection::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch,
+        )
+    }
+
+    pub(crate) fn validate_appearance_selection(
+        &self,
+        batch: &crate::runtime::appearance::UiAppearanceInvalidationBatch,
+    ) -> Result<(), super::super::projection::UiMountedProjectionDenial> {
+        self.candidate.validate_appearance_selection(batch)
+    }
+
+    pub(crate) fn appearance_selection_cost_report(
+        &self,
+    ) -> super::super::projection::UiMountedAppearanceSelectionCostReport {
+        self.candidate.appearance_selection_cost_report()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn projection_rc_for_test(
+        &self,
+    ) -> std::rc::Rc<super::super::UiMountedProjectionFrame> {
+        self.candidate.projection_rc()
+    }
+
+    pub(crate) fn appearance_node_inputs_for_reconstruction(
         &self,
     ) -> Vec<super::super::projection::UiMountedAppearanceNodeInputContext> {
-        self.candidate.frame().appearance_node_inputs()
+        self.candidate
+            .frame()
+            .appearance_node_inputs_for_reconstruction()
     }
 
     pub(crate) fn set_appearance_invalidation_batch(
@@ -116,18 +170,10 @@ impl UiPreparedMountedFrame {
         self.candidate.appearance_invalidation_batch()
     }
 
-    pub(crate) fn prune_appearance_state(
-        &mut self,
-        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
-        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    ) {
-        self.candidate.prune_appearance_state(session, generation);
-    }
-
     pub(crate) fn reserve_appearance_state(
         &mut self,
         context: &crate::runtime::appearance::UiAppearanceAttemptContext,
-    ) -> Result<(), super::super::projection::UiAppearanceStateCapacityExceeded> {
+    ) -> Result<(), super::super::projection::UiMountedAppearanceStateMutationDenial> {
         self.candidate.reserve_appearance_state(context)
     }
 
@@ -140,7 +186,7 @@ impl UiPreparedMountedFrame {
     pub(crate) fn stage_appearance_projection(
         &mut self,
         attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
-    ) -> Result<(), super::super::projection::UiAppearanceStateCapacityExceeded> {
+    ) -> Result<(), super::super::projection::UiMountedAppearanceStateMutationDenial> {
         self.candidate.stage_appearance_projection(attempt)
     }
 

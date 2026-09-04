@@ -54,7 +54,6 @@ pub(crate) struct UiApplicationPresentationProjection {
     content: crate::mounting::UiMountedSemanticContentInput,
     revisions: Box<[(Box<str>, u64)]>,
     theme_values: crate::mounting::UiMountedThemeValueSource,
-    theme_revision: u64,
 }
 
 impl UiApplicationPresentationState {
@@ -252,7 +251,6 @@ impl UiApplicationPresentationState {
             content,
             revisions: revisions.into_boxed_slice(),
             theme_values: self.theme_values_source(),
-            theme_revision: self.theme_revision,
         })
     }
 
@@ -260,6 +258,7 @@ impl UiApplicationPresentationState {
         crate::mounting::UiMountedThemeValueSource::from_current_with_changes(
             Arc::clone(&self.token_values),
             self.pending_theme_tokens.clone(),
+            self.theme_revision,
         )
     }
 
@@ -321,6 +320,11 @@ impl UiApplicationPresentationState {
             .is_some_and(|pending| pending.revision() == batch.revision())
         {
             self.pending_appearance_invalidation = None;
+        }
+    }
+
+    pub(crate) fn settle_published_theme_values(&mut self, expected_revision: u64) {
+        if expected_revision == self.theme_revision {
             self.pending_theme_tokens.clear();
         }
     }

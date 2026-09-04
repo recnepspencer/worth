@@ -8,6 +8,7 @@ use super::UiMountedProjectionDenial;
 mod appearance_frame;
 mod appearance_state;
 mod appearance_state_membership;
+mod appearance_state_membership_work;
 pub(in crate::mounting) mod diagnostic_source;
 mod drawable_order;
 mod lane_recording;
@@ -22,6 +23,7 @@ mod portal_overlay_view;
 mod presentation_effects;
 pub(crate) mod presentation_sources;
 mod presentation_view;
+mod projection_owner;
 mod rebind;
 mod semantic_mechanics;
 mod semantic_projection;
@@ -42,7 +44,10 @@ use view::{UiMountedOrdinaryPaintSelector, UiMountedPlanIndexPaintSelector};
 
 pub(crate) use appearance_state::{
     UiAppearanceStateCapacityExceeded, UiMountedAppearanceFrameState,
+    UiMountedAppearanceStateMutationDenial,
 };
+pub(crate) use appearance_state_membership_work::UiMountedAppearanceMembershipWork;
+pub(crate) use projection_owner::UiMountedProjectionFrameOwner;
 
 #[derive(Clone)]
 pub(crate) struct UiMountedAppearanceNodeInputContext {
@@ -132,7 +137,6 @@ pub struct UiMountedProjectionFrame {
     font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     text_profile_generation: worth_ui_host_contract::UiTextProfileGeneration,
     materialized_projection_rows: std::rc::Rc<std::cell::Cell<u64>>,
-    appearance_state: UiMountedAppearanceFrameState,
 }
 
 pub(super) struct UiMountedProjectionFrameInput {
@@ -188,7 +192,6 @@ impl UiMountedProjectionFrame {
             font_collection: input.font_collection,
             text_profile_generation: super::semantic_text::current_text_profile_generation(),
             materialized_projection_rows: std::rc::Rc::new(std::cell::Cell::new(0)),
-            appearance_state: UiMountedAppearanceFrameState::default(),
         }
     }
 
@@ -360,29 +363,5 @@ impl UiMountedProjectionFrame {
 
     pub(in crate::mounting) fn semantic_projection(&self) -> &UiMountedSemanticProjection {
         &self.semantic
-    }
-
-    pub(crate) fn appearance_node_inputs(&self) -> Vec<UiMountedAppearanceNodeInputContext> {
-        self.semantic
-            .nodes_in_mounted_order()
-            .map(|node| {
-                let receipt = node.receipt();
-                let node_receipt = self
-                    .receipt_basis
-                    .receipt_for(receipt.mounted_instance())
-                    .expect("mounted projection node belongs to its receipt basis");
-                UiMountedAppearanceNodeInputContext {
-                    frame: self.frame,
-                    semantic_surface: receipt.semantic_surface(),
-                    mounted_instance: receipt.mounted_instance(),
-                    graph_node: receipt.graph_node(),
-                    incarnation: receipt.incarnation(),
-                    node_receipt,
-                    issuer: self.receipt_basis.issuer(),
-                    plan_digest: receipt.plan_digest(),
-                    allocation: receipt.allocation(),
-                }
-            })
-            .collect()
     }
 }

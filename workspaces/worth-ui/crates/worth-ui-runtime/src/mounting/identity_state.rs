@@ -71,7 +71,7 @@ pub(crate) struct UiMountedIdentityState {
         crate::runtime::persistent_index::UiPersistentOrdSet<UiMountedInstanceIdentity>,
     current_frame: Option<UiMountedFrameIdentity>,
     current_receipt_basis: Option<super::UiMountedNodeReceiptBasis>,
-    current_projection: Option<std::rc::Rc<super::UiMountedProjectionFrame>>,
+    current_projection: Option<std::rc::Rc<super::UiMountedProjectionFrameOwner>>,
     current_manifest: Option<worth_ui_host_contract::UiMountedFrameManifest>,
     current_core: Option<worth_ui_host_contract::UiMountedFrameCanonicalCore>,
     current_publication: Option<super::UiMountedFramePublicationReceipt>,
@@ -194,13 +194,19 @@ impl UiMountedIdentityState {
     }
 
     pub(crate) fn current_projection(&self) -> Option<&super::UiMountedProjectionFrame> {
+        self.current_projection
+            .as_ref()
+            .map(|owner| owner.projection())
+    }
+
+    pub(crate) fn current_projection_owner(&self) -> Option<&super::UiMountedProjectionFrameOwner> {
         self.current_projection.as_deref()
     }
 
     pub(crate) fn focus_participation_snapshot(
         &self,
     ) -> Option<super::UiMountedFocusParticipationSnapshot> {
-        let projection = self.current_projection.as_ref()?;
+        let projection = self.current_projection.as_ref()?.projection();
         let receipts = self.current_receipt_basis.as_ref()?;
         Some(super::UiMountedFocusParticipationSnapshot::from_projection(
             projection, receipts,

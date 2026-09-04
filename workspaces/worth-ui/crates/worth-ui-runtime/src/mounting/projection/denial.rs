@@ -73,6 +73,9 @@ pub enum UiMountedProjectionDenial {
     VisualOverlaySurfaceMismatch,
     DuplicateLaneContribution,
     CostCounterOverflow,
+    AppearanceSelectionBatchMismatch,
+    AppearanceSelectionFrameMismatch,
+    ProjectionOwnerUnavailable,
 }
 
 impl From<super::super::UiMountedIdentityDenial> for UiMountedProjectionDenial {

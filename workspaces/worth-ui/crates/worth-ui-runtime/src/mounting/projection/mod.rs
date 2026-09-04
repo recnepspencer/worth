@@ -1,4 +1,5 @@
 mod appearance;
+mod appearance_selection;
 mod cost_accounting;
 mod denial;
 mod focus_scope;
@@ -18,15 +19,21 @@ pub(crate) use appearance::{
     UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
     UiMountedAppearanceNodeInput,
 };
+pub(crate) use appearance_selection::{
+    UiMountedAppearanceProjectionSelection, UiMountedAppearanceSelectionCostReport,
+};
 pub use denial::UiMountedProjectionDenial;
 pub(crate) use focus_scope::UiMountedFocusScope;
 pub(in crate::mounting) use frame_storage::diagnostic_source::UiMountedDiagnosticSource;
 pub(crate) use frame_storage::presentation_sources::compile as compile_presentation_sources;
-pub(crate) use frame_storage::UiAppearanceStateCapacityExceeded;
 pub(crate) use frame_storage::UiMountedAppearanceNodeInputContext;
 pub use frame_storage::UiMountedProjectionFrame;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticMechanicSource;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticProjection;
+pub(crate) use frame_storage::{
+    UiAppearanceStateCapacityExceeded, UiMountedAppearanceFrameState,
+    UiMountedAppearanceStateMutationDenial, UiMountedProjectionFrameOwner,
+};
 pub(in crate::mounting) use hit_test::reattribute_hit_test;
 pub use node_receipt::UiMountedNodeReceipt;
 pub use prepared_projection::UiProjectedMountedFrameCandidate;

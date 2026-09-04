@@ -97,16 +97,16 @@ impl UiMountedIdentityState {
         let (candidate, manifest, core, reuse_contract) = frame.into_publication_parts();
         self.current_manifest = Some(manifest);
         self.current_core = Some(core);
-        let (projection, identity_candidate, projection_changes) = candidate.into_parts();
+        let (owner, identity_candidate, projection_changes) = candidate.into_parts();
         self.peak_qualified_layouts = self
             .peak_qualified_layouts
-            .max(projection.qualified_layout_count());
+            .max(owner.projection().qualified_layout_count());
         let frame = identity_candidate.frame();
         let committed = self.commit_projection_changes(&projection_changes);
         debug_assert!(committed);
         self.current_frame = Some(frame);
         self.current_receipt_basis = Some(identity_candidate.receipt_basis);
-        self.current_projection = Some(projection);
+        self.current_projection = Some(std::rc::Rc::new(owner));
         self.current_publication = Some(receipt);
         self.current_trace_source = Some(trace_source);
         self.current_reuse_contract = Some(reuse_contract);
@@ -125,16 +125,16 @@ impl UiMountedIdentityState {
         let (candidate, manifest, core, reuse_contract) = frame.into_publication_parts();
         self.current_manifest = Some(manifest);
         self.current_core = Some(core);
-        let (projection, identity_candidate, projection_changes) = candidate.into_parts();
+        let (owner, identity_candidate, projection_changes) = candidate.into_parts();
         self.peak_qualified_layouts = self
             .peak_qualified_layouts
-            .max(projection.qualified_layout_count());
+            .max(owner.projection().qualified_layout_count());
         let frame = identity_candidate.frame();
         let committed = self.commit_projection_changes(&projection_changes);
         debug_assert!(committed);
         self.current_frame = Some(frame);
         self.current_receipt_basis = Some(identity_candidate.receipt_basis);
-        self.current_projection = Some(projection);
+        self.current_projection = Some(std::rc::Rc::new(owner));
         self.current_publication = Some(receipt);
         self.current_trace_source = Some(trace_source);
         self.current_reuse_contract = Some(reuse_contract);
@@ -204,10 +204,11 @@ impl UiMountedIdentityState {
         &self,
         replacement_views: &[UiReconciledBindingView],
     ) -> Result<super::super::UiProjectedMountedFrameCandidate, UiMountedIdentityDenial> {
-        let current_projection = self
+        let current_owner = self
             .current_projection
             .as_ref()
             .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?;
+        let current_projection = current_owner.projection();
         let current_instances = current_projection.mounted_instances().collect::<Vec<_>>();
         let identity_candidate = super::UiMountedIdentityFrameCandidate {
             receipt_basis: self
@@ -227,7 +228,14 @@ impl UiMountedIdentityState {
             .rebound(identity_candidate.frame(), replacement_views)
             .map_err(|_| UiMountedIdentityDenial::ReconciliationBasisMismatch)?;
         Ok(super::super::UiProjectedMountedFrameCandidate {
-            frame: std::rc::Rc::new(projection),
+            owner: super::super::UiMountedProjectionFrameOwner::new(
+                std::rc::Rc::new(projection),
+                super::super::UiMountedAppearanceFrameState::fork(
+                    Some(current_owner.appearance()),
+                    std::rc::Rc::new(super::super::UiMountedAppearanceProjectionSelection::empty()),
+                ),
+                current_owner.theme_revision(),
+            ),
             identity_candidate,
             projection_changes,
             presentation_predecessor: self.current_frame,

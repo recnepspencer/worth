@@ -9,6 +9,25 @@ pub(crate) struct UiMountedPaintAttribution {
 }
 
 impl WorthUiMountedSessionState {
+    pub(crate) fn current_theme_revision_for_frame(
+        &self,
+        frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    ) -> Option<u64> {
+        let owner = self.identity.current_projection_owner()?;
+        (owner.projection().frame_identity() == frame)
+            .then_some(owner.theme_revision())
+            .flatten()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn current_projection_rc_for_test(
+        &self,
+    ) -> Option<std::rc::Rc<crate::mounting::UiMountedProjectionFrame>> {
+        self.identity
+            .current_projection_owner()
+            .map(|owner| owner.projection_rc())
+    }
+
     pub(crate) fn seal_appearance_receipt_basis(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,

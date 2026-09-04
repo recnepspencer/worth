@@ -79,6 +79,7 @@ pub(crate) enum UiMountedThemeValueSource {
     ActiveCurrent {
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
         changed_tokens: Arc<std::collections::BTreeSet<crate::capability::ThemeTokenId>>,
+        theme_revision: u64,
     },
     ReplacementCandidateFrozenPlan,
     PreviewOnly {
@@ -89,20 +90,24 @@ pub(crate) enum UiMountedThemeValueSource {
 impl UiMountedThemeValueSource {
     pub(crate) fn from_current(
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
+        theme_revision: u64,
     ) -> Self {
         Self::ActiveCurrent {
             values,
             changed_tokens: Arc::new(std::collections::BTreeSet::new()),
+            theme_revision,
         }
     }
 
     pub(crate) fn from_current_with_changes(
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
         changed_tokens: std::collections::BTreeSet<crate::capability::ThemeTokenId>,
+        theme_revision: u64,
     ) -> Self {
         Self::ActiveCurrent {
             values,
             changed_tokens: Arc::new(changed_tokens),
+            theme_revision,
         }
     }
 
@@ -122,6 +127,13 @@ impl UiMountedThemeValueSource {
             Self::ActiveCurrent { values, .. } => values.get(token),
             Self::PreviewOnly { binding } => binding.current_value(token),
             Self::ReplacementCandidateFrozenPlan => None,
+        }
+    }
+
+    pub(crate) const fn active_theme_revision(&self) -> Option<u64> {
+        match self {
+            Self::ActiveCurrent { theme_revision, .. } => Some(*theme_revision),
+            Self::ReplacementCandidateFrozenPlan | Self::PreviewOnly { .. } => None,
         }
     }
 
@@ -167,13 +179,14 @@ mod tests {
         let value = crate::capability::ThemeTokenValue::color(
             crate::capability::ThemeColorValue::hex("#112233").unwrap(),
         );
-        let source = UiMountedThemeValueSource::from_current(Arc::new(BTreeMap::from([(
-            token.clone(),
-            value.clone(),
-        )])));
+        let source = UiMountedThemeValueSource::from_current(
+            Arc::new(BTreeMap::from([(token.clone(), value.clone())])),
+            9,
+        );
 
         assert_eq!(source.current_value(&token), Some(&value));
         assert!(!source.has_theme_changes());
+        assert_eq!(source.active_theme_revision(), Some(9));
     }
 
     #[test]
