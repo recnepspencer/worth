@@ -1,5 +1,9 @@
 use super::WorthUiActiveApplicationSession;
 
+#[cfg(test)]
+#[path = "theme_values/tests.rs"]
+mod tests;
+
 impl WorthUiActiveApplicationSession {
     pub(crate) fn admit_application_theme_values(
         &mut self,
