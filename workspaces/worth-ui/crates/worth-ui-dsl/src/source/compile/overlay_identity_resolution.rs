@@ -1,21 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::sealed_overlay_declaration_bindings::{allocate, region_key};
 use crate::source::{
     WorthUiArtifactInputModule, WorthUiArtifactInputNode, WorthUiArtifactInputProvenance,
     WorthUiDslCompileDiagnostic, WorthUiDslCompileDiagnosticCode, WorthUiDslCompileReport,
     WorthUiDslCompileStopClass, WorthUiDslSourceSpan, WorthUiFileAuthoredLoweredDeclaration,
-    WorthUiSourceModuleId,
+    WorthUiSealedOverlayDeclarationBindings, WorthUiSourceModuleId,
 };
 
-struct OverlayIdentityTables {
-    backdrops: BTreeMap<String, crate::UiBackdropIdentity>,
-    portals: BTreeMap<String, crate::UiPortalDeclarationId>,
-    surfaces: BTreeMap<String, crate::UiSemanticSurfaceDeclarationIdentity>,
-    regions: BTreeMap<String, crate::UiMosaicRegionDeclarationIdentity>,
-}
-
 #[derive(Debug)]
-enum ResolutionDenial {
+pub(super) enum ResolutionDenial {
     Duplicate(&'static str, String),
     Capacity(&'static str),
     Missing(&'static str, String),
@@ -25,7 +19,13 @@ enum ResolutionDenial {
 
 pub(crate) fn resolve_file_authored_overlay_declarations(
     modules: BTreeMap<WorthUiSourceModuleId, Vec<WorthUiFileAuthoredLoweredDeclaration>>,
-) -> Result<BTreeMap<WorthUiSourceModuleId, WorthUiArtifactInputModule>, WorthUiDslCompileReport> {
+) -> Result<
+    (
+        BTreeMap<WorthUiSourceModuleId, WorthUiArtifactInputModule>,
+        WorthUiSealedOverlayDeclarationBindings,
+    ),
+    WorthUiDslCompileReport,
+> {
     let tables = collect_tables(&modules)
         .map_err(|denial| resolver_report(denial, first_provenance(&modules)))?;
     let roles = collect_roles(&modules);
@@ -49,25 +49,12 @@ pub(crate) fn resolve_file_authored_overlay_declarations(
             WorthUiArtifactInputModule::new(module_id, nodes),
         );
     }
-    Ok(resolved_modules)
-}
-
-pub(crate) fn resolve_portal_identity_names(
-    names: impl IntoIterator<Item = String>,
-) -> Result<Vec<crate::UiPortalDeclarationId>, ()> {
-    let names = names.into_iter().collect::<Vec<_>>();
-    let unique = names.iter().cloned().collect::<BTreeSet<_>>();
-    if unique.len() != names.len() {
-        return Err(());
-    }
-    allocate(unique, "portal", crate::UiPortalDeclarationId::new)
-        .map(|identities| identities.into_values().collect())
-        .map_err(|_| ())
+    Ok((resolved_modules, tables))
 }
 
 fn collect_tables(
     modules: &BTreeMap<WorthUiSourceModuleId, Vec<WorthUiFileAuthoredLoweredDeclaration>>,
-) -> Result<OverlayIdentityTables, ResolutionDenial> {
+) -> Result<WorthUiSealedOverlayDeclarationBindings, ResolutionDenial> {
     let mut backdrop_names = BTreeSet::new();
     let mut portal_names = BTreeSet::new();
     let mut surface_names = BTreeSet::new();
@@ -101,20 +88,19 @@ fn collect_tables(
             }
         }
     }
-    Ok(OverlayIdentityTables {
-        backdrops: allocate(backdrop_names, "backdrop", crate::UiBackdropIdentity::new)?,
-        portals: allocate(portal_names, "portal", crate::UiPortalDeclarationId::new)?,
-        surfaces: allocate(
+    Ok(WorthUiSealedOverlayDeclarationBindings::from_parts(
+        allocate(backdrop_names, crate::UiBackdropIdentity::new)
+            .map_err(|_| ResolutionDenial::Capacity("backdrop"))?,
+        allocate(portal_names, crate::UiPortalDeclarationId::new)
+            .map_err(|_| ResolutionDenial::Capacity("portal"))?,
+        allocate(
             surface_names,
-            "surface",
             crate::UiSemanticSurfaceDeclarationIdentity::new,
-        )?,
-        regions: allocate(
-            region_names,
-            "mosaic region",
-            crate::UiMosaicRegionDeclarationIdentity::new,
-        )?,
-    })
+        )
+        .map_err(|_| ResolutionDenial::Capacity("surface"))?,
+        allocate(region_names, crate::UiMosaicRegionDeclarationIdentity::new)
+            .map_err(|_| ResolutionDenial::Capacity("mosaic region"))?,
+    ))
 }
 
 fn collect_roles(
@@ -134,23 +120,35 @@ fn collect_roles(
 
 fn resolve_backdrop(
     source: &crate::source::lower::WorthUiBackdropSource,
-    tables: &OverlayIdentityTables,
+    tables: &WorthUiSealedOverlayDeclarationBindings,
     roles: &BTreeMap<String, crate::UiAppearanceRoleDeclaration>,
 ) -> Result<crate::UiBackdropDeclaration, ResolutionDenial> {
-    let identity = lookup(&tables.backdrops, "backdrop", source.identity())?;
-    let surface = lookup(&tables.surfaces, "surface", source.surface())?;
+    let identity = lookup(
+        tables.backdrop_named(source.identity()),
+        "backdrop",
+        source.identity(),
+    )?;
+    let surface = lookup(
+        tables.surface_named(source.surface()),
+        "surface",
+        source.surface(),
+    )?;
     let scope = match source.scope() {
         crate::source::lower::WorthUiBackdropScopeSource::SurfaceSingleton => {
             crate::UiBackdropScope::SurfaceSingleton
         }
         crate::source::lower::WorthUiBackdropScopeSource::PerPortalInstance(portal) => {
-            crate::UiBackdropScope::PerPortalInstance(lookup(&tables.portals, "portal", portal)?)
+            crate::UiBackdropScope::PerPortalInstance(lookup(
+                tables.portal_named(portal),
+                "portal",
+                portal,
+            )?)
         }
     };
     let extent = match source.extent() {
         crate::source::lower::WorthUiBackdropExtentSource::SurfaceViewport(surface) => {
             crate::UiBackdropExtentBasis::SurfaceViewport(lookup(
-                &tables.surfaces,
+                tables.surface_named(surface),
                 "surface",
                 surface,
             )?)
@@ -159,9 +157,9 @@ fn resolve_backdrop(
             surface,
             region,
         } => crate::UiBackdropExtentBasis::PresentedMosaicRegion {
-            surface: lookup(&tables.surfaces, "surface", surface)?,
+            surface: lookup(tables.surface_named(surface), "surface", surface)?,
             region: lookup(
-                &tables.regions,
+                tables.region_named(surface, region),
                 "mosaic region",
                 &region_key(surface, region),
             )?,
@@ -173,7 +171,7 @@ fn resolve_backdrop(
         }
         crate::source::lower::WorthUiBackdropPresenceSource::WhilePortalPresented(portal) => {
             crate::UiBackdropPresenceBasis::WhilePortalPresented(lookup(
-                &tables.portals,
+                tables.portal_named(portal),
                 "portal",
                 portal,
             )?)
@@ -185,7 +183,7 @@ fn resolve_backdrop(
         }
         crate::source::lower::WorthUiBackdropMotionSource::PortalPresentation(portal) => {
             crate::UiBackdropMotionBasis::PortalPresentation(lookup(
-                &tables.portals,
+                tables.portal_named(portal),
                 "portal",
                 portal,
             )?)
@@ -197,14 +195,14 @@ fn resolve_backdrop(
         }
         crate::source::lower::WorthUiBackdropPlacementSource::ImmediatelyBeforePortal(portal) => {
             crate::UiBackdropPlacement::ImmediatelyBeforePortal(lookup(
-                &tables.portals,
+                tables.portal_named(portal),
                 "portal",
                 portal,
             )?)
         }
         crate::source::lower::WorthUiBackdropPlacementSource::ImmediatelyAfterPortal(portal) => {
             crate::UiBackdropPlacement::ImmediatelyAfterPortal(lookup(
-                &tables.portals,
+                tables.portal_named(portal),
                 "portal",
                 portal,
             )?)
@@ -212,14 +210,14 @@ fn resolve_backdrop(
         crate::source::lower::WorthUiBackdropPlacementSource::ImmediatelyBeforeBackdrop(
             backdrop,
         ) => crate::UiBackdropPlacement::ImmediatelyBeforeBackdrop(lookup(
-            &tables.backdrops,
+            tables.backdrop_named(backdrop),
             "backdrop",
             backdrop,
         )?),
         crate::source::lower::WorthUiBackdropPlacementSource::ImmediatelyAfterBackdrop(
             backdrop,
         ) => crate::UiBackdropPlacement::ImmediatelyAfterBackdrop(lookup(
-            &tables.backdrops,
+            tables.backdrop_named(backdrop),
             "backdrop",
             backdrop,
         )?),
@@ -241,7 +239,7 @@ fn resolve_backdrop(
     .map_err(ResolutionDenial::Backdrop)
 }
 
-fn insert_name(
+pub(super) fn insert_name(
     names: &mut BTreeSet<String>,
     namespace: &'static str,
     name: &str,
@@ -253,41 +251,12 @@ fn insert_name(
     }
 }
 
-fn allocate<T>(
-    names: BTreeSet<String>,
-    namespace: &'static str,
-    constructor: impl Fn(u64) -> Option<T>,
-) -> Result<BTreeMap<String, T>, ResolutionDenial> {
-    names
-        .into_iter()
-        .enumerate()
-        .map(|(index, name)| {
-            let value = index
-                .checked_add(1)
-                .and_then(|value| u64::try_from(value).ok())
-                .ok_or(ResolutionDenial::Capacity(namespace))?;
-            let identity = constructor(value).ok_or(ResolutionDenial::Capacity(namespace))?;
-            Ok((name, identity))
-        })
-        .collect()
-}
-
 fn lookup<T: Copy>(
-    table: &BTreeMap<String, T>,
+    value: Option<T>,
     namespace: &'static str,
     name: &str,
 ) -> Result<T, ResolutionDenial> {
-    table
-        .get(name)
-        .copied()
-        .ok_or_else(|| ResolutionDenial::Missing(namespace, name.to_owned()))
-}
-
-fn region_key(surface: &str, region: &str) -> String {
-    let mut key = surface.to_owned();
-    key.push(char::from(0));
-    key.push_str(region);
-    key
+    value.ok_or_else(|| ResolutionDenial::Missing(namespace, name.to_owned()))
 }
 
 fn first_provenance(
@@ -300,6 +269,16 @@ fn first_provenance(
             WorthUiFileAuthoredLoweredDeclaration::Artifact(node) => provenance(node),
             WorthUiFileAuthoredLoweredDeclaration::Backdrop { provenance, .. } => provenance,
         })
+        .next()
+}
+
+pub(super) fn first_node_provenance(
+    modules: &BTreeMap<WorthUiSourceModuleId, WorthUiArtifactInputModule>,
+) -> Option<&WorthUiArtifactInputProvenance> {
+    modules
+        .values()
+        .flat_map(WorthUiArtifactInputModule::nodes)
+        .map(provenance)
         .next()
 }
 
@@ -318,7 +297,7 @@ fn provenance(node: &WorthUiArtifactInputNode) -> &WorthUiArtifactInputProvenanc
     }
 }
 
-fn resolver_report(
+pub(super) fn resolver_report(
     denial: ResolutionDenial,
     provenance: Option<&WorthUiArtifactInputProvenance>,
 ) -> WorthUiDslCompileReport {

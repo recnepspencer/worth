@@ -1,3 +1,4 @@
+mod authored_overlay_material;
 mod authored_service_policy;
 mod declaration_material;
 mod denial;
@@ -8,6 +9,10 @@ mod service_declaration_admission;
 #[cfg(test)]
 mod tests;
 
+pub use authored_overlay_material::{
+    WorthUiAuthoredBackdropDeclaration, WorthUiAuthoredOverlayMaterial,
+    WorthUiAuthoredPortalAnchorBinding,
+};
 pub(in crate::runtime::source_ingress) use declaration_material::prepare_declaration_material;
 pub(crate) use declaration_material::WorthUiPreparedDeclarationMaterial;
 pub use denial::{

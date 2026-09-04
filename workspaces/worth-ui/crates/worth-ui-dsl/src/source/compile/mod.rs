@@ -6,6 +6,8 @@ mod compile_diagnostic;
 mod compiler;
 mod overlay_identity_resolution;
 mod protocol_identity;
+mod rust_overlay_identity_resolution;
+mod sealed_overlay_declaration_bindings;
 mod sealed_semantic_artifact;
 mod sealed_semantic_package;
 mod semantic_package_exact_basis;
@@ -20,10 +22,10 @@ pub use compile_diagnostic::{
     WorthUiDslDiagnosticIdentity, WorthUiDslSourceSpan,
 };
 pub use compiler::WorthUiDslCompiler;
-pub(crate) use overlay_identity_resolution::{
-    resolve_file_authored_overlay_declarations, resolve_portal_identity_names,
-};
+pub(crate) use overlay_identity_resolution::resolve_file_authored_overlay_declarations;
 pub use protocol_identity::WorthUiDslProtocolIdentity;
+pub(crate) use rust_overlay_identity_resolution::resolve_rust_authored_overlay_declaration_bindings;
+pub use sealed_overlay_declaration_bindings::WorthUiSealedOverlayDeclarationBindings;
 pub use sealed_semantic_artifact::WorthUiSealedSemanticArtifact;
 pub use sealed_semantic_package::{
     WorthUiSealedSemanticPackage, WorthUiSemanticAppearanceRoleDeclaration,

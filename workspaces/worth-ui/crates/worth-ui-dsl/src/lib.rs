@@ -63,11 +63,12 @@ pub use source::{
     WorthUiProjectionDeclarationErrorKind, WorthUiProjectionLifecycle,
     WorthUiProjectionNativeFamily, WorthUiProjectionRequirement,
     WorthUiProjectionRequirementIdentity, WorthUiProjectionShape, WorthUiRustAuthoredArtifactInput,
-    WorthUiRustAuthoredArtifactInputModule, WorthUiSealedSemanticArtifact,
-    WorthUiSealedSemanticPackage, WorthUiSemanticAppearanceRoleDeclaration,
-    WorthUiSemanticArtifactDeclaration, WorthUiSemanticBackdropDeclaration, WorthUiSemanticBlock,
-    WorthUiSemanticDeclaration, WorthUiSemanticDeclarationView, WorthUiSemanticImport,
-    WorthUiSemanticModule, WorthUiSemanticPackageIdentity, WorthUiSemanticProjectionDeclaration,
+    WorthUiRustAuthoredArtifactInputModule, WorthUiSealedOverlayDeclarationBindings,
+    WorthUiSealedSemanticArtifact, WorthUiSealedSemanticPackage,
+    WorthUiSemanticAppearanceRoleDeclaration, WorthUiSemanticArtifactDeclaration,
+    WorthUiSemanticBackdropDeclaration, WorthUiSemanticBlock, WorthUiSemanticDeclaration,
+    WorthUiSemanticDeclarationView, WorthUiSemanticImport, WorthUiSemanticModule,
+    WorthUiSemanticPackageIdentity, WorthUiSemanticProjectionDeclaration,
     WorthUiSemanticProvenanceRef, WorthUiSemanticToken, WorthUiSourceModuleId, WorthUiSourceSpan,
 };
 pub use support::WorthUiDslSupportPosture;

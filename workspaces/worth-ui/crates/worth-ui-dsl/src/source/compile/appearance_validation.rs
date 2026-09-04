@@ -43,13 +43,6 @@ impl WorthUiSemanticPackageSealingState {
                 backdrop.declaration().clone(),
                 super::sealing::input_node_provenance(input).clone(),
             )),
-            WorthUiSemanticDeclaration::SemanticArtifact(artifact) => {
-                if let Some(crate::WorthUiServiceDeclarationMeaning::Portal(portal)) =
-                    artifact.declaration().service_declaration()
-                {
-                    self.portal_identities.push(portal.identity().to_owned());
-                }
-            }
             _ => {}
         }
     }

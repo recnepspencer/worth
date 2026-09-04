@@ -303,8 +303,10 @@ pub(crate) use super::source_ingress::{
     prepare_rust_authored_handoff, WorthUiAuthoredCompositionPreparationDenial,
 };
 pub use super::source_ingress::{
-    WorthUiAuthoredProjectionRequirement, WorthUiAuthoredServiceDeclaration,
-    WorthUiCandidateComposition, WorthUiCandidateCompositionBasis, WorthUiCandidateOrderingReceipt,
+    WorthUiAuthoredBackdropDeclaration, WorthUiAuthoredOverlayMaterial,
+    WorthUiAuthoredPortalAnchorBinding, WorthUiAuthoredProjectionRequirement,
+    WorthUiAuthoredServiceDeclaration, WorthUiCandidateComposition,
+    WorthUiCandidateCompositionBasis, WorthUiCandidateOrderingReceipt,
     WorthUiFilesystemSourceAcquisitionDenial, WorthUiFilesystemSourceProvider,
     WorthUiFilesystemSourceWatcher, WorthUiFilesystemWatcherBackend,
     WorthUiFilesystemWatcherDenial, WorthUiFilesystemWatcherReadiness,

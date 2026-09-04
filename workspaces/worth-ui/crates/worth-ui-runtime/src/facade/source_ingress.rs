@@ -3,8 +3,10 @@
 pub use crate::runtime::{
     UiSourceCompilationDenialReceipt, UiSourceRebindAttemptBasis, UiSourceRebindAttemptDenial,
     UiSourceRebindAttemptDenialReceipt, UiSourceRebindAttemptFailure, UiSourceRebindAttemptOutcome,
-    WorthUiAuthoredProjectionRequirement, WorthUiAuthoredServiceDeclaration,
-    WorthUiCandidateComposition, WorthUiCandidateCompositionBasis, WorthUiCandidateOrderingReceipt,
+    WorthUiAuthoredBackdropDeclaration, WorthUiAuthoredOverlayMaterial,
+    WorthUiAuthoredPortalAnchorBinding, WorthUiAuthoredProjectionRequirement,
+    WorthUiAuthoredServiceDeclaration, WorthUiCandidateComposition,
+    WorthUiCandidateCompositionBasis, WorthUiCandidateOrderingReceipt,
     WorthUiFilesystemSourceAcquisitionDenial, WorthUiFilesystemSourceProvider,
     WorthUiFilesystemSourceWatcher, WorthUiFilesystemWatcherBackend,
     WorthUiFilesystemWatcherDenial, WorthUiFilesystemWatcherReadiness,

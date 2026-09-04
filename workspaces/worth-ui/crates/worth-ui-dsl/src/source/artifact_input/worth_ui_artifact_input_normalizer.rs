@@ -26,7 +26,11 @@ impl WorthUiArtifactInputNormalizer {
             );
         }
 
-        WorthUiArtifactInput::new(modules, canonical_module_order)
+        WorthUiArtifactInput::new(
+            modules,
+            canonical_module_order,
+            artifact_input.overlay_declaration_bindings().clone(),
+        )
     }
 }
 
