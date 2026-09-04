@@ -22,4 +22,6 @@ pub use worth_ui_dsl::{
     UiThemeSolidStroke, UiThemeValue, UiThemeValueKind,
 };
 
-pub use worth_ui_runtime::facade::AppearanceRoleRegistrationDenial;
+pub use worth_ui_runtime::facade::{
+    AppearanceRoleRegistrationDenial, UiAppearanceInspectionGenerationSuccessionDenial,
+};

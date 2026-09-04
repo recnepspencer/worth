@@ -16,6 +16,9 @@ mod frame_support;
 use frame_support::{publish_frame, publish_validation_class};
 
 #[cfg(test)]
+#[path = "appearance_inspection_generation_tests.rs"]
+mod appearance_inspection_generation_tests;
+#[cfg(test)]
 #[path = "appearance_receipt_basis_tests.rs"]
 mod basis_tests;
 #[cfg(test)]

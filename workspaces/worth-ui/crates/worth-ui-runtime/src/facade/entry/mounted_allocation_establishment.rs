@@ -135,7 +135,16 @@ impl WorthUiActiveApplicationSession {
             .map_err(|_| WorthUiMountedAllocationEstablishmentDenial::StaleGraphSuccessor)?;
         let appearance_succession = self
             .prepare_appearance_generation_succession(&graph_successor.generation_succession())
-            .map_err(WorthUiMountedAllocationEstablishmentDenial::AppearanceThemeSuccession)?;
+            .map_err(|denial| match denial {
+                super::UiAppearanceGenerationSuccessionDenial::Theme(denial) => {
+                    WorthUiMountedAllocationEstablishmentDenial::AppearanceThemeSuccession(denial)
+                }
+                super::UiAppearanceGenerationSuccessionDenial::Inspection(denial) => {
+                    WorthUiMountedAllocationEstablishmentDenial::AppearanceInspectionSuccession(
+                        denial,
+                    )
+                }
+            })?;
         let entries = self.collect_mounted_measurement_entries(
             graph_successor.graph_snapshot(),
             &candidates,

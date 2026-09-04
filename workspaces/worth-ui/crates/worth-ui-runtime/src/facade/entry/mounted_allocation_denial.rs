@@ -29,6 +29,9 @@ pub enum WorthUiMountedAllocationEstablishmentDenial {
     AppearanceThemeSuccession(
         crate::runtime::presentation_state::UiAppearanceGenerationSuccessionDenial,
     ),
+    AppearanceInspectionSuccession(
+        crate::runtime::appearance::UiAppearanceInspectionGenerationSuccessionDenial,
+    ),
     Activation(crate::runtime::WorthUiAllocationCatalogActivationDenial),
     Runtime(WorthUiMountedAllocationRuntimeStage),
 }

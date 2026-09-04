@@ -8,6 +8,10 @@ mod app;
 mod app_builder;
 mod app_inspection_routing;
 mod appearance_generation_succession;
+pub use crate::runtime::appearance::UiAppearanceInspectionGenerationSuccessionDenial;
+pub(super) use appearance_generation_succession::{
+    UiAppearanceGenerationSuccessionDenial, UiPreparedAppearanceGenerationSuccession,
+};
 mod application_replacement;
 mod builder;
 #[cfg(any(test, feature = "certification-support"))]

@@ -2,11 +2,12 @@ use super::producer::UiAppearanceInspectionProducer;
 
 pub(super) fn record_attempt_denial(
     producer: &mut UiAppearanceInspectionProducer,
+    scope: &super::producer::UiAppearanceInspectionScope,
     context: &super::super::projection::UiAppearanceAttemptContext,
     denial: super::UiAppearanceInspectionDenial,
     receipt: super::super::projection::UiAppearanceChangeReceipt,
 ) {
-    let world = world_for_context(context);
+    let world = producer.current_world(context.target().surface().diagnostic_value());
     let role = context.role();
     let role_name = role.map_or("unavailable", |role| role.role().as_str());
     let role_revision = role.map_or(0, |role| role.revision().value());
@@ -73,7 +74,7 @@ pub(super) fn record_attempt_denial(
             ),
         )
         .with_denial_posture(denial_posture(denial));
-        producer.record(query, explanation);
+        producer.record_scoped(scope, query, explanation);
     }
 }
 
@@ -116,18 +117,4 @@ mod tests {
             Posture::MountLowering
         );
     }
-}
-
-fn world_for_context(
-    context: &super::super::projection::UiAppearanceAttemptContext,
-) -> worth_ui_inspection::UiAppearanceInspectionWorld {
-    worth_ui_inspection::UiAppearanceInspectionWorld::new(
-        context.target().session().as_u64(),
-        context
-            .generation()
-            .prepared_generation()
-            .semantic_package_identity()
-            .narrowing_fingerprint(),
-        context.target().surface().diagnostic_value(),
-    )
 }

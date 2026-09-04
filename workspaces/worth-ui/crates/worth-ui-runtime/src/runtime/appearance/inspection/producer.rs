@@ -1,10 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::denial;
+mod generation;
+pub use generation::UiAppearanceInspectionGenerationSuccessionDenial;
+pub(super) use generation::UiAppearanceInspectionScope;
+pub(crate) use generation::UiPreparedAppearanceInspectionGenerationSuccession;
 use worth_ui_dsl::UiAppearanceAspect;
 use worth_ui_inspection::{
     UiAppearanceInspectionExplanation, UiAppearanceInspectionOutcome, UiAppearanceInspectionQuery,
-    UiAppearanceInspectionSupport, UiAppearanceInspectionWorld,
+    UiAppearanceInspectionSupport, UiAppearanceInspectionWorld, UiEvidenceAuthorityGeneration,
 };
 
 const UI_APPEARANCE_INSPECTION_CAPACITY: usize = 64;
@@ -67,29 +71,29 @@ type InspectionKey = (UiAppearanceInspectionWorld, u64, UiAppearanceAspect);
 pub(crate) struct UiAppearanceInspectionProducer {
     entries: BTreeMap<InspectionKey, Entry>,
     expired: BTreeSet<InspectionKey>,
-    current_world: Option<UiAppearanceInspectionWorld>,
-    retired_world: Option<UiAppearanceInspectionWorld>,
+    current_scope: Option<UiAppearanceInspectionScope>,
+    evidence_generation: UiEvidenceAuthorityGeneration,
     next_sequence: u64,
+    #[cfg(test)]
+    test_current_world: Option<UiAppearanceInspectionWorld>,
 }
 
 impl UiAppearanceInspectionProducer {
-    pub(crate) fn new() -> Self {
-        Self {
-            entries: BTreeMap::new(),
-            expired: BTreeSet::new(),
-            current_world: None,
-            retired_world: None,
-            next_sequence: 1,
-        }
-    }
-
     pub(crate) fn record_projection(
         &mut self,
         projection: &super::super::projection::UiAppearanceProjection,
         consumers_selected: u32,
         receipt: super::super::projection::UiAppearanceChangeReceipt,
     ) {
-        super::projection_record::record_projection(self, projection, consumers_selected, receipt);
+        let basis = projection.state().basis();
+        let scope = UiAppearanceInspectionScope::from_parts(basis.session(), basis.generation());
+        super::projection_record::record_projection(
+            self,
+            &scope,
+            projection,
+            consumers_selected,
+            receipt,
+        );
     }
 
     pub(crate) fn record_frame_attempts(
@@ -107,7 +111,13 @@ impl UiAppearanceInspectionProducer {
                     context,
                     denial,
                     receipt,
-                } => denial::record_attempt_denial(self, &context, denial, receipt),
+                } => {
+                    let scope = UiAppearanceInspectionScope::from_parts(
+                        context.target().session(),
+                        context.generation(),
+                    );
+                    denial::record_attempt_denial(self, &scope, &context, denial, receipt)
+                }
             }
         }
     }
@@ -123,43 +133,39 @@ impl UiAppearanceInspectionProducer {
                 receipt,
             } = record
             {
-                denial::record_attempt_denial(self, &context, denial, receipt);
+                let scope = UiAppearanceInspectionScope::from_parts(
+                    context.target().session(),
+                    context.generation(),
+                );
+                denial::record_attempt_denial(self, &scope, &context, denial, receipt);
             }
         }
     }
 
-    pub(crate) fn reset_for_new_generation(&mut self) {
-        if let Some(current_world) = self.current_world.take() {
-            self.retired_world = Some(current_world);
+    pub(super) fn record_scoped(
+        &mut self,
+        scope: &UiAppearanceInspectionScope,
+        query: UiAppearanceInspectionQuery,
+        explanation: UiAppearanceInspectionExplanation,
+    ) {
+        let Some(current_scope) = self.current_scope.as_ref() else {
+            return;
+        };
+        let world = query.world();
+        if current_scope != scope
+            || world != scope.world(self.evidence_generation, world.surface_identity())
+        {
+            return;
         }
-        let retired = self.entries.keys().copied().collect::<Vec<_>>();
-        self.entries.clear();
-        self.expired.extend(retired);
-        while self.expired.len() > UI_APPEARANCE_INSPECTION_CAPACITY {
-            let oldest = *self
-                .expired
-                .iter()
-                .next()
-                .expect("expired appearance inspection entries are non-empty");
-            self.expired.remove(&oldest);
-        }
+        self.record_entry(query, explanation);
     }
 
-    pub(crate) fn record(
+    fn record_entry(
         &mut self,
         query: UiAppearanceInspectionQuery,
         explanation: UiAppearanceInspectionExplanation,
     ) {
         let world = query.world();
-        if self.current_world.is_none() {
-            self.current_world = Some(world);
-        } else {
-            debug_assert_eq!(
-                self.current_world,
-                Some(world),
-                "appearance inspection records must belong to the active world"
-            );
-        }
         let key = (world, query.graph_node_digest(), query.aspect());
         self.expired.remove(&key);
         let sequence = self.next_sequence;
@@ -201,16 +207,60 @@ impl UiAppearanceInspectionProducer {
         );
     }
 
+    #[cfg(test)]
+    pub(crate) fn record(
+        &mut self,
+        query: UiAppearanceInspectionQuery,
+        explanation: UiAppearanceInspectionExplanation,
+    ) {
+        let world = query.world();
+        if self.test_current_world.is_none() {
+            self.test_current_world = Some(world);
+        }
+        assert_eq!(
+            self.test_current_world,
+            Some(world),
+            "test inspection records must belong to one inert test world"
+        );
+        self.record_entry(query, explanation);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn replace_test_world(&mut self, world: UiAppearanceInspectionWorld) {
+        self.test_current_world = Some(world);
+        self.entries.clear();
+        self.expired.clear();
+    }
+
     pub(crate) fn query(
         &self,
         query: UiAppearanceInspectionQuery,
     ) -> UiAppearanceInspectionOutcome {
         let world = query.world();
-        if self.current_world.is_some_and(|current| current != world)
-            || self.retired_world == Some(world)
+        let Some(scope) = self.current_scope.as_ref() else {
+            #[cfg(test)]
+            {
+                if self.test_current_world != Some(world) {
+                    return UiAppearanceInspectionOutcome::WrongWorld;
+                }
+                return self.query_known_world(query);
+            }
+            #[cfg(not(test))]
+            return UiAppearanceInspectionOutcome::WrongWorld;
+        };
+        if world.session_identity() != scope.session.as_u64()
+            || world.evidence_generation() != self.evidence_generation
         {
             return UiAppearanceInspectionOutcome::WrongWorld;
         }
+        self.query_known_world(query)
+    }
+
+    fn query_known_world(
+        &self,
+        query: UiAppearanceInspectionQuery,
+    ) -> UiAppearanceInspectionOutcome {
+        let world = query.world();
         let key = (world, query.graph_node_digest(), query.aspect());
         if let Some(entry) = self.entries.get(&key) {
             if matches!(
@@ -224,14 +274,22 @@ impl UiAppearanceInspectionProducer {
         }
         if self.expired.contains(&key) {
             UiAppearanceInspectionOutcome::Expired
-        } else {
+        } else if self.surface_is_recorded(world) {
             UiAppearanceInspectionOutcome::Unavailable
+        } else {
+            UiAppearanceInspectionOutcome::WrongWorld
         }
     }
-}
 
-impl Default for UiAppearanceInspectionProducer {
-    fn default() -> Self {
-        Self::new()
+    fn surface_is_recorded(&self, world: UiAppearanceInspectionWorld) -> bool {
+        self.entries.keys().any(|(entry_world, _, _)| {
+            entry_world.session_identity() == world.session_identity()
+                && entry_world.evidence_generation() == world.evidence_generation()
+                && entry_world.surface_identity() == world.surface_identity()
+        }) || self.expired.iter().any(|(entry_world, _, _)| {
+            entry_world.session_identity() == world.session_identity()
+                && entry_world.evidence_generation() == world.evidence_generation()
+                && entry_world.surface_identity() == world.surface_identity()
+        })
     }
 }

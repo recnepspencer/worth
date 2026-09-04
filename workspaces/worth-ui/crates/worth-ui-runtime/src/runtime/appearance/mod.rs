@@ -11,9 +11,11 @@ mod theme;
 #[cfg(test)]
 mod host_completion_tests;
 
+pub use inspection::UiAppearanceInspectionGenerationSuccessionDenial;
 pub(crate) use inspection::{
     UiAppearanceInspectionAttemptBatch, UiAppearanceInspectionDenial,
     UiAppearanceInspectionProducer, UiAppearanceInspectionRecord,
+    UiPreparedAppearanceInspectionGenerationSuccession,
 };
 pub(crate) use invalidation::UiAppearanceInvalidationBatch;
 #[cfg(test)]

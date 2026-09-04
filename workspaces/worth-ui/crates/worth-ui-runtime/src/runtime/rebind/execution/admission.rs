@@ -39,6 +39,9 @@ pub enum UiRebindPreparationDenial {
     AppearanceThemeSuccession(
         crate::runtime::presentation_state::UiAppearanceGenerationSuccessionDenial,
     ),
+    AppearanceInspectionSuccession(
+        crate::runtime::appearance::UiAppearanceInspectionGenerationSuccessionDenial,
+    ),
 }
 
 impl UiRebindExecutionRequest {

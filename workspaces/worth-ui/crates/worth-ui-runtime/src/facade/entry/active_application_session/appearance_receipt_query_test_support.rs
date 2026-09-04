@@ -10,16 +10,7 @@ pub(super) fn why_for(
     fixture: &MountedAppearanceFixture,
     aspect: worth_ui_dsl::UiAppearanceAspect,
 ) -> worth_ui_inspection::UiAppearanceInspectionExplanation {
-    let world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
-        fixture.session.session_identity().as_u64(),
-        fixture
-            .session
-            .active_generation_identity()
-            .prepared_generation()
-            .semantic_package_identity()
-            .narrowing_fingerprint(),
-        fixture.surface.diagnostic_value(),
-    );
+    let world = fixture.session.appearance_inspection_world(fixture.surface);
     let query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
         world,
         fixture.graph_node.digest(),

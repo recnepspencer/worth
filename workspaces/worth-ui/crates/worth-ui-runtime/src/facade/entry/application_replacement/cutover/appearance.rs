@@ -5,7 +5,7 @@ pub(super) fn prepare_successor_theme(
     pending: &WorthUiPendingApplicationCutover,
     successor: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
 ) -> Result<
-    crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession,
+    super::super::super::UiPreparedAppearanceGenerationSuccession,
     WorthUiApplicationCutoverDenial,
 > {
     let candidate_index = pending.next_app.prepared_authority().consumed_fact_index();
@@ -18,7 +18,7 @@ pub(super) fn prepare_successor_theme(
     if !has_candidate_consumers {
         return session
             .prepare_appearance_replacement_succession(successor, None, None, None)
-            .map_err(WorthUiApplicationCutoverDenial::AppearanceThemeSuccession);
+            .map_err(map_appearance_succession_denial);
     }
 
     let themes = pending.next_app.capabilities().appearance_themes().ok_or(
@@ -69,7 +69,20 @@ pub(super) fn prepare_successor_theme(
             rebinding.as_ref(),
             Some(themes),
         )
-        .map_err(WorthUiApplicationCutoverDenial::AppearanceThemeSuccession)
+        .map_err(map_appearance_succession_denial)
+}
+
+fn map_appearance_succession_denial(
+    denial: super::super::super::UiAppearanceGenerationSuccessionDenial,
+) -> WorthUiApplicationCutoverDenial {
+    match denial {
+        super::super::super::UiAppearanceGenerationSuccessionDenial::Theme(denial) => {
+            WorthUiApplicationCutoverDenial::AppearanceThemeSuccession(denial)
+        }
+        super::super::super::UiAppearanceGenerationSuccessionDenial::Inspection(denial) => {
+            WorthUiApplicationCutoverDenial::AppearanceInspectionSuccession(denial)
+        }
+    }
 }
 
 pub(super) fn validate_candidate_owner_installation(

@@ -7,8 +7,7 @@ pub(crate) struct WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
     session: &'session mut WorthUiActiveApplicationSession,
     successor_authority:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
-    appearance_succession:
-        Option<crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession>,
+    appearance_succession: Option<super::UiPreparedAppearanceGenerationSuccession>,
     _admitted_candidate: crate::runtime::WorthUiAdmittedReplacementCandidate,
     _comparison: crate::runtime::WorthUiRuntimeArtifactComparison,
 }
@@ -39,9 +38,18 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
         let appearance_succession = session
             .prepare_appearance_generation_succession(&generation_succession)
             .map(Some)
-            .map_err(
-                crate::runtime::rebind::UiRebindPreparationDenial::AppearanceThemeSuccession,
-            )?;
+            .map_err(|denial| match denial {
+                super::UiAppearanceGenerationSuccessionDenial::Theme(denial) => {
+                    crate::runtime::rebind::UiRebindPreparationDenial::AppearanceThemeSuccession(
+                        denial,
+                    )
+                }
+                super::UiAppearanceGenerationSuccessionDenial::Inspection(denial) => {
+                    crate::runtime::rebind::UiRebindPreparationDenial::AppearanceInspectionSuccession(
+                        denial,
+                    )
+                }
+            })?;
         Ok(Self {
             session,
             successor_authority,

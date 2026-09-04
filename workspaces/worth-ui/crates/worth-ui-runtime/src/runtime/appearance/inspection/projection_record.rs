@@ -3,17 +3,17 @@ use worth_ui_inspection::{
     UiAppearanceInspectionExplanation, UiAppearanceInspectionMountedMechanic,
     UiAppearanceInspectionPhysicalSuppression, UiAppearanceInspectionQuery,
     UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport, UiAppearanceInspectionValue,
-    UiAppearanceInspectionWorld,
 };
 
 pub(super) fn record_projection(
     producer: &mut super::producer::UiAppearanceInspectionProducer,
+    scope: &super::producer::UiAppearanceInspectionScope,
     projection: &super::super::projection::UiAppearanceProjection,
     consumers_selected: u32,
     receipt: super::super::projection::UiAppearanceChangeReceipt,
 ) {
-    let world = world_for_projection(projection);
     let distinctions = receipt.change_distinctions();
+    let world = producer.current_world(projection.target().surface().diagnostic_value());
     for aspect in projection.aspects() {
         let query = UiAppearanceInspectionQuery::new(
             world,
@@ -53,7 +53,7 @@ pub(super) fn record_projection(
                 consumers_selected,
             ),
         );
-        producer.record(query, explanation);
+        producer.record_scoped(scope, query, explanation);
     }
 }
 
@@ -95,19 +95,4 @@ fn support(
             UiAppearanceInspectionSupport::Inapplicable
         }
     }
-}
-
-fn world_for_projection(
-    projection: &super::super::projection::UiAppearanceProjection,
-) -> UiAppearanceInspectionWorld {
-    let basis = projection.state().basis();
-    UiAppearanceInspectionWorld::new(
-        basis.session().as_u64(),
-        basis
-            .generation()
-            .prepared_generation()
-            .semantic_package_identity()
-            .narrowing_fingerprint(),
-        basis.surface().diagnostic_value(),
-    )
 }

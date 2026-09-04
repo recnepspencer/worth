@@ -1,3 +1,4 @@
+use crate::UiEvidenceAuthorityGeneration;
 use worth_ui_dsl::{UiAppearanceAspect, UiAppearanceAxisClass, UiThemeValue};
 
 /// The exact semantic world to which an appearance inspection query belongs.
@@ -7,19 +8,19 @@ use worth_ui_dsl::{UiAppearanceAspect, UiAppearanceAxisClass, UiThemeValue};
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct UiAppearanceInspectionWorld {
     session_identity: u64,
-    generation_fingerprint: u64,
+    evidence_generation: UiEvidenceAuthorityGeneration,
     surface_identity: u64,
 }
 
 impl UiAppearanceInspectionWorld {
     pub const fn new(
         session_identity: u64,
-        generation_fingerprint: u64,
+        evidence_generation: UiEvidenceAuthorityGeneration,
         surface_identity: u64,
     ) -> Self {
         Self {
             session_identity,
-            generation_fingerprint,
+            evidence_generation,
             surface_identity,
         }
     }
@@ -28,8 +29,8 @@ impl UiAppearanceInspectionWorld {
         self.session_identity
     }
 
-    pub const fn generation_fingerprint(self) -> u64 {
-        self.generation_fingerprint
+    pub const fn evidence_generation(self) -> UiEvidenceAuthorityGeneration {
+        self.evidence_generation
     }
 
     pub const fn surface_identity(self) -> u64 {

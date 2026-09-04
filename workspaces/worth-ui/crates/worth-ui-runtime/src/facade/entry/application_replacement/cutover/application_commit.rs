@@ -25,7 +25,7 @@ impl WorthUiActiveApplicationSession {
             }
         };
         let publication = self.application.commit_application_activation(activation);
-        if let Some(appearance_succession) = prepared.appearance_theme_succession.take() {
+        if let Some(appearance_succession) = prepared.appearance_succession.take() {
             self.commit_appearance_generation_succession(appearance_succession);
         }
         let service_policy_plan = self.application.prepared_authority().service_policy_plan();

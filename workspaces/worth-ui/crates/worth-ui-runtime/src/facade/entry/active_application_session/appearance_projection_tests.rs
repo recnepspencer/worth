@@ -133,15 +133,7 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         .iter()
         .all(|color| color.channels() == [17, 34, 51, 255]));
 
-    let world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
-        session.session_identity().as_u64(),
-        session
-            .active_generation_identity()
-            .prepared_generation()
-            .semantic_package_identity()
-            .narrowing_fingerprint(),
-        surface.diagnostic_value(),
-    );
+    let world = session.appearance_inspection_world(surface);
     let query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
         world,
         graph_node.digest(),
@@ -290,15 +282,7 @@ fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
         crate::mounting::UiMountedFrameOutcome::Published(_)
     ));
 
-    let world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
-        session.session_identity().as_u64(),
-        session
-            .active_generation_identity()
-            .prepared_generation()
-            .semantic_package_identity()
-            .narrowing_fingerprint(),
-        surface.diagnostic_value(),
-    );
+    let world = session.appearance_inspection_world(surface);
     let query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
         world,
         graph_node.digest(),

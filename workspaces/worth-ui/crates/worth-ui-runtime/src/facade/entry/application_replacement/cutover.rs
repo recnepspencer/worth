@@ -24,7 +24,7 @@ struct WorthUiPreparedCutoverEvidence {
     candidate_application_authority:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationLoweringAuthority,
     candidate_service_policy_plan: crate::declaration::UiNormalizedServicePolicyPlan,
-    appearance_theme: crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession,
+    appearance_succession: super::super::UiPreparedAppearanceGenerationSuccession,
 }
 
 struct WorthUiCutoverPreparationInput {
@@ -40,7 +40,7 @@ struct WorthUiPreparedCatalogActivation {
     visual_trace_source:
         crate::facade::prepared_application_authority::WorthUiPreparedVisualTraceSource,
     font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
-    appearance_theme: crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession,
+    appearance_succession: super::super::UiPreparedAppearanceGenerationSuccession,
 }
 
 impl WorthUiActiveApplicationSession {
@@ -162,7 +162,7 @@ impl WorthUiActiveApplicationSession {
             candidate_graph,
             candidate_application_authority,
             candidate_service_policy_plan,
-            appearance_theme: prepared_catalog.appearance_theme,
+            appearance_succession: prepared_catalog.appearance_succession,
         };
         match prepared_catalog.prepared.into_activation() {
             Err(receipt) => Ok(seal_semantic_no_op(evidence, receipt)),
@@ -185,7 +185,7 @@ impl WorthUiActiveApplicationSession {
                 self.identity,
                 pending.next_app.generation_identity(),
             );
-        let appearance_theme =
+        let appearance_succession =
             appearance::prepare_successor_theme(self, &pending, successor_generation)?;
         let reload_cost_seed = pending.reload_cost_seed;
         let visual_trace_source = pending.next_app.visual_trace_source();
@@ -218,7 +218,7 @@ impl WorthUiActiveApplicationSession {
             reload_cost_seed,
             visual_trace_source,
             font_collection,
-            appearance_theme,
+            appearance_succession,
         })
     }
 }

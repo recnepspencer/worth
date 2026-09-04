@@ -13,6 +13,10 @@ impl WorthUiActiveApplicationSession {
         let identity = WorthUiActiveApplicationSessionIdentity::from_host_session_value(
             host_session.identity().as_u64(),
         );
+        let initial_generation = WorthUiActiveApplicationGenerationIdentity::current(
+            identity,
+            app.generation_identity(),
+        );
         let mounted_frame_retention_budget = app.mounted_frame_retention_budget();
         let host_observation_capacity = app.host_observation_capacity();
         let visual_policy = app.visual_inspection_policy();
@@ -193,7 +197,8 @@ impl WorthUiActiveApplicationSession {
             intent_postures: crate::mounting::UiIntentPostureTable::new(),
             presentation,
             appearance_theme_admission,
-            appearance_inspection: crate::runtime::appearance::UiAppearanceInspectionProducer::new(),
+            appearance_inspection:
+                crate::runtime::appearance::UiAppearanceInspectionProducer::new(initial_generation),
             appearance_owner_snapshot: None,
             visual_inspection,
             next_visual_capture_identity: 1,
