@@ -27,15 +27,7 @@ fn appearance_theme_value_truth_real_session_observes_b_to_a_without_appearance_
             .value(),
         support::typed_color([68, 85, 102, 255])
     );
-    let initial_world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
-        session.session_identity().as_u64(),
-        session
-            .active_generation_identity()
-            .prepared_generation()
-            .semantic_package_identity()
-            .narrowing_fingerprint(),
-        surface.diagnostic_value(),
-    );
+    let initial_world = session.appearance_inspection_world(surface);
     let initial_explanation =
         match session.why_appearance(worth_ui_inspection::UiAppearanceInspectionQuery::new(
             initial_world,
@@ -69,15 +61,7 @@ fn appearance_theme_value_truth_real_session_observes_b_to_a_without_appearance_
         0
     );
 
-    let world = worth_ui_inspection::UiAppearanceInspectionWorld::new(
-        session.session_identity().as_u64(),
-        session
-            .active_generation_identity()
-            .prepared_generation()
-            .semantic_package_identity()
-            .narrowing_fingerprint(),
-        surface.diagnostic_value(),
-    );
+    let world = session.appearance_inspection_world(surface);
     let explanation =
         match session.why_appearance(worth_ui_inspection::UiAppearanceInspectionQuery::new(
             world,
