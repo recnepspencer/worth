@@ -61,10 +61,6 @@ pub fn translate_unpublished_appearance_for_certification(
     )
 }
 
-#[cfg(all(test, feature = "certification-support"))]
-#[path = "headless_translation/unpublished_tests.rs"]
-mod unpublished_tests;
-
 pub(super) fn translate_headless_frame(
     view: &UiMountedFrameConsumptionView<'_>,
     projection: &UiMountedProjectionView,

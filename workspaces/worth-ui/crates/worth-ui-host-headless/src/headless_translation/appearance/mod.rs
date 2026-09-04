@@ -99,3 +99,6 @@ fn validate_mechanic(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(test, feature = "certification-support"))]
+mod unpublished_tests;
