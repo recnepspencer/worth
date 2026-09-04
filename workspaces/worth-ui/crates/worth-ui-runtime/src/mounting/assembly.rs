@@ -41,6 +41,7 @@ pub enum UiMountedFramePreparationDenial {
     TraceSourceGenerationMismatch,
     IncompleteManifest,
     IntegrityMismatch,
+    AppearanceStateCapacityExceeded(super::projection::UiAppearanceStateCapacityExceeded),
 }
 
 #[derive(Clone)]

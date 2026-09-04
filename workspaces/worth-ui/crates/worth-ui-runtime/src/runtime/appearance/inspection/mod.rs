@@ -6,5 +6,6 @@ mod producer;
 mod producer_tests;
 
 pub(crate) use producer::{
-    UiAppearanceInspectionDenial, UiAppearanceInspectionProducer, UiAppearanceInspectionRecord,
+    UiAppearanceInspectionAttemptBatch, UiAppearanceInspectionDenial,
+    UiAppearanceInspectionProducer, UiAppearanceInspectionRecord,
 };

@@ -1,6 +1,6 @@
 use crate::runtime::tests::appearance_component_session_test_support as support;
 
-const SWITCHED_SLOT: &str = "theme.appearance_consumer.switched";
+pub(super) const SWITCHED_SLOT: &str = "theme.appearance_consumer.switched";
 
 pub(super) fn single_aspect_role(
     identity: &str,
@@ -114,6 +114,31 @@ pub(super) fn theme_bundle(
     )
     .unwrap();
     crate::capability::FrozenAppearanceThemeCapabilities::admit(catalog, vec![definition]).unwrap()
+}
+
+pub(super) fn update_theme(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    hex: &str,
+) {
+    update_theme_at_revision(session, hex, 0);
+}
+
+pub(super) fn update_theme_at_revision(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    hex: &str,
+    expected_revision: u64,
+) {
+    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
+    let value = crate::capability::ThemeTokenValue::color(
+        crate::capability::ThemeColorValue::hex(hex).unwrap(),
+    );
+    let change = super::super::super::UiNativeThemeTokenValueChange::successor(
+        token.clone(),
+        expected_revision,
+        value,
+    )
+    .unwrap();
+    session.admit_application_theme_values(&[change]).unwrap();
 }
 
 fn initial_theme_color(hex: &str) -> worth_ui_dsl::UiThemeColor {

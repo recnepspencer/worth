@@ -135,6 +135,8 @@ impl WorthUiActiveApplicationSession {
             &execution.generation_identity,
             execution.host_exchange,
             transition,
+            Some(execution.appearance_inspection),
+            Some(execution.presentation),
         ))
     }
 
@@ -183,6 +185,8 @@ impl WorthUiActiveApplicationSession {
             &execution.generation_identity,
             execution.host_exchange,
             transition,
+            Some(execution.appearance_inspection),
+            Some(execution.presentation),
         ))
     }
 }

@@ -65,6 +65,7 @@ pub(super) fn prepare_candidate_mounted_frame(
             semantic_content,
             theme_values:
                 crate::mounting::UiMountedThemeValueSource::replacement_candidate_frozen_plan(),
+            appearance_invalidation: None,
             font_collection: std::sync::Arc::clone(application.font_collection()),
             reuse_contract,
         })?;

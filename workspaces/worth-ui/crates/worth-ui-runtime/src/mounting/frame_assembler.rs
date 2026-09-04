@@ -35,6 +35,7 @@ pub(crate) struct UiMountedFrameAssemblyInput<'input, 'graph> {
     pub portal_overlays: std::rc::Rc<[super::UiMountedPortalOverlayProjectionInput]>,
     pub semantic_content: super::UiMountedSemanticContentInput,
     pub theme_values: super::UiMountedThemeValueSource,
+    pub appearance_invalidation: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
     pub font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     pub reuse_contract: super::UiMountedFrameReuseContract,
 }
@@ -193,6 +194,7 @@ impl<'state> UiMountedFrameAssembler<'state> {
                 portal_overlays: input.portal_overlays,
                 semantic_content: &input.semantic_content,
                 theme_values: &input.theme_values,
+                appearance_invalidation: input.appearance_invalidation,
                 font_collection: input.font_collection,
                 semantic_predecessor,
                 capability_generation: input.reuse_contract.capability_generation(),

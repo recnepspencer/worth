@@ -2,7 +2,10 @@ use crate::runtime::tests::appearance_component_session_test_support as support;
 
 #[path = "appearance_receipt_role_test_support.rs"]
 mod role_support;
-use role_support::{single_aspect_role, switched_validation_role, theme_bundle};
+use role_support::{
+    single_aspect_role, switched_validation_role, theme_bundle, update_theme,
+    update_theme_at_revision, SWITCHED_SLOT,
+};
 
 #[path = "appearance_receipt_query_test_support.rs"]
 mod query_support;
@@ -11,8 +14,6 @@ use query_support::{shutdown, why, why_for};
 #[cfg(test)]
 #[path = "appearance_receipt_basis_tests.rs"]
 mod basis_tests;
-
-const SWITCHED_SLOT: &str = "theme.appearance_consumer.switched";
 
 struct MountedAppearanceFixture {
     session: crate::facade::WorthUiActiveApplicationSession,
@@ -61,7 +62,7 @@ fn real_source_turn_reports_input_evidence_changed() {
 }
 
 #[test]
-fn real_validation_transition_reports_semantic_projection_changed() {
+fn real_validation_transition_reports_provenance_changed_byte_equivalent_suppression() {
     let role = switched_validation_role();
     let mut fixture = mounted_fixture(&role, &[SWITCHED_SLOT], false);
     update_theme(&mut fixture.session, "#405060");
@@ -89,7 +90,7 @@ fn real_validation_transition_reports_semantic_projection_changed() {
     );
     assert_eq!(
         explanation.invalidation_cause(),
-        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::SemanticProjectionChanged
+        worth_ui_inspection::UiAppearanceInspectionInvalidationCause::EqualOutputSuppressed
     );
     shutdown(fixture.session);
 }
@@ -188,8 +189,13 @@ fn mounted_fixture(
         ]),
     );
     host.push_native_display_presented();
-    host.push_native_display_presented();
-    host.push_native_display_presented();
+    if six_axis {
+        host.push_native_display_presented();
+        host.push_native_display_presented();
+    } else {
+        host.push_native_display_settled_without_effects();
+        host.push_native_display_settled_without_effects();
+    }
     let mut session = builder
         .with_rust_authored_declaration_fixture(support::appearance_fixture(role))
         .freeze()
@@ -274,6 +280,40 @@ fn mounted_fixture(
         .receipts()
         .iter()
         .any(|receipt| receipt.identity().graph_node_identity() == graph_node));
+    refresh_appearance_owner_snapshot(&mut session, role, "appearance-receipt-mounted");
+    let themes = session
+        .capabilities()
+        .appearance_themes()
+        .expect("receipt fixture has an appearance theme bundle");
+    let definition = themes
+        .definitions()
+        .first()
+        .expect("receipt fixture has a theme definition");
+    let host_profile = worth_ui_host_contract::UiHostAppearanceProfileContract::admit(
+        "appearance-receipt-test-host",
+        1,
+        worth_ui_host_contract::UiHostAppearanceMechanicFamily::ALL,
+        Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
+    )
+    .unwrap();
+    let capability =
+        crate::runtime::appearance::UiThemeCapabilityAdmission::from_frozen_capabilities(
+            themes,
+            definition.identity(),
+            session.capabilities().appearance_roles(),
+            &host_profile,
+        )
+        .unwrap()
+        .issue(
+            [role.role().clone()],
+            surface,
+            session.active_generation_identity(),
+        )
+        .unwrap();
+    session
+        .presentation
+        .install_initial_appearance_theme_binding(capability)
+        .unwrap();
     session.advance_mounted_identity_frame().unwrap();
     publish_frame(&mut session, 0);
     MountedAppearanceFixture {
@@ -356,23 +396,4 @@ fn publish_frame(session: &mut crate::facade::WorthUiActiveApplicationSession, n
         outcome,
         crate::mounting::UiMountedFrameOutcome::Published(_)
     ));
-}
-
-fn update_theme(session: &mut crate::facade::WorthUiActiveApplicationSession, hex: &str) {
-    update_theme_at_revision(session, hex, 0);
-}
-
-fn update_theme_at_revision(
-    session: &mut crate::facade::WorthUiActiveApplicationSession,
-    hex: &str,
-    expected_revision: u64,
-) {
-    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
-    let value = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex(hex).unwrap(),
-    );
-    let change =
-        super::super::UiNativeThemeTokenValueChange::successor(token, expected_revision, value)
-            .unwrap();
-    session.admit_application_theme_values(&[change]).unwrap();
 }

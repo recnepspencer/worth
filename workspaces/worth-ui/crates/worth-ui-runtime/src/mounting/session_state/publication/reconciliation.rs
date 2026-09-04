@@ -71,7 +71,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         frame: crate::mounting::UiAuthorityAdmittedMountedFrame,
         replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
         capability_report: worth_ui_host_contract::WorthUiHostCapabilityReport,
-        mut appearance_inspection: Option<
+        _appearance_inspection: Option<
             &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
         >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
@@ -104,12 +104,12 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
                 );
             }
         };
-        if let Some(producer) = appearance_inspection.as_deref_mut() {
-            producer.record_frame_attempts(admission.lower_appearance());
-        }
+        let appearance_batch = admission.lower_appearance();
         let reservation =
             UiMountedFrameReconciliationCandidate::reserve(&admission, &current, replacements);
         let attempt = admission.attempt();
+        self.presentation
+            .retain_appearance_attempt(attempt, appearance_batch);
         let replaced = self
             .reconciliation_reservations
             .insert(attempt, reservation);

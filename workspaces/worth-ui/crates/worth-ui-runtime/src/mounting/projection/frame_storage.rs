@@ -5,6 +5,7 @@ use worth_ui_host_contract::{
 
 use super::UiMountedProjectionDenial;
 
+mod appearance_frame;
 mod appearance_state;
 pub(in crate::mounting) mod diagnostic_source;
 mod drawable_order;
@@ -38,7 +39,9 @@ pub(in crate::mounting) use semantic_projection::UiMountedSemanticProjection;
 pub(super) use semantic_projection::{UiMountedProjectionNodeRecord, UiMountedProjectionSurface};
 use view::{UiMountedOrdinaryPaintSelector, UiMountedPlanIndexPaintSelector};
 
-pub(crate) use appearance_state::UiMountedAppearanceFrameState;
+pub(crate) use appearance_state::{
+    UiAppearanceStateCapacityExceeded, UiMountedAppearanceFrameState,
+};
 
 #[derive(Clone)]
 pub(crate) struct UiMountedAppearanceNodeInputContext {
@@ -335,13 +338,9 @@ impl UiMountedProjectionFrame {
         &self.semantic
     }
 
-    pub(crate) fn appearance_node_inputs(
-        &self,
-        selected_graph_nodes: &[crate::graph::UiGraphNodeIdentity],
-    ) -> Vec<UiMountedAppearanceNodeInputContext> {
+    pub(crate) fn appearance_node_inputs(&self) -> Vec<UiMountedAppearanceNodeInputContext> {
         self.semantic
             .nodes_in_mounted_order()
-            .filter(|node| selected_graph_nodes.contains(&node.receipt.graph_node()))
             .map(|node| {
                 let receipt = node.receipt();
                 let node_receipt = self
@@ -361,24 +360,5 @@ impl UiMountedProjectionFrame {
                 }
             })
             .collect()
-    }
-
-    pub(crate) fn inherit_appearance_state(&mut self, predecessor: Option<&Self>) {
-        self.appearance_state
-            .inherit_from(predecessor.map(|frame| &frame.appearance_state));
-    }
-
-    pub(crate) fn stage_appearance_projection(
-        &mut self,
-        attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
-    ) {
-        self.appearance_state.stage(attempt);
-    }
-
-    pub(crate) fn lower_appearance(
-        &mut self,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
-        self.appearance_state.lower(presentation)
     }
 }

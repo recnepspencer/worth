@@ -177,6 +177,7 @@ impl<'session> WorthUiPendingMountedPreview<'session> {
                 theme_values: crate::mounting::UiMountedThemeValueSource::preview_only(
                     self.preview_theme_observation.bind_surface(surface),
                 ),
+                appearance_invalidation: None,
                 font_collection: std::sync::Arc::clone(&self.font_collection),
                 reuse_contract,
             })

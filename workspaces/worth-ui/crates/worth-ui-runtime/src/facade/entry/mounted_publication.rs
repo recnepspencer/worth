@@ -148,6 +148,8 @@ impl WorthUiActiveApplicationSession {
                 host_exchange: &mut self.host_exchange,
             },
             transition,
+            Some(&mut self.appearance_inspection),
+            Some(&mut self.presentation),
         );
         if matches!(
             outcome,
@@ -220,6 +222,10 @@ pub(super) fn finish_mounted_transition(
     generation: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
     host_exchange: &mut crate::host_exchange::WorthUiHostExchangeSessionState,
     transition: crate::mounting::UiMountedPublicationTransition,
+    appearance_inspection: Option<&mut crate::runtime::appearance::UiAppearanceInspectionProducer>,
+    appearance_presentation: Option<
+        &mut crate::runtime::presentation_state::UiApplicationPresentationState,
+    >,
 ) -> UiMountedFrameOutcome {
     let active_generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
         application_session,
@@ -236,14 +242,22 @@ pub(super) fn finish_mounted_transition(
             host_exchange,
         },
         transition,
+        appearance_inspection,
+        appearance_presentation,
     )
 }
 
 fn finish_mounted_transition_with_ports(
     mut ports: UiMountedPublicationSettlementPorts<'_>,
     transition: crate::mounting::UiMountedPublicationTransition,
+    mut appearance_inspection: Option<
+        &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+    >,
+    appearance_presentation: Option<
+        &mut crate::runtime::presentation_state::UiApplicationPresentationState,
+    >,
 ) -> UiMountedFrameOutcome {
-    let (outcome, observation) = transition.into_parts();
+    let (outcome, observation, appearance) = transition.into_parts();
     match &outcome {
         UiMountedFrameOutcome::Published(receipt)
         | UiMountedFrameOutcome::Unchanged(receipt)
@@ -255,6 +269,27 @@ fn finish_mounted_transition_with_ports(
     }
     if let Some(observation) = observation {
         record_mounted_observation(ports.host_exchange, observation);
+    }
+    if let Some(appearance) = appearance {
+        let (invalidation, records) = appearance.into_parts();
+        match &outcome {
+            UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_) => {
+                if let Some(producer) = appearance_inspection.as_deref_mut() {
+                    producer.record_frame_attempts(records);
+                }
+                if let (Some(presentation), Some(invalidation)) =
+                    (appearance_presentation, invalidation.as_ref())
+                {
+                    presentation.settle_appearance_invalidation(invalidation);
+                }
+            }
+            UiMountedFrameOutcome::RejectedBeforeEffects(_) => {
+                if let Some(producer) = appearance_inspection.as_deref_mut() {
+                    producer.record_pre_effect_denials(records);
+                }
+            }
+            _ => {}
+        }
     }
     outcome
 }

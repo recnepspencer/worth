@@ -99,25 +99,58 @@ impl UiPreparedMountedFrame {
 
     pub(crate) fn appearance_node_inputs(
         &self,
-        theme_values: &crate::mounting::UiMountedThemeValueSource,
     ) -> Vec<super::super::projection::UiMountedAppearanceNodeInputContext> {
-        self.candidate
-            .frame()
-            .appearance_node_inputs(theme_values.canonical_consumers())
+        self.candidate.frame().appearance_node_inputs()
+    }
+
+    pub(crate) fn set_appearance_invalidation_batch(
+        &mut self,
+        batch: crate::runtime::appearance::UiAppearanceInvalidationBatch,
+    ) {
+        self.candidate.set_appearance_invalidation_batch(batch);
+    }
+
+    pub(crate) fn appearance_invalidation_batch(
+        &self,
+    ) -> Option<crate::runtime::appearance::UiAppearanceInvalidationBatch> {
+        self.candidate.appearance_invalidation_batch()
+    }
+
+    pub(crate) fn prune_appearance_state(
+        &mut self,
+        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) {
+        self.candidate.prune_appearance_state(session, generation);
+    }
+
+    pub(crate) fn reserve_appearance_state(
+        &mut self,
+        context: &crate::runtime::appearance::UiAppearanceAttemptContext,
+    ) -> Result<(), super::super::projection::UiAppearanceStateCapacityExceeded> {
+        self.candidate.reserve_appearance_state(context)
+    }
+
+    pub(crate) fn appearance_state_capacity_error(
+        &self,
+    ) -> Option<super::super::projection::UiAppearanceStateCapacityExceeded> {
+        self.candidate.appearance_state_capacity_error()
     }
 
     pub(crate) fn stage_appearance_projection(
         &mut self,
         attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
-    ) {
-        self.candidate.stage_appearance_projection(attempt);
+    ) -> Result<(), super::super::projection::UiAppearanceStateCapacityExceeded> {
+        self.candidate.stage_appearance_projection(attempt)
     }
 
     pub(crate) fn lower_appearance(
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
-        self.candidate.lower_appearance(presentation)
+    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
+        let invalidation = self.appearance_invalidation_batch();
+        let records = self.candidate.lower_appearance(presentation);
+        crate::runtime::appearance::UiAppearanceInspectionAttemptBatch::new(invalidation, records)
     }
 
     pub fn receipt(&self) -> UiMountedFrameReceipt {

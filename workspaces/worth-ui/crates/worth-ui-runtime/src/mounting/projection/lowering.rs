@@ -21,6 +21,8 @@ pub(crate) struct UiMountedProjectionInput<'input, 'graph> {
     pub(crate) portal_overlays: std::rc::Rc<[super::super::UiMountedPortalOverlayProjectionInput]>,
     pub(crate) semantic_content: &'input super::super::UiMountedSemanticContentInput,
     pub(crate) theme_values: &'input super::super::UiMountedThemeValueSource,
+    pub(crate) appearance_invalidation:
+        Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
     pub(crate) font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     pub(in crate::mounting) semantic_predecessor: Option<&'input UiMountedSemanticProjection>,
     pub(crate) capability_generation:
@@ -45,6 +47,7 @@ struct UiMountedNodeLoweringContext<'input, 'graph> {
     plan_digest: u64,
     semantic_content: &'input super::super::UiMountedSemanticContentInput,
     theme_values: &'input super::super::UiMountedThemeValueSource,
+    appearance_invalidation: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
     predecessor: Option<&'input UiMountedSemanticProjection>,
     mechanics_predecessor_available: bool,
 }
@@ -96,6 +99,7 @@ pub(crate) fn prepare_projection(
         plan_digest: input.plan_digest,
         semantic_content: input.semantic_content,
         theme_values: input.theme_values,
+        appearance_invalidation: input.appearance_invalidation,
         predecessor: input.semantic_predecessor,
         mechanics_predecessor_available: state
             .current_projection()
@@ -169,6 +173,16 @@ pub(crate) fn prepare_projection(
             font_collection: input.font_collection,
         },
     ))
+}
+
+impl UiMountedNodeLoweringContext<'_, '_> {
+    fn theme_value_changed(&self, graph_node: crate::graph::UiGraphNodeIdentity) -> bool {
+        self.theme_values.has_theme_changes()
+            && self
+                .appearance_invalidation
+                .as_ref()
+                .is_some_and(|batch| batch.selects(graph_node))
+    }
 }
 
 fn portal_changed_instances(

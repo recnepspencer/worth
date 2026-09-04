@@ -159,6 +159,17 @@ impl UiGraphAppearanceConsumerContract {
     ) -> &[crate::graph::UiGraphNodeIdentity] {
         self.role_consumers.get(role).map_or(&[], Box::as_ref)
     }
+
+    pub(super) fn attached_consumer_nodes(&self) -> Box<[crate::graph::UiGraphNodeIdentity]> {
+        let mut nodes = self
+            .attachments
+            .iter()
+            .map(|attachment| attachment.graph_node)
+            .collect::<Vec<_>>();
+        nodes.sort_unstable();
+        nodes.dedup();
+        nodes.into_boxed_slice()
+    }
 }
 
 fn append_state_consumer(

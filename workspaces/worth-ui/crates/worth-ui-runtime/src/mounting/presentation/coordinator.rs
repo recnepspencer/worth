@@ -54,6 +54,10 @@ pub struct UiMountedPresentationCoordinator {
         UiMountedPresentationAttemptIdentity,
         super::state::UiMountedPresentationInFlightState,
     >,
+    appearance_attempts: BTreeMap<
+        UiMountedPresentationAttemptIdentity,
+        crate::runtime::appearance::UiAppearanceInspectionAttemptBatch,
+    >,
     unresolved_semantic_receipts: BTreeMap<
         UiMountedPresentationAttemptIdentity,
         Vec<worth_ui_query_binding::WorthUiPresentationRecoveryRequiredReceipt>,
@@ -95,6 +99,7 @@ impl Default for UiMountedPresentationCoordinator {
             in_flight_limit: DEFAULT_IN_FLIGHT_LIMIT,
             active: Rc::new(RefCell::new(BTreeSet::new())),
             in_flight: BTreeMap::new(),
+            appearance_attempts: BTreeMap::new(),
             unresolved_semantic_receipts: BTreeMap::new(),
             unresolved_semantic_recoveries: BTreeMap::new(),
             presentation_states: BTreeMap::new(),
@@ -144,6 +149,25 @@ impl UiMountedPresentationCoordinator {
             host,
             authority,
         })
+    }
+
+    pub(crate) fn retain_appearance_attempt(
+        &mut self,
+        attempt: UiMountedPresentationAttemptIdentity,
+        batch: crate::runtime::appearance::UiAppearanceInspectionAttemptBatch,
+    ) {
+        let replaced = self.appearance_attempts.insert(attempt, batch);
+        assert!(
+            replaced.is_none(),
+            "runtime-minted presentation attempts have one appearance batch"
+        );
+    }
+
+    pub(crate) fn take_appearance_attempt(
+        &mut self,
+        attempt: UiMountedPresentationAttemptIdentity,
+    ) -> Option<crate::runtime::appearance::UiAppearanceInspectionAttemptBatch> {
+        self.appearance_attempts.remove(&attempt)
     }
 
     fn present_all(

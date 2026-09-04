@@ -133,7 +133,6 @@ impl UiAppearanceChangeReceipt {
             });
         let equal_output_suppressed = semantic_projection_changed
             && !resolved_aspect_value_changed
-            && predecessor.physical_output_equivalent(successor)
             && physical_output_suppressed(mounting);
         Ok(Self {
             input_evidence_changed,
@@ -141,6 +140,24 @@ impl UiAppearanceChangeReceipt {
             resolved_aspect_value_changed,
             mounted_mechanical_output_changed: mounted_mechanical_output_changed(mounting),
             equal_output_suppressed,
+            denied_before_effects: false,
+            mounting_result_available: true,
+        })
+    }
+
+    pub(crate) fn from_reconstruction_mount(
+        mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
+    ) -> Option<Self> {
+        (mounting.posture()
+            == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction
+            && mounting.changes().is_empty()
+            && !mounting.order_changed())
+        .then_some(Self {
+            input_evidence_changed: false,
+            semantic_projection_changed: false,
+            resolved_aspect_value_changed: false,
+            mounted_mechanical_output_changed: false,
+            equal_output_suppressed: false,
             denied_before_effects: false,
             mounting_result_available: true,
         })

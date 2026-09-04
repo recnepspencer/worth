@@ -62,12 +62,11 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
-        let appearance_theme_values = theme_values.clone();
         let mut projection =
             self.begin_mounted_projection(request, lanes, semantic_content, theme_values, None)?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
         let mut frame = projection.finish()?;
-        self.finish_appearance_projection(&mut frame, &appearance_theme_values);
+        self.finish_appearance_projection(&mut frame)?;
         Ok(frame)
     }
 
@@ -84,7 +83,6 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
-        let appearance_theme_values = theme_values.clone();
         let mut projection = self.begin_mounted_projection(
             request,
             lanes,
@@ -94,7 +92,7 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         )?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
         let mut frame = projection.finish()?;
-        self.finish_appearance_projection(&mut frame, &appearance_theme_values);
+        self.finish_appearance_projection(&mut frame)?;
         Ok(frame)
     }
 
@@ -111,12 +109,10 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
-        let appearance_theme_values = theme_values.clone();
         let mut projection =
             self.begin_mounted_projection(request, lanes, semantic_content, theme_values, None)?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
-        let mut frame = projection.finish_for_reconciliation(replacements)?;
-        self.finish_appearance_projection(&mut frame, &appearance_theme_values);
+        let frame = projection.finish_for_reconciliation(replacements)?;
         Ok(frame)
     }
 
@@ -161,6 +157,7 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
             portal_overlays,
             semantic_content,
             theme_values,
+            appearance_invalidation: self.presentation.appearance_invalidation_batch(),
             font_collection: std::sync::Arc::clone(&self.font_collection),
             reuse_contract,
         };

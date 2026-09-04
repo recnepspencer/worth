@@ -115,6 +115,12 @@ impl UiGraphConsumedFactIndex {
         self.appearance_consumers.role_consumers(role).into()
     }
 
+    pub(crate) fn appearance_attached_consumer_nodes(
+        &self,
+    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
+        self.appearance_consumers.attached_consumer_nodes()
+    }
+
     pub(crate) fn has_same_appearance_consumer_contract(&self, other: &Self) -> bool {
         self.appearance_consumers == other.appearance_consumers
     }

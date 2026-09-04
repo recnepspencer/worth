@@ -35,6 +35,7 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             plan_index,
             semantic_input,
             predecessor,
+            self.theme_value_changed(instance.graph_node_identity()),
         )?;
         if semantic_text_formatting.is_none() && (semantic_input.is_some() || predecessor.is_some())
         {
@@ -44,9 +45,7 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
                     plan_index_available: plan_index.is_some(),
                     predecessor_available: predecessor.is_some(),
                     semantic_input_available: semantic_input.is_some(),
-                    theme_value_changed: self
-                        .theme_values
-                        .is_canonically_selected(instance.graph_node_identity()),
+                    theme_value_changed: self.theme_value_changed(instance.graph_node_identity()),
                 },
             );
         }

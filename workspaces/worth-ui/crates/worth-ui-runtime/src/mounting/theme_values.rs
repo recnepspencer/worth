@@ -76,9 +76,9 @@ impl UiMountedPreviewThemeBinding {
 
 #[derive(Clone)]
 pub(crate) enum UiMountedThemeValueSource {
-    CanonicalSelection {
+    ActiveCurrent {
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-        selection: crate::runtime::appearance::UiAppearanceConsumerSelection,
+        changed_tokens: Arc<std::collections::BTreeSet<crate::capability::ThemeTokenId>>,
     },
     ReplacementCandidateFrozenPlan,
     PreviewOnly {
@@ -87,11 +87,23 @@ pub(crate) enum UiMountedThemeValueSource {
 }
 
 impl UiMountedThemeValueSource {
-    pub(crate) fn from_canonical_selection(
+    pub(crate) fn from_current(
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-        selection: crate::runtime::appearance::UiAppearanceConsumerSelection,
     ) -> Self {
-        Self::CanonicalSelection { values, selection }
+        Self::ActiveCurrent {
+            values,
+            changed_tokens: Arc::new(std::collections::BTreeSet::new()),
+        }
+    }
+
+    pub(crate) fn from_current_with_changes(
+        values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
+        changed_tokens: std::collections::BTreeSet<crate::capability::ThemeTokenId>,
+    ) -> Self {
+        Self::ActiveCurrent {
+            values,
+            changed_tokens: Arc::new(changed_tokens),
+        }
     }
 
     pub(crate) const fn replacement_candidate_frozen_plan() -> Self {
@@ -107,7 +119,7 @@ impl UiMountedThemeValueSource {
         token: &crate::capability::ThemeTokenId,
     ) -> Option<&crate::capability::ThemeTokenValue> {
         match self {
-            Self::CanonicalSelection { values, .. } => values.get(token),
+            Self::ActiveCurrent { values, .. } => values.get(token),
             Self::PreviewOnly { binding } => binding.current_value(token),
             Self::ReplacementCandidateFrozenPlan => None,
         }
@@ -117,20 +129,11 @@ impl UiMountedThemeValueSource {
         matches!(self, Self::ReplacementCandidateFrozenPlan)
     }
 
-    pub(crate) fn canonical_consumers(&self) -> &[crate::graph::UiGraphNodeIdentity] {
+    pub(crate) fn has_theme_changes(&self) -> bool {
         match self {
-            Self::CanonicalSelection { selection, .. } => selection.consumers(),
-            Self::ReplacementCandidateFrozenPlan | Self::PreviewOnly { .. } => &[],
+            Self::ActiveCurrent { changed_tokens, .. } => !changed_tokens.is_empty(),
+            Self::ReplacementCandidateFrozenPlan | Self::PreviewOnly { .. } => false,
         }
-    }
-
-    pub(crate) fn is_canonically_selected(
-        &self,
-        graph_node: crate::graph::UiGraphNodeIdentity,
-    ) -> bool {
-        self.canonical_consumers()
-            .binary_search(&graph_node)
-            .is_ok()
     }
 }
 
@@ -159,24 +162,18 @@ mod tests {
     }
 
     #[test]
-    fn active_values_expose_only_the_canonical_consumer_selection() {
+    fn active_values_carry_values_without_consumer_selection() {
         let token = crate::capability::ThemeTokenId::new("theme.current").unwrap();
         let value = crate::capability::ThemeTokenValue::color(
             crate::capability::ThemeColorValue::hex("#112233").unwrap(),
         );
-        let selected = crate::graph::UiGraphNodeIdentity::new(92_001);
-        let unselected = crate::graph::UiGraphNodeIdentity::new(92_002);
-        let selection =
-            crate::runtime::appearance::UiAppearanceConsumerSelection::for_test([selected]);
-        let source = UiMountedThemeValueSource::from_canonical_selection(
-            Arc::new(BTreeMap::from([(token.clone(), value.clone())])),
-            selection,
-        );
+        let source = UiMountedThemeValueSource::from_current(Arc::new(BTreeMap::from([(
+            token.clone(),
+            value.clone(),
+        )])));
 
         assert_eq!(source.current_value(&token), Some(&value));
-        assert_eq!(source.canonical_consumers(), &[selected]);
-        assert!(source.is_canonically_selected(selected));
-        assert!(!source.is_canonically_selected(unselected));
+        assert!(!source.has_theme_changes());
     }
 
     #[test]
@@ -193,14 +190,11 @@ mod tests {
             )
             .bind_surface(surface),
         );
-        let graph_node = crate::graph::UiGraphNodeIdentity::new(7_316);
-
         assert!(matches!(
             &source,
             UiMountedThemeValueSource::PreviewOnly { .. }
         ));
-        assert!(source.canonical_consumers().is_empty());
-        assert!(!source.is_canonically_selected(graph_node));
+        assert!(!source.has_theme_changes());
         assert!(!source.uses_frozen_plan());
         assert!(source.current_value(&token).is_some());
     }

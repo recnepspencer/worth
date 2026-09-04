@@ -10,7 +10,7 @@ use super::UiAppearanceResolver;
 #[test]
 fn resolver_is_deterministic_and_emits_no_host_commands() {
     super::tests::run_on_appearance_fixture_stack(|| {
-        let (mut session, binding, target, vector, theme) = inputs();
+        let (session, binding, target, vector, theme) = inputs();
         assert_eq!(binding.basis().graph_node(), target.graph_node());
         assert_eq!(binding.basis().role(), binding.role().role());
         assert_eq!(binding.basis().revision(), binding.role().revision());

@@ -88,6 +88,34 @@ impl UiMountedAppearanceSidecar {
         Ok(delta.work)
     }
 
+    pub(crate) fn reconstruction_work(
+        &self,
+    ) -> Option<worth_ui_host_contract::UiMountedAppearanceWork> {
+        let facts = self.current.as_ref()?;
+        let predecessor_manifest =
+            worth_ui_host_contract::UiMountedAppearancePredecessorManifest::from_runtime_mounting(
+                facts
+                    .records()
+                    .iter()
+                    .map(|record| record.identity().clone()),
+                facts
+                    .frame()
+                    .overlay_order()
+                    .bottom_to_top()
+                    .iter()
+                    .cloned(),
+            )?;
+        worth_ui_host_contract::UiMountedAppearanceWork::from_runtime_mounting(
+            worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction,
+            Some(facts.frame().frame()),
+            Some(predecessor_manifest),
+            facts.frame().clone(),
+            [],
+            [],
+            false,
+        )
+    }
+
     #[cfg(test)]
     pub(crate) fn current(&self) -> Option<&UiMountedAppearanceFacts> {
         self.current.as_ref()

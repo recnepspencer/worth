@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct UiAppearanceOwnerSnapshot {
     turn: crate::runtime::observation::UiObservationTurnIdentity,
     session: crate::facade::WorthUiActiveApplicationSessionIdentity,
@@ -64,6 +65,36 @@ impl UiAppearanceOwnerSnapshot {
     }
     pub(crate) const fn demand(&self) -> super::UiAppearanceStateAxisDemand {
         self.demand
+    }
+
+    pub(crate) fn changed_axes(&self, predecessor: &Self) -> super::UiAppearanceStateAxisDemand {
+        let mut changed = super::UiAppearanceStateAxisDemand::default();
+        if self.operability != predecessor.operability {
+            changed.include(worth_ui_dsl::UiAppearanceStateAxis::Operability);
+        }
+        if self.focus != predecessor.focus {
+            changed.include(worth_ui_dsl::UiAppearanceStateAxis::Focus);
+        }
+        if self.validation != predecessor.validation {
+            changed.include(worth_ui_dsl::UiAppearanceStateAxis::Validation);
+        }
+        if self.selection != predecessor.selection {
+            changed.include(worth_ui_dsl::UiAppearanceStateAxis::Selection);
+        }
+        if self.pointer_presence != predecessor.pointer_presence {
+            changed.include(worth_ui_dsl::UiAppearanceStateAxis::Hover);
+        }
+        if self.pressed != predecessor.pressed {
+            changed.include(worth_ui_dsl::UiAppearanceStateAxis::Pressed);
+        }
+        changed
+    }
+
+    pub(crate) fn requires_initial_invalidation(&self, predecessor: &Self) -> bool {
+        self.session != predecessor.session
+            || self.source_basis != predecessor.source_basis
+            || self.generation != predecessor.generation
+            || self.demand != predecessor.demand
     }
     pub(crate) const fn focus(&self) -> Option<&crate::runtime::focus::UiFocusAppearancePosture> {
         self.focus.as_ref()

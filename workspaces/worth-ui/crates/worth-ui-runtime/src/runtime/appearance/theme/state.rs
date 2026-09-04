@@ -37,6 +37,12 @@ pub(crate) enum UiThemeSwitchDenial {
 }
 
 impl UiAppearanceThemeState {
+    pub(crate) fn active_bindings(
+        &self,
+    ) -> impl ExactSizeIterator<Item = &super::UiActiveThemeBinding> {
+        self.bindings.values()
+    }
+
     pub(crate) fn active_binding(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,

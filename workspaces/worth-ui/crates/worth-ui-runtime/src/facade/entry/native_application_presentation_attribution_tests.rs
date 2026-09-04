@@ -96,7 +96,7 @@ fn admitted_zero_consumer_theme_slot_commits_without_mounted_work() {
 
     let source = shell.session.complete_application_theme_values_source();
     assert_eq!(source.current_value(&zero_consumer_token), Some(&successor));
-    assert!(source.canonical_consumers().is_empty());
+    assert!(!source.has_theme_changes());
 
     let outcome = completed(shell.present_frame(200, 2));
     assert_eq!(

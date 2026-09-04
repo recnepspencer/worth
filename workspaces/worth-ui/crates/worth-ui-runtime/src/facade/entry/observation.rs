@@ -16,10 +16,50 @@ impl super::WorthUiActiveApplicationSession {
         }
         self.validate_pointer_observation_currentness(&observations)?;
         let owners = observations.take_appearance_owner_snapshot();
+        let predecessor = self.appearance_owner_snapshot.clone();
         let outcome = self
             .application
             .classify_observations(self.identity, observations)?;
         self.appearance_owner_snapshot = owners;
+        if let Some(current) = self.appearance_owner_snapshot.as_ref() {
+            let initial = self.application.appearance_initial_invalidation_batch();
+            let pending_basis_changed = self
+                .presentation
+                .appearance_invalidation_batch()
+                .is_some_and(|pending| pending.basis() != initial.basis());
+            if predecessor.is_none() || pending_basis_changed {
+                self.presentation
+                    .queue_appearance_invalidation(initial)
+                    .expect("appearance invalidation revision remains available");
+            } else if current.requires_initial_invalidation(
+                predecessor.as_ref().expect("owner snapshot is present"),
+            ) {
+                self.presentation
+                    .queue_appearance_invalidation(
+                        self.application.appearance_initial_invalidation_batch(),
+                    )
+                    .expect("appearance invalidation revision remains available");
+            } else {
+                let changed =
+                    current.changed_axes(predecessor.as_ref().expect("owner snapshot is present"));
+                for axis in [
+                    worth_ui_dsl::UiAppearanceStateAxis::Operability,
+                    worth_ui_dsl::UiAppearanceStateAxis::Focus,
+                    worth_ui_dsl::UiAppearanceStateAxis::Validation,
+                    worth_ui_dsl::UiAppearanceStateAxis::Selection,
+                    worth_ui_dsl::UiAppearanceStateAxis::Hover,
+                    worth_ui_dsl::UiAppearanceStateAxis::Pressed,
+                ] {
+                    if changed.contains(axis) {
+                        self.presentation
+                            .queue_appearance_invalidation(
+                                self.application.appearance_state_invalidation_batch(axis),
+                            )
+                            .expect("appearance invalidation revision remains available");
+                    }
+                }
+            }
+        }
         Ok(outcome)
     }
 

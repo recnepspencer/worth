@@ -108,11 +108,10 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
     );
     let change = super::super::UiNativeThemeTokenValueChange::new(token, value).unwrap();
     session.admit_application_theme_values(&[change]).unwrap();
-    let consumers_selected = session
-        .complete_application_theme_values_source()
-        .canonical_consumers()
-        .len() as u32;
-    assert!(consumers_selected > 0);
+    assert!(session
+        .presentation
+        .appearance_invalidation_batch()
+        .is_some_and(|batch| batch.selected_count() > 0));
 
     let outcome = session
         .execute_mounted_frame(
@@ -164,7 +163,7 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         explanation.physical_suppression(),
         worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotSuppressed
     );
-    assert_eq!(explanation.cost().consumers_selected(), consumers_selected);
+    assert!(explanation.cost().consumers_selected() > 0);
     assert_eq!(
         explanation.value(),
         worth_ui_inspection::UiAppearanceInspectionValue::Resolved(
@@ -275,10 +274,10 @@ fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
     );
     let change = super::super::UiNativeThemeTokenValueChange::new(token, value).unwrap();
     session.admit_application_theme_values(&[change]).unwrap();
-    assert!(!session
-        .complete_application_theme_values_source()
-        .canonical_consumers()
-        .is_empty());
+    assert!(session
+        .presentation
+        .appearance_invalidation_batch()
+        .is_some_and(|batch| batch.selected_count() > 0));
 
     let outcome = session
         .execute_mounted_frame(

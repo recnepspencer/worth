@@ -95,8 +95,36 @@ impl UiProjectedMountedFrameCandidate {
     pub(in crate::mounting) fn stage_appearance_projection(
         &mut self,
         attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
+    ) -> Result<(), super::frame_storage::UiAppearanceStateCapacityExceeded> {
+        std::rc::Rc::make_mut(&mut self.frame).stage_appearance_projection(attempt)
+    }
+
+    pub(in crate::mounting) fn set_appearance_invalidation_batch(
+        &mut self,
+        batch: crate::runtime::appearance::UiAppearanceInvalidationBatch,
     ) {
-        std::rc::Rc::make_mut(&mut self.frame).stage_appearance_projection(attempt);
+        std::rc::Rc::make_mut(&mut self.frame).set_appearance_invalidation_batch(batch);
+    }
+
+    pub(in crate::mounting) fn appearance_invalidation_batch(
+        &self,
+    ) -> Option<crate::runtime::appearance::UiAppearanceInvalidationBatch> {
+        self.frame.appearance_invalidation_batch()
+    }
+
+    pub(in crate::mounting) fn prune_appearance_state(
+        &mut self,
+        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) {
+        std::rc::Rc::make_mut(&mut self.frame).prune_appearance_state(session, generation);
+    }
+
+    pub(in crate::mounting) fn reserve_appearance_state(
+        &mut self,
+        context: &crate::runtime::appearance::UiAppearanceAttemptContext,
+    ) -> Result<(), super::frame_storage::UiAppearanceStateCapacityExceeded> {
+        std::rc::Rc::make_mut(&mut self.frame).reserve_appearance_state(context)
     }
 
     pub(in crate::mounting) fn lower_appearance(
@@ -115,9 +143,16 @@ impl UiProjectedMountedFrameCandidate {
     ) -> Result<(), UiMountedProjectionDenial> {
         let frame = std::rc::Rc::make_mut(&mut self.frame);
         frame.rebind_retained_mechanics(replacements)?;
+        frame.begin_appearance_reconstruction();
         self.presentation_changed_instances = frame.mounted_instances().collect::<Vec<_>>().into();
         self.presentation_node_changed_instances = self.presentation_changed_instances.clone();
         Ok(())
+    }
+
+    pub(in crate::mounting) fn appearance_state_capacity_error(
+        &self,
+    ) -> Option<super::frame_storage::UiAppearanceStateCapacityExceeded> {
+        self.frame.appearance_state_capacity_error()
     }
 
     pub fn frame(&self) -> &UiMountedProjectionFrame {

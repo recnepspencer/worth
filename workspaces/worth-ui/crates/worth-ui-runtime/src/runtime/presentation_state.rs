@@ -19,7 +19,14 @@ pub(crate) struct UiApplicationPresentationState {
     resolved_targets: BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenId>,
     mutable_token_revisions: BTreeMap<crate::capability::ThemeTokenId, u64>,
     theme_revision: u64,
-    pending_theme_consumers: crate::runtime::appearance::UiAppearanceConsumerSelection,
+    pending_appearance_invalidation:
+        Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
+    pending_theme_tokens: std::collections::BTreeSet<crate::capability::ThemeTokenId>,
+    next_appearance_batch_revision: u64,
+    appearance_theme_values: BTreeMap<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        theme_values::UiApplicationThemeTypedValues,
+    >,
     #[allow(
         dead_code,
         reason = "milestone 3.16 Gate 0 places the future binding owner without activating switching"
@@ -90,8 +97,10 @@ impl UiApplicationPresentationState {
             resolved_targets,
             mutable_token_revisions,
             theme_revision: 0,
-            pending_theme_consumers:
-                crate::runtime::appearance::UiAppearanceConsumerSelection::empty(),
+            pending_appearance_invalidation: None,
+            pending_theme_tokens: std::collections::BTreeSet::new(),
+            next_appearance_batch_revision: 1,
+            appearance_theme_values: BTreeMap::new(),
             appearance_theme_state: None,
         }
     }
@@ -121,9 +130,14 @@ impl UiApplicationPresentationState {
         &mut self,
         capability: crate::runtime::appearance::UiThemeCapabilityReceipt,
     ) -> Result<(), crate::runtime::appearance::UiThemeInitialBindingDenial> {
-        self.appearance_theme_state
+        let result = self
+            .appearance_theme_state
             .get_or_insert_with(crate::runtime::appearance::UiAppearanceThemeState::default)
-            .install_initial(capability)
+            .install_initial(capability);
+        if result.is_ok() {
+            self.appearance_theme_values.clear();
+        }
+        result
     }
 
     #[allow(
@@ -134,10 +148,15 @@ impl UiApplicationPresentationState {
         &mut self,
         prepared: crate::runtime::appearance::UiPreparedThemeSwitch,
     ) -> Result<(), crate::runtime::appearance::UiThemeSwitchDenial> {
-        self.appearance_theme_state
+        let result = self
+            .appearance_theme_state
             .as_mut()
             .ok_or(crate::runtime::appearance::UiThemeSwitchDenial::UnknownPreparedSwitch)?
-            .commit_published_switch(prepared)
+            .commit_published_switch(prepared);
+        if result.is_ok() {
+            self.appearance_theme_values.clear();
+        }
+        result
     }
 
     #[allow(
@@ -299,10 +318,49 @@ impl UiApplicationPresentationState {
     }
 
     pub(crate) fn theme_values_source(&self) -> crate::mounting::UiMountedThemeValueSource {
-        crate::mounting::UiMountedThemeValueSource::from_canonical_selection(
+        crate::mounting::UiMountedThemeValueSource::from_current_with_changes(
             Arc::clone(&self.token_values),
-            self.pending_theme_consumers.clone(),
+            self.pending_theme_tokens.clone(),
         )
+    }
+
+    pub(crate) fn appearance_invalidation_batch(
+        &self,
+    ) -> Option<crate::runtime::appearance::UiAppearanceInvalidationBatch> {
+        self.pending_appearance_invalidation.clone()
+    }
+
+    pub(crate) fn queue_appearance_invalidation(
+        &mut self,
+        batch: crate::runtime::appearance::UiAppearanceInvalidationBatch,
+    ) -> Result<(), ()> {
+        let revision = self.next_appearance_batch_revision;
+        self.next_appearance_batch_revision = revision.checked_add(1).ok_or(())?;
+        let batch = batch.with_revision(revision);
+        if let Some(pending) = self.pending_appearance_invalidation.as_mut() {
+            if pending.basis() == batch.basis() {
+                pending.merge(batch);
+            } else {
+                *pending = batch;
+            }
+        } else {
+            self.pending_appearance_invalidation = Some(batch);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn settle_appearance_invalidation(
+        &mut self,
+        batch: &crate::runtime::appearance::UiAppearanceInvalidationBatch,
+    ) {
+        if self
+            .pending_appearance_invalidation
+            .as_ref()
+            .is_some_and(|pending| pending.revision() == batch.revision())
+        {
+            self.pending_appearance_invalidation = None;
+            self.pending_theme_tokens.clear();
+        }
     }
 
     pub(crate) fn preview_theme_observation(
@@ -321,10 +379,6 @@ impl UiApplicationPresentationState {
                     row.projected_presentation_revision = Some(*revision);
                 }
             }
-        }
-        if self.theme_revision == projection.theme_revision {
-            self.pending_theme_consumers =
-                crate::runtime::appearance::UiAppearanceConsumerSelection::empty();
         }
     }
 }

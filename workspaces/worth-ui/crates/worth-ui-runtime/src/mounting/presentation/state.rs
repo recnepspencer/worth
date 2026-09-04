@@ -128,7 +128,7 @@ impl UiMountedPresentationAdmission {
 
     pub(crate) fn lower_appearance(
         &mut self,
-    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
+    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
         self.frame.lower_appearance(self.attempt)
     }
 

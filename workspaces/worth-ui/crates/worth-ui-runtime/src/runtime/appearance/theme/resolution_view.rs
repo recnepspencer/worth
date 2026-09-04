@@ -1,15 +1,14 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use worth_ui_dsl::{UiThemeColor, UiThemeSlotIdentity, UiThemeValue, UiThemeValueKind};
+use worth_ui_dsl::{UiThemeSlotIdentity, UiThemeValue, UiThemeValueKind};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiThemeResolutionView {
     definition: crate::capability::UiThemeDefinition,
     catalog: crate::capability::UiThemeSlotCatalog,
     capability: super::UiThemeCapabilityReceipt,
-    value_overrides:
-        Option<Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>>,
+    typed_values: Option<Arc<BTreeMap<crate::capability::ThemeTokenId, UiThemeValue>>>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -52,15 +51,15 @@ impl UiThemeResolutionView {
             definition: definition.clone(),
             catalog: themes.catalog().clone(),
             capability: capability.clone(),
-            value_overrides: None,
+            typed_values: None,
         })
     }
 
-    pub(crate) fn with_value_overrides(
+    pub(crate) fn with_typed_values(
         mut self,
-        values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
+        values: Arc<BTreeMap<crate::capability::ThemeTokenId, UiThemeValue>>,
     ) -> Self {
-        self.value_overrides = Some(values);
+        self.typed_values = Some(values);
         self
     }
 
@@ -84,11 +83,12 @@ impl UiThemeResolutionView {
             .ok_or(UiThemeResolutionDenial::MissingAliasTarget)?;
         let terminal = UiThemeSlotIdentity::new(terminal_id.as_str())
             .ok_or(UiThemeResolutionDenial::InvalidSlotIdentity)?;
-        let value = match &self.value_overrides {
-            Some(values) => values.get(terminal_id).and_then(runtime_theme_value),
-            None => self.definition.value(terminal_id),
-        }
-        .ok_or(UiThemeResolutionDenial::MissingValue)?;
+        let value = self
+            .typed_values
+            .as_ref()
+            .and_then(|values| values.get(terminal_id).copied())
+            .or_else(|| self.definition.value(terminal_id))
+            .ok_or(UiThemeResolutionDenial::MissingValue)?;
         if value.kind() != expected_kind {
             return Err(UiThemeResolutionDenial::ValueKindMismatch);
         }
@@ -177,14 +177,6 @@ impl UiThemeResolutionView {
             digest = fold(digest, role.revision().value());
         }
         digest
-    }
-}
-
-fn runtime_theme_value(value: &crate::capability::ThemeTokenValue) -> Option<UiThemeValue> {
-    match value {
-        crate::capability::ThemeTokenValue::Color(color) => UiThemeColor::parse(color.as_str())
-            .ok()
-            .map(UiThemeValue::Color),
     }
 }
 

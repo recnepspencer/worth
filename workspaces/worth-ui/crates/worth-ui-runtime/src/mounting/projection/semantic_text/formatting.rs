@@ -41,19 +41,18 @@ pub(in crate::mounting::projection) enum UiMountedSemanticTextRowFormatting<'a> 
 pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
     plan: super::super::super::UiMountedPlanProjectionSource<'_>,
     theme_values: &crate::mounting::UiMountedThemeValueSource,
-    graph_node: crate::graph::UiGraphNodeIdentity,
+    _graph_node: crate::graph::UiGraphNodeIdentity,
     plan_index: Option<u32>,
     input: Option<&crate::mounting::UiMountedSemanticTextContent>,
     predecessor: Option<&super::UiMountedSemanticTextSeed>,
+    theme_value_changed: bool,
 ) -> Result<Option<UiMountedSemanticTextFormattingSeed>, UiMountedProjectionDenial> {
     if let Some(crate::mounting::UiMountedSemanticTextContent::Scalar(input)) = input {
         if let Some(directive) = input.formatting() {
             return lower_directive(directive).map(Some);
         }
     }
-    if let Some(predecessor) =
-        predecessor.filter(|_| !theme_values.is_canonically_selected(graph_node))
-    {
+    if let Some(predecessor) = predecessor.filter(|_| !theme_value_changed) {
         return Ok(Some(predecessor.formatting().clone()));
     }
     let Some(plan_index) = plan_index else {

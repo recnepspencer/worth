@@ -12,9 +12,10 @@ mod theme;
 mod host_completion_tests;
 
 pub(crate) use inspection::{
-    UiAppearanceInspectionDenial, UiAppearanceInspectionProducer, UiAppearanceInspectionRecord,
+    UiAppearanceInspectionAttemptBatch, UiAppearanceInspectionDenial,
+    UiAppearanceInspectionProducer, UiAppearanceInspectionRecord,
 };
-pub(crate) use invalidation::UiAppearanceConsumerSelection;
+pub(crate) use invalidation::{UiAppearanceConsumerSelection, UiAppearanceInvalidationBatch};
 #[allow(
     unused_imports,
     reason = "Gate 1 retains sealed appearance projection re-exports for later mounting consumers"
@@ -43,8 +44,7 @@ pub(crate) use state::{
 };
 pub(crate) use theme::{
     UiActiveThemeBinding, UiAppearanceThemeState, UiPreparedThemeSwitch,
-    UiThemeCapabilityAdmission, UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial,
-    UiThemeInitialBindingDenial, UiThemeResolutionDenial, UiThemeResolutionView,
-    UiThemeSwitchDenial, UiThemeSwitchOrigin, UiThemeSwitchOriginAdmissionDenial,
-    UiThemeSwitchOriginFamily, UiThemeSwitchRequest,
+    UiThemeCapabilityAdmission, UiThemeCapabilityReceipt, UiThemeInitialBindingDenial,
+    UiThemeResolutionDenial, UiThemeResolutionView, UiThemeSwitchDenial, UiThemeSwitchOrigin,
+    UiThemeSwitchOriginAdmissionDenial, UiThemeSwitchOriginFamily, UiThemeSwitchRequest,
 };

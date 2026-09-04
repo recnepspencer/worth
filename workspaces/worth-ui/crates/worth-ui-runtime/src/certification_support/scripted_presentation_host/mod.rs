@@ -198,6 +198,17 @@ impl ScriptedPresentationHost {
         ));
     }
 
+    pub fn push_native_display_settled_without_effects(&self) {
+        self.push_presentation(UiHostSurfacePresentationOutcome::Presented(
+            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+                UiHostSurfacePresentationMode::NativeDisplay,
+                scripted_presentation_epoch(),
+                UiMountedCompletedEffects::new(Vec::new()),
+                worth_ui_host_contract::UiHostPresentationCostReport::default(),
+            ),
+        ));
+    }
+
     pub fn push_rejected(&self) {
         self.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
             worth_ui_host_contract::UiHostSurfacePresentationDenial::AdapterDeclined,

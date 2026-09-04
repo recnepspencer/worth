@@ -3,6 +3,34 @@ use std::sync::Arc;
 
 use super::UiApplicationPresentationState;
 
+#[derive(Clone)]
+pub(crate) struct UiApplicationThemeTypedValues {
+    capability: crate::runtime::appearance::UiThemeCapabilityReceipt,
+    values: Arc<BTreeMap<crate::capability::ThemeTokenId, worth_ui_dsl::UiThemeValue>>,
+}
+
+impl UiApplicationThemeTypedValues {
+    fn new(
+        capability: &crate::runtime::appearance::UiThemeCapabilityReceipt,
+        values: BTreeMap<crate::capability::ThemeTokenId, worth_ui_dsl::UiThemeValue>,
+    ) -> Self {
+        Self {
+            capability: capability.clone(),
+            values: Arc::new(values),
+        }
+    }
+
+    pub(crate) fn capability(&self) -> &crate::runtime::appearance::UiThemeCapabilityReceipt {
+        &self.capability
+    }
+
+    pub(crate) fn values(
+        &self,
+    ) -> Arc<BTreeMap<crate::capability::ThemeTokenId, worth_ui_dsl::UiThemeValue>> {
+        Arc::clone(&self.values)
+    }
+}
+
 pub(crate) struct UiApplicationThemeValueUpdate {
     predecessor_theme_revision: u64,
     token_values:
@@ -11,12 +39,34 @@ pub(crate) struct UiApplicationThemeValueUpdate {
     changed_tokens: Box<[crate::capability::ThemeTokenId]>,
     semantic_presentation_revisions: Box<[(Box<str>, u64)]>,
     theme_revision: u64,
+    appearance_theme_values:
+        BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, UiApplicationThemeTypedValues>,
 }
 
 impl UiApplicationPresentationState {
     pub(crate) fn prepare_theme_values(
         &self,
         changes: &[crate::facade::entry::UiNativeThemeTokenValueChange],
+    ) -> Result<UiApplicationThemeValueUpdate, ()> {
+        self.prepare_theme_values_inner(changes, None)
+    }
+
+    pub(crate) fn prepare_theme_values_for_appearance(
+        &self,
+        changes: &[crate::facade::entry::UiNativeThemeTokenValueChange],
+        themes: &crate::capability::FrozenAppearanceThemeCapabilities,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Result<UiApplicationThemeValueUpdate, ()> {
+        self.prepare_theme_values_inner(changes, Some((themes, generation)))
+    }
+
+    fn prepare_theme_values_inner(
+        &self,
+        changes: &[crate::facade::entry::UiNativeThemeTokenValueChange],
+        appearance: Option<(
+            &crate::capability::FrozenAppearanceThemeCapabilities,
+            &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        )>,
     ) -> Result<UiApplicationThemeValueUpdate, ()> {
         let mut seen = HashSet::with_capacity(changes.len());
         for change in changes {
@@ -28,6 +78,19 @@ impl UiApplicationPresentationState {
                 return Err(());
             }
         }
+        let typed_changes = changes
+            .iter()
+            .map(|change| {
+                let value = match change.value() {
+                    crate::capability::ThemeTokenValue::Color(color) => {
+                        worth_ui_dsl::UiThemeColor::parse(color.as_str())
+                            .map(worth_ui_dsl::UiThemeValue::Color)
+                            .map_err(|_| ())?
+                    }
+                };
+                Ok((change.token().clone(), value))
+            })
+            .collect::<Result<BTreeMap<_, _>, ()>>()?;
 
         let mut token_values = Arc::clone(&self.token_values);
         let mut mutable_token_revisions = self.mutable_token_revisions.clone();
@@ -61,6 +124,39 @@ impl UiApplicationPresentationState {
         changed_tokens.dedup();
         changed_targets.sort();
         changed_targets.dedup();
+        let mut appearance_theme_values = self.appearance_theme_values.clone();
+        if let Some((themes, generation)) = appearance {
+            let Some(theme_state) = self.appearance_theme_state.as_ref() else {
+                return Err(());
+            };
+            for binding in theme_state.active_bindings() {
+                if binding.capability().application() != generation {
+                    return Err(());
+                }
+                let view = crate::runtime::appearance::UiThemeResolutionView::from_capability(
+                    binding.capability(),
+                    themes,
+                )
+                .map_err(|_| ())?;
+                let mut values = appearance_theme_values
+                    .get(&binding.surface())
+                    .filter(|current| current.capability == *binding.capability())
+                    .map_or_else(BTreeMap::new, |current| (*current.values).clone());
+                for (token, value) in &typed_changes {
+                    let requested =
+                        worth_ui_dsl::UiThemeSlotIdentity::new(token.as_str()).ok_or(())?;
+                    let resolved = view.resolve(&requested, value.kind()).map_err(|_| ())?;
+                    let terminal =
+                        crate::capability::ThemeTokenId::new(resolved.terminal().as_str())
+                            .map_err(|_| ())?;
+                    values.insert(terminal, *value);
+                }
+                appearance_theme_values.insert(
+                    binding.surface(),
+                    UiApplicationThemeTypedValues::new(binding.capability(), values),
+                );
+            }
+        }
         let semantic_presentation_revisions = self
             .rows
             .iter()
@@ -95,13 +191,14 @@ impl UiApplicationPresentationState {
             changed_tokens: changed_tokens.into_boxed_slice(),
             semantic_presentation_revisions: semantic_presentation_revisions.into_boxed_slice(),
             theme_revision,
+            appearance_theme_values,
         })
     }
 
     pub(crate) fn commit_theme_values(
         &mut self,
         update: UiApplicationThemeValueUpdate,
-        canonical_selection: crate::runtime::appearance::UiAppearanceConsumerSelection,
+        invalidation: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
     ) -> Result<(), ()> {
         if update.predecessor_theme_revision != self.theme_revision {
             return Err(());
@@ -116,7 +213,12 @@ impl UiApplicationPresentationState {
                     .presentation_revision = revision;
             }
             self.theme_revision = update.theme_revision;
-            self.pending_theme_consumers.merge(canonical_selection);
+            self.appearance_theme_values = update.appearance_theme_values;
+            self.pending_theme_tokens
+                .extend(update.changed_tokens.iter().cloned());
+            if let Some(invalidation) = invalidation {
+                self.queue_appearance_invalidation(invalidation)?;
+            }
         }
         Ok(())
     }

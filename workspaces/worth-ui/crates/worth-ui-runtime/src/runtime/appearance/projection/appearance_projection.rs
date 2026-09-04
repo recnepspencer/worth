@@ -78,27 +78,6 @@ impl UiAppearanceProjection {
     pub(crate) fn exactly_equivalent(&self, other: &Self) -> bool {
         self == other
     }
-
-    pub(crate) fn physical_output_equivalent(&self, other: &Self) -> bool {
-        self.role == other.role
-            && self.role_schema == other.role_schema
-            && self.role_revision == other.role_revision
-            && self.aspects.len() == other.aspects.len()
-            && self.aspects.iter().all(|left| {
-                other
-                    .aspects
-                    .iter()
-                    .find(|right| right.aspect() == left.aspect())
-                    .is_some_and(|right| {
-                        right.value() == left.value()
-                            && right.support() == left.support()
-                            && right.provenance().selected_slot()
-                                == left.provenance().selected_slot()
-                            && right.provenance().terminal_slot()
-                                == left.provenance().terminal_slot()
-                    })
-            })
-    }
 }
 
 fn fold(digest: u64, value: u64) -> u64 {

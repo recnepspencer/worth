@@ -3,7 +3,6 @@ use crate::mounting::{
     UiMountedFrameOutcome, UiMountedFramePublicationCandidate, UiMountedFramePublicationReceipt,
     UiMountedPresentationInFlight, UiMountedPresentationOutcome,
 };
-
 #[path = "publication/reconciliation.rs"]
 mod reconciliation;
 
@@ -16,8 +15,8 @@ pub(crate) struct UiMountedObservationValidationBasis<'session> {
 pub(crate) struct UiMountedPublicationTransition {
     outcome: UiMountedFrameOutcome,
     observation: Option<UiMountedHostObservationTransition>,
+    appearance: Option<crate::runtime::appearance::UiAppearanceInspectionAttemptBatch>,
 }
-
 pub(crate) enum UiMountedHostObservationTransition {
     NeverPresented(worth_ui_host_contract::UiMountedFrameIdentity),
     Rejected(worth_ui_host_contract::UiMountedFrameIdentity),
@@ -143,7 +142,7 @@ impl WorthUiMountedSessionState {
         retained: crate::mounting::retention::UiRetentionPreparedMountedFrame,
         capability_report: worth_ui_host_contract::WorthUiHostCapabilityReport,
         publication_predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
-        mut appearance_inspection: Option<
+        _appearance_inspection: Option<
             &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
         >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
@@ -163,12 +162,12 @@ impl WorthUiMountedSessionState {
                     );
                 }
             };
-        if let Some(producer) = appearance_inspection.as_deref_mut() {
-            producer.record_frame_attempts(admission.lower_appearance());
-        }
+        let appearance_batch = admission.lower_appearance();
         let reservation =
             UiMountedFramePublicationCandidate::reserve(&admission, publication_predecessor);
         let attempt = admission.attempt();
+        self.presentation
+            .retain_appearance_attempt(attempt, appearance_batch);
         let replaced = self.publication_reservations.insert(attempt, reservation);
         assert!(
             replaced.is_none(),
@@ -239,53 +238,62 @@ impl WorthUiMountedSessionState {
         outcome: UiMountedPresentationOutcome,
     ) -> UiMountedPublicationTransition {
         let attempt = presentation_attempt(&outcome);
-        if self.reconciliation_reservations.contains_key(&attempt) {
-            return self.finish_reconciliation(outcome, attempt);
-        }
-        match outcome {
-            UiMountedPresentationOutcome::Presented(presented) => {
-                let attempt = presented.receipt().attempt();
-                let reservation = self
-                    .publication_reservations
-                    .remove(&attempt)
-                    .expect("every presented attempt has a pre-effect publication reservation");
-                match reservation.commit_presented(presented, &mut self.identity) {
-                    crate::mounting::UiMountedFramePublicationCommit::Current(receipt) => {
-                        UiMountedPublicationTransition::new(UiMountedFrameOutcome::Published(
-                            receipt,
-                        ))
-                    }
-                    crate::mounting::UiMountedFramePublicationCommit::Superseded(frame) => {
-                        UiMountedPublicationTransition::new(UiMountedFrameOutcome::Superseded(
-                            frame,
-                        ))
+        let retain_appearance = matches!(&outcome, UiMountedPresentationOutcome::InFlight(_));
+        let appearance_batch = (!retain_appearance)
+            .then(|| self.presentation.take_appearance_attempt(attempt))
+            .flatten();
+        let mut transition = if self.reconciliation_reservations.contains_key(&attempt) {
+            self.finish_reconciliation(outcome, attempt)
+        } else {
+            match outcome {
+                UiMountedPresentationOutcome::Presented(presented) => {
+                    let attempt = presented.receipt().attempt();
+                    let reservation = self
+                        .publication_reservations
+                        .remove(&attempt)
+                        .expect("every presented attempt has a pre-effect publication reservation");
+                    match reservation.commit_presented(presented, &mut self.identity) {
+                        crate::mounting::UiMountedFramePublicationCommit::Current(receipt) => {
+                            UiMountedPublicationTransition::new(UiMountedFrameOutcome::Published(
+                                receipt,
+                            ))
+                        }
+                        crate::mounting::UiMountedFramePublicationCommit::Superseded(frame) => {
+                            UiMountedPublicationTransition::new(UiMountedFrameOutcome::Superseded(
+                                frame,
+                            ))
+                        }
                     }
                 }
+                UiMountedPresentationOutcome::RejectedBeforeEffects(rejected) => {
+                    self.remove_publication_reservation(rejected.attempt());
+                    let frame = rejected.frame().canonical_core().frame();
+                    UiMountedPublicationTransition::with_observation(
+                        UiMountedFrameOutcome::RejectedBeforeEffects(rejected),
+                        UiMountedHostObservationTransition::Rejected(frame),
+                    )
+                }
+                UiMountedPresentationOutcome::Superseded(superseded) => {
+                    self.remove_publication_reservation(superseded.attempt());
+                    UiMountedPublicationTransition::new(UiMountedFrameOutcome::Superseded(
+                        superseded,
+                    ))
+                }
+                UiMountedPresentationOutcome::InFlight(in_flight) => {
+                    UiMountedPublicationTransition::new(UiMountedFrameOutcome::InFlight(in_flight))
+                }
+                UiMountedPresentationOutcome::PresentationIndeterminate(indeterminate) => {
+                    self.remove_publication_reservation(indeterminate.report().attempt());
+                    let observation = indeterminate_observation(&indeterminate);
+                    UiMountedPublicationTransition::with_observation(
+                        UiMountedFrameOutcome::PresentationIndeterminate(indeterminate),
+                        observation,
+                    )
+                }
             }
-            UiMountedPresentationOutcome::RejectedBeforeEffects(rejected) => {
-                self.remove_publication_reservation(rejected.attempt());
-                let frame = rejected.frame().canonical_core().frame();
-                UiMountedPublicationTransition::with_observation(
-                    UiMountedFrameOutcome::RejectedBeforeEffects(rejected),
-                    UiMountedHostObservationTransition::Rejected(frame),
-                )
-            }
-            UiMountedPresentationOutcome::Superseded(superseded) => {
-                self.remove_publication_reservation(superseded.attempt());
-                UiMountedPublicationTransition::new(UiMountedFrameOutcome::Superseded(superseded))
-            }
-            UiMountedPresentationOutcome::InFlight(in_flight) => {
-                UiMountedPublicationTransition::new(UiMountedFrameOutcome::InFlight(in_flight))
-            }
-            UiMountedPresentationOutcome::PresentationIndeterminate(indeterminate) => {
-                self.remove_publication_reservation(indeterminate.report().attempt());
-                let observation = indeterminate_observation(&indeterminate);
-                UiMountedPublicationTransition::with_observation(
-                    UiMountedFrameOutcome::PresentationIndeterminate(indeterminate),
-                    observation,
-                )
-            }
-        }
+        };
+        transition.appearance = appearance_batch;
+        transition
     }
 
     pub(crate) fn current_publication(&self) -> Option<&UiMountedFramePublicationReceipt> {
@@ -328,6 +336,7 @@ impl UiMountedPublicationTransition {
         Self {
             outcome,
             observation: None,
+            appearance: None,
         }
     }
 
@@ -338,6 +347,7 @@ impl UiMountedPublicationTransition {
         Self {
             outcome,
             observation: Some(observation),
+            appearance: None,
         }
     }
 
@@ -346,8 +356,9 @@ impl UiMountedPublicationTransition {
     ) -> (
         UiMountedFrameOutcome,
         Option<UiMountedHostObservationTransition>,
+        Option<crate::runtime::appearance::UiAppearanceInspectionAttemptBatch>,
     ) {
-        (self.outcome, self.observation)
+        (self.outcome, self.observation, self.appearance)
     }
 }
 

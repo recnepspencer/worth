@@ -34,6 +34,32 @@ pub(crate) enum UiAppearanceInspectionRecord {
     },
 }
 
+pub(crate) struct UiAppearanceInspectionAttemptBatch {
+    invalidation: Option<super::super::invalidation::UiAppearanceInvalidationBatch>,
+    records: Vec<UiAppearanceInspectionRecord>,
+}
+
+impl UiAppearanceInspectionAttemptBatch {
+    pub(crate) fn new(
+        invalidation: Option<super::super::invalidation::UiAppearanceInvalidationBatch>,
+        records: Vec<UiAppearanceInspectionRecord>,
+    ) -> Self {
+        Self {
+            invalidation,
+            records,
+        }
+    }
+
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        Option<super::super::invalidation::UiAppearanceInvalidationBatch>,
+        Vec<UiAppearanceInspectionRecord>,
+    ) {
+        (self.invalidation, self.records)
+    }
+}
+
 #[derive(Clone)]
 struct Entry {
     explanation: UiAppearanceInspectionExplanation,
@@ -91,6 +117,22 @@ impl UiAppearanceInspectionProducer {
                     denial,
                     receipt,
                 } => denial::record_attempt_denial(self, &context, denial, receipt),
+            }
+        }
+    }
+
+    pub(crate) fn record_pre_effect_denials(
+        &mut self,
+        records: impl IntoIterator<Item = UiAppearanceInspectionRecord>,
+    ) {
+        for record in records {
+            if let UiAppearanceInspectionRecord::Denial {
+                context,
+                denial,
+                receipt,
+            } = record
+            {
+                denial::record_attempt_denial(self, &context, denial, receipt);
             }
         }
     }
@@ -320,7 +362,6 @@ fn physical_suppression(
         UiAppearanceInspectionPhysicalSuppression::NotSuppressed
     }
 }
-
 impl Default for UiAppearanceInspectionProducer {
     fn default() -> Self {
         Self::new()

@@ -15,6 +15,7 @@ pub(crate) struct UiAppearanceAttemptContext {
     aspect_hints: Box<[worth_ui_dsl::UiAppearanceAspect]>,
     consumers_selected: u32,
     owner_evidence: u64,
+    invalidation_batch: Option<super::super::invalidation::UiAppearanceInvalidationBatch>,
 }
 
 impl UiAppearanceAttemptContext {
@@ -44,6 +45,7 @@ impl UiAppearanceAttemptContext {
             aspect_hints: Box::new([]),
             consumers_selected,
             owner_evidence,
+            invalidation_batch: None,
         }
     }
 
@@ -66,6 +68,13 @@ impl UiAppearanceAttemptContext {
         self.owner_evidence = state.evidence_digest();
         self.generation = state.basis().generation().clone();
         self.state = Some(state.clone());
+    }
+
+    pub(crate) fn set_invalidation_batch(
+        &mut self,
+        batch: &super::super::invalidation::UiAppearanceInvalidationBatch,
+    ) {
+        self.invalidation_batch = Some(batch.clone());
     }
 
     pub(crate) fn set_projection(&mut self, projection: &super::UiAppearanceProjection) {
@@ -177,6 +186,12 @@ impl UiAppearanceAttemptContext {
 
     pub(crate) const fn owner_evidence(&self) -> u64 {
         self.owner_evidence
+    }
+
+    pub(crate) fn invalidation_batch(
+        &self,
+    ) -> Option<&super::super::invalidation::UiAppearanceInvalidationBatch> {
+        self.invalidation_batch.as_ref()
     }
 }
 
