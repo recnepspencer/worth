@@ -28,18 +28,18 @@ pub use artifact_input::{
 };
 pub(crate) use canonical::WorthUiCanonicalModuleOrder;
 pub(crate) use compile::{
-    resolve_file_authored_overlay_declarations, resolve_portal_identity_names,
+    resolve_file_authored_overlay_declarations, resolve_rust_authored_overlay_declaration_bindings,
 };
 pub use compile::{
     WorthUiAuthoredMode, WorthUiAuthoredSourceInput, WorthUiDslCompileDiagnostic,
     WorthUiDslCompileDiagnosticCode, WorthUiDslCompileDiagnosticDetail, WorthUiDslCompileReport,
     WorthUiDslCompileStopClass, WorthUiDslCompiler, WorthUiDslDiagnosticIdentity,
-    WorthUiDslProtocolIdentity, WorthUiDslSourceSpan, WorthUiSealedSemanticArtifact,
-    WorthUiSealedSemanticPackage, WorthUiSemanticAppearanceRoleDeclaration,
-    WorthUiSemanticBackdropDeclaration, WorthUiSemanticBlock, WorthUiSemanticDeclaration,
-    WorthUiSemanticDeclarationView, WorthUiSemanticImport, WorthUiSemanticModule,
-    WorthUiSemanticPackageIdentity, WorthUiSemanticProjectionDeclaration,
-    WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
+    WorthUiDslProtocolIdentity, WorthUiDslSourceSpan, WorthUiSealedOverlayDeclarationBindings,
+    WorthUiSealedSemanticArtifact, WorthUiSealedSemanticPackage,
+    WorthUiSemanticAppearanceRoleDeclaration, WorthUiSemanticBackdropDeclaration,
+    WorthUiSemanticBlock, WorthUiSemanticDeclaration, WorthUiSemanticDeclarationView,
+    WorthUiSemanticImport, WorthUiSemanticModule, WorthUiSemanticPackageIdentity,
+    WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
 };
 pub(crate) use import_graph::{WorthUiSourceImport, WorthUiSourceImportGraph};
 pub use legality::{

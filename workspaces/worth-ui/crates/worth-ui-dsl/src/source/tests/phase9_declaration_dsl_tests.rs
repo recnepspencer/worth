@@ -325,6 +325,21 @@ fn file_and_rust_backdrops_converge_on_equal_typed_graph_and_bytes() {
         file.overlay_relation_graph().unwrap().canonical_bytes(),
         rust.overlay_relation_graph().unwrap().canonical_bytes()
     );
+    let file_bindings = file.overlay_declaration_bindings();
+    let permuted_bindings = permuted_file.overlay_declaration_bindings();
+    let rust_bindings = rust.overlay_declaration_bindings();
+    assert_eq!(
+        file_bindings.portal_named("alpha.portal"),
+        permuted_bindings.portal_named("alpha.portal")
+    );
+    assert_eq!(
+        file_bindings.portal_named("beta.portal"),
+        rust_bindings.portal_named("beta.portal")
+    );
+    assert_eq!(
+        file_bindings.surface_named("alpha.surface"),
+        rust_bindings.surface_named("alpha.surface")
+    );
     assert_eq!(file.identity(), rust.identity());
     assert_eq!(file.identity(), permuted_file.identity());
 }

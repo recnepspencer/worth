@@ -20,6 +20,8 @@ pub(crate) struct WorthUiRustAuthoredToArtifactInputLowerer;
 pub(crate) enum WorthUiRustAuthoredInputLoweringDenial {
     InvalidModulePath,
     DuplicateModuleIdentity,
+    DuplicateOverlayDeclaration,
+    OverlayIdentityCapacity,
 }
 
 impl WorthUiRustAuthoredToArtifactInputLowerer {
@@ -52,8 +54,27 @@ impl WorthUiRustAuthoredToArtifactInputLowerer {
             }
         }
 
+        let overlay_declaration_bindings =
+            crate::source::resolve_rust_authored_overlay_declaration_bindings(&modules).map_err(
+                |report| {
+                    let code = report
+                        .diagnostics()
+                        .first()
+                        .map(|diagnostic| diagnostic.identity().code());
+                    match code {
+                        Some(
+                            crate::WorthUiDslCompileDiagnosticCode::DuplicateAppearanceDeclaration,
+                        ) => WorthUiRustAuthoredInputLoweringDenial::DuplicateOverlayDeclaration,
+                        _ => WorthUiRustAuthoredInputLoweringDenial::OverlayIdentityCapacity,
+                    }
+                },
+            )?;
         Ok(WorthUiArtifactInputNormalizer::normalize(
-            WorthUiArtifactInput::new(modules, canonical_module_order),
+            WorthUiArtifactInput::new(
+                modules,
+                canonical_module_order,
+                overlay_declaration_bindings,
+            ),
         ))
     }
 }

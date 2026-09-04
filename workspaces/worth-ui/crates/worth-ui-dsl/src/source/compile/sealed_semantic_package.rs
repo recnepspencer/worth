@@ -18,7 +18,7 @@ use crate::source::{
     WorthUiArtifactInput, WorthUiArtifactInputModule, WorthUiArtifactInputNode,
     WorthUiArtifactInputProvenance, WorthUiArtifactInputReference, WorthUiAuthoredStructuralBody,
     WorthUiDslCompileDiagnostic, WorthUiDslCompileReport, WorthUiProjectionRequirement,
-    WorthUiSourceModuleId,
+    WorthUiSealedOverlayDeclarationBindings, WorthUiSourceModuleId,
 };
 use crate::UiDslLoweringReceipt;
 #[derive(Debug)]
@@ -29,6 +29,7 @@ pub struct WorthUiSealedSemanticPackage {
     identity: WorthUiSemanticPackageIdentity,
     protocol: WorthUiDslProtocolIdentity,
     authored_mode: WorthUiAuthoredMode,
+    overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings,
     overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
     _seal: WorthUiSemanticPackageSeal,
 }
@@ -111,7 +112,7 @@ struct WorthUiSemanticPackageSealingState {
         ),
     >,
     backdrops: Vec<(crate::UiBackdropDeclaration, WorthUiArtifactInputProvenance)>,
-    portal_identities: Vec<String>,
+    overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings,
     overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
 }
 
@@ -121,7 +122,8 @@ impl WorthUiSealedSemanticPackage {
         authored_mode: WorthUiAuthoredMode,
     ) -> Result<Self, WorthUiDslCompileReport> {
         let canonical_module_order = semantic_input.module_ids().to_vec();
-        let mut state = WorthUiSemanticPackageSealingState::new();
+        let overlay_declaration_bindings = semantic_input.overlay_declaration_bindings().clone();
+        let mut state = WorthUiSemanticPackageSealingState::new(overlay_declaration_bindings);
         for module_id in &canonical_module_order {
             let input_module = semantic_input
                 .module(module_id)
@@ -151,6 +153,7 @@ impl WorthUiSealedSemanticPackage {
             identity,
             protocol: WorthUiDslProtocolIdentity::current(),
             authored_mode,
+            overlay_declaration_bindings: state.overlay_declaration_bindings,
             overlay_relation_graph: state.overlay_relation_graph,
             _seal: WorthUiSemanticPackageSeal,
         })
@@ -211,7 +214,7 @@ impl WorthUiSealedSemanticPackage {
 }
 
 impl WorthUiSemanticPackageSealingState {
-    fn new() -> Self {
+    fn new(overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings) -> Self {
         Self {
             modules: BTreeMap::new(),
             provenance_table: Vec::new(),
@@ -220,7 +223,7 @@ impl WorthUiSemanticPackageSealingState {
             projection_content_references: Vec::new(),
             appearance_roles: BTreeMap::new(),
             backdrops: Vec::new(),
-            portal_identities: Vec::new(),
+            overlay_declaration_bindings,
             overlay_relation_graph: None,
         }
     }

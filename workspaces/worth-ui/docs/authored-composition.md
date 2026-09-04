@@ -24,6 +24,7 @@ sealed semantic package before runtime prepares an application.
 - `WorthUiSettledSourceSnapshot::attempt_source_rebind(...)`
 - `WorthUiApplicationBuilder::with_rust_authored_input(...)`
 - `WorthUiApplicationBuilder::with_candidate_submission(...)`
+- `WorthUiPreparedApplicationAuthority::authored_overlay_material()`
 - `WorthUiNativeApplicationShell::begin_source_rebind(...)`
 
 The source facade owns transport, settlement, revision affinity, and candidate
@@ -95,7 +96,10 @@ let session = app.launch()?;
 The capability-only preparation supplies the exact admission snapshot for
 lowering; it does not launch or become a second active application. The
 candidate retains source revision, ordering, semantic handoff, and provenance
-as one unit.
+as one unit. That handoff also carries the compiler-issued overlay declaration
+bindings, admitted backdrop/relation material, portal-anchor rows, and their
+source provenance; prepared authority exposes those facts only as immutable
+borrowed reads.
 
 ### Watched Edit
 

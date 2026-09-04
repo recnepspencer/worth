@@ -41,9 +41,14 @@ impl WorthUiParsedSourceToArtifactInputLowerer {
         if !diagnostics.is_empty() {
             return Err(crate::source::WorthUiDslCompileReport::new(diagnostics));
         }
-        let modules = crate::source::resolve_file_authored_overlay_declarations(lowered_modules)?;
+        let (modules, overlay_declaration_bindings) =
+            crate::source::resolve_file_authored_overlay_declarations(lowered_modules)?;
         Ok(WorthUiArtifactInputNormalizer::normalize(
-            WorthUiArtifactInput::new(modules, canonical_module_order),
+            WorthUiArtifactInput::new(
+                modules,
+                canonical_module_order,
+                overlay_declaration_bindings,
+            ),
         ))
     }
 }

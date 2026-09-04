@@ -1,6 +1,7 @@
 use super::{
     WorthUiSealedSemanticPackage, WorthUiSemanticDeclaration, WorthUiSemanticProvenanceRef,
 };
+use crate::source::WorthUiSealedOverlayDeclarationBindings;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthUiSemanticAppearanceRoleDeclaration {
@@ -55,6 +56,10 @@ impl WorthUiSemanticBackdropDeclaration {
 }
 
 impl WorthUiSealedSemanticPackage {
+    pub fn overlay_declaration_bindings(&self) -> &WorthUiSealedOverlayDeclarationBindings {
+        &self.overlay_declaration_bindings
+    }
+
     pub fn overlay_relation_graph(&self) -> Option<&crate::UiOverlayRelationGraph> {
         self.overlay_relation_graph.as_ref()
     }

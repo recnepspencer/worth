@@ -179,6 +179,10 @@ impl WorthUiPreparedApplicationAuthority {
         &self.semantic_handoff
     }
 
+    pub fn authored_overlay_material(&self) -> &crate::runtime::WorthUiAuthoredOverlayMaterial {
+        self.semantic_handoff.authored_overlay_material()
+    }
+
     pub fn application_artifact_posture(&self) -> WorthUiPreparedApplicationArtifactPosture {
         self.canonical_artifact.posture()
     }

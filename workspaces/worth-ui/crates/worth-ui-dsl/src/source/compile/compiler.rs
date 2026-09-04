@@ -131,6 +131,12 @@ fn rust_authored_report(denial: WorthUiRustAuthoredInputLoweringDenial) -> Worth
         WorthUiRustAuthoredInputLoweringDenial::DuplicateModuleIdentity => {
             WorthUiDslCompileDiagnosticCode::DuplicateRustAuthoredModuleIdentity
         }
+        WorthUiRustAuthoredInputLoweringDenial::DuplicateOverlayDeclaration => {
+            WorthUiDslCompileDiagnosticCode::DuplicateAppearanceDeclaration
+        }
+        WorthUiRustAuthoredInputLoweringDenial::OverlayIdentityCapacity => {
+            WorthUiDslCompileDiagnosticCode::OverlayCapacityDenied
+        }
     };
     WorthUiDslCompileReport::new(vec![WorthUiDslCompileDiagnostic::new(
         code,

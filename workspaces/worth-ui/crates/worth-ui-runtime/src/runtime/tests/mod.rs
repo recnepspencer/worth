@@ -52,6 +52,8 @@ pub(crate) mod appearance_theme_test_support;
 mod application_semantic_no_op_tests;
 #[path = "replacement/artifact_equivalence_boundary_tests.rs"]
 mod artifact_equivalence_boundary_tests;
+#[path = "source_ingress/authored_overlay_handoff_tests.rs"]
+mod authored_overlay_handoff_tests;
 #[path = "replacement/candidate_admission_boundary_tests.rs"]
 mod candidate_admission_boundary_tests;
 #[path = "source_ingress/candidate_composition_preparation_tests.rs"]
