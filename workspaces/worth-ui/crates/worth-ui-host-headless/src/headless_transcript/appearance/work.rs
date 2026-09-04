@@ -5,7 +5,7 @@ use worth_ui_host_contract::{
 use super::UiHeadlessAppearanceMechanic;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum UiHeadlessAppearanceMechanicChange {
+pub enum UiHeadlessAppearanceMechanicChange {
     Insert(UiHeadlessAppearanceMechanic),
     Replace {
         predecessor: UiMountedAppearanceMechanicIdentity,

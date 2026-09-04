@@ -4,6 +4,7 @@ mod change;
 mod color;
 mod compositing;
 mod frame;
+mod geometry_qualification;
 mod logical_length;
 mod native_profile;
 mod node_attribution;
@@ -16,6 +17,7 @@ mod portal_surface;
 mod radii;
 mod surface;
 mod text_foreground;
+mod unpublished;
 
 pub use backdrop::{
     UiMountedBackdropAppearanceAttribution, UiMountedBackdropCompletionDenial,
@@ -42,6 +44,11 @@ pub use frame::{
     UiMountedAppearanceFrame, UiMountedAppearanceFrameDenial,
     UiMountedAppearancePredecessorManifest, UiMountedAppearanceWork,
     UiMountedAppearanceWorkPosture,
+};
+pub use geometry_qualification::{
+    UiHostAppearanceGeometryQualification, UiHostAppearanceGeometryQualificationBasis,
+    UiHostAppearanceGeometryQualificationDenial, UiHostAppearanceScaleDenial,
+    UiHostAppearanceScaleGeometryQualification, UI_HOST_APPEARANCE_GEOMETRY_ROW_CAPACITY,
 };
 pub use logical_length::{
     UiAppearanceLogicalLength, UiAppearanceNegativeLength,
@@ -76,4 +83,9 @@ pub use surface::{
 pub use text_foreground::{
     UiMountedTextForegroundAppearanceCompletionDenial,
     UiMountedTextForegroundAppearanceCompletionInput, UiMountedTextForegroundAppearanceMechanic,
+};
+pub use unpublished::{
+    UiUnpublishedAppearanceFragment, UiUnpublishedAppearanceFragmentIdentity,
+    UiUnpublishedAppearanceFrameProjection, UiUnpublishedAppearanceFrameProjectionDenial,
+    UI_UNPUBLISHED_APPEARANCE_FRAGMENT_CAPACITY,
 };

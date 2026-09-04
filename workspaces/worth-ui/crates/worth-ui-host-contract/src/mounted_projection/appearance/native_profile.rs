@@ -1,5 +1,7 @@
 use crate::runtime::WorthUiHostCapabilityDigest;
 
+use super::UiHostAppearanceGeometryQualification;
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum UiHostAppearanceMechanicFamily {
     SurfaceFill,
@@ -43,6 +45,7 @@ pub struct UiHostAppearanceProfileContract {
     version: u16,
     mechanics: Box<[UiHostAppearanceMechanicFamily]>,
     primary_pointer: Option<super::UiHostPrimaryPointerKind>,
+    geometry_qualification: UiHostAppearanceGeometryQualification,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -58,6 +61,7 @@ impl UiHostAppearanceProfileContract {
         version: u16,
         mechanics: impl IntoIterator<Item = UiHostAppearanceMechanicFamily>,
         primary_pointer: Option<super::UiHostPrimaryPointerKind>,
+        geometry_qualification: UiHostAppearanceGeometryQualification,
     ) -> Result<Self, UiHostAppearanceProfileDenial> {
         let identity = identity.into();
         if identity.is_empty() {
@@ -79,6 +83,7 @@ impl UiHostAppearanceProfileContract {
             version,
             mechanics: mechanics.into_boxed_slice(),
             primary_pointer,
+            geometry_qualification,
         })
     }
 
@@ -99,6 +104,10 @@ impl UiHostAppearanceProfileContract {
         self.primary_pointer
     }
 
+    pub const fn geometry_qualification(&self) -> &UiHostAppearanceGeometryQualification {
+        &self.geometry_qualification
+    }
+
     pub(crate) fn append_canonical_encoding(&self, digest: &mut WorthUiHostCapabilityDigest) {
         digest.update_byte(match self.posture {
             UiHostAppearanceProfilePosture::StagedNonCurrent => 1,
@@ -114,6 +123,8 @@ impl UiHostAppearanceProfileContract {
             Some(super::UiHostPrimaryPointerKind::Mouse) => 1,
             Some(super::UiHostPrimaryPointerKind::Pen) => 2,
         });
+        self.geometry_qualification
+            .append_canonical_encoding(digest);
     }
 }
 
@@ -138,6 +149,10 @@ impl UiHostAppearanceMechanicFamily {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        UiAppearanceLogicalLength, UiHostAppearanceGeometryQualificationBasis,
+        UiHostAppearanceScaleGeometryQualification,
+    };
 
     const EXPLICIT_MECHANICS: [UiHostAppearanceMechanicFamily; 11] = [
         UiHostAppearanceMechanicFamily::SurfaceFill,
@@ -160,6 +175,7 @@ mod tests {
             2,
             EXPLICIT_MECHANICS,
             Some(super::super::UiHostPrimaryPointerKind::Mouse),
+            qualified_geometry(),
         )
         .is_ok());
         assert_eq!(
@@ -168,8 +184,21 @@ mod tests {
                 2,
                 [UiHostAppearanceMechanicFamily::SurfaceFill],
                 None,
+                qualified_geometry(),
             ),
             Err(UiHostAppearanceProfileDenial::MissingRequiredMechanic)
         );
+    }
+
+    fn qualified_geometry() -> UiHostAppearanceGeometryQualification {
+        UiHostAppearanceGeometryQualification::admit([
+            UiHostAppearanceScaleGeometryQualification::new(
+                1_000,
+                1,
+                UiAppearanceLogicalLength::new(1_000).unwrap(),
+                UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter,
+            ),
+        ])
+        .unwrap()
     }
 }

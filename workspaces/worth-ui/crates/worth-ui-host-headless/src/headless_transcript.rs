@@ -8,8 +8,8 @@ use worth_ui_host_contract::{
     UiSurfaceBindingGeneration,
 };
 
-#[cfg(test)]
-pub(crate) mod appearance;
+#[cfg(feature = "certification-support")]
+pub mod appearance;
 mod delta;
 mod mechanic_accessors;
 mod semantic_text;

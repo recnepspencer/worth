@@ -14,7 +14,7 @@ use super::{
     UiHeadlessRecorderCapacity, UiHeadlessResolvedClip, UiHeadlessResourceContact,
 };
 
-#[cfg(test)]
+#[cfg(feature = "certification-support")]
 pub(crate) mod appearance;
 mod portal_overlay;
 pub(super) mod semantic_text;
@@ -25,7 +25,7 @@ use unperformed_effects::{
     has_accessibility, has_diagnostic, has_focus, has_motion, unperformed_effects,
 };
 
-#[cfg(test)]
+#[cfg(feature = "certification-support")]
 pub(crate) fn translate_unpublished_appearance_work(
     work: &worth_ui_host_contract::UiMountedAppearanceWork,
 ) -> Result<
@@ -34,6 +34,36 @@ pub(crate) fn translate_unpublished_appearance_work(
 > {
     appearance::translate(work)
 }
+
+#[cfg(feature = "certification-support")]
+pub fn translate_unpublished_appearance_for_certification(
+    projection: &worth_ui_host_contract::UiUnpublishedAppearanceFrameProjection,
+) -> Result<
+    super::headless_transcript::appearance::UiHeadlessUnpublishedAppearanceFrameTranscript,
+    appearance::UiHeadlessAppearanceTranslationDenial,
+> {
+    let fragments = projection
+        .fragments()
+        .iter()
+        .map(|fragment| {
+            let work = translate_unpublished_appearance_work(fragment.work())?;
+            Ok(
+                super::headless_transcript::appearance::UiHeadlessUnpublishedAppearanceFragmentTranscript::from_source(
+                    fragment, work,
+                ),
+            )
+        })
+        .collect::<Result<Vec<_>, appearance::UiHeadlessAppearanceTranslationDenial>>()?;
+    Ok(
+        super::headless_transcript::appearance::UiHeadlessUnpublishedAppearanceFrameTranscript::from_source(
+            projection, fragments,
+        ),
+    )
+}
+
+#[cfg(all(test, feature = "certification-support"))]
+#[path = "headless_translation/unpublished_tests.rs"]
+mod unpublished_tests;
 
 pub(super) fn translate_headless_frame(
     view: &UiMountedFrameConsumptionView<'_>,

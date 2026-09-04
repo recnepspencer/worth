@@ -24,6 +24,15 @@ pub(super) fn staged_test_host_profile(
             worth_ui_host_contract::UiHostAppearanceMechanicFamily::Clip,
         ],
         Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
+        worth_ui_host_contract::UiHostAppearanceGeometryQualification::admit([
+            worth_ui_host_contract::UiHostAppearanceScaleGeometryQualification::new(
+                1_000,
+                1,
+                worth_ui_host_contract::UiAppearanceLogicalLength::new(1_000).unwrap(),
+                worth_ui_host_contract::UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter,
+            ),
+        ])
+        .expect("the staged test geometry qualification must admit"),
     )
     .expect("the explicit staged test host profile must admit")
 }

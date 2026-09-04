@@ -15,6 +15,7 @@ pub enum UiMountedAppearanceMechanicIdentity {
     },
     Pointer {
         pointer: crate::UiHostPointerIdentity,
+        surface: crate::UiSemanticSurfaceIdentity,
         target: crate::UiMountedInstanceIdentity,
     },
     Backdrop(UiMountedBackdropIdentity),
@@ -49,6 +50,7 @@ impl UiMountedAppearanceMechanic {
             },
             Self::Pointer(mechanic) => UiMountedAppearanceMechanicIdentity::Pointer {
                 pointer: mechanic.pointer(),
+                surface: mechanic.surface(),
                 target: mechanic.target(),
             },
             Self::Backdrop(mechanic) => {
