@@ -23,6 +23,37 @@ class WorthUiContractGateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "observed 51"):
                 removal_gate.validate(root, manifest)
 
+    def test_removal_inventory_counts_tracked_and_untracked_rust_and_excludes_deleted_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tracked = root / "workspaces/worth-ui/tracked.rs"
+            untracked = root / "workspaces/worth-ui/untracked.rs"
+            tracked.parent.mkdir(parents=True)
+            tracked.write_text(self.removal_source(theme_color_adjustment=-1), encoding="utf-8")
+            untracked.write_text("ThemeColorValue", encoding="utf-8")
+            manifest = self.write_removal_manifest(root, tracked_paths=[tracked])
+
+            removal_gate.validate(root, manifest)
+
+            tracked.unlink()
+            with self.assertRaisesRegex(ValueError, "static-paint authority: observed 0"):
+                removal_gate.validate(root, manifest)
+
+    def test_removal_inventory_does_not_allow_source_and_manifest_to_self_authorize_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "workspaces/worth-ui/sample.rs"
+            source.parent.mkdir(parents=True)
+            source.write_text(self.removal_source(extra_static_paint=True), encoding="utf-8")
+            manifest = self.write_removal_manifest(root)
+            contract = json.loads(manifest.read_text(encoding="utf-8"))
+            static_paint = contract["entries"][0]
+            static_paint["current_remaining"] += 1
+            manifest.write_text(json.dumps(contract), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "unexpected removal inventory contract"):
+                removal_gate.validate(root, manifest)
+
     def test_removal_inventory_keeps_original_and_gate_zero_counts_distinct(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -41,18 +72,74 @@ class WorthUiContractGateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unexpected removal inventory contract"):
                 removal_gate.validate(root, manifest)
 
+    def test_removal_inventory_rejects_malformed_contracts(self) -> None:
+        cases = [
+            ("missing family", lambda contract: contract["entries"].pop(), "every required"),
+            (
+                "duplicate family",
+                lambda contract: contract["entries"].append(dict(contract["entries"][0])),
+                "duplicate inventory family",
+            ),
+            (
+                "wrong family",
+                lambda contract: contract["entries"][0].update(family="unknown"),
+                "unexpected removal inventory contract",
+            ),
+            (
+                "wrong pattern",
+                lambda contract: contract["entries"][0].update(glob="workspaces/worth-ui/*.rs"),
+                "unexpected removal inventory contract",
+            ),
+            (
+                "invalid current count",
+                lambda contract: contract["entries"][0].update(current_remaining=-1),
+                "must be a non-negative integer",
+            ),
+            (
+                "missing entry key",
+                lambda contract: contract["entries"][0].pop("current_retention"),
+                "entry keys must remain exact",
+            ),
+            (
+                "wrong stage",
+                lambda contract: contract.update(current_stage="gate_3"),
+                "current stage must remain gate_4",
+            ),
+            (
+                "target drift",
+                lambda contract: contract.update(cutover_target=1),
+                "cutover target must be exactly zero",
+            ),
+        ]
+        for name, mutate, message in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                source = root / "workspaces/worth-ui/sample.rs"
+                source.parent.mkdir(parents=True)
+                source.write_text(self.removal_source(), encoding="utf-8")
+                manifest = self.write_removal_manifest(root)
+                contract = json.loads(manifest.read_text(encoding="utf-8"))
+                mutate(contract)
+                manifest.write_text(json.dumps(contract), encoding="utf-8")
+
+                with self.assertRaisesRegex(ValueError, message):
+                    removal_gate.validate(root, manifest)
+
     @staticmethod
-    def removal_source(*, extra_static_paint: bool = False) -> str:
+    def removal_source(
+        *, extra_static_paint: bool = False, theme_color_adjustment: int = 0,
+    ) -> str:
         lines = []
-        for literal, _, gate_zero_remaining, _ in removal_gate.REQUIRED_FAMILIES.values():
-            count = gate_zero_remaining + int(
+        for literal, _, _, _, current_remaining, _ in removal_gate.REQUIRED_FAMILIES.values():
+            count = current_remaining + int(
                 extra_static_paint and literal == "ComponentStaticPaintContract"
             )
+            count += theme_color_adjustment if literal == "ThemeColorValue" else 0
             lines.extend(literal for _ in range(count))
         return "\n".join(lines)
 
     @staticmethod
-    def write_removal_manifest(root: Path) -> Path:
+    def write_removal_manifest(root: Path, *, tracked_paths: list[Path] | None = None) -> Path:
         entries = [
             {
                 "family": family,
@@ -61,16 +148,34 @@ class WorthUiContractGateTests(unittest.TestCase):
                 "original_baseline": original_baseline,
                 "gate_zero_remaining": gate_zero_remaining,
                 "gate_zero_retention": gate_zero_retention,
+                "current_remaining": current_remaining,
+                "current_retention": current_retention,
             }
             for family, (
-                literal, original_baseline, gate_zero_remaining, gate_zero_retention,
+                literal,
+                original_baseline,
+                gate_zero_remaining,
+                gate_zero_retention,
+                current_remaining,
+                current_retention,
             ) in removal_gate.REQUIRED_FAMILIES.items()
         ]
         manifest = root / "inventory.json"
         manifest.write_text(
-            json.dumps({"cutover_target": 0, "entries": entries}), encoding="utf-8"
+            json.dumps({
+                "current_stage": removal_gate.CURRENT_STAGE,
+                "cutover_target": 0,
+                "entries": entries,
+            }),
+            encoding="utf-8",
         )
         subprocess.run(["git", "init", "--quiet"], cwd=root, check=True)
+        for tracked_path in tracked_paths or []:
+            subprocess.run(
+                ["git", "add", tracked_path.relative_to(root).as_posix()],
+                cwd=root,
+                check=True,
+            )
         return manifest
 
     def test_protocol_manifest_detects_live_source_drift(self) -> None:
