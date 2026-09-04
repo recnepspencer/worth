@@ -165,6 +165,40 @@ impl WorthUiRustAuthoredArtifactInputModule {
         self.with_semantic_declaration(declaration.into_semantic_declaration())
     }
 
+    pub fn with_portal_declaration(
+        mut self,
+        identity: impl Into<String>,
+        surface: impl Into<String>,
+        anchor: impl Into<String>,
+        layer: crate::WorthUiPortalLayer,
+        dismissal: crate::WorthUiPortalDismissalSet,
+        first_enabled_focus: bool,
+        restore_focus: bool,
+        motion: impl Into<String>,
+    ) -> Result<Self, crate::WorthUiServiceDeclarationParseError> {
+        let identity = identity.into();
+        let portal = crate::WorthUiPortalDeclaration::authoring(
+            identity.clone().into_boxed_str(),
+            surface.into().into_boxed_str(),
+            anchor.into().into_boxed_str(),
+            layer,
+            dismissal,
+            first_enabled_focus,
+            restore_focus,
+            motion.into().into_boxed_str(),
+        )?;
+        let declaration = WorthUiSemanticArtifactDeclaration::new(
+            crate::UiDslSemanticKey::new(identity),
+            crate::UiDslSemanticFamily::RuntimeService,
+        )
+        .with_service_declaration(crate::WorthUiServiceDeclarationMeaning::Portal(portal));
+        self.declarations
+            .push(WorthUiRustAuthoredDeclaration::SemanticArtifact(
+                declaration,
+            ));
+        Ok(self)
+    }
+
     pub fn with_surface(mut self, name_text: impl Into<String>) -> Self {
         self.declarations
             .push(WorthUiRustAuthoredDeclaration::Surface {

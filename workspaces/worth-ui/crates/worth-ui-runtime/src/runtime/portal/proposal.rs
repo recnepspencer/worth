@@ -1,6 +1,7 @@
 #[must_use = "a staged portal proposal must settle with existing publication"]
 pub(crate) struct UiStagedPortalServiceProposal {
     transition: super::UiPreparedPortalServiceTransition,
+    overlay_binding_stage: Option<super::UiPortalOverlayBindingStage>,
     proposal: crate::runtime::session::service_proposal::UiServiceProposalIdentity,
     scope: crate::runtime::session::service_proposal::UiServiceProposalOccupancyScopeIdentity,
     mounted_work: crate::runtime::session::service_proposal::UiServiceMountedWorkReference,
@@ -11,9 +12,11 @@ impl UiStagedPortalServiceProposal {
         transition: super::UiPreparedPortalServiceTransition,
         proposal: crate::runtime::session::service_proposal::UiServiceProposalIdentity,
         scope: crate::runtime::session::service_proposal::UiServiceProposalOccupancyScopeIdentity,
+        overlay_binding_stage: Option<super::UiPortalOverlayBindingStage>,
     ) -> Self {
         Self {
             transition,
+            overlay_binding_stage,
             proposal,
             scope,
             mounted_work: crate::runtime::session::service_proposal::UiServiceMountedWorkReference::for_portal_proposal(
@@ -40,6 +43,13 @@ impl UiStagedPortalServiceProposal {
 
     pub(in crate::runtime) const fn transition(&self) -> &super::UiPreparedPortalServiceTransition {
         &self.transition
+    }
+
+    pub(crate) fn overlay_binding_commit(&self) -> super::UiPortalOverlayBindingCommit {
+        super::UiPortalOverlayBindingCommit::from_transition(
+            &self.transition,
+            self.overlay_binding_stage.clone(),
+        )
     }
 
     pub(in crate::runtime) fn stage_receipt(

@@ -69,6 +69,7 @@ impl<'state> UiIntentInputBasisView<'state> {
             generation: self.generation.clone(),
             publication_frame: self.publication_frame,
             target: self.target,
+            portal_declaration: material.portal_declaration,
             source: material.source,
             query_inputs: material.query_inputs,
             application_inputs: material.application_inputs,

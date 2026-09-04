@@ -6,6 +6,11 @@ pub(super) fn finish<'session>(
 ) -> UiPortalDismissalPublicationOutcome<'session> {
     match outcome {
         crate::mounting::UiMountedFrameOutcome::Published(mounted) => {
+            let binding_commit = admitted
+                .proposal
+                .as_ref()
+                .expect("published dismissal retains proposal")
+                .overlay_binding_commit();
             let (focus, motion, exit_retention) = admitted
                 .session
                 .application
@@ -34,6 +39,11 @@ pub(super) fn finish<'session>(
                         .expect("admitted dismissal retains Motion installation"),
                 )
                 .expect("published dismissal retains exact service proposal");
+            let binding_commit = binding_commit.with_retained_exit(exit_retention.is_some());
+            admitted
+                .session
+                .commit_authored_overlay_binding(binding_commit)
+                .expect("published dismissal retains its exact overlay binding stage");
             admitted
                 .session
                 .rebind_portal_after_current_published_frame();

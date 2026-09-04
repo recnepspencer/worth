@@ -120,13 +120,27 @@ impl UiOverlayRelationGraph {
         portals: impl IntoIterator<Item = UiOverlayPortalParticipant>,
         backdrops: impl IntoIterator<Item = &'a super::UiBackdropDeclaration>,
     ) -> Result<Self, UiOverlayRelationAdmissionDenial> {
+        Self::admit_with_optional_surface_facts(
+            portals
+                .into_iter()
+                .map(|participant| (participant.portal, Some(participant.surface))),
+            backdrops,
+        )
+    }
+
+    pub(crate) fn admit_with_optional_surface_facts<'a>(
+        portals: impl IntoIterator<
+            Item = (
+                super::UiPortalDeclarationId,
+                Option<super::UiSemanticSurfaceDeclarationIdentity>,
+            ),
+        >,
+        backdrops: impl IntoIterator<Item = &'a super::UiBackdropDeclaration>,
+    ) -> Result<Self, UiOverlayRelationAdmissionDenial> {
         Self::admit_facts(
             portals
                 .into_iter()
-                .map(|participant| UiOverlayPortalFact {
-                    portal: participant.portal,
-                    surface: Some(participant.surface),
-                })
+                .map(|(portal, surface)| UiOverlayPortalFact { portal, surface })
                 .collect(),
             backdrops
                 .into_iter()

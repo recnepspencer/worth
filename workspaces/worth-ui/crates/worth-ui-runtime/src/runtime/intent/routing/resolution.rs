@@ -48,6 +48,7 @@ fn resolve_mounted(
                 super::UiResolvedProductIntentRouteInput {
                     graph_node: route.graph_node(),
                     interaction: route.interaction(),
+                    portal_declaration: route.portal_declaration(),
                     definition_id: definitions.definition_at(declaration.definition()).id(),
                     declaration,
                     source: super::UiIntentProductInputSource::mounted(interaction),
@@ -114,6 +115,7 @@ fn resolve_command(
         UiResolvedProductIntentRoute::new(super::UiResolvedProductIntentRouteInput {
             graph_node,
             interaction: declaration.interaction(),
+            portal_declaration: None,
             definition_id: definitions.definition_at(declaration.definition()).id(),
             declaration,
             source: super::UiIntentProductInputSource::command(receipt, target),

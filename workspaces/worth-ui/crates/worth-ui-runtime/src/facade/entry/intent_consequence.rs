@@ -74,6 +74,7 @@ impl WorthUiActiveApplicationSession {
         policy: crate::runtime::rebind::UiRebindExecutionPolicy,
         execution: crate::runtime::rebind::UiRebindExecutionRequest,
     ) -> UiIntentConsequencePublicationOutcome<'_> {
+        let mut portal_binding_stage = None;
         let explicit_portal_transition = match handoff.runtime_service_destination() {
             Some(crate::capability::UiIntentRuntimeServiceDestination::InvokeCommand) => {
                 if handoff.command_route().is_none() {
@@ -131,6 +132,23 @@ impl WorthUiActiveApplicationSession {
                         ),
                     );
                 };
+                if let Some(declaration) = request.declared_portal() {
+                    portal_binding_stage = match self.admit_authored_portal_open(
+                        declaration,
+                        request.portal(),
+                        request.semantic_surface(),
+                    ) {
+                        Ok(stage) => Some(stage),
+                        Err(denial) => {
+                            return self.stop_intent_consequence(
+                                handoff,
+                                UiIntentConsequenceStopReason::RuntimeServicePortalBinding(
+                                    denial.stop_reason(),
+                                ),
+                            )
+                        }
+                    };
+                }
                 match portal.prepare(request) {
                     Ok(transition) => Some(transition),
                     Err(
@@ -325,6 +343,7 @@ impl WorthUiActiveApplicationSession {
             posture: observation.posture,
             consequence: handoff,
             portal_transition,
+            portal_binding_stage,
             portal_proposal: None,
             query_reference,
         };

@@ -5,6 +5,7 @@ mod identity;
 mod inspection;
 mod lifecycle;
 mod overlay_binding_export;
+mod overlay_binding_lifecycle;
 mod placement;
 #[cfg(test)]
 mod placement_tests;
@@ -49,6 +50,10 @@ pub(crate) use lifecycle::{
 pub(crate) use overlay_binding_export::{
     UiPortalOverlayBindingDenial, UiPortalOverlayBindingOwner, UiPortalOverlayBindingOwnerExport,
     UiPortalOverlayBindingRow,
+};
+pub(crate) use overlay_binding_lifecycle::{
+    UiPortalOverlayBindingCommit, UiPortalOverlayBindingLifecycle,
+    UiPortalOverlayBindingLifecycleDenial, UiPortalOverlayBindingStage,
 };
 pub(crate) use placement::{
     UiCommittedPortalPlacement, UiPortalLayerIdentity, UiPortalPlacementDenial,

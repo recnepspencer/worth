@@ -63,6 +63,12 @@ pub(crate) enum UiPortalProposalPreparationDenial {
 }
 
 impl UiStagedPortalProposalTransaction {
+    pub(crate) fn overlay_binding_commit(
+        &self,
+    ) -> crate::runtime::portal::UiPortalOverlayBindingCommit {
+        self.portal.overlay_binding_commit()
+    }
+
     /// The compiled reveal witness must name exactly the Scroll owner whose
     /// staged replan this transaction is about to commit.
     pub(super) fn reveal_refinement_agrees(&self) -> bool {

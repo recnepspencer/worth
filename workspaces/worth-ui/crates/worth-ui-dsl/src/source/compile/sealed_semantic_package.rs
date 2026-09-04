@@ -1,5 +1,7 @@
 #[path = "appearance_validation.rs"]
 mod appearance_validation;
+#[path = "sealed_semantic_package/authored_route_validation.rs"]
+mod authored_route_validation;
 #[path = "sealed_semantic_accessors.rs"]
 mod sealed_semantic_accessors;
 #[path = "sealed_semantic_appearance.rs"]
@@ -131,6 +133,7 @@ impl WorthUiSealedSemanticPackage {
             state.seal_module(module_id, input_module);
         }
         state.validate_projection_content_references();
+        authored_route_validation::validate(&mut state);
         state.validate_appearance_declarations();
         if !state.diagnostics.is_empty() {
             return Err(WorthUiDslCompileReport::new(state.diagnostics));

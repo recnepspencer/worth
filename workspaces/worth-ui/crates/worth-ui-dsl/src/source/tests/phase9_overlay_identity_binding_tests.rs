@@ -7,8 +7,10 @@ use crate::{
     UiDslSemanticFamily, UiDslSemanticKey, UiMosaicRegionDeclarationIdentity,
     UiSemanticSurfaceDeclarationIdentity, UiThemeSlotIdentity, UiThemeValueKind,
     WorthUiArtifactInputBodyAtom, WorthUiAuthoredSourceInput, WorthUiDslCompileDiagnosticCode,
-    WorthUiDslCompiler, WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule,
-    WorthUiSemanticArtifactDeclaration, WorthUiServiceDeclarationMeaning, WorthUiServiceFamily,
+    WorthUiDslCompiler, WorthUiIntentInteractionFamily, WorthUiIntentInteractionRoute,
+    WorthUiPortalDismissalSet, WorthUiPortalLayer, WorthUiRustAuthoredArtifactInput,
+    WorthUiRustAuthoredArtifactInputModule, WorthUiSemanticArtifactDeclaration,
+    WorthUiSemanticDeclaration, WorthUiServiceDeclarationMeaning, WorthUiServiceFamily,
 };
 
 fn compile_file(
@@ -26,6 +28,33 @@ fn compile_rust(
     WorthUiDslCompiler::compile_rust_authored(&WorthUiRustAuthoredArtifactInput::from_modules([
         module,
     ]))
+}
+
+fn first_component_route(
+    package: &crate::WorthUiSealedSemanticPackage,
+) -> WorthUiIntentInteractionRoute {
+    for module_id in package.module_ids() {
+        for view in package
+            .declaration_views(module_id)
+            .expect("sealed package contains its source modules")
+        {
+            if let WorthUiSemanticDeclaration::Component(component) = view.declaration() {
+                if let Some(route) = component.structure().interaction_routes().first() {
+                    return route.clone();
+                }
+            }
+        }
+    }
+    panic!("source fixture must contain one component interaction route");
+}
+
+fn first_portal_surface(package: &crate::WorthUiSealedSemanticPackage) -> Option<&str> {
+    package
+        .service_declarations()
+        .find_map(|(service, _)| match service {
+            WorthUiServiceDeclarationMeaning::Portal(portal) => portal.surface(),
+            _ => None,
+        })
 }
 
 fn rust_portal(name: &str, anchor: &str) -> WorthUiSemanticArtifactDeclaration {
@@ -224,6 +253,77 @@ fn duplicate_rust_portal_identity_is_denied_by_compiler_binding_collection() {
         report.diagnostics()[0].identity().code(),
         WorthUiDslCompileDiagnosticCode::DuplicateAppearanceDeclaration
     );
+    assert_eq!(
+        report.diagnostics()[0].message(),
+        "Rust-authored input could not be normalized into a sealed DSL package"
+    );
+}
+
+#[test]
+fn file_and_rust_routes_retain_the_explicit_compiler_portal_association() {
+    let file = compile_file(
+        r#"
+        surface workspace.surface.overlay {}
+        portal overlay.menu {
+            surface workspace.surface.overlay
+            anchor workspace.anchor
+            layer transient
+            dismiss escape
+            focus first_enabled
+            motion system_popover
+        }
+        component workspace.component.overlay {
+            interaction activate routes workspace.intent.open opens portal overlay.menu;
+        }
+        "#,
+    )
+    .expect("file route and Portal declaration should compile");
+    let rust = compile_rust(
+        WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
+            .with_surface("workspace.surface.overlay")
+            .with_portal_declaration(
+                "overlay.menu",
+                "workspace.surface.overlay",
+                "workspace.anchor",
+                WorthUiPortalLayer::Transient,
+                WorthUiPortalDismissalSet::from_flags(true, false, false, false)
+                    .expect("Rust Portal dismissal is typed"),
+                true,
+                false,
+                "system_popover",
+            )
+            .expect("Rust Portal declaration should be authored through the typed entry point")
+            .with_control_routes(
+                "workspace.component.overlay",
+                [WorthUiIntentInteractionRoute::product(
+                    WorthUiIntentInteractionFamily::Activate,
+                    "workspace.intent.open",
+                )
+                .opens_portal("overlay.menu")],
+            ),
+    )
+    .expect("Rust route and Portal declaration should compile");
+
+    assert_eq!(
+        first_component_route(&file),
+        first_component_route(&rust),
+        "file and Rust authoring must emit one explicit route association"
+    );
+    let file_bindings = file.overlay_declaration_bindings();
+    let rust_bindings = rust.overlay_declaration_bindings();
+    assert_eq!(
+        file_bindings.portal_named("overlay.menu"),
+        rust_bindings.portal_named("overlay.menu")
+    );
+    assert_eq!(
+        file_bindings.surface_named("workspace.surface.overlay"),
+        rust_bindings.surface_named("workspace.surface.overlay")
+    );
+    assert_eq!(
+        first_portal_surface(&file),
+        Some("workspace.surface.overlay")
+    );
+    assert_eq!(first_portal_surface(&file), first_portal_surface(&rust));
 }
 
 #[test]

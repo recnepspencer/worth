@@ -26,10 +26,6 @@ impl WorthUiSealedOverlayDeclarationBindings {
         }
     }
 
-    pub(super) fn portal_ids(&self) -> Vec<crate::UiPortalDeclarationId> {
-        self.portals.values().copied().collect()
-    }
-
     pub fn is_empty(&self) -> bool {
         self.backdrops.is_empty()
             && self.portals.is_empty()
@@ -47,6 +43,12 @@ impl WorthUiSealedOverlayDeclarationBindings {
 
     pub fn surface_named(&self, name: &str) -> Option<crate::UiSemanticSurfaceDeclarationIdentity> {
         self.surfaces.get(name).copied()
+    }
+
+    pub fn contains_surface(&self, identity: crate::UiSemanticSurfaceDeclarationIdentity) -> bool {
+        self.surfaces
+            .values()
+            .any(|candidate| *candidate == identity)
     }
 
     pub fn region_named(

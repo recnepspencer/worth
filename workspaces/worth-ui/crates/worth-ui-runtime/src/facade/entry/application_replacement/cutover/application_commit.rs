@@ -25,6 +25,7 @@ impl WorthUiActiveApplicationSession {
             }
         };
         let publication = self.application.commit_application_activation(activation);
+        self.replace_authored_overlay_binding_generation();
         if let Some(appearance_succession) = prepared.appearance_succession.take() {
             self.commit_appearance_generation_succession(appearance_succession);
         }

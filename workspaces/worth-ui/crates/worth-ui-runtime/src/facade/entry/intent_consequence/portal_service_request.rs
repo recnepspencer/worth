@@ -22,7 +22,7 @@ pub(super) fn portal_service_request(
         },
     );
     let portal = crate::runtime::portal::UiPortalIdentity::for_owner(owner);
-    match destination {
+    let request = match destination {
         crate::capability::UiIntentRuntimeServiceDestination::OpenPortal => {
             crate::runtime::portal::UiPortalServiceRequest::open(
                 portal,
@@ -43,6 +43,13 @@ pub(super) fn portal_service_request(
         crate::capability::UiIntentRuntimeServiceDestination::InvokeCommand => {
             unreachable!("command consequences never construct mounted portal service requests")
         }
+    };
+    match destination {
+        crate::capability::UiIntentRuntimeServiceDestination::OpenPortal => {
+            request.with_declared_portal(handoff.authored_portal_declaration())
+        }
+        crate::capability::UiIntentRuntimeServiceDestination::ClosePortal
+        | crate::capability::UiIntentRuntimeServiceDestination::InvokeCommand => request,
     }
 }
 

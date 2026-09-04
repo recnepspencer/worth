@@ -48,6 +48,12 @@ impl WorthUiApplicationSessionState {
         self.app.generation_identity()
     }
 
+    pub(crate) fn authored_overlay_material(
+        &self,
+    ) -> &crate::runtime::WorthUiAuthoredOverlayMaterial {
+        self.app.prepared_authority().authored_overlay_material()
+    }
+
     pub(crate) fn host_session_plan(
         &self,
     ) -> &crate::facade::prepared_application_authority::WorthUiHostSessionPlan {

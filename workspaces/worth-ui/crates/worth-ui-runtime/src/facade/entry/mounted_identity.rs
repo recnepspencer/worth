@@ -108,7 +108,7 @@ impl WorthUiActiveApplicationSession {
         Ok(surface)
     }
 
-    fn materialize_initial_appearance_theme_binding(
+    pub(super) fn materialize_initial_appearance_theme_binding(
         &mut self,
         surface: UiSemanticSurfaceIdentity,
     ) -> Result<(), UiMountedIdentityDenial> {

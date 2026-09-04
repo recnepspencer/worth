@@ -1,7 +1,7 @@
 use worth_ui_dsl::{
-    UiDslSemanticFamily, WorthUiArtifactInputProvenance, WorthUiIntentDeclarationMeaning,
-    WorthUiIntentInteractionFamily, WorthUiIntentInteractionRoute, WorthUiIntentPayloadSourceSpec,
-    WorthUiSealedSemanticPackage, WorthUiSemanticDeclaration,
+    UiDslSemanticFamily, UiPortalDeclarationId, WorthUiArtifactInputProvenance,
+    WorthUiIntentDeclarationMeaning, WorthUiIntentInteractionFamily, WorthUiIntentInteractionRoute,
+    WorthUiIntentPayloadSourceSpec, WorthUiSealedSemanticPackage, WorthUiSemanticDeclaration,
 };
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -21,6 +21,7 @@ pub(crate) struct WorthUiAuthoredIntentDeclaration {
 pub(crate) struct WorthUiAuthoredIntentRoute {
     target_provenance_digest: u64,
     route: WorthUiIntentInteractionRoute,
+    portal_declaration: Option<UiPortalDeclarationId>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,6 +29,9 @@ pub(crate) enum WorthUiAuthoredIntentMaterialDenial {
     InvalidDeclaration {
         identity: Box<str>,
         reason: WorthUiAuthoredIntentDeclarationDenial,
+    },
+    UnknownPortalRoute {
+        portal: Box<str>,
     },
 }
 
@@ -62,12 +66,31 @@ pub(crate) fn prepare_authored_intent_material(
                         component
                             .structure()
                             .interaction_routes()
-                            .iter()
-                            .cloned()
-                            .map(|route| WorthUiAuthoredIntentRoute {
-                                target_provenance_digest,
-                                route,
-                            }),
+                        .iter()
+                        .cloned()
+                            .map(|route| {
+                                let portal_declaration = route
+                                    .opened_portal_identity()
+                                    .map(|portal| {
+                                        package
+                                            .overlay_declaration_bindings()
+                                            .portal_named(portal)
+                                            .ok_or_else(|| {
+                                                WorthUiAuthoredIntentMaterialDenial::UnknownPortalRoute {
+                                                    portal: portal.into(),
+                                                }
+                                            })
+                                    })
+                                    .transpose();
+                                portal_declaration.map(|portal_declaration| {
+                                    WorthUiAuthoredIntentRoute {
+                                        target_provenance_digest,
+                                        route,
+                                        portal_declaration,
+                                    }
+                                })
+                            })
+                            .collect::<Result<Vec<_>, _>>()?,
                     );
                 }
                 _ => {}
@@ -219,5 +242,9 @@ impl WorthUiAuthoredIntentRoute {
 
     pub(crate) const fn route(&self) -> &WorthUiIntentInteractionRoute {
         &self.route
+    }
+
+    pub(crate) const fn portal_declaration(&self) -> Option<UiPortalDeclarationId> {
+        self.portal_declaration
     }
 }

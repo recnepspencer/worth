@@ -101,6 +101,14 @@ bindings, admitted backdrop/relation material, portal-anchor rows, and their
 source provenance; prepared authority exposes those facts only as immutable
 borrowed reads.
 
+An authored Portal may explicitly name its semantic surface, and an interaction
+route may explicitly name the Portal it opens. The compiler resolves those
+names to issued declaration identities; the prepared runtime binds the declared
+surface and Portal owner under the current application generation, staging and
+settling the binding with the existing Portal transition. Unqualified legacy
+surface creation remains valid but does not acquire authored-Portal eligibility.
+This Gate 4 boundary is staged and unpublished: it emits no live appearance.
+
 ### Watched Edit
 
 After launch, do not lower loose source parts or prepare another application.

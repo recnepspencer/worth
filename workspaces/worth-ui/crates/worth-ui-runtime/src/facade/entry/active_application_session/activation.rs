@@ -163,6 +163,10 @@ impl WorthUiActiveApplicationSession {
                     )
                 }),
             ),
+            authored_overlay_bindings:
+                crate::runtime::portal::UiPortalOverlayBindingLifecycle::new(
+                    initial_generation.clone(),
+                ),
             dormant_portal_stack_ordinal_issuer,
             motion: crate::runtime::UiRuntimeServiceInstallation::from_optional(
                 service_policy_plan.motion().map(|policy| {

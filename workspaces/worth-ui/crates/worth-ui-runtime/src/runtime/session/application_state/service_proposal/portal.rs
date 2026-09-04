@@ -7,6 +7,7 @@ impl WorthUiApplicationSessionState {
         handoff: &crate::runtime::intent_execution::UiIntentConsequenceHandoff,
         transition: crate::runtime::portal::UiPreparedPortalServiceTransition,
         application: crate::runtime::intent::WorthUiActiveApplicationGenerationIdentity,
+        overlay_binding_stage: Option<crate::runtime::portal::UiPortalOverlayBindingStage>,
         declared_selection: Option<crate::runtime::selection::UiDeclaredSelectionBinding>,
         selection_state: Option<&crate::runtime::selection::UiSelectionRuntimeState>,
         motion_state: &mut crate::runtime::motion::UiMotionRuntimeState,
@@ -19,6 +20,7 @@ impl WorthUiApplicationSessionState {
         self.begin_portal_service_proposal_from_request(
             request,
             transition,
+            overlay_binding_stage,
             declared_selection.zip(selection_state),
             motion_state,
             motion_request,
@@ -41,6 +43,7 @@ impl WorthUiApplicationSessionState {
             request,
             transition,
             None,
+            None,
             motion_state,
             motion_request,
         )
@@ -62,6 +65,7 @@ impl WorthUiApplicationSessionState {
         self.begin_portal_service_proposal_from_request(
             request,
             transition,
+            None,
             None,
             motion_state,
             motion_request,
@@ -86,6 +90,7 @@ impl WorthUiApplicationSessionState {
             request,
             transition,
             None,
+            None,
             motion_state,
             None,
         )
@@ -95,6 +100,7 @@ impl WorthUiApplicationSessionState {
         &mut self,
         request: crate::runtime::session::service_proposal::UiServiceRequestBasis<Authority>,
         transition: crate::runtime::portal::UiPreparedPortalServiceTransition,
+        overlay_binding_stage: Option<crate::runtime::portal::UiPortalOverlayBindingStage>,
         declared_selection: Option<(
             crate::runtime::selection::UiDeclaredSelectionBinding,
             &crate::runtime::selection::UiSelectionRuntimeState,
@@ -182,6 +188,7 @@ impl WorthUiApplicationSessionState {
             transition,
             proposal,
             portal_family.scope(),
+            overlay_binding_stage,
         );
         let focus = crate::runtime::focus::UiStagedFocusServiceProposal::prepare(
             proposal,

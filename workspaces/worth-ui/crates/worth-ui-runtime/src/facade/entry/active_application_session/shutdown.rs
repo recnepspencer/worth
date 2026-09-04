@@ -3,6 +3,7 @@ use super::{WorthUiActiveApplicationSession, WorthUiRuntimeShutdownReceipt};
 impl WorthUiActiveApplicationSession {
     pub fn shutdown(mut self) -> WorthUiRuntimeShutdownReceipt {
         self.shutdown_portal_exit_retention();
+        self.clear_authored_overlay_bindings();
         let rebind = self.rebind.shutdown();
         let visual_capture = self.visual_captures.shutdown();
         let visual_overlay = self.visual_overlays.shutdown();

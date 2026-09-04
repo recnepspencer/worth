@@ -7,6 +7,7 @@ pub(crate) struct UiPortalServiceRequest {
     presented_viewport: Option<crate::runtime::interaction::UiPresentedViewportGeometry>,
     placement_geometry: Option<crate::declaration::UiDeclaredPortalPlacementGeometry>,
     semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    declared_portal: Option<worth_ui_dsl::UiPortalDeclarationId>,
     parent: Option<super::UiPortalIdentity>,
     shielding: super::UiPortalInputShielding,
     shielding_uses_policy_default: bool,
@@ -39,6 +40,7 @@ impl UiPortalServiceRequest {
                 crate::declaration::UiDeclaredPortalPlacementGeometry::dropdown(),
             ),
             semantic_surface,
+            declared_portal: None,
             parent: None,
             shielding: super::UiPortalInputShielding::ContentBounds,
             shielding_uses_policy_default: true,
@@ -64,6 +66,7 @@ impl UiPortalServiceRequest {
                 crate::declaration::UiDeclaredPortalPlacementGeometry::dropdown(),
             ),
             semantic_surface,
+            declared_portal: None,
             parent: Some(parent),
             shielding,
             shielding_uses_policy_default: false,
@@ -84,6 +87,7 @@ impl UiPortalServiceRequest {
             presented_viewport: None,
             placement_geometry: None,
             semantic_surface,
+            declared_portal: None,
             parent: None,
             shielding: super::UiPortalInputShielding::ContentBounds,
             shielding_uses_policy_default: false,
@@ -130,6 +134,18 @@ impl UiPortalServiceRequest {
         self,
     ) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
         self.semantic_surface
+    }
+
+    pub(crate) const fn declared_portal(self) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.declared_portal
+    }
+
+    pub(crate) const fn with_declared_portal(
+        mut self,
+        declared_portal: Option<worth_ui_dsl::UiPortalDeclarationId>,
+    ) -> Self {
+        self.declared_portal = declared_portal;
+        self
     }
 
     pub(crate) const fn shielding(self) -> super::UiPortalInputShielding {

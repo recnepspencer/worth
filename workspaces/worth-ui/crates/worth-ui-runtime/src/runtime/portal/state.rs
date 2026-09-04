@@ -139,6 +139,15 @@ impl UiPortalRuntimeState {
         self.records.len()
     }
 
+    pub(crate) fn semantic_surface_for(
+        &self,
+        portal: super::UiPortalIdentity,
+    ) -> Option<worth_ui_host_contract::UiSemanticSurfaceIdentity> {
+        self.records
+            .get(&portal)
+            .map(|record| record.semantic_surface)
+    }
+
     /// Graph nodes exposed by active Portal scopes are the Portal owner/anchor
     /// nodes in 3.15, not child content mounted inside the Portal. Bounded by
     /// the active portals because terminal portals leave the live table.

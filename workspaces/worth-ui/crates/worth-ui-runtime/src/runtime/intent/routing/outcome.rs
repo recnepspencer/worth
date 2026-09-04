@@ -11,6 +11,7 @@ pub enum UiIntentRouteResolution {
 pub struct UiResolvedProductIntentRoute {
     graph_node: UiGraphNodeIdentity,
     interaction: UiSemanticInteractionFamily,
+    portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     definition_id: UiIntentId,
     declaration: Arc<UiCanonicalIntentDeclaration>,
     source: UiIntentProductInputSource,
@@ -30,6 +31,7 @@ pub struct UiResolvedConfirmationIntentRoute {
 pub(crate) struct UiResolvedProductIntentRouteInput {
     pub(crate) graph_node: UiGraphNodeIdentity,
     pub(crate) interaction: UiSemanticInteractionFamily,
+    pub(crate) portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     pub(crate) definition_id: UiIntentId,
     pub(crate) declaration: Arc<UiCanonicalIntentDeclaration>,
     pub(crate) source: UiIntentProductInputSource,
@@ -57,6 +59,7 @@ impl UiResolvedProductIntentRoute {
         Self {
             graph_node: input.graph_node,
             interaction: input.interaction,
+            portal_declaration: input.portal_declaration,
             definition_id: input.definition_id,
             declaration: input.declaration,
             source: input.source,
@@ -71,6 +74,10 @@ impl UiResolvedProductIntentRoute {
 
     pub const fn interaction(&self) -> UiSemanticInteractionFamily {
         self.interaction
+    }
+
+    pub const fn portal_declaration(&self) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.portal_declaration
     }
 
     pub const fn definition_id(&self) -> UiIntentId {
@@ -117,6 +124,7 @@ impl UiResolvedProductIntentRoute {
         self,
     ) -> (
         UiGraphNodeIdentity,
+        Option<worth_ui_dsl::UiPortalDeclarationId>,
         Arc<UiCanonicalIntentDeclaration>,
         UiIntentProductInputSource,
         crate::declaration::UiIntentRouteResolutionCost,
@@ -124,6 +132,7 @@ impl UiResolvedProductIntentRoute {
     ) {
         (
             self.graph_node,
+            self.portal_declaration,
             self.declaration,
             self.source,
             self.cost,

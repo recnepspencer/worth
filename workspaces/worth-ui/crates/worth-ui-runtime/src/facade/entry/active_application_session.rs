@@ -22,6 +22,11 @@ mod appearance_receipt_distinction_tests;
 mod command_context;
 #[path = "active_application_session/command_observation.rs"]
 mod command_observation;
+#[path = "active_application_session/declared_overlay_binding.rs"]
+mod declared_overlay_binding;
+#[cfg(test)]
+#[path = "active_application_session/declared_overlay_binding_tests.rs"]
+mod declared_overlay_binding_tests;
 #[path = "active_application_session/focus_observation.rs"]
 mod focus_observation;
 #[path = "active_application_session/host_session_identity.rs"]
@@ -74,6 +79,7 @@ pub struct WorthUiActiveApplicationSession {
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::focus::UiFocusRuntimeState>,
     pub(super) portal:
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::portal::UiPortalRuntimeState>,
+    pub(super) authored_overlay_bindings: crate::runtime::portal::UiPortalOverlayBindingLifecycle,
     pub(super) dormant_portal_stack_ordinal_issuer:
         Option<crate::runtime::portal::UiPortalStackOrdinalIssuer>,
     pub(super) motion:

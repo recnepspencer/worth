@@ -94,11 +94,33 @@ impl<'a> StructuralParser<'a> {
         let declaration_identity = self
             .cursor
             .expect_identifier("root/interaction:declaration")?;
+        let opened_portal_identity = if self.cursor.peek_identifier().as_deref() == Some("opens") {
+            self.cursor
+                .expect_keyword("opens", "root/interaction:opens")?;
+            self.cursor
+                .expect_keyword("portal", "root/interaction:opens-kind")?;
+            Some(
+                self.cursor
+                    .expect_identifier("root/interaction:opened-portal")?,
+            )
+        } else {
+            None
+        };
+        if opened_portal_identity.is_some()
+            && matches!(kind, crate::WorthUiIntentInteractionRouteKind::Confirmation)
+        {
+            return Err(WorthUiStructuralParseFailure {
+                code: WorthUiStructuralLanguageDiagnosticCode::InvalidStructuralSyntax,
+                authored_text: "opens portal".to_owned(),
+                structural_locus: "root/interaction:confirmation-portal".to_owned(),
+            });
+        }
         self.cursor.consume_optional_semicolon();
         Ok(crate::WorthUiIntentInteractionRoute::from_authored_parts(
             family,
             declaration_identity,
             kind,
+            opened_portal_identity,
         ))
     }
 

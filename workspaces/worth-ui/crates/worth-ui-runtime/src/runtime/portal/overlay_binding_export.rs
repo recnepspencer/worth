@@ -87,6 +87,21 @@ impl UiPortalOverlayBindingOwner {
         Self::insert_binding(&mut self.portal_declarations, portal, declaration)
     }
 
+    pub(crate) fn binding_for_portal(
+        &self,
+        portal: UiPortalIdentity,
+    ) -> Option<UiPortalDeclarationId> {
+        self.portal_declarations.get(&portal).copied()
+    }
+
+    pub(crate) fn remove(&mut self, portal: UiPortalIdentity) {
+        self.portal_declarations.remove(&portal);
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.portal_declarations.is_empty()
+    }
+
     #[allow(
         dead_code,
         reason = "Binding replacement is consumed by owner tests and successor-facing setup."

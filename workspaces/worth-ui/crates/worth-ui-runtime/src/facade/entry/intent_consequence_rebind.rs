@@ -5,6 +5,7 @@ pub(super) struct WorthUiIntentConsequenceRebindTransfer {
     pub(super) posture: Option<crate::mounting::UiIntentPostureCommit>,
     pub(super) consequence: crate::runtime::intent_execution::UiIntentConsequenceHandoff,
     pub(super) portal_transition: Option<crate::runtime::portal::UiPreparedPortalServiceTransition>,
+    pub(super) portal_binding_stage: Option<crate::runtime::portal::UiPortalOverlayBindingStage>,
     pub(super) portal_proposal: Option<crate::runtime::session::UiStagedPortalProposalTransaction>,
     pub(super) query_reference:
         Option<worth_ui_query_binding::WorthUiInstalledQueryBindingReference>,
@@ -100,6 +101,7 @@ impl WorthUiActiveApplicationSession {
                     &transfer.consequence,
                     transition,
                     generation,
+                    transfer.portal_binding_stage.take(),
                     declared_selection,
                     self.selection.as_ref(),
                     self.motion

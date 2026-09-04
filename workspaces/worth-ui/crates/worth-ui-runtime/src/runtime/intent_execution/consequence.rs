@@ -61,6 +61,7 @@ pub enum UiIntentConsequenceStopReason {
     RuntimeServiceOwnerUnavailable(UiRuntimeServiceFamilyStopReason),
     RuntimeServiceTransitionExhausted,
     RuntimeServicePortalPlacement(UiIntentPortalPlacementStopReason),
+    RuntimeServicePortalBinding(UiIntentPortalBindingStopReason),
     RuntimeServiceProposal(UiRuntimeServiceProposalStop),
 }
 
@@ -217,6 +218,25 @@ pub enum UiIntentPortalPlacementStopReason {
     InsufficientViewport,
     UnknownPortalParent,
     PortalLayerDepthExhausted,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiIntentPortalBindingStopReason {
+    ForeignGeneration,
+    UnknownPortalDeclaration,
+    ForeignSurfaceDeclaration,
+    PortalSurfaceUndeclared,
+    DeclaredSurfaceUnbound,
+    DeclaredSurfaceAlreadyBound,
+    RuntimeSurfaceConflict,
+    PortalSurfaceMismatch,
+    PortalDeclarationConflict,
+    PortalAlreadyLiveWithoutBinding,
+    RetiredBinding,
+    TransitionMismatch,
+    SurfaceBindingCapacityExceeded,
+    OwnerConflict,
+    MountedIdentity,
 }
 
 #[must_use]

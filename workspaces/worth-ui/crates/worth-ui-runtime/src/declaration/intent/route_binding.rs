@@ -5,6 +5,7 @@ pub struct UiIntentRouteBinding {
     graph_node: crate::graph::UiGraphNodeIdentity,
     declaration_index: u32,
     interaction: UiSemanticInteractionFamily,
+    portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
 }
 
 impl UiIntentRouteBinding {
@@ -12,11 +13,13 @@ impl UiIntentRouteBinding {
         graph_node: crate::graph::UiGraphNodeIdentity,
         declaration_index: u32,
         interaction: UiSemanticInteractionFamily,
+        portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     ) -> Self {
         Self {
             graph_node,
             declaration_index,
             interaction,
+            portal_declaration,
         }
     }
 
@@ -30,5 +33,9 @@ impl UiIntentRouteBinding {
 
     pub(crate) const fn declaration_index(&self) -> u32 {
         self.declaration_index
+    }
+
+    pub(crate) const fn portal_declaration(&self) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.portal_declaration
     }
 }

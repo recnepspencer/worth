@@ -34,7 +34,18 @@ pub(crate) fn resolve_file_authored_overlay_declarations(
         let mut nodes = Vec::with_capacity(declarations.len());
         for declaration in declarations {
             match declaration {
-                WorthUiFileAuthoredLoweredDeclaration::Artifact(node) => nodes.push(node),
+                WorthUiFileAuthoredLoweredDeclaration::Artifact(node) => {
+                    if let WorthUiArtifactInputNode::SemanticArtifact(artifact) = &node {
+                        if let Some(crate::WorthUiServiceDeclarationMeaning::Portal(portal)) =
+                            artifact.declaration().service_declaration()
+                        {
+                            portal_surface_identity(portal, &tables).map_err(|denial| {
+                                resolver_report(denial, Some(artifact.provenance()))
+                            })?;
+                        }
+                    }
+                    nodes.push(node)
+                }
                 WorthUiFileAuthoredLoweredDeclaration::Backdrop { source, provenance } => {
                     let node = resolve_backdrop(&source, &tables, &roles)
                         .map_err(|denial| resolver_report(denial, Some(&provenance)))?;
@@ -101,6 +112,16 @@ fn collect_tables(
         allocate(region_names, crate::UiMosaicRegionDeclarationIdentity::new)
             .map_err(|_| ResolutionDenial::Capacity("mosaic region"))?,
     ))
+}
+
+pub(super) fn portal_surface_identity(
+    portal: &crate::WorthUiPortalDeclaration,
+    tables: &WorthUiSealedOverlayDeclarationBindings,
+) -> Result<Option<crate::UiSemanticSurfaceDeclarationIdentity>, ResolutionDenial> {
+    portal
+        .surface()
+        .map(|surface| lookup(tables.surface_named(surface), "surface", surface))
+        .transpose()
 }
 
 fn collect_roles(
