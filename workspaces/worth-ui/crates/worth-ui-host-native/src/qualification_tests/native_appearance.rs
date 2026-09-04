@@ -1,6 +1,6 @@
 use super::super::native_profile::{
-    UiNativePlatformProfileIdentity, STAGED_APPEARANCE_PROFILE, WORTH_UI_NATIVE_NEXT_PROFILE_MANIFEST,
-    WORTH_UI_NATIVE_PROFILE_MANIFEST,
+    UiNativePlatformProfileIdentity, STAGED_APPEARANCE_PROFILE,
+    WORTH_UI_NATIVE_NEXT_PROFILE_MANIFEST, WORTH_UI_NATIVE_PROFILE_MANIFEST,
 };
 
 use worth_ui_host_contract::{UiMountedTextSchemaVersion, WorthUiHostMechanicsAdapter};
@@ -127,9 +127,10 @@ fn certification_report_uses_the_explicit_host_owned_staged_mechanic_qualificati
 
 #[test]
 fn live_native_preparation_remains_v1_without_staged_appearance_or_cutover_protocol() {
-    let (mechanics, _event_loop) = crate::WorthUiPreparedNativeHost::prepare_qualified().into_parts(
-        crate::UiNativeWindowConfiguration::qualified("host-admission", [800, 600]),
-    );
+    let (mechanics, _event_loop) =
+        crate::WorthUiPreparedNativeHost::prepare_qualified().into_parts(
+            crate::UiNativeWindowConfiguration::qualified("host-admission", [800, 600]),
+        );
     let report = WorthUiHostMechanicsAdapter::mechanical_capability_report(&mechanics);
     let protocol = WorthUiHostMechanicsAdapter::mechanical_protocol_contract(&mechanics);
 

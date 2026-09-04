@@ -90,11 +90,9 @@ pub use lifecycle_protocol::{
     UiNativeLifecycleEffect, UiNativeLifecyclePhase, UiNativeLifecycleProtocol,
     UiNativeLifecycleRequiredAction, UiNativeLifecycleTransition,
 };
-pub(crate) use mechanics_adapter::WorthUiNativeMechanicsAdapter;
 #[cfg(feature = "certification-support")]
 pub use mechanics_adapter::staged_appearance_report as staged_appearance_capability_report;
-#[cfg(feature = "certification-support")]
-pub(crate) use presentation::appearance::STAGED_APPEARANCE_MECHANICS;
+pub(crate) use mechanics_adapter::WorthUiNativeMechanicsAdapter;
 pub(crate) use observation::UiNativePresentationInput;
 pub use observation::{
     UiNativeGlyphObservation, UiNativeGraphicsObservation, UiNativePresentationObservation,
@@ -106,6 +104,8 @@ pub use physical_work_signal::{
     UiNativePhysicalSignalTransitionObservation, UiNativePhysicalSignalWorkClass,
 };
 pub(crate) use platform::UiNativePointerInputPort;
+#[cfg(feature = "certification-support")]
+pub(crate) use presentation::appearance::STAGED_APPEARANCE_MECHANICS;
 #[cfg(test)]
 pub(crate) use presentation::GPU_WAIT_DEADLINE;
 #[cfg(feature = "certification-support")]

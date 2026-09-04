@@ -8,6 +8,8 @@ mod qualification;
 mod text_profile;
 
 #[cfg(feature = "certification-support")]
+pub use native::staged_appearance_capability_report;
+#[cfg(feature = "certification-support")]
 pub use native::{
     certify_client_close_with_queued_readiness, UiNativeQueuedReadinessCloseCertification,
 };
@@ -18,8 +20,6 @@ pub use native::{
     UiNativePresentationFault, UiNativePresentationFaultDisposition,
     UiNativePresentationRecoveryClass,
 };
-#[cfg(feature = "certification-support")]
-pub use native::staged_appearance_capability_report;
 pub use native::{
     UiNativeApplicationReadinessGrant, UiNativeApplicationReadinessOwnerCount,
     UiNativeApplicationReadinessOwnerCountDenial, UiNativeApplicationReadinessPort,

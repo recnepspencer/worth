@@ -11,11 +11,11 @@
 
 mod antialiasing;
 mod backdrop_pipeline;
+#[cfg(feature = "certification-support")]
+mod certification_profile;
 mod command;
 mod damage;
 mod damage_candidate;
-#[cfg(feature = "certification-support")]
-mod certification_profile;
 mod geometry;
 mod outline_pipeline;
 mod retained;

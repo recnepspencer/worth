@@ -139,10 +139,7 @@ impl WorthUiHostCapabilityDigest {
     }
 
     pub(crate) fn update_byte(&mut self, byte: u8) {
-        self.value = self
-            .value
-            .wrapping_mul(0x0000_0100_0000_01B3)
-            ^ u64::from(byte);
+        self.value = self.value.wrapping_mul(0x0000_0100_0000_01B3) ^ u64::from(byte);
     }
 
     pub(crate) fn update_bytes(&mut self, bytes: &[u8]) {
@@ -229,11 +226,14 @@ mod tests {
         let absent = WorthUiHostCapabilityReport::available(vec![]);
         let first = WorthUiHostCapabilityReport::available(vec![])
             .with_appearance_profile(first_profile.clone());
-        let second = WorthUiHostCapabilityReport::available(vec![])
-            .with_appearance_profile(second_profile);
+        let second =
+            WorthUiHostCapabilityReport::available(vec![]).with_appearance_profile(second_profile);
 
         assert_eq!(first, second);
-        assert_eq!(first.profile_identity_digest(), second.profile_identity_digest());
+        assert_eq!(
+            first.profile_identity_digest(),
+            second.profile_identity_digest()
+        );
         assert_eq!(
             first.appearance_profile(),
             Some(&first_profile),
