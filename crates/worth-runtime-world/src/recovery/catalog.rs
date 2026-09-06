@@ -1,4 +1,3 @@
-use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::budget::RuntimeWorldBudgetLimit;
@@ -10,7 +9,10 @@ use super::product_unpublished::{
 };
 
 mod active;
+mod slots;
+use slots::{RecoveryEntry, RecoveryRecordSlots};
 mod initialization;
+mod page;
 #[path = "catalog/update.rs"]
 mod update;
 use update::ReservedProductUnpublishedRecordUpdate;
@@ -33,26 +35,22 @@ pub(crate) enum RecoveryCatalogDenial {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RecoveryRecordRemovalDenial {
     CallerCapabilityLive,
+    Busy,
     NotEligible,
 }
 
 #[derive(Debug)]
 struct RecoveryCatalogState {
+    costs: crate::inspection::RuntimeWorldRecoveryCosts,
     owner: RuntimeWorldOwnerIdentity,
     maximum_slots: usize,
     maximum_metadata_bytes: usize,
     reserved_slots: usize,
     abandoned_slots: usize,
-    active: BTreeMap<
-        ProductUnpublishedOwnerEffectsIdentity,
-        Arc<crate::publication::ActiveAttemptRecord>,
-    >,
+    slots: RecoveryRecordSlots,
     reserved_metadata_bytes: usize,
     updating_slots: usize,
-    updating_identities: BTreeSet<ProductUnpublishedOwnerEffectsIdentity>,
     metadata_bytes: usize,
-    records:
-        BTreeMap<ProductUnpublishedOwnerEffectsIdentity, Arc<ProductUnpublishedOwnerEffectsRecord>>,
 }
 
 /// Runtime World capacity for records whose owner effects outlived product
@@ -97,6 +95,9 @@ impl Drop for ReservedProductUnpublishedSlot {
 }
 
 impl ProductUnpublishedRecoveryCatalog {
+    pub(crate) const fn slot_metadata_charge_hint() -> usize {
+        RecoveryRecordSlots::metadata_charge_hint()
+    }
     fn locked_state(&self) -> MutexGuard<'_, RecoveryCatalogState> {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }
@@ -117,8 +118,8 @@ impl ProductUnpublishedRecoveryCatalog {
             });
         }
         if state
-            .records
-            .len()
+            .slots
+            .retained_len()
             .saturating_add(state.reserved_slots)
             .saturating_add(state.updating_slots)
             .saturating_add(state.abandoned_slots)
@@ -156,30 +157,63 @@ impl ProductUnpublishedRecoveryCatalog {
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Option<Arc<ProductUnpublishedOwnerEffectsRecord>> {
+        self.inspect_record(handle).ok()
+    }
+
+    pub(crate) fn inspect_record(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Result<Arc<ProductUnpublishedOwnerEffectsRecord>, super::RuntimeWorldRecoveryDenial> {
+        use super::RuntimeWorldRecoveryDenial;
         if handle.catalog_affinity() != self.affinity() {
-            return None;
+            return Err(RuntimeWorldRecoveryDenial::ForeignHandle);
         }
         self.materialize_abandoned(handle.identity());
         let state = self.locked_state();
-        state.records.get(handle.identity()).cloned()
+        if matches!(
+            state.slots.get(handle.identity()),
+            Some(RecoveryEntry::Busy)
+        ) {
+            return Err(RuntimeWorldRecoveryDenial::Busy);
+        }
+        match state.slots.get(handle.identity()) {
+            Some(RecoveryEntry::Retained(record)) => Ok(Arc::clone(record)),
+            _ => Err(RuntimeWorldRecoveryDenial::MissingRecord),
+        }
     }
 
     pub(crate) fn take_record_for_update(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
-    ) -> Option<ReservedProductUnpublishedRecordUpdate> {
+    ) -> Result<ReservedProductUnpublishedRecordUpdate, super::RuntimeWorldRecoveryDenial> {
         if handle.catalog_affinity() != self.affinity() {
-            return None;
+            return Err(super::RuntimeWorldRecoveryDenial::ForeignHandle);
         }
         self.materialize_abandoned(handle.identity());
         let mut state = self.locked_state();
-        let record = state.records.remove(handle.identity())?;
+        if matches!(
+            state.slots.get(handle.identity()),
+            Some(RecoveryEntry::Busy)
+        ) {
+            return Err(super::RuntimeWorldRecoveryDenial::Busy);
+        }
+        if !matches!(
+            state.slots.get(handle.identity()),
+            Some(RecoveryEntry::Retained(_))
+        ) {
+            return Err(super::RuntimeWorldRecoveryDenial::MissingRecord);
+        }
+        let RecoveryEntry::Retained(record) =
+            state.slots.replace(handle.identity(), RecoveryEntry::Busy)
+        else {
+            unreachable!("checked retained record")
+        };
+        state.costs.updates_started = state.costs.updates_started.saturating_add(1);
         state.updating_slots = state
             .updating_slots
             .checked_add(1)
             .expect("a bounded recovery update counter cannot overflow");
-        assert!(state.updating_identities.insert(handle.identity().clone()));
-        Some(ReservedProductUnpublishedRecordUpdate::new(
+        Ok(ReservedProductUnpublishedRecordUpdate::new(
             self.clone(),
             handle.identity().clone(),
             record,
@@ -199,7 +233,13 @@ impl ProductUnpublishedRecoveryCatalog {
         }
         self.materialize_abandoned(handle.identity());
         let mut state = self.locked_state();
-        let Some(record) = state.records.get(handle.identity()) else {
+        if matches!(
+            state.slots.get(handle.identity()),
+            Some(RecoveryEntry::Busy)
+        ) {
+            return Err(RecoveryRecordRemovalDenial::Busy);
+        }
+        let Some(RecoveryEntry::Retained(record)) = state.slots.get(handle.identity()) else {
             return Ok(None);
         };
         if Arc::strong_count(record) != 1 {
@@ -208,43 +248,40 @@ impl ProductUnpublishedRecoveryCatalog {
         if !eligible(record) {
             return Err(RecoveryRecordRemovalDenial::NotEligible);
         }
-        let record = state
-            .records
-            .remove(handle.identity())
-            .expect("the checked recovery record remains installed");
+        let Some(RecoveryEntry::Retained(record)) = state.slots.remove(handle.identity()) else {
+            unreachable!("checked retained record")
+        };
         state.metadata_bytes = state
             .metadata_bytes
             .checked_sub(record.metadata_bytes())
             .expect("a catalog record owns its metadata charge");
+        state.costs.records_cleaned = state.costs.records_cleaned.saturating_add(1);
         Ok(Some(record))
     }
 
     pub(crate) fn identities(&self) -> Vec<ProductUnpublishedOwnerEffectsIdentity> {
         let state = self.locked_state();
         state
-            .records
-            .keys()
-            .chain(state.updating_identities.iter())
-            .chain(
-                state
-                    .active
-                    .iter()
-                    .filter(|(_, record)| record.is_abandoned())
-                    .map(|(identity, _)| identity),
-            )
-            .cloned()
+            .slots
+            .iter()
+            .filter_map(|(identity, entry)| match entry {
+                RecoveryEntry::Active(active) if !active.is_abandoned() => None,
+                _ => Some(identity.clone()),
+            })
             .collect()
     }
 
+    #[cfg(test)]
     pub(crate) fn installed_slots(&self) -> usize {
         let state = self.locked_state();
         state
-            .records
-            .len()
+            .slots
+            .retained_len()
             .saturating_add(state.updating_slots)
             .saturating_add(state.abandoned_slots)
     }
 
+    #[cfg(test)]
     pub(crate) fn metadata_bytes(&self) -> usize {
         self.locked_state().metadata_bytes
     }
@@ -253,11 +290,13 @@ impl ProductUnpublishedRecoveryCatalog {
         self.locked_state().reserved_slots
     }
 
+    #[cfg(test)]
     pub(crate) fn maximum_slots(&self) -> usize {
         self.locked_state().maximum_slots
     }
 
     #[cfg(test)]
+    #[cfg(feature = "test-operation-control")]
     pub(crate) fn set_metadata_ceiling_for_test(&self, maximum_metadata_bytes: usize) {
         let mut state = self.locked_state();
         assert!(

@@ -29,13 +29,13 @@ impl std::fmt::Debug for ProductBranchHeadProtection {
 }
 
 /// A failed protection admission returns every consumed artifact intact.
-#[derive(Debug)]
 pub(crate) struct ProductBranchHeadProtectionAdmissionFailure {
     denial: ProductBranchHeadProtectionDenial,
     protection: ProductBranchHeadProtection,
 }
 
 impl ProductBranchHeadProtectionAdmissionFailure {
+    #[cfg(test)]
     pub(crate) const fn denial(&self) -> ProductBranchHeadProtectionDenial {
         self.denial
     }
@@ -199,5 +199,14 @@ impl ProductBranchHeadProtection {
             }
         }
         Ok(())
+    }
+}
+
+impl std::fmt::Debug for ProductBranchHeadProtectionAdmissionFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProductBranchHeadProtectionAdmissionFailure")
+            .field("denial", &self.denial)
+            .field("protection", &self.protection)
+            .finish()
     }
 }

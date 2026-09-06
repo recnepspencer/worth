@@ -16,6 +16,7 @@ pub(crate) enum RetentionObligationDenial {
         actual: RuntimeWorldOwnerIdentity,
     },
     InvalidComponentPair,
+    HistoryDependency(super::RetentionTransferDenial),
     ObservationCapacityExhausted,
     UniquePinCapacityExhausted {
         maximum_unique_component_pins: usize,
@@ -33,7 +34,7 @@ pub(crate) enum RetentionObligationDenial {
 /// Counts only named structural work performed by this registry. No byte or
 /// time estimate is invented for a component owner's lease.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(crate) struct RetentionCostSnapshot {
+pub struct RetentionCostSnapshot {
     unique_pin_hits: u64,
     owner_acquisition_contacts: u64,
     owner_release_contacts: u64,
@@ -56,55 +57,55 @@ pub(crate) struct RetentionCostSnapshot {
 }
 
 impl RetentionCostSnapshot {
-    pub(crate) const fn unique_pin_hits(self) -> u64 {
+    pub const fn unique_pin_hits(self) -> u64 {
         self.unique_pin_hits
     }
-    pub(crate) const fn owner_acquisition_contacts(self) -> u64 {
+    pub const fn owner_acquisition_contacts(self) -> u64 {
         self.owner_acquisition_contacts
     }
-    pub(crate) const fn owner_release_contacts(self) -> u64 {
+    pub const fn owner_release_contacts(self) -> u64 {
         self.owner_release_contacts
     }
-    pub(crate) const fn owner_drop_releases(self) -> u64 {
+    pub const fn owner_drop_releases(self) -> u64 {
         self.owner_drop_releases
     }
-    pub(crate) const fn dependency_acquires(self) -> u64 {
+    pub const fn dependency_acquires(self) -> u64 {
         self.dependency_acquires
     }
-    pub(crate) const fn dependency_releases(self) -> u64 {
+    pub const fn dependency_releases(self) -> u64 {
         self.dependency_releases
     }
-    pub(crate) const fn single_flight_joins(self) -> u64 {
+    pub const fn single_flight_joins(self) -> u64 {
         self.single_flight_joins
     }
-    pub(crate) const fn batch_admitted(self) -> u64 {
+    pub const fn batch_admitted(self) -> u64 {
         self.batch_admitted
     }
-    pub(crate) const fn batch_denied(self) -> u64 {
+    pub const fn batch_denied(self) -> u64 {
         self.batch_denied
     }
-    pub(crate) const fn flights_started(self) -> u64 {
+    pub const fn flights_started(self) -> u64 {
         self.flights_started
     }
-    pub(crate) const fn relational_contacts(self) -> u64 {
+    pub const fn relational_contacts(self) -> u64 {
         self.relational_contacts
     }
-    pub(crate) const fn relational_successes(self) -> u64 {
+    pub const fn relational_successes(self) -> u64 {
         self.relational_successes
     }
-    pub(crate) const fn relational_denials(self) -> u64 {
+    pub const fn relational_denials(self) -> u64 {
         self.relational_denials
     }
-    pub(crate) const fn signal_contacts(self) -> u64 {
+    pub const fn signal_contacts(self) -> u64 {
         self.signal_contacts
     }
-    pub(crate) const fn signal_successes(self) -> u64 {
+    pub const fn signal_successes(self) -> u64 {
         self.signal_successes
     }
-    pub(crate) const fn signal_denials(self) -> u64 {
+    pub const fn signal_denials(self) -> u64 {
         self.signal_denials
     }
-    pub(crate) const fn rollbacks(self) -> u64 {
+    pub const fn rollbacks(self) -> u64 {
         self.rollbacks
     }
 
@@ -139,16 +140,16 @@ impl RetentionCostSnapshot {
             }
         }
     }
-    pub(crate) const fn reclamation_entries_examined(self) -> u64 {
+    pub const fn reclamation_entries_examined(self) -> u64 {
         self.reclamation_entries_examined
     }
-    pub(crate) const fn reclamation_entries_reclaimed(self) -> u64 {
+    pub const fn reclamation_entries_reclaimed(self) -> u64 {
         self.reclamation_entries_reclaimed
     }
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(crate) struct RetentionReclamationReport {
+pub struct RetentionReclamationReport {
     requested: usize,
     examined: usize,
     reclaimed: usize,
@@ -156,16 +157,16 @@ pub(crate) struct RetentionReclamationReport {
 }
 
 impl RetentionReclamationReport {
-    pub(crate) const fn requested(self) -> usize {
+    pub const fn requested(self) -> usize {
         self.requested
     }
-    pub(crate) const fn examined(self) -> usize {
+    pub const fn examined(self) -> usize {
         self.examined
     }
-    pub(crate) const fn reclaimed(self) -> usize {
+    pub const fn reclaimed(self) -> usize {
         self.reclaimed
     }
-    pub(crate) const fn remaining_unique_pins(self) -> usize {
+    pub const fn remaining_unique_pins(self) -> usize {
         self.remaining_unique_pins
     }
 }

@@ -18,7 +18,10 @@ impl RuntimeWorldInstant {
 }
 
 /// Source for the purpose-specific monotonic clock. A clock is an allowed
-/// runtime dependency, not a component-owner adapter.
+/// runtime dependency, not a component-owner adapter. Implementations must be
+/// monotonic, bounded, nonblocking, and must not re-enter Runtime World. The
+/// final deadline check runs under the exact product-cell guard before movement;
+/// no clock callback runs after that irreversible cutoff.
 pub trait RuntimeWorldClockSource: Send + Sync {
     fn now(&self) -> RuntimeWorldInstant;
 }

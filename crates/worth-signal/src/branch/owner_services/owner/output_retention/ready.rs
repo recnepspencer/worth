@@ -1,34 +1,24 @@
+#[cfg(test)]
+use super::SignalForkOutputReservation;
+#[cfg(test)]
+use crate::branch::{SignalBranchForkOperationDenial, ValidatedSignalBranchName};
+#[cfg(test)]
 use std::sync::Arc;
 
 use crate::branch::{
-    AdmittedSignalBranchBasis, AdmittedSignalBranchSnapshot, SignalBranchAdvanceDenial,
-    SignalBranchForkOperationDenial, SignalBranchRestoreDenial, SignalBranchSnapshotCaptureDenial,
-    SignalBranchSnapshotCaptureOutcome, ValidatedSignalBranchName,
+    AdmittedSignalBranchBasis, AdmittedSignalBranchSnapshot, SignalBranchRestoreDenial,
+    SignalBranchSnapshotCaptureDenial, SignalBranchSnapshotCaptureOutcome,
 };
-use crate::data::error::SignalError;
-use crate::logic::transaction::{SignalTransaction, TransactionResult};
 
-use super::{
-    SignalAdvanceOutputReservation, SignalForkOutputReservation, SignalRestoreOutputReservation,
-    SignalSnapshotOutputReservation,
-};
-use crate::branch::owner_services::branch_execution_cell::advance::SignalBranchAdvanceCellOutcome;
+use super::{SignalRestoreOutputReservation, SignalSnapshotOutputReservation};
 use crate::branch::owner_services::branch_execution_cell::restoration::SignalBranchRestoreCellOutcome;
 use crate::branch::owner_services::branch_execution_cell::snapshot::SignalBranchSnapshotCellOutcome;
 use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+#[cfg(test)]
 use crate::branch::owner_services::owner::fork_reservation::SignalInstalledOwnerFork;
 use crate::branch::owner_services::SignalOwnerCancellationToken;
+#[cfg(test)]
 use crate::state::SignalBranchHandle;
-
-pub(in crate::branch::owner_services) struct SignalReadyAdvanceOutput<'a, D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
-{
-    reservation: SignalAdvanceOutputReservation<'a, D, I, T>,
-    outcome: SignalBranchAdvanceCellOutcome,
-}
 
 pub(in crate::branch::owner_services) struct SignalReadySnapshotOutput<'a, D, I, T>
 where
@@ -50,6 +40,7 @@ where
     outcome: SignalBranchRestoreCellOutcome,
 }
 
+#[cfg(test)]
 pub(in crate::branch::owner_services) struct SignalReadyForkOutput<'a, D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
@@ -58,57 +49,6 @@ where
 {
     reservation: SignalForkOutputReservation<'a, D, I, T>,
     installed: SignalInstalledOwnerFork<'a, D, I, T>,
-}
-
-impl<'a, D, I, T> SignalAdvanceOutputReservation<'a, D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
-{
-    pub(in crate::branch::owner_services) fn advance<E, Ctx, F>(
-        self,
-        expected: &AdmittedSignalBranchBasis,
-        runtime_ctx: &mut Ctx,
-        cancellation: &SignalOwnerCancellationToken,
-        apply: F,
-    ) -> Result<SignalReadyAdvanceOutput<'a, D, I, T>, SignalBranchAdvanceDenial>
-    where
-        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
-    {
-        let outcome =
-            self.cell
-                .advance_exact(self.admission, expected, runtime_ctx, cancellation, apply)?;
-        Ok(SignalReadyAdvanceOutput {
-            reservation: self,
-            outcome,
-        })
-    }
-}
-
-impl<D, I, T> SignalReadyAdvanceOutput<'_, D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
-{
-    pub(in crate::branch::owner_services) fn into_parts(
-        self,
-    ) -> (AdmittedSignalBranchBasis, TransactionResult) {
-        self.reservation
-            .admission
-            .reach_operation_boundary(SignalOwnerOperationBoundary::OutcomeConstruction);
-        let (branch_id, observation, transaction) = self.outcome.into_output_parts();
-        debug_assert_eq!(branch_id, self.reservation.branch_id);
-        let mut retention = self.reservation.retention;
-        let basis = self.reservation.owner.admit_canonical_basis(
-            observation,
-            branch_id,
-            self.reservation.cell.incarnation().get(),
-            retention.take_one(),
-        );
-        (basis, transaction)
-    }
 }
 
 impl<'a, D, I, T> SignalSnapshotOutputReservation<'a, D, I, T>
@@ -254,6 +194,7 @@ where
     }
 }
 
+#[cfg(test)]
 impl<'a, D, I, T> SignalForkOutputReservation<'a, D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
@@ -279,6 +220,7 @@ where
     }
 }
 
+#[cfg(test)]
 impl<D, I, T> SignalReadyForkOutput<'_, D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,

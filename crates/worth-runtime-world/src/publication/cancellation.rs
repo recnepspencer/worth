@@ -26,7 +26,6 @@ pub(crate) enum RuntimeWorldCancellationBoundary {
     BeforeFirstOwnerEffect,
     BetweenOwnerEffects,
     BeforeProductMovement,
-    AfterProductMovement,
 }
 
 impl RuntimeWorldCancellationSource {

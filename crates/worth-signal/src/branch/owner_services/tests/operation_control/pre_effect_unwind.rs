@@ -144,12 +144,14 @@ fn exercise_advance_pre_effect_fault(boundary: SignalOwnerOperationBoundary) {
         let reservation = owner
             .reserve_advance_output(&admission, &cell)
             .expect("advance output reserves");
-        let _ = reservation.advance::<(), (), _>(
-            &basis,
-            &mut (),
-            &SignalOwnerCancellationSource::new().token(),
-            |_| Ok(()),
-        );
+        let _ = reservation
+            .advance::<(), (), _>(
+                &basis,
+                &mut (),
+                &SignalOwnerCancellationSource::new().token(),
+                |_| Ok(()),
+            )
+            .into_result();
     }))
     .is_err());
     let mut released = ledger_before.clone();

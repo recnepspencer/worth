@@ -7,20 +7,27 @@
 // tokens. Re-exporting those exact types here keeps the World facade complete
 // without exposing a constructor or a second authority path.
 pub use worth_relational::facade::branch::{
-    AdmittedRelationalBranchBasis, RelationalBranchBasisPort, RelationalOwnerServicePorts,
+    AdmittedRelationalBranchBasis, RelationalBranchBasisAdmissionIdentity,
+    RelationalBranchBasisPort, RelationalBranchIdentity, RelationalOwnerServicePorts,
 };
-pub use worth_relational::facade::history::RelationalCommitIdentity;
+
+pub use worth_relational::facade::history::{RelationalCommitIdentity, RelationalCommitReceipt};
+
 pub use worth_relational::facade::mvcc::RelationalTransactionIntent;
+
 pub use worth_runtime_bridge::facade::{
     AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldCorrespondencePort,
 };
+
 pub use worth_signal::facade::branch::{
-    AdmittedSignalBranchBasis, SignalBranchBasisAdmissionIdentity, SignalOwnerCancellationToken,
-    SignalOwnerServicePorts,
+    AdmittedSignalBranchBasis, SignalBranchAdvanceOutcome, SignalBranchBasisAdmissionIdentity,
+    SignalBranchForkOutcome, SignalOwnerCancellationToken, SignalOwnerServicePorts,
 };
+
 pub use worth_signal::facade::{SignalError, SignalTransaction};
 
 pub use crate::basis::AdmittedCompositeRuntimeWorldBasis;
+
 pub use crate::branch::{
     ComponentBranchTarget, CustodyComponent, NoEffectRuntimeWorldBootstrap,
     OwnerCreatedComponentCustodyRecord, OwnerRetirementWork, PerformedRuntimeWorldBootstrap,
@@ -32,6 +39,7 @@ pub use crate::branch::{
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchRetirementDenial,
     SignalBranchCreationPlan,
 };
+
 pub use crate::budget::{
     RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial, RuntimeWorldBudgetInstallation,
     RuntimeWorldBudgetLimit, RuntimeWorldBudgetResource, RuntimeWorldBudgets,
@@ -39,39 +47,65 @@ pub use crate::budget::{
     RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
     RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
 };
+
 pub use crate::history::{
     CompositeCallerCorrelation, CompositeCommitParent, CompositeCommitProvenance,
-    CompositeComponentChangePosture, CompositeRuntimeWorldCommit,
-    CompositeSignalPublicationIdentity, OrdinaryParent,
+    CompositeComponentChangePosture, CompositeHistoryCatalogDenial,
+    CompositeHistoryReclamationRequest, CompositeHistoryTraversal, CompositeRuntimeWorldCommit,
+    CompositeSignalPublicationIdentity, HistoryCatalogCounters, HistoryMetadataLedger,
+    HistoryReclamationDenial, HistoryReclamationOutcome, OrdinaryParent,
 };
+
 pub use crate::identity::{
     CompositeBasisKey, CompositeCommitIdentity, CompositePublicationAttemptIdentity,
     ProductBranchIdentity, ProductBranchIncarnation, ProductBranchReferenceGeneration,
     ProductUnpublishedOwnerEffectsIdentity, RuntimeWorldBootstrapAttemptIdentity,
     RuntimeWorldIdentityExhaustion, RuntimeWorldIdentityFamily, RuntimeWorldOwnerIdentity,
 };
+
 pub use crate::lifecycle::{
+    MissingRuntimeWorldInput, RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort,
     RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial, RuntimeWorldCloseReport,
-    RuntimeWorldInstant, RuntimeWorldOwnerInputs, RuntimeWorldOwnerLifecycleObservation,
-    RuntimeWorldOwnerRoot, RuntimeWorldOwnerUnavailable, RuntimeWorldRetainedRecordReport,
+    RuntimeWorldInspectionPort, RuntimeWorldInstant, RuntimeWorldLifecyclePort,
+    RuntimeWorldObservationPort, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
+    RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
+    RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort, RuntimeWorldRetainedRecordReport,
+    RuntimeWorldServiceDenial,
 };
+
 pub use crate::publication::{
     CompositeAttemptCancellationPosture, CompositeAttemptProgress, CompositeComponentIntent,
     CompositeLateCancellationPosture, CompositeOwnerExecutionResults,
     CompositePublicationCostCounters, CompositePublicationIntent, CompositePublicationOrder,
-    CompositePublicationReady, CompositeRelationalOwnerResult, CompositeSignalOwnerResult,
-    LoweredOwnerComponentPlan, NoEffectCause, NoEffectCompositePublication,
-    OwnerExecutionSettlement, PerformedCompositePublication,
+    CompositeRelationalOwnerResult, CompositeSignalOwnerResult, ConsumedCompositePublication,
+    NoEffectCause, NoEffectCompositePublication, PerformedCompositePublication,
     PreparedCompositePublicationWithSignal, PreparedCompositePublicationWithoutSignal,
     RelationalAttemptProgress, RelationalAttemptProgressPosture, RelationalComponentPlan,
-    RelationalComponentPlanPosture, ReservedCompositePublicationAttempt,
-    ResolvedExpectedProductHead, RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
+    RelationalComponentPlanPosture, RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
     RuntimeWorldPublicationOutcome, RuntimeWorldPublicationPhase, SignalAttemptProgress,
     SignalAttemptProgressPosture, SignalComponentPlan, SignalComponentPlanPosture, WithSignal,
     WithoutSignal,
 };
+
 pub use crate::recovery::{
-    ProductUnpublishedCause, ProductUnpublishedNextAction, ProductUnpublishedOwnerEffects,
-    ProductUnpublishedRecoveryHandle, ProductUnpublishedRetentionPosture,
-    RecoveryContinuationContract,
+    PerformedPublicationRecoveryDenial, ProductUnpublishedCause, ProductUnpublishedNextAction,
+    ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle,
+    ProductUnpublishedRetentionPosture, RecoveryContinuationContract, RuntimeWorldRecoveryDenial,
 };
+
+pub use crate::inspection::{
+    RuntimeWorldHistorySnapshot, RuntimeWorldRecoveryCosts, RuntimeWorldRecoveryCursor,
+    RuntimeWorldRecoveryPage, RuntimeWorldRecoveryRecordState, RuntimeWorldRecoveryRow,
+    RuntimeWorldRecoverySnapshot, RuntimeWorldRetentionEntry,
+    RuntimeWorldRetentionInspectionDenial, RuntimeWorldRetentionKey, RuntimeWorldRetentionSnapshot,
+};
+
+pub use crate::retention::{
+    ComponentBasisDependencyClass, ComponentBasisDependencyCounts, RetentionCostSnapshot,
+    RetentionReclamationReport,
+};
+
+pub use worth_relational::facade::transactions::CommitResult;
+
+#[cfg(feature = "test-operation-control")]
+pub use crate::lifecycle::{RuntimeWorldOperationControl, RuntimeWorldProductComparePause};

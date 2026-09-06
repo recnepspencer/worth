@@ -70,6 +70,7 @@ impl RelationalAttemptProgress {
 impl SignalAttemptProgress {
     pub(crate) fn retained_image(&self) -> Self {
         let evidence = match &self.evidence {
+            #[cfg(test)]
             Some(SignalProgressEvidence::Prepared) => Some(SignalProgressEvidence::Prepared),
             Some(SignalProgressEvidence::Advanced(outcome)) => {
                 Some(SignalProgressEvidence::Advanced(Arc::clone(outcome)))

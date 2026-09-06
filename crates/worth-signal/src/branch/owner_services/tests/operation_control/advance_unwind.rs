@@ -51,6 +51,7 @@ fn advance_outcome_construction_fault_preserves_performed_truth_and_releases_out
                     )
                 },
             )
+            .into_result()
             .expect("advance reaches outcome construction");
         let _ = ready.into_parts();
     }));
@@ -104,6 +105,7 @@ fn advance_outcome_construction_fault_preserves_performed_truth_and_releases_out
             &SignalOwnerCancellationSource::new().token(),
             |_| Ok(()),
         )
+        .into_result()
         .expect("a healthy advance follows outcome unwind")
         .into_parts();
     assert_eq!(healthy.0.observation().generation().get(), 2);

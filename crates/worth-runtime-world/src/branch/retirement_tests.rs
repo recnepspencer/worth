@@ -220,7 +220,7 @@ fn retirement_releases_product_capacity_without_releasing_live_observation_custo
     ));
 
     drop(child);
-    assert_eq!(owner.state.retention.active_component_obligation_count(), 4);
+    assert_eq!(owner.state.retention.active_component_obligation_count(), 6);
     let replacement = create_reused_branch(&owner, &root, reuse_intent("reusable"));
     assert_ne!(replacement.branch_identity(), root.branch_identity());
     // Identity is keyed by name, incarnation by occurrence.
@@ -231,7 +231,7 @@ fn retirement_releases_product_capacity_without_releasing_live_observation_custo
     drop(replacement);
     assert_eq!(owner.state.branches.branch_count(), 1);
     assert_eq!(owner.state.branches.reserved_branch_count(), 0);
-    assert_eq!(owner.state.retention.active_component_obligation_count(), 4);
+    assert_eq!(owner.state.retention.active_component_obligation_count(), 6);
 }
 
 #[test]

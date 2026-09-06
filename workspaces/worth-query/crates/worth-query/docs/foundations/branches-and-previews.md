@@ -433,9 +433,12 @@ Look for:
 - Relational branch-local MVCC, exact-basis readmission, detached transactions,
   and typed branch-merge settlement repair are implemented owner capabilities.
   They do not make every Query branch-session effect family supported.
-- Signal owner services provide exact component bases and per-branch progress,
-  but Query does not yet coordinate composite Relational-plus-Signal product
-  publication; that remains the 9.17.2 and 9.17.3 boundary.
+- Signal owner services provide exact component bases and per-branch progress.
+  [Runtime World](../../../../../../crates/worth-runtime-world/README.md) implements
+  memory-resident composite history and coordinated Relational-plus-Signal
+  publication in milestone 9.17.2. Query carriage, outbox gating, and public
+  product-branch integration remain milestone 9.17.3 work; existing Query branch
+  sessions do not acquire those guarantees merely because the owner exists.
 - Durable preview replay and temporal/async branch-session behavior remain
   future work.
 

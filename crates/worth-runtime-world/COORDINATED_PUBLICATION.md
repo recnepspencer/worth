@@ -33,8 +33,9 @@ recheck, and final product publication. No Runtime World lock may be held over
 a component-owner call. Unchanged components are represented by `RetainExact`
 and do not imply a latest lookup or owner contact.
 
-The managed owner implements the internal service seams. Public builder/port
-assembly and the 9.17.3 handoff remain Phase 5 work. Branch creation uses an
+The public builder installs the managed owner and exposes typed ports. The
+public prepared types distinguish execution with and without Signal; internal
+progression types cannot be constructed or skipped by consumers. Branch creation uses an
 explicit reuse/fork plan per component and checks cancellation before effects
 and at source-guarded installation. A performed fork denied by cancellation
 remains retained with its exact effects.
@@ -65,3 +66,28 @@ The registry binds a destination witness before effects and records actual
 insertion under the source guard. A refused cell stays in the resource lease.
 Post-insertion unwind releases attempt admission without inventing an unpublished
 record, even if retirement and name reuse precede the caller's Drop.
+
+## Cancellation and unwind
+
+The World token is checked before effects and at named progression boundaries.
+The final clock read precedes the final atomic cancellation check; once the CAS
+installs, late cancellation cannot reclassify a performed publication. A stale
+product head after an owner effect is a retained partial, never rollback.
+
+Signal's owner-issued `SignalBranchAdvanceCompletion` carries its canonical
+advanced result across a post-movement unwind. World records that exact result
+in the preinstalled attempt custody before resuming the original panic payload.
+An unwind before movement creates no invented owner effect. No counter, latest
+lookup or reconstructed descriptor substitutes for that carried result.
+
+`recovery_port().continue_effects(effects)` continues an already-performed
+Relational settlement when necessary, or exposes cleanup-only obligations.
+It never calls an unperformed Signal sibling or a product CAS. Automatic adoption
+of an owner-local successor is outside 9.17.2.
+
+Recovery retains exclusive custody of the record while settlement runs. If
+settlement unwinds, the record regains its exact carried progress and component
+results before it becomes available again. A consumed settlement route leaves
+only its owner-issued identity and basis for explicit repair, never a recreated
+performed capability. Cleanup remains denied while settlement is still owed;
+retry continues that settlement without rerunning component publication.

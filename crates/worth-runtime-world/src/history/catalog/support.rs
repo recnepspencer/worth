@@ -46,41 +46,16 @@ pub(super) fn validate_parent_for_reservation(
             actual: parent.commit().owner_identity(),
         });
     }
-    if !state
+    if state
         .entries
         .get(parent.commit())
-        .is_some_and(Option::is_some)
+        .is_none_or(|slot| slot.get().is_none())
     {
         return Err(CompositeHistoryCatalogDenial::MissingParent(
             parent.commit().clone(),
         ));
     }
     Ok(())
-}
-
-pub(super) fn install_entry(
-    state: &mut CompositeHistoryCatalogState,
-    entry: CompositeHistoryCatalogEntry,
-) {
-    let identity = entry.identity().clone();
-    let parent = entry.commit().parent().clone();
-    {
-        let mut reachability = lock_index(&state.reachability);
-        reachability.install(&identity);
-    }
-    let slot = state
-        .entries
-        .get_mut(&identity)
-        .expect("admission allocated this history slot");
-    assert!(
-        slot.is_none(),
-        "one reservation populates one immutable occurrence"
-    );
-    *slot = Some(entry);
-    if matches!(parent, CompositeCommitParent::Root) {
-        state.root = Some(identity);
-        state.root_ever_installed = true;
-    }
 }
 
 pub(super) fn release_reservation(
@@ -90,7 +65,10 @@ pub(super) fn release_reservation(
     let Some(reservation) = state.reservations.remove(identity) else {
         return;
     };
-    assert!(matches!(state.entries.remove(identity), Some(None)));
+    assert!(state
+        .entries
+        .remove(identity)
+        .is_some_and(|slot| slot.get().is_none()));
     lock_index(&state.reachability).release_reservation(identity);
     state.metadata.release_reservation(&reservation);
     lock_counters(&state.counters).record_metadata_release();
@@ -133,7 +111,11 @@ pub(super) fn prevalidate_candidate_prefix(
         }
     }
     for candidate in candidates {
-        if !state.entries.get(candidate).is_some_and(Option::is_some) {
+        if state
+            .entries
+            .get(candidate)
+            .is_none_or(|slot| slot.get().is_none())
+        {
             return Err(HistoryReclamationDenial::UnknownCandidate(
                 candidate.clone(),
             ));
@@ -145,13 +127,13 @@ pub(super) fn prevalidate_candidate_prefix(
 pub(super) fn remove_installed(
     state: &mut CompositeHistoryCatalogState,
     identity: &CompositeCommitIdentity,
-) -> CompositeHistoryCatalogEntry {
+) -> Arc<std::sync::OnceLock<CompositeHistoryCatalogEntry>> {
     let entry = state
         .entries
         .remove(identity)
-        .flatten()
         .expect("prevalidated candidate remains installed during reclamation");
-    let parent = entry.commit().parent().clone();
+    let installed = entry.get().expect("prevalidated installed slot");
+    let parent = installed.commit().parent().clone();
     {
         let mut reachability = lock_index(&state.reachability);
         reachability.remove_installed(identity);
@@ -159,7 +141,9 @@ pub(super) fn remove_installed(
             reachability.decrement_descendant_dependency(parent.commit());
         }
     }
-    state.metadata.release_installed(entry.metadata_charge());
+    state
+        .metadata
+        .release_installed(installed.metadata_charge());
     lock_counters(&state.counters).record_metadata_release();
     if matches!(parent, CompositeCommitParent::Root) && state.root.as_ref() == Some(identity) {
         state.root = None;

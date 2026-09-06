@@ -89,8 +89,12 @@ where
             RelationalPublicationOutcome::Stale(_) => {
                 Err(pre_effect_failure(NoEffectCause::StaleExpectedProductHead))
             }
-            RelationalPublicationOutcome::Denied(_) => {
-                Err(pre_effect_failure(NoEffectCause::OwnerUnavailable))
+            RelationalPublicationOutcome::Denied(denial) => {
+                let cause = match denial {
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerUnavailable { .. } => NoEffectCause::OwnerUnavailable,
+                    _ => NoEffectCause::OwnerDeniedBeforeEffect,
+                };
+                Err(pre_effect_failure(cause))
             }
             RelationalPublicationOutcome::Interrupted(_)
             | RelationalPublicationOutcome::Deferred(_)

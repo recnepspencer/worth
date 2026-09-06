@@ -50,7 +50,7 @@ fn fork_budgets(live_branches: u64, custody_records: u64) -> RuntimeWorldBudgets
         },
         history: RuntimeWorldHistoryBudgetInstallation {
             retained_composite_commits: 12,
-            history_metadata_bytes: 4096,
+            history_metadata_bytes: 16384,
         },
         observations: RuntimeWorldObservationBudgetInstallation {
             active_observations: 8,

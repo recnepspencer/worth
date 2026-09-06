@@ -27,13 +27,26 @@ impl CanonicalPublicationEnvelope {
         self: &Arc<Self>,
         history: ExplicitCommitHistoryProtectionObligation,
     ) -> Option<PublicationDeliveryClaim> {
+        self.try_claim_delivery(history).ok()
+    }
+    pub(crate) fn try_claim_delivery(
+        self: &Arc<Self>,
+        history: ExplicitCommitHistoryProtectionObligation,
+    ) -> Result<PublicationDeliveryClaim, crate::recovery::PerformedPublicationRecoveryDenial> {
+        use crate::recovery::PerformedPublicationRecoveryDenial as Denial;
         if history.commit_identity() != self.commit_identity() {
-            return None;
+            return Err(Denial::ProtectionMismatch);
         }
         self.delivery
             .compare_exchange(AVAILABLE, CLAIMED, Ordering::AcqRel, Ordering::Acquire)
-            .ok()?;
-        Some(PublicationDeliveryClaim {
+            .map_err(|state| {
+                if state == CONSUMED {
+                    Denial::Consumed
+                } else {
+                    Denial::Claimed
+                }
+            })?;
+        Ok(PublicationDeliveryClaim {
             envelope: Arc::clone(self),
             _history: history,
             consumed: false,
@@ -48,10 +61,11 @@ impl PublicationDeliveryClaim {
 
     /// The future product handoff must consume this claim, not an inspection
     /// image. There is no transition back from consumed to available.
-    pub(crate) fn consume(mut self) {
+    pub(crate) fn consume(mut self) -> Self {
         assert!(self.envelope.facts().is_some());
         self.envelope.delivery.store(CONSUMED, Ordering::Release);
         self.consumed = true;
+        self
     }
 }
 

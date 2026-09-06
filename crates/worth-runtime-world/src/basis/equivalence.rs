@@ -7,16 +7,6 @@ pub(crate) struct CompositeBasisMismatch {
     observed: CompositeBasisKey,
 }
 
-impl CompositeBasisMismatch {
-    pub(crate) fn expected(&self) -> &CompositeBasisKey {
-        &self.expected
-    }
-
-    pub(crate) fn observed(&self) -> &CompositeBasisKey {
-        &self.observed
-    }
-}
-
 pub(crate) fn compare_exact(
     expected: &AdmittedCompositeRuntimeWorldBasis,
     observed: &AdmittedCompositeRuntimeWorldBasis,

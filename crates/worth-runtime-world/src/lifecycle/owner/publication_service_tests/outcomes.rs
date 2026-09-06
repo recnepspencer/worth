@@ -32,7 +32,8 @@ fn ready_drop_retains_effects_and_allows_close_before_explicit_cleanup() {
     assert_eq!(report.retained_records().len(), 1);
     let row = &report.retained_records()[0];
     assert_eq!(row.cause(), ProductUnpublishedCause::CallerAbandoned);
-    assert_eq!(row.live_component_obligations(), 2);
+    // Retained publication pair plus the pre-acquired history pair.
+    assert_eq!(row.live_component_obligations(), 4);
     assert_eq!(row.live_composite_obligations(), 2);
     let handle = owner.recovery_handles().pop().unwrap();
     let record = owner.inspect_recovery(&handle).unwrap();

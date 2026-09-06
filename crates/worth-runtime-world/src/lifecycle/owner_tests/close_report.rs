@@ -78,11 +78,10 @@ fn close_exposes_every_retained_record_in_its_terminal_report() {
     );
 }
 
-/// Close reclaims the exact component pins nothing holds any more, and only
-/// those: the entry a completed publication released is reclaimed, while the
-/// retained record keeps every pin it still owes.
+/// Close preserves exact pins held by retained history and partial records.
+/// A completed publication does not make its predecessor history reclaimable.
 #[test]
-fn close_reclaims_released_component_pins_and_never_a_retained_record_pin() {
+fn close_preserves_history_and_retained_record_component_pins() {
     let race = resolve_one_race_after_a_completed_publication(
         CompositeLateCancellationPosture::NotRequested,
     );
@@ -98,8 +97,8 @@ fn close_reclaims_released_component_pins_and_never_a_retained_record_pin() {
 
     assert_eq!(
         report.released_unique_component_pins(),
-        1,
-        "the exact relational entry the completed publication released is reclaimable,          and close must actually reclaim it"
+        0,
+        "retained predecessor history still owns the exact relational pin"
     );
     assert_eq!(
         report.released_unique_component_pins(),

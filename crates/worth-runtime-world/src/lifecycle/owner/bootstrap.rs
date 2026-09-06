@@ -20,6 +20,12 @@ where
         &self,
         intent: RuntimeWorldBootstrapIntent,
     ) -> RuntimeWorldBootstrapOutcome {
+        if intent
+            .cancellation()
+            .is_some_and(|token| token.is_cancelled())
+        {
+            return no_effect(RuntimeWorldBootstrapNoEffectCause::Cancelled);
+        }
         let mut state = self
             .state
             .bootstrap
@@ -36,7 +42,9 @@ where
             .close
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if close.state() != super::super::close::RuntimeWorldCloseState::Open {
+        if !self.owner_is_present()
+            || close.state() != super::super::close::RuntimeWorldCloseState::Open
+        {
             return no_effect(RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable);
         }
         drop(close);
@@ -58,6 +66,7 @@ where
         &self,
         intent: RuntimeWorldBootstrapIntent,
     ) -> RuntimeWorldBootstrapOutcome {
+        let cancellation = intent.cancellation().cloned();
         let (creation, relational, signal, correspondence, generation) = intent.into_parts();
         let branch_reservation = match self.state.branches.reserve_root(self.owner_identity()) {
             Ok(reservation) => reservation,
@@ -138,7 +147,36 @@ where
             Err(denial) => return no_effect(map_retention_denial(denial)),
         };
 
-        let root_entry = match history_capacity.install(Arc::clone(&root)) {
+        let history_pins = match product_head.fork_history(&basis) {
+            Ok(pins) => pins,
+            Err(_) => return no_effect(RuntimeWorldBootstrapNoEffectCause::CapacityExhausted),
+        };
+        // No component-owner calls occur under this final admission guard.
+        // Every consuming-call failure remains anchored by another acquired
+        // exact pair: head + observation during history installation, observation
+        // during head/cell construction, cell during observation construction,
+        // and observation + installed history during root-cell installation.
+        // Therefore no inner error drop can release the final owner lease.
+        // This guard drops before outer rollback and acquired-pair custody.
+        let mut bootstrap = self
+            .state
+            .bootstrap
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let close = self.state.close.lock().unwrap_or_else(|e| e.into_inner());
+        if !self.owner_is_present()
+            || close.state() != super::super::close::RuntimeWorldCloseState::Open
+        {
+            return no_effect(RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable);
+        }
+        drop(close);
+        if cancellation
+            .as_ref()
+            .is_some_and(|token| token.is_cancelled())
+        {
+            return no_effect(RuntimeWorldBootstrapNoEffectCause::Cancelled);
+        }
+        let root_entry = match history_capacity.install(Arc::clone(&root), history_pins) {
             Ok(entry) => entry,
             Err(_) => return no_effect(RuntimeWorldBootstrapNoEffectCause::CapacityExhausted),
         };
@@ -201,6 +239,8 @@ where
             .take()
             .expect("successful root installation retains rollback custody")
             .commit();
+        *bootstrap = RuntimeWorldBootstrapState::Performed;
+        drop(bootstrap);
         PerformedRuntimeWorldBootstrap::new(bootstrap_attempt, basis, observation).into_outcome()
     }
 }
@@ -222,14 +262,7 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     fn drop(&mut self) {
-        if self.completed {
-            *self
-                .owner
-                .state
-                .bootstrap
-                .lock()
-                .unwrap_or_else(|error| error.into_inner()) = RuntimeWorldBootstrapState::Performed;
-        } else {
+        if !self.completed {
             *self
                 .owner
                 .state

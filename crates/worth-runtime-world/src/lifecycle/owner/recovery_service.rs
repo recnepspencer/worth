@@ -4,17 +4,6 @@ use crate::recovery::{
     RecoveryContinuationContract,
 };
 
-#[cfg(test)]
-use std::collections::HashMap;
-#[cfg(test)]
-use std::sync::atomic::{AtomicBool, Ordering};
-#[cfg(test)]
-use std::sync::mpsc::SyncSender;
-#[cfg(test)]
-use std::sync::{Arc, Condvar, Mutex, OnceLock};
-#[cfg(test)]
-use std::time::{Duration, Instant};
-
 use super::RuntimeWorldOwnerRoot;
 
 #[cfg(test)]
@@ -26,132 +15,13 @@ mod settlement_catalog_tests;
 mod concurrency_tests;
 
 #[cfg(test)]
-const RECOVERY_UPDATE_PAUSE_TIMEOUT: Duration = Duration::from_secs(5);
+#[path = "recovery_service/unwind_tests.rs"]
+mod unwind_tests;
 
 #[cfg(test)]
-#[derive(Debug)]
-pub(super) struct RecoveryUpdatePause {
-    reached: SyncSender<()>,
-    release: Arc<(Mutex<bool>, Condvar)>,
-    /// Set when the paused update gave up waiting and resumed on its own.
-    timed_out: AtomicBool,
-}
-
+mod update_control;
 #[cfg(test)]
-pub(super) struct RecoveryUpdatePauseGuard {
-    handle: ProductUnpublishedRecoveryHandle,
-    pause: Arc<RecoveryUpdatePause>,
-}
-
-#[cfg(test)]
-static RECOVERY_UPDATE_PAUSES: OnceLock<
-    Mutex<HashMap<ProductUnpublishedRecoveryHandle, Arc<RecoveryUpdatePause>>>,
-> = OnceLock::new();
-
-#[cfg(test)]
-fn recovery_update_pause_slot(
-) -> &'static Mutex<HashMap<ProductUnpublishedRecoveryHandle, Arc<RecoveryUpdatePause>>> {
-    RECOVERY_UPDATE_PAUSES.get_or_init(|| Mutex::new(HashMap::new()))
-}
-
-#[cfg(test)]
-pub(super) fn install_test_recovery_update_pause(
-    handle: ProductUnpublishedRecoveryHandle,
-    reached: SyncSender<()>,
-) -> RecoveryUpdatePauseGuard {
-    let pause = Arc::new(RecoveryUpdatePause {
-        reached,
-        release: Arc::new((Mutex::new(false), Condvar::new())),
-        timed_out: AtomicBool::new(false),
-    });
-    let mut installed = recovery_update_pause_slot()
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    assert!(
-        !installed.contains_key(&handle),
-        "only one recovery update pause may be installed for a handle"
-    );
-    installed.insert(handle.clone(), Arc::clone(&pause));
-    RecoveryUpdatePauseGuard { handle, pause }
-}
-
-#[cfg(test)]
-impl RecoveryUpdatePause {
-    fn wait_for_release(&self) {
-        if self.reached.send(()).is_err() {
-            return;
-        }
-        let deadline = Instant::now() + RECOVERY_UPDATE_PAUSE_TIMEOUT;
-        let (opened, signal) = &*self.release;
-        let mut opened = opened.lock().unwrap_or_else(|error| error.into_inner());
-        while !*opened {
-            let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
-                self.note_timeout();
-                return;
-            };
-            let (next, result) = signal
-                .wait_timeout(opened, remaining)
-                .unwrap_or_else(|error| error.into_inner());
-            opened = next;
-            // A release that lands in the same instant the wait expires is a
-            // release, not a timeout: the loop condition decides.
-            if result.timed_out() && !*opened {
-                self.note_timeout();
-                return;
-            }
-        }
-    }
-
-    fn note_timeout(&self) {
-        self.timed_out.store(true, Ordering::SeqCst);
-    }
-
-    fn timed_out(&self) -> bool {
-        self.timed_out.load(Ordering::SeqCst)
-    }
-
-    fn release(&self) {
-        let (opened, signal) = &*self.release;
-        let mut opened = opened.lock().unwrap_or_else(|error| error.into_inner());
-        *opened = true;
-        signal.notify_all();
-    }
-}
-
-#[cfg(test)]
-impl Drop for RecoveryUpdatePauseGuard {
-    fn drop(&mut self) {
-        self.pause.release();
-        let mut installed = recovery_update_pause_slot()
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        let owned_registration = installed
-            .get(&self.handle)
-            .is_some_and(|current| Arc::ptr_eq(current, &self.pause));
-        if owned_registration {
-            installed.remove(&self.handle);
-        }
-        drop(installed);
-        // A pause that resumed on its own describes an update the test never
-        // controlled, so the test fails here by name.
-        assert!(
-            !self.pause.timed_out() || std::thread::panicking(),
-            "recovery update pause was never released within {RECOVERY_UPDATE_PAUSE_TIMEOUT:?}"
-        );
-    }
-}
-
-#[cfg(test)]
-fn pause_test_recovery_update(handle: &ProductUnpublishedRecoveryHandle) {
-    let pause = recovery_update_pause_slot()
-        .lock()
-        .unwrap_or_else(|error| error.into_inner())
-        .get(handle)
-        .cloned();
-    if let Some(pause) = pause {
-        pause.wait_for_release();
-    }
-}
+use update_control::{install_test_recovery_update_pause, pause_test_recovery_update};
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
 where
@@ -162,6 +32,7 @@ where
     /// Enumerate owner-issued recovery handles. A handle is only an
     /// attempt-affine inspection key; it cannot publish a product branch or
     /// mint a component-owner capability.
+    #[cfg(test)]
     pub fn recovery_handles(&self) -> Vec<ProductUnpublishedRecoveryHandle> {
         let affinity = self.state.recovery.affinity();
         self.state
@@ -172,10 +43,12 @@ where
             .collect()
     }
 
+    #[cfg(test)]
     pub fn recovery_record_count(&self) -> usize {
         self.state.recovery.installed_slots()
     }
 
+    #[cfg(test)]
     pub fn inspect_recovery(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
@@ -190,6 +63,7 @@ where
     /// capability is dropped first so that it cannot be the inspection that
     /// keeps the record retained; the release itself is
     /// [`Self::cleanup_recovery_handle`].
+    #[cfg(test)]
     pub(crate) fn cleanup_recovery(
         &self,
         effects: ProductUnpublishedOwnerEffects,
@@ -209,11 +83,12 @@ where
     /// component owners still owe is returned here rather than left installed
     /// under a branch that will never exist. `None` is a record this call did
     /// not release; it drains nothing, because it retired nothing.
+    #[cfg(test)]
     pub(crate) fn cleanup_recovery_handle(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Option<Vec<OwnerRetirementWork>> {
-        let released = self.state.recovery.cleanup_record(handle).ok()?;
+        let released = self.state.recovery.cleanup_record(handle, None).ok()?;
         Some(self.drain_released_occurrence(&released))
     }
 
@@ -243,18 +118,41 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn inspect_effects(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Result<ProductUnpublishedOwnerEffects, crate::recovery::RuntimeWorldRecoveryDenial> {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
+        self.state
+            .recovery
+            .inspect_record(handle)
+            .map(ProductUnpublishedOwnerEffects::from_catalog_record)
+    }
+    fn release_effects(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+        minimum_age_ticks: u64,
+    ) -> Result<Vec<OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial> {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
+        let released = self
+            .state
+            .recovery
+            .cleanup_record(handle, Some((self.state.clock.now(), minimum_age_ticks)))?;
+        Ok(self.drain_released_occurrence(&released))
+    }
     fn continue_effects(
         &self,
         effects: ProductUnpublishedOwnerEffects,
-    ) -> Result<RecoveryContinuationContract, super::super::ports::RuntimeWorldOwnerUnavailable>
-    {
+    ) -> Result<RecoveryContinuationContract, crate::recovery::RuntimeWorldRecoveryDenial> {
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| super::super::ports::RuntimeWorldOwnerUnavailable::new())?;
         let handle = effects.recovery_handle();
-        if self.state.recovery.lookup_record(&handle).is_none() {
-            return Err(super::super::ports::RuntimeWorldOwnerUnavailable::new());
-        }
+        drop(self.state.recovery.inspect_record(&handle)?);
         let settlement_required = effects.progress().relational_requires_settlement();
         if !settlement_required {
             let actions = effects.next_actions().to_vec();
@@ -263,19 +161,15 @@ where
         }
 
         drop(effects);
-        let mut update = self
-            .state
-            .recovery
-            .take_record_for_update(&handle)
-            .ok_or_else(super::super::ports::RuntimeWorldOwnerUnavailable::new)?;
+        let mut update = self.state.recovery.take_record_for_update(&handle)?;
         #[cfg(test)]
         pause_test_recovery_update(&handle);
         let record = update
             .record_mut()
-            .ok_or_else(super::super::ports::RuntimeWorldOwnerUnavailable::new)?;
-        let mut recovery = record
-            .take_relational_recovery()
-            .map_err(|()| super::super::ports::RuntimeWorldOwnerUnavailable::new())?;
+            .ok_or(crate::recovery::RuntimeWorldRecoveryDenial::CallerCapabilityLive)?;
+        let mut recovery = record.take_relational_recovery().map_err(|()| {
+            crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable
+        })?;
 
         if let Some(performed) = recovery.take_performed() {
             match self
@@ -288,17 +182,22 @@ where
                     if result.outcome().commit.commit_id
                         == recovery.commit_identity().commit_id() =>
                 {
-                    record.settle_relational_recovery(recovery, result);
+                    recovery
+                        .finish(|record, state| record.settle_relational_recovery(state, result));
                 }
-                Ok(_) => record.retain_identity_repair(recovery),
+                Ok(_) => recovery.finish(|record, state| record.retain_identity_repair(state)),
                 Err(error) => match error.deferred_settlement() {
                     Some(settlement)
                         if settlement.commit().commit_id
                             == recovery.commit_identity().commit_id() =>
                     {
-                        record.retain_pending_relational_settlement(recovery, settlement.clone());
+                        recovery.finish(|record, state| {
+                            record.retain_pending_relational_settlement(state, settlement.clone())
+                        });
                     }
-                    Some(_) | None => record.retain_identity_repair(recovery),
+                    Some(_) | None => {
+                        recovery.finish(|record, state| record.retain_identity_repair(state))
+                    }
                 },
             }
         } else if let Some(settlement) = recovery.settlement().cloned() {
@@ -313,9 +212,11 @@ where
                     if receipt == *settlement.commit()
                         && performed_result.outcome().commit == receipt =>
                 {
-                    record.settle_relational_recovery(recovery, performed_result);
+                    recovery.finish(|record, state| {
+                        record.settle_relational_recovery(state, performed_result)
+                    });
                 }
-                Ok(_) | Err(_) => record.restore_relational_recovery(recovery),
+                Ok(_) | Err(_) => drop(recovery),
             }
         } else if let Some(commit_identity) = recovery.take_identity_repair() {
             match self
@@ -325,21 +226,42 @@ where
                 .repair_pending_publication_settlement(commit_identity.commit_id())
             {
                 Ok(receipt) if receipt.commit_id == commit_identity.commit_id() => {
-                    record.settle_relational_recovery_with_receipt(recovery, receipt);
+                    recovery.finish(|record, state| {
+                        record.settle_relational_recovery_with_receipt(state, receipt)
+                    });
                 }
                 Ok(_) | Err(_) => {
                     recovery.restore_identity_repair();
-                    record.restore_relational_recovery(recovery);
+                    drop(recovery);
                 }
             }
         } else {
-            record.restore_relational_recovery(recovery);
+            drop(recovery);
             update.finish();
-            return Err(super::super::ports::RuntimeWorldOwnerUnavailable::new());
+            return Err(crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable);
         }
 
         let actions = record.next_actions().to_vec();
         update.finish();
         Ok(RecoveryContinuationContract::new(actions))
+    }
+    fn recover_performed(
+        &self,
+        identity: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<
+        crate::publication::PerformedCompositePublication,
+        crate::recovery::PerformedPublicationRecoveryDenial,
+    > {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| {
+                crate::recovery::PerformedPublicationRecoveryDenial::OwnerUnavailable(
+                    crate::lifecycle::RuntimeWorldOwnerUnavailable::new(),
+                )
+            })?;
+        self.state
+            .history
+            .recover_delivery(identity)
+            .map(crate::publication::PerformedCompositePublication::owner_issued)
     }
 }

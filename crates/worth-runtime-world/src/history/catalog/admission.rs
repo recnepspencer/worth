@@ -7,13 +7,15 @@ use crate::history::CanonicalPublicationEnvelope;
 use crate::identity::{CompositeCommitIdentity, CompositePublicationAttemptIdentity};
 
 use super::support::{lock_state, validate_owner, validate_parent_for_reservation};
+#[cfg(test)]
+use super::CompositeRuntimeWorldCommit;
 use super::{
     counters, lock_index, metadata, CompositeCommitParent, CompositeHistoryCatalog,
-    CompositeHistoryCatalogDenial, CompositeRuntimeWorldCommit, HistoryReservationMetadata,
-    ReservedCompositeCommitCapacity,
+    CompositeHistoryCatalogDenial, HistoryReservationMetadata, ReservedCompositeCommitCapacity,
 };
 
 impl CompositeHistoryCatalog {
+    #[cfg(test)]
     pub(crate) fn reserve(
         &self,
         commit: &CompositeRuntimeWorldCommit,
@@ -113,9 +115,8 @@ impl CompositeHistoryCatalog {
             reachability.increment_descendant_dependency(parent.commit())?;
         }
         // Populate the eventual indexes now. Promotion fills these resident
-        // slots; it never asks either ordered map to allocate after effects.
-        assert!(state.entries.insert(identity.clone(), None).is_none());
-        lock_index(&state.reachability).reserve(identity.clone());
+        // slots; it never asks either lookup index to allocate after effects.
+        let slots = super::slots::ReservedHistorySlots::reserve(&mut state, &identity);
         state.metadata.reserve_confirmed(preview);
         counters::lock_counters(&state.counters).record_metadata_reservation();
         let reservation = HistoryReservationMetadata {
@@ -134,6 +135,7 @@ impl CompositeHistoryCatalog {
             Arc::clone(&self.state),
             identity,
             reservation,
+            slots,
             publication,
         ))
     }

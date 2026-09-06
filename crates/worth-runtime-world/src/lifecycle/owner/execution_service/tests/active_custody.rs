@@ -155,7 +155,7 @@ fn active_custody_resource_lease_restores_bound_pins_on_unwind() {
     assert_eq!(owner.state.retention.reserved_unique_pin_capacity(), 0);
     assert_eq!(
         owner.state.retention.active_component_obligation_count(),
-        baseline + 2
+        baseline + 4
     );
     drop(record);
     assert!(owner.cleanup_recovery_handle(&handle).is_some());

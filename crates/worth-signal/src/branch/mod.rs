@@ -1,3 +1,5 @@
+mod advance_completion;
+pub use advance_completion::SignalBranchAdvanceCompletion;
 mod advancement;
 mod authority;
 mod basis;

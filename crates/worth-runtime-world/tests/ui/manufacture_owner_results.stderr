@@ -1,0 +1,42 @@
+error[E0624]: associated function `from_components` is private
+ --> tests/ui/manufacture_owner_results.rs:3:45
+  |
+3 |       let _ = CompositeOwnerExecutionResults::from_components;
+  |                                               ^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: src/publication/owner_results.rs
+  |
+  | /     pub(super) fn from_components(
+  | |         relational: CompositeRelationalOwnerResult,
+  | |         signal: CompositeSignalOwnerResult,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here
+
+error[E0624]: associated function `settlement_pending` is private
+ --> tests/ui/manufacture_owner_results.rs:4:45
+  |
+4 |       let _ = CompositeRelationalOwnerResult::settlement_pending;
+  |                                               ^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: src/publication/owner_results/relational.rs
+  |
+  | /     pub(crate) fn settlement_pending(
+  | |         commit_identity: RelationalCommitIdentity,
+  | |         successor_basis: AdmittedRelationalBranchBasis,
+  | |         settlement: DeferredPublicationSettlement,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here
+
+error[E0624]: associated function `settlement_required` is private
+ --> tests/ui/manufacture_owner_results.rs:5:45
+  |
+5 |       let _ = CompositeRelationalOwnerResult::settlement_required;
+  |                                               ^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: src/publication/owner_results/relational.rs
+  |
+  | /     pub(crate) fn settlement_required(
+  | |         commit_identity: RelationalCommitIdentity,
+  | |         successor_basis: AdmittedRelationalBranchBasis,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

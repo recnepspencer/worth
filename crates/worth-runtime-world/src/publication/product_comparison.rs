@@ -34,8 +34,4 @@ impl ResolvedExpectedProductHead {
     pub fn intent(&self) -> &CompositeComponentIntent {
         &self.intent
     }
-
-    pub(crate) fn into_parts(self) -> (CompositeComponentIntent, ProductBranchObservation) {
-        (self.intent, self.expected)
-    }
 }

@@ -3,7 +3,9 @@ use std::sync::Arc;
 use worth_relational::facade::mvcc::RelationalTransactionIntent;
 
 use crate::branch::reference_test_fixture::{self, RealReferenceFixture};
-use crate::branch::{ProductBranchObservation, ProductBranchReferenceSnapshot};
+use crate::branch::ProductBranchObservation;
+#[cfg(feature = "test-operation-control")]
+use crate::branch::ProductBranchReferenceSnapshot;
 use crate::lifecycle::{
     RuntimeWorldObservationService, RuntimeWorldOwnerExecutionService,
     RuntimeWorldPreparationService, RuntimeWorldProductPublicationService,
@@ -234,23 +236,22 @@ fn post_effect_retention_denial_installs_recovery_and_preserves_retry_capacity()
     assert_eq!(
         retained.live_obligation_count(),
         4,
-        "the reserved pin pair, the recovery slot, and the installed successor history"
+        "the reserved pin pair, the recovery slot, and the reserved successor history"
     );
     assert_eq!(
         retained.component_results().signal_posture(),
         crate::history::CompositeComponentChangePosture::Published
     );
-    assert_eq!(owner.state.history.len(), 2);
-    let retained_commit = owner
-        .state
-        .history
-        .lookup(
-            retained
-                .successor_commit()
-                .expect("a reacquisition-pending record kept its installed successor"),
-        )
-        .expect("post-effect denial installs the exact successor occurrence");
-    assert_eq!(retained_commit.basis(), retained.successor_basis().unwrap());
+    assert_eq!(owner.state.history.len(), 1);
+    assert_eq!(owner.state.history.reserved_len(), 1);
+    assert!(
+        retained.successor_commit().is_none(),
+        "a denied pin pair cannot install unprotected history"
+    );
+    assert!(
+        retained.successor_basis().is_some(),
+        "performed owner evidence stays in recovery custody"
+    );
     assert_eq!(&cell_snapshot(&owner), expected.snapshot());
     let recovery_handle = retained.recovery_handle();
     assert_eq!(owner.state.recovery.reserved_slots(), 0);
@@ -283,6 +284,7 @@ fn assert_retry_capacity(owner: &TestOwner, expected: usize) {
         expected
     );
 }
+#[cfg(feature = "test-operation-control")]
 fn cell_snapshot(owner: &TestOwner) -> ProductBranchReferenceSnapshot {
     owner
         .state

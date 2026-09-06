@@ -38,6 +38,7 @@ fn retention_preflight_accepts_an_exact_available_historical_target_without_curr
                     .set_dependencies(dependent, [DependencyEdge::new(second, Aspect::new(2))])
             },
         )
+        .into_result()
         .expect("first semantic mutation performs");
     let (first_basis, _) = first_advance.into_parts();
     let first_capture = owner
@@ -60,6 +61,7 @@ fn retention_preflight_accepts_an_exact_available_historical_target_without_curr
                     .set_dependencies(dependent, [DependencyEdge::new(third, Aspect::new(3))])
             },
         )
+        .into_result()
         .expect("the live cell advances beyond the historical basis");
     let (second_basis, _) = second_advance.into_parts();
     let second_capture = owner

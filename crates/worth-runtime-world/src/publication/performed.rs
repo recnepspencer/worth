@@ -3,7 +3,6 @@ use worth_proof::AuthorityWitness;
 use crate::branch::ProductBranchReferenceSnapshot;
 use crate::history::{CompositeRuntimeWorldCommit, PublicationDeliveryClaim};
 use crate::identity::CompositePublicationAttemptIdentity;
-use crate::retention::RetentionTransferReceipt;
 
 use super::{CompositeOwnerExecutionResults, CompositePublicationCostCounters};
 
@@ -88,14 +87,12 @@ impl PerformedCompositePublication {
         self.facts().cost_counters
     }
 
-    pub(crate) fn retention_transfer(&self) -> &RetentionTransferReceipt {
-        self.facts().movement.retention_transfer()
-    }
-
     /// The product handoff consumes the delivery capability. Read-only facts
     /// retained by history cannot reopen a consumed delivery.
-    pub(crate) fn consume(self) {
-        self.delivery.consume();
+    pub fn consume(self) -> ConsumedCompositePublication {
+        ConsumedCompositePublication {
+            delivery: self.delivery.consume(),
+        }
     }
 
     fn facts(&self) -> &crate::history::PerformedPublicationFacts {
@@ -103,5 +100,41 @@ impl PerformedCompositePublication {
             .envelope()
             .facts()
             .expect("a performed delivery has canonical committed facts")
+    }
+}
+
+/// Descriptive facts from a permanently consumed delivery. This receipt cannot
+/// authorize another product terminal or reopen delivery.
+#[derive(Debug)]
+pub struct ConsumedCompositePublication {
+    delivery: PublicationDeliveryClaim,
+}
+impl ConsumedCompositePublication {
+    pub fn old_product_head(&self) -> &ProductBranchReferenceSnapshot {
+        self.facts().movement.before()
+    }
+    pub fn new_product_head(&self) -> &ProductBranchReferenceSnapshot {
+        self.facts().movement.after()
+    }
+    pub fn commit(&self) -> &CompositeRuntimeWorldCommit {
+        self.new_product_head().commit()
+    }
+    pub fn attempt_identity(&self) -> &CompositePublicationAttemptIdentity {
+        self.delivery.envelope().attempt_identity()
+    }
+    pub fn component_results(&self) -> &CompositeOwnerExecutionResults {
+        &self.facts().component_results
+    }
+    pub fn late_cancellation(&self) -> CompositeLateCancellationPosture {
+        self.facts().late_cancellation
+    }
+    pub fn cost_counters(&self) -> CompositePublicationCostCounters {
+        self.facts().cost_counters
+    }
+    fn facts(&self) -> &crate::history::PerformedPublicationFacts {
+        self.delivery
+            .envelope()
+            .facts()
+            .expect("consumption preserves canonical facts")
     }
 }

@@ -62,6 +62,32 @@ impl std::fmt::Debug for CompositePublicationReady {
 }
 
 impl CompositePublicationReady {
+    pub(crate) fn retain(self, cause: ProductUnpublishedCause) -> RuntimeWorldPublicationOutcome {
+        RuntimeWorldPublicationOutcome::ProductUnpublished(self.custody.retain(
+            cause,
+            None,
+            crate::publication::RetainedCommitDisposition::ReleaseUnused,
+        ))
+    }
+
+    pub(crate) fn publish_controlled(
+        self,
+        cell: &ProductBranchReferenceCell,
+        cancellation: &super::RuntimeWorldCancellationToken,
+        clock: &crate::lifecycle::RuntimeWorldClock,
+        #[cfg(feature = "test-operation-control")]
+        control: &crate::lifecycle::RuntimeWorldOperationControl,
+    ) -> RuntimeWorldPublicationOutcome {
+        let cutoff = super::ProductMovementCutoff::new(cancellation, clock, self.deadline);
+        self.publish_with_cutoff(
+            cell,
+            CompositeLateCancellationPosture::NotRequested,
+            Some(cutoff),
+            #[cfg(feature = "test-operation-control")]
+            Some(control),
+        )
+    }
+
     pub(crate) fn new(inputs: CompositePublicationReadyInputs) -> Self {
         let CompositePublicationReadyInputs {
             identity,
@@ -87,16 +113,13 @@ impl CompositePublicationReady {
         }
     }
 
+    #[cfg(test)]
     pub fn attempt_identity(&self) -> &CompositePublicationAttemptIdentity {
         &self.attempt_identity
     }
 
     pub fn expected_head(&self) -> &ProductBranchObservation {
         &self.expected_head
-    }
-
-    pub fn progress(&self) -> &super::CompositeAttemptProgress {
-        &self.progress
     }
 
     /// Hand the exact reserved contents back as one bundle. Nothing is
@@ -124,10 +147,29 @@ impl CompositePublicationReady {
     /// product-head authority over the cell and never advances the product
     /// reference generation. The movement record is still written before the
     /// swap, inside the cell's own write lock.
+    #[cfg(test)]
     pub(crate) fn publish(
         self,
         cell: &ProductBranchReferenceCell,
         late_cancellation: CompositeLateCancellationPosture,
+    ) -> RuntimeWorldPublicationOutcome {
+        self.publish_with_cutoff(
+            cell,
+            late_cancellation,
+            None,
+            #[cfg(feature = "test-operation-control")]
+            None,
+        )
+    }
+
+    fn publish_with_cutoff(
+        self,
+        cell: &ProductBranchReferenceCell,
+        late_cancellation: CompositeLateCancellationPosture,
+        cutoff: Option<super::ProductMovementCutoff>,
+        #[cfg(feature = "test-operation-control")] control: Option<
+            &crate::lifecycle::RuntimeWorldOperationControl,
+        >,
     ) -> RuntimeWorldPublicationOutcome {
         let mut ready = self.into_inputs();
         assert!(
@@ -144,7 +186,13 @@ impl CompositePublicationReady {
         ready.counters.record_product_cell_touch();
         match loss_before_product_movement(&ready, late_cancellation, &observed_head) {
             Some(cause) => retain_before_product_movement(ready, observed_head, cause),
-            None => attempt_product_movement(ready, cell, late_cancellation),
+            None => {
+                #[cfg(feature = "test-operation-control")]
+                if let Some(control) = control {
+                    control.before_product_compare();
+                }
+                attempt_product_movement(ready, cell, late_cancellation, cutoff)
+            }
         }
     }
 }

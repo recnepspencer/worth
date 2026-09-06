@@ -38,6 +38,7 @@ pub(crate) struct PerformedPublicationFacts {
 /// Read-only owner evidence prepared before entering the branch critical
 /// section. It cannot authorize a performed publication by itself.
 pub(crate) struct PreparedPublicationRecord {
+    cutoff: Option<crate::publication::ProductMovementCutoff>,
     envelope: Arc<CanonicalPublicationEnvelope>,
     commit: Arc<crate::history::CompositeRuntimeWorldCommit>,
     component_results: CompositeOwnerExecutionResults,
@@ -75,6 +76,7 @@ impl CanonicalPublicationEnvelope {
         );
         assert!(commit.matches_owner_results(self.expected.basis(), component_results));
         PreparedPublicationRecord {
+            cutoff: None,
             envelope: Arc::clone(self),
             commit: Arc::clone(commit),
             component_results: component_results.evidence_image(),
@@ -103,14 +105,32 @@ impl CanonicalPublicationEnvelope {
     }
 }
 
+pub(crate) struct StagedPublicationRecord {
+    envelope: Arc<CanonicalPublicationEnvelope>,
+    facts: PerformedPublicationFacts,
+    cutoff: Option<crate::publication::ProductMovementCutoff>,
+}
 impl PreparedPublicationRecord {
+    pub(crate) fn with_cutoff(
+        mut self,
+        cutoff: Option<crate::publication::ProductMovementCutoff>,
+    ) -> Self {
+        self.cutoff = cutoff;
+        self
+    }
+    pub(crate) fn check_cutoff(
+        &self,
+    ) -> Result<(), crate::publication::ProductMovementCutoffDenial> {
+        self.cutoff.as_ref().map_or(Ok(()), |cutoff| cutoff.check())
+    }
+
     /// Validate all bindings and fill the preallocated record before the cell
     /// swaps. The caller must then swap and mark committed without a fallible
     /// operation, allocation, callback, or destructor between those steps.
     pub(crate) fn stage(
         mut self,
         movement: &ProductBranchReferenceMovement,
-    ) -> Arc<CanonicalPublicationEnvelope> {
+    ) -> StagedPublicationRecord {
         assert_eq!(movement.before(), &self.envelope.expected);
         assert_eq!(
             movement.after().selected_commit(),
@@ -128,18 +148,31 @@ impl PreparedPublicationRecord {
             late_cancellation: self.late_cancellation,
             cost_counters: self.cost_counters,
         };
-        self.envelope
-            .facts
-            .set(facts)
-            .expect("one reserved history entry records one publication movement");
-        self.envelope
+        StagedPublicationRecord {
+            envelope: self.envelope,
+            facts,
+            cutoff: self.cutoff,
+        }
     }
 }
 
-impl CanonicalPublicationEnvelope {
-    /// Called only by the cell immediately after its infallible image swap,
-    /// while readers remain excluded and before the old protection drops.
-    pub(crate) fn mark_committed(&self) {
-        self.committed.store(true, Ordering::Release);
+impl StagedPublicationRecord {
+    /// The cell has swapped while readers remain excluded. Record the atomic
+    /// cancellation observation and expose this same canonical envelope.
+    pub(crate) fn mark_committed(mut self) {
+        if self
+            .cutoff
+            .as_ref()
+            .is_some_and(|cutoff| cutoff.cancellation_after_movement())
+        {
+            self.facts.late_cancellation =
+                CompositeLateCancellationPosture::RequestedAfterProductMovement;
+            self.facts.cost_counters.record_cancellation_observation();
+        }
+        self.envelope
+            .facts
+            .set(self.facts)
+            .expect("one reserved entry records one movement");
+        self.envelope.committed.store(true, Ordering::Release);
     }
 }

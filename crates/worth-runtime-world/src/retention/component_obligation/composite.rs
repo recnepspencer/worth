@@ -76,8 +76,8 @@ impl IssuedComponentPinPair {
 /// exact commit occurrence and basis from which the owner issued them.
 #[derive(Debug)]
 pub(crate) struct ObservationRetentionObligation {
-    relational: ComponentBasisPinObligation,
-    signal: ComponentBasisPinObligation,
+    _relational: ComponentBasisPinObligation,
+    _signal: ComponentBasisPinObligation,
     captured_commit: CompositeCommitIdentity,
     captured_basis: CompositeBasisKey,
     _capacity: crate::retention::ReservedObservationCapacity,
@@ -99,20 +99,22 @@ impl ObservationRetentionObligation {
             ComponentBasisDependencyClass::AdmittedObservation
         );
         Self {
-            relational,
-            signal,
+            _relational: relational,
+            _signal: signal,
             captured_commit: commit.identity().clone(),
             captured_basis: basis,
             _capacity: capacity,
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn relational(&self) -> &ComponentBasisPinObligation {
-        &self.relational
+        &self._relational
     }
 
+    #[cfg(test)]
     pub(crate) fn signal(&self) -> &ComponentBasisPinObligation {
-        &self.signal
+        &self._signal
     }
 
     pub(crate) fn matches_captured_head(&self, commit: &CompositeRuntimeWorldCommit) -> bool {
@@ -197,6 +199,7 @@ impl PublicationRetentionObligation {
 
     /// Transfer publication custody into the sole product-head authority.
     /// The exact successor basis is checked before either claim changes class.
+    #[cfg(test)]
     pub(crate) fn into_product_head_transfer(
         mut self,
         successor_basis: &AdmittedCompositeRuntimeWorldBasis,

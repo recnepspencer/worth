@@ -27,3 +27,8 @@ trybuild.workspace = true
 
 [lints]
 workspace = true
+
+[[example]]
+name = "runtime_world_publication"
+test = true
+harness = false

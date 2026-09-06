@@ -1,0 +1,59 @@
+error[E0599]: no method named `build` found for struct `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, worth_runtime_world::facade::RuntimeWorldBudgets, MissingRuntimeWorldInput>` in the current scope
+ --> tests/ui/missing_builder_inputs.rs:5:58
+  |
+4 | /     RuntimeWorldOwner::builder().with_bridge_correspondence(bridge).with_relational_services(rel)
+5 | |         .with_signal_services(sig).with_budgets(budgets).build();
+  | |                                                         -^^^^^ method not found in `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, worth_runtime_world::facade::RuntimeWorldBudgets, MissingRuntimeWorldInput>`
+  | |_________________________________________________________|
+  |
+  |
+  = note: the method was found for
+          - `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<D, I, E, Ctx, T>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`
+
+error[E0599]: no method named `build` found for struct `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, MissingRuntimeWorldInput, worth_runtime_world::facade::RuntimeWorldClock>` in the current scope
+  --> tests/ui/missing_builder_inputs.rs:10:54
+   |
+ 9 | /     RuntimeWorldOwner::builder().with_bridge_correspondence(bridge).with_relational_services(rel)
+10 | |         .with_signal_services(sig).with_clock(clock).build();
+   | |                                                     -^^^^^ method not found in `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, MissingRuntimeWorldInput, worth_runtime_world::facade::RuntimeWorldClock>`
+   | |_____________________________________________________|
+   |
+   |
+   = note: the method was found for
+           - `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<D, I, E, Ctx, T>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`
+
+error[E0599]: no method named `build` found for struct `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, MissingRuntimeWorldInput, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>` in the current scope
+  --> tests/ui/missing_builder_inputs.rs:15:50
+   |
+14 | /     RuntimeWorldOwner::builder().with_bridge_correspondence(bridge).with_relational_services(rel)
+15 | |         .with_budgets(budgets).with_clock(clock).build();
+   | |                                                 -^^^^^ method not found in `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, MissingRuntimeWorldInput, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`
+   | |_________________________________________________|
+   |
+   |
+   = note: the method was found for
+           - `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<D, I, E, Ctx, T>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`
+
+error[E0599]: no method named `build` found for struct `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, MissingRuntimeWorldInput, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>` in the current scope
+  --> tests/ui/missing_builder_inputs.rs:20:50
+   |
+19 | /     RuntimeWorldOwner::builder().with_bridge_correspondence(bridge).with_signal_services(sig)
+20 | |         .with_budgets(budgets).with_clock(clock).build();
+   | |                                                 -^^^^^ method not found in `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, MissingRuntimeWorldInput, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`
+   | |_________________________________________________|
+   |
+   |
+   = note: the method was found for
+           - `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<D, I, E, Ctx, T>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`
+
+error[E0599]: no method named `build` found for struct `RuntimeWorldOwnerBuilder<MissingRuntimeWorldInput, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>` in the current scope
+  --> tests/ui/missing_builder_inputs.rs:25:50
+   |
+24 | /     RuntimeWorldOwner::builder().with_relational_services(rel).with_signal_services(sig)
+25 | |         .with_budgets(budgets).with_clock(clock).build();
+   | |                                                 -^^^^^ method not found in `RuntimeWorldOwnerBuilder<MissingRuntimeWorldInput, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`
+   | |_________________________________________________|
+   |
+   |
+   = note: the method was found for
+           - `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<D, I, E, Ctx, T>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`

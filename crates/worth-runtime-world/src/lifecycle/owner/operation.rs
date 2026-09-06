@@ -115,6 +115,7 @@ where
             ));
         }
         Ok(assemble_reserved_attempt(ReservedAttemptAssembly {
+            admitted_at: self.state.clock.now(),
             identities,
             resources,
             plan,
@@ -202,7 +203,7 @@ where
         self.reserve_operation_with_state(RuntimeWorldOperationState::Preparing)
     }
 
-    pub(super) fn reserve_recovery_operation_if_open_and_bootstrapped(
+    pub(in crate::lifecycle) fn reserve_recovery_operation_if_open_and_bootstrapped(
         &self,
     ) -> Result<RuntimeWorldOperationReservation, ()> {
         self.reserve_operation_with_state(RuntimeWorldOperationState::Recovering)
@@ -237,7 +238,9 @@ where
             .close
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if close.state() != super::super::close::RuntimeWorldCloseState::Open {
+        if !self.owner_is_present()
+            || close.state() != super::super::close::RuntimeWorldCloseState::Open
+        {
             return Err(());
         }
         let active = ledger.active.checked_add(1).ok_or(())?;
@@ -261,6 +264,9 @@ where
     }
 
     fn is_open_and_bootstrapped(&self) -> bool {
+        if !self.owner_is_present() {
+            return false;
+        }
         let bootstrap = self
             .state
             .bootstrap

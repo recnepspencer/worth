@@ -12,7 +12,7 @@ categories = ["data-structures", "database-implementations", "science"]
 [features]
 allocation-probes = []
 test-durability-faults = []
-test-operation-control = []
+test-operation-control = ["test-durability-faults"]
 
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }

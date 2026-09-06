@@ -1,3 +1,4 @@
+use super::RecoveryEntry;
 use std::sync::Arc;
 
 use super::{
@@ -6,8 +7,8 @@ use super::{
 };
 
 /// Exclusive custody while a recovery service performs one owner-local
-/// settlement. The record is absent from the visible map only during the
-/// owner call, while its slot and metadata charge remain held by this token.
+/// settlement. The resident slot is Busy during the owner call, while this token holds
+/// the exact record and the catalog keeps its slot and metadata charge.
 pub(crate) struct ReservedProductUnpublishedRecordUpdate {
     catalog: ProductUnpublishedRecoveryCatalog,
     identity: ProductUnpublishedOwnerEffectsIdentity,
@@ -38,11 +39,12 @@ impl Drop for ReservedProductUnpublishedRecordUpdate {
             .state
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        assert!(state
-            .records
-            .insert(self.identity.clone(), record)
-            .is_none());
-        state.updating_identities.remove(&self.identity);
+        assert!(matches!(
+            state
+                .slots
+                .replace(&self.identity, RecoveryEntry::Retained(record)),
+            RecoveryEntry::Busy
+        ));
         state.updating_slots = state
             .updating_slots
             .checked_sub(1)
@@ -79,39 +81,16 @@ impl ReservedProductUnpublishedRecordUpdate {
             .state
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        assert!(state
-            .records
-            .insert(self.identity.clone(), record)
-            .is_none());
-        state.updating_identities.remove(&self.identity);
+        assert!(matches!(
+            state
+                .slots
+                .replace(&self.identity, RecoveryEntry::Retained(record)),
+            RecoveryEntry::Busy
+        ));
         state.updating_slots = state
             .updating_slots
             .checked_sub(1)
             .expect("a live recovery update owns one slot");
         self.armed = false;
-    }
-}
-
-impl ProductUnpublishedRecoveryCatalog {
-    pub(crate) fn drain_records(&self) -> Vec<Arc<ProductUnpublishedOwnerEffectsRecord>> {
-        let mut state = self.locked_state();
-        assert_eq!(
-            state.updating_slots, 0,
-            "catalog shutdown cannot drain while a recovery update owns custody"
-        );
-        assert_eq!(
-            state.reserved_slots, 0,
-            "catalog shutdown cannot drain while a recovery reservation owns custody"
-        );
-        assert_eq!(
-            state.reserved_metadata_bytes, 0,
-            "catalog shutdown cannot drain while metadata reservation custody is live"
-        );
-        assert!(
-            state.updating_identities.is_empty(),
-            "catalog shutdown cannot drain while an update identity is live"
-        );
-        state.metadata_bytes = 0;
-        std::mem::take(&mut state.records).into_values().collect()
     }
 }

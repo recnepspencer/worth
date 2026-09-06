@@ -1,37 +1,62 @@
 # `worth-runtime-world`
 
-This crate is the memory-resident composition owner for the 9.17.2 Runtime
-World. The implementation now includes:
-owner-issued identities, complete product-head observations, exact composite
-bases, installed budgets, owner service bundles, publication progression,
-linear terminal artifacts, retained owner-effect records, and the retention
-lane's dependency vocabulary.
+Runtime World owns memory-resident product branches and coordinated publication
+across real Relational and Signal owners. Bridge owns their installed semantic
+correspondence; component owners retain their own mutation, settlement and basis
+authority. The public import surface is `worth_runtime_world::facade`.
 
-The only supported public import surface is:
+Construct a World with all five required inputs: the Bridge correspondence port,
+Relational services, generic Signal services, installed `RuntimeWorldBudgets`, and
+an explicit `RuntimeWorldClock`. Bind Bridge correspondence to the actual Signal
+graph before sealing that graph's owner services. Bootstrap explicitly from the
+three owners' admitted bases; construction does not create an ambient product head.
 
-```rust
-use worth_runtime_world::facade::*;
+The [executable example](examples/runtime_world_publication.rs) contains the full
+public construction and lifecycle, including its real schema and correspondence
+declarations. Run it with:
+
+```sh
+cargo run -p worth-runtime-world --example runtime_world_publication
+cargo test -p worth-runtime-world --example runtime_world_publication
 ```
 
-The crate depends only on the public facades of Foundational, Proof,
-Relational, Signal, and Runtime Bridge. It has no Query, Store, persistence,
-replay, codec, or physical-runtime dependency. A Runtime World never discovers
-an ambient current head and never accepts a raw component runtime or a generic
-authority marker.
+The example gives its worker an explicit 4 MiB stack for unoptimized component
+construction on Windows. It executes bootstrap, a successful Relational-only
+publication, a stale prepared attempt, and a retained partial followed by cleanup.
+Its Cargo declaration uses `test = true` and `harness = false`, so package tests
+execute the real workflow.
 
-Bootstrap, retention, branch creation, publication, recovery, and close execute
-through the managed owner's internal service seams. Phase 5 assembles and
-freezes the public builder and service facade; this crate is not yet the 9.17.3
-Query cutover surface. Ordinary publication now preserves owner-addressable
-custody across caller Drop and unwind and guards materialization with the final
-branch comparison. Branch creation carries the same custody through both forks
-and destination installation; its registry records actual installation even
-when the caller unwinds or the installed branch is later retired.
+`RuntimeWorldOwner<D, I, E, Ctx, T>` is non-cloneable. Its cloneable ports are weak
+access to the live owner, not independent owners. Observation, branch, lifecycle,
+inspection and recovery ports do not expose the Signal generic bundle;
+`RuntimeWorldPublicationPort<D, I, E, Ctx, T>` preserves it. Event and context
+types need not implement `Clone` or `Default`.
 
-Construction installs `RuntimeWorldBudgets`, concrete component service bundles
-in `RuntimeWorldOwnerInputs`, and an explicit `RuntimeWorldClock`. The clock
-controls deadlines and cleanup eligibility, never identity, basis, parentage,
-or authority.
+Publication starts with a complete `ProductBranchObservation`. Use
+`prepare_without_signal` for a Relational-only intent, or `prepare_with_signal`
+for Signal-only/combined work. Their prepared types cannot be exchanged.
+`execute_with_signal` accepts the real Signal transaction callback. No
+application callback runs after the final product comparison cutoff.
 
-The Runtime World is intentionally in-memory. Restart recovery and durable
-Store integration are outside this milestone.
+Handle every `RuntimeWorldPublicationOutcome`:
+
+- `Performed`: the product CAS installed the exact successor. Borrow the
+  canonical component results and consume the linear delivery once.
+- `NoEffect`: neither component nor product moved. Correct the denied intent or
+  acquire an appropriate fresh observation before preparing a new attempt.
+- `ProductUnpublished`: named component effects exist but the product head did
+  not move. Preserve the returned evidence and use explicit recovery/cleanup;
+  it does not authorize a product commit or sibling continuation.
+
+Keep the World owner and component roots alive while using their ports. Explicit
+close fences new work, reports outstanding observations and retained records, and
+returns any owner-created component retirement work. Drop caller observations and
+results, then the closed World state before checking final component lease release.
+World close does not close component owners.
+
+See [history](COMPOSITE_HISTORY.md), [publication](COORDINATED_PUBLICATION.md),
+and [retention/recovery](RETENTION_AND_RECOVERY.md) for exact contracts.
+
+This crate has no Query, Store, persistence, replay, codec or physical-runtime
+dependency. It does not provide durable restart, multi-parent history, rollback,
+or Query public completion. Query application integration is milestone 9.17.3.

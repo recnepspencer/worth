@@ -24,6 +24,9 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     fn branch_service_is_available(&self) -> bool {
+        if !self.owner_is_present() {
+            return false;
+        }
         let bootstrap = self
             .state
             .bootstrap
@@ -284,8 +287,7 @@ fn map_registry_denial(
         | ProductBranchRegistryDenial::ReservationMissing
         | ProductBranchRegistryDenial::IdentityMismatch
         | ProductBranchRegistryDenial::BranchAlreadyInstalled
-        | ProductBranchRegistryDenial::LifecycleAlreadyInstalled
-        | ProductBranchRegistryDenial::UnknownBranch => {
+        | ProductBranchRegistryDenial::LifecycleAlreadyInstalled => {
             RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
         }
         ProductBranchRegistryDenial::NameAlreadyReserved
@@ -330,6 +332,7 @@ fn map_retention_denial(
             RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
         }
         RetentionObligationDenial::ObservationCapacityExhausted
+        | RetentionObligationDenial::HistoryDependency(_)
         | RetentionObligationDenial::InvalidComponentPair
         | RetentionObligationDenial::UniquePinCapacityExhausted { .. }
         | RetentionObligationDenial::InFlightAcquisitionCapacityExhausted { .. }

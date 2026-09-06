@@ -11,8 +11,8 @@ mod compatibility;
 mod creation;
 
 /// SPEC-P4-012. Both terminal-governed attempts carry their structural
-/// counters from the moment they are reserved, and every counter reads zero
-/// while the reservation is still pre-effect. The counters ride the attempt;
+/// counters from the moment they are reserved, including the installed
+/// history reservation, before any component effect. The counters ride the attempt;
 /// they are not handed to the publication phase by a caller.
 #[test]
 fn attempt_reserves_structural_counters_before_the_first_owner_effect() {
@@ -26,9 +26,11 @@ fn attempt_reserves_structural_counters_before_the_first_owner_effect() {
         None,
     )
     .expect("current head admits Signal preparation");
+    let mut reserved_costs = CompositePublicationCostCounters::zero();
+    reserved_costs.record_history_slot_reserved();
     assert_eq!(
         prepared.attempt().counters(),
-        &CompositePublicationCostCounters::zero(),
+        &reserved_costs,
         "a reserved publication attempt has contacted no owner yet"
     );
     assert_eq!(
@@ -46,12 +48,11 @@ fn attempt_reserves_structural_counters_before_the_first_owner_effect() {
     .expect("current head admits a creation reservation");
     assert_eq!(
         created.counters(),
-        &CompositePublicationCostCounters::zero(),
+        &reserved_costs,
         "a reserved creation attempt has contacted no owner yet"
     );
 
-    // Both attempts hold live capacity while reporting zero cost, which is the
-    // exact window the spec calls "initialized before execution".
+    // Both attempts account their reservation before component execution.
     assert_eq!(reservation_counts(owner.as_ref()), (2, 2, 4, 4, 2));
     drop(prepared);
     drop(created);

@@ -2,6 +2,8 @@
 mod basis_history;
 #[path = "runtime_world_certification/bridge.rs"]
 mod bridge;
+#[path = "runtime_world_certification/court/mod.rs"]
+mod court;
 #[path = "runtime_world_certification/reference.rs"]
 mod reference;
 #[path = "runtime_world_certification/retention.rs"]

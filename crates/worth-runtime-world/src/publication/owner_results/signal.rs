@@ -19,6 +19,20 @@ enum CompositeSignalOwnerResultKind {
 }
 
 impl CompositeSignalOwnerResult {
+    /// Exact owner-issued outcome retained by this composite result.
+    pub fn advanced_outcome(&self) -> Option<&SignalBranchAdvanceOutcome> {
+        match &self.result {
+            CompositeSignalOwnerResultKind::Advanced(outcome) => Some(outcome),
+            _ => None,
+        }
+    }
+    pub fn fork_outcome(&self) -> Option<&SignalBranchForkOutcome> {
+        match &self.result {
+            CompositeSignalOwnerResultKind::Forked(outcome) => Some(outcome),
+            _ => None,
+        }
+    }
+
     pub(super) fn evidence_image(&self) -> Self {
         Self {
             result: self.result.clone(),

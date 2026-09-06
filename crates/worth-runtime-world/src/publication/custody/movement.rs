@@ -23,6 +23,7 @@ impl ActiveAttemptCustody {
         counters: &mut CompositePublicationCostCounters,
         late: CompositeLateCancellationPosture,
         cell: &ProductBranchReferenceCell,
+        cutoff: Option<crate::publication::ProductMovementCutoff>,
     ) -> Result<PerformedCompositePublication, ProductBranchReferenceLoss> {
         let publication = self
             .record
@@ -46,9 +47,10 @@ impl ActiveAttemptCustody {
         counters.record_cas_attempt();
         let mut performed_counters = *counters;
         performed_counters.record_history_slot_installed();
-        let record: PreparedPublicationRecord =
-            publication.prepare(commit, results, late, performed_counters);
-        cell.publish_recorded(
+        let record: PreparedPublicationRecord = publication
+            .prepare(commit, results, late, performed_counters)
+            .with_cutoff(cutoff);
+        if let Err(loss) = cell.publish_recorded(
             expected,
             &mut lease,
             |lease| {
@@ -57,7 +59,13 @@ impl ActiveAttemptCustody {
                 &mut lease.resources_mut().product_head
             },
             record,
-        )?;
+        ) {
+            if loss.cutoff_denial().is_none() {
+                counters.record_cas_loss();
+            }
+            lease.resources_mut().product_comparison_costs = Some(*counters);
+            return Err(loss);
+        }
         let resources = lease.resources_mut();
         let delivery = resources
             .delivery
@@ -85,7 +93,13 @@ impl super::ActiveAttemptResourceLease<'_> {
             panic!("a ready publication holds its uninstalled slot")
         };
         let (history, delivery) = capacity
-            .try_install_publication(Arc::clone(commit))
+            .try_install_publication(
+                Arc::clone(commit),
+                resources
+                    .history_pins
+                    .take()
+                    .expect("history pins bound before cell admission"),
+            )
             .expect("reserved publication history installs with both protections");
         resources.history_custody = ActiveHistoryCustody::Installed(history);
         resources.delivery = Some(delivery);

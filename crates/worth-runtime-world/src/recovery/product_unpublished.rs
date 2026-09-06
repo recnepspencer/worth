@@ -61,7 +61,7 @@ pub(crate) struct ProductUnpublishedOwnerEffectsRecord {
     cause: ProductUnpublishedCause,
     next_actions: RetainedNextActions,
     deadline: Option<RuntimeWorldInstant>,
-    age_ticks: u64,
+    admitted_at: RuntimeWorldInstant,
     owner_effect_count: usize,
     metadata_bytes: usize,
 }
@@ -96,11 +96,8 @@ impl ProductUnpublishedOwnerEffects {
     pub(crate) const fn metadata_charge_hint() -> usize {
         let retained = std::mem::size_of::<ProductUnpublishedOwnerEffectsRecord>();
         let active = crate::publication::ActiveAttemptRecord::metadata_charge_hint();
-        if active > retained {
-            active
-        } else {
-            retained
-        }
+        (if active > retained { active } else { retained })
+            + super::catalog::ProductUnpublishedRecoveryCatalog::slot_metadata_charge_hint()
     }
 
     pub(crate) fn from_catalog_record(record: Arc<ProductUnpublishedOwnerEffectsRecord>) -> Self {
@@ -179,8 +176,17 @@ impl ProductUnpublishedOwnerEffects {
         self.record.deadline
     }
 
-    pub fn age_ticks(&self) -> u64 {
-        self.record.age_ticks
+    /// Owner-clock instant at which this attempt completed admission.
+    pub fn admitted_at(&self) -> RuntimeWorldInstant {
+        self.record.admitted_at
+    }
+
+    /// Costs carried from an attempted final cell comparison. Earlier partials
+    /// have no comparison snapshot, rather than invented zero-cost evidence.
+    pub fn product_comparison_costs(
+        &self,
+    ) -> Option<crate::publication::CompositePublicationCostCounters> {
+        self.record.retention.product_comparison_costs
     }
 
     pub fn owner_effect_count(&self) -> usize {
@@ -196,5 +202,14 @@ impl ProductUnpublishedOwnerEffects {
             self.record.identity.clone(),
             self.record.catalog_affinity,
         )
+    }
+}
+
+impl ProductUnpublishedOwnerEffectsRecord {
+    pub(crate) fn admitted_at(&self) -> RuntimeWorldInstant {
+        self.admitted_at
+    }
+    pub(crate) fn deadline(&self) -> Option<RuntimeWorldInstant> {
+        self.deadline
     }
 }

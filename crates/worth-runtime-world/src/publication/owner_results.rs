@@ -40,7 +40,7 @@ enum CompositeRelationalOwnerResultKind {
     SettlementPending {
         commit_identity: RelationalCommitIdentity,
         successor_basis: AdmittedRelationalBranchBasis,
-        settlement: DeferredPublicationSettlement,
+        _settlement: DeferredPublicationSettlement,
     },
 }
 
@@ -75,49 +75,6 @@ impl CompositeOwnerExecutionResults {
     pub(crate) fn retained() -> Self {
         Self {
             relational: CompositeRelationalOwnerResult::retained(),
-            signal: CompositeSignalOwnerResult::retained(),
-        }
-    }
-
-    pub(crate) fn relational_settlement_pending(
-        commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
-        settlement: DeferredPublicationSettlement,
-    ) -> Self {
-        Self {
-            relational: CompositeRelationalOwnerResult::settlement_pending(
-                commit_identity,
-                successor_basis,
-                settlement,
-            ),
-            signal: CompositeSignalOwnerResult::retained(),
-        }
-    }
-
-    pub(crate) fn relational_settlement_required(
-        commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
-    ) -> Self {
-        Self {
-            relational: CompositeRelationalOwnerResult::settlement_required(
-                commit_identity,
-                successor_basis,
-            ),
-            signal: CompositeSignalOwnerResult::retained(),
-        }
-    }
-
-    pub(crate) fn relational_settled(
-        commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
-        result: CommitResult,
-    ) -> Self {
-        Self {
-            relational: CompositeRelationalOwnerResult::settled(
-                commit_identity,
-                successor_basis,
-                std::sync::Arc::new(result),
-            ),
             signal: CompositeSignalOwnerResult::retained(),
         }
     }
@@ -191,11 +148,15 @@ impl CompositeOwnerExecutionResults {
         }
     }
 
+    pub fn signal(&self) -> &CompositeSignalOwnerResult {
+        &self.signal
+    }
+
     pub fn signal_posture(&self) -> CompositeComponentChangePosture {
         self.signal.posture()
     }
 
-    pub(crate) fn relational_publication_identity(
+    pub fn relational_publication_identity(
         &self,
     ) -> Option<worth_relational::facade::history::RelationalCommitIdentity> {
         match &self.relational.result {
@@ -213,7 +174,7 @@ impl CompositeOwnerExecutionResults {
         }
     }
 
-    pub(crate) fn relational_publication_basis_identity(
+    pub fn relational_publication_basis_identity(
         &self,
     ) -> Option<&worth_relational::facade::branch::RelationalBranchBasisAdmissionIdentity> {
         match &self.relational.result {
@@ -233,7 +194,7 @@ impl CompositeOwnerExecutionResults {
         }
     }
 
-    pub(crate) fn relational_fork_target_identity(
+    pub fn relational_fork_target_identity(
         &self,
     ) -> Option<&worth_relational::facade::branch::RelationalBranchIdentity> {
         match &self.relational.result {
@@ -245,7 +206,7 @@ impl CompositeOwnerExecutionResults {
         }
     }
 
-    pub(crate) fn relational_settlement(
+    pub fn relational_settlement(
         &self,
     ) -> Option<&worth_relational::facade::history::RelationalCommitReceipt> {
         match &self.relational.result {
@@ -257,7 +218,7 @@ impl CompositeOwnerExecutionResults {
         }
     }
 
-    pub(crate) fn relational_commit_result(&self) -> Option<&CommitResult> {
+    pub fn relational_commit_result(&self) -> Option<&CommitResult> {
         match &self.relational.result {
             CompositeRelationalOwnerResultKind::Published { result, .. } => result.as_deref(),
             CompositeRelationalOwnerResultKind::RetainedExact
@@ -267,7 +228,7 @@ impl CompositeOwnerExecutionResults {
         }
     }
 
-    pub(crate) fn signal_publication_identity(
+    pub fn signal_publication_identity(
         &self,
     ) -> Option<crate::history::CompositeSignalPublicationIdentity> {
         self.signal.publication_identity()

@@ -18,3 +18,9 @@ pub(crate) use product_unpublished::next_actions_for_progress;
 pub(crate) use product_unpublished::ProductUnpublishedOwnerEffectsRecord;
 pub(crate) use product_unpublished::RetainedAttemptFacts;
 pub(crate) use progress::ProductUnpublishedLiveObligations;
+
+mod denial;
+pub use denial::RuntimeWorldRecoveryDenial;
+
+mod performed_denial;
+pub use performed_denial::PerformedPublicationRecoveryDenial;

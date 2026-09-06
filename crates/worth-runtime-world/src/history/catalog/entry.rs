@@ -3,8 +3,9 @@ use std::sync::Arc;
 use super::metadata::HistoryMetadataCharge;
 use super::CompositeRuntimeWorldCommit;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct CompositeHistoryCatalogEntry {
+    pub(super) _pins: crate::retention::HistoryRetentionObligation,
     pub(super) commit: Arc<CompositeRuntimeWorldCommit>,
     pub(super) publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
     pub(super) metadata_charge: HistoryMetadataCharge,

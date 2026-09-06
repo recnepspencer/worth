@@ -39,14 +39,15 @@ where
     pub(super) fn execute_signal<F>(
         &self,
         attempt: &mut crate::publication::ReservedCompositePublicationAttempt,
+        progress: &mut crate::publication::CompositeAttemptProgress,
         request: SignalExecutionRequest<'_, Ctx, F>,
         runtime_cancellation: &RuntimeWorldCancellationToken,
-    ) -> Result<SignalAttemptProgress, SignalExecutionFailure>
+    ) -> Result<(), SignalExecutionFailure>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
         match (attempt.plan().signal().posture(), request) {
-            (SignalComponentPlanPosture::RetainExact, _) => Ok(SignalAttemptProgress::untouched()),
+            (SignalComponentPlanPosture::RetainExact, _) => Ok(()),
             (
                 SignalComponentPlanPosture::AdvanceExact,
                 SignalExecutionRequest::AdvanceExact { runtime_ctx, apply },
@@ -58,17 +59,33 @@ where
                 let signal_cancellation = runtime_cancellation.signal_token();
                 #[cfg(test)]
                 super::rehearsal::reach_signal_advance(self.owner_identity(), signal_cancellation);
-                self.state
+                let mut completion = self
+                    .state
                     .signal
                     .mutation_port()
-                    .advance_exact(
+                    .advance_exact_with_completion(
                         attempt.plan().signal().expected(),
                         runtime_ctx,
                         signal_cancellation,
                         apply,
-                    )
-                    .map(SignalAttemptProgress::advanced)
-                    .map_err(|denial| advance_failure(&denial))
+                    );
+                let result = completion.take_result();
+                match result {
+                    Some(Ok(outcome)) => {
+                        progress.set_signal(SignalAttemptProgress::advanced(outcome));
+                        attempt.record_progress(progress);
+                        completion.resume_unwind();
+                        Ok(())
+                    }
+                    Some(Err(denial)) => {
+                        completion.resume_unwind();
+                        Err(advance_failure(&denial))
+                    }
+                    None => {
+                        completion.resume_unwind();
+                        unreachable!("missing owner result carries an unwind")
+                    }
+                }
             }
             // An advancing plan reached the seam without the caller's Signal
             // borrow. The plan and the borrow are chosen together at the

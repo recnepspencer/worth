@@ -54,6 +54,7 @@ fn exercise_fork_post_install_fault(boundary: SignalOwnerOperationBoundary) {
                 [DependencyEdge::new(replacement, Aspect::new(7))],
             )
         })
+        .into_result()
         .expect("source journal receives a real canonical mutation");
     let (basis, transaction) = advanced.into_parts();
     assert!(transaction.touched_nodes > 0);
@@ -215,6 +216,7 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination_cu
                 )
             },
         )
+        .into_result()
         .expect("source-fault fixture creates a real source journal");
     let (basis, transaction) = advanced.into_parts();
     assert!(transaction.touched_nodes > 0);

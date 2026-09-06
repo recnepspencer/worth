@@ -1,6 +1,7 @@
 use super::*;
 
 impl ProductUnpublishedRecoveryCatalog {
+    #[cfg(test)]
     pub(crate) fn new(
         owner: RuntimeWorldOwnerIdentity,
         maximum_slots: RuntimeWorldBudgetLimit,
@@ -10,17 +11,16 @@ impl ProductUnpublishedRecoveryCatalog {
         // The lane still accounts every installed record with its real charge.
         Self {
             state: Arc::new(Mutex::new(RecoveryCatalogState {
+                costs: Default::default(),
                 owner,
                 maximum_slots: maximum_slots.get(),
                 maximum_metadata_bytes: usize::MAX,
                 reserved_slots: 0,
                 abandoned_slots: 0,
-                active: BTreeMap::new(),
+                slots: RecoveryRecordSlots::default(),
                 reserved_metadata_bytes: 0,
                 updating_slots: 0,
-                updating_identities: BTreeSet::new(),
                 metadata_bytes: 0,
-                records: BTreeMap::new(),
             })),
         }
     }
@@ -32,17 +32,16 @@ impl ProductUnpublishedRecoveryCatalog {
     ) -> Self {
         Self {
             state: Arc::new(Mutex::new(RecoveryCatalogState {
+                costs: Default::default(),
                 owner,
                 maximum_slots: maximum_slots.get(),
                 maximum_metadata_bytes: maximum_metadata_bytes.get(),
                 reserved_slots: 0,
                 abandoned_slots: 0,
-                active: BTreeMap::new(),
+                slots: RecoveryRecordSlots::default(),
                 reserved_metadata_bytes: 0,
                 updating_slots: 0,
-                updating_identities: BTreeSet::new(),
                 metadata_bytes: 0,
-                records: BTreeMap::new(),
             })),
         }
     }

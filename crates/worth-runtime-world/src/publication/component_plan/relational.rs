@@ -52,16 +52,6 @@ impl RelationalComponentPlan {
         }
     }
 
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        RelationalComponentPlanPosture,
-        AdmittedRelationalBranchBasis,
-        Option<PreparedRelationalCommitCandidate>,
-    ) {
-        (self.posture, self.expected, self.prepared_candidate)
-    }
-
     pub(crate) fn take_prepared_candidate(&mut self) -> Option<PreparedRelationalCommitCandidate> {
         self.prepared_candidate.take()
     }

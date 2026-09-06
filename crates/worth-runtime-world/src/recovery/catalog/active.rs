@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::identity::ProductUnpublishedOwnerEffectsIdentity;
 use crate::publication::ActiveAttemptRecord;
 
+use super::RecoveryEntry;
 use super::{ProductUnpublishedRecoveryCatalog, ReservedProductUnpublishedSlot};
 
 impl ReservedProductUnpublishedSlot {
@@ -14,25 +15,24 @@ impl ReservedProductUnpublishedSlot {
     ) -> super::ProductUnpublishedOwnerEffects {
         let (record, removed, permits) = {
             let mut state = self.catalog.locked_state();
-            let active = state
-                .active
-                .get(identity)
-                .expect("the caller owns a registered attempt");
+            let Some(RecoveryEntry::Active(active)) = state.slots.get(identity) else {
+                unreachable!("registered active attempt")
+            };
             let permits = active.abandon();
             let record = active
                 .materialize_abandoned(self.catalog.affinity())
                 .expect("retained active evidence is representable");
+            state.costs.retained_records_created =
+                state.costs.retained_records_created.saturating_add(1);
             state.reserved_slots -= 1;
             state.reserved_metadata_bytes -= self.reserved_metadata_bytes;
             state.metadata_bytes += self.reserved_metadata_bytes;
             // Acquire the caller's capability before exposing the record to
             // cleanup. Releasing admission first would allow close or another
             // caller to remove the record before this terminal received it.
-            assert!(state
-                .records
-                .insert(identity.clone(), Arc::clone(&record))
-                .is_none());
-            let removed = state.active.remove(identity);
+            let removed = state
+                .slots
+                .replace(identity, RecoveryEntry::Retained(Arc::clone(&record)));
             self.armed = false;
             (record, removed, permits)
         };
@@ -46,16 +46,18 @@ impl ReservedProductUnpublishedSlot {
     pub(crate) fn register_active(&self, record: Arc<ActiveAttemptRecord>) {
         let mut state = self.catalog.locked_state();
         assert_eq!(record.identity().owner_identity(), state.owner);
-        assert!(!state.records.contains_key(record.identity()));
-        assert!(!state.active.contains_key(record.identity()));
-        assert!(state
-            .active
-            .insert(record.identity().clone(), record)
-            .is_none());
+        state.slots.insert_active(record);
     }
 
     pub(crate) fn remove_active(&self, identity: &ProductUnpublishedOwnerEffectsIdentity) {
-        let record = self.catalog.locked_state().active.remove(identity);
+        let record = {
+            let mut state = self.catalog.locked_state();
+            if matches!(state.slots.get(identity), Some(RecoveryEntry::Active(_))) {
+                state.slots.remove(identity)
+            } else {
+                None
+            }
+        };
         drop(record);
     }
 
@@ -64,11 +66,12 @@ impl ReservedProductUnpublishedSlot {
     pub(crate) fn abandon_active(mut self, identity: &ProductUnpublishedOwnerEffectsIdentity) {
         let permits = {
             let mut state = self.catalog.locked_state();
-            let record = state
-                .active
-                .get(identity)
-                .expect("the caller owns a registered attempt");
+            let Some(RecoveryEntry::Active(record)) = state.slots.get(identity) else {
+                unreachable!("registered active attempt")
+            };
             let permits = record.abandon();
+            state.costs.retained_records_created =
+                state.costs.retained_records_created.saturating_add(1);
             state.reserved_slots -= 1;
             state.reserved_metadata_bytes -= self.reserved_metadata_bytes;
             state.abandoned_slots += 1;
@@ -87,16 +90,16 @@ impl ProductUnpublishedRecoveryCatalog {
     pub(super) fn materialize_abandoned(&self, identity: &ProductUnpublishedOwnerEffectsIdentity) {
         let removed = {
             let mut state = self.locked_state();
-            let Some(active) = state.active.get(identity) else {
+            let Some(RecoveryEntry::Active(active)) = state.slots.get(identity) else {
                 return;
             };
             let Some(record) = active.materialize_abandoned(self.affinity()) else {
                 return;
             };
-            assert!(!state.records.contains_key(identity));
-            state.records.insert(identity.clone(), record);
             state.abandoned_slots -= 1;
-            state.active.remove(identity)
+            state
+                .slots
+                .replace(identity, RecoveryEntry::Retained(record))
         };
         drop(removed);
     }

@@ -23,6 +23,7 @@ impl ActiveAttemptRecord {
             .into_recovery_results()
             .ok()?;
         let facts = RetainedAttemptFacts {
+            admitted_at: self.admitted_at,
             identity: self.identity().clone(),
             attempt_identity: self.attempt.clone(),
             expected_head: self.expected.clone(),

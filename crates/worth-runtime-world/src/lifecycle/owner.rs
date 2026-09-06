@@ -1,4 +1,4 @@
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use worth_relational::facade::branch::RelationalOwnerServicePorts;
@@ -6,7 +6,6 @@ use worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort;
 use worth_signal::facade::branch::SignalOwnerServicePorts;
 
 use crate::branch::registry::ProductBranchRegistry;
-use crate::budget::RuntimeWorldBudgets;
 use crate::history::CompositeHistoryCatalog;
 use crate::identity::{
     RuntimeWorldIdentityExhaustion, RuntimeWorldIdentityIssuer, RuntimeWorldOwnerIdentity,
@@ -22,6 +21,7 @@ mod bootstrap;
 mod branch_service;
 mod construction;
 mod execution_service;
+mod inspection_service;
 mod operation;
 mod publication_service;
 mod recovery_service;
@@ -74,12 +74,14 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    #[cfg(feature = "test-operation-control")]
+    pub(super) operation_control: super::RuntimeWorldOperationControl,
+    pub(super) owner_present: AtomicBool,
     pub(super) owner_identity: RuntimeWorldOwnerIdentity,
     pub(super) identities: Mutex<RuntimeWorldIdentityIssuer>,
     pub(super) relational: RelationalOwnerServicePorts,
     pub(super) signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
     pub(super) bridge: RuntimeWorldCorrespondencePort,
-    pub(super) budgets: RuntimeWorldBudgets,
     pub(super) clock: RuntimeWorldClock,
     pub(super) history: CompositeHistoryCatalog,
     pub(super) retention: RuntimeWorldRetentionOwner<D, I, T>,
@@ -127,7 +129,6 @@ where
         );
         let branches = ProductBranchRegistry::new(owner_identity, budgets.live_product_branches());
         let custody = crate::branch::OwnerCreatedComponentCustodyRegistry::new(
-            owner_identity,
             budgets.owner_created_component_custody_records(),
         );
         let recovery = RecoveryCatalog::new_with_metadata(
@@ -139,12 +140,14 @@ where
             RuntimeWorldPublicationCapacityLedger::new(budgets.active_publication_attempts());
         Ok(Self {
             state: Arc::new(RuntimeWorldOwnerState {
+                #[cfg(feature = "test-operation-control")]
+                operation_control: super::RuntimeWorldOperationControl::default(),
+                owner_present: AtomicBool::new(true),
                 owner_identity,
                 identities: Mutex::new(identities),
                 relational,
                 signal,
                 bridge,
-                budgets,
                 clock,
                 history,
                 retention,
@@ -162,6 +165,25 @@ where
 
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.state.owner_identity
+    }
+
+    pub(super) fn owner_is_present(&self) -> bool {
+        self.state.owner_present.load(Ordering::Acquire)
+    }
+
+    pub(super) fn release_public_owner(&self) {
+        let _bootstrap = self
+            .state
+            .bootstrap
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let _operation = self
+            .state
+            .operation
+            .state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        self.state.owner_present.store(false, Ordering::Release);
     }
 }
 

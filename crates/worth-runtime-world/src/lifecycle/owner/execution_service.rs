@@ -112,7 +112,7 @@ where
             }
         };
         let relational_successor = relational.successor_basis().cloned();
-        let progress =
+        let mut progress =
             CompositeAttemptProgress::new(relational, SignalAttemptProgress::untouched());
         attempt.record_progress(&progress);
 
@@ -129,8 +129,8 @@ where
             return self.retain_or_no_effect(attempt, progress, cause, no_effect);
         }
 
-        let signal = match self.execute_signal(&mut attempt, signal_request, cancellation) {
-            Ok(signal) => signal,
+        match self.execute_signal(&mut attempt, &mut progress, signal_request, cancellation) {
+            Ok(()) => {}
             Err(SignalExecutionFailure {
                 cause,
                 no_effect,
@@ -140,9 +140,6 @@ where
                 return self.retain_or_no_effect(attempt, progress, cause, no_effect);
             }
         };
-        let progress = CompositeAttemptProgress::new(progress.into_relational(), signal);
-        attempt.record_progress(&progress);
-
         self.publish_settled_progress(attempt, progress, cancellation)
     }
 

@@ -1,7 +1,7 @@
 /// Closed Runtime World dependency vocabulary for one exact component-basis
 /// pin. A count is semantic usage, not an owner lease or a history record.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum ComponentBasisDependencyClass {
+pub enum ComponentBasisDependencyClass {
     ProductBranchHead,
     RetainedCompositeHistory,
     AdmittedObservation,
@@ -11,6 +11,7 @@ pub(crate) enum ComponentBasisDependencyClass {
 }
 
 impl ComponentBasisDependencyClass {
+    #[cfg(test)]
     pub(crate) const ALL: [Self; 6] = [
         Self::ProductBranchHead,
         Self::RetainedCompositeHistory,
@@ -37,7 +38,7 @@ impl ComponentBasisDependencyClass {
 /// Every mutation is checked. A count cannot wrap into an earlier state, and
 /// a release cannot manufacture a count for a dependency it did not own.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct ComponentBasisDependencyCounts {
+pub struct ComponentBasisDependencyCounts {
     counts: [usize; 6],
 }
 
@@ -46,7 +47,7 @@ impl ComponentBasisDependencyCounts {
         Self { counts: [0; 6] }
     }
 
-    pub(crate) const fn get(self, class: ComponentBasisDependencyClass) -> usize {
+    pub const fn get(self, class: ComponentBasisDependencyClass) -> usize {
         self.counts[class.index()]
     }
 
@@ -54,7 +55,7 @@ impl ComponentBasisDependencyCounts {
         self.total() == 0
     }
 
-    pub(crate) const fn total(self) -> usize {
+    pub const fn total(self) -> usize {
         let mut total: usize = 0;
         let mut index = 0;
         while index < self.counts.len() {

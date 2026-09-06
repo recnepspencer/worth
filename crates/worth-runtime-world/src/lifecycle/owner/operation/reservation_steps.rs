@@ -160,6 +160,7 @@ where
 /// it as one value keeps the reservation boundary checks readable as a single
 /// sequence instead of a long constructor call.
 pub(super) struct ReservedAttemptAssembly {
+    pub(super) admitted_at: RuntimeWorldInstant,
     pub(super) identities: IssuedPublicationIdentities,
     pub(super) resources: ReservedPublicationResources,
     pub(super) plan: LoweredOwnerComponentPlan,
@@ -175,6 +176,7 @@ pub(super) fn assemble_reserved_attempt(
     assembly: ReservedAttemptAssembly,
 ) -> ReservedCompositePublicationAttempt {
     let ReservedAttemptAssembly {
+        admitted_at,
         identities:
             IssuedPublicationIdentities {
                 attempt_identity,
@@ -200,6 +202,7 @@ pub(super) fn assemble_reserved_attempt(
         expected_head.basis().clone(),
         plan,
         ReservedAttemptCapacities::new(ReservedAttemptCapacityInputs {
+            admitted_at,
             reserved_commit_identity: commit_identity,
             product_unpublished_identity,
             reserved_commit_capacity,

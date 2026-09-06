@@ -18,3 +18,5 @@ mod recovery;
 mod retention;
 
 pub mod facade;
+
+mod inspection;

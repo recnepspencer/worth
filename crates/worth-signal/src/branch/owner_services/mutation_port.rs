@@ -71,6 +71,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn diagnostic_owner_runtime_instance_id(&self) -> u64 {
         self.diagnostic_owner_runtime_instance_id
     }
@@ -119,21 +120,39 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        let owner = self
-            .upgrade_owner()
-            .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
-        let admission = owner.admit().map_err(map_advance_admission_denial)?;
-        let branch_id = expected.owner_branch_id();
-        let cell = owner
-            .lookup_cell(&admission, branch_id)
-            .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
-        let output = owner.reserve_advance_output(&admission, &cell)?;
-        let ready = output.advance(expected, runtime_ctx, cancellation, apply)?;
-        let (advanced_basis, transaction) = ready.into_parts();
-        Ok(SignalBranchAdvanceOutcome::owner_issued(
-            advanced_basis,
-            transaction,
-        ))
+        self.advance_exact_with_completion(expected, runtime_ctx, cancellation, apply)
+            .into_result()
+    }
+
+    /// Preserve exact owner completion when a post-movement boundary unwinds.
+    pub fn advance_exact_with_completion<F>(
+        &self,
+        expected: &AdmittedSignalBranchBasis,
+        runtime_ctx: &mut Ctx,
+        cancellation: &SignalOwnerCancellationToken,
+        apply: F,
+    ) -> crate::branch::SignalBranchAdvanceCompletion
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
+        use crate::branch::SignalBranchAdvanceCompletion;
+        let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let owner = self
+                .upgrade_owner()
+                .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
+            let admission = owner.admit().map_err(map_advance_admission_denial)?;
+            let branch_id = expected.owner_branch_id();
+            let cell = owner
+                .lookup_cell(&admission, branch_id)
+                .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
+            let output = owner.reserve_advance_output(&admission, &cell)?;
+            Ok(output.advance(expected, runtime_ctx, cancellation, apply))
+        }));
+        match execution {
+            Ok(Ok(completion)) => completion,
+            Ok(Err(denial)) => SignalBranchAdvanceCompletion::returned(Err(denial)),
+            Err(payload) => SignalBranchAdvanceCompletion::unwound(None, payload),
+        }
     }
 
     pub fn capture_exact(

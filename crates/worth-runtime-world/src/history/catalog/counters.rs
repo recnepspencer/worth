@@ -4,7 +4,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 /// them. Callers receive a copy of this observation; they cannot report
 /// synthetic work by constructing an outcome.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(crate) struct HistoryCatalogCounters {
+pub struct HistoryCatalogCounters {
+    reserved_entry_writes: u64,
     owner_validations: u64,
     parent_validations: u64,
     candidate_validations: u64,
@@ -37,6 +38,14 @@ pub(super) fn lock_counters(
 }
 
 impl HistoryCatalogCounters {
+    pub(super) fn record_reserved_entry_write(&mut self) {
+        Self::increment(&mut self.reserved_entry_writes);
+    }
+    /// Direct writes to slots carried from pre-effect reservation; no key lookup.
+    pub const fn reserved_entry_writes(self) -> u64 {
+        self.reserved_entry_writes
+    }
+
     fn increment(counter: &mut u64) {
         *counter = counter.saturating_add(1);
     }
@@ -53,6 +62,7 @@ impl HistoryCatalogCounters {
         Self::increment(&mut self.candidate_validations);
     }
 
+    #[cfg(test)]
     pub(super) fn record_entry_lookup(&mut self) {
         Self::increment(&mut self.entry_lookups);
     }
@@ -101,63 +111,64 @@ impl HistoryCatalogCounters {
         Self::increment(&mut self.metadata_releases);
     }
 
-    pub(crate) const fn owner_validations(self) -> u64 {
+    pub const fn owner_validations(self) -> u64 {
         self.owner_validations
     }
 
-    pub(crate) const fn parent_validations(self) -> u64 {
+    pub const fn parent_validations(self) -> u64 {
         self.parent_validations
     }
 
-    pub(crate) const fn candidate_validations(self) -> u64 {
+    pub const fn candidate_validations(self) -> u64 {
         self.candidate_validations
     }
 
-    pub(crate) const fn entry_lookups(self) -> u64 {
+    /// Explicit historical lookup requests, not internal hash probes or collisions.
+    pub const fn entry_lookups(self) -> u64 {
         self.entry_lookups
     }
 
-    pub(crate) const fn reachability_lookups(self) -> u64 {
+    pub const fn reachability_lookups(self) -> u64 {
         self.reachability_lookups
     }
 
-    pub(crate) const fn dependency_increments(self) -> u64 {
+    pub const fn dependency_increments(self) -> u64 {
         self.dependency_increments
     }
 
-    pub(crate) const fn dependency_decrements(self) -> u64 {
+    pub const fn dependency_decrements(self) -> u64 {
         self.dependency_decrements
     }
 
-    pub(crate) const fn direct_protection_acquisitions(self) -> u64 {
+    pub const fn direct_protection_acquisitions(self) -> u64 {
         self.direct_protection_acquisitions
     }
 
-    pub(crate) const fn direct_protection_releases(self) -> u64 {
+    pub const fn direct_protection_releases(self) -> u64 {
         self.direct_protection_releases
     }
 
-    pub(crate) const fn reachability_rows_installed(self) -> u64 {
+    pub const fn reachability_rows_installed(self) -> u64 {
         self.reachability_rows_installed
     }
 
-    pub(crate) const fn reachability_rows_removed(self) -> u64 {
+    pub const fn reachability_rows_removed(self) -> u64 {
         self.reachability_rows_removed
     }
 
-    pub(crate) const fn metadata_reservation_checks(self) -> u64 {
+    pub const fn metadata_reservation_checks(self) -> u64 {
         self.metadata_reservation_checks
     }
 
-    pub(crate) const fn metadata_reservations(self) -> u64 {
+    pub const fn metadata_reservations(self) -> u64 {
         self.metadata_reservations
     }
 
-    pub(crate) const fn metadata_promotions(self) -> u64 {
+    pub const fn metadata_promotions(self) -> u64 {
         self.metadata_promotions
     }
 
-    pub(crate) const fn metadata_releases(self) -> u64 {
+    pub const fn metadata_releases(self) -> u64 {
         self.metadata_releases
     }
 }

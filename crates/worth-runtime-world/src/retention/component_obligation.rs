@@ -1,20 +1,24 @@
+#[cfg(test)]
+use super::unique_component_pin::ComponentBasisLeaseIdentity;
 use std::fmt;
 use std::sync::Arc;
 
+#[cfg(test)]
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
+#[cfg(test)]
 use worth_signal::facade::branch::SignalBranchRetentionReleaseDenial;
 
 use crate::identity::RuntimeWorldOwnerIdentity;
 
-use super::obligation_transfer::{
-    ComponentBasisObligationTransferDestination, RetentionTransferDenial,
-};
-use super::unique_component_pin::{
-    ComponentBasisLeaseIdentity, ComponentBasisPinClaim, ExactComponentBasisKey,
-};
+#[cfg(test)]
+use super::obligation_transfer::ComponentBasisObligationTransferDestination;
+use super::obligation_transfer::RetentionTransferDenial;
+use super::unique_component_pin::{ComponentBasisPinClaim, ExactComponentBasisKey};
 use super::ComponentBasisDependencyClass;
 
 mod composite;
+mod history;
+pub(crate) use history::HistoryRetentionObligation;
 mod product_head;
 mod retained_partial;
 
@@ -28,6 +32,7 @@ pub(crate) use retained_partial::RetainedPartialRetentionObligation;
 /// cannot be terminated. The component owner lease remains bound to the
 /// registry in every refusal path.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) enum RetentionReleaseDenial {
     UnknownPin,
     ForeignOwner {
@@ -40,9 +45,9 @@ pub(crate) enum RetentionReleaseDenial {
 
 /// Why an explicit claim release reached its terminal outcome or refusal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) enum ComponentBasisReleaseOutcome {
     OwnerReleased,
-    OwnerUnavailable,
     OwnerOperationPanicked,
     SharedOwnerLease,
 }
@@ -50,13 +55,16 @@ pub(crate) enum ComponentBasisReleaseOutcome {
 /// Exact evidence for one dependency-count release. It carries no capability
 /// and is not used to authorize another release.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct ComponentBasisReleaseReceipt {
     key: ExactComponentBasisKey,
     lease_identity: ComponentBasisLeaseIdentity,
     outcome: ComponentBasisReleaseOutcome,
 }
 
+#[cfg(test)]
 impl ComponentBasisReleaseReceipt {
+    #[cfg(test)]
     pub(crate) fn owner_issued(
         key: ExactComponentBasisKey,
         lease_identity: ComponentBasisLeaseIdentity,
@@ -69,22 +77,16 @@ impl ComponentBasisReleaseReceipt {
         }
     }
 
+    #[cfg(test)]
     pub(crate) const fn outcome(&self) -> ComponentBasisReleaseOutcome {
         self.outcome
-    }
-
-    pub(crate) fn key(&self) -> &ExactComponentBasisKey {
-        &self.key
-    }
-
-    pub(crate) const fn lease_identity(&self) -> ComponentBasisLeaseIdentity {
-        self.lease_identity
     }
 }
 
 /// Error carrier that returns the still-live move-only claim to an explicit
 /// caller. A denied foreign release therefore cannot destroy retention.
 #[derive(Debug)]
+#[cfg(test)]
 pub(crate) struct RetentionReleaseFailure {
     pub(super) claim: ComponentBasisPinClaim,
     pub(super) denial: RetentionReleaseDenial,
@@ -94,6 +96,13 @@ pub(crate) struct RetentionReleaseFailure {
 /// owner. Claims carry this narrow object so the shared Phase 1 handoffs need
 /// not become generic over component runtime types.
 pub(super) trait RetentionControlSurface: Send + Sync {
+    fn fork_history_pair(
+        &self,
+        relational: &ComponentBasisPinClaim,
+        signal: &ComponentBasisPinClaim,
+    ) -> Result<(ComponentBasisPinClaim, ComponentBasisPinClaim), RetentionTransferDenial>;
+
+    #[cfg(test)]
     fn transfer_claim(
         &self,
         claim: ComponentBasisPinClaim,
@@ -107,6 +116,7 @@ pub(super) trait RetentionControlSurface: Send + Sync {
         target: ComponentBasisDependencyClass,
     ) -> Result<(), RetentionTransferDenial>;
 
+    #[cfg(test)]
     fn release_claim(
         &self,
         claim: ComponentBasisPinClaim,
@@ -156,6 +166,7 @@ impl ComponentBasisPinObligation {
         }
     }
 
+    #[cfg(test)]
     pub(crate) const fn lease_identity(&self) -> ComponentBasisLeaseIdentity {
         match &self.claim {
             Some(claim) => claim.lease_identity,
@@ -165,6 +176,16 @@ impl ComponentBasisPinObligation {
 
     /// Retag the actual held claims under the retention owner's pair lock.
     /// No raw claim leaves either Drop guard while validation can deny/unwind.
+    pub(super) fn fork_history_pair(
+        &self,
+        other: &Self,
+    ) -> Result<(Self, Self), RetentionTransferDenial> {
+        let relational = self.claim.as_ref().expect("live first claim");
+        let signal = other.claim.as_ref().expect("live second claim");
+        let (relational, signal) = relational.control.fork_history_pair(relational, signal)?;
+        Ok((Self::new(relational), Self::new(signal)))
+    }
+
     pub(super) fn transfer_pair_to(
         &mut self,
         other: &mut Self,
@@ -196,6 +217,7 @@ impl ComponentBasisPinObligation {
 
     /// Transfer this one exact dependency without acquiring another owner
     /// lease. Failure returns the original obligation unchanged.
+    #[cfg(test)]
     pub(crate) fn try_transfer_to(
         mut self,
         destination: ComponentBasisObligationTransferDestination,
@@ -219,6 +241,7 @@ impl ComponentBasisPinObligation {
 
     /// Explicitly consume one claim. A denied release returns the original
     /// obligation so its caller can rebind it to the correct owner and retry.
+    #[cfg(test)]
     pub(crate) fn try_release(
         mut self,
     ) -> Result<ComponentBasisReleaseReceipt, (Self, RetentionReleaseDenial)> {

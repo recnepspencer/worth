@@ -23,34 +23,6 @@ impl RealReferenceFixture {
             .reserve_fork_target(BranchId(target.to_owned()))
     }
 
-    pub(crate) fn retention_owner(
-        &self,
-    ) -> &crate::retention::RuntimeWorldRetentionOwner<(), (), ()> {
-        &self.owner
-    }
-
-    pub(crate) fn owner_identity(&self) -> crate::identity::RuntimeWorldOwnerIdentity {
-        self.owner_identity
-    }
-
-    pub(crate) fn next_publication_attempt(
-        &mut self,
-    ) -> crate::identity::CompositePublicationAttemptIdentity {
-        self.identities
-            .issuer_mut()
-            .publication_attempt()
-            .expect("publication attempt identity")
-    }
-
-    pub(crate) fn next_product_unpublished(
-        &mut self,
-    ) -> crate::identity::ProductUnpublishedOwnerEffectsIdentity {
-        self.identities
-            .issuer_mut()
-            .product_unpublished()
-            .expect("product-unpublished identity")
-    }
-
     pub(crate) fn perform_relational_owner_change(&self) -> PerformedRelationalCommit {
         let candidate =
             self.prepare_relational_owner_candidate("runtime-world-cas-loss-owner-effect");

@@ -1,20 +1,20 @@
 use worth_runtime_world::facade::{
     AdmittedRelationalBranchBasis, AdmittedRuntimeWorldCorrespondenceBasis,
     AdmittedSignalBranchBasis, CompositeAttemptProgress, PreparedCompositePublicationWithSignal,
-    PreparedCompositePublicationWithoutSignal, RelationalOwnerServicePorts,
-    RelationalTransactionIntent, ResolvedExpectedProductHead, RuntimeWorldCancellationSource,
-    RuntimeWorldCancellationToken, RuntimeWorldCorrespondencePort, RuntimeWorldOwnerInputs,
+    PreparedCompositePublicationWithoutSignal, ProductBranchObservation,
+    RelationalOwnerServicePorts, RelationalTransactionIntent, RuntimeWorldCancellationSource,
+    RuntimeWorldCancellationToken, RuntimeWorldCorrespondencePort, RuntimeWorldOwner,
     RuntimeWorldPublicationOutcome, SignalError, SignalOwnerCancellationToken,
     SignalOwnerServicePorts, SignalTransaction,
 };
 
 fn takes_public_return_types(
     progress: &CompositeAttemptProgress,
-    expected: &ResolvedExpectedProductHead,
+    expected: &ProductBranchObservation,
     outcome: &RuntimeWorldPublicationOutcome,
 ) {
     let _ = progress.relational_posture();
-    let _ = expected.expected();
+    let _ = expected.selected_commit();
     let _ = format!("{outcome:?}");
 }
 
@@ -27,7 +27,7 @@ fn names_public_component_signatures(
     _correspondence_basis: &AdmittedRuntimeWorldCorrespondenceBasis,
     _intent: Option<RelationalTransactionIntent>,
     _token: Option<SignalOwnerCancellationToken>,
-    _world_inputs: Option<RuntimeWorldOwnerInputs<(), (), (), u32, ()>>,
+    _world_inputs: Option<RuntimeWorldOwner<(), (), (), u32, ()>>,
 ) {
     let _error: Option<SignalError> = None;
     let _transaction: Option<SignalTransaction<'static, (), (), (), u32, ()>> = None;
@@ -58,4 +58,51 @@ fn main() {
         names_public_component_signatures,
         names_both_prepared_stages,
     );
+}
+
+// Type-check the complete public construction/execution boundary under exactly
+// the predecessor's bounds, with no Clone, Default or Debug on E or Ctx.
+fn exact_generic_contract<D, I, E, Ctx, T, F>(
+    relational: RelationalOwnerServicePorts,
+    signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
+    bridge: RuntimeWorldCorrespondencePort,
+    budgets: worth_runtime_world::facade::RuntimeWorldBudgets,
+    clock: worth_runtime_world::facade::RuntimeWorldClock,
+    prepared: PreparedCompositePublicationWithSignal,
+    context: &mut Ctx,
+    cancellation: &RuntimeWorldCancellationToken,
+    apply: F,
+) -> RuntimeWorldPublicationOutcome
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    E: Send + Sync + 'static,
+    Ctx: Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+    F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+{
+    let owner = RuntimeWorldOwner::builder()
+        .with_bridge_correspondence(bridge)
+        .with_relational_services(relational)
+        .with_signal_services(signal)
+        .with_budgets(budgets)
+        .with_clock(clock)
+        .build()
+        .unwrap();
+    owner
+        .publication_port()
+        .execute_with_signal(prepared, context, cancellation, apply)
+}
+
+fn canonical_owner_artifacts(
+    performed: &worth_runtime_world::facade::PerformedCompositePublication,
+) {
+    let results = performed.component_results();
+    let _: Option<&worth_runtime_world::facade::CommitResult> = results.relational_commit_result();
+    let _: Option<&worth_runtime_world::facade::RelationalCommitReceipt> =
+        results.relational_settlement();
+    let _: Option<&worth_runtime_world::facade::SignalBranchAdvanceOutcome> =
+        results.signal().advanced_outcome();
+    let _: Option<&worth_runtime_world::facade::SignalBranchForkOutcome> =
+        results.signal().fork_outcome();
 }

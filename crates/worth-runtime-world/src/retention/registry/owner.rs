@@ -15,8 +15,11 @@ use crate::history::CompositeRuntimeWorldCommit;
 use crate::identity::RuntimeWorldOwnerIdentity;
 
 use super::super::component_obligation::{
-    ObservationRetentionObligation, ProductHeadRetentionObligation, PublicationRetentionObligation,
-    RetainedPartialRetentionObligation, RetentionReleaseDenial,
+    ObservationRetentionObligation, ProductHeadRetentionObligation,
+};
+#[cfg(test)]
+use super::super::component_obligation::{
+    PublicationRetentionObligation, RetainedPartialRetentionObligation, RetentionReleaseDenial,
 };
 use super::super::dependency_counts::ComponentBasisDependencyCounts;
 use super::super::unique_component_pin::{ComponentBasisLeaseIdentity, ExactComponentBasisKey};
@@ -27,13 +30,14 @@ mod acquisition;
 mod batch_acquisition;
 mod capacity_reservation;
 mod claim_lifecycle;
+mod history_claims;
+mod inspection;
 
 pub(crate) use capacity_reservation::ReservedComponentPinPairCapacity;
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug)]
 enum ComponentOwnerLease {
     Relational(RelationalBranchRetentionLease),
     Signal(SignalBranchRetentionLease),
@@ -100,6 +104,7 @@ where
     costs: RetentionCostSnapshot,
 }
 
+#[cfg(test)]
 struct OwnerReleaseFailure {
     reason: RetentionReleaseDenial,
     lease: ComponentOwnerLease,
@@ -236,6 +241,7 @@ where
         .map(|pair| ObservationRetentionObligation::owner_issued(commit, pair, capacity))
     }
 
+    #[cfg(test)]
     pub(crate) fn issue_publication(
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
@@ -255,6 +261,7 @@ where
             .map(ProductHeadRetentionObligation::owner_issued)
     }
 
+    #[cfg(test)]
     pub(crate) fn issue_retained_partial(
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
@@ -266,6 +273,7 @@ where
         .map(RetainedPartialRetentionObligation::owner_issued)
     }
 
+    #[cfg(test)]
     pub(crate) fn active_component_obligation_count(&self) -> usize {
         self.lock().active_obligations
     }
@@ -274,14 +282,17 @@ where
         self.lock().unique_slots
     }
 
+    #[cfg(test)]
     pub(crate) fn in_flight_acquisition_count(&self) -> usize {
         self.lock().active_reservations
     }
 
+    #[cfg(test)]
     pub(crate) fn reserved_unique_pin_capacity(&self) -> usize {
         self.lock().reserved_unique_slots
     }
 
+    #[cfg(test)]
     pub(crate) fn reserved_in_flight_acquisition_capacity(&self) -> usize {
         self.lock().reserved_in_flight_reservations
     }
@@ -314,6 +325,15 @@ where
             examined: keys.len(),
             reclaimed,
             remaining_unique_pins: state.unique_slots,
+        }
+    }
+}
+
+impl std::fmt::Debug for ComponentOwnerLease {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Relational(value) => f.debug_tuple("Relational").field(value).finish(),
+            Self::Signal(value) => f.debug_tuple("Signal").field(value).finish(),
         }
     }
 }

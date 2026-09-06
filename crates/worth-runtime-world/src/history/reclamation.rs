@@ -6,53 +6,45 @@ use super::catalog::CompositeHistoryCatalogDenial;
 /// represented by live catalog-owned protection obligations, not copied
 /// ancestry supplied with this request.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct CompositeHistoryReclamationRequest {
+pub struct CompositeHistoryReclamationRequest {
     owner: RuntimeWorldOwnerIdentity,
     candidate_commits: Vec<CompositeCommitIdentity>,
     maximum_reclaims: usize,
-    age_ticks: u64,
 }
 
 impl CompositeHistoryReclamationRequest {
-    pub(crate) fn new(
+    pub fn new(
         owner: RuntimeWorldOwnerIdentity,
         candidate_commits: Vec<CompositeCommitIdentity>,
         maximum_reclaims: usize,
-        age_ticks: u64,
     ) -> Self {
         Self {
             owner,
             candidate_commits,
             maximum_reclaims,
-            age_ticks,
         }
     }
 
-    pub(crate) const fn owner(&self) -> RuntimeWorldOwnerIdentity {
+    pub const fn owner(&self) -> RuntimeWorldOwnerIdentity {
         self.owner
     }
 
-    pub(crate) fn candidate_commits(&self) -> &[CompositeCommitIdentity] {
+    pub fn candidate_commits(&self) -> &[CompositeCommitIdentity] {
         &self.candidate_commits
     }
 
-    pub(crate) const fn maximum_reclaims(&self) -> usize {
+    pub const fn maximum_reclaims(&self) -> usize {
         self.maximum_reclaims
-    }
-
-    pub(crate) const fn age_ticks(&self) -> u64 {
-        self.age_ticks
     }
 }
 
 /// Reclamation is an observation of a bounded maintenance batch, not a
 /// promise that every requested candidate can be removed.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct HistoryReclamationOutcome {
+pub struct HistoryReclamationOutcome {
     maximum_reclaims: usize,
     examined: usize,
     skipped_protected: usize,
-    skipped_too_young: usize,
     skipped_with_descendant_dependencies: usize,
     reclaimed: Vec<CompositeCommitIdentity>,
     metadata_bytes_reclaimed: usize,
@@ -64,7 +56,6 @@ impl HistoryReclamationOutcome {
             maximum_reclaims,
             examined: 0,
             skipped_protected: 0,
-            skipped_too_young: 0,
             skipped_with_descendant_dependencies: 0,
             reclaimed: Vec::new(),
             metadata_bytes_reclaimed: 0,
@@ -77,10 +68,6 @@ impl HistoryReclamationOutcome {
 
     pub(crate) fn record_skipped_protected(&mut self) {
         self.skipped_protected += 1;
-    }
-
-    pub(crate) fn record_skipped_too_young(&mut self) {
-        self.skipped_too_young += 1;
     }
 
     pub(crate) fn record_skipped_with_descendant_dependencies(&mut self) {
@@ -100,37 +87,34 @@ impl HistoryReclamationOutcome {
         self.reclaimed.push(identity);
     }
 
-    pub(crate) const fn maximum_reclaims(&self) -> usize {
+    pub const fn maximum_reclaims(&self) -> usize {
         self.maximum_reclaims
     }
 
-    pub(crate) const fn examined(&self) -> usize {
+    pub const fn examined(&self) -> usize {
         self.examined
     }
 
-    pub(crate) const fn skipped_protected(&self) -> usize {
+    pub const fn skipped_protected(&self) -> usize {
         self.skipped_protected
     }
 
-    pub(crate) const fn skipped_too_young(&self) -> usize {
-        self.skipped_too_young
-    }
-
-    pub(crate) const fn skipped_with_descendant_dependencies(&self) -> usize {
+    pub const fn skipped_with_descendant_dependencies(&self) -> usize {
         self.skipped_with_descendant_dependencies
     }
 
-    pub(crate) fn reclaimed_commits(&self) -> &[CompositeCommitIdentity] {
+    pub fn reclaimed_commits(&self) -> &[CompositeCommitIdentity] {
         &self.reclaimed
     }
 
-    pub(crate) const fn metadata_bytes_reclaimed(&self) -> usize {
+    pub const fn metadata_bytes_reclaimed(&self) -> usize {
         self.metadata_bytes_reclaimed
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum HistoryReclamationDenial {
+pub enum HistoryReclamationDenial {
+    OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     Catalog(CompositeHistoryCatalogDenial),
     ForeignCandidate {
         expected: RuntimeWorldOwnerIdentity,

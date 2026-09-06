@@ -10,8 +10,6 @@ pub(crate) struct RelationalRecoveryRecordState {
 
 pub(super) enum RelationalRecoveryRecordRoute {
     Performed {
-        commit_identity: worth_relational::facade::history::RelationalCommitIdentity,
-        successor_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         performed: worth_relational::facade::mvcc::PerformedRelationalCommit,
     },
     SettlementPending {
@@ -47,11 +45,7 @@ impl RelationalRecoveryRecordState {
     ) -> Self {
         let route = match recovery_route {
             crate::publication::RelationalRecoveryRoute::Performed { performed } => {
-                RelationalRecoveryRecordRoute::Performed {
-                    commit_identity: commit_identity.clone(),
-                    successor_basis: successor_basis.clone(),
-                    performed,
-                }
+                RelationalRecoveryRecordRoute::Performed { performed }
             }
             crate::publication::RelationalRecoveryRoute::SettlementPending { settlement } => {
                 RelationalRecoveryRecordRoute::SettlementPending {

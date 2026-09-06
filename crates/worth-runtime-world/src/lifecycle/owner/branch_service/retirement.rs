@@ -58,9 +58,6 @@ fn map_retirement_denial(
     use crate::branch::registry::ProductBranchRegistryDenial;
 
     match denial {
-        ProductBranchRegistryDenial::UnknownBranch => {
-            RuntimeWorldBranchRetirementDenial::UnknownBranch
-        }
         ProductBranchRegistryDenial::AlreadyRetired => {
             RuntimeWorldBranchRetirementDenial::AlreadyRetired
         }

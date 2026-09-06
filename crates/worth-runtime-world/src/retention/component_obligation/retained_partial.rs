@@ -1,12 +1,16 @@
+#[cfg(test)]
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::identity::{CompositeBasisKey, RuntimeWorldOwnerIdentity};
 
-use super::super::unique_component_pin::{ComponentBasisPinClaim, ExactComponentPinRequest};
+use super::super::unique_component_pin::ComponentBasisPinClaim;
+#[cfg(test)]
+use super::super::unique_component_pin::ExactComponentPinRequest;
 use super::super::ComponentBasisDependencyClass;
-use super::{ComponentBasisPinObligation, IssuedComponentPinPair};
+use super::ComponentBasisPinObligation;
+#[cfg(test)]
+use super::IssuedComponentPinPair;
 
 /// Two exact component claims retained with product-unpublished owner effects.
-#[derive(Debug)]
 pub(crate) struct RetainedPartialRetentionObligation {
     owner: RuntimeWorldOwnerIdentity,
     basis: CompositeBasisKey,
@@ -15,6 +19,7 @@ pub(crate) struct RetainedPartialRetentionObligation {
 }
 
 impl RetainedPartialRetentionObligation {
+    #[cfg(test)]
     pub(crate) fn owner_issued(pair: IssuedComponentPinPair) -> Self {
         let (owner, basis, dependency, relational, signal) = pair.into_parts();
         assert_eq!(
@@ -53,22 +58,12 @@ impl RetainedPartialRetentionObligation {
         }
     }
 
-    pub(crate) const fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
-        self.owner
-    }
-
-    pub(crate) fn basis(&self) -> &CompositeBasisKey {
-        &self.basis
-    }
-
-    pub(crate) fn relational(&self) -> &ComponentBasisPinObligation {
-        &self.relational
-    }
-
+    #[cfg(test)]
     pub(crate) fn signal(&self) -> &ComponentBasisPinObligation {
         &self.signal
     }
 
+    #[cfg(test)]
     pub(crate) fn matches_basis(&self, basis: &AdmittedCompositeRuntimeWorldBasis) -> bool {
         self.owner == basis.owner_identity()
             && self.basis == *basis.identity()
@@ -88,5 +83,16 @@ impl RetainedPartialRetentionObligation {
                 == ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
             && self.signal.dependency()
                 == ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
+    }
+}
+
+impl std::fmt::Debug for RetainedPartialRetentionObligation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RetainedPartialRetentionObligation")
+            .field("owner", &self.owner)
+            .field("basis", &self.basis)
+            .field("relational", &self.relational)
+            .field("signal", &self.signal)
+            .finish()
     }
 }

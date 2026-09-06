@@ -34,7 +34,6 @@ impl Eq for ProductBranchReferenceSnapshot {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ProductBranchReferenceSnapshotDenial {
-    OwnerMismatch,
     BranchOwnerMismatch,
     LifecycleOwnerMismatch,
     CommitOwnerMismatch,

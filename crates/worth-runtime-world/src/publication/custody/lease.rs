@@ -44,12 +44,21 @@ impl ActiveAttemptCustody {
                 resources.pin_denial = None;
             }
             ActivePinCustody::Bound(obligation) => assert!(obligation.matches_basis(basis)),
-            ActivePinCustody::Retained(_) => {
+            ActivePinCustody::Retained { .. } => {
                 unreachable!("retained custody cannot bind publication pins")
             }
             ActivePinCustody::TransferredToProduct => {
                 unreachable!("performed custody cannot bind publication pins")
             }
+        }
+        if resources.history_pins.is_none() {
+            let ActivePinCustody::Bound(pins) = &resources.pins else {
+                unreachable!("binding completed")
+            };
+            resources.history_pins = Some(
+                pins.fork_history(basis)
+                    .map_err(RetentionObligationDenial::HistoryDependency)?,
+            );
         }
         Ok(())
     }

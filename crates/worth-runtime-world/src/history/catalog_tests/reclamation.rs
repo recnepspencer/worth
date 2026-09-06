@@ -6,21 +6,22 @@ use super::fixtures::{history_contract, linear_history};
 
 #[test]
 fn descendant_dependencies_and_direct_protections_block_exact_targets() {
-    let (_owner, commits) = linear_history(3);
+    let (owner, commits) = linear_history(3);
     let root = commits[0].clone();
     let ordinary = commits[1].clone();
     let leaf = commits[2].clone();
     let owner_identity = root.identity().owner_identity();
     let catalog = CompositeHistoryCatalog::new(owner_identity, history_contract(3, u64::MAX));
     for commit in [&root, &ordinary, &leaf] {
-        catalog.append(commit.clone()).expect("chain install");
+        catalog
+            .append(commit.clone(), owner.history_pins(commit))
+            .expect("chain install");
     }
 
     let blocked_root = catalog
         .reclaim_batch(CompositeHistoryReclamationRequest::new(
             owner_identity,
             vec![root.identity().clone()],
-            1,
             1,
         ))
         .expect("installed child blocks parent");
@@ -44,7 +45,6 @@ fn descendant_dependencies_and_direct_protections_block_exact_targets() {
             owner_identity,
             vec![leaf.identity().clone()],
             1,
-            1,
         ))
         .expect("direct protection blocks leaf");
     assert_eq!(blocked_leaf.skipped_protected(), 1);
@@ -61,7 +61,6 @@ fn descendant_dependencies_and_direct_protections_block_exact_targets() {
             owner_identity,
             vec![leaf.identity().clone()],
             1,
-            1,
         ))
         .expect("released protection permits leaf reclaim");
     assert_eq!(
@@ -73,14 +72,12 @@ fn descendant_dependencies_and_direct_protections_block_exact_targets() {
             owner_identity,
             vec![ordinary.identity().clone()],
             1,
-            1,
         ))
         .expect("reclaimed leaf releases ordinary dependency");
     let reclaimed_root = catalog
         .reclaim_batch(CompositeHistoryReclamationRequest::new(
             owner_identity,
             vec![root.identity().clone()],
-            1,
             1,
         ))
         .expect("reclaimed ordinary releases root dependency");
@@ -99,9 +96,14 @@ fn malformed_bounded_prefix_is_rejected_before_reachability_or_mutation() {
         root.identity().owner_identity(),
         history_contract(2, u64::MAX),
     );
-    catalog.append(root.clone()).expect("root install");
-    catalog.append(child.clone()).expect("child install");
+    catalog
+        .append(root.clone(), owner.history_pins(&root))
+        .expect("root install");
+    catalog
+        .append(child.clone(), owner.history_pins(&child))
+        .expect("child install");
     let unknown = owner
+        .authority
         .issuer_mut()
         .composite_commit()
         .expect("unknown identity");
@@ -109,7 +111,6 @@ fn malformed_bounded_prefix_is_rejected_before_reachability_or_mutation() {
     let denial = catalog.reclaim_batch(CompositeHistoryReclamationRequest::new(
         root.identity().owner_identity(),
         vec![unknown.clone(), child.identity().clone()],
-        1,
         1,
     ));
     assert_eq!(
@@ -130,7 +131,6 @@ fn malformed_bounded_prefix_is_rejected_before_reachability_or_mutation() {
         root.identity().owner_identity(),
         vec![child.identity().clone(), child.identity().clone()],
         2,
-        1,
     ));
     assert_eq!(
         duplicate,
@@ -144,7 +144,6 @@ fn malformed_bounded_prefix_is_rejected_before_reachability_or_mutation() {
         .reclaim_batch(CompositeHistoryReclamationRequest::new(
             root.identity().owner_identity(),
             vec![child.identity().clone(), unknown],
-            1,
             1,
         ))
         .expect("candidate suffix beyond the bound is not inspected");
@@ -161,9 +160,14 @@ fn zero_batch_does_no_candidate_index_allocation_or_mutation_work() {
         root.identity().owner_identity(),
         history_contract(2, u64::MAX),
     );
-    catalog.append(root.clone()).expect("root install");
-    catalog.append(child.clone()).expect("child install");
+    catalog
+        .append(root.clone(), owner.history_pins(&root))
+        .expect("root install");
+    catalog
+        .append(child.clone(), owner.history_pins(&child))
+        .expect("child install");
     let unknown = owner
+        .authority
         .issuer_mut()
         .composite_commit()
         .expect("unknown identity");
@@ -174,7 +178,6 @@ fn zero_batch_does_no_candidate_index_allocation_or_mutation_work() {
             root.identity().owner_identity(),
             vec![unknown],
             0,
-            1,
         ))
         .expect("zero batch is a valid no-op");
     let after = catalog.counters();
@@ -203,13 +206,16 @@ fn exact_protection_validation_rejects_foreign_and_unknown_occurrences() {
         root.identity().owner_identity(),
         history_contract(1, u64::MAX),
     );
-    catalog.append(root.clone()).expect("root install");
+    catalog
+        .append(root.clone(), owner.history_pins(&root))
+        .expect("root install");
     let before_denials = catalog.counters();
     assert!(matches!(
         catalog.protect_product_head(&foreign_commits[0]),
         Err(CompositeHistoryCatalogDenial::ForeignOwner { .. })
     ));
     let unknown = owner
+        .authority
         .issuer_mut()
         .composite_commit()
         .expect("unknown identity");
@@ -217,7 +223,7 @@ fn exact_protection_validation_rejects_foreign_and_unknown_occurrences() {
         catalog.protect_product_head(&crate::history::CompositeRuntimeWorldCommit::from_root_bootstrap(
             unknown.clone(),
             root.basis().clone(),
-            owner.issuer_mut().bootstrap_attempt().expect("unknown attempt"),
+            owner.authority.issuer_mut().bootstrap_attempt().expect("unknown attempt"),
             None,
         ).expect("same-owner unknown commit")),
         Err(CompositeHistoryCatalogDenial::UnknownProtectionTarget(target)) if target == unknown
@@ -235,14 +241,16 @@ fn exact_protection_validation_rejects_foreign_and_unknown_occurrences() {
 
 #[test]
 fn product_head_protection_proves_one_exact_installed_occurrence() {
-    let (_owner, commits) = linear_history(2);
+    let (owner, commits) = linear_history(2);
     let root = commits[0].clone();
     let successor = commits[1].clone();
     let owner_identity = root.identity().owner_identity();
     let catalog = CompositeHistoryCatalog::new(owner_identity, history_contract(2, u64::MAX));
-    catalog.append(root.clone()).expect("root install");
     catalog
-        .append(successor.clone())
+        .append(root.clone(), owner.history_pins(&root))
+        .expect("root install");
+    catalog
+        .append(successor.clone(), owner.history_pins(&successor))
         .expect("successor install");
 
     let before = catalog.counters();
@@ -264,7 +272,6 @@ fn product_head_protection_proves_one_exact_installed_occurrence() {
             owner_identity,
             vec![successor.identity().clone()],
             1,
-            1,
         ))
         .expect("live product head blocks reclamation");
     assert_eq!(blocked.skipped_protected(), 1);
@@ -277,7 +284,6 @@ fn product_head_protection_proves_one_exact_installed_occurrence() {
         .reclaim_batch(CompositeHistoryReclamationRequest::new(
             owner_identity,
             vec![successor.identity().clone()],
-            1,
             1,
         ))
         .expect("final drop permits reclamation");

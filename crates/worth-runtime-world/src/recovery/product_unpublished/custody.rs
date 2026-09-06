@@ -4,6 +4,10 @@ use super::*;
 mod state;
 pub(super) use state::RelationalRecoveryRecordState;
 
+#[path = "custody/lease.rs"]
+mod lease;
+use lease::RelationalRecoveryLease;
+
 impl ProductUnpublishedOwnerEffectsRecord {
     pub(crate) fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
         &self.identity
@@ -31,7 +35,7 @@ impl ProductUnpublishedOwnerEffectsRecord {
         self.next_actions.as_slice()
     }
 
-    pub(crate) fn take_relational_recovery(&mut self) -> Result<RelationalRecoveryRecordState, ()> {
+    pub(crate) fn take_relational_recovery(&mut self) -> Result<RelationalRecoveryLease<'_>, ()> {
         let progress = std::mem::replace(&mut self.progress, CompositeAttemptProgress::untouched());
         let component_results = std::mem::replace(
             &mut self.component_results,
@@ -46,13 +50,14 @@ impl ProductUnpublishedOwnerEffectsRecord {
                     return Err(());
                 }
             };
-        Ok(RelationalRecoveryRecordState::from_recovery_parts(
+        let state = RelationalRecoveryRecordState::from_recovery_parts(
             commit_identity,
             successor_basis,
             recovery_route,
             component_results,
             signal_posture,
-        ))
+        );
+        Ok(RelationalRecoveryLease::new(self, state))
     }
 
     pub(crate) fn restore_relational_recovery(&mut self, mut state: RelationalRecoveryRecordState) {

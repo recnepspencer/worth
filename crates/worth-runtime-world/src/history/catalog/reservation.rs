@@ -3,7 +3,8 @@ use std::sync::{Arc, Mutex};
 use super::denial::CompositeHistoryCatalogDenial;
 use super::entry::CompositeHistoryCatalogEntry;
 use super::metadata::{HistoryMetadataCharge, HistoryReservationMetadata};
-use super::support::{install_entry, lock_state, release_reservation};
+use super::slots::ReservedHistorySlots;
+use super::support::{lock_state, release_reservation};
 use super::CompositeHistoryCatalogState;
 use super::CompositeRuntimeWorldCommit;
 
@@ -35,68 +36,21 @@ impl Drop for InstalledRootCommitRollback {
         let mut state = lock_state(&self.state);
         let entry = super::support::remove_installed(&mut state, &self.identity);
         assert!(
-            matches!(entry.commit().parent(), super::CompositeCommitParent::Root),
+            matches!(
+                entry.get().expect("installed root").commit().parent(),
+                super::CompositeCommitParent::Root
+            ),
             "bootstrap rollback owns only the root history entry"
         );
         state.root_reserved = false;
         state.root_ever_installed = false;
         self.armed = false;
+        drop(state);
+        drop(entry);
     }
 }
 
 impl InstalledRootCommitRollback {
-    pub(super) fn new(
-        state: Arc<Mutex<CompositeHistoryCatalogState>>,
-        identity: crate::identity::CompositeCommitIdentity,
-    ) -> Self {
-        Self {
-            state,
-            identity,
-            armed: true,
-        }
-    }
-
-    pub(crate) fn commit(mut self) {
-        self.armed = false;
-    }
-}
-
-/// Rollback custody for any newly installed commit until the publication CAS
-/// is reached. The CAS boundary disarms this guard because a stale product
-/// head still leaves a valid immutable commit for recovery/reclamation.
-#[must_use = "an installed commit must be committed or rolled back"]
-pub(crate) struct InstalledCommitRollback {
-    state: Arc<Mutex<CompositeHistoryCatalogState>>,
-    identity: crate::identity::CompositeCommitIdentity,
-    armed: bool,
-}
-
-impl std::fmt::Debug for InstalledCommitRollback {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter
-            .debug_struct("InstalledCommitRollback")
-            .field("identity", &self.identity)
-            .field("armed", &self.armed)
-            .finish_non_exhaustive()
-    }
-}
-
-impl Drop for InstalledCommitRollback {
-    fn drop(&mut self) {
-        if !self.armed {
-            return;
-        }
-        let mut state = lock_state(&self.state);
-        let entry = super::support::remove_installed(&mut state, &self.identity);
-        if matches!(entry.commit().parent(), super::CompositeCommitParent::Root) {
-            state.root_reserved = false;
-            state.root_ever_installed = false;
-        }
-        self.armed = false;
-    }
-}
-
-impl InstalledCommitRollback {
     pub(super) fn new(
         state: Arc<Mutex<CompositeHistoryCatalogState>>,
         identity: crate::identity::CompositeCommitIdentity,
@@ -118,6 +72,7 @@ pub(crate) struct ReservedCompositeCommitCapacity {
     state: Arc<Mutex<CompositeHistoryCatalogState>>,
     identity: crate::identity::CompositeCommitIdentity,
     reservation: HistoryReservationMetadata,
+    slots: Option<ReservedHistorySlots>,
     publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
     armed: bool,
 }
@@ -155,12 +110,14 @@ impl ReservedCompositeCommitCapacity {
         state: Arc<Mutex<CompositeHistoryCatalogState>>,
         identity: crate::identity::CompositeCommitIdentity,
         reservation: HistoryReservationMetadata,
+        slots: ReservedHistorySlots,
         publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
     ) -> Self {
         Self {
             state,
             identity,
             reservation,
+            slots: Some(slots),
             publication,
             armed: true,
         }
@@ -169,12 +126,20 @@ impl ReservedCompositeCommitCapacity {
     pub(crate) fn install(
         mut self,
         commit: Arc<CompositeRuntimeWorldCommit>,
-    ) -> Result<CompositeHistoryCatalogEntry, CompositeHistoryCatalogDenial> {
+        pins: crate::retention::HistoryRetentionObligation,
+    ) -> Result<Arc<CompositeRuntimeWorldCommit>, CompositeHistoryCatalogDenial> {
         let mut state = lock_state(&self.state);
-        self.validate_installation(&state, &commit)?;
-        let entry =
-            promote_reserved_commit(&mut state, &self.identity, commit, self.publication.clone());
+        self.validate_installation(&state, &commit, &pins)?;
+        let entry = promote_reserved_commit(
+            &mut state,
+            &self.identity,
+            self.slots.as_ref().expect("live reserved slots"),
+            commit,
+            self.publication.clone(),
+            pins,
+        );
         self.armed = false;
+        self.slots = None;
         Ok(entry)
     }
 
@@ -184,6 +149,7 @@ impl ReservedCompositeCommitCapacity {
     pub(crate) fn try_install_product_head(
         &mut self,
         commit: Arc<CompositeRuntimeWorldCommit>,
+        pins: crate::retention::HistoryRetentionObligation,
     ) -> Result<crate::history::ProductHeadHistoryProtectionObligation, CompositeHistoryCatalogDenial>
     {
         use crate::history::retention::{
@@ -191,12 +157,26 @@ impl ReservedCompositeCommitCapacity {
             ProductHeadHistoryProtectionObligation,
         };
         let mut state = lock_state(&self.state);
-        self.validate_installation(&state, &commit)?;
+        self.validate_installation(&state, &commit, &pins)?;
         let identity = self.identity.clone();
         let reachability = Arc::clone(&state.reachability);
-        promote_reserved_commit(&mut state, &self.identity, commit, self.publication.clone());
-        super::lock_index(&reachability).protect_newly_installed(&identity);
+        promote_reserved_commit(
+            &mut state,
+            &self.identity,
+            self.slots.as_ref().expect("live reserved slots"),
+            commit,
+            self.publication.clone(),
+            pins,
+        );
+        super::lock_index(&reachability).protect_reserved_slot(
+            &self
+                .slots
+                .as_ref()
+                .expect("live reserved slots")
+                .reachability,
+        );
         self.armed = false;
+        self.slots = None;
         Ok(ProductHeadHistoryProtectionObligation::issued(
             CompositeHistoryProtectionObligation::new(
                 reachability,
@@ -212,6 +192,7 @@ impl ReservedCompositeCommitCapacity {
     pub(crate) fn try_install_publication(
         &mut self,
         commit: Arc<CompositeRuntimeWorldCommit>,
+        pins: crate::retention::HistoryRetentionObligation,
     ) -> Result<
         (
             crate::history::ProductHeadHistoryProtectionObligation,
@@ -228,7 +209,7 @@ impl ReservedCompositeCommitCapacity {
             .as_ref()
             .ok_or(CompositeHistoryCatalogDenial::ReservationCommitMismatch)?;
         let mut state = lock_state(&self.state);
-        self.validate_installation(&state, &commit)?;
+        self.validate_installation(&state, &commit, &pins)?;
         if commit.provenance()
             != &crate::history::CompositeCommitProvenance::Publication(
                 publication.attempt_identity().clone(),
@@ -240,15 +221,36 @@ impl ReservedCompositeCommitCapacity {
         let delivery_identity = identity.clone();
         let reachability = Arc::clone(&state.reachability);
         let delivery_reachability = Arc::clone(&reachability);
-        promote_reserved_commit(&mut state, &self.identity, commit, self.publication.clone());
+        promote_reserved_commit(
+            &mut state,
+            &self.identity,
+            self.slots.as_ref().expect("live reserved slots"),
+            commit,
+            self.publication.clone(),
+            pins,
+        );
         {
             let mut index = super::lock_index(&reachability);
-            index.protect_newly_installed(&identity);
+            index.protect_reserved_slot(
+                &self
+                    .slots
+                    .as_ref()
+                    .expect("live reserved slots")
+                    .reachability,
+            );
             index
-                .increment_direct_protection(&identity)
+                .increment_reserved_protection(
+                    &self
+                        .slots
+                        .as_ref()
+                        .expect("live reserved slots")
+                        .reachability,
+                    &identity,
+                )
                 .expect("a new entry with one head protection has room for its delivery");
         }
         self.armed = false;
+        self.slots = None;
         let head = ProductHeadHistoryProtectionObligation::issued(
             CompositeHistoryProtectionObligation::new(
                 reachability,
@@ -273,7 +275,11 @@ impl ReservedCompositeCommitCapacity {
         &self,
         state: &CompositeHistoryCatalogState,
         commit: &CompositeRuntimeWorldCommit,
+        pins: &crate::retention::HistoryRetentionObligation,
     ) -> Result<(), CompositeHistoryCatalogDenial> {
+        if !pins.matches_basis(commit.basis()) {
+            return Err(CompositeHistoryCatalogDenial::HistoryPinBasisMismatch);
+        }
         if !self.armed {
             return Err(CompositeHistoryCatalogDenial::ReservationMissing);
         }
@@ -301,9 +307,11 @@ impl ReservedCompositeCommitCapacity {
 fn promote_reserved_commit(
     state: &mut CompositeHistoryCatalogState,
     identity: &crate::identity::CompositeCommitIdentity,
+    slots: &ReservedHistorySlots,
     commit: Arc<CompositeRuntimeWorldCommit>,
     publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
-) -> CompositeHistoryCatalogEntry {
+    pins: crate::retention::HistoryRetentionObligation,
+) -> Arc<CompositeRuntimeWorldCommit> {
     let reservation = state
         .reservations
         .remove(identity)
@@ -315,11 +323,13 @@ fn promote_reserved_commit(
     if matches!(reservation.parent, super::CompositeCommitParent::Root) {
         state.root_reserved = false;
     }
+    let result = Arc::clone(&commit);
     let entry = CompositeHistoryCatalogEntry {
+        _pins: pins,
         commit,
         publication,
         metadata_charge: reservation.commit_charge,
     };
-    install_entry(state, entry.clone());
-    entry
+    slots.install(state, entry);
+    result
 }

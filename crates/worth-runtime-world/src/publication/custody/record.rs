@@ -17,6 +17,7 @@ pub(crate) struct ActiveAttemptRecord {
     identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(super) attempt: CompositePublicationAttemptIdentity,
     pub(super) expected: ProductBranchObservation,
+    pub(super) admitted_at: RuntimeWorldInstant,
     pub(super) deadline: Option<RuntimeWorldInstant>,
     pub(super) publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
     pub(super) state: Mutex<ActiveAttemptState>,
@@ -48,6 +49,7 @@ impl ActiveAttemptRecord {
         capacities: ReservedAttemptCapacities,
     ) -> (Arc<Self>, ReservedProductUnpublishedSlot) {
         let ReservedAttemptCapacityInputs {
+            admitted_at,
             reserved_commit_identity,
             product_unpublished_identity,
             reserved_commit_capacity,
@@ -59,10 +61,12 @@ impl ActiveAttemptRecord {
         } = capacities.into_parts();
         let publication = reserved_commit_capacity.publication_envelope().cloned();
         let resources = ActiveAttemptResources {
+            product_comparison_costs: None,
             commit_identity: reserved_commit_identity,
             commit: None,
             history_custody: ActiveHistoryCustody::Reserved(reserved_commit_capacity),
             pins: ActivePinCustody::Reserved(reserved_component_pin_pair),
+            history_pins: None,
             pin_denial: None,
             product_head: None,
             delivery: None,
@@ -72,6 +76,7 @@ impl ActiveAttemptRecord {
         };
         let record = Arc::new(Self {
             identity: product_unpublished_identity,
+            admitted_at,
             attempt,
             expected,
             deadline,
@@ -87,6 +92,13 @@ impl ActiveAttemptRecord {
             }),
         });
         (record, reserved_recovery_slot)
+    }
+
+    pub(crate) fn admitted_at(&self) -> RuntimeWorldInstant {
+        self.admitted_at
+    }
+    pub(crate) fn deadline(&self) -> Option<RuntimeWorldInstant> {
+        self.deadline
     }
 
     pub(super) fn state(&self) -> MutexGuard<'_, ActiveAttemptState> {

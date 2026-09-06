@@ -12,9 +12,9 @@ use crate::budget::{
 };
 use crate::lifecycle::{
     RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial,
-    RuntimeWorldObservationService, RuntimeWorldOwnerExecutionService,
-    RuntimeWorldPreparationService, RuntimeWorldProductPublicationService,
+    RuntimeWorldOwnerExecutionService, RuntimeWorldPreparationService,
 };
+
 use crate::publication::{
     CompositeLateCancellationPosture, CompositePublicationIntent, OwnerExecutionOutcome,
     RuntimeWorldCancellationSource, RuntimeWorldPublicationOutcome,
@@ -80,31 +80,6 @@ fn setup() -> (
         }
     };
     (fixture, owner, performed.product_branch().clone())
-}
-
-fn setup_with_relational_source() -> (
-    RealReferenceFixture,
-    Arc<TestOwner>,
-    ProductBranchObservation,
-) {
-    let (fixture, owner, expected) = setup();
-    let ready = ready_relational(&fixture, &owner, &expected, "publication-service");
-    let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
-    match RuntimeWorldProductPublicationService::publish(
-        owner.as_ref(),
-        ready,
-        &cell,
-        CompositeLateCancellationPosture::NotRequested,
-    ) {
-        RuntimeWorldPublicationOutcome::Performed(_) => {}
-        other => panic!("the canonical seed publishes its product head: {other:?}"),
-    }
-    let expected = RuntimeWorldObservationService::observe_product_branch(
-        owner.as_ref(),
-        &expected.branch_identity().clone(),
-    )
-    .expect("the owner re-observes the published source basis");
-    (fixture, owner, expected)
 }
 
 /// One canonical Relational publication off the observed head. Lowering and

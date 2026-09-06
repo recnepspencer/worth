@@ -1,6 +1,6 @@
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 
-use crate::publication::{CompositeComponentIntent, ResolvedExpectedProductHead};
+use crate::publication::ResolvedExpectedProductHead;
 
 mod compatibility;
 mod lowering;
@@ -18,7 +18,6 @@ pub use signal::{SignalComponentPlan, SignalComponentPlanPosture};
 #[derive(Debug)]
 pub struct LoweredOwnerComponentPlan {
     expected: ResolvedExpectedProductHead,
-    intent: CompositeComponentIntent,
     relational: RelationalComponentPlan,
     signal: SignalComponentPlan,
 }
@@ -26,13 +25,11 @@ pub struct LoweredOwnerComponentPlan {
 impl LoweredOwnerComponentPlan {
     pub(crate) fn new(
         expected: ResolvedExpectedProductHead,
-        intent: CompositeComponentIntent,
         relational: RelationalComponentPlan,
         signal: SignalComponentPlan,
     ) -> Self {
         Self {
             expected,
-            intent,
             relational,
             signal,
         }
@@ -42,27 +39,12 @@ impl LoweredOwnerComponentPlan {
         &self.expected
     }
 
-    pub fn component_intent(&self) -> CompositeComponentIntent {
-        self.intent.clone()
-    }
-
     pub const fn relational(&self) -> &RelationalComponentPlan {
         &self.relational
     }
 
     pub const fn signal(&self) -> &SignalComponentPlan {
         &self.signal
-    }
-
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        ResolvedExpectedProductHead,
-        CompositeComponentIntent,
-        RelationalComponentPlan,
-        SignalComponentPlan,
-    ) {
-        (self.expected, self.intent, self.relational, self.signal)
     }
 
     /// Recheck the plan against its own admitted head before any bounded

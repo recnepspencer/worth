@@ -1,9 +1,12 @@
+#[cfg(test)]
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 
+use super::super::super::component_obligation::RetentionControlSurface;
+#[cfg(test)]
 use super::super::super::component_obligation::{
-    ComponentBasisReleaseOutcome, ComponentBasisReleaseReceipt, RetentionControlSurface,
-    RetentionReleaseDenial, RetentionReleaseFailure,
+    ComponentBasisReleaseOutcome, ComponentBasisReleaseReceipt, RetentionReleaseDenial,
+    RetentionReleaseFailure,
 };
 use super::super::super::dependency_counts::ComponentBasisDependencyCounts;
 use super::super::super::obligation_transfer::RetentionTransferDenial;
@@ -17,6 +20,15 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn fork_history_pair(
+        &self,
+        relational: &ComponentBasisPinClaim,
+        signal: &ComponentBasisPinClaim,
+    ) -> Result<(ComponentBasisPinClaim, ComponentBasisPinClaim), RetentionTransferDenial> {
+        self.fork_history_claims(relational, signal)
+    }
+
+    #[cfg(test)]
     fn transfer_claim(
         &self,
         mut claim: ComponentBasisPinClaim,
@@ -115,6 +127,7 @@ where
         Ok(())
     }
 
+    #[cfg(test)]
     fn release_claim(
         &self,
         claim: ComponentBasisPinClaim,

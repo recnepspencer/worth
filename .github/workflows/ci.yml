@@ -180,6 +180,9 @@ jobs:
       - name: Run tests
         run: cargo test --workspace
 
+      - name: Runtime World operation-control certification
+        run: bash scripts/ci/run_runtime_world_operation_control.sh
+
       - name: worth-relational operation-control cancellation lane
         run: >-
           bash scripts/ci/run_relational_named_test_selection.sh
@@ -300,6 +303,28 @@ jobs:
           bash scripts/ci/run_relational_named_test_selection.sh
           --lib --exact --ignored
           --selection tests::publication::cdc::certification::seeded_resume::cdc_certification_thousand_step_random_resume_matrix_converges
+
+  worth-runtime-world-scale-certification:
+    name: WORTH Runtime World scheduled certification
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run Court, Standard, Scale and longer model sequences
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p worth-runtime-world --features test-operation-control --test runtime_world_certification -- --ignored --show-output --test-threads=1 | tee runtime-world-scale.log
+          for profile in court standard scale; do
+            grep -Eq "^test court::cost::profiles::${profile}_profile \.\.\. ok$" runtime-world-scale.log
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-world-scale
+          path: runtime-world-scale.log
 
   worth-query-cold-certification:
     name: WORTH Query scheduled cold certification

@@ -60,6 +60,7 @@ identifiers, or equivalent-looking reports.
 | Relational | Entities, relations, aspects, immutable branch roots, mutable branch-reference cells, exact branch observations, detached transactions, opaque prepared candidates, branch-local linearization, commit history, and durable publication settlement | Product authorization, application operation meaning, Query index publication, or external completion |
 | Runtime Bridge | Installed correspondence and lawful lowering between Query and lower runtimes | Relational facts, Signal decisions, or application policy |
 | Signal | Policy evaluation, producer-local scoped invalidation, readiness and scheduling, performed execution receipts, component branch graph and bases, per-branch execution cells, weak owner services, local evaluation slots, and condition outcomes | Application capability admission, Query maintenance authority, composite product currentness, or relational mutation |
+| Runtime World | Memory-resident product branch references, immutable single-parent composite history, exact component-basis composition, coordinated publication, and bounded retained owner effects | Application authorization, component truth or settlement authority, durable restart, or Query public completion |
 | Query | Installed application meaning, authority composition, admission, typed progression, execution products, idempotency/outbox meaning, Query index publication, typed settlement recovery, runtime-local aftermath recovery, and consumer publication | Authentication truth, graph truth, policy truth, external completion, or Relational durability authority |
 | Store | Durable persistence, journals, restart checkpoints, and reconstructive state | Ordinary Query admission, live recovery authority, or external completion |
 | External effect owner | Whether an escaping consequence was accepted or completed | Query commit, application authorization, or recovery authority |
@@ -211,9 +212,9 @@ ordinary application operation and must not enter application or host code.
 
 If an example requires an application consumer to import
 `worth_query_installation`, `worth_query_admission`, `worth_query_execution`,
-`worth_query_publication`, Relational, Runtime Bridge, or Signal directly, the
-example is crossing an authority boundary. The audience facade must expose the
-needed lawful product instead.
+`worth_query_publication`, Relational, Runtime Bridge, Signal, or Runtime World
+directly, the example is crossing an authority boundary. The audience facade
+must expose the needed lawful product instead.
 
 ## Declaration And Installation
 
@@ -718,6 +719,20 @@ same-branch work serializes in one execution cell while unrelated branches can
 progress independently. These are lower-owner contracts, not public Query
 composite branches or product-currentness authority.
 
+`worth-runtime-world` now owns the lower-runtime composition boundary. Its
+`ProductBranchObservation` binds the exact product reference and admitted
+Relational, Signal, and Bridge bases. Only its final compare-and-publish step
+can install a performed composite publication. Component movement without that
+installation remains `ProductUnpublished`, with settlement or cleanup obligations;
+it is neither rollback nor permission to run a missing sibling or adopt a successor.
+
+This owner is implemented in milestone 9.17.2. Query carriage, dispatch-outbox
+gating on performed composite publication, and the public product-branch facade
+remain milestone 9.17.3 work. The application path above still describes the
+current Query runtime; importing World directly does not provide that integration.
+See the [Runtime World contract](../../../../../crates/worth-runtime-world/README.md)
+for construction, outcomes, history, retention, and recovery.
+
 Currentness checks compare retained dependencies with the owning runtime. They
 do not rebuild authority from a fresh report. Relevant drift returns a typed
 stale or denied outcome before governed work proceeds.
@@ -1144,7 +1159,7 @@ Use this table when deciding where a change belongs.
 | Which scoped recomputation did the lower runtime actually perform? | Signal performed execution receipt |
 | Which projection, membership, ordering, group, or window consequence is required? | Query impact admission and maintenance |
 | What did an installed policy condition evaluate to? | Signal |
-| Which Relational and Signal bases form the current product? | Future Runtime World composition authority; not Query or either component owner |
+| Which Relational and Signal bases form the current product? | Runtime World composition authority; Query integration remains milestone 9.17.3 |
 | What generic proof progression or readmission law applies? | `worth-proof` |
 | What exact canonical value, provenance, receipt, or portable basis represents this meaning? | Foundational |
 | What application operation or query was declared? | Application domain |

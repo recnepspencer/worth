@@ -1,5 +1,5 @@
 use std::mem::size_of;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::identity::CompositeCommitIdentity;
 
@@ -32,11 +32,12 @@ impl AllocationOracle {
             size_of::<CompositeRuntimeWorldCommit>(),
             size_of::<Arc<CompositeRuntimeWorldCommit>>(),
             size_of::<CompositeCommitIdentity>(),
-            size_of::<Option<CompositeHistoryCatalogEntry>>(),
+            size_of::<Arc<OnceLock<CompositeHistoryCatalogEntry>>>(),
             size_of::<CompositeCommitIdentity>(),
-            size_of::<Option<HistoryReachabilityRecord>>(),
-            size_of::<Box<Option<CompositeHistoryCatalogEntry>>>(),
-            size_of::<Box<Option<HistoryReachabilityRecord>>>(),
+            size_of::<Arc<Mutex<Option<HistoryReachabilityRecord>>>>(),
+            size_of::<OnceLock<CompositeHistoryCatalogEntry>>(),
+            size_of::<Mutex<Option<HistoryReachabilityRecord>>>(),
+            4 * size_of::<usize>(),
         ])
     }
 
@@ -50,7 +51,8 @@ impl AllocationOracle {
             size_of::<HistoryReservationMetadata>(),
             size_of::<CompositeCommitIdentity>(),
             held_parent_identity,
-            size_of::<Box<HistoryReservationMetadata>>(),
+            size_of::<Arc<Mutex<super::super::CompositeHistoryCatalogState>>>(),
+            2 * size_of::<usize>(),
         ])
     }
 

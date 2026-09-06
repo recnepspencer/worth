@@ -52,6 +52,7 @@ impl ReservedComponentPinPairCapacity {
     /// Bind the reserved pair to the exact basis selected by the operation.
     /// On denial, the owner restores consumed credit before returning this
     /// still-armed token so recovery can retry or release it exactly once.
+    #[cfg(test)]
     pub(crate) fn bind_publication(
         mut self,
         basis: &AdmittedCompositeRuntimeWorldBasis,

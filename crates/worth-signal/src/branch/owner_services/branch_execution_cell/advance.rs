@@ -18,6 +18,7 @@ pub(crate) struct SignalBranchAdvanceCellOutcome {
 }
 
 impl SignalBranchAdvanceCellOutcome {
+    #[cfg(test)]
     pub(crate) fn into_parts(self) -> (SignalBranchObservation, TransactionResult) {
         (self.observation, self.transaction)
     }
@@ -42,6 +43,7 @@ where
     /// Exact one-cell mutation seam consumed by the Phase 4 mutation port.
     /// Cancellation and complete-basis comparison occur before the canonical
     /// transaction callback can mutate branch truth.
+    #[cfg(test)]
     pub(crate) fn advance_exact<E, Ctx, F>(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,
@@ -50,6 +52,30 @@ where
         cancellation: &SignalOwnerCancellationToken,
         apply: F,
     ) -> Result<SignalBranchAdvanceCellOutcome, SignalBranchAdvanceDenial>
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
+        let mut outcome = None;
+        self.advance_into(
+            admission,
+            expected,
+            runtime_ctx,
+            cancellation,
+            apply,
+            &mut outcome,
+        )?;
+        Ok(outcome.expect("successful cell advancement installs its exact result"))
+    }
+
+    pub(in crate::branch::owner_services) fn advance_into<E, Ctx, F>(
+        &self,
+        admission: &SignalOwnerOperationAdmission<'_>,
+        expected: &AdmittedSignalBranchBasis,
+        runtime_ctx: &mut Ctx,
+        cancellation: &SignalOwnerCancellationToken,
+        apply: F,
+        output: &mut Option<SignalBranchAdvanceCellOutcome>,
+    ) -> Result<(), SignalBranchAdvanceDenial>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
@@ -95,12 +121,13 @@ where
             movements: &self.movements,
         }
         .record_canonical_movement(&permit);
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::AfterCanonicalMovement);
-        Ok(SignalBranchAdvanceCellOutcome {
+        *output = Some(SignalBranchAdvanceCellOutcome {
             branch_id: self.branch_id,
             observation,
             transaction,
-        })
+        });
+        admission.reach_operation_boundary(SignalOwnerOperationBoundary::AfterCanonicalMovement);
+        Ok(())
     }
 }
 

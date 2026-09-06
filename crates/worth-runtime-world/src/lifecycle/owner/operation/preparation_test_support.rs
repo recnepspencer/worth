@@ -44,7 +44,8 @@ fn budgets(publication_attempts: u64, custody_records: u64) -> RuntimeWorldBudge
         },
         history: RuntimeWorldHistoryBudgetInstallation {
             retained_composite_commits: 8,
-            history_metadata_bytes: 4096,
+            // Keep history storage independent of the attempt-capacity boundary.
+            history_metadata_bytes: 8192,
         },
         observations: RuntimeWorldObservationBudgetInstallation {
             active_observations: 8,
@@ -165,7 +166,6 @@ pub(super) fn retained_relational_plan(
     };
     LoweredOwnerComponentPlan::new(
         resolved,
-        intent,
         RelationalComponentPlan::retain_exact(expected.basis().relational_basis().clone()),
         signal_plan,
     )
@@ -243,7 +243,6 @@ pub(super) fn plan_pinning_signal_basis(
             .expect("the advanced head is its own current image");
     LoweredOwnerComponentPlan::new(
         resolved,
-        intent,
         RelationalComponentPlan::retain_exact(expected.basis().relational_basis().clone()),
         SignalComponentPlan::advance_exact(signal_basis),
     )

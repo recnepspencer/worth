@@ -44,7 +44,7 @@ fn observation_binding_returns_both_exact_tokens_on_each_mismatch() {
     let (_, components, history) = component_mismatch.into_parts();
     drop(components);
     drop(history);
-    assert_eq!(fixture.owner.active_component_obligation_count(), 0);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 6);
     assert_eq!(
         catalog.counters().direct_protection_releases(),
         before_history.direct_protection_releases() + 1
@@ -69,7 +69,7 @@ fn observation_binding_returns_both_exact_tokens_on_each_mismatch() {
     let (_, components, history) = history_mismatch.into_parts();
     drop(components);
     drop(history);
-    assert_eq!(fixture.owner.active_component_obligation_count(), 0);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 6);
     assert_eq!(
         catalog.counters().direct_protection_releases(),
         before_history.direct_protection_releases() + 1
@@ -92,7 +92,7 @@ fn observation_denials_issue_no_managed_authority_or_stranded_token() {
         ))
     ));
     assert_eq!(fixture.owner.cost_snapshot(), before_owner);
-    assert_eq!(fixture.owner.active_component_obligation_count(), 2);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 4);
     assert_eq!(catalog.counters(), before_history);
 
     let before_foreign_owner = foreign_fixture.owner.cost_snapshot();
@@ -114,8 +114,8 @@ fn observation_denials_issue_no_managed_authority_or_stranded_token() {
         after_foreign_owner.signal_contacts(),
         before_foreign_owner.signal_contacts()
     );
-    assert_eq!(foreign_fixture.owner.unique_pin_count(), 0);
-    assert_eq!(foreign_fixture.owner.active_component_obligation_count(), 0);
+    assert_eq!(foreign_fixture.owner.unique_pin_count(), 2);
+    assert_eq!(foreign_fixture.owner.active_component_obligation_count(), 2);
     assert_eq!(
         catalog.counters().direct_protection_releases(),
         before_history.direct_protection_releases() + 1
@@ -148,7 +148,7 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
         fixture.owner.cost_snapshot().signal_contacts(),
         retention_after_observe.signal_contacts()
     );
-    assert_eq!(fixture.owner.active_component_obligation_count(), 4);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 10);
 
     let successor_snapshot = fixture::successor_snapshot(&initial, Arc::clone(&successor));
     cell.compare_and_publish(
@@ -166,7 +166,6 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
         CompositeHistoryReclamationRequest::new(
             fixture.owner_identity,
             vec![selected.identity().clone()],
-            1,
             1,
         )
     };
@@ -191,7 +190,7 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
         fixture.owner.cost_snapshot().dependency_releases(),
         dependency_releases_before_final + 2
     );
-    assert_eq!(fixture.owner.active_component_obligation_count(), 2);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 8);
     let reclaimed = catalog
         .reclaim_batch(reclaim_request())
         .expect("final exact releases permit selected sibling reclamation");

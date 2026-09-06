@@ -50,7 +50,7 @@ fn admitted_output_capacity_reserves_pre_effect_and_cancellation_restores_exactl
 }
 
 #[test]
-fn admitted_output_conversion_is_infallible_after_close_fences_new_work() {
+fn carried_advance_output_handoff_survives_close_fencing_new_work() {
     let (mut runtime, _, branch, basis) = runtime_with_two_branches();
     let (_, mutation, _) = runtime.owner_port_slots().expect("runtime seals");
     let owner = mutation.upgrade_owner().expect("owner remains live");
@@ -64,6 +64,7 @@ fn admitted_output_conversion_is_infallible_after_close_fences_new_work() {
     let cancellation = SignalOwnerCancellationSource::new();
     let performed = reservation
         .advance::<(), (), _>(&basis, &mut (), &cancellation.token(), |_| Ok(()))
+        .into_result()
         .expect("the pre-close admitted movement performs");
     let (closed_tx, closed_rx) = mpsc::sync_channel(1);
     let closing_owner = Arc::clone(&owner);
@@ -184,6 +185,7 @@ fn named_outputs_convert_populated_advance_capture_restore_and_fork_movements() 
                 transaction.set_dependencies(dispatch, [DependencyEdge::new(berth, Aspect::new(0))])
             },
         )
+        .into_result()
         .expect("the populated source advances");
     let (advanced_basis, advanced_transaction) = advanced.into_parts();
     assert!(advanced_transaction.touched_nodes > 0);
@@ -217,6 +219,7 @@ fn named_outputs_convert_populated_advance_capture_restore_and_fork_movements() 
                     .set_dependencies(dispatch, [DependencyEdge::new(weather, Aspect::new(0))])
             },
         )
+        .into_result()
         .expect("the live cell diverges after capture");
     let (reverted_basis, reverted_transaction) = reverted.into_parts();
     assert!(reverted_transaction.touched_nodes > 0);

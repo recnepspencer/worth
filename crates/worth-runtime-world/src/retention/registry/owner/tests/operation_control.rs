@@ -66,7 +66,7 @@ fn parked_real_batch_has_one_claimant_and_actual_joiners_with_shared_success() {
     let root = Arc::new(root_commit(&mut fixture));
     let owner = Arc::new(fixture.owner.clone());
     let control = fixture
-        .signal_runtime
+        ._signal_runtime
         .owner_operation_control()
         .expect("real Signal owner exposes operation control");
     let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
@@ -129,7 +129,7 @@ fn parked_real_batch_shares_denial_rolls_back_and_retries_cleanly() {
     let root = Arc::new(root_commit(&mut fixture));
     let owner = Arc::new(fixture.owner.clone());
     let control = fixture
-        .signal_runtime
+        ._signal_runtime
         .owner_operation_control()
         .expect("real Signal owner exposes operation control");
     let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
@@ -223,7 +223,7 @@ fn parked_real_batch_shares_denial_rolls_back_and_retries_cleanly() {
 fn reserved_pair_owner_denial_preserves_credit_without_unwind_panic() {
     let fixture = real_fixture(4, 4);
     let control = fixture
-        .signal_runtime
+        ._signal_runtime
         .owner_operation_control()
         .expect("real Signal owner exposes operation control");
     control.inject_panic_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
@@ -276,7 +276,7 @@ fn reclaim_skips_husk_while_batch_reacquisition_flight_is_active() {
     drop(signal);
 
     let control = fixture
-        .signal_runtime
+        ._signal_runtime
         .owner_operation_control()
         .expect("real Signal owner exposes operation control");
     let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);

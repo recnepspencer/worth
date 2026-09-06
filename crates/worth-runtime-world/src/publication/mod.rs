@@ -37,7 +37,10 @@ pub use owner_execution::OwnerExecutionSettlement;
 pub use owner_results::{
     CompositeOwnerExecutionResults, CompositeRelationalOwnerResult, CompositeSignalOwnerResult,
 };
-pub use performed::{CompositeLateCancellationPosture, PerformedCompositePublication};
+pub use performed::{
+    CompositeLateCancellationPosture, ConsumedCompositePublication, PerformedCompositePublication,
+};
+#[cfg(test)]
 pub use product_cas::CompositePublicationReady;
 pub use product_comparison::ResolvedExpectedProductHead;
 pub(crate) use progress::RelationalRecoveryRoute;
@@ -54,3 +57,6 @@ pub(crate) use reservation::{
     ReservedAttemptCapacities, ReservedAttemptCapacityInputs, ReservedBranchCreationAttempt,
     ReservedBranchCreationInputs, ReservedPublicationAttemptParts,
 };
+
+mod movement_cutoff;
+pub(crate) use movement_cutoff::{ProductMovementCutoff, ProductMovementCutoffDenial};

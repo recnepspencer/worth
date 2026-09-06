@@ -6,12 +6,13 @@ mod metadata;
 mod publication;
 mod reachability;
 mod reservation;
+mod slots;
 mod support;
 mod traversal;
 
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::num::NonZeroUsize;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::budget::RuntimeWorldBudgetLimit;
 use crate::identity::{CompositeCommitIdentity, RuntimeWorldOwnerIdentity};
@@ -25,17 +26,17 @@ use super::retention::{
 };
 use super::{CompositeCommitParent, CompositeRuntimeWorldCommit};
 
-pub(crate) use counters::HistoryCatalogCounters;
-pub(crate) use denial::CompositeHistoryCatalogDenial;
+pub use counters::HistoryCatalogCounters;
+pub use denial::CompositeHistoryCatalogDenial;
 pub(crate) use entry::CompositeHistoryCatalogEntry;
-pub(crate) use metadata::HistoryMetadataLedger;
+pub use metadata::HistoryMetadataLedger;
 pub(super) use metadata::HistoryReservationMetadata;
 pub(in crate::history) use reachability::{
     lock_index, HistoryReachabilityHandle, HistoryReachabilityIndex,
 };
 pub(crate) use reservation::ReservedCompositeCommitCapacity;
 use support::{lock_state, prevalidate_candidate_prefix, remove_installed, validate_owner};
-pub(crate) use traversal::CompositeHistoryTraversal;
+pub use traversal::CompositeHistoryTraversal;
 
 /// Installed limits consumed by the immutable history owner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,10 +79,10 @@ pub(crate) struct CompositeHistoryCatalog {
 pub(super) struct CompositeHistoryCatalogState {
     owner: RuntimeWorldOwnerIdentity,
     limits: RuntimeWorldHistoryCatalogContract,
-    // Reservation allocates the eventual ordered slot before owner effects.
+    // Reservation allocates the eventual stable slot before owner effects.
     // Only a populated slot is an installed occurrence.
-    entries: BTreeMap<CompositeCommitIdentity, Option<CompositeHistoryCatalogEntry>>,
-    reservations: BTreeMap<CompositeCommitIdentity, HistoryReservationMetadata>,
+    entries: HashMap<CompositeCommitIdentity, Arc<OnceLock<CompositeHistoryCatalogEntry>>>,
+    reservations: HashMap<CompositeCommitIdentity, HistoryReservationMetadata>,
     metadata: HistoryMetadataLedger,
     reachability: HistoryReachabilityHandle,
     counters: counters::HistoryCatalogCountersHandle,
@@ -103,8 +104,8 @@ impl CompositeHistoryCatalog {
             state: Arc::new(Mutex::new(CompositeHistoryCatalogState {
                 owner,
                 limits: contract,
-                entries: BTreeMap::new(),
-                reservations: BTreeMap::new(),
+                entries: HashMap::new(),
+                reservations: HashMap::new(),
                 metadata: HistoryMetadataLedger::default(),
                 reachability,
                 counters,
@@ -115,14 +116,17 @@ impl CompositeHistoryCatalog {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn append(
         &self,
         commit: Arc<CompositeRuntimeWorldCommit>,
-    ) -> Result<CompositeHistoryCatalogEntry, CompositeHistoryCatalogDenial> {
+        pins: crate::retention::HistoryRetentionObligation,
+    ) -> Result<Arc<CompositeRuntimeWorldCommit>, CompositeHistoryCatalogDenial> {
         let reservation = self.reserve(commit.as_ref())?;
-        reservation.install(commit)
+        reservation.install(commit, pins)
     }
 
+    #[cfg(test)]
     pub(crate) fn lookup(
         &self,
         identity: &CompositeCommitIdentity,
@@ -132,19 +136,17 @@ impl CompositeHistoryCatalog {
         state
             .entries
             .get(identity)
-            .and_then(Option::as_ref)
+            .and_then(|slot| slot.get())
             .map(|entry| Arc::clone(&entry.commit))
     }
 
-    pub(crate) fn root(&self) -> Option<CompositeCommitIdentity> {
-        lock_state(&self.state).root.clone()
-    }
-
+    #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         let state = lock_state(&self.state);
         state.entries.len() - state.reservations.len()
     }
 
+    #[cfg(test)]
     pub(crate) fn reserved_len(&self) -> usize {
         lock_state(&self.state).reservations.len()
     }
@@ -158,7 +160,7 @@ impl CompositeHistoryCatalog {
             state
                 .entries
                 .get(identity)
-                .and_then(Option::as_ref)
+                .and_then(|slot| slot.get())
                 .is_some_and(|entry| matches!(
                     entry.commit().parent(),
                     CompositeCommitParent::Root
@@ -168,28 +170,23 @@ impl CompositeHistoryCatalog {
         reservation::InstalledRootCommitRollback::new(Arc::clone(&self.state), identity.clone())
     }
 
-    pub(crate) fn arm_installed_commit_rollback(
-        &self,
-        identity: &CompositeCommitIdentity,
-    ) -> reservation::InstalledCommitRollback {
-        assert!(
-            lock_state(&self.state)
-                .entries
-                .get(identity)
-                .is_some_and(Option::is_some),
-            "commit rollback must be armed for an installed entry"
-        );
-        reservation::InstalledCommitRollback::new(Arc::clone(&self.state), identity.clone())
+    pub(crate) fn snapshot(&self) -> crate::inspection::RuntimeWorldHistorySnapshot {
+        let state = lock_state(&self.state);
+        let costs = *counters::lock_counters(&state.counters);
+        crate::inspection::RuntimeWorldHistorySnapshot {
+            installed: state.entries.len() - state.reservations.len(),
+            reserved: state.reservations.len(),
+            metadata: state.metadata,
+            costs,
+        }
     }
 
+    #[cfg(test)]
     pub(crate) fn metadata_ledger(&self) -> HistoryMetadataLedger {
         lock_state(&self.state).metadata
     }
 
-    pub(crate) fn lookup_count(&self) -> u64 {
-        self.counters().entry_lookups()
-    }
-
+    #[cfg(test)]
     pub(crate) fn counters(&self) -> HistoryCatalogCounters {
         let state = lock_state(&self.state);
         let counters = *counters::lock_counters(&state.counters);
@@ -203,7 +200,11 @@ impl CompositeHistoryCatalog {
     ) -> Result<CompositeHistoryProtectionObligation, CompositeHistoryCatalogDenial> {
         let state = lock_state(&self.state);
         validate_owner(&state, identity.owner_identity())?;
-        if !state.entries.get(&identity).is_some_and(Option::is_some) {
+        if state
+            .entries
+            .get(&identity)
+            .is_none_or(|slot| slot.get().is_none())
+        {
             return Err(CompositeHistoryCatalogDenial::UnknownProtectionTarget(
                 identity,
             ));
@@ -254,18 +255,35 @@ impl CompositeHistoryCatalog {
     ) -> Result<CompositeHistoryTraversal, CompositeHistoryCatalogDenial> {
         let state = lock_state(&self.state);
         validate_owner(&state, start.owner_identity())?;
+        if state
+            .entries
+            .get(&start)
+            .is_none_or(|slot| slot.get().is_none())
+        {
+            return Err(CompositeHistoryCatalogDenial::UnknownProtectionTarget(
+                start,
+            ));
+        }
+        lock_index(&state.reachability).increment_direct_protection(&start)?;
+        let protection = CompositeHistoryProtectionObligation::new(
+            Arc::clone(&state.reachability),
+            start.clone(),
+            HistoryProtectionClass::ExplicitObligation,
+        );
         let mut current = start;
         let mut commits = Vec::with_capacity(maximum_commits.get().min(state.entries.len()));
         for _ in 0..maximum_commits.get() {
             let entry = state
                 .entries
                 .get(&current)
-                .and_then(Option::as_ref)
+                .and_then(|slot| slot.get())
                 .ok_or_else(|| CompositeHistoryCatalogDenial::MissingParent(current.clone()))?;
             commits.push(Arc::clone(&entry.commit));
             let Some(parent) = support::ordinary_parent_identity(entry.commit().parent()) else {
                 return Ok(CompositeHistoryTraversal {
                     commits,
+                    _protection: protection,
+                    _catalog: self.clone(),
                     next_parent: None,
                 });
             };
@@ -273,6 +291,8 @@ impl CompositeHistoryCatalog {
         }
         Ok(CompositeHistoryTraversal {
             commits,
+            _protection: protection,
+            _catalog: self.clone(),
             next_parent: Some(current),
         })
     }
@@ -315,12 +335,15 @@ impl CompositeHistoryCatalog {
                 outcome.record_skipped_with_descendant_dependencies();
                 continue;
             }
-            if request.age_ticks() == 0 {
-                outcome.record_skipped_too_young();
-                continue;
-            }
             let entry = remove_installed(&mut state, candidate);
-            outcome.reclaimed_one(candidate.clone(), entry.metadata_charge().total());
+            outcome.reclaimed_one(
+                candidate.clone(),
+                entry
+                    .get()
+                    .expect("removed installed slot")
+                    .metadata_charge()
+                    .total(),
+            );
             released_entries.push(entry);
         }
         drop(state);

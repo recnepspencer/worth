@@ -51,41 +51,6 @@ pub(crate) fn history_catalog(
     )
 }
 
-pub(crate) fn recovery_catalog(
-    owner: crate::identity::RuntimeWorldOwnerIdentity,
-) -> crate::recovery::RecoveryCatalog {
-    let budgets = crate::budget::RuntimeWorldBudgets::install(
-        crate::budget::RuntimeWorldBudgetInstallation {
-            branches: crate::budget::RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 1,
-            },
-            history: crate::budget::RuntimeWorldHistoryBudgetInstallation {
-                retained_composite_commits: 1,
-                history_metadata_bytes: 1,
-            },
-            observations: crate::budget::RuntimeWorldObservationBudgetInstallation {
-                active_observations: 1,
-            },
-            publication: crate::budget::RuntimeWorldPublicationBudgetInstallation {
-                active_publication_attempts: 1,
-            },
-            recovery: crate::budget::RuntimeWorldRecoveryBudgetInstallation {
-                retained_product_unpublished_records: 1,
-                retained_partial_metadata_bytes: 1,
-            },
-            retention: crate::budget::RuntimeWorldRetentionBudgetInstallation {
-                unique_exact_component_pins: 1,
-                in_flight_pin_acquisition_reservations: 1,
-            },
-            custody: crate::budget::RuntimeWorldCustodyBudgetInstallation {
-                owner_created_component_custody_records: 1,
-            },
-        },
-    )
-    .expect("positive recovery test budgets");
-    crate::recovery::RecoveryCatalog::new(owner, budgets.retained_product_unpublished_records())
-}
-
 pub(crate) fn root_commit(fixture: &mut RealReferenceFixture) -> CompositeRuntimeWorldCommit {
     CompositeRuntimeWorldCommit::from_root_bootstrap(
         fixture
@@ -135,7 +100,17 @@ pub(crate) fn installed_root() -> (
     let mut fixture = super::real_fixture(16, 16);
     let root = Arc::new(root_commit(&mut fixture));
     let catalog = history_catalog(fixture.owner_identity);
-    catalog.append(Arc::clone(&root)).expect("root install");
+    catalog
+        .append(
+            Arc::clone(&root),
+            fixture
+                .owner
+                .issue_publication(root.basis())
+                .unwrap()
+                .fork_history(root.basis())
+                .unwrap(),
+        )
+        .expect("root install");
     (fixture, catalog, root)
 }
 
@@ -146,7 +121,15 @@ pub(crate) fn install_ordinary(
 ) -> Arc<CompositeRuntimeWorldCommit> {
     let commit = Arc::new(ordinary_commit(fixture, predecessor));
     catalog
-        .append(Arc::clone(&commit))
+        .append(
+            Arc::clone(&commit),
+            fixture
+                .owner
+                .issue_publication(commit.basis())
+                .unwrap()
+                .fork_history(commit.basis())
+                .unwrap(),
+        )
         .expect("ordinary commit install");
     commit
 }

@@ -98,14 +98,6 @@ impl ComponentBasisLeaseIdentity {
     pub(super) const fn issued(owner: RuntimeWorldOwnerIdentity, ordinal: u64) -> Self {
         Self { owner, ordinal }
     }
-
-    pub(crate) const fn owner(self) -> RuntimeWorldOwnerIdentity {
-        self.owner
-    }
-
-    pub(crate) const fn ordinal(self) -> u64 {
-        self.ordinal
-    }
 }
 
 /// One move-only claim on one dependency count. The component-owner lease is
@@ -152,16 +144,8 @@ impl ComponentBasisPinClaim {
         self.owner
     }
 
-    pub(crate) fn key(&self) -> &ExactComponentBasisKey {
-        &self.key
-    }
-
     pub(crate) const fn dependency(&self) -> ComponentBasisDependencyClass {
         self.dependency
-    }
-
-    pub(crate) const fn lease_identity(&self) -> ComponentBasisLeaseIdentity {
-        self.lease_identity
     }
 }
 

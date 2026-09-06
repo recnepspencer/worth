@@ -17,10 +17,13 @@ use crate::retention::{
 /// resource lease may take them out while calling an owner, then restores them.
 #[derive(Debug)]
 pub(crate) struct ActiveAttemptResources {
+    pub(crate) product_comparison_costs:
+        Option<crate::publication::CompositePublicationCostCounters>,
     pub(super) commit_identity: CompositeCommitIdentity,
     pub(super) commit: Option<Arc<CompositeRuntimeWorldCommit>>,
     pub(super) history_custody: ActiveHistoryCustody,
     pub(super) pins: ActivePinCustody,
+    pub(super) history_pins: Option<crate::retention::HistoryRetentionObligation>,
     pub(super) pin_denial: Option<RetentionObligationDenial>,
     pub(super) product_head: Option<crate::branch::ProductBranchHeadProtection>,
     pub(super) delivery: Option<crate::history::PublicationDeliveryClaim>,
@@ -41,7 +44,9 @@ pub(super) enum ActiveHistoryCustody {
 pub(super) enum ActivePinCustody {
     Reserved(ReservedComponentPinPairCapacity),
     Bound(PublicationRetentionObligation),
-    Retained(RetainedPartialRetentionObligation),
+    Retained {
+        _obligation: RetainedPartialRetentionObligation,
+    },
     TransferredToProduct,
 }
 
@@ -62,7 +67,7 @@ impl ActiveAttemptResources {
             ActivePinCustody::Bound(_) => {
                 crate::recovery::ProductUnpublishedRetentionPosture::PublicationPinsRetained
             }
-            ActivePinCustody::Retained(_) => {
+            ActivePinCustody::Retained { .. } => {
                 crate::recovery::ProductUnpublishedRetentionPosture::RetainedExact
             }
             ActivePinCustody::TransferredToProduct => {
@@ -95,7 +100,7 @@ impl ActiveAttemptResources {
 
     pub(crate) fn live_obligations(&self) -> crate::recovery::ProductUnpublishedLiveObligations {
         let counts = crate::recovery::ProductUnpublishedLiveObligations::from_custody(
-            2,
+            2 + 2 * usize::from(self.history_pins.is_some()),
             self.holds_history_obligation(),
         );
         match self.creation.as_ref().and_then(|c| c.observation.as_ref()) {

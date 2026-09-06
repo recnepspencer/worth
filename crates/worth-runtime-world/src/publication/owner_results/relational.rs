@@ -36,7 +36,7 @@ impl CompositeRelationalOwnerResult {
             result: CompositeRelationalOwnerResultKind::SettlementPending {
                 commit_identity,
                 successor_basis,
-                settlement,
+                _settlement: settlement,
             },
         }
     }

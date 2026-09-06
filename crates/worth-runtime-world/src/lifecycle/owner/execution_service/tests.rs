@@ -387,3 +387,11 @@ fn assert_retains_only_the_relational_effect(
         SignalAttemptProgressPosture::Untouched
     );
 }
+
+#[path = "tests/public_cutoff.rs"]
+mod public_cutoff;
+#[path = "tests/public_ports.rs"]
+mod public_ports;
+
+#[path = "tests/public_inspection.rs"]
+mod public_inspection;

@@ -1,11 +1,6 @@
-use worth_runtime_world::facade::{
-    OwnerExecutionSettlement, ReservedCompositePublicationAttempt,
-};
-
-fn consume_settlement(_: OwnerExecutionSettlement) {}
-
-fn illegal_skip(attempt: ReservedCompositePublicationAttempt) {
-    consume_settlement(attempt);
+use worth_runtime_world::facade::*;
+fn illegal_skip(port: RuntimeWorldPublicationPort<(),(),(),(),()>,
+    intent: CompositePublicationIntent<WithoutSignal>, token: &RuntimeWorldCancellationToken) {
+    port.execute_without_signal(intent,token);
 }
-
 fn main() {}

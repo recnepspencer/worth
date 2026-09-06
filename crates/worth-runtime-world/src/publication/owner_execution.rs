@@ -50,6 +50,7 @@ impl OwnerExecutionSettlement {
         }
     }
 
+    #[cfg(test)]
     pub fn progress(&self) -> &CompositeAttemptProgress {
         &self.progress
     }

@@ -1,8 +1,9 @@
+#[cfg(test)]
+use crate::branch::SignalBranchForkOperationDenial;
 use std::sync::Arc;
 
 use crate::branch::{
-    SignalBranchAdvanceDenial, SignalBranchForkOperationDenial, SignalBranchRestoreDenial,
-    SignalBranchSnapshotCaptureDenial,
+    SignalBranchAdvanceDenial, SignalBranchRestoreDenial, SignalBranchSnapshotCaptureDenial,
 };
 use crate::state::SignalBranchId;
 
@@ -13,6 +14,9 @@ use super::super::SignalOwnerOperationAdmission;
 use super::super::{SignalBranchCellState, SignalBranchExecutionCell, SignalOwnerUnavailable};
 use super::SignalOwner;
 use crate::branch::retention::SignalBranchAdmissionReservation;
+
+#[path = "output_retention/advance.rs"]
+mod advance;
 
 #[path = "output_retention/ready.rs"]
 mod ready;
@@ -26,7 +30,6 @@ where
     owner: &'a SignalOwner<D, I, T>,
     admission: &'a SignalOwnerOperationAdmission<'a>,
     cell: Arc<SignalBranchExecutionCell<SignalBranchCellState<D, I, T>>>,
-    branch_id: SignalBranchId,
     retention: SignalBranchAdmissionReservation,
 }
 
@@ -56,6 +59,7 @@ where
     retention: SignalBranchAdmissionReservation,
 }
 
+#[cfg(test)]
 pub(in crate::branch::owner_services) struct SignalForkOutputReservation<'a, D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
@@ -91,7 +95,6 @@ where
             owner: self,
             admission,
             cell: Arc::clone(cell),
-            branch_id,
             retention,
         })
     }
@@ -143,6 +146,7 @@ where
         })
     }
 
+    #[cfg(test)]
     pub(in crate::branch::owner_services) fn reserve_fork_output<'a>(
         &'a self,
         admission: &'a SignalOwnerOperationAdmission<'a>,
@@ -235,6 +239,7 @@ map_output_denial!(
     |branch_id| SignalBranchRestoreDenial::OwnerCellMisuse { branch_id },
     |denial| SignalBranchRestoreDenial::RetentionUnavailable { denial }
 );
+#[cfg(test)]
 map_output_denial!(
     map_fork_output_denial,
     SignalBranchForkOperationDenial,

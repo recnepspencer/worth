@@ -32,6 +32,7 @@ fn final_cell_comparison_rejects_a_real_winner_without_promoting_or_retagging() 
             &mut counters,
             CompositeLateCancellationPosture::NotRequested,
             &cell,
+            None,
         )
         .unwrap_err();
     assert_eq!(loss.observed_head(), selected.snapshot());

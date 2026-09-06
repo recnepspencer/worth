@@ -1,5 +1,5 @@
 use std::mem::size_of;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::identity::CompositeCommitIdentity;
 
@@ -11,11 +11,11 @@ use super::{CompositeCommitParent, CompositeRuntimeWorldCommit};
 pub(super) struct HistoryMetadataCharge {
     commit_record: usize,
     arc_history: usize,
-    ordered_index_key: usize,
-    ordered_index_value: usize,
+    lookup_index_key: usize,
+    lookup_index_value: usize,
     reachability_key: usize,
     reachability_row: usize,
-    owner_controlled_boxes: usize,
+    slot_allocations: usize,
     publication_envelope: usize,
     publication_branch_name: usize,
     total: usize,
@@ -27,31 +27,32 @@ impl HistoryMetadataCharge {
     ) -> Result<Self, HistoryMetadataArithmeticOverflow> {
         let commit_record = size_of::<CompositeRuntimeWorldCommit>();
         let arc_history = size_of::<Arc<CompositeRuntimeWorldCommit>>();
-        let ordered_index_key = size_of::<CompositeCommitIdentity>();
-        let ordered_index_value = size_of::<Option<CompositeHistoryCatalogEntry>>();
+        let lookup_index_key = size_of::<CompositeCommitIdentity>();
+        let lookup_index_value = size_of::<Arc<OnceLock<CompositeHistoryCatalogEntry>>>();
         let reachability_key = size_of::<CompositeCommitIdentity>();
-        let reachability_row = size_of::<Option<HistoryReachabilityRecord>>();
-        let owner_controlled_boxes = checked_sum([
-            size_of::<Box<Option<CompositeHistoryCatalogEntry>>>(),
-            size_of::<Box<Option<HistoryReachabilityRecord>>>(),
+        let reachability_row = size_of::<Arc<Mutex<Option<HistoryReachabilityRecord>>>>();
+        let slot_allocations = checked_sum([
+            size_of::<OnceLock<CompositeHistoryCatalogEntry>>(),
+            size_of::<Mutex<Option<HistoryReachabilityRecord>>>(),
+            4 * size_of::<usize>(),
         ])?;
         let total = checked_sum([
             commit_record,
             arc_history,
-            ordered_index_key,
-            ordered_index_value,
+            lookup_index_key,
+            lookup_index_value,
             reachability_key,
             reachability_row,
-            owner_controlled_boxes,
+            slot_allocations,
         ])?;
         Ok(Self {
             commit_record,
             arc_history,
-            ordered_index_key,
-            ordered_index_value,
+            lookup_index_key,
+            lookup_index_value,
             reachability_key,
             reachability_row,
-            owner_controlled_boxes,
+            slot_allocations,
             publication_envelope: 0,
             publication_branch_name: 0,
             total,
@@ -98,7 +99,7 @@ pub(super) struct HistoryReservationCharge {
     reservation_key: usize,
     reservation_value: usize,
     held_identities: usize,
-    owner_controlled_boxes: usize,
+    reservation_handles: usize,
     total: usize,
 }
 
@@ -113,26 +114,23 @@ impl HistoryReservationCharge {
             CompositeCommitParent::Ordinary(_) => size_of::<CompositeCommitIdentity>(),
         };
         let held_identities = checked_sum([size_of::<CompositeCommitIdentity>(), parent_identity])?;
-        let owner_controlled_boxes = size_of::<Box<HistoryReservationMetadata>>();
+        let reservation_handles = checked_sum([
+            size_of::<Arc<Mutex<super::CompositeHistoryCatalogState>>>(),
+            size_of::<super::slots::ReservedHistorySlots>(),
+        ])?;
         let total = checked_sum([
             reservation_key,
             reservation_value,
             held_identities,
-            owner_controlled_boxes,
+            reservation_handles,
         ])?;
         Ok(Self {
             reservation_key,
             reservation_value,
             held_identities,
-            owner_controlled_boxes,
+            reservation_handles,
             total,
         })
-    }
-
-    pub(super) fn for_commit(
-        commit: &CompositeRuntimeWorldCommit,
-    ) -> Result<Self, HistoryMetadataArithmeticOverflow> {
-        Self::for_parent(commit.parent())
     }
 
     pub(super) const fn total(self) -> usize {
@@ -171,7 +169,7 @@ pub(super) enum HistoryMetadataLedgerDenial {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(crate) struct HistoryMetadataLedger {
+pub struct HistoryMetadataLedger {
     installed_resident: usize,
     reservation_resident: usize,
     promised_installation: usize,
@@ -278,19 +276,19 @@ impl HistoryMetadataLedger {
             .expect("a reclaimed entry owns its total occupancy");
     }
 
-    pub(crate) const fn installed_resident(self) -> usize {
+    pub const fn installed_resident(self) -> usize {
         self.installed_resident
     }
 
-    pub(crate) const fn reservation_resident(self) -> usize {
+    pub const fn reservation_resident(self) -> usize {
         self.reservation_resident
     }
 
-    pub(crate) const fn promised_installation(self) -> usize {
+    pub const fn promised_installation(self) -> usize {
         self.promised_installation
     }
 
-    pub(crate) const fn total_occupancy(self) -> usize {
+    pub const fn total_occupancy(self) -> usize {
         self.total_occupancy
     }
 }

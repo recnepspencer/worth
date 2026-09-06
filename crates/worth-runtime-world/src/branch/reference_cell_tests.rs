@@ -247,17 +247,20 @@ fn bootstrap_product_head_protection_survives_without_an_observation() {
     let (mut fixture, catalog, root) = fixture::installed_root();
     let snapshot = fixture::initial_snapshot(&mut fixture, Arc::clone(&root));
     let protection = fixture::bootstrap_product_head_protection(&fixture, &catalog, snapshot);
-    assert_eq!(fixture.owner.active_component_obligation_count(), 2);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 4);
 
     let cell = ProductBranchReferenceCell::new(protection).expect("direct bootstrap protection");
-    assert_eq!(fixture.owner.active_component_obligation_count(), 2);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 4);
     let observation = cell
         .observe(&catalog, &fixture.owner)
         .expect("observation owns an independent pair");
-    assert_eq!(fixture.owner.active_component_obligation_count(), 4);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 6);
     drop(observation);
-    assert_eq!(fixture.owner.active_component_obligation_count(), 2);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 4);
     drop(cell);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 2);
+    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 0);
+    drop(catalog);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
     assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
 }

@@ -15,6 +15,7 @@ pub(crate) use protection::{
 };
 
 mod protection;
+mod publication;
 #[cfg(test)]
 pub(crate) mod publication_unwind;
 mod successor_validation;
@@ -71,9 +72,11 @@ pub(crate) enum ProductBranchReferenceCellDenial {
     },
     SuccessorProtectionMismatch,
     GenerationExhausted,
+    Cutoff(crate::publication::ProductMovementCutoffDenial),
 }
 
 #[derive(Debug)]
+#[cfg(test)]
 pub(crate) struct ProductBranchReferencePublishFailure {
     denial: ProductBranchReferenceCellDenial,
     observed_head: ProductBranchReferenceSnapshot,
@@ -87,32 +90,36 @@ pub(crate) struct ProductBranchReferenceLoss {
 }
 
 impl ProductBranchReferenceLoss {
+    pub(crate) fn cutoff_denial(&self) -> Option<crate::publication::ProductMovementCutoffDenial> {
+        match self.denial {
+            ProductBranchReferenceCellDenial::Cutoff(denial) => Some(denial),
+            _ => None,
+        }
+    }
+
     pub(crate) fn observed_head(&self) -> &ProductBranchReferenceSnapshot {
         &self.observed_head
     }
 }
 
+#[cfg(test)]
 impl ProductBranchReferencePublishFailure {
+    #[cfg(test)]
     pub(crate) fn denial(&self) -> &ProductBranchReferenceCellDenial {
         &self.denial
     }
 
+    #[cfg(test)]
     pub(crate) fn observed_head(&self) -> &ProductBranchReferenceSnapshot {
         &self.observed_head
     }
 
+    #[cfg(test)]
     pub(crate) fn into_successor_protection(self) -> ProductBranchHeadProtection {
         self.successor_protection
     }
-
-    pub(crate) fn into_recovery_parts(
-        self,
-    ) -> (ProductBranchReferenceSnapshot, ProductBranchHeadProtection) {
-        (self.observed_head, self.successor_protection)
-    }
 }
 
-#[derive(Debug)]
 pub(crate) enum ProductBranchReferenceObservationFailure {
     HistoryProtection(CompositeHistoryCatalogDenial),
     Retention(RetentionObligationDenial),
@@ -124,7 +131,7 @@ pub(crate) enum ProductBranchReferenceObservationFailure {
 pub(crate) struct ProductBranchReferenceMovement {
     before: ProductBranchReferenceSnapshot,
     after: ProductBranchReferenceSnapshot,
-    retention_transfer: RetentionTransferReceipt,
+    _retention_transfer: RetentionTransferReceipt,
 }
 
 impl ProductBranchReferenceMovement {
@@ -134,10 +141,6 @@ impl ProductBranchReferenceMovement {
 
     pub(crate) fn after(&self) -> &ProductBranchReferenceSnapshot {
         &self.after
-    }
-
-    pub(crate) fn retention_transfer(&self) -> &RetentionTransferReceipt {
-        &self.retention_transfer
     }
 }
 
@@ -269,83 +272,6 @@ impl ProductBranchReferenceCell {
             })
     }
 
-    pub(crate) fn publish_recorded<A>(
-        &self,
-        expected: &ProductBranchObservation,
-        argument: &mut A,
-        materialize: impl FnOnce(&mut A) -> &mut Option<ProductBranchHeadProtection>,
-        publication: crate::history::PreparedPublicationRecord,
-    ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
-        self.replace_expected(expected, argument, materialize, Some(publication))
-    }
-
-    fn replace_expected<A>(
-        &self,
-        expected: &ProductBranchObservation,
-        argument: &mut A,
-        materialize: impl FnOnce(&mut A) -> &mut Option<ProductBranchHeadProtection>,
-        publication: Option<crate::history::PreparedPublicationRecord>,
-    ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
-        let expected_snapshot = expected.snapshot();
-        let mut current = self.state.write();
-        if &current.snapshot != expected_snapshot {
-            return Err(ProductBranchReferenceLoss {
-                denial: ProductBranchReferenceCellDenial::ExpectedHeadMismatch(
-                    expected
-                        .mismatch_against_snapshot(&current.snapshot)
-                        .expect("snapshot equality and observation comparison must agree"),
-                ),
-                observed_head: current.snapshot.clone(),
-            });
-        }
-        // Only an exactly current attempt may populate its reserved history
-        // storage and transfer already bound World pin claims. The callback
-        // must not allocate, contact a component owner, or touch this cell.
-        let successor_slot = materialize(argument);
-        #[cfg(test)]
-        publication_unwind::after_materialized();
-        let successor = successor_slot
-            .as_ref()
-            .expect("materialization retains complete custody");
-        if let Err(denial) = validate_successor(&current.snapshot, successor) {
-            return Err(ProductBranchReferenceLoss {
-                denial,
-                observed_head: current.snapshot.clone(),
-            });
-        }
-
-        let successor_snapshot = successor.snapshot().clone();
-        let Some(successor_receipt) = successor.transfer_receipt().cloned() else {
-            return Err(ProductBranchReferenceLoss {
-                denial: ProductBranchReferenceCellDenial::SuccessorProtectionMismatch,
-                observed_head: current.snapshot.clone(),
-            });
-        };
-        let movement = ProductBranchReferenceMovement {
-            before: current.snapshot.clone(),
-            after: successor_snapshot.clone(),
-            retention_transfer: successor_receipt,
-        };
-        let publication = publication.map(|record| record.stage(&movement));
-        let old_image = std::mem::replace(
-            &mut *current,
-            ProductBranchReferenceImage {
-                snapshot: successor_snapshot,
-                protection: successor_slot
-                    .take()
-                    .expect("validated successor custody moves only at the cell swap"),
-            },
-        );
-        if let Some(publication) = publication.as_ref() {
-            publication.mark_committed();
-        }
-        drop(current);
-        #[cfg(test)]
-        publication_unwind::after_committed();
-        drop(old_image);
-        Ok(movement)
-    }
-
     #[cfg(test)]
     fn hold_for_test(&self) -> impl Drop + '_ {
         self.state.write()
@@ -365,3 +291,17 @@ impl ProductBranchReferenceCell {
 #[cfg(test)]
 #[path = "reference_cell_tests.rs"]
 mod tests;
+
+impl std::fmt::Debug for ProductBranchReferenceObservationFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::HistoryProtection(value) => {
+                f.debug_tuple("HistoryProtection").field(value).finish()
+            }
+            Self::Retention(value) => f.debug_tuple("Retention").field(value).finish(),
+            Self::ObservationBinding(value) => {
+                f.debug_tuple("ObservationBinding").field(value).finish()
+            }
+        }
+    }
+}

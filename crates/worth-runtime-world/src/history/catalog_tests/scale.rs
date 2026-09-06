@@ -19,7 +19,7 @@ fn reclaim_one_from_history(non_root_commit_count: usize) -> ReclamationCounterD
     let total_commits = non_root_commit_count
         .checked_add(1)
         .expect("test history length fits usize");
-    let (_owner, commits) = linear_history(total_commits);
+    let (owner, commits) = linear_history(total_commits);
     let root = commits.first().expect("root commit");
     let candidate = commits.last().expect("leaf commit");
     let owner_identity = root.identity().owner_identity();
@@ -28,14 +28,15 @@ fn reclaim_one_from_history(non_root_commit_count: usize) -> ReclamationCounterD
         history_contract(total_commits as u64, u64::MAX),
     );
     for commit in &commits {
-        catalog.append(commit.clone()).expect("history install");
+        catalog
+            .append(commit.clone(), owner.history_pins(commit))
+            .expect("history install");
     }
     let before = catalog.counters();
     let outcome = catalog
         .reclaim_batch(CompositeHistoryReclamationRequest::new(
             owner_identity,
             vec![candidate.identity().clone()],
-            1,
             1,
         ))
         .expect("leaf reclaim");

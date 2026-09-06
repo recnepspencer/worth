@@ -1,9 +1,6 @@
-use worth_runtime_world::facade::{LoweredOwnerComponentPlan, ReservedCompositePublicationAttempt};
-
-fn consume_reserved(_: ReservedCompositePublicationAttempt) {}
-
-fn illegal_skip(plan: LoweredOwnerComponentPlan) {
-    consume_reserved(plan);
+use worth_runtime_world::facade::*;
+fn illegal_stage(port: RuntimeWorldPublicationPort<(),(),(),(),()>,
+    prepared: PreparedCompositePublicationWithSignal, token:&RuntimeWorldCancellationToken) {
+    port.execute_without_signal(prepared,token);
 }
-
 fn main() {}

@@ -53,12 +53,6 @@ impl PreparedCompositePublicationWithoutSignal {
         self.attempt.expected_head()
     }
 
-    /// Read-only view of the sealed reservation. Reading a plan cannot move
-    /// the attempt into the other stage or execute it.
-    pub(crate) fn attempt(&self) -> &ReservedCompositePublicationAttempt {
-        &self.attempt
-    }
-
     pub fn cancel(self) -> NoEffectCompositePublication {
         self.attempt.cancel()
     }
@@ -83,6 +77,7 @@ impl PreparedCompositePublicationWithSignal {
 
     /// Read-only view of the sealed reservation. Reading a plan cannot move
     /// the attempt into the other stage or execute it.
+    #[cfg(test)]
     pub(crate) fn attempt(&self) -> &ReservedCompositePublicationAttempt {
         &self.attempt
     }

@@ -13,6 +13,7 @@ pub struct RuntimeWorldBootstrapIntent {
     relational_basis: AdmittedRelationalBranchBasis,
     signal_basis: AdmittedSignalBranchBasis,
     correspondence_basis: AdmittedRuntimeWorldCorrespondenceBasis,
+    cancellation: Option<crate::publication::RuntimeWorldCancellationToken>,
     initial_generation: ProductBranchReferenceGeneration,
 }
 
@@ -28,10 +29,23 @@ impl RuntimeWorldBootstrapIntent {
             relational_basis,
             signal_basis,
             correspondence_basis,
+            cancellation: None,
             initial_generation: ProductBranchReferenceGeneration::initial(),
         }
     }
 
+    pub fn with_cancellation(
+        mut self,
+        cancellation: crate::publication::RuntimeWorldCancellationToken,
+    ) -> Self {
+        self.cancellation = Some(cancellation);
+        self
+    }
+    pub(crate) fn cancellation(
+        &self,
+    ) -> Option<&crate::publication::RuntimeWorldCancellationToken> {
+        self.cancellation.as_ref()
+    }
     pub fn creation(&self) -> &ProductBranchCreationIntent {
         &self.creation
     }

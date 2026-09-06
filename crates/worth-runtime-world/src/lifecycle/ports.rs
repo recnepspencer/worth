@@ -1,5 +1,9 @@
+use crate::history::{
+    CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
+};
 use worth_signal::facade::{SignalError, SignalTransaction};
 
+#[cfg(test)]
 use crate::branch::ProductBranchReferenceCell;
 use crate::branch::{
     ProductBranchCreationIntent, ProductBranchObservation, ProductBranchRetirementReport,
@@ -8,11 +12,15 @@ use crate::branch::{
 };
 use crate::identity::ProductBranchIdentity;
 use crate::lifecycle::RuntimeWorldInstant;
+#[cfg(test)]
 use crate::publication::{
-    CompositeLateCancellationPosture, CompositePublicationIntent, CompositePublicationReady,
-    CompositePublicationStage, NoEffectCompositePublication, OwnerExecutionOutcome,
-    PreparedCompositePublicationWithSignal, PreparedCompositePublicationWithoutSignal,
-    ReservedBranchCreationAttempt, RuntimeWorldCancellationToken, RuntimeWorldPublicationOutcome,
+    CompositeLateCancellationPosture, CompositePublicationReady, RuntimeWorldPublicationOutcome,
+};
+use crate::publication::{
+    CompositePublicationIntent, CompositePublicationStage, NoEffectCompositePublication,
+    OwnerExecutionOutcome, PreparedCompositePublicationWithSignal,
+    PreparedCompositePublicationWithoutSignal, ReservedBranchCreationAttempt,
+    RuntimeWorldCancellationToken,
 };
 use crate::recovery::{ProductUnpublishedOwnerEffects, RecoveryContinuationContract};
 
@@ -76,13 +84,15 @@ impl<'a> RuntimeWorldBranchCreationRequest<'a> {
 /// product reference occurrence; a partial value keeps performed owner work
 /// in the bounded recovery authority without publishing a product head.
 #[derive(Debug)]
-pub(crate) enum RuntimeWorldBranchCreationOutcome {
+pub enum RuntimeWorldBranchCreationOutcome {
     Performed(ProductBranchObservation),
     ProductUnpublished(ProductUnpublishedOwnerEffects),
 }
 
 /// Shared internal seam for exact product-head observation.
-pub(crate) trait RuntimeWorldObservationService {
+pub(crate) trait RuntimeWorldObservationService:
+    super::availability::RuntimeWorldAvailability
+{
     fn observe_product_branch(
         &self,
         branch: &ProductBranchIdentity,
@@ -93,7 +103,9 @@ pub(crate) trait RuntimeWorldObservationService {
 /// per-owner creation plans live in `ProductBranchCreationIntent`; retirement
 /// reports the component work it did not perform instead of silently
 /// deleting a component branch.
-pub(crate) trait RuntimeWorldBranchService {
+pub(crate) trait RuntimeWorldBranchService:
+    super::availability::RuntimeWorldAvailability
+{
     fn create_product_branch(
         &self,
         request: RuntimeWorldBranchCreationRequest<'_>,
@@ -168,6 +180,7 @@ pub(crate) trait RuntimeWorldOwnerExecutionService {
         ) -> Result<(), SignalError>;
 }
 
+#[cfg(test)]
 pub(crate) trait RuntimeWorldProductPublicationService {
     fn publish(
         &self,
@@ -179,18 +192,51 @@ pub(crate) trait RuntimeWorldProductPublicationService {
 
 /// Shared internal seam for retained owner effects. Recovery never fabricates
 /// a product commit or promotes a partial record to performed publication.
-pub(crate) trait RuntimeWorldRecoveryService {
+pub(crate) trait RuntimeWorldRecoveryService:
+    super::availability::RuntimeWorldAvailability
+{
+    fn inspect_effects(
+        &self,
+        handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
+    ) -> Result<ProductUnpublishedOwnerEffects, crate::recovery::RuntimeWorldRecoveryDenial>;
+    fn release_effects(
+        &self,
+        handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
+        minimum_age_ticks: u64,
+    ) -> Result<Vec<crate::branch::OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial>;
+
     fn continue_effects(
         &self,
         effects: ProductUnpublishedOwnerEffects,
-    ) -> Result<RecoveryContinuationContract, RuntimeWorldOwnerUnavailable>;
+    ) -> Result<RecoveryContinuationContract, crate::recovery::RuntimeWorldRecoveryDenial>;
+    fn recover_performed(
+        &self,
+        identity: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<
+        crate::publication::PerformedCompositePublication,
+        crate::recovery::PerformedPublicationRecoveryDenial,
+    >;
 }
 
 /// Shared internal seam for one-shot root bootstrap and owner close. Close
 /// reports what it drained and what it deliberately left to the component
 /// owners rather than returning a bare unit.
-pub(crate) trait RuntimeWorldLifecycleService {
+pub(crate) trait RuntimeWorldLifecycleService:
+    super::availability::RuntimeWorldAvailability
+{
     fn bootstrap_root(&self, intent: RuntimeWorldBootstrapIntent) -> RuntimeWorldBootstrapOutcome;
 
     fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>;
+    fn reclaim_history(
+        &self,
+        request: CompositeHistoryReclamationRequest,
+    ) -> Result<HistoryReclamationOutcome, HistoryReclamationDenial>;
+    fn reclaim_retention(
+        &self,
+        keys: &[crate::inspection::RuntimeWorldRetentionKey],
+        maximum: usize,
+    ) -> Result<
+        crate::retention::RetentionReclamationReport,
+        crate::inspection::RuntimeWorldRetentionInspectionDenial,
+    >;
 }

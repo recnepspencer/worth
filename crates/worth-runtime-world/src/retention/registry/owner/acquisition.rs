@@ -1,10 +1,13 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 
+#[cfg(test)]
 use worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome;
 
+use super::super::super::component_obligation::RetentionControlSurface;
+#[cfg(test)]
 use super::super::super::component_obligation::{
-    ComponentBasisPinObligation, RetentionControlSurface, RetentionReleaseDenial,
+    ComponentBasisPinObligation, RetentionReleaseDenial,
 };
 use super::super::super::dependency_counts::ComponentBasisDependencyCounts;
 use super::super::super::unique_component_pin::{
@@ -12,9 +15,10 @@ use super::super::super::unique_component_pin::{
 };
 use super::super::super::ComponentBasisDependencyClass;
 use super::super::RetentionObligationDenial;
+#[cfg(test)]
+use super::OwnerReleaseFailure;
 use super::{
-    ComponentOwnerLease, FlightCompletion, OwnerReleaseFailure, PinEntry, PinFlight,
-    RuntimeWorldRetentionOwner,
+    ComponentOwnerLease, FlightCompletion, PinEntry, PinFlight, RuntimeWorldRetentionOwner,
 };
 
 impl<D, I, T> RuntimeWorldRetentionOwner<D, I, T>
@@ -43,6 +47,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(super) fn release_component(
         &self,
         lease: ComponentOwnerLease,
@@ -71,6 +76,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn issue_component(
         &self,
         request: ExactComponentPinRequest<'_>,

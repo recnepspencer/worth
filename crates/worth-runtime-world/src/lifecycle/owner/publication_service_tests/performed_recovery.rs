@@ -50,7 +50,6 @@ fn unwind_after_materialization_preserves_head_custody_without_claiming_movement
             owner.owner_identity(),
             vec![commit.clone()],
             1,
-            1,
         ))
         .unwrap();
     assert_eq!(reclaimed.reclaimed_commits(), &[commit]);
@@ -203,7 +202,6 @@ fn delivery_protects_retired_history_and_releases_its_envelope_charge_once() {
             owner.owner_identity(),
             vec![identity.clone(), root.clone()],
             2,
-            1,
         )
     };
     let before = owner.state.history.metadata_ledger();

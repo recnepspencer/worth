@@ -12,9 +12,29 @@ pub use owner::RuntimeWorldOwnerRoot;
 pub use owner_inputs::RuntimeWorldOwnerInputs;
 #[allow(unused_imports)]
 pub(crate) use ports::{
-    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchCreationRequest,
-    RuntimeWorldBranchService, RuntimeWorldLifecycleService, RuntimeWorldObservationService,
-    RuntimeWorldOwnerExecutionService, RuntimeWorldPreparationService,
-    RuntimeWorldProductPublicationService, RuntimeWorldRecoveryService,
+    RuntimeWorldBranchCreationRequest, RuntimeWorldBranchService, RuntimeWorldLifecycleService,
+    RuntimeWorldObservationService, RuntimeWorldOwnerExecutionService,
+    RuntimeWorldPreparationService, RuntimeWorldRecoveryService,
 };
 pub use ports::{RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable};
+
+pub(crate) mod availability;
+mod builder;
+mod public_owner;
+mod service_ports;
+pub use builder::{MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder};
+pub use public_owner::RuntimeWorldOwner;
+pub use service_ports::*;
+
+pub use ports::RuntimeWorldBranchCreationOutcome;
+
+mod service_denial;
+pub use service_denial::RuntimeWorldServiceDenial;
+
+#[cfg(feature = "test-operation-control")]
+mod operation_control;
+#[cfg(feature = "test-operation-control")]
+pub use operation_control::{RuntimeWorldOperationControl, RuntimeWorldProductComparePause};
+
+#[cfg(test)]
+pub(crate) use ports::RuntimeWorldProductPublicationService;

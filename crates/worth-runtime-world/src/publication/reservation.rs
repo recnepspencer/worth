@@ -83,12 +83,12 @@ impl ReservedCompositePublicationAttempt {
             deadline,
             order: CompositePublicationOrder::RelationalThenSignal,
             progress,
-            counters: CompositePublicationCostCounters::zero(),
+            counters: {
+                let mut costs = CompositePublicationCostCounters::zero();
+                costs.record_history_slot_reserved();
+                costs
+            },
         }
-    }
-
-    pub fn identity(&self) -> &CompositePublicationAttemptIdentity {
-        &self.identity
     }
 
     pub fn expected_head(&self) -> &ProductBranchObservation {
@@ -107,6 +107,7 @@ impl ReservedCompositePublicationAttempt {
         self.deadline
     }
 
+    #[cfg(test)]
     pub fn order(&self) -> CompositePublicationOrder {
         self.order
     }
@@ -121,6 +122,7 @@ impl ReservedCompositePublicationAttempt {
 
     /// Structural counters are initialized when the attempt is reserved, before
     /// the first owner effect, so a caller can read an honest zeroed scope.
+    #[cfg(test)]
     pub fn counters(&self) -> &CompositePublicationCostCounters {
         &self.counters
     }
@@ -129,6 +131,7 @@ impl ReservedCompositePublicationAttempt {
         &mut self.counters
     }
 
+    #[cfg(test)]
     pub fn cancellation_posture(&self) -> CompositeAttemptCancellationPosture {
         self.cancellation
     }
@@ -139,10 +142,6 @@ impl ReservedCompositePublicationAttempt {
 
     pub(crate) fn begin_owner_execution(&mut self) {
         self.custody.begin_owner_execution();
-    }
-
-    pub(crate) fn begin_recovery(&mut self) {
-        self.custody.begin_recovery();
     }
 
     pub(crate) fn take_relational_candidate(

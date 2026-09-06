@@ -46,7 +46,7 @@ pub(super) struct RealFixture {
     pub(super) basis: AdmittedCompositeRuntimeWorldBasis,
     pub(super) signal_port: worth_signal::facade::branch::SignalBranchBasisPort<(), (), ()>,
     pub(super) relational_runtime: Arc<worth_relational::facade::runtime::RelationalRuntime>,
-    pub(super) signal_runtime: SignalRuntime<(), (), (), (), ()>,
+    pub(super) _signal_runtime: SignalRuntime<(), (), (), (), ()>,
     pub(super) identities: RuntimeWorldOwnerConstructionContract,
 }
 
@@ -215,7 +215,7 @@ pub(super) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> Rea
         basis,
         signal_port: retained_signal_port,
         relational_runtime,
-        signal_runtime,
+        _signal_runtime: signal_runtime,
         identities,
     }
 }

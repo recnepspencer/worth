@@ -10,9 +10,6 @@ use worth_signal::facade::branch::{SignalBranchAdvanceOutcome, SignalBranchForkO
 mod recovery;
 pub(crate) use recovery::RelationalRecoveryRoute;
 
-#[path = "progress/preparation.rs"]
-mod preparation;
-
 #[path = "progress/effect_count.rs"]
 mod effect_count;
 pub(crate) use effect_count::owner_effect_count_from_postures;
@@ -150,10 +147,6 @@ impl RelationalAttemptProgress {
             None => self.fork_successor_basis.as_ref(),
         }
     }
-
-    pub(super) fn into_evidence(self) -> Option<RelationalProgressEvidence> {
-        self.evidence
-    }
 }
 
 /// Exact Signal owner progress. Signal has no Relational settlement state.
@@ -166,6 +159,7 @@ pub enum SignalAttemptProgressPosture {
 
 #[derive(Debug)]
 pub(super) enum SignalProgressEvidence {
+    #[cfg(test)]
     Prepared,
     Advanced(std::sync::Arc<SignalBranchAdvanceOutcome>),
     Forked(SignalBranchForkOutcome),
@@ -185,6 +179,7 @@ impl SignalAttemptProgress {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn prepared_for_execution() -> Self {
         Self {
             posture: SignalAttemptProgressPosture::PreparedForExecution,
@@ -228,10 +223,6 @@ impl SignalAttemptProgress {
             _ => None,
         }
     }
-
-    pub(super) fn into_evidence(self) -> Option<SignalProgressEvidence> {
-        self.evidence
-    }
 }
 
 #[derive(Debug)]
@@ -257,6 +248,10 @@ impl CompositeAttemptProgress {
 
     pub const fn relational_posture(&self) -> RelationalAttemptProgressPosture {
         self.relational.posture()
+    }
+
+    pub(crate) fn set_signal(&mut self, signal: SignalAttemptProgress) {
+        self.signal = signal;
     }
 
     pub const fn signal_posture(&self) -> SignalAttemptProgressPosture {

@@ -5205,8 +5205,11 @@ shadow graph, or `Arc<Mutex<SignalRuntime<_>>>`.
 
 #### Milestone 9.17.2: Composite Runtime-World History And Coordinated Publication
 
-Status: Planned. The 9.17.1.2 predecessor gate is closed; implementation may
-proceed against its frozen owner-service contracts.
+Status: Implementation and scoped closure complete on 2026-09-05. The persistent
+Astra high gate approved Phases 5-7, including the real owner court, executable
+example and closure checks. The [specification](./milestone-9.17.2.md) records the
+untouched dependency lint debt and Signal batch-read follow-up. Query carriage
+and public facade cutover remain in 9.17.3.
 
 The dedicated `worth-runtime-world` composition owner consumes exact
 Relational, Signal, and installed Bridge-correspondence artifacts. It owns

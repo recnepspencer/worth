@@ -133,7 +133,7 @@ fn bootstrap_installs_one_coherent_root_and_second_call_is_no_contact() {
     assert_eq!(owner.state.history.reserved_len(), 0);
     assert!(owner.state.branches.root_cell().is_some());
     assert_eq!(owner.state.retention.unique_pin_count(), 2);
-    assert_eq!(owner.state.retention.active_component_obligation_count(), 4);
+    assert_eq!(owner.state.retention.active_component_obligation_count(), 6);
 
     let before_retention = owner.state.retention.cost_snapshot();
     let before_history = owner.state.history.counters();
@@ -308,3 +308,6 @@ fn owner_reservation_owns_all_real_capacity_and_drops_it_as_one_attempt() {
     assert_eq!(owner.state.publication_capacity.active(), 0);
     assert_eq!(owner.state.operation.active(), 0);
 }
+
+#[path = "owner_tests/bootstrap_boundary.rs"]
+mod bootstrap_boundary;

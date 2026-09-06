@@ -118,3 +118,16 @@ If you are integrating something deeper:
 1. [`REFERENCE_MAP.md`](./REFERENCE_MAP.md)
 2. the relevant domain guide
 3. only then the deeper control or replay-oriented parts of the facade
+
+## Product history and coordinated publication
+
+[`worth-runtime-world`](../worth-runtime-world/README.md) owns product branches,
+composite commit history and coordinated Relational/Signal publication. Bridge
+owns installed semantic correspondence. Admit that exact installed witness through
+`RuntimeBridge::runtime_world_correspondence_port().admit_installed_basis(...)`
+after binding it to the actual Signal graph; descriptors or detached registration
+requests cannot replace the installed witness.
+
+Use the [Runtime World example](../worth-runtime-world/examples/runtime_world_publication.rs)
+for real same-graph construction and three-way publication handling. Bridge
+speculation/replay is not product-head or committed-terminal authority.

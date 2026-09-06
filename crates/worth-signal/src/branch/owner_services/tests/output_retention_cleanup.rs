@@ -27,9 +27,11 @@ fn named_output_capacity_returns_after_real_cancellation_and_callback_panic() {
     cancelled.cancel();
     let before_cancel = cell.cost_snapshot();
     assert!(matches!(
-        cancelled_output.advance::<(), (), _>(&basis, &mut (), &cancelled.token(), |_| panic!(
-            "cancelled callback must remain unreachable"
-        ),),
+        cancelled_output
+            .advance::<(), (), _>(&basis, &mut (), &cancelled.token(), |_| panic!(
+                "cancelled callback must remain unreachable"
+            ),)
+            .into_result(),
         Err(SignalBranchAdvanceDenial::CancelledNoMovement)
     ));
     assert_eq!(cell.cost_snapshot(), before_cancel);
@@ -43,9 +45,11 @@ fn named_output_capacity_returns_after_real_cancellation_and_callback_panic() {
         .expect("advance output reserves before callback unwind");
     let open = SignalOwnerCancellationSource::new();
     let panic = catch_unwind(AssertUnwindSafe(|| {
-        let _ = panicking_output.advance::<(), (), _>(&basis, &mut (), &open.token(), |_| {
-            panic!("inject output-reservation callback unwind")
-        });
+        let _ = panicking_output
+            .advance::<(), (), _>(&basis, &mut (), &open.token(), |_| {
+                panic!("inject output-reservation callback unwind")
+            })
+            .into_result();
     }));
     assert!(panic.is_err());
     let all_after_panic = owner
@@ -139,17 +143,18 @@ fn prior_admission_reserves_and_converts_populated_advance_after_closing() {
         "the pending Closing output owns one exact reserved slot"
     );
     let cancellation = SignalOwnerCancellationSource::new();
-    let ready = output
+    let completed = output
         .advance::<(), (), _>(&basis, &mut (), &cancellation.token(), |transaction| {
             transaction.set_dependencies(dispatch, [DependencyEdge::new(berth, Aspect::new(0))])
         })
+        .into_result()
         .expect("meaningful pre-admitted work performs while Closing");
     assert_eq!(
         owner.lifecycle_observation(),
         SignalOwnerLifecycleObservation::Closing,
-        "performed work cannot complete the lifecycle before ready conversion"
+        "performed work cannot complete the lifecycle before its admitted call ends"
     );
-    let (advanced_basis, transaction) = ready.into_parts();
+    let (advanced_basis, transaction) = completed.into_parts();
     assert!(transaction.touched_nodes > 0);
     cell.with_state(&admission, |state, _| {
         assert_eq!(
@@ -162,7 +167,7 @@ fn prior_admission_reserves_and_converts_populated_advance_after_closing() {
     assert_eq!(
         owner.lifecycle_observation(),
         SignalOwnerLifecycleObservation::Closing,
-        "the converted output still borrows the admitted synchronous call"
+        "the original synchronous call remains admitted after output handoff"
     );
     drop(advanced_basis);
     drop(basis);

@@ -9,6 +9,7 @@ pub(super) fn attempt_product_movement(
     mut ready: CompositePublicationReadyInputs,
     cell: &ProductBranchReferenceCell,
     late: CompositeLateCancellationPosture,
+    cutoff: Option<crate::publication::ProductMovementCutoff>,
 ) -> RuntimeWorldPublicationOutcome {
     match ready.custody.attempt_movement(
         &ready.expected_head,
@@ -17,12 +18,22 @@ pub(super) fn attempt_product_movement(
         &mut ready.counters,
         late,
         cell,
+        cutoff,
     ) {
         Ok(performed) => RuntimeWorldPublicationOutcome::Performed(performed),
         Err(loss) => {
-            ready.counters.record_cas_loss();
+            let cause = match loss.cutoff_denial() {
+                Some(crate::publication::ProductMovementCutoffDenial::Cancelled) => {
+                    ready.counters.record_cancellation_observation();
+                    ProductUnpublishedCause::CancellationAfterEffect
+                }
+                Some(crate::publication::ProductMovementCutoffDenial::Deadline) => {
+                    ProductUnpublishedCause::DeadlineAfterEffect
+                }
+                None => ProductUnpublishedCause::ProductPublicationLost,
+            };
             RuntimeWorldPublicationOutcome::ProductUnpublished(ready.custody.retain(
-                ProductUnpublishedCause::ProductPublicationLost,
+                cause,
                 Some(loss.observed_head().clone()),
                 RetainedCommitDisposition::ReleaseUnused,
             ))

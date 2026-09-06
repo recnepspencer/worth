@@ -51,7 +51,13 @@ impl ActiveAttemptCustody {
             panic!("creation holds reserved history")
         };
         let protection = capacity
-            .try_install_product_head(Arc::clone(commit))
+            .try_install_product_head(
+                Arc::clone(commit),
+                resources
+                    .history_pins
+                    .take()
+                    .expect("creation bound exact history pins"),
+            )
             .expect("the admitted creation installs with immediate protection");
         resources.history_custody = ActiveHistoryCustody::Installed(protection);
     }

@@ -6,7 +6,7 @@ use super::fixtures::{history_contract, linear_history};
 
 #[test]
 fn allocation_ledger_matches_an_independent_oracle_across_lifecycles() {
-    let (_owner, commits) = linear_history(2);
+    let (owner, commits) = linear_history(2);
     let root = commits[0].clone();
     let child = commits[1].clone();
     let owner_identity = root.identity().owner_identity();
@@ -24,7 +24,9 @@ fn allocation_ledger_matches_an_independent_oracle_across_lifecycles() {
         AllocationOracle::installed_resident(root.as_ref()),
         AllocationOracle::reservation_plus_installation(root.as_ref()),
     );
-    root_slot.install(root.clone()).expect("root installation");
+    root_slot
+        .install(root.clone(), owner.history_pins(&root))
+        .expect("root installation");
     assert_ledger(
         catalog.metadata_ledger(),
         AllocationOracle::installed_resident(root.as_ref()),
@@ -42,7 +44,7 @@ fn allocation_ledger_matches_an_independent_oracle_across_lifecycles() {
         maximum,
     );
     child_slot
-        .install(child.clone())
+        .install(child.clone(), owner.history_pins(&child))
         .expect("child installation");
     assert_ledger(
         catalog.metadata_ledger(),
@@ -59,7 +61,6 @@ fn allocation_ledger_matches_an_independent_oracle_across_lifecycles() {
             owner_identity,
             vec![child.identity().clone()],
             1,
-            1,
         ))
         .expect("child reclaim");
     assert_ledger(
@@ -74,7 +75,6 @@ fn allocation_ledger_matches_an_independent_oracle_across_lifecycles() {
             owner_identity,
             vec![root.identity().clone()],
             1,
-            1,
         ))
         .expect("root reclaim");
     assert_ledger(catalog.metadata_ledger(), 0, 0, 0, 0);
@@ -82,7 +82,7 @@ fn allocation_ledger_matches_an_independent_oracle_across_lifecycles() {
 
 #[test]
 fn exact_metadata_budget_succeeds_and_one_byte_less_denies_pre_effect() {
-    let (_owner, commits) = linear_history(1);
+    let (owner, commits) = linear_history(1);
     let root = commits[0].clone();
     let exact = AllocationOracle::reservation_plus_installation(root.as_ref());
     assert!(exact > 0);
@@ -92,7 +92,7 @@ fn exact_metadata_budget_succeeds_and_one_byte_less_denies_pre_effect() {
         history_contract(1, as_u64(exact)),
     );
     exact_catalog
-        .append(root.clone())
+        .append(root.clone(), owner.history_pins(&root))
         .expect("complete promised installation fits exact budget");
     assert_eq!(
         exact_catalog.metadata_ledger().installed_resident(),

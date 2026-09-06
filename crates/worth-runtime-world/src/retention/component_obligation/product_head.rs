@@ -98,6 +98,7 @@ impl ProductHeadRetentionObligation {
     /// The only product-head-to-recovery transition. Both live claims already
     /// passed owner, basis, and dependency admission, so a denial here would be
     /// registry corruption rather than a recoverable publication outcome.
+    #[cfg(test)]
     pub(crate) fn transition_to_retained_partial(mut self) -> RetainedPartialRetentionObligation {
         self.try_transfer_retained()
             .expect("live product-head claims transition atomically into recovery custody")

@@ -31,7 +31,6 @@ pub(crate) enum ProductBranchRegistryDenial {
     BranchAlreadyInstalled,
     LifecycleAlreadyInstalled,
     AlreadyRetired,
-    UnknownBranch,
 }
 
 #[derive(Debug)]
@@ -127,6 +126,7 @@ impl ProductBranchRegistry {
         ))
     }
 
+    #[cfg(test)]
     pub(crate) fn root_cell(&self) -> Option<ProductBranchReferenceCell> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         state
@@ -134,32 +134,6 @@ impl ProductBranchRegistry {
             .as_ref()
             .and_then(|branch| state.entries.get(branch))
             .map(|entry| entry.cell.clone())
-    }
-
-    pub(crate) fn root_snapshot(&self) -> Option<ProductBranchReferenceSnapshot> {
-        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        state
-            .root
-            .as_ref()
-            .and_then(|branch| state.entries.get(branch))
-            .map(|entry| entry.cell.atomic_snapshot())
-    }
-
-    pub(crate) fn root_branch(&self) -> Option<ProductBranchIdentity> {
-        self.state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .root
-            .clone()
-    }
-
-    pub(crate) fn root_name(&self) -> Option<ProductBranchName> {
-        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        state
-            .root
-            .as_ref()
-            .filter(|branch| state.entries.contains_key(*branch))
-            .map(|branch| branch.name().clone())
     }
 
     pub(crate) fn branch_cell(
@@ -174,6 +148,7 @@ impl ProductBranchRegistry {
             .map(|entry| entry.cell.clone())
     }
 
+    #[cfg(test)]
     pub(crate) fn branch_count(&self) -> usize {
         self.state
             .lock()
@@ -182,6 +157,7 @@ impl ProductBranchRegistry {
             .len()
     }
 
+    #[cfg(test)]
     pub(crate) fn reserved_branch_count(&self) -> usize {
         self.state
             .lock()

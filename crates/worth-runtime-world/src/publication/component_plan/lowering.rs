@@ -38,9 +38,7 @@ pub(crate) fn lower_component_plans(
         &expected_head,
     )?;
     let signal = lower_signal_plan(basis.signal_basis().clone(), intent.changes_signal());
-    Ok(LoweredOwnerComponentPlan::new(
-        expected, intent, relational, signal,
-    ))
+    Ok(LoweredOwnerComponentPlan::new(expected, relational, signal))
 }
 
 fn lower_relational_plan(

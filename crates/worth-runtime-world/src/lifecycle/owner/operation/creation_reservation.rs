@@ -113,6 +113,7 @@ where
                 source,
                 plan,
                 capacities: ReservedAttemptCapacities::new(ReservedAttemptCapacityInputs {
+                    admitted_at: self.state.clock.now(),
                     reserved_commit_identity: commit_identity,
                     product_unpublished_identity,
                     reserved_commit_capacity,

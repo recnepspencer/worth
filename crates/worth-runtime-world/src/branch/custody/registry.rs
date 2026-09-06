@@ -2,13 +2,12 @@ use std::sync::{Arc, Mutex};
 
 use crate::branch::observation::RuntimeWorldBranchAdmissionDenial;
 use crate::budget::RuntimeWorldBudgetLimit;
-use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation, RuntimeWorldOwnerIdentity};
+use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation};
 
 use super::{CustodyComponent, OwnerCreatedComponentCustodyRecord};
 
 #[derive(Debug)]
 struct CustodyRegistryState {
-    owner: RuntimeWorldOwnerIdentity,
     maximum: usize,
     reserved: usize,
     installed: Vec<OwnerCreatedComponentCustodyRecord>,
@@ -23,22 +22,14 @@ pub(crate) struct OwnerCreatedComponentCustodyRegistry {
 }
 
 impl OwnerCreatedComponentCustodyRegistry {
-    pub(crate) fn new(owner: RuntimeWorldOwnerIdentity, maximum: RuntimeWorldBudgetLimit) -> Self {
+    pub(crate) fn new(maximum: RuntimeWorldBudgetLimit) -> Self {
         Self {
             state: Arc::new(Mutex::new(CustodyRegistryState {
-                owner,
                 maximum: maximum.get(),
                 reserved: 0,
                 installed: Vec::new(),
             })),
         }
-    }
-
-    pub(crate) fn owner(&self) -> RuntimeWorldOwnerIdentity {
-        self.state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .owner
     }
 
     /// Charged before the owner fork that would create the recorded branch;
@@ -111,6 +102,7 @@ impl OwnerCreatedComponentCustodyRegistry {
             .clone()
     }
 
+    #[cfg(test)]
     pub(crate) fn installed(&self) -> usize {
         self.state
             .lock()
@@ -139,10 +131,6 @@ impl std::fmt::Debug for ReservedCustodySlot {
 }
 
 impl ReservedCustodySlot {
-    pub(crate) const fn component(&self) -> CustodyComponent {
-        self.component
-    }
-
     pub(crate) fn install(mut self, record: OwnerCreatedComponentCustodyRecord) {
         let mut state = self
             .registry

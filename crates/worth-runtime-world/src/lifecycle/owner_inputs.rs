@@ -45,24 +45,24 @@ where
         }
     }
 
+    #[cfg(test)]
     pub fn relational(&self) -> &RelationalOwnerServicePorts {
         &self.relational
     }
 
+    #[cfg(test)]
     pub fn signal(&self) -> &SignalOwnerServicePorts<D, I, E, Ctx, T> {
         &self.signal
     }
 
+    #[cfg(test)]
     pub fn bridge(&self) -> &RuntimeWorldCorrespondencePort {
         &self.bridge
     }
 
+    #[cfg(test)]
     pub fn budgets(&self) -> &RuntimeWorldBudgets {
         &self.budgets
-    }
-
-    pub fn clock(&self) -> &RuntimeWorldClock {
-        &self.clock
     }
 
     pub(crate) fn into_parts(

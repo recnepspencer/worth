@@ -19,3 +19,6 @@ mod pending_storage;
 mod protected_installation;
 #[path = "catalog_tests/publication_metadata.rs"]
 mod publication_metadata;
+
+#[path = "catalog_tests/managed_traversal.rs"]
+mod managed_traversal;

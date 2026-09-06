@@ -43,6 +43,7 @@ fn exercise_advance_pause(boundary: SignalOwnerOperationBoundary, expected_movem
         let cancellation = SignalOwnerCancellationSource::new();
         let result = reservation
             .advance::<(), (), _>(&basis, &mut (), &cancellation.token(), |_| Ok(()))
+            .into_result()
             .map(|ready| ready.into_parts().0.observation().generation().get());
         let _ = done_tx.send(result);
     });

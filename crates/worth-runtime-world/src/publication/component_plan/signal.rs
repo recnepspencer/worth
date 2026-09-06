@@ -38,8 +38,4 @@ impl SignalComponentPlan {
             expected,
         }
     }
-
-    pub(crate) fn into_parts(self) -> (SignalComponentPlanPosture, AdmittedSignalBranchBasis) {
-        (self.posture, self.expected)
-    }
 }

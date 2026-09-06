@@ -33,6 +33,7 @@ impl RuntimeWorldOwnerConstructionContract {
         self.issuer.owner()
     }
 
+    #[cfg(test)]
     pub(crate) const fn issuer(&self) -> &RuntimeWorldIdentityIssuer {
         &self.issuer
     }

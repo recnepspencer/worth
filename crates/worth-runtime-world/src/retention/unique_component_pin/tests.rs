@@ -245,7 +245,7 @@ fn all_transfers_change_counts_without_contacting_a_component_owner() {
 #[test]
 fn foreign_signal_basis_cannot_substitute_into_an_exact_pin() {
     let fixture = fixture(1, 1);
-    let mut foreign_runtime = SignalRuntime::builder(SignalGraph::new())
+    let foreign_runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let foreign_basis = foreign_runtime

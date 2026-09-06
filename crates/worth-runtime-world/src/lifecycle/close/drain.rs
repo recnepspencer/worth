@@ -9,13 +9,9 @@ use super::report::{
 };
 use super::RuntimeWorldCloseDenial;
 
-/// Close the owner: admit, drain, and flip Open -> Closing -> Closed while
-/// holding one operation-admission guard across all three.
-///
-/// The guard is what makes the report complete. `admit_close` checks the
-/// ledger and `RuntimeWorldCloseContract::begin` flips the state; a reservation
-/// admitted between those two points would be closed over silently and would
-/// be missing from the report, so nothing may be admitted in that window.
+/// Admit close under bootstrap -> operation -> close lock order. Publishing
+/// Closing excludes every new admission before the guards are released.
+/// Component custody drains outside lifecycle locks.
 pub(super) fn close_owner<D, I, E, Ctx, T>(
     state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
 ) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>
@@ -31,7 +27,6 @@ where
     if *bootstrap == RuntimeWorldBootstrapState::InProgress {
         return Err(RuntimeWorldCloseDenial::AlreadyClosing);
     }
-    drop(bootstrap);
     // Publish the queued waiter before blocking so the transition from "no
     // close" to "a close is admitting" is observable rather than inferred from
     // elapsed time.
@@ -47,15 +42,21 @@ where
         operation.active,
         state.recovery.reserved_slots(),
     )?;
-    let report = drain_for_close(state)?;
+    let retained_records = enumerate_retained_records(state)?;
     let mut close = state
         .close
         .lock()
         .unwrap_or_else(|error| error.into_inner());
     close.begin()?;
-    close.finish()?;
     drop(close);
     drop(operation);
+    drop(bootstrap);
+    let report = drain_for_close(state, retained_records);
+    state
+        .close
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .finish()?;
     Ok(report)
 }
 
@@ -79,21 +80,18 @@ fn admit_close(
     Ok(())
 }
 
-/// Settle what close can settle, enumerate every retained owner obligation it
-/// cannot, and release every pin the owner can still release.
-///
-/// SPEC-P4-008: an installed retained record is a report row, never a denial.
-/// The only remaining denial here is a record whose critical section is still
-/// in flight, which no report row can honestly describe.
+/// Drain custody after Closing has excluded new admission. Retained records
+/// were described during admission; this phase exposes them and releases
+/// unneeded pins without settling or reclassifying their owner effects.
 fn drain_for_close<D, I, E, Ctx, T>(
     state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
-) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>
+    retained_records: Vec<RuntimeWorldRetainedRecordReport>,
+) -> RuntimeWorldCloseReport
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    let retained_records = enumerate_retained_records(state)?;
     // Order matters: releasing the branch references first is what makes the
     // custody drain total. A record still installed after that belongs to an
     // occurrence no product reference names any more, which is exactly the
@@ -127,12 +125,12 @@ where
         // so the same records leave as typed work the caller must dispatch.
         retired_owner_created_custody: outstanding_owner_retirement_work.len(),
     };
-    Ok(RuntimeWorldCloseReport::new(
+    RuntimeWorldCloseReport::new(
         retained_records,
         counts,
         state.retention.active_observation_count(),
         outstanding_owner_retirement_work,
-    ))
+    )
 }
 
 /// Name every retained record the catalog still holds. A record that is inside

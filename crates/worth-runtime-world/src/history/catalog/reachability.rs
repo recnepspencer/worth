@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::identity::CompositeCommitIdentity;
@@ -29,8 +29,14 @@ impl HistoryReachabilityRecord {
 /// installation fills it in place. Reclamation never reconstructs ancestry.
 #[derive(Debug)]
 pub(in crate::history) struct HistoryReachabilityIndex {
-    records: BTreeMap<CompositeCommitIdentity, Option<HistoryReachabilityRecord>>,
+    records: HashMap<CompositeCommitIdentity, HistoryReachabilitySlot>,
     counters: HistoryCatalogCountersHandle,
+}
+
+pub(in crate::history) type HistoryReachabilitySlot = Arc<Mutex<Option<HistoryReachabilityRecord>>>;
+
+fn lock_slot(slot: &HistoryReachabilitySlot) -> MutexGuard<'_, Option<HistoryReachabilityRecord>> {
+    slot.lock().unwrap_or_else(|error| error.into_inner())
 }
 
 pub(in crate::history) type HistoryReachabilityHandle = Arc<Mutex<HistoryReachabilityIndex>>;
@@ -46,29 +52,29 @@ pub(in crate::history) fn lock_index(
 impl HistoryReachabilityIndex {
     pub(super) fn new(counters: HistoryCatalogCountersHandle) -> Self {
         Self {
-            records: BTreeMap::new(),
+            records: HashMap::new(),
             counters,
         }
     }
 
-    pub(super) fn reserve(&mut self, identity: CompositeCommitIdentity) {
-        assert!(
-            self.records.insert(identity, None).is_none(),
-            "an admitted history occurrence reserves one reachability slot"
-        );
+    pub(super) fn reserve(&mut self, identity: CompositeCommitIdentity) -> HistoryReachabilitySlot {
+        let slot = Arc::new(Mutex::new(None));
+        assert!(self.records.insert(identity, Arc::clone(&slot)).is_none());
+        slot
     }
 
     pub(super) fn release_reservation(&mut self, identity: &CompositeCommitIdentity) {
-        assert!(matches!(self.records.remove(identity), Some(None)));
-    }
-
-    pub(super) fn install(&mut self, identity: &CompositeCommitIdentity) {
         let slot = self
             .records
-            .get_mut(identity)
-            .expect("admission allocated the reachability slot");
-        assert!(slot.is_none());
-        *slot = Some(HistoryReachabilityRecord::default());
+            .remove(identity)
+            .expect("reserved reachability slot");
+        assert!(lock_slot(&slot).is_none());
+    }
+
+    pub(super) fn install_reserved_slot(&mut self, slot: &HistoryReachabilitySlot) {
+        let mut record = lock_slot(slot);
+        assert!(record.is_none());
+        *record = Some(HistoryReachabilityRecord::default());
         lock_counters(&self.counters).record_reachability_row_installed();
     }
 
@@ -77,18 +83,19 @@ impl HistoryReachabilityIndex {
         identity: &CompositeCommitIdentity,
     ) -> Option<HistoryReachabilityRecord> {
         lock_counters(&self.counters).record_reachability_lookup();
-        self.records.get(identity).copied().flatten()
+        self.records.get(identity).and_then(|slot| *lock_slot(slot))
     }
 
     pub(super) fn increment_descendant_dependency(
         &mut self,
         parent: &CompositeCommitIdentity,
     ) -> Result<(), CompositeHistoryCatalogDenial> {
-        let record = self
+        let slot = self
             .records
-            .get_mut(parent)
-            .and_then(Option::as_mut)
+            .get(parent)
             .expect("validated installed parent has a reachability row");
+        let mut held = lock_slot(slot);
+        let record = held.as_mut().expect("installed reachability record");
         record.descendant_dependencies =
             record
                 .descendant_dependencies
@@ -101,11 +108,12 @@ impl HistoryReachabilityIndex {
     }
 
     pub(super) fn decrement_descendant_dependency(&mut self, parent: &CompositeCommitIdentity) {
-        let record = self
+        let slot = self
             .records
-            .get_mut(parent)
-            .and_then(Option::as_mut)
+            .get(parent)
             .expect("a reclaimed child retains an installed parent row");
+        let mut held = lock_slot(slot);
+        let record = held.as_mut().expect("installed reachability record");
         record.descendant_dependencies = record
             .descendant_dependencies
             .checked_sub(1)
@@ -115,29 +123,23 @@ impl HistoryReachabilityIndex {
 
     /// The catalog still owns its installation lock and has not exposed this
     /// fresh row. Its first protection is exactly one, with no capacity check.
-    pub(super) fn protect_newly_installed(&mut self, identity: &CompositeCommitIdentity) {
-        let record = self
-            .records
-            .get_mut(identity)
-            .and_then(Option::as_mut)
+    pub(super) fn protect_reserved_slot(&mut self, slot: &HistoryReachabilitySlot) {
+        let mut held = lock_slot(slot);
+        let record = held
+            .as_mut()
             .expect("new installation has a reachability row");
-        assert_eq!(
-            record.direct_protections, 0,
-            "new installation has no prior protection"
-        );
+        assert_eq!(record.direct_protections, 0);
         record.direct_protections = 1;
         lock_counters(&self.counters).record_direct_protection_acquisition();
     }
 
-    pub(super) fn increment_direct_protection(
-        &mut self,
+    pub(super) fn increment_reserved_protection(
+        &self,
+        slot: &HistoryReachabilitySlot,
         identity: &CompositeCommitIdentity,
     ) -> Result<(), CompositeHistoryCatalogDenial> {
-        let record = self
-            .records
-            .get_mut(identity)
-            .and_then(Option::as_mut)
-            .expect("validated installed protection target has a reachability row");
+        let mut held = lock_slot(slot);
+        let record = held.as_mut().expect("installed reachability record");
         record.direct_protections = record.direct_protections.checked_add(1).ok_or_else(|| {
             CompositeHistoryCatalogDenial::ProtectionCountOverflow(identity.clone())
         })?;
@@ -145,15 +147,27 @@ impl HistoryReachabilityIndex {
         Ok(())
     }
 
+    pub(super) fn increment_direct_protection(
+        &mut self,
+        identity: &CompositeCommitIdentity,
+    ) -> Result<(), CompositeHistoryCatalogDenial> {
+        let slot = self
+            .records
+            .get(identity)
+            .expect("installed reachability record");
+        self.increment_reserved_protection(slot, identity)
+    }
+
     pub(in crate::history) fn decrement_direct_protection(
         &mut self,
         identity: &CompositeCommitIdentity,
     ) {
-        let record = self
+        let slot = self
             .records
-            .get_mut(identity)
-            .and_then(Option::as_mut)
+            .get(identity)
             .expect("a live protection obligation retains its installed row");
+        let mut held = lock_slot(slot);
+        let record = held.as_mut().expect("installed reachability record");
         record.direct_protections = record
             .direct_protections
             .checked_sub(1)
@@ -165,11 +179,13 @@ impl HistoryReachabilityIndex {
         &mut self,
         identity: &CompositeCommitIdentity,
     ) -> HistoryReachabilityRecord {
-        let record = self
+        let slot = self
             .records
             .remove(identity)
-            .flatten()
-            .expect("reclaiming an installed commit has an index row");
+            .expect("reclaiming installed slot");
+        let record = lock_slot(&slot)
+            .take()
+            .expect("installed reachability record");
         assert_eq!(record, HistoryReachabilityRecord::default());
         lock_counters(&self.counters).record_reachability_row_removed();
         record

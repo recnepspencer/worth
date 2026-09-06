@@ -1,7 +1,8 @@
 # Milestone 9.17.2: Composite Runtime-World History And Coordinated Publication
 
-> **Status:** Planned and ready for implementation. No production
-> implementation claim is made by this specification.
+> **Status:** Implementation and scoped closure complete on 2026-09-05.
+> The persistent Astra high gate approved Phases 5–7. Untouched dependency lint
+> debt remains explicitly recorded under the Phase 7 closure evidence.
 >
 > **Product posture:** This milestone establishes the memory-resident Runtime
 > World composition authority in the dedicated `worth-runtime-world` owner
@@ -683,7 +684,7 @@ one-way service seal:
 use worth_runtime_world::facade::{
     CompositePublicationIntent, ProductBranchCreationIntent,
     RuntimeWorldBootstrapIntent, RuntimeWorldCancellationSource, RuntimeWorldOwner,
-    RuntimeWorldPublicationOutcome,
+    RuntimeWorldPublicationOutcome, RuntimeWorldBootstrapOutcome,
 };
 
 let bridge_correspondence_port = bridge.runtime_world_correspondence_port();
@@ -707,22 +708,31 @@ let bootstrapped = world.lifecycle_port().bootstrap_root(
         bridge_correspondence,
     ),
 )?;
-let product_branch = bootstrapped.product_branch();
+let initial = match bootstrapped {
+    RuntimeWorldBootstrapOutcome::Performed(performed) => performed,
+    RuntimeWorldBootstrapOutcome::NoEffect(denial) => return inspect_bootstrap_denial(denial),
+};
+let product_branch = initial.product_branch().branch_identity();
 
 let expected = world
     .observation_port()
     .observe_product_branch(product_branch)?;
 
-let prepared = world.publication_port().prepare(
+let cancellation = RuntimeWorldCancellationSource::new();
+let prepared = match world.publication_port().prepare_without_signal(
     expected,
     CompositePublicationIntent::without_signal(relational_change),
-)?;
-let cancellation = RuntimeWorldCancellationSource::new();
+    &cancellation.token(),
+    None,
+) {
+    Ok(prepared) => prepared,
+    Err(no_effect) => return inspect_no_effect(no_effect),
+};
 
 match world.publication_port().execute_without_signal(
     prepared,
     &cancellation.token(),
-)? {
+) {
     RuntimeWorldPublicationOutcome::Performed(performed) => {
         query_handoff.accept(performed)?;
     }
@@ -1125,6 +1135,42 @@ already on `codex/9-17-2-phase4-contract-sync`.
 
 ### Phase 5: Serial progression and facade freeze
 
+Phase 5 public-boundary implementation decision: non-generic observation,
+branch, recovery, and lifecycle ports hold weak references to private World
+service traits. Only the private World engine implements those traits; callers
+cannot register implementations. This dispatch hides the engine's generic
+storage, never replaces or erases either concrete component-owner bundle, and
+never stores a Signal context or mutation callback. Publication ports retain the
+five exact Signal parameters. The public non-Clone owner is the sole strong root;
+owner loss closes admission even while an already admitted call holds a temporary
+engine reference. Consuming a performed publication permanently closes its
+exclusive delivery lane; the returned receipt is descriptive canonical evidence,
+not authority for another product terminal.
+
+
+Phase 5 inspection and custody decisions: every installed history occurrence
+owns a mandatory pair of exact component dependencies, forked from already held
+claims before installation without acquiring another component-owner lease.
+Bounded ancestry observations protect their starting occurrence and retain the
+catalog lifetime; they return borrowed commit references. Explicit history
+reclamation has named candidates and a work bound, with no invented history-age
+policy. Exact pin maintenance examines only caller-named keys. Recovery pages
+charge every examined slot, including vacancies, against the work bound, and recovery
+age starts at the owner-clock admission sample carried through caller loss.
+Cleanup takes an explicit minimum age. Inspection counters are catalog or
+registry observations with documented accounting scope; cumulative concurrent
+work is never attributed to a single attempt. Per-attempt history reservation
+cost is recorded at successful reservation.
+
+Phase 5 final handoff decisions: canonical Relational result/receipt and Signal
+advance/fork outcomes are borrowed through the result facade; settlement routes
+remain private. Bootstrap accepts an optional explicit cancellation token on its
+intent. Its final installation checks cancellation and owner/close state under
+bootstrap admission, then publishes the complete root state under the same guard.
+Inspection is unavailable until that state is complete. Close holds bootstrap
+through operation admission, publishes Closing, then drains component custody
+outside lifecycle locks.
+
 Assemble the typed progression; audit cancellation/capacity edges; prove three
 outcomes, one-winner CAS, unrelated progress, bounded recovery, and no mixed
 world; freeze the facade and 9.17.3 artifacts.
@@ -1136,11 +1182,46 @@ world; freeze the facade and 9.17.3 artifacts.
 - **Adversarial:** controlled schedules, substitutions, compiler cases, races.
 - **Operability:** cost/scale, facade, example, docs, dependency/residue proof.
 
+Phase 6 implementation evidence (2026-09-05): one real facade court with the
+non-unit Signal bundle, the full reuse/fork matrix, hostile publication/recovery
+and retention cases, six deterministic operation-control scenarios, independent
+seeded product transitions, and three named ignored profiles are implemented.
+The gate approved the model/cost slice after requiring fresh live-head observation,
+all known basis dependency classes, varied seeded operation order/lifetimes and
+live-pin U populations. Ordinary certification has 33 tests plus three ignored
+profiles; the operation-control feature adds six cases. The grouped compiler
+family executes sixteen fixtures. The facade-only executable example and public
+owner docs complete Phase 6. The persistent gate approved the documentation and
+example slice, followed by the Phase 7 closure below.
+
+The Signal single-target routing choice and reproducible untouched batch-read
+follow-up are recorded in `crates/worth-runtime-world/RETENTION_AND_RECOVERY.md`.
+No Query cutover or batch-read repair is claimed. Scheduled profile configuration,
+measurement posture and population co-variation are documented there as well.
+
 ### Phase 7: Serial closure gate
 
 Run the one integration target's default/feature lanes plus owner, compiler,
 scale, docs, format, lint, line-cap, boundary, and context gates. Review/merge
 is not an implementation lane; no contract fork crosses into 9.17.3.
+
+Phase 7 closure evidence (2026-09-05, final gate approved): the ordinary package
+passes 209 owner tests, 33 certification cases (including the sixteen compiler
+fixtures), and the executable example; the doc lane contains no doctests. The
+feature owner lane passes 217 tests, deterministic operation-control passes six,
+and the scheduled lane passes all three profiles. Focused predecessor checks
+pass seven Bridge Runtime World cases, 207 Signal owner-service cases and four
+Relational lineage resolution cases. Formatting, dirty line caps, dependency
+boundaries and generated context validation pass.
+
+The exact planned Clippy command was run and failed on existing Signal dependency
+dead-code diagnostics. All warnings in scoped files were corrected. Strict World
+checks with `--no-deps` pass for default and all features; dependency diagnostics
+remain in untouched files (62 Signal and seven Relational warning groups). Under
+`AGENTS.md`, untouched pre-existing failures are repository debt and do not expand
+or block scoped completion. This is not a claim that the broader strict command
+passes. The Bridge selector was corrected from `runtime_world_correspondence`
+(which executed zero cases) to `runtime_world` (seven executed cases).
 
 ## Performance And Resource Contract
 
@@ -1153,6 +1234,18 @@ Name these scale axes in implementation and evidence:
 - `P`: retained product-unpublished records;
 - `O`: active admitted observations; and
 - `W`: concurrent writers.
+
+Owner-local hash indexing uses expected/amortized constant-time bounds, as in
+the exact-pin registry; this is not a worst-case collision guarantee. History
+reservation carries stable entry/reachability slots through publication. Index
+growth and slot allocation precede component effects; final installation writes
+those slots without index insertion. Logical-call counters and direct-slot-write
+counters describe different work and cannot establish hash collision bounds.
+Recovery likewise uses pre-effect reusable slots and an identity hash index;
+Active/Retained/Busy transitions update one existing slot. Bounded pages use an
+opaque owner-affine position cursor and charge vacancies against the examined
+bound. Slot order is observational, not identity order or a frozen snapshot;
+concurrent reuse before the cursor requires a fresh scan to observe that new row.
 
 Required bounds are:
 
@@ -1346,7 +1439,7 @@ test-operation-control = [
 The planned commands are:
 
 ```text
-cargo test -p worth-runtime-bridge runtime_world_correspondence
+cargo test -p worth-runtime-bridge runtime_world
 cargo test -p worth-runtime-world --test runtime_world_certification
 cargo test -p worth-runtime-world --features test-operation-control --test runtime_world_certification operation_control::
 cargo test -p worth-runtime-world --features test-operation-control --test runtime_world_certification -- --ignored

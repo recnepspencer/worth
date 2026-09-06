@@ -3,9 +3,10 @@ use crate::identity::CompositePublicationAttemptIdentity;
 use crate::lifecycle::RuntimeWorldInstant;
 use crate::publication::{
     ActiveAttemptCustody, CompositeAttemptCancellationPosture, CompositeAttemptProgress,
-    CompositePublicationCostCounters, CompositePublicationOrder, NoEffectCause,
-    NoEffectCompositePublication, ReservedAttemptCapacities,
+    CompositePublicationCostCounters, CompositePublicationOrder, ReservedAttemptCapacities,
 };
+#[cfg(test)]
+use crate::publication::{NoEffectCause, NoEffectCompositePublication};
 
 /// Branch creation reserves the same resources under the same rules and
 /// consumes into a creation terminal. Custody slots for every owner fork this
@@ -79,10 +80,15 @@ impl ReservedBranchCreationAttempt {
             deadline,
             order: CompositePublicationOrder::RelationalThenSignal,
             progress,
-            counters: CompositePublicationCostCounters::zero(),
+            counters: {
+                let mut costs = CompositePublicationCostCounters::zero();
+                costs.record_history_slot_reserved();
+                costs
+            },
         }
     }
 
+    #[cfg(test)]
     pub(crate) const fn identity(&self) -> &CompositePublicationAttemptIdentity {
         &self.identity
     }
@@ -95,6 +101,7 @@ impl ReservedBranchCreationAttempt {
         &self.plan
     }
 
+    #[cfg(test)]
     pub(crate) const fn order(&self) -> CompositePublicationOrder {
         self.order
     }
@@ -107,6 +114,7 @@ impl ReservedBranchCreationAttempt {
 
     /// Structural counters are initialized when the attempt is reserved, before
     /// the first owner effect.
+    #[cfg(test)]
     pub(crate) const fn counters(&self) -> &CompositePublicationCostCounters {
         &self.counters
     }
@@ -138,6 +146,7 @@ impl ReservedBranchCreationAttempt {
         self.custody.begin_publication();
     }
 
+    #[cfg(test)]
     pub(crate) fn cancel(self) -> NoEffectCompositePublication {
         assert_eq!(self.progress.owner_effect_count(), 0);
         NoEffectCompositePublication::new(NoEffectCause::CancelledBeforeEffect, Some(self.source))

@@ -68,7 +68,6 @@ pub(crate) enum ProductBranchObservationAuthorityDenial {
     HistoryCommitOrOwnerMismatch,
 }
 
-#[derive(Debug)]
 pub(crate) struct ProductBranchObservationAdmissionFailure {
     denial: ProductBranchObservationAuthorityDenial,
     snapshot: ProductBranchReferenceSnapshot,
@@ -77,10 +76,12 @@ pub(crate) struct ProductBranchObservationAdmissionFailure {
 }
 
 impl ProductBranchObservationAdmissionFailure {
+    #[cfg(test)]
     pub(crate) const fn denial(&self) -> ProductBranchObservationAuthorityDenial {
         self.denial
     }
 
+    #[cfg(test)]
     pub(crate) fn into_parts(
         self,
     ) -> (
@@ -224,10 +225,6 @@ impl ProductBranchObservation {
         self.snapshot.commit().basis()
     }
 
-    pub(crate) fn retention_obligation(&self) -> &ProductBranchObservationObligation {
-        &self.obligation
-    }
-
     pub(crate) fn snapshot(&self) -> &ProductBranchReferenceSnapshot {
         &self.snapshot
     }
@@ -248,3 +245,14 @@ impl ProductBranchObservation {
 #[cfg(test)]
 #[path = "observation_tests.rs"]
 mod tests;
+
+impl std::fmt::Debug for ProductBranchObservationAdmissionFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProductBranchObservationAdmissionFailure")
+            .field("denial", &self.denial)
+            .field("snapshot", &self.snapshot)
+            .field("components", &self.components)
+            .field("history", &self.history)
+            .finish()
+    }
+}

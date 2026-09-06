@@ -120,6 +120,7 @@ fn exercise_restore_post_movement_fault(boundary: SignalOwnerOperationBoundary) 
                     &SignalOwnerCancellationSource::new().token(),
                     |_| Ok(()),
                 )
+                .into_result()
                 .expect("a healthy target operation follows outcome unwind");
             let _ = healthy.into_parts();
         }

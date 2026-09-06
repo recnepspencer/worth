@@ -49,27 +49,13 @@ impl ActiveAttemptCustody {
                 .as_ref()
                 .expect("explicit retention has prepared its successor"),
         );
-        match disposition {
-            RetainedCommitDisposition::InstallSuccessor => {
-                if let ActiveHistoryCustody::Reserved(capacity) = &mut resources.history_custody {
-                    let protection = capacity
-                        .try_install_product_head(Arc::clone(&commit))
-                        .expect("the reserved successor installs under protection");
-                    resources.history_custody = ActiveHistoryCustody::Installed(protection);
-                }
-            }
-            RetainedCommitDisposition::ReleaseUnused => {
-                if matches!(resources.history_custody, ActiveHistoryCustody::Reserved(_)) {
-                    resources.history_custody = ActiveHistoryCustody::Released;
-                    resources.commit = None;
-                }
-            }
-        }
         if let Some(head) = resources.product_head.as_mut() {
             let retained = head
                 .retain_component_pins()
                 .expect("the exact returned head pair retains atomically");
-            resources.pins = ActivePinCustody::Retained(retained);
+            resources.pins = ActivePinCustody::Retained {
+                _obligation: retained,
+            };
             let (_, _, history, _) = resources
                 .product_head
                 .take()
@@ -85,11 +71,46 @@ impl ActiveAttemptCustody {
                 }
             }
         }
+        match disposition {
+            RetainedCommitDisposition::InstallSuccessor => {
+                if let ActiveHistoryCustody::Reserved(capacity) = &mut resources.history_custody {
+                    if resources.history_pins.is_none() {
+                        if let ActivePinCustody::Bound(pins) = &resources.pins {
+                            match pins.fork_history(commit.basis()) {
+                                Ok(history) => resources.history_pins = Some(history),
+                                Err(denial) => resources.pin_denial = Some(
+                                    crate::retention::RetentionObligationDenial::HistoryDependency(
+                                        denial,
+                                    ),
+                                ),
+                            }
+                        }
+                    }
+                    // A denied pin binding retains the original reserved slot;
+                    // it never installs an unpinned history occurrence.
+                    if let Some(pins) = resources.history_pins.take() {
+                        let protection = capacity
+                            .try_install_product_head(Arc::clone(&commit), pins)
+                            .expect("reserved successor installs with exact history pins");
+                        resources.history_custody = ActiveHistoryCustody::Installed(protection);
+                    }
+                }
+            }
+            RetainedCommitDisposition::ReleaseUnused => {
+                if matches!(resources.history_custody, ActiveHistoryCustody::Reserved(_)) {
+                    resources.history_custody = ActiveHistoryCustody::Released;
+                    resources.commit = None;
+                    resources.history_pins = None;
+                }
+            }
+        }
         if let ActivePinCustody::Bound(obligation) = &mut resources.pins {
             let retained = obligation
                 .try_transfer_retained()
                 .expect("live publication claims transfer together into retained custody");
-            resources.pins = ActivePinCustody::Retained(retained);
+            resources.pins = ActivePinCustody::Retained {
+                _obligation: retained,
+            };
         }
     }
 }

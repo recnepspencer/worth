@@ -6,9 +6,9 @@ mod reclamation;
 mod retention;
 
 pub(crate) use catalog::{
-    CompositeHistoryCatalog, CompositeHistoryCatalogDenial, ReservedCompositeCommitCapacity,
-    RuntimeWorldHistoryCatalogContract,
+    CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RuntimeWorldHistoryCatalogContract,
 };
+pub use catalog::{CompositeHistoryCatalogDenial, CompositeHistoryTraversal};
 #[allow(
     unused_imports,
     reason = "the internal denial is asserted by the real constructor contract test"
@@ -24,8 +24,11 @@ pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim,
 };
-#[cfg(test)]
-pub(crate) use reclamation::CompositeHistoryReclamationRequest;
+pub use reclamation::{
+    CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
+};
 pub(crate) use retention::{
     ExplicitCommitHistoryProtectionObligation, ProductHeadHistoryProtectionObligation,
 };
+
+pub use catalog::{HistoryCatalogCounters, HistoryMetadataLedger};

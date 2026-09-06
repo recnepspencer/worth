@@ -13,6 +13,7 @@ use crate::retention::ReservedComponentPinPairCapacity;
 #[derive(Debug)]
 #[must_use = "reserved attempt capacities are consumed by a terminal or released on drop"]
 pub(crate) struct ReservedAttemptCapacities {
+    admitted_at: crate::lifecycle::RuntimeWorldInstant,
     reserved_commit_identity: CompositeCommitIdentity,
     product_unpublished_identity: ProductUnpublishedOwnerEffectsIdentity,
     reserved_commit_capacity: ReservedCompositeCommitCapacity,
@@ -27,6 +28,7 @@ pub(crate) struct ReservedAttemptCapacities {
 /// record and disassembled back into it, so a terminal that takes the bundle
 /// apart names each resource it consumes rather than counting tuple slots.
 pub(crate) struct ReservedAttemptCapacityInputs {
+    pub(crate) admitted_at: crate::lifecycle::RuntimeWorldInstant,
     pub(crate) reserved_commit_identity: CompositeCommitIdentity,
     pub(crate) product_unpublished_identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(crate) reserved_commit_capacity: ReservedCompositeCommitCapacity,
@@ -40,6 +42,7 @@ pub(crate) struct ReservedAttemptCapacityInputs {
 impl ReservedAttemptCapacities {
     pub(crate) fn new(inputs: ReservedAttemptCapacityInputs) -> Self {
         let ReservedAttemptCapacityInputs {
+            admitted_at,
             reserved_commit_identity,
             product_unpublished_identity,
             reserved_commit_capacity,
@@ -50,6 +53,7 @@ impl ReservedAttemptCapacities {
             operation,
         } = inputs;
         Self {
+            admitted_at,
             reserved_commit_identity,
             product_unpublished_identity,
             reserved_commit_capacity,
@@ -63,6 +67,7 @@ impl ReservedAttemptCapacities {
 
     pub(crate) fn into_parts(self) -> ReservedAttemptCapacityInputs {
         ReservedAttemptCapacityInputs {
+            admitted_at: self.admitted_at,
             reserved_commit_identity: self.reserved_commit_identity,
             product_unpublished_identity: self.product_unpublished_identity,
             reserved_commit_capacity: self.reserved_commit_capacity,

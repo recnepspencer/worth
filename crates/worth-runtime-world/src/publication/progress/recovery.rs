@@ -212,6 +212,7 @@ impl SignalAttemptProgress {
             {
                 crate::publication::CompositeSignalOwnerResult::retained()
             }
+            #[cfg(test)]
             Some(super::SignalProgressEvidence::Prepared)
                 if posture == SignalAttemptProgressPosture::PreparedForExecution =>
             {

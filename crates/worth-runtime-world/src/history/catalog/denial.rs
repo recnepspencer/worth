@@ -1,7 +1,7 @@
 use crate::identity::{CompositeCommitIdentity, RuntimeWorldOwnerIdentity};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum CompositeHistoryCatalogDenial {
+pub enum CompositeHistoryCatalogDenial {
     ForeignOwner {
         expected: RuntimeWorldOwnerIdentity,
         actual: RuntimeWorldOwnerIdentity,
@@ -10,6 +10,7 @@ pub(crate) enum CompositeHistoryCatalogDenial {
         expected: RuntimeWorldOwnerIdentity,
         actual: RuntimeWorldOwnerIdentity,
     },
+    HistoryPinBasisMismatch,
     DuplicateCommit,
     RootAlreadyInstalled,
     MissingParent(CompositeCommitIdentity),

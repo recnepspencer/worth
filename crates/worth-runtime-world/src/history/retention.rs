@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use crate::history::CompositeRuntimeWorldCommit;
 use crate::identity::{CompositeCommitIdentity, RuntimeWorldOwnerIdentity};
-use crate::retention::ComponentBasisDependencyClass;
 
 use super::catalog::{lock_index, HistoryReachabilityHandle};
 
@@ -11,7 +10,6 @@ use super::catalog::{lock_index, HistoryReachabilityHandle};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::history) enum HistoryProtectionClass {
     ProductHead,
-    ProductUnpublishedOwnerEffects,
     ExplicitObligation,
 }
 
@@ -88,37 +86,6 @@ impl ProductHeadHistoryProtectionObligation {
     pub(crate) fn matches_commit(&self, commit: &CompositeRuntimeWorldCommit) -> bool {
         self.commit_identity() == commit.identity()
     }
-
-    pub(crate) fn transition_to_product_unpublished(
-        self,
-    ) -> ProductUnpublishedHistoryProtectionObligation {
-        let Self { mut protection } = self;
-        protection.class = HistoryProtectionClass::ProductUnpublishedOwnerEffects;
-        ProductUnpublishedHistoryProtectionObligation { protection }
-    }
-}
-
-/// History custody for the exact installed successor whose owner effects
-/// survived a lost product CAS. It reuses the product-head protection rather
-/// than acquiring a second direct protection after the race.
-#[must_use = "product-unpublished recovery must retain its installed successor commit"]
-pub(crate) struct ProductUnpublishedHistoryProtectionObligation {
-    protection: CompositeHistoryProtectionObligation,
-}
-
-impl std::fmt::Debug for ProductUnpublishedHistoryProtectionObligation {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter
-            .debug_struct("ProductUnpublishedHistoryProtectionObligation")
-            .field("identity", &self.protection.identity)
-            .finish_non_exhaustive()
-    }
-}
-
-impl ProductUnpublishedHistoryProtectionObligation {
-    pub(crate) fn commit_identity(&self) -> &CompositeCommitIdentity {
-        &self.protection.identity
-    }
 }
 
 /// History-issued proof that one live commit-bound consumer keeps its exact
@@ -154,30 +121,5 @@ impl ExplicitCommitHistoryProtectionObligation {
 
     pub(crate) fn matches_commit(&self, commit: &CompositeRuntimeWorldCommit) -> bool {
         self.commit_identity() == commit.identity()
-    }
-}
-
-/// History's future retention lane consumes an exact component dependency
-/// class; it never becomes a second owner-lease authority.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct HistoryRetentionContract {
-    owner: RuntimeWorldOwnerIdentity,
-    dependency: ComponentBasisDependencyClass,
-}
-
-impl HistoryRetentionContract {
-    pub(crate) const fn new(
-        owner: RuntimeWorldOwnerIdentity,
-        dependency: ComponentBasisDependencyClass,
-    ) -> Self {
-        Self { owner, dependency }
-    }
-
-    pub(crate) const fn owner(self) -> RuntimeWorldOwnerIdentity {
-        self.owner
-    }
-
-    pub(crate) const fn dependency(self) -> ComponentBasisDependencyClass {
-        self.dependency
     }
 }

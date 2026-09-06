@@ -134,7 +134,7 @@ fn assert_cleanup_releases_custody(
     assert_eq!(owner.recovery_record_count(), 0);
     assert_eq!(
         owner.state.retention.active_component_obligation_count(),
-        custody_before
+        custody_before + 2 // Unreachable successor history awaits explicit reclamation.
     );
     let source_after =
         RuntimeWorldObservationService::observe_product_branch(owner, source.branch_identity())

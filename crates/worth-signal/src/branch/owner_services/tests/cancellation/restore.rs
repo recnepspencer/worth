@@ -183,6 +183,7 @@ pub(in crate::branch::owner_services::tests) fn restore_fixture() -> PopulatedRe
                 )
             },
         )
+        .into_result()
         .expect("the snapshot semantic value performs");
     let (snapshot_basis, _) = snapshot_ready.into_parts();
     let capture = owner
@@ -207,6 +208,7 @@ pub(in crate::branch::owner_services::tests) fn restore_fixture() -> PopulatedRe
                     .set_dependencies(dispatch, [DependencyEdge::new(live_source, Aspect::new(0))])
             },
         )
+        .into_result()
         .expect("the live cell genuinely diverges after capture");
     let (current_basis, _) = live_ready.into_parts();
     assert_dependency(&cell, &admission, dispatch, live_source);

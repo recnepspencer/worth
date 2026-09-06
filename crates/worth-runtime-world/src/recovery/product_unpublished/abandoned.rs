@@ -28,7 +28,7 @@ impl ProductUnpublishedOwnerEffectsRecord {
             cause,
             next_actions,
             deadline,
-            age_ticks: 0,
+            admitted_at: facts.admitted_at,
             owner_effect_count,
             metadata_bytes: ProductUnpublishedOwnerEffects::metadata_charge_hint(),
         })

@@ -11,6 +11,7 @@ use crate::publication::{CompositeAttemptProgress, CompositeOwnerExecutionResult
 /// from, would describe an attempt that never ran, so no caller may name a
 /// subset of it.
 pub(crate) struct RetainedAttemptFacts {
+    pub(crate) admitted_at: crate::lifecycle::RuntimeWorldInstant,
     pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(crate) attempt_identity: CompositePublicationAttemptIdentity,
     pub(crate) expected_head: ProductBranchObservation,

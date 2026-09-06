@@ -5,9 +5,6 @@ pub struct CompositePublicationCostCounters {
     relational_owner_contacts: u64,
     signal_owner_contacts: u64,
     expected_head_rechecks: u64,
-    unique_pin_hits: u64,
-    unique_pin_acquisitions: u64,
-    unique_pin_releases: u64,
     history_slots_reserved: u64,
     history_slots_installed: u64,
     product_cell_touches: u64,
@@ -15,8 +12,6 @@ pub struct CompositePublicationCostCounters {
     cas_wins: u64,
     cas_losses: u64,
     cancellation_observations: u64,
-    retained_partial_creations: u64,
-    retained_partial_cleanups: u64,
 }
 
 impl CompositePublicationCostCounters {
@@ -25,9 +20,6 @@ impl CompositePublicationCostCounters {
             relational_owner_contacts: 0,
             signal_owner_contacts: 0,
             expected_head_rechecks: 0,
-            unique_pin_hits: 0,
-            unique_pin_acquisitions: 0,
-            unique_pin_releases: 0,
             history_slots_reserved: 0,
             history_slots_installed: 0,
             product_cell_touches: 0,
@@ -35,8 +27,6 @@ impl CompositePublicationCostCounters {
             cas_wins: 0,
             cas_losses: 0,
             cancellation_observations: 0,
-            retained_partial_creations: 0,
-            retained_partial_cleanups: 0,
         }
     }
 
@@ -50,18 +40,6 @@ impl CompositePublicationCostCounters {
 
     pub const fn expected_head_rechecks(self) -> u64 {
         self.expected_head_rechecks
-    }
-
-    pub const fn unique_pin_hits(self) -> u64 {
-        self.unique_pin_hits
-    }
-
-    pub const fn unique_pin_acquisitions(self) -> u64 {
-        self.unique_pin_acquisitions
-    }
-
-    pub const fn unique_pin_releases(self) -> u64 {
-        self.unique_pin_releases
     }
 
     pub const fn history_slots_reserved(self) -> u64 {
@@ -92,14 +70,6 @@ impl CompositePublicationCostCounters {
         self.cancellation_observations
     }
 
-    pub const fn retained_partial_creations(self) -> u64 {
-        self.retained_partial_creations
-    }
-
-    pub const fn retained_partial_cleanups(self) -> u64 {
-        self.retained_partial_cleanups
-    }
-
     /// One round of Relational-owner-facing work this attempt asked for. A
     /// creation fork and a publication commit are each one contact however many
     /// port calls the owner needs to perform it: the counter names how often the
@@ -125,6 +95,10 @@ impl CompositePublicationCostCounters {
             .expected_head_rechecks
             .checked_add(1)
             .expect("one bounded publication cannot overflow head recheck accounting");
+    }
+
+    pub(crate) fn record_history_slot_reserved(&mut self) {
+        self.history_slots_reserved += 1;
     }
 
     pub(crate) fn record_history_slot_installed(&mut self) {

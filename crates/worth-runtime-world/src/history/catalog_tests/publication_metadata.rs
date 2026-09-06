@@ -14,12 +14,12 @@ fn publication_envelope_is_charged_before_effects_and_released_with_its_entry() 
         panic!("ordinary child")
     };
     let expected = ProductBranchReferenceSnapshot::owner_issued(
-        owner.owner_identity(),
+        owner.authority.owner_identity(),
         ProductBranchIdentity::issued(
-            owner.owner_identity(),
+            owner.authority.owner_identity(),
             ProductBranchName::try_new("root").unwrap(),
         ),
-        owner.issuer_mut().branch_incarnation().unwrap(),
+        owner.authority.issuer_mut().branch_incarnation().unwrap(),
         ProductBranchReferenceGeneration::initial(),
         root.clone(),
     )
@@ -28,10 +28,12 @@ fn publication_envelope_is_charged_before_effects_and_released_with_its_entry() 
     let publication_charge = AllocationOracle::publication_resident(child, "root");
     let maximum = root_charge + AllocationOracle::reservation_resident(child) + publication_charge;
     let denied = CompositeHistoryCatalog::new(
-        owner.owner_identity(),
+        owner.authority.owner_identity(),
         history_contract(2, (maximum - 1) as u64),
     );
-    denied.append(root.clone()).unwrap();
+    denied
+        .append(root.clone(), owner.history_pins(root))
+        .unwrap();
     let before = denied.metadata_ledger();
     assert!(matches!(
         denied.reserve_publication_capacity(
@@ -44,9 +46,13 @@ fn publication_envelope_is_charged_before_effects_and_released_with_its_entry() 
     assert_eq!(denied.metadata_ledger(), before);
     assert_eq!(denied.reserved_len(), 0);
 
-    let catalog =
-        CompositeHistoryCatalog::new(owner.owner_identity(), history_contract(2, maximum as u64));
-    catalog.append(root.clone()).unwrap();
+    let catalog = CompositeHistoryCatalog::new(
+        owner.authority.owner_identity(),
+        history_contract(2, maximum as u64),
+    );
+    catalog
+        .append(root.clone(), owner.history_pins(root))
+        .unwrap();
     let mut capacity = catalog
         .reserve_publication_capacity(child.identity().clone(), attempt.clone(), expected)
         .unwrap();
@@ -59,7 +65,9 @@ fn publication_envelope_is_charged_before_effects_and_released_with_its_entry() 
         .claim_performed_publication(child.identity())
         .unwrap()
         .is_none());
-    let (head, delivery) = capacity.try_install_publication(child.clone()).unwrap();
+    let (head, delivery) = capacity
+        .try_install_publication(child.clone(), owner.history_pins(child))
+        .unwrap();
     assert_eq!(
         catalog.metadata_ledger().installed_resident(),
         root_charge + publication_charge
@@ -76,9 +84,8 @@ fn publication_envelope_is_charged_before_effects_and_released_with_its_entry() 
     drop(head);
     let request = || {
         CompositeHistoryReclamationRequest::new(
-            owner.owner_identity(),
+            owner.authority.owner_identity(),
             vec![child.identity().clone()],
-            1,
             1,
         )
     };

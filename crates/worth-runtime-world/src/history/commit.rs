@@ -248,10 +248,6 @@ impl CompositeRuntimeWorldCommit {
         self.component_evidence.signal_publication_identity()
     }
 
-    pub(crate) fn component_evidence(&self) -> &CompositeComponentEvidence {
-        &self.component_evidence
-    }
-
     pub(crate) fn matches_owner_results(
         &self,
         predecessor: &AdmittedCompositeRuntimeWorldBasis,
