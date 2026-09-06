@@ -98,3 +98,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_regis
         }
     }
 }
+
+#[cfg(test)]
+#[path = "admission_denial/owner_unavailable.rs"]
+mod owner_unavailable_tests;
