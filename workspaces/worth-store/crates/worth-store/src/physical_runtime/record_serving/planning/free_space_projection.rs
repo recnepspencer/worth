@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use worth_store_physical_format::{
-    DurableFreeSpaceManifestHeader, FreeSpaceKey, RecordAllocationClass,
-    RecordFreeSpaceManifestEntry,
+    CurrentPhysicalRecordPlacement, DurableFreeSpaceManifestHeader, FreeSpaceKey,
+    PersistedRecordIdentity, RecordAllocationClass, RecordFreeSpaceManifestEntry,
 };
 
 use super::super::planning::free_space_routing::{
@@ -10,8 +10,11 @@ use super::super::planning::free_space_routing::{
 };
 use super::super::{
     planning::inline_segment_plan::InlineSegmentAllocation, AdmittedPhysicalRecordFormat,
-    AdmittedRecordAccessPolicy, RecordAllocationFrontier, RecordAppendDenial, RecordAppendError,
+    AdmittedRecordAccessPolicy, RecordAppendDenial, RecordAppendError,
 };
+
+mod committed_frontier;
+use committed_frontier::CommittedAllocationFrontier;
 
 pub(in crate::physical_runtime::record_serving) struct FreeSpaceProjectionContext<'plan> {
     pub(in crate::physical_runtime::record_serving) allocation:
@@ -23,12 +26,12 @@ pub(in crate::physical_runtime::record_serving) struct FreeSpaceProjectionContex
     pub(in crate::physical_runtime::record_serving) current: &'plan DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime::record_serving) successor_generation: u64,
     pub(in crate::physical_runtime::record_serving) successor_capacity: u16,
-    pub(in crate::physical_runtime::record_serving) frontier: &'plan RecordAllocationFrontier,
 }
 
 pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
     context: FreeSpaceProjectionContext<'_>,
     touched_segments: &[InlineSegmentAllocation],
+    placements: &BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
 ) -> Result<FreeSpacePublicationPlan, RecordAppendError> {
     let FreeSpaceProjectionContext {
         allocation,
@@ -38,8 +41,13 @@ pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
         current,
         successor_generation,
         successor_capacity,
-        frontier,
     } = context;
+    let frontier = CommittedAllocationFrontier::from_publication(
+        current,
+        touched_segments,
+        placements.values().copied(),
+    )
+    .ok_or_else(damaged)?;
     let segment_page_capacity = touched_segments
         .first()
         .map_or(current.segment_page_capacity(), |segment| {
@@ -75,13 +83,13 @@ pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
         updates.insert(key, update);
     }
     let extent_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).expect("stable owner");
-    let extent_update = if frontier.next_extent() < u64::MAX {
+    let extent_update = if frontier.next_extent < u64::MAX {
         FreeSpaceUpdate::Available(
             RecordFreeSpaceManifestEntry::new(
                 RecordAllocationClass::Extent,
                 1,
-                frontier.next_extent(),
-                u64::MAX - frontier.next_extent(),
+                frontier.next_extent,
+                u64::MAX - frontier.next_extent,
                 1,
             )
             .ok_or_else(damaged)?,
@@ -100,9 +108,9 @@ pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
             generation: successor_generation,
             node_capacity: successor_capacity,
             segment_page_capacity,
-            next_segment: frontier.next_segment(),
-            next_page: frontier.next_page(),
-            next_extent: frontier.next_extent(),
+            next_segment: frontier.next_segment,
+            next_page: frontier.next_page,
+            next_extent: frontier.next_extent,
             updates,
         },
     )
