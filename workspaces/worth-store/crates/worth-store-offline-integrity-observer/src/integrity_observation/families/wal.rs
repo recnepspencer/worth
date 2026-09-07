@@ -15,6 +15,7 @@ pub(crate) struct WalFrameObservation {
     pub(crate) offset: u64,
     pub(crate) length: u64,
     pub(crate) outcome: Outcome,
+    pub(crate) lsn: Option<(u64, u64)>,
 }
 
 pub(crate) fn read_wal_segment(
@@ -25,11 +26,24 @@ pub(crate) fn read_wal_segment(
     counters: &mut OfflineIntegrityObservationCounters,
 ) -> Vec<WalFrameObservation> {
     let mut observations = Vec::new();
+    if bytes.is_empty() {
+        return vec![WalFrameObservation {
+            offset: 0,
+            length: 0,
+            lsn: None,
+            outcome: damage(
+                Cause::Truncation,
+                Some((0, WAL_FRAME_V1_HEADER_BYTES as u64)),
+                Blast::Artifact,
+            ),
+        }];
+    }
     let mut offset = 0;
     let mut next_lsn = None;
     while offset < bytes.len() {
         if observations.len() as u64 >= maximum_frames {
             observations.push(WalFrameObservation {
+                lsn: None,
                 offset: offset as u64,
                 length: 0,
                 outcome: Outcome::Indeterminate(
@@ -42,6 +56,7 @@ pub(crate) fn read_wal_segment(
         match read_frame(remaining, segment, generation, next_lsn, counters) {
             Ok((length, end)) => {
                 observations.push(WalFrameObservation {
+                    lsn: Some((read_u64(remaining, 28), end)),
                     offset: offset as u64,
                     length: length as u64,
                     outcome: Outcome::Intact,
@@ -51,6 +66,7 @@ pub(crate) fn read_wal_segment(
             }
             Err(outcome) => {
                 observations.push(WalFrameObservation {
+                    lsn: None,
                     offset: offset as u64,
                     length: remaining.len() as u64,
                     outcome: super::super::record_walk::shift_outcome(outcome, offset as u64),

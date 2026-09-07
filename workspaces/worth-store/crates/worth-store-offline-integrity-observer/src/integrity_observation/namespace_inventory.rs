@@ -55,7 +55,16 @@ pub(crate) fn observe_namespace_residue(
                 }
                 queue.push_back((path, depth + 1));
             } else {
-                residue.push(unknown_artifact(root, &path, depth + 1, walk));
+                if let Some(declared) = super::unaddressed_record::observe_unaddressed_record(
+                    root,
+                    &path,
+                    depth + 1,
+                    walk,
+                ) {
+                    residue.extend(declared);
+                } else {
+                    residue.push(unknown_artifact(root, &path, depth + 1, walk));
+                }
             }
         }
     }

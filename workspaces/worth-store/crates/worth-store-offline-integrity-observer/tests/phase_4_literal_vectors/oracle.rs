@@ -158,7 +158,7 @@ fn crc32c(parts: &[&[u8]]) -> u32 {
     !crc
 }
 
-fn sha256(parts: &[&[u8]]) -> [u8; 32] {
+pub(super) fn sha256(parts: &[&[u8]]) -> [u8; 32] {
     let bytes: Vec<u8> = parts.iter().flat_map(|part| part.iter().copied()).collect();
     sha256_bytes(&bytes)
 }

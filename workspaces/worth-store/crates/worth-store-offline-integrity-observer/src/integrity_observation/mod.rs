@@ -25,8 +25,10 @@ mod root_protocol_paths;
 mod root_protocol_projection;
 mod root_protocol_walk;
 mod sha256;
+mod unaddressed_record;
 mod unknown_artifact;
 mod untrusted_media;
+mod wal_coverage;
 
 pub use artifact_walk::{observe_store, OfflineIntegrityObservationDenial};
 pub use counters::OfflineIntegrityObservationCounters;

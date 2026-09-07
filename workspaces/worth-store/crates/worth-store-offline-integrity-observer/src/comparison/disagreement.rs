@@ -63,7 +63,7 @@ pub fn compare_integrity_observations(
             }),
             _ => None,
         };
-        comparisons.push(json!({"path":scope.0,"family":scope.1,"offset":scope.2,"agreement":agreement,"different_fields":fields,"posture_disagreement":posture_difference}));
+        comparisons.push(json!({"path":scope.0,"family":scope.1,"offset":scope.2,"unbounded_identity":scope.3,"agreement":agreement,"different_fields":fields,"posture_disagreement":posture_difference}));
     }
     let document = json!({"protocol":COMPARISON_PROTOCOL.as_str(),"version":COMPARISON_VERSION.get(),"runtime":runtime_report,"offline":offline_report,"comparisons":comparisons,"consumed":{"agreements":agreements,"disagreements":disagreements,"input_bytes":runtime.len()+offline.len()}});
     let wire = encode_bounded(&document, limits.report_bytes)?;
@@ -76,7 +76,7 @@ pub fn compare_integrity_observations(
     Ok(PhysicalIntegrityComparison { wire, counters })
 }
 
-type Scope = (String, String, Option<u64>);
+type Scope = (String, String, Option<u64>, Option<String>);
 fn index(artifacts: &[Artifact]) -> Result<BTreeMap<Scope, &Artifact>, Denial> {
     let mut indexed = BTreeMap::new();
     for artifact in artifacts {
@@ -84,6 +84,7 @@ fn index(artifacts: &[Artifact]) -> Result<BTreeMap<Scope, &Artifact>, Denial> {
             artifact.path.clone(),
             artifact.family.clone(),
             artifact.range.as_ref().map(|range| range.offset),
+            artifact.range.is_none().then(|| artifact.identity.clone()),
         );
         if indexed.insert(key, artifact).is_some() {
             return Err(Denial::DuplicateScope);

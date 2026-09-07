@@ -35,6 +35,8 @@ pub enum OfflineUnknownPhysicalReason {
     RootNotAddressed,
     StoreIdentityUnavailable,
     FilesystemEntryUnavailable,
+    PhysicalAliasNotReinspected,
+    ParentScopeUnavailable,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

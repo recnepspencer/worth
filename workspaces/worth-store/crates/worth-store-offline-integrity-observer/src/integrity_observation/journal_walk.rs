@@ -3,8 +3,8 @@ use super::{
         checkpoint::read_checkpoint, physical_work::read_physical_work, wal::read_wal_segment,
     },
     unknown_artifact::{relative_path, unknown_artifact},
-    BoundedMediaWalk, OfflineArtifactObservation, OfflineIntegrityOutcome as Outcome,
-    OfflineUnknownPhysicalReason,
+    BoundedMediaWalk, OfflineArtifactDuplicateEvidence, OfflineArtifactObservation,
+    OfflineIntegrityOutcome as Outcome, OfflineUnknownPhysicalReason,
 };
 use std::path::Path;
 use worth_foundational::{
@@ -18,6 +18,7 @@ pub(crate) fn observe_journals(
     walk: &mut BoundedMediaWalk,
 ) -> Vec<OfflineArtifactObservation> {
     let mut observations = Vec::new();
+    let mut wal_coverage = Vec::new();
     if walk.exhausted_reason().is_some() {
         return observations;
     }
@@ -36,6 +37,21 @@ pub(crate) fn observe_journals(
             let mut length = 0;
             let outcome = match walk.acquire(&path, 3) {
                 Err(outcome) => outcome,
+                Ok(acquired) if acquired.is_alias() => {
+                    observations.push(alias(
+                        root,
+                        &path,
+                        acquired.physical_alias_of.as_ref().unwrap(),
+                        Family::PhysicalWorkObligation,
+                        format!(
+                            "operation:{:016x}:{:016x}:{:016x}",
+                            identity.0, identity.1, identity.2
+                        ),
+                        Some(identity.1),
+                        acquired.byte_length as u64,
+                    ));
+                    continue;
+                }
                 Ok(acquired) => {
                     length = acquired.byte_length;
                     match store {
@@ -92,6 +108,17 @@ pub(crate) fn observe_journals(
                         outcome,
                     ));
                 }
+                Ok(acquired) if acquired.is_alias() => {
+                    observations.push(alias(
+                        root,
+                        &path,
+                        acquired.physical_alias_of.as_ref().unwrap(),
+                        Family::WalFrame,
+                        format!("wal:{segment}:{generation}:0"),
+                        Some(generation),
+                        acquired.byte_length as u64,
+                    ));
+                }
                 Ok(acquired) => {
                     let maximum = walk.maximum_entries();
                     let frames = read_wal_segment(
@@ -102,6 +129,9 @@ pub(crate) fn observe_journals(
                         walk.counters_mut(),
                     );
                     for frame in frames {
+                        if let Some((start, end)) = frame.lsn {
+                            wal_coverage.push((start, end));
+                        }
                         walk.record_outcome(&frame.outcome);
                         observations.push(project(
                             &relative,
@@ -117,6 +147,10 @@ pub(crate) fn observe_journals(
             }
         }
     }
+    observations.extend(super::wal_coverage::observe_missing_coverage(
+        wal_coverage,
+        walk,
+    ));
     let checkpoint = root.join("families/checkpoint.current");
     if checkpoint.try_exists().unwrap_or(true) {
         observe_checkpoint(root, &checkpoint, store, None, walk, &mut observations);
@@ -148,6 +182,17 @@ fn observe_checkpoint(
     let relative = relative_path(root, path);
     let acquired = walk.acquire(path, 2);
     match (acquired, store) {
+        (Ok(acquired), _) if acquired.is_alias() => {
+            observations.push(alias(
+                root,
+                path,
+                acquired.physical_alias_of.as_ref().unwrap(),
+                Family::CheckpointStreamHeader,
+                format!("checkpoint-candidate:{}", sequence.unwrap_or(0)),
+                sequence,
+                acquired.byte_length as u64,
+            ));
+        }
         (Err(outcome), _) => {
             walk.record_outcome(&outcome);
             observations.push(project(
@@ -196,6 +241,29 @@ fn observe_checkpoint(
             }
         }
     }
+}
+
+fn alias(
+    root: &Path,
+    path: &Path,
+    first: &Path,
+    family: Family,
+    identity: String,
+    generation: Option<u64>,
+    length: u64,
+) -> OfflineArtifactObservation {
+    project(
+        &relative_path(root, path),
+        family,
+        identity,
+        generation,
+        0,
+        length,
+        Outcome::Unknown(OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected),
+    )
+    .with_duplicate(OfflineArtifactDuplicateEvidence::PhysicalAlias {
+        first_path: relative_path(root, first).into(),
+    })
 }
 
 fn pending_identity(name: &str) -> Option<(u64, u64, u64)> {

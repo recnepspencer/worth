@@ -44,8 +44,7 @@ pub(super) fn verify() {
             ),
         }],
     );
-    for case in cases() {
-        let bytes = literal_page(&case);
+    for (case, (_, bytes)) in cases().iter().zip(reader_vectors()) {
         let ranges = [(0, 44), (48, bytes.len())];
         let checksums = [LiteralChecksumExpectation {
             checksum: LiteralChecksum::Crc32c(case.checksum),

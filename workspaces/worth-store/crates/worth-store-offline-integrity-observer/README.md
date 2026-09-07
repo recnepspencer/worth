@@ -152,5 +152,15 @@ Page and chunk observations describe embedded ranges, not invented standalone
 files. Missing expected child containers remain damage at the expected child
 scope. Unaddressed historical roots and unreachable residue remain Unknown:
 their own bytes cannot establish the parent scope needed to call them Intact.
+Canonical unaddressed record envelopes are still independently checksum-checked:
+self-contained damage or unsupported format remains visible, while an otherwise
+valid envelope is Unknown because parent scope has not been established.
+Recognized physical aliases are not reparsed: one bounded Unknown alias row
+preserves the alternate expected path/generation and the first path's identity.
+The original first-path observation retains its complete outcome. A journal
+alias never expands a second stream vector or repeats its checksums.
+Independently admitted adjacent WAL LSN intervals expose missing interior
+coverage as a reachability observation. This does not invent a concrete missing
+filename or byte range, require optional checkpoints, or condemn pruned prefixes.
 Unknown directories are reported without probing their content as canonical
 artifacts. Observation completeness describes traversal, not universal integrity.

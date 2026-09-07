@@ -71,6 +71,23 @@ pub(crate) fn observe_records(
                     .physical_alias_of
                     .as_ref()
                     .map(|path| super::unknown_artifact::relative_path(root, path));
+                if let Some(first_path) = &alias {
+                    observations.push(
+                        project(
+                            &expected,
+                            acquired.byte_length,
+                            Outcome::Unknown(
+                                OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected,
+                            ),
+                        )
+                        .with_duplicate(
+                            OfflineArtifactDuplicateEvidence::PhysicalAlias {
+                                first_path: first_path.clone().into(),
+                            },
+                        ),
+                    );
+                    continue;
+                }
                 if let ChildScope::Page { pages, .. } = expected.scope {
                     let expected_bytes =
                         u64::from(pages) * u64::from(read_u32(&expected.format, 2));
