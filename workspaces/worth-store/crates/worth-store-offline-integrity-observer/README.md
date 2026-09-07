@@ -1,12 +1,12 @@
 # WORTH Store offline integrity observer
 
-This crate owns the implementation-independent C.9 offline root-observer lane.
+This crate owns the implementation-independent C.9 offline observation lane.
 It reads Store content from a closed or isolated Store root through ordinary
 read-only OS file handles, applies finite caller-declared resource bounds, and
 emits a descriptive version-1 report. It grants no runtime admission, recovery choice, repair,
 quarantine mutation, reachability mutation, or semantic-service authority.
 
-## Phase 3 observation contract
+## Independent observation contract
 
 `observe_store` follows one staged root-protocol chain:
 
@@ -25,7 +25,13 @@ quarantine mutation, reachability mutation, or semantic-service authority.
    unaddressed damaged or unsupported evidence), while only selectors address
    missing-root obligations, checking envelope, generation scope,
    capacity, shape, and root/segment/free-space pointer encodings; and
-7. retain typed artifact outcomes, exact localization, completeness, and
+7. descend only from intact canonical roots into independently parsed routing,
+   segment-membership, and free-space trees; bind pages to membership-issued
+   segment/page/generation ranges and extents to routing-issued record bindings;
+8. read bootstrap catalogs, WAL segments, pending physical work, and checkpoint
+   streams independently, including record checksums and selective checkpoint
+   footer aggregate digests; and
+9. retain typed artifact outcomes, exact localization, completeness, and
    traversal/decoder counters in an `OfflineIntegrityReport`.
 
 The current and previous selectors are separate reader entry points even though
@@ -117,3 +123,34 @@ budget, so report-size exhaustion is enforced before an oversized allocation or
 emission. The wire contains no admission proof, recovery option, repair token, owner
 disposition, or reconciled verdict. Report-size exhaustion prevents emission and
 does not alter the already observed Store bytes.
+
+## Comparison
+
+```text
+physical_store_integrity_observer compare \
+  --runtime-observation <runtime-v1.json> \
+  --offline-observation <offline-v1.json> \
+  --report <new-external-report.json|->
+```
+
+Comparison admits version-1 reports only, with distinct runtime/offline roles,
+executables and processes, matching nonempty Store identity and scenario, and
+independent run identities. Input size is capped at 16 MiB per report, artifact
+count at 100,000 per report, and output at 64 MiB. Library callers can lower or
+raise these explicit finite limits. Invalid schemas, compatibility windows,
+duplicate scopes, or resource overflow fail closed.
+
+The comparison wire is `store.physical.integrity-comparison` version `1`. It
+retains both complete input observations and reports exact differences in
+presence, identity, generation, byte range, outcome/localization, and duplicate
+evidence. Same-posture differences remain visible. There is no winner,
+consensus, repair policy, or admission result. Comparison never opens a Store;
+the operator owns excluding the Store root from its output. The command rejects
+an input as output and uses create-new semantics, including hard-link aliases.
+
+Page and chunk observations describe embedded ranges, not invented standalone
+files. Missing expected child containers remain damage at the expected child
+scope. Unaddressed historical roots and unreachable residue remain Unknown:
+their own bytes cannot establish the parent scope needed to call them Intact.
+Unknown directories are reported without probing their content as canonical
+artifacts. Observation completeness describes traversal, not universal integrity.

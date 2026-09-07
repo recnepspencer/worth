@@ -2,6 +2,8 @@
 
 #[path = "physical_store_integrity_observer/arguments.rs"]
 mod arguments;
+#[path = "physical_store_integrity_observer/comparison.rs"]
+mod comparison;
 #[path = "physical_store_integrity_observer/observation.rs"]
 mod observation;
 #[path = "physical_store_integrity_observer/report_output.rs"]
@@ -19,7 +21,11 @@ fn main() {
             std::process::exit(2);
         }
     };
-    if let Err(message) = observation::observe(arguments) {
+    let result = match arguments {
+        arguments::OperationArguments::Observe(arguments) => observation::observe(arguments),
+        arguments::OperationArguments::Compare(arguments) => comparison::compare(arguments),
+    };
+    if let Err(message) = result {
         eprintln!("physical_store_integrity_observer: {message}");
         std::process::exit(1);
     }

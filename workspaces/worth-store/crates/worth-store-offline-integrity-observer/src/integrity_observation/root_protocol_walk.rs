@@ -54,11 +54,16 @@ pub(crate) struct AddressedRootExpectation {
     pub(crate) format: [u8; 10],
 }
 
+pub(crate) struct ObservedRootProtocol {
+    pub(crate) artifacts: Vec<OfflineArtifactObservation>,
+    pub(crate) roots: Vec<OfflineRootManifestFacts>,
+}
+
 pub(crate) fn observe_root_protocol(
     store_root: &Path,
     expected_store_identity: Option<[u8; 16]>,
     walk: &mut BoundedMediaWalk,
-) -> Result<Vec<OfflineArtifactObservation>, OfflineIntegrityObservationDenial> {
+) -> Result<ObservedRootProtocol, OfflineIntegrityObservationDenial> {
     let (mut selectors, mut unknowns) = read_selector_entries(store_root, walk)?;
     apply_selector_store_scope(&mut selectors, expected_store_identity);
     apply_selector_linkage(&mut selectors);
@@ -70,11 +75,21 @@ pub(crate) fn observe_root_protocol(
     unknowns.extend(root_unknowns);
     mark_root_duplicates(&mut roots, walk);
     mark_missing_selector_pointers(&mut selectors, &roots, root_incomplete, walk);
+    let admitted_roots = roots
+        .iter()
+        .filter(|entry| {
+            entry.exact_scope_established && entry.outcome == OfflineIntegrityOutcome::Intact
+        })
+        .filter_map(|entry| entry.facts)
+        .collect();
     let mut observations = selector_observations(selectors);
     observations.extend(root_observations(&addressed, roots, root_incomplete));
     observations.extend(unknowns);
     observations.sort_by(|left, right| left.relative_path().cmp(right.relative_path()));
-    Ok(observations)
+    Ok(ObservedRootProtocol {
+        artifacts: observations,
+        roots: admitted_roots,
+    })
 }
 
 fn read_selector_entries(
@@ -90,10 +105,19 @@ fn read_selector_entries(
     let mut unknown_paths = Vec::new();
     for path in &scan.entries {
         let Some((role, canonical)) = selector_path_role(path) else {
-            if path
-                .file_name()
-                .is_some_and(|name| name != "roots" && name != "bootstrap.catalog")
-            {
+            if path.file_name().is_some_and(|name| {
+                ![
+                    "roots",
+                    "bootstrap.catalog",
+                    "segments",
+                    "segment-manifests",
+                    "extents",
+                    "extent-manifests",
+                    "free-space",
+                ]
+                .iter()
+                .any(|known| name == *known)
+            }) {
                 unknown_paths.push(path.clone());
             }
             continue;
@@ -190,6 +214,9 @@ fn read_root_entries(
     for path in scan.entries {
         match root_manifest_generation(&path) {
             Some(generation) => candidates.push((path, generation)),
+            None if path
+                .file_name()
+                .is_some_and(|name| name.to_string_lossy().contains("-block-")) => {}
             None => unknown_paths.push(path),
         }
     }

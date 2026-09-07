@@ -1,3 +1,4 @@
+mod comparison_protocol;
 mod phase_4_literal_vectors;
 mod report_boundary_and_binary;
 mod resource_bounds;
@@ -55,25 +56,41 @@ fn clean_root_protocol_observation_and_counters_are_exact() {
         report.store_identity(),
         Some("0102030405060708090a0b0c0d0e0f10")
     );
-    assert_eq!(report.artifacts().len(), 4);
-    assert!(report
+    assert_eq!(report.artifacts().len(), 7);
+    let root_artifacts: Vec<_> = report
         .artifacts()
         .iter()
-        .all(|artifact| { artifact.outcome().posture() == PhysicalIntegrityPosture::Intact }));
+        .filter(|artifact| {
+            matches!(
+                artifact.family().declared(),
+                Some(
+                    PhysicalArtifactFamily::NamespaceIdentity
+                        | PhysicalArtifactFamily::CurrentRootSelector
+                        | PhysicalArtifactFamily::PreviousRootSelector
+                        | PhysicalArtifactFamily::RootManifest
+                )
+            )
+        })
+        .collect();
+    assert_eq!(root_artifacts.len(), 4);
+    assert!(root_artifacts
+        .iter()
+        .all(|artifact| artifact.outcome().posture() == PhysicalIntegrityPosture::Intact));
     assert_eq!(
-        report.artifacts()[0].family(),
+        root_artifacts[0].family(),
         PhysicalArtifactFamily::CurrentRootSelector
     );
     assert_eq!(
-        report.artifacts()[1].family(),
+        root_artifacts[1].family(),
         PhysicalArtifactFamily::PreviousRootSelector
     );
     assert_eq!(
-        report.artifacts()[2].family(),
+        root_artifacts[2].family(),
         PhysicalArtifactFamily::RootManifest
     );
     let counters = report.counters();
-    assert_eq!(counters.entries_visited(), 5);
+    assert_eq!(counters.entries_visited(), 8);
+    assert_eq!(counters.missing_artifacts(), 3);
     assert_eq!(counters.bytes_read(), 654);
     assert_eq!(counters.files_opened(), 16);
     assert_eq!(counters.open_file_high_water(), 5);

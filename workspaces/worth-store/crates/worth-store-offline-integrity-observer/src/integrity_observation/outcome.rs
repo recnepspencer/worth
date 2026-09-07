@@ -13,6 +13,9 @@ pub enum OfflineUnsupportedVersionAxis {
     RootProtocol,
     IntegrityAlgorithm,
     RecordIdentityWidth,
+    WalFrame,
+    CheckpointRecord,
+    PhysicalWork,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

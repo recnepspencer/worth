@@ -51,11 +51,10 @@ impl BoundedMediaWalk {
         after_read: impl FnOnce(),
     ) -> Result<BoundedAcquisition, OfflineIntegrityOutcome> {
         self.admit_acquisition_path(path, depth)?;
-        if std::fs::metadata(path)
+        let length = std::fs::metadata(path)
             .map_err(|_| self.indeterminate_io())?
-            .len()
-            > self.remaining_byte_budget()
-        {
+            .len();
+        if length > self.remaining_byte_budget() && !self.cached_lengths.contains(&length) {
             return Err(self.bound(OfflineIndeterminatePhysicalReason::ByteBoundExceeded));
         }
         before_open();
@@ -69,6 +68,14 @@ impl BoundedMediaWalk {
         self.verify_path_binding(&file, path, &physical_identity)?;
         let (physical_alias_of, cached_bytes) = self.cached_alias(&physical_identity, path);
         if let Some(bytes) = cached_bytes {
+            let unchanged = self
+                .seen_files
+                .get(&physical_identity)
+                .and_then(|cached| cached.snapshot.as_ref())
+                .is_some_and(|snapshot| same_snapshot(snapshot, &before));
+            if !unchanged {
+                return Err(self.source_changed());
+            }
             return Ok(BoundedAcquisition {
                 byte_length: bytes.len(),
                 bytes,
@@ -83,7 +90,7 @@ impl BoundedMediaWalk {
         after_read();
         self.verify_stable_file(&file, path, &before, &physical_identity, bytes.len())?;
         let bytes: Arc<[u8]> = bytes.into();
-        self.cache_bytes(physical_identity.clone(), path, Arc::clone(&bytes));
+        self.cache_bytes(physical_identity.clone(), path, Arc::clone(&bytes), before);
         Ok(BoundedAcquisition {
             byte_length: bytes.len(),
             bytes,
@@ -285,15 +292,26 @@ impl BoundedMediaWalk {
         Ok(())
     }
 
-    fn cache_bytes(&mut self, identity: PhysicalFileIdentity, path: &Path, bytes: Arc<[u8]>) {
+    fn cache_bytes(
+        &mut self,
+        identity: PhysicalFileIdentity,
+        path: &Path,
+        bytes: Arc<[u8]>,
+        snapshot: Metadata,
+    ) {
+        self.cached_lengths.insert(bytes.len() as u64);
         match self.seen_files.entry(identity) {
             Entry::Vacant(entry) => {
                 entry.insert(CachedPhysicalFile {
                     first_path: path.to_path_buf(),
                     bytes: Some(bytes),
+                    snapshot: Some(snapshot),
                 });
             }
-            Entry::Occupied(mut entry) => entry.get_mut().bytes = Some(bytes),
+            Entry::Occupied(mut entry) => {
+                entry.get_mut().bytes = Some(bytes);
+                entry.get_mut().snapshot = Some(snapshot);
+            }
         }
     }
 
@@ -307,6 +325,7 @@ impl BoundedMediaWalk {
                 entry.insert(CachedPhysicalFile {
                     first_path: path.to_path_buf(),
                     bytes: None,
+                    snapshot: None,
                 });
                 None
             }

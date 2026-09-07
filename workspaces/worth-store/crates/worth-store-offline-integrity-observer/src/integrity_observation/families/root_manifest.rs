@@ -12,6 +12,7 @@ const ROOT_MANIFEST_KIND: u8 = 2;
 pub(crate) struct OfflineRootManifestFacts {
     pub(crate) generation: u64,
     pub(crate) format: [u8; 10],
+    pub(crate) payload: [u8; 320],
 }
 
 pub(crate) fn read_root_manifest(
@@ -64,6 +65,7 @@ pub(crate) fn read_root_manifest(
     Ok(OfflineRootManifestFacts {
         generation,
         format: frame.format,
+        payload: frame.payload.try_into().expect("admitted root payload"),
     })
 }
 

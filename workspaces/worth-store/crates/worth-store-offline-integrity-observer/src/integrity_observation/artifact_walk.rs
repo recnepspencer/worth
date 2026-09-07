@@ -37,7 +37,24 @@ pub fn observe_store(
         .expected_store_identity
         .map(|identity| hex_bytes(&identity).into_boxed_str());
     let mut observations = namespace.observations;
-    observations.extend(root_observations);
+    observations.extend(root_observations.artifacts);
+    observations.extend(super::record_walk::observe_records(
+        &store_root,
+        namespace.expected_store_identity,
+        &root_observations.roots,
+        &mut walk,
+    ));
+    observations.extend(super::journal_walk::observe_journals(
+        &store_root,
+        namespace.expected_store_identity,
+        &mut walk,
+    ));
+    let residue = super::namespace_inventory::observe_namespace_residue(
+        &store_root,
+        &observations,
+        &mut walk,
+    );
+    observations.extend(residue);
     observations.sort_by(|left, right| left.relative_path().cmp(right.relative_path()));
     let (counters, completeness) = walk.finish();
     let mut report = OfflineIntegrityReport::new(

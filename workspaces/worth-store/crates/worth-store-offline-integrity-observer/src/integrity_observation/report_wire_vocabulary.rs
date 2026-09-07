@@ -27,7 +27,47 @@ pub(crate) fn family(value: OfflineArtifactFamily) -> &'static str {
             "previous_root_selector"
         }
         OfflineArtifactFamily::Declared(PhysicalArtifactFamily::RootManifest) => "root_manifest",
-        OfflineArtifactFamily::Declared(_) => "outside_phase_3_root_slice",
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::PhysicalWorkObligation) => {
+            "physical_work_obligation"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::BootstrapCatalog) => {
+            "bootstrap_catalog"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::RootRoutingBlock) => {
+            "root_routing_block"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::SegmentMembershipBlock) => {
+            "segment_membership_block"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::PageFrame) => "page_frame",
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::ExtentManifest) => {
+            "extent_manifest"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::ExtentChunkFrame) => {
+            "extent_chunk_frame"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::FreeSpaceHeader) => {
+            "free_space_header"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::FreeSpaceMembershipBlock) => {
+            "free_space_membership_block"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::WalFrame) => "wal_frame",
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointStreamHeader) => {
+            "checkpoint_stream_header"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointDirtyBasis) => {
+            "checkpoint_dirty_basis"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointBindingCompaction) => {
+            "checkpoint_binding_compaction"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointBinding) => {
+            "checkpoint_binding"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointFooter) => {
+            "checkpoint_footer"
+        }
     }
 }
 
@@ -81,6 +121,10 @@ pub(crate) fn format_field(value: OfflinePhysicalFormatField) -> &'static str {
         OfflinePhysicalFormatField::ManifestGeneration => "manifest_generation",
         OfflinePhysicalFormatField::ManifestPointer => "manifest_pointer",
         OfflinePhysicalFormatField::Reserved => "reserved",
+        OfflinePhysicalFormatField::TreeIdentity => "tree_identity",
+        OfflinePhysicalFormatField::TreeLevel => "tree_level",
+        OfflinePhysicalFormatField::WalLsn => "wal_lsn",
+        OfflinePhysicalFormatField::CheckpointAggregate => "checkpoint_aggregate",
     }
 }
 
@@ -95,6 +139,9 @@ pub(crate) fn unsupported_axis(value: OfflineUnsupportedVersionAxis) -> &'static
         OfflineUnsupportedVersionAxis::RootProtocol => "root_protocol",
         OfflineUnsupportedVersionAxis::IntegrityAlgorithm => "integrity_algorithm",
         OfflineUnsupportedVersionAxis::RecordIdentityWidth => "record_identity_width",
+        OfflineUnsupportedVersionAxis::WalFrame => "wal_frame",
+        OfflineUnsupportedVersionAxis::CheckpointRecord => "checkpoint_record",
+        OfflineUnsupportedVersionAxis::PhysicalWork => "physical_work",
     }
 }
 

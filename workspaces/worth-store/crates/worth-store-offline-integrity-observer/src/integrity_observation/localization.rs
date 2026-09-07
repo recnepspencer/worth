@@ -40,6 +40,10 @@ pub enum OfflinePhysicalFormatField {
     ManifestGeneration,
     ManifestPointer,
     Reserved,
+    TreeIdentity,
+    TreeLevel,
+    WalLsn,
+    CheckpointAggregate,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

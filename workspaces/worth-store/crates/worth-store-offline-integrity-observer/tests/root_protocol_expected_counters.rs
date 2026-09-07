@@ -20,7 +20,7 @@ pub(crate) struct ExpectedCounters {
 
 pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedCounters {
     let selector = target != Target::Root;
-    match operator {
+    let mut expected = match operator {
         Operator::B | Operator::K => ExpectedCounters {
             entries: 5,
             bytes: 654,
@@ -147,7 +147,16 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
             missing: 0,
             depth: 4,
         },
-    }
+    };
+    // The literal root world deliberately has no bootstrap or free-space files.
+    // Full traversal also visits the root's namespace/families entries.
+    expected.entries += 3;
+    expected.missing += if selector || matches!(operator, Operator::D) {
+        3
+    } else {
+        1
+    };
+    expected
 }
 
 pub(crate) fn assert_counters(

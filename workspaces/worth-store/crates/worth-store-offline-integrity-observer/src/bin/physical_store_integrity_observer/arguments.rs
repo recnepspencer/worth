@@ -6,9 +6,10 @@ use worth_store_offline_integrity_observer::{
 };
 
 pub(super) const HELP: &str = "\
-Independent read-only C.9 root-protocol observer\n\n\
+Independent read-only C.9 physical-integrity observer\n\n\
 Usage:\n  physical_store_integrity_observer observe \\\n    --store-root <closed-or-isolated-store-root> \\\n    --report <path-outside-store-root|-> \\\n    --max-entries <n> --max-bytes <n> --max-open-files <n> \\\n    --max-depth <n> --max-symlinks <n> --max-elapsed-ms <n> \\\n    --max-report-bytes <n>\n\n\
-The Phase 3 binary observes current/previous selectors and addressed root manifests.\n\
+The observer inspects every current family through independent bounded readers.\n\
+Compare: physical_store_integrity_observer compare --runtime-observation <path> --offline-observation <path> --report <external-path|->\n\
 Optional --run and --scenario values bind a caller-declared observation context.\n\
 It never repairs, recovers, quarantines, deletes, or accepts damaged bytes.\n";
 
@@ -25,9 +26,14 @@ pub(super) enum ArgumentOutcome {
     Denied(String),
 }
 
+pub(super) enum OperationArguments {
+    Observe(ObserveArguments),
+    Compare(super::comparison::CompareArguments),
+}
+
 pub(super) fn parse(
     arguments: impl IntoIterator<Item = OsString>,
-) -> Result<ObserveArguments, ArgumentOutcome> {
+) -> Result<OperationArguments, ArgumentOutcome> {
     let mut arguments = arguments.into_iter();
     let Some(operation) = arguments.next() else {
         return Err(ArgumentOutcome::Help(HELP));
@@ -35,9 +41,12 @@ pub(super) fn parse(
     if operation == "--help" || operation == "-h" {
         return Err(ArgumentOutcome::Help(HELP));
     }
+    if operation == "compare" {
+        return super::comparison::parse(arguments).map(OperationArguments::Compare);
+    }
     if operation != "observe" {
         return Err(ArgumentOutcome::Denied(
-            "only the Phase 3 observe operation is available".into(),
+            "expected observe or compare".into(),
         ));
     }
     let mut values = ArgumentValues::default();
@@ -50,7 +59,7 @@ pub(super) fn parse(
         })?;
         values.assign(&flag.to_string_lossy(), value)?;
     }
-    values.finish()
+    values.finish().map(OperationArguments::Observe)
 }
 
 #[derive(Default)]

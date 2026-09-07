@@ -1,13 +1,17 @@
 mod artifact_walk;
+mod child_expectation;
 mod counters;
 mod crc32c;
 mod duplicate_identity;
 mod families;
 mod file_identity;
+mod journal_walk;
 mod limits;
 mod localization;
 mod namespace_identity_walk;
+mod namespace_inventory;
 mod outcome;
+mod record_walk;
 mod report;
 mod report_boundary;
 mod report_output;

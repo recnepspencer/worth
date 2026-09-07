@@ -72,6 +72,11 @@ impl OfflineArtifactObservation {
         self
     }
 
+    pub(crate) fn with_outcome(mut self, outcome: OfflineIntegrityOutcome) -> Self {
+        self.outcome = outcome;
+        self
+    }
+
     pub fn relative_path(&self) -> &str {
         &self.relative_path
     }

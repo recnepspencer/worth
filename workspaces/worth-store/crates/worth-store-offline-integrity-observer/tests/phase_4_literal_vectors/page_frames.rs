@@ -106,3 +106,10 @@ fn literal_page(case: &PageCase) -> Vec<u8> {
     bytes[case.byte_count - 3..].copy_from_slice(&[0xde, 0xad, 0x5a]);
     bytes
 }
+
+pub(super) fn reader_vectors() -> Vec<([u8; 10], Vec<u8>)> {
+    cases()
+        .iter()
+        .map(|case| (case.format_bytes, literal_page(case)))
+        .collect()
+}

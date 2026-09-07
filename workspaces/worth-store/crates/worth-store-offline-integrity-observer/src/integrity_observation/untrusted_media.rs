@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -22,8 +22,13 @@ pub(crate) struct BoundedMediaWalk {
     started: Instant,
     completeness: OfflineIntegrityReportCompleteness,
     seen_files: BTreeMap<PhysicalFileIdentity, CachedPhysicalFile>,
+    cached_lengths: BTreeSet<u64>,
+    seen_directories: BTreeMap<PathBuf, DirectoryScan>,
+    last_exhaustion: Option<OfflineIndeterminatePhysicalReason>,
+    refused_paths: BTreeMap<PathBuf, OfflineIndeterminatePhysicalReason>,
 }
 
+#[derive(Clone)]
 pub(crate) struct DirectoryScan {
     pub(crate) entries: Vec<PathBuf>,
     pub(crate) incomplete_reason: Option<OfflineIndeterminatePhysicalReason>,
@@ -44,6 +49,7 @@ pub(crate) struct UnrecognizedEntryClassification {
 struct CachedPhysicalFile {
     first_path: PathBuf,
     bytes: Option<Arc<[u8]>>,
+    snapshot: Option<fs::Metadata>,
 }
 
 impl BoundedAcquisition {
@@ -53,6 +59,15 @@ impl BoundedAcquisition {
 }
 
 impl BoundedMediaWalk {
+    pub(crate) fn exhausted_reason(&self) -> Option<OfflineIndeterminatePhysicalReason> {
+        self.last_exhaustion
+    }
+    pub(crate) fn maximum_entries(&self) -> u64 {
+        self.limits.maximum_entries()
+    }
+    pub(crate) fn entry_bound(&mut self) -> OfflineIntegrityOutcome {
+        self.bound(OfflineIndeterminatePhysicalReason::EntryBoundExceeded)
+    }
     pub(crate) fn new(
         limits: OfflineIntegrityObservationLimits,
         store_root: PathBuf,
@@ -65,10 +80,23 @@ impl BoundedMediaWalk {
             started,
             completeness: OfflineIntegrityReportCompleteness::Complete,
             seen_files: BTreeMap::new(),
+            cached_lengths: BTreeSet::new(),
+            seen_directories: BTreeMap::new(),
+            last_exhaustion: None,
+            refused_paths: BTreeMap::new(),
         }
     }
 
     pub(crate) fn scan_directory(&mut self, path: &Path, depth: u32) -> io::Result<DirectoryScan> {
+        if let Some(scan) = self.seen_directories.get(path) {
+            return Ok(scan.clone());
+        }
+        let scan = self.scan_uncached_directory(path, depth)?;
+        self.seen_directories.insert(path.to_owned(), scan.clone());
+        Ok(scan)
+    }
+
+    fn scan_uncached_directory(&mut self, path: &Path, depth: u32) -> io::Result<DirectoryScan> {
         if let Some(reason) = self.depth_exhaustion(depth) {
             return Ok(incomplete_scan(Vec::new(), reason));
         }
@@ -109,6 +137,25 @@ impl BoundedMediaWalk {
         }
         if matches!(outcome, OfflineIntegrityOutcome::Indeterminate(_)) {
             self.counters.indeterminate_reads += 1;
+            if self.completeness == OfflineIntegrityReportCompleteness::Complete {
+                self.completeness = OfflineIntegrityReportCompleteness::Indeterminate;
+            }
+        }
+        if matches!(
+            outcome,
+            OfflineIntegrityOutcome::Indeterminate(
+                OfflineIndeterminatePhysicalReason::EntryBoundExceeded
+                    | OfflineIndeterminatePhysicalReason::ByteBoundExceeded
+                    | OfflineIndeterminatePhysicalReason::OpenFileBoundExceeded
+                    | OfflineIndeterminatePhysicalReason::DepthBoundExceeded
+                    | OfflineIndeterminatePhysicalReason::SymlinkBoundExceeded
+                    | OfflineIndeterminatePhysicalReason::ElapsedBoundExceeded
+            )
+        ) {
+            if let OfflineIntegrityOutcome::Indeterminate(reason) = outcome {
+                self.last_exhaustion = Some(*reason);
+            }
+            self.mark_bound_exhausted();
         }
     }
 
@@ -146,17 +193,19 @@ impl BoundedMediaWalk {
     }
 
     pub(crate) fn finish(
-        self,
+        mut self,
     ) -> (
         OfflineIntegrityObservationCounters,
         OfflineIntegrityReportCompleteness,
     ) {
+        self.elapsed_exhaustion();
         (self.counters, self.completeness)
     }
 
     fn depth_exhaustion(&mut self, depth: u32) -> Option<OfflineIndeterminatePhysicalReason> {
         self.counters.maximum_depth_reached = self.counters.maximum_depth_reached.max(depth);
         (depth > self.limits.maximum_depth()).then(|| {
+            self.last_exhaustion = Some(OfflineIndeterminatePhysicalReason::DepthBoundExceeded);
             self.mark_bound_exhausted();
             OfflineIndeterminatePhysicalReason::DepthBoundExceeded
         })
@@ -165,6 +214,8 @@ impl BoundedMediaWalk {
     fn elapsed_exhaustion(&mut self) -> Option<OfflineIndeterminatePhysicalReason> {
         (self.started.elapsed().as_millis() as u64 > self.limits.maximum_elapsed_milliseconds())
             .then(|| {
+                self.last_exhaustion =
+                    Some(OfflineIndeterminatePhysicalReason::ElapsedBoundExceeded);
                 self.mark_bound_exhausted();
                 OfflineIndeterminatePhysicalReason::ElapsedBoundExceeded
             })
@@ -179,6 +230,9 @@ impl BoundedMediaWalk {
         &mut self,
         path: &Path,
     ) -> io::Result<Option<OfflineIndeterminatePhysicalReason>> {
+        if let Some(reason) = self.refused_paths.get(path) {
+            return Ok(Some(*reason));
+        }
         let metadata = fs::symlink_metadata(path)?;
         let escaped = fs::canonicalize(path)
             .map(|resolved| !resolved.starts_with(&self.store_root))
@@ -188,22 +242,35 @@ impl BoundedMediaWalk {
         }
         self.counters.symlinks_refused += 1;
         if self.counters.symlinks_refused > self.limits.maximum_symlinks() {
+            self.last_exhaustion = Some(OfflineIndeterminatePhysicalReason::SymlinkBoundExceeded);
+            self.refused_paths.insert(
+                path.to_owned(),
+                OfflineIndeterminatePhysicalReason::SymlinkBoundExceeded,
+            );
             self.mark_bound_exhausted();
             Ok(Some(
                 OfflineIndeterminatePhysicalReason::SymlinkBoundExceeded,
             ))
         } else {
+            self.refused_paths.insert(
+                path.to_owned(),
+                OfflineIndeterminatePhysicalReason::SymlinkRefused,
+            );
             self.completeness = OfflineIntegrityReportCompleteness::Indeterminate;
             Ok(Some(OfflineIndeterminatePhysicalReason::SymlinkRefused))
         }
     }
 
     fn bound(&mut self, reason: OfflineIndeterminatePhysicalReason) -> OfflineIntegrityOutcome {
+        self.last_exhaustion = Some(reason);
         self.mark_bound_exhausted();
         OfflineIntegrityOutcome::Indeterminate(reason)
     }
 
     fn mark_bound_exhausted(&mut self) {
+        if self.last_exhaustion.is_none() {
+            self.last_exhaustion = Some(OfflineIndeterminatePhysicalReason::EntryBoundExceeded);
+        }
         if self.completeness != OfflineIntegrityReportCompleteness::BoundExhausted {
             self.counters.exhausted_bounds += 1;
         }
@@ -216,6 +283,8 @@ impl BoundedMediaWalk {
     }
 }
 
+#[cfg(test)]
+mod cached_source_tests;
 #[cfg(test)]
 mod source_change_tests;
 

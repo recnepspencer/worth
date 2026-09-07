@@ -14,21 +14,63 @@ const ROUND: [u32; 64] = [
 ];
 
 pub(crate) fn sha256(bytes: &[u8]) -> [u8; 32] {
-    let bit_length = (bytes.len() as u64).wrapping_mul(8);
-    let padded_length = (bytes.len() + 9).div_ceil(64) * 64;
-    let mut padded = vec![0_u8; padded_length];
-    padded[..bytes.len()].copy_from_slice(bytes);
-    padded[bytes.len()] = 0x80;
-    padded[padded_length - 8..].copy_from_slice(&bit_length.to_be_bytes());
-    let mut state = INITIAL;
-    for block in padded.chunks_exact(64) {
-        compress(&mut state, block);
+    let mut digest = Sha256::new();
+    digest.update(bytes);
+    digest.finish()
+}
+
+pub(crate) struct Sha256 {
+    state: [u32; 8],
+    pending: [u8; 64],
+    used: usize,
+    length: u64,
+}
+
+impl Sha256 {
+    pub(crate) fn new() -> Self {
+        Self {
+            state: INITIAL,
+            pending: [0; 64],
+            used: 0,
+            length: 0,
+        }
     }
-    let mut digest = [0_u8; 32];
-    for (target, word) in digest.chunks_exact_mut(4).zip(state) {
-        target.copy_from_slice(&word.to_be_bytes());
+    pub(crate) fn update(&mut self, mut bytes: &[u8]) {
+        self.length = self.length.wrapping_add(bytes.len() as u64);
+        if self.used != 0 {
+            let accepted = bytes.len().min(64 - self.used);
+            self.pending[self.used..self.used + accepted].copy_from_slice(&bytes[..accepted]);
+            self.used += accepted;
+            bytes = &bytes[accepted..];
+            if self.used < 64 {
+                return;
+            }
+            compress(&mut self.state, &self.pending);
+            self.used = 0;
+        }
+        let mut chunks = bytes.chunks_exact(64);
+        for chunk in &mut chunks {
+            compress(&mut self.state, chunk);
+        }
+        let remaining = chunks.remainder();
+        self.pending[..remaining.len()].copy_from_slice(remaining);
+        self.used = remaining.len();
     }
-    digest
+    pub(crate) fn finish(mut self) -> [u8; 32] {
+        self.pending[self.used] = 0x80;
+        self.pending[self.used + 1..].fill(0);
+        if self.used >= 56 {
+            compress(&mut self.state, &self.pending);
+            self.pending.fill(0);
+        }
+        self.pending[56..].copy_from_slice(&self.length.wrapping_mul(8).to_be_bytes());
+        compress(&mut self.state, &self.pending);
+        let mut digest = [0_u8; 32];
+        for (target, word) in digest.chunks_exact_mut(4).zip(self.state) {
+            target.copy_from_slice(&word.to_be_bytes());
+        }
+        digest
+    }
 }
 
 fn compress(state: &mut [u32; 8], block: &[u8]) {

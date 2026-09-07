@@ -1,7 +1,14 @@
 #![forbid(unsafe_code)]
-//! Independent, bounded observation of the C.9 selector-to-root protocol.
+//! Independent, bounded C.9 physical-family observation and disagreement.
 
+mod comparison;
 mod integrity_observation;
+
+pub use comparison::{
+    compare_integrity_observations, PhysicalIntegrityComparison,
+    PhysicalIntegrityComparisonCounters, PhysicalIntegrityComparisonDenial,
+    PhysicalIntegrityComparisonLimits, PhysicalIntegrityComparisonLimitsDenial,
+};
 
 pub use integrity_observation::{
     emit_offline_integrity_report, encode_offline_integrity_report, observe_store,

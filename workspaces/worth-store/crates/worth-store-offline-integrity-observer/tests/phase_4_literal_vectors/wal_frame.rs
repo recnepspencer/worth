@@ -8,7 +8,7 @@ use super::oracle::{
     LiteralChecksum, LiteralChecksumExpectation, LiteralVector,
 };
 
-const FRAME_HEX: &str = concat!(
+pub(super) const FRAME_HEX: &str = concat!(
     "574f52544857414c010074000100000000000000020000000000000003000000",
     "0000000004000000000000000300000000000000d675c4a7b3dc55cebb3c413a",
     "084473b6e80a549d48106af3439bbdf5c76eb5768e1336ab78ebe687fd8056a3",
