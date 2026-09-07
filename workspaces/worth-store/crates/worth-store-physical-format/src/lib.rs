@@ -25,7 +25,6 @@ mod header;
 mod in_memory_physical_format_model;
 mod manifest;
 mod offline_verifier;
-mod offline_walk;
 mod page_record;
 mod payload;
 mod physical_artifact_read_range;
@@ -191,13 +190,6 @@ pub use offline_verifier::{
     OfflineVerifierLayoutObservation, OfflineVerifierObservationSource, PersistedExtentBytes,
     PersistedPageBytes, PersistedPhysicalLayout, PersistedPhysicalLayoutBuilder,
     PhysicalLayoutReport,
-};
-pub use offline_walk::{
-    classify_offline_artifact_family, observe_bounded_physical_bytes,
-    verify_bounded_extent_artifact_from_reader, verify_bounded_page_artifact_from_reader,
-    verify_bounded_root_manifest_artifact_from_reader, BoundedPhysicalArtifactDenial,
-    BoundedPhysicalArtifactObservation, OfflinePhysicalArtifactFamily,
-    OfflineStructuralObservation, VerifiedRootManifestArtifact,
 };
 pub use page_record::{
     append_inline_records_owned, decode_inline_record, encode_inline_page, inspect_inline_page,

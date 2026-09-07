@@ -1,8 +1,6 @@
+use crate::{classify_offline_artifact_family, OfflinePhysicalArtifactFamily};
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::{OfflineMediaReadDenial, ReadOnlyOfflineMediaCapability};
-use worth_store_physical_format::{
-    classify_offline_artifact_family, OfflinePhysicalArtifactFamily,
-};
 
 use super::{
     OfflineInspectionBudget, OfflineInspectionCancellation, OfflineInspectionCounters,

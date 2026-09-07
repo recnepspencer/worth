@@ -2,7 +2,7 @@ use std::io::Read;
 
 use sha2::{Digest, Sha256};
 
-use crate::{
+use worth_store_physical_format::{
     ExtentGenerationCell, OfflineManifestCodec, OfflineVerifierDenial, PageGenerationCell,
     PhysicalBinaryEncodingWitness, PhysicalByteOrder, PhysicalFrameKind, PhysicalHeaderAuthority,
     PhysicalHeaderDecodeDenial, PhysicalPageKind, PhysicalPublicationState,
@@ -160,8 +160,10 @@ fn verify_header_framed_artifact(
     max_buffer_bytes: usize,
     decode: impl FnOnce(
         &[u8],
-    )
-        -> Result<crate::PhysicalHeaderDecodeWitness, BoundedPhysicalArtifactDenial>,
+    ) -> Result<
+        worth_store_physical_format::PhysicalHeaderDecodeWitness,
+        BoundedPhysicalArtifactDenial,
+    >,
 ) -> Result<BoundedPhysicalArtifactObservation, BoundedPhysicalArtifactDenial> {
     let header_bytes = PHYSICAL_HEADER_LENGTH as usize;
     require_buffer(max_buffer_bytes, header_bytes + 1)?;

@@ -4,6 +4,10 @@ use super::checkpoint_backup_verification::{
     verify_bounded_checkpoint_backup_artifact_from_reader,
     BoundedCheckpointBackupVerificationRequest,
 };
+use crate::{
+    verify_bounded_extent_artifact_from_reader, verify_bounded_page_artifact_from_reader,
+    verify_bounded_root_manifest_artifact_from_reader,
+};
 use worth_store_blob_chunks::{
     verify_bounded_blob_backup_artifact_from_reader, BoundedBlobBackupVerificationRequest,
 };
@@ -12,10 +16,8 @@ use worth_store_layout_indexes::{
     LayoutIndexBackupFormat,
 };
 use worth_store_physical_format::{
-    verify_bounded_extent_artifact_from_reader, verify_bounded_page_artifact_from_reader,
-    verify_bounded_root_manifest_artifact_from_reader, BackupBundleArtifactCoverage,
-    BackupBundleArtifactFormat, BackupBundleArtifactManifestRow, PhysicalGenerationAuthority,
-    RootPublicationCell,
+    BackupBundleArtifactCoverage, BackupBundleArtifactFormat, BackupBundleArtifactManifestRow,
+    PhysicalGenerationAuthority, RootPublicationCell,
 };
 use worth_store_wal::artifact_store::{
     verify_bounded_wal_segment_from_reader, BoundedWalSegmentVerificationRequest,

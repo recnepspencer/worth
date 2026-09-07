@@ -121,28 +121,28 @@ impl RepairIntent {
 }
 
 const fn repair_family(
-    family: worth_store_physical_format::OfflinePhysicalArtifactFamily,
+    family: worth_store_offline_verifier::OfflinePhysicalArtifactFamily,
 ) -> IntegrityRepairArtifactFamily {
     match family {
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Manifest => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Manifest => {
             IntegrityRepairArtifactFamily::Manifest
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Page => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Page => {
             IntegrityRepairArtifactFamily::Page
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Extent => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Extent => {
             IntegrityRepairArtifactFamily::Extent
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Wal => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Wal => {
             IntegrityRepairArtifactFamily::Wal
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Index => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Index => {
             IntegrityRepairArtifactFamily::LayoutIndex
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::BlobChunk => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::BlobChunk => {
             IntegrityRepairArtifactFamily::BlobChunk
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Unknown => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Unknown => {
             IntegrityRepairArtifactFamily::Unknown
         }
     }

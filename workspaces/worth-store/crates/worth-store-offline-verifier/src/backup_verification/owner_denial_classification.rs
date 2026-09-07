@@ -1,6 +1,7 @@
+use crate::BoundedPhysicalArtifactDenial;
 use worth_store_blob_chunks::BoundedBlobBackupDenial;
 use worth_store_layout_indexes::BoundedLayoutIndexDenial;
-use worth_store_physical_format::{BoundedPhysicalArtifactDenial, PhysicalHeaderDecodeDenialKind};
+use worth_store_physical_format::PhysicalHeaderDecodeDenialKind;
 use worth_store_wal::artifact_store::BoundedWalSegmentDenial;
 
 use super::checkpoint_backup_verification::BoundedCheckpointBackupDenial;

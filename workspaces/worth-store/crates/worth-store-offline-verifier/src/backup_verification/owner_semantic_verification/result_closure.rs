@@ -8,7 +8,8 @@ use super::outcome::{
 use crate::backup_verification::owner_resource_budget::actual_owner_result_owned_allocation_bytes;
 use crate::inspection::OwnerDecodedArtifactBinding;
 use crate::truth_composition::RecoveryCandidateObservation;
-use worth_store_physical_format::{BackupBundleManifest, OfflinePhysicalArtifactFamily};
+use crate::OfflinePhysicalArtifactFamily;
+use worth_store_physical_format::BackupBundleManifest;
 
 pub(super) fn close(
     root: &Path,

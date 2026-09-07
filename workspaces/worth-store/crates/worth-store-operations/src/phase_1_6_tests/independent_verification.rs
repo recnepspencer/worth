@@ -1,8 +1,8 @@
 use super::support::*;
+use worth_store_offline_verifier::OfflinePhysicalArtifactFamily;
 use worth_store_offline_verifier::{
     ObservedRecoveryFrontier, OfflineStructuralIdentification, RecoveryCandidateConfidence,
 };
-use worth_store_physical_format::OfflinePhysicalArtifactFamily;
 
 #[test]
 fn phases_five_and_six_run_the_full_backup_truth_ladder_on_real_media() {

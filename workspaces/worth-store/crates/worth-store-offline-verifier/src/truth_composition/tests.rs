@@ -1,8 +1,8 @@
+use crate::OfflinePhysicalArtifactFamily;
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::{OfflineMediaClosureEntry, OfflineMediaConsistencyBasis};
 use worth_store_physical_format::{
-    OfflinePhysicalArtifactFamily, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
-    PhysicalSegmentId,
+    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId, PhysicalSegmentId,
 };
 
 use super::candidate_evaluation::synthetic_observation_for_test;

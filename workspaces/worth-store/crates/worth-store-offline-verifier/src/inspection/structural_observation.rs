@@ -1,3 +1,4 @@
+//! Legacy structural inspection evidence, never C.9 validator authority.
 use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

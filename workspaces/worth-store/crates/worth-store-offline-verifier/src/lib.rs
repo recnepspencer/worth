@@ -59,6 +59,11 @@ pub use backup_verification::{
     BackupVerificationReport, BoundedCheckpointBackupDenial, BoundedCheckpointBackupObservation,
     BoundedCheckpointBackupVerificationRequest, StructurallyVerifiedBackupBundle,
 };
+pub use backup_verification::{
+    verify_bounded_extent_artifact_from_reader, verify_bounded_page_artifact_from_reader,
+    verify_bounded_root_manifest_artifact_from_reader, BoundedPhysicalArtifactDenial,
+    BoundedPhysicalArtifactObservation, VerifiedRootManifestArtifact,
+};
 pub use blob_corruption_observation::{
     classify_offline_damage_case, OfflineBlobCorruptionClassification,
     OfflineBlobCorruptionEvidenceKind, OfflineBlobCorruptionObservation,
@@ -109,6 +114,10 @@ pub use hostile_physical_truth::{
     OfflineHostileCurrentRecordTruth, OfflineHostilePhysicalTruthBudget,
     OfflineHostilePhysicalTruthBudgetDenial, OfflineHostilePhysicalTruthDenial,
     OfflineHostilePhysicalTruthObservation,
+};
+pub use inspection::{
+    classify_offline_artifact_family, observe_bounded_physical_bytes,
+    OfflinePhysicalArtifactFamily, OfflineStructuralObservation,
 };
 pub use inspection::{
     OfflineInspectionBudget, OfflineInspectionCancellation, OfflineInspectionCheckpoint,

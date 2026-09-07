@@ -1,7 +1,7 @@
 use std::time::Duration;
 
+use crate::OfflinePhysicalArtifactFamily;
 use worth_store_physical_backend::{OfflineMediaClosureEntry, OfflineMediaFileIdentity};
-use worth_store_physical_format::OfflinePhysicalArtifactFamily;
 
 use super::{OfflineInspectionCounters, OfflineWalkedFile};
 use crate::inspection::resume_checkpoint_codec::{decode_checkpoint, encode_checkpoint};

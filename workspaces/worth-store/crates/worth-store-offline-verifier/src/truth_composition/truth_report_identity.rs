@@ -3,8 +3,8 @@ use super::{
     ObservedRecoveryFrontier, OfflineAuthorityClass, OfflineRecoveryAvailability,
     OfflineSecurityEvidencePosture, OperationalTruthRegion, OperationalTruthReport,
 };
+use crate::OfflinePhysicalArtifactFamily;
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::OfflinePhysicalArtifactFamily;
 
 impl OperationalTruthReport {
     /// Stable identity for canonical semantic truth composition.

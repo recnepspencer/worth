@@ -37,3 +37,9 @@ pub use verify_backup::{
     verify_materialized_backup, verify_materialized_backup_with_cancellation,
     BackupStructuralVerificationDenial, BackupVerificationAllocationPhase,
 };
+mod bounded_physical_artifact;
+pub use bounded_physical_artifact::{
+    verify_bounded_extent_artifact_from_reader, verify_bounded_page_artifact_from_reader,
+    verify_bounded_root_manifest_artifact_from_reader, BoundedPhysicalArtifactDenial,
+    BoundedPhysicalArtifactObservation, VerifiedRootManifestArtifact,
+};

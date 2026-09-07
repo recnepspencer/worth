@@ -1,4 +1,4 @@
-use worth_store_physical_format::{OfflinePhysicalArtifactFamily, VerifiedRootManifestArtifact};
+use crate::{OfflinePhysicalArtifactFamily, VerifiedRootManifestArtifact};
 use worth_store_wal::artifact_store::BoundedWalSegmentObservation;
 
 use crate::backup_verification::BoundedCheckpointBackupObservation;
