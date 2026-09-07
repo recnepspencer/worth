@@ -6,7 +6,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(crate) struct RecoveryIntegrityIngressCounters {
+pub struct RecoveryIntegrityIngressCounters {
     pub attempted: u64,
     pub admitted: u64,
     pub rejected_damaged: u64,

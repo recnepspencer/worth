@@ -55,6 +55,10 @@ impl PhysicalRecoveryRefusal {
         self.integrity_trace.counters().attempted
     }
 
+    pub const fn integrity_counters(&self) -> crate::PhysicalRecoveryIntegrityCounters {
+        self.integrity_trace.counters()
+    }
+
     pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
         self.integrity_trace.observations()
     }

@@ -82,3 +82,4 @@ impl WorthStoreRecovery {
         orchestration::recover(request, Some(yieldpoint))
     }
 }
+pub use integrity_ingress::RecoveryIntegrityIngressCounters as PhysicalRecoveryIntegrityCounters;

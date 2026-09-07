@@ -21,7 +21,7 @@ pub(crate) use admitted_artifact::IntegrityAdmittedRecoveryArtifact;
 pub(crate) use checkpoint_stream::{
     admit_observed_checkpoint_stream, CheckpointStreamAdmissionFailure,
 };
-pub(crate) use counters::RecoveryIntegrityIngressCounters;
+pub use counters::RecoveryIntegrityIngressCounters;
 #[allow(unused_imports)]
 pub(crate) use families::checkpoint::IntegrityAdmittedCheckpointStream;
 pub(crate) use families::checkpoint::OwnerCheckpointProjection;

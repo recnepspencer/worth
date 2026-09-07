@@ -118,6 +118,10 @@ impl PhysicalRecoveryBlockEvidence {
         self.integrity_trace.counters().attempted
     }
 
+    pub const fn integrity_counters(&self) -> crate::PhysicalRecoveryIntegrityCounters {
+        self.integrity_trace.counters()
+    }
+
     pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
         self.integrity_trace.observations()
     }
@@ -170,6 +174,10 @@ impl PhysicalRecoveryPublicationIndeterminate {
     }
     pub const fn integrity_observation_count(&self) -> u64 {
         self.integrity_trace.counters().attempted
+    }
+
+    pub const fn integrity_counters(&self) -> crate::PhysicalRecoveryIntegrityCounters {
+        self.integrity_trace.counters()
     }
 
     pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {

@@ -98,6 +98,11 @@ impl RecoveredPhysicalRuntimeHandoff {
         self.evidence.integrity_trace.counters().attempted
     }
 
+    /// Read-only ingress evidence; constructing a copy grants no recovery authority.
+    pub const fn integrity_counters(&self) -> crate::PhysicalRecoveryIntegrityCounters {
+        self.evidence.integrity_trace.counters()
+    }
+
     pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
         self.evidence.integrity_trace.observations()
     }
