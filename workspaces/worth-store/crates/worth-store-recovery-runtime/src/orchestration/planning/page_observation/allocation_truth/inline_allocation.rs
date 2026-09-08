@@ -78,7 +78,7 @@ fn admit_initial_page_sequence(
             return Err(PageObservationFailure::InvalidTarget(target.identity()));
         }
     }
-    if !sequence_starts_at(absent.iter().map(|(_, page, _, _)| *page), next_page) {
+    if !allocation_sequence_above(absent.iter().map(|(_, page, _, _)| *page), next_page) {
         return Err(PageObservationFailure::InvalidTarget(
             absent[0].3.identity(),
         ));
@@ -150,10 +150,10 @@ fn admit_new_segments(
             if previous_segment.is_some() && pages_in_segment != page_capacity {
                 return Err(PageObservationFailure::InvalidTarget(target.identity()));
             }
-            if *segment != expected_segment {
+            if *segment < expected_segment {
                 return Err(PageObservationFailure::InvalidTarget(target.identity()));
             }
-            expected_segment = expected_segment
+            expected_segment = segment
                 .checked_add(1)
                 .ok_or(PageObservationFailure::InvalidTarget(target.identity()))?;
             previous_segment = Some(*segment);

@@ -13,6 +13,8 @@ use worth_store_physical_format::RecordArtifactFile;
 mod fixtures;
 #[path = "plan_tests/group_atomic.rs"]
 mod group_atomic;
+#[path = "plan_tests/observation_membership.rs"]
+mod observation_membership;
 #[path = "plan_tests/projection_mutants.rs"]
 mod projection_mutants;
 

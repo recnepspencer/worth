@@ -53,6 +53,16 @@ pub fn admit_physical_redo_members(
 }
 
 impl AdmittedPhysicalRedoMembers {
+    /// Requires exact membership in the projection-validated WAL observation set.
+    /// A decoded target alone does not carry this closure or operation-fate proof.
+    pub fn contains_exact_observation_target(&self, target: &PhysicalRedoTarget) -> bool {
+        self.members
+            .iter()
+            .filter(|member| member.fate == RecoveryOperationFate::Indeterminate)
+            .flat_map(|member| member.records.iter())
+            .any(|record| record.targets().contains(target))
+    }
+
     pub fn target_identities(&self) -> Box<[PhysicalRedoTargetIdentity]> {
         self.members
             .iter()

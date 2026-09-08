@@ -161,7 +161,7 @@ pub(super) fn resolve(
             .retained_previous()
             .map(|previous| (previous.manifest(), previous.selector().format())),
         context.selection.page_facts().placements(),
-        &observation_targets,
+        &admitted.redo,
         admitted.format,
         read_ceiling.addressed_reads,
         context.limits.manifest_entries,

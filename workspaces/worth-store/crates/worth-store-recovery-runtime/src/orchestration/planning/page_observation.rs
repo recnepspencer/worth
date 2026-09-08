@@ -42,7 +42,7 @@ pub(super) fn observe_selected_pages(
         PhysicalRecordFormatDeclaration,
     )>,
     placements: &[CurrentPhysicalRecordPlacement],
-    targets: &[PhysicalRedoTarget],
+    admitted_redo: &worth_store_recovery_physics::AdmittedPhysicalRedoMembers,
     format: PhysicalRecordFormatDeclaration,
     maximum_entries: u64,
     admitted_manifest_entries: u64,
@@ -50,6 +50,7 @@ pub(super) fn observe_selected_pages(
     maximum_bytes: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> (AdmittedRecoveryFilesystemMedia, PageObservationAttempt) {
+    let targets = admitted_redo.observation_targets();
     let mut discovery = media
         .bounded_discovery(maximum_entries, maximum_bytes)
         .expect("admitted nonzero recovery limits create a bounded planning reader");
@@ -59,7 +60,8 @@ pub(super) fn observe_selected_pages(
         root_manifest,
         retained_fallback,
         placements,
-        targets,
+        &targets,
+        admitted_redo,
         format,
         admitted_manifest_entries,
         maximum_manifest_entries,
@@ -90,6 +92,7 @@ fn observe(
     )>,
     placements: &[CurrentPhysicalRecordPlacement],
     targets: &[PhysicalRedoTarget],
+    admitted_redo: &worth_store_recovery_physics::AdmittedPhysicalRedoMembers,
     format: PhysicalRecordFormatDeclaration,
     admitted_manifest_entries: u64,
     maximum_manifest_entries: u64,
@@ -191,6 +194,7 @@ fn observe(
         absent_targets,
         &selected_source,
         absence_identity,
+        admitted_redo,
     )?;
     observations.extend(absent.observations);
     Ok(ObservedPageBasis {
