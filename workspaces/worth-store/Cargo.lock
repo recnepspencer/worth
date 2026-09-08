@@ -1595,6 +1595,8 @@ dependencies = [
 name = "worth-store-offline-integrity-observer"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "worth-foundational",
  "worth-store-physical-format",
 ]

@@ -246,3 +246,5 @@ mod tests {
         assert_eq!(fixed_limits.current_root_entries(), 185);
     }
 }
+pub use read_work_port::PhysicalIntegrityScrubReadDeferral;
+pub(in crate::physical_runtime) use record_queue_policy::admit_scrub_background_policy;

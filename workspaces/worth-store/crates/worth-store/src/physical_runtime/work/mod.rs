@@ -7,6 +7,7 @@ mod consumer_lifecycle;
 mod declaration;
 mod drain_observation;
 mod execution;
+pub(in crate::physical_runtime) use execution::PhysicalInspectionExecutorCommand;
 mod identity;
 mod observation;
 mod profile;

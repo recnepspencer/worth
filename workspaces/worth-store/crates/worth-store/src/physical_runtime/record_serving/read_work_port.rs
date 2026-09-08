@@ -19,7 +19,9 @@ use super::{
     RecordWorkAdmission,
 };
 
+mod inspection;
 mod scheduler_preparation;
+pub use inspection::PhysicalIntegrityScrubReadDeferral;
 
 use scheduler_preparation::{admit_ready, require_projection_failure, RangeSchedulerRoute};
 

@@ -38,6 +38,13 @@ pub enum PhysicalWorkEffectFate {
 }
 
 pub enum PhysicalWorkSettlementEvidence {
+    /// Diagnostic acquisition only: never revokes serving health or grants repair.
+    Inspection {
+        physical: worth_store_physical_backend::ObservedArtifactInspectionRead,
+        bytes: Box<[u8]>,
+        scheduler: QueueExecutionOutcome,
+    },
+    InspectionDenied(ArtifactTreeFailure),
     NoEffect(PhysicalWorkNoEffectEvidence),
     Metadata {
         physical: CompletedArtifactMetadataRead,
@@ -198,6 +205,21 @@ impl PhysicalWorkSettlement {
 impl PhysicalWorkSettlementEvidence {
     pub const fn fate(&self) -> PhysicalWorkEffectFate {
         match self {
+            Self::Inspection {
+                physical,
+                scheduler,
+                ..
+            } => {
+                if physical.completed_bytes() == physical.range().length() as u64
+                    && physical.stable()
+                    && matches!(scheduler, QueueExecutionOutcome::Executed(_))
+                {
+                    PhysicalWorkEffectFate::ReadCompleted
+                } else {
+                    PhysicalWorkEffectFate::ReadIncomplete
+                }
+            }
+            Self::InspectionDenied(_) => PhysicalWorkEffectFate::ProvenNoEffect,
             Self::NoEffect(_) => PhysicalWorkEffectFate::ProvenNoEffect,
             Self::Metadata { .. } => PhysicalWorkEffectFate::ReadCompleted,
             Self::Read { .. } => PhysicalWorkEffectFate::ReadCompleted,
@@ -265,6 +287,8 @@ impl PhysicalWorkSettlementEvidence {
 
     pub const fn completed_payload_bytes(&self) -> u64 {
         match self {
+            Self::Inspection { physical, .. } => physical.completed_bytes(),
+            Self::InspectionDenied(_) => 0,
             Self::NoEffect(_) | Self::Metadata { .. } | Self::StaleOrForeign => 0,
             Self::Read { physical, .. } => physical.completed_bytes(),
             Self::Write { physical, .. } | Self::Publication { physical, .. } => {
@@ -288,6 +312,9 @@ impl PhysicalWorkSettlementEvidence {
         declared: PhysicalWorkRecoveryDisposition,
     ) -> PhysicalWorkRecoveryDisposition {
         match self {
+            Self::Inspection { .. } | Self::InspectionDenied(_) => {
+                PhysicalWorkRecoveryDisposition::NoEffect
+            }
             Self::TerminalFailure(failure) => failure.recovery,
             Self::StaleOrForeign => PhysicalWorkRecoveryDisposition::InspectionRequired,
             Self::NoEffect(_) => declared,

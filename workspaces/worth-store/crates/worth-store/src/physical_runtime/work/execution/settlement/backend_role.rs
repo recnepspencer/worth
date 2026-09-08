@@ -5,6 +5,8 @@ use super::PhysicalWorkSettlementEvidence;
 impl PhysicalWorkSettlementEvidence {
     pub(in crate::physical_runtime) const fn backend_role(&self) -> Option<MediaOperationRole> {
         match self {
+            Self::Inspection { .. } => Some(MediaOperationRole::PositionedRead),
+            Self::InspectionDenied(_) => None,
             Self::NoEffect(_) | Self::StaleOrForeign => None,
             Self::Metadata { .. } => Some(MediaOperationRole::ReadMetadata),
             Self::Read { .. } => Some(MediaOperationRole::PositionedRead),

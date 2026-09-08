@@ -38,6 +38,17 @@ pub fn validate_checkpoint_footer<'media>(
     CheckpointFooterIntegrityValidation<'media>,
     PhysicalIntegrityObservationCounters,
 ) {
+    validate_with_expected(artifact, scope, || basis.expected_bindings(scope))
+}
+
+pub(super) fn validate_with_expected<'media>(
+    artifact: UntrustedPhysicalArtifact<'media>,
+    scope: PhysicalArtifactScope,
+    expected: impl FnOnce() -> Result<CheckpointFooterExpectedBindings, PhysicalIntegrityRejection>,
+) -> (
+    CheckpointFooterIntegrityValidation<'media>,
+    PhysicalIntegrityObservationCounters,
+) {
     let byte_count = artifact.byte_count();
     let family = PhysicalIntegrityArtifactFamily::CheckpointFooter;
     if scope.artifact_family() != family {
@@ -58,7 +69,7 @@ pub fn validate_checkpoint_footer<'media>(
     if let Some(rejection) = identity_mismatch(scope, footer) {
         return rejected_footer(rejection, byte_count);
     }
-    let expected = match basis.expected_bindings(scope) {
+    let expected = match expected() {
         Ok(expected) => expected,
         Err(rejection) => return rejected_footer(rejection, byte_count),
     };

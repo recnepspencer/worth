@@ -8,6 +8,7 @@ pub(in crate::physical_runtime) mod root_manifest;
 pub(in crate::physical_runtime) mod root_protocol;
 pub(in crate::physical_runtime) mod root_tree;
 mod source_scope;
+pub(in crate::physical_runtime) use source_scope::artifact_matches_scope;
 
 #[cfg(test)]
 mod tests;

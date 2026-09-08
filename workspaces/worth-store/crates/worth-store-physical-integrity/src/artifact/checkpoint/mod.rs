@@ -5,9 +5,13 @@ mod dirty_basis;
 mod footer;
 mod footer_basis;
 mod footer_envelope;
+mod inspection_aggregate;
+mod inspection_records;
 mod record_rejection;
 mod stream_header;
 mod verified_stream;
+pub(crate) use inspection_aggregate::CheckpointInspectionAggregate;
+pub(crate) use inspection_records::inspect_checkpoint_window;
 
 pub use binding::{validate_checkpoint_binding, CheckpointBindingIntegrityValidation};
 pub use binding_compaction::{

@@ -14,6 +14,8 @@ mod record_matrix;
 mod routing_projections;
 #[path = "checkpoint_validation/scope_denials.rs"]
 mod scope_denials;
+#[path = "checkpoint_validation/scrub_streaming.rs"]
+mod scrub_streaming;
 #[path = "checkpoint_validation/security_binding.rs"]
 mod security_binding;
 #[path = "checkpoint_validation/stream_bindings.rs"]

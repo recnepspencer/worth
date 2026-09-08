@@ -28,6 +28,8 @@ impl SettledPhysicalWork {
 
     pub fn effect_identity(&self) -> Option<crate::physical_runtime::PhysicalEffectIdentity> {
         let backend = match &self.evidence {
+            PhysicalWorkSettlementEvidence::Inspection { physical, .. } => physical.operation(),
+            PhysicalWorkSettlementEvidence::InspectionDenied(_) => return None,
             PhysicalWorkSettlementEvidence::Metadata { physical, .. } => physical.operation(),
             PhysicalWorkSettlementEvidence::Read { physical, .. } => physical.operation(),
             PhysicalWorkSettlementEvidence::Write { physical, .. }

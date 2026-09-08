@@ -45,8 +45,9 @@ pub use observation::{
 };
 pub use quarantine::{PhysicalQuarantineObservation, PhysicalQuarantinePosture};
 pub use scrub::{
-    PhysicalIntegrityScrubCounters, PhysicalIntegrityScrubInspection, PhysicalIntegrityScrubWindow,
-    PhysicalIntegrityScrubWindowOutcome,
+    inspect_physical_integrity_window, PhysicalIntegrityScrubCounters,
+    PhysicalIntegrityScrubInspection, PhysicalIntegrityScrubValidator,
+    PhysicalIntegrityScrubWindow, PhysicalIntegrityScrubWindowOutcome,
 };
 pub use validation::{
     CheckpointBindingPayloadProjectionDenial, CheckpointFooterRoutingProjection,

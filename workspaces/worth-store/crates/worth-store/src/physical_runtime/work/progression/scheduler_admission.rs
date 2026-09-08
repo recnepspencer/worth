@@ -69,6 +69,7 @@ impl ResourceAdmittedPhysicalWork {
             .ok_or(PhysicalWorkPreEffectDenial::ConsumerCancelled)?;
         Ok((
             DispatchedPhysicalWork {
+                inspection_source: None,
                 admitted,
                 signal,
                 effect_activity: Some(effect_activity),

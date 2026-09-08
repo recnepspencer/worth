@@ -2,6 +2,16 @@
 //!
 //! These values are descriptions only. They grant no media access, decoder
 //! entry, recovery choice, quarantine mutation, or repair authority.
+//!
+//! A projection carries the observed scope and posture, not the owner's proof:
+//! ```
+//! use worth_foundational::physical_integrity_observation::{PhysicalByteRange, PhysicalIntegrityPosture};
+//! let observed = (PhysicalByteRange::new(4096, 16384).unwrap(), PhysicalIntegrityPosture::Unknown);
+//! assert_eq!(observed.0.end(), 20480);
+//! assert!(PhysicalByteRange::new(u64::MAX, 1).is_err());
+//! ```
+//! Validate untrusted serialized fields and protocol bounds at their ingress;
+//! serializability is not an admission mechanism.
 
 mod adapter_evidence;
 mod artifact_family;

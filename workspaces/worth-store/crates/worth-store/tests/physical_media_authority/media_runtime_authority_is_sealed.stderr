@@ -4,7 +4,7 @@ error: cannot construct `MediaOwnedPhysicalRuntime` with struct literal syntax d
 4 |     MediaOwnedPhysicalRuntime {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `termination`, `media` and `core` that were not provided
+  = note: private fields `termination`, `media`, `core` and `root_protocol_counters` that were not provided
 help: you might have meant to use the `new` associated function
   |
 4 -     MediaOwnedPhysicalRuntime {}

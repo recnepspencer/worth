@@ -57,6 +57,8 @@ mod foundational_evidence;
 mod generation_policy_truth;
 #[path = "physical_record_journeys/identity_process.rs"]
 mod identity_process;
+#[path = "physical_record_journeys/integrity_scrub.rs"]
+mod integrity_scrub;
 #[path = "physical_record_journeys/locator_free_space.rs"]
 mod locator_free_space;
 #[path = "physical_record_journeys/manifest_fixture.rs"]

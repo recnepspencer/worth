@@ -149,6 +149,13 @@ pub use integrity::{
     IntegrityAdmittedRecoveryWalFrame, IntegrityAdmittedRecoveryWalSegment,
     RecoveryWalIntegrityAdmissionDenial,
 };
+pub use integrity::{
+    ManagedPhysicalIntegrityScrubHandle, ManagedPhysicalIntegrityScrubProgress,
+    ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityScrubCancellation,
+    PhysicalIntegrityScrubCounters, PhysicalIntegrityScrubDeferral,
+    PhysicalIntegrityScrubRequestDenial, PhysicalIntegrityScrubResume,
+    PhysicalIntegrityScrubTarget, PhysicalIntegrityScrubWindowObservation,
+};
 pub(in crate::physical_runtime) use integrity::{
     ResidentAdmissionCounterCells, RootProtocolRouteCounterCells,
 };
@@ -171,6 +178,7 @@ pub use observation::{
     LifecycleObservation, ObservationError, ObservationHandle, RootAdmissionObservation,
     RuntimeObservation,
 };
+pub use record_serving::PhysicalIntegrityScrubReadDeferral;
 pub use record_serving::*;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_construction::{

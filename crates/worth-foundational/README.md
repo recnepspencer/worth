@@ -98,6 +98,19 @@ caller cannot assemble a stronger owner artifact from Foundational parts.
 
 ## Related Docs
 
+### Physical integrity observations
+
+`physical_integrity_observation` exports portable artifact/family identities,
+byte ranges, generations, five integrity postures, quarantine descriptions,
+adapter evidence, and disagreement. Constructors bound identifier and range
+shape; protocol consumers must also validate untrusted wire schemas and limits.
+These DTOs cannot open media, runtime decoding, recovery choice, or repair.
+Keep owner disposition separate from observed integrity; projection is one-way,
+never a route back into a sealed runtime proof.
+
+See the [Store integrity guide](../../_docs/worth-store/physical-integrity-and-offline-verification.md)
+and the module's compiling descriptive-projection example.
+
 - [Query Aspects And Authority Lanes](../../workspaces/worth-query/crates/worth-query/docs/modeling/aspects-and-authority-lanes.md)
 - [Conditional Installed Operations](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
 - [worth-proof](../worth-proof/README.md)

@@ -180,7 +180,7 @@ fn identity_mismatch(scope: PhysicalArtifactScope) -> PhysicalIntegrityRejection
     )
 }
 
-fn sequence_mismatch(scope: PhysicalArtifactScope) -> PhysicalIntegrityRejection {
+pub(super) fn sequence_mismatch(scope: PhysicalArtifactScope) -> PhysicalIntegrityRejection {
     damaged(
         scope,
         PhysicalDamageCause::SequenceMismatch,

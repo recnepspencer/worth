@@ -13,8 +13,10 @@ use super::super::{PhysicalRecordReader, RecordPublicationResidueObservation};
 #[path = "serving_runtime/certification/mod.rs"]
 mod certification;
 mod physical_work;
+mod scrub;
 
 pub struct ServingPhysicalRuntime {
+    scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,
     parts: PhysicalStoreInstanceParts,
 }
 
@@ -23,7 +25,10 @@ impl ServingPhysicalRuntime {
         foundation: PhysicalStoreInstanceFoundation,
     ) -> Result<Self, super::super::RecordServingAdmissionInspectionRequired> {
         match PhysicalStoreInstanceParts::from_record_admission(foundation) {
-            Ok(parts) => Ok(Self { parts }),
+            Ok(parts) => Ok(Self {
+                scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
+                parts,
+            }),
             Err(failure) => {
                 let (identity, terminal, cause) = failure.abort();
                 Err(super::super::RecordServingAdmissionInspectionRequired::new(
@@ -220,6 +225,7 @@ impl ServingPhysicalRuntime {
     }
 
     pub fn close_plan(self) -> crate::physical_runtime::PhysicalStoreClosePlan {
+        drop(self.scrub);
         crate::physical_runtime::PhysicalStoreClosePlan::new(self.parts)
     }
 
@@ -228,6 +234,7 @@ impl ServingPhysicalRuntime {
     }
 
     pub fn abort_with_evidence(self) -> crate::physical_runtime::PhysicalStoreAbortOutcome {
+        drop(self.scrub);
         crate::physical_runtime::PhysicalStoreAbortOutcome::execute(self.parts)
     }
 }

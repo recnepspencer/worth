@@ -12,10 +12,13 @@ use crate::physical_runtime::work::{
     PhysicalPublicationEffect, PhysicalRootPublicationWorkAction, PhysicalWorkOperationFamily,
 };
 
+mod inspection_binding;
 #[cfg(feature = "recovery-runtime-owner")]
 mod recovery;
 
 pub struct DispatchedPhysicalWork {
+    pub(in crate::physical_runtime::work::progression) inspection_source:
+        Option<worth_store_physical_backend::ArtifactTreeFile>,
     pub(in crate::physical_runtime::work::progression) admitted: AdmittedPhysicalWork,
     pub(in crate::physical_runtime::work::progression) signal: PhysicalSignalReadinessEvidence,
     pub(in crate::physical_runtime::work::progression) effect_activity:

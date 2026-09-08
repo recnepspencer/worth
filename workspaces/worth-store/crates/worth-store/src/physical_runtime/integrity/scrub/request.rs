@@ -1,85 +1,82 @@
-use std::num::NonZeroU64;
+use super::PhysicalIntegrityScrubTarget;
+use std::time::Duration;
+use worth_store_physical_format::store_namespace::StableStoreIdentity;
 
-use worth_store_physical_integrity::PhysicalIntegrityScrubWindow;
+pub(super) const MAX_TARGETS: usize = 4096;
+const MAX_WINDOW_BYTES: u32 = 16 * 1024 * 1024;
 
-use crate::physical_runtime::ScrubPhysicalAllocation;
-
-pub(super) struct LazyIntegrityScrubWindows<'media> {
-    windows: Box<dyn Iterator<Item = PhysicalIntegrityScrubWindow<'media>> + 'media>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhysicalIntegrityScrubRequestDenial {
+    EmptyScope,
+    TargetLimitExceeded,
+    TargetScopeMismatch,
+    DuplicateOrOverlappingTarget,
+    WindowBoundExceeded,
+    TotalByteBoundExceeded,
+    InvalidDeadline,
+    RuntimeScopeMismatch,
+    ActiveHandleLimitExceeded,
+    RuntimeClosed,
 }
 
-pub(in crate::physical_runtime) struct ManagedPhysicalIntegrityScrubRequest<'runtime, 'media> {
-    allocation: ScrubPhysicalAllocation<'runtime>,
-    windows: LazyIntegrityScrubWindows<'media>,
-    yield_after_windows: Option<NonZeroU64>,
+/// Bounded diagnostic intent. Completion covers exactly these targets, never
+/// implies a complete-store traversal and never authorizes a repair.
+#[derive(Debug)]
+pub struct ManagedPhysicalIntegrityScrubRequest {
+    pub(in crate::physical_runtime) store: StableStoreIdentity,
+    pub(super) targets: Box<[PhysicalIntegrityScrubTarget]>,
+    pub(super) deadline: Duration,
 }
 
-impl<'runtime, 'media> ManagedPhysicalIntegrityScrubRequest<'runtime, 'media> {
-    pub(in crate::physical_runtime) fn new<I>(
-        allocation: ScrubPhysicalAllocation<'runtime>,
-        windows: I,
-    ) -> Self
-    where
-        I: Iterator<Item = PhysicalIntegrityScrubWindow<'media>> + 'media,
-    {
-        Self {
-            allocation,
-            windows: LazyIntegrityScrubWindows::new(windows),
-            yield_after_windows: None,
+impl ManagedPhysicalIntegrityScrubRequest {
+    pub fn new(
+        store: StableStoreIdentity,
+        targets: impl IntoIterator<Item = PhysicalIntegrityScrubTarget>,
+        maximum_window_bytes: u32,
+        maximum_total_bytes: u64,
+        deadline: Duration,
+    ) -> Result<Self, PhysicalIntegrityScrubRequestDenial> {
+        use PhysicalIntegrityScrubRequestDenial as Denial;
+        if maximum_window_bytes == 0 || maximum_window_bytes > MAX_WINDOW_BYTES {
+            return Err(Denial::WindowBoundExceeded);
         }
-    }
-
-    pub(in crate::physical_runtime) fn with_yield_after_windows(
-        mut self,
-        windows: NonZeroU64,
-    ) -> Self {
-        self.yield_after_windows = Some(windows);
-        self
-    }
-
-    pub(super) fn into_parts(
-        self,
-    ) -> (
-        ScrubPhysicalAllocation<'runtime>,
-        LazyIntegrityScrubWindows<'media>,
-        Option<NonZeroU64>,
-    ) {
-        (self.allocation, self.windows, self.yield_after_windows)
-    }
-}
-
-impl<'media> LazyIntegrityScrubWindows<'media> {
-    fn new<I>(windows: I) -> Self
-    where
-        I: Iterator<Item = PhysicalIntegrityScrubWindow<'media>> + 'media,
-    {
-        Self {
-            windows: Box::new(windows),
+        if deadline.is_zero() || deadline > Duration::from_secs(24 * 60 * 60) {
+            return Err(Denial::InvalidDeadline);
         }
+        let mut exact = Vec::new();
+        let mut bytes = 0_u64;
+        for target in targets {
+            if exact.len() == MAX_TARGETS {
+                return Err(Denial::TargetLimitExceeded);
+            }
+            if target.scope().store_identity() != store {
+                return Err(Denial::RuntimeScopeMismatch);
+            }
+            if target.range().length() > maximum_window_bytes {
+                return Err(Denial::WindowBoundExceeded);
+            }
+            bytes = bytes
+                .checked_add(target.range().length() as u64)
+                .filter(|total| *total <= maximum_total_bytes)
+                .ok_or(Denial::TotalByteBoundExceeded)?;
+            if exact
+                .iter()
+                .any(|prior: &PhysicalIntegrityScrubTarget| prior.range().overlaps(target.range()))
+            {
+                return Err(Denial::DuplicateOrOverlappingTarget);
+            }
+            exact.push(target);
+        }
+        if exact.is_empty() {
+            return Err(Denial::EmptyScope);
+        }
+        Ok(Self {
+            store,
+            targets: exact.into_boxed_slice(),
+            deadline,
+        })
     }
-
-    pub(super) fn next(&mut self) -> Option<PhysicalIntegrityScrubWindow<'media>> {
-        self.windows.next()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::cell::Cell;
-
-    use super::LazyIntegrityScrubWindows;
-
-    #[test]
-    fn wrapping_a_source_does_not_pull_or_precollect_windows() {
-        let pulls = Cell::new(0_u64);
-        let source = std::iter::from_fn(|| {
-            pulls.set(pulls.get() + 1);
-            None
-        });
-
-        let mut windows = LazyIntegrityScrubWindows::new(source);
-        assert_eq!(pulls.get(), 0);
-        assert!(windows.next().is_none());
-        assert_eq!(pulls.get(), 1);
+    pub fn targets(&self) -> &[PhysicalIntegrityScrubTarget] {
+        &self.targets
     }
 }

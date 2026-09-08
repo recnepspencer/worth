@@ -8,6 +8,8 @@ mod literal_vectors;
 mod manifest;
 #[path = "extent_validation/scope_adversaries.rs"]
 mod scope_adversaries;
+#[path = "extent_validation/scrub_membership.rs"]
+mod scrub_membership;
 #[path = "extent_validation/support.rs"]
 mod support;
 #[path = "extent_validation/validation_records.rs"]

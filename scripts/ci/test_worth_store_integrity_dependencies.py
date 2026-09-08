@@ -13,6 +13,14 @@ SPEC.loader.exec_module(GUARD)
 
 
 class IntegrityDependencyGuardTests(unittest.TestCase):
+    def test_wire_dependencies_do_not_admit_runtime_or_owner_parsers(self) -> None:
+        self.assertEqual(GUARD.OBSERVER_DEPENDENCIES, {
+            "worth-foundational", "worth-store-physical-format", "serde", "serde_json",
+        })
+        for owner in ("worth-store", "worth-store-physical-integrity", "worth-store-wal",
+                      "worth-store-recovery-runtime", "worth-store-offline-verifier"):
+            self.assertNotIn(owner, GUARD.OBSERVER_DEPENDENCIES)
+
     def test_declaration_import_is_the_only_allowed_physical_format_route(self) -> None:
         allowed = "use worth_store_physical_format::integrity_declarations::families;"
         self.assertEqual(GUARD.forbidden_format_routes(allowed), [])

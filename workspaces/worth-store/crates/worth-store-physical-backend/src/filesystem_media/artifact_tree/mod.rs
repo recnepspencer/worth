@@ -4,6 +4,10 @@ mod bounded_listing;
 mod directory_listing;
 mod durable_truncation;
 mod exact_read_effect;
+mod inspection_read;
+pub use inspection_read::{
+    InspectionSourceVersion, ObservedArtifactInspectionRead, ScheduledArtifactInspectionReadOutcome,
+};
 mod exact_write_effect;
 mod failure;
 mod media;

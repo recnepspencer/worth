@@ -14,6 +14,9 @@ CRATES = ROOT / "workspaces" / "worth-store" / "crates"
 OBSERVER = CRATES / "worth-store-offline-integrity-observer"
 RUNTIME_INTEGRITY = CRATES / "worth-store-physical-integrity"
 LOWER_INTEGRITY_DEPENDENCIES = {"worth-foundational", "worth-store-physical-format"}
+# Wire encoding/decoding is not a shared physical parser or authority lane.
+# Keep this exact allowlist: no runtime codecs, validators, or owner dependencies.
+OBSERVER_DEPENDENCIES = LOWER_INTEGRITY_DEPENDENCIES | {"serde", "serde_json"}
 FORMAT_CRATE = re.compile(r"\bworth_store_physical_format\b")
 DECLARATION_ROUTE = re.compile(r"\s*::\s*integrity_declarations\b")
 
@@ -56,10 +59,10 @@ def main() -> int:
 
     with (OBSERVER / "Cargo.toml").open("rb") as source:
         observer_dependencies = all_dependencies(tomllib.load(source))
-    if observer_dependencies != LOWER_INTEGRITY_DEPENDENCIES:
+    if observer_dependencies != OBSERVER_DEPENDENCIES:
         violations.append(
             f"{OBSERVER.name} dependencies of every kind must be exactly "
-            f"{sorted(LOWER_INTEGRITY_DEPENDENCIES)}, found {sorted(observer_dependencies)}"
+            f"{sorted(OBSERVER_DEPENDENCIES)}, found {sorted(observer_dependencies)}"
         )
 
     for source_root in (OBSERVER / "src", OBSERVER / "tests"):

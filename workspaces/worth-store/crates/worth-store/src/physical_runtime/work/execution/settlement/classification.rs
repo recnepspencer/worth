@@ -26,6 +26,24 @@ pub(super) fn classify(
     outcome: PhysicalExecutorOutcome,
 ) -> PhysicalWorkSettlementEvidence {
     match outcome {
+        PhysicalExecutorOutcome::InspectionObserved {
+            physical,
+            bytes,
+            scheduler,
+        } if dispatched.matches_inspection(&physical)
+            && bytes.len() == physical.range().length() as usize =>
+        {
+            PhysicalWorkSettlementEvidence::Inspection {
+                physical,
+                bytes,
+                scheduler,
+            }
+        }
+        PhysicalExecutorOutcome::InspectionDenied(failure)
+            if dispatched.intent().scope().inspection_target().is_some() =>
+        {
+            PhysicalWorkSettlementEvidence::InspectionDenied(failure)
+        }
         PhysicalExecutorOutcome::DeniedBeforeEffect { failure, retry } => {
             PhysicalWorkSettlementEvidence::NoEffect(PhysicalWorkNoEffectEvidence {
                 failure,

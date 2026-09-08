@@ -88,10 +88,11 @@ pub use artifact_tree::{
     CompletedScheduledArtifactNewWrite, CompletedScheduledArtifactRangeRead,
     CompletedScheduledArtifactRangeWrite, CompletedScheduledArtifactTreePublicationEffect,
     IndeterminateArtifactAppend, IndeterminateArtifactNewWrite, IndeterminateArtifactRangeWrite,
-    IndeterminateArtifactTreePublicationEffect, ScheduledArtifactAppendOutcome,
-    ScheduledArtifactMetadataReadOutcome, ScheduledArtifactNewWriteOutcome,
-    ScheduledArtifactRangeReadOutcome, ScheduledArtifactRangeWriteOutcome,
-    ScheduledArtifactTreePublicationEffectOutcome,
+    IndeterminateArtifactTreePublicationEffect, InspectionSourceVersion,
+    ObservedArtifactInspectionRead, ScheduledArtifactAppendOutcome,
+    ScheduledArtifactInspectionReadOutcome, ScheduledArtifactMetadataReadOutcome,
+    ScheduledArtifactNewWriteOutcome, ScheduledArtifactRangeReadOutcome,
+    ScheduledArtifactRangeWriteOutcome, ScheduledArtifactTreePublicationEffectOutcome,
 };
 pub use capability_profile::{
     CapabilityProfileError, CapabilitySupport, FilesystemBackendProfile, FilesystemLocation,

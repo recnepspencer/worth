@@ -60,6 +60,12 @@ pub(in crate::physical_runtime) struct IndeterminatePhysicalWalBarrier {
 }
 
 pub(in crate::physical_runtime) enum PhysicalExecutorOutcome {
+    InspectionObserved {
+        physical: worth_store_physical_backend::ObservedArtifactInspectionRead,
+        bytes: Box<[u8]>,
+        scheduler: QueueExecutionOutcome,
+    },
+    InspectionDenied(worth_store_physical_backend::ArtifactTreeFailure),
     DeniedBeforeEffect {
         failure: ArtifactTreeFailure,
         retry: super::PhysicalRetryPayload,

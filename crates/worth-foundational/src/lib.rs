@@ -21,6 +21,8 @@
 //! - `docs/diagnostics-and-explanation-ontology/README.md`
 //! - `docs/lineage-provenance-receipts-and-support-truth/README.md`
 //! - `docs/performance/README.md`
+//! - [`physical_integrity_observation`]: portable physical facts without media,
+//!   decoder, recovery, or repair authority.
 
 #![forbid(unsafe_code)]
 

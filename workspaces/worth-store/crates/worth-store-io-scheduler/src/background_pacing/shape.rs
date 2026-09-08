@@ -45,6 +45,14 @@ impl BackgroundIoPressureShape {
         )
     }
 
+    /// Store-owned buffered-file inspection; does not claim direct I/O.
+    pub const fn buffered_file_scrub_scan() -> Self {
+        Self::new(
+            BackgroundIoPressureClass::ScrubScan,
+            IoSchedulerBackendCapabilityRequirement::BufferedFile,
+        )
+    }
+
     pub const fn replication_prep_read() -> Self {
         Self::new(
             BackgroundIoPressureClass::ReplicationPrepRead,

@@ -328,7 +328,10 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
         self.tree.directory_has_entries(&self.record_staging)
     }
 
-    fn artifact(&self, artifact: RecordArtifactFile) -> ArtifactTreeFile {
+    pub(in crate::physical_runtime) fn artifact(
+        &self,
+        artifact: RecordArtifactFile,
+    ) -> ArtifactTreeFile {
         self.artifact_directory(artifact)
             .file(&artifact.file_name())
             .expect("encoded Store artifact names are portable")

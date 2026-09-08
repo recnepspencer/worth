@@ -21,7 +21,7 @@ pub(super) fn require_exact_resident_source<'lease>(
     Ok(UntrustedPhysicalArtifact::from_bounded_bytes(lease))
 }
 
-pub(super) fn artifact_matches_scope(
+pub(in crate::physical_runtime) fn artifact_matches_scope(
     artifact: RecordArtifactFile,
     scope: PhysicalArtifactScope,
 ) -> bool {

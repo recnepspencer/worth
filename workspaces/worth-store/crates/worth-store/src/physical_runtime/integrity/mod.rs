@@ -42,28 +42,11 @@ pub(in crate::physical_runtime) use resident_admission::page::{
     admit_resident_page, IntegrityAdmittedResidentPageBasis,
 };
 pub use root_protocol_admission_denial::RootProtocolAdmissionDenial;
-pub(in crate::physical_runtime) use scrub::{
+pub(in crate::physical_runtime) use scrub::PhysicalIntegrityScrubOwner;
+pub use scrub::{
     ManagedPhysicalIntegrityScrubHandle, ManagedPhysicalIntegrityScrubProgress,
-    ManagedPhysicalIntegrityScrubRequest,
+    ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityScrubCancellation,
+    PhysicalIntegrityScrubCounters, PhysicalIntegrityScrubDeferral,
+    PhysicalIntegrityScrubRequestDenial, PhysicalIntegrityScrubResume,
+    PhysicalIntegrityScrubTarget, PhysicalIntegrityScrubWindowObservation,
 };
-
-#[cfg(test)]
-mod owner_valid_compile_contracts {
-    use super::*;
-    use crate::physical_runtime::LifecycleGeneration;
-
-    fn drive_scrub<'runtime, 'media>(
-        request: ManagedPhysicalIntegrityScrubRequest<'runtime, 'media>,
-        generation: LifecycleGeneration,
-    ) {
-        let mut handle = ManagedPhysicalIntegrityScrubHandle::start(request);
-        let _: ManagedPhysicalIntegrityScrubProgress = handle.next(generation, |_| {});
-        handle.cancel();
-        handle.close();
-    }
-
-    #[test]
-    fn phase_two_owner_bind_shapes_type_check_without_forging_validation() {
-        let _ = drive_scrub;
-    }
-}

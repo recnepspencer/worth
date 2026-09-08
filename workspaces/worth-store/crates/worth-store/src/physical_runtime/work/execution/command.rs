@@ -1,4 +1,6 @@
 mod artifact;
+mod inspection;
+pub(in crate::physical_runtime) use types::PhysicalInspectionExecutorCommand;
 mod checkpoint;
 mod reclamation;
 mod root_publication;

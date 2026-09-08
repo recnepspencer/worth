@@ -17,39 +17,7 @@ impl PhysicalWorkResourceDemand {
         durability: PhysicalWorkDurabilityRequirement,
     ) -> Self {
         let members = scope.member_count() as u64;
-        let bytes = scope.wal_reclamation_target().map_or_else(
-            || {
-                scope.checkpoint_target().map_or_else(
-                    || {
-                        scope.wal_append_target().map_or_else(
-                            || {
-                                scope.wal_barrier_target().map_or_else(
-                                    || {
-                                        scope.root_publication_target().map_or_else(
-                                            || {
-                                                scope.coordinates().iter().fold(
-                                                    0_u64,
-                                                    |total, coordinate| {
-                                                        total.saturating_add(u64::from(
-                                                            coordinate.length(),
-                                                        ))
-                                                    },
-                                                )
-                                            },
-                                            |root| root.accounted_bytes(),
-                                        )
-                                    },
-                                    |_| 1,
-                                )
-                            },
-                            |wal| wal.byte_count(),
-                        )
-                    },
-                    |checkpoint| checkpoint.accounted_bytes(),
-                )
-            },
-            |reclamation| reclamation.byte_count(),
-        );
+        let bytes = accounted_bytes(scope);
         let queue = QueueProducerResourceShape::new()
             .with_queue_slots(members)
             .with_worker_permits(members)
@@ -91,4 +59,27 @@ impl PhysicalWorkResourceDemand {
     pub const fn flush_epoch(self) -> u64 {
         self.flush_epoch
     }
+}
+fn accounted_bytes(scope: &PhysicalWorkScope) -> u64 {
+    if let Some(range) = scope.inspection_target() {
+        return range.length() as u64;
+    }
+    if let Some(target) = scope.wal_reclamation_target() {
+        return target.byte_count();
+    }
+    if let Some(target) = scope.checkpoint_target() {
+        return target.accounted_bytes();
+    }
+    if let Some(target) = scope.wal_append_target() {
+        return target.byte_count();
+    }
+    if scope.wal_barrier_target().is_some() {
+        return 1;
+    }
+    if let Some(target) = scope.root_publication_target() {
+        return target.accounted_bytes();
+    }
+    scope.coordinates().iter().fold(0_u64, |total, range| {
+        total.saturating_add(range.length() as u64)
+    })
 }

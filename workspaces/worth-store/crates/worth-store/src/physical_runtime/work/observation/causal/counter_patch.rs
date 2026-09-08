@@ -1,7 +1,7 @@
 use super::super::PhysicalWorkCounterSnapshot;
 
 const FAMILY_COUNT: usize = 9;
-const PRESSURE_COUNT: usize = 7;
+const PRESSURE_COUNT: usize = 8;
 const STAGE_COUNT: usize = 7;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -66,7 +66,7 @@ mod tests {
 
     #[test]
     fn sparse_absolute_patch_reconstructs_the_exact_observed_snapshot() {
-        let mut before_counts = [[[0_u64; 7]; 7]; 9];
+        let mut before_counts = [[[0_u64; 7]; 8]; 9];
         before_counts[1][2][3] = 8;
         before_counts[8][6][6] = 13;
         let before = PhysicalWorkCounterSnapshot::from_counts(before_counts);
@@ -74,6 +74,7 @@ mod tests {
         let mut after_counts = before_counts;
         after_counts[1][2][3] = 5;
         after_counts[4][5][6] = 21;
+        after_counts[1][7][6] = 34;
         let after = PhysicalWorkCounterSnapshot::from_counts(after_counts);
 
         let patch = PhysicalWorkCounterPatch::between(before, after);
@@ -81,7 +82,7 @@ mod tests {
         patch.apply_to(&mut reconstructed);
 
         assert_eq!(reconstructed, after);
-        assert_eq!(patch.changes.len(), 2);
+        assert_eq!(patch.changes.len(), 3);
     }
 
     #[test]
@@ -106,7 +107,7 @@ mod tests {
     }
 
     fn snapshot_with_values(first: u64, second: u64, third: u64) -> PhysicalWorkCounterSnapshot {
-        let mut counts = [[[0_u64; 7]; 7]; 9];
+        let mut counts = [[[0_u64; 7]; 8]; 9];
         counts[0][0][0] = first;
         counts[4][5][6] = second;
         counts[8][6][6] = third;

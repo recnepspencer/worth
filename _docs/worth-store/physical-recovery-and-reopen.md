@@ -29,6 +29,15 @@ backend media, and recovery-physics types are not alternate entry points.
 
 ## Core Mental Model
 
+C.8 discovery consumes C.9-admitted physical artifacts before owner decoding.
+Integrity rejection preserves the exact damaged, unsupported, unknown, or
+indeterminate posture and scope; it cannot select a recovery source or grant
+redo/publication authority. C.8 still owns source precedence, durable continuity,
+and the recovered-runtime handoff. A valid older checkpoint is bound to its
+exact retained root, not promoted to the current serving root by integrity.
+See [Physical Integrity And Offline Verification](physical-integrity-and-offline-verification.md)
+for the separate managed scrub and independent all-family observer workflows.
+
 Persisted selectors, checkpoints, manifests, page or extent frames, and WAL are
 the source of truth. Recovery derives a plan from them under finite limits.
 The runtime report describes what that process concluded. The offline observer
@@ -120,8 +129,9 @@ certification or operator tool; the observer must not decide recovery success.
 C.4 remains the only physical effect executor. C.5.1 schedules recovery work.
 C.7 remains the ordinary durability and checkpoint publisher. The offline
 verifier is an independent inspection boundary, not a Store runtime.
-`RecoveredPhysicalRuntimeHandoff` is the only successor boundary: C.9 adds
-integrity, corruption localization, quarantine, and offline truth; C.10 adds
+`RecoveredPhysicalRuntimeHandoff` is the only successor boundary. C.9 supplies
+integrity, corruption localization, descriptive quarantine, and independent
+offline truth; C.10 adds
 stable reads, epochs, reclaim, scheduled I/O, and maintenance interference.
 Neither milestone may treat a recovery or observer report as authority.
 
