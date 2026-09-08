@@ -1,4 +1,4 @@
-use super::{
+use crate::physical_runtime::{
     ManagedPhysicalIntegrityScrubHandle, ManagedPhysicalIntegrityScrubProgress as Progress,
 };
 use serde_json::{json, Value};
@@ -63,15 +63,15 @@ impl ManagedPhysicalIntegrityScrubHandle {
                 !name.is_empty() && name.len() <= 256 && !name.chars().any(char::is_control)
             })
             .ok_or(Denial::ExecutableIdentityUnavailable)?;
-        let initial = self.counters;
-        let remaining = &self.request.targets[self.next_target.min(self.request.targets.len())..];
+        let initial = self.counters();
+        let (store, deadline, remaining) = self.remaining_scope();
         let header = json!({"protocol":"store.physical.integrity-observation", "version":1,
             "role":"runtime-integrity-observer", "executable":executable, "process":std::process::id().to_string(),
-            "run":context.run, "scenario":context.scenario, "store":hex(&self.request.store.bytes()),
+            "run":context.run, "scenario":context.scenario, "store":hex(&store.bytes()),
             "compatibility":{"earliest":1,"latest":1},
             "declared_limits":{"entries":remaining.len(), "bytes":remaining.iter().map(|target| u64::from(target.range().length())).sum::<u64>(),
                 "window_bytes":remaining.iter().map(|target| target.range().length()).max().unwrap_or(0),
-                "elapsed_ms":self.request.deadline.as_millis(), "report_bytes":maximum_report_bytes}});
+                "elapsed_ms":deadline.as_millis(), "report_bytes":maximum_report_bytes}});
         let mut wire = ReportWire {
             output,
             written: 0,
@@ -85,7 +85,7 @@ impl ManagedPhysicalIntegrityScrubHandle {
         wire.append(b"],\"completeness\":")?;
         wire.value(&json!(completeness))?;
         wire.append(b",\"consumed\":{")?;
-        let counters = self.counters;
+        let counters = self.counters();
         wire.fields(&json!({"entries":emitted, "bytes":counters.acquired_bytes - initial.acquired_bytes,
             "completed_windows":counters.completed_windows - initial.completed_windows,
             "validator_entries":validator_entries, "checksum_calculations":null, "owner_decoder_entries":0,
@@ -112,7 +112,7 @@ impl ManagedPhysicalIntegrityScrubHandle {
         let mut emitted = 0;
         let mut validator_entries = 0;
         let completeness = loop {
-            let target = self.request.targets.get(self.next_target).copied();
+            let target = self.remaining_scope().2.first().copied();
             match self.next_window() {
                 Progress::WindowInspected(observation) => {
                     if emitted != 0 {

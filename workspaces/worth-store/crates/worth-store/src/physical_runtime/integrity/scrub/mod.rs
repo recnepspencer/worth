@@ -9,10 +9,7 @@ mod target;
 mod window_inspection;
 
 pub use cancellation::PhysicalIntegrityScrubCancellation;
-pub use handle::{
-    ManagedPhysicalIntegrityScrubHandle, PhysicalIntegrityRuntimeReportContext,
-    PhysicalIntegrityRuntimeReportDenial, PhysicalIntegrityScrubResume,
-};
+pub use handle::{ManagedPhysicalIntegrityScrubHandle, PhysicalIntegrityScrubResume};
 pub(in crate::physical_runtime) use owner::PhysicalIntegrityScrubOwner;
 pub use progress::{
     ManagedPhysicalIntegrityScrubProgress, PhysicalIntegrityScrubCounters,

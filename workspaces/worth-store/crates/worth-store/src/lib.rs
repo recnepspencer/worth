@@ -11,6 +11,7 @@
 //! use worth_store::physical_format::InMemoryPhysicalFormatModel;
 //! ```
 
+pub mod integrity_observation;
 pub mod physical_runtime;
 
 pub mod aspect_native {

@@ -151,8 +151,7 @@ pub use integrity::{
 };
 pub use integrity::{
     ManagedPhysicalIntegrityScrubHandle, ManagedPhysicalIntegrityScrubProgress,
-    ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityRuntimeReportContext,
-    PhysicalIntegrityRuntimeReportDenial, PhysicalIntegrityScrubCancellation,
+    ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityScrubCancellation,
     PhysicalIntegrityScrubCounters, PhysicalIntegrityScrubDeferral,
     PhysicalIntegrityScrubRequestDenial, PhysicalIntegrityScrubResume,
     PhysicalIntegrityScrubTarget, PhysicalIntegrityScrubWindowObservation,

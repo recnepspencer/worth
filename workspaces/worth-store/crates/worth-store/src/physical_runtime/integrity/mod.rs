@@ -45,8 +45,7 @@ pub use root_protocol_admission_denial::RootProtocolAdmissionDenial;
 pub(in crate::physical_runtime) use scrub::PhysicalIntegrityScrubOwner;
 pub use scrub::{
     ManagedPhysicalIntegrityScrubHandle, ManagedPhysicalIntegrityScrubProgress,
-    ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityRuntimeReportContext,
-    PhysicalIntegrityRuntimeReportDenial, PhysicalIntegrityScrubCancellation,
+    ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityScrubCancellation,
     PhysicalIntegrityScrubCounters, PhysicalIntegrityScrubDeferral,
     PhysicalIntegrityScrubRequestDenial, PhysicalIntegrityScrubResume,
     PhysicalIntegrityScrubTarget, PhysicalIntegrityScrubWindowObservation,

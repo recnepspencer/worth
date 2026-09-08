@@ -102,7 +102,11 @@ quarantine, or authorize repair. Repair/recovery selection/semantic readmission
 require their own owner-controlled workflows.
 
 For comparison input, call `handle.write_observation_report(context, max_bytes,
-&mut sink)`, with `PhysicalIntegrityRuntimeReportContext::new(run, scenario)`.
+&mut sink)`, with
+`worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext::new(run, scenario)`.
+The JSON adapter belongs to Store's diagnostic observation module, outside the
+physical runtime; it consumes only bounded scrub observations and descriptive
+scope/counter facts, never raw media or admission authority.
 This acquires the remaining targets and streams version-1 JSON to a caller-owned
 `Write` sink; Store does not allocate a report-sized buffer. Process/executable
 identity is sampled by the runtime. The sink must be outside the Store if it is

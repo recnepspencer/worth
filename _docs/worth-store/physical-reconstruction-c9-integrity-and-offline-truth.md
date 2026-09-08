@@ -207,7 +207,8 @@ identities:
 1. **Producer** creates the production-valid baseline through ordinary Store
    writes, C.7 publication, and a clean close.
 2. **Pending-obligation producer** is used only for the physical-work family.
-   It starts from a copy of the clean baseline, submits one ordinary production
+   It ordinarily reopens the producer's same physical root after clean close,
+   submits one ordinary production
    mutation, lets recovery-journal preparation complete, and blocks the
    executor's first target-media effect after that preparation at the admitted
    backend boundary. Arrival at that boundary proves the v6 `.pending`
@@ -215,7 +216,8 @@ identities:
    observes its durable visibility, then terminates the child without close or
    settlement. The boundary may delay the target effect but may not delay or
    create, encode, or edit the obligation.
-3. **Artifact editor** opens only an isolated copy after producer death and
+3. **Artifact editor** opens only an isolated case subject after producer death
+   (a copy or the identity-preserving restoration described below) and
    applies one typed corruption operator to a target selected from the clean
    artifact manifest.
 4. **Fresh recovery reopener** invokes the real C.8 recovery composition root.
@@ -228,6 +230,19 @@ identities:
    editor's independently declared operation.
 7. **Online scrub subject** runs against a separately produced live clean
    Store through the Store-owned scrub facade under constrained budgets.
+
+Ordinary reopen is bound to the admitted physical root identity: byte-identical
+files copied into a different root directory do not preserve the persisted
+durability-policy binding. A runtime-inspection or pending-obligation subject
+therefore retains its producer's actual root directory. The parent may retain
+an immutable external snapshot and restore its exact files into that same
+directory between cases, only after every prior child has exited. Restoration
+must never replace the root directory itself, must verify baseline bytes and
+namespace before the next process starts, and must leave independent before/
+after observations for every case. This is fixture preparation, not runtime
+repair. Recovery-only cases continue to use isolated copies. A clean same-root
+ordinary reopen must succeed; copying the root must not be made legal by
+weakening persisted policy-identity checks.
 
 The runner rejects binary reuse between recovery and verifier roles and
 rejects protocol, Store, scenario, or run identity substitution.
@@ -290,8 +305,9 @@ removes every `.pending` obligation and C.5.1 forbids clean close with an
 unmatched live obligation. Their immutable baseline is the separately produced
 post-termination world from role 2. The parent independently records the exact
 pending pathname, fixed 160-byte length, and digest after child death. The
-uncorrupted row inspects that production-issued file; each damaged row copies
-that same terminated world before applying one typed edit. No test constructs
+uncorrupted row inspects that production-issued file; each damaged row restores
+that same terminated world's exact contents into the retained physical root
+before applying one typed edit. No test constructs
 obligation bytes, calls `PhysicalEffectJournal` privately, or treats the
 inspection-required owner posture caused by a live obligation as checksum
 damage.
@@ -1647,7 +1663,25 @@ The dominant axis under `physical_runtime/integrity/` is live Store lifecycle
 composition. This location owns C.6 resident guards, C.5.1 scheduling and
 cancellation, Store/runtime generation, C.8 handoff binding, and the public
 managed scrub facade. It excludes checksum implementation, offline traversal,
-recovery source choice, and repair.
+recovery source choice, repair, and JSON serialization.
+
+The Store-owned runtime observation protocol is a diagnostic consumer outside
+that physical-runtime boundary:
+
+```text
+workspaces/worth-store/crates/worth-store/src/integrity_observation/ [create]
+├── mod.rs                         [stable diagnostic report facade]
+├── runtime_report.rs              [bounded caller-sink export]
+└── runtime_report/
+    ├── artifact.rs                [descriptive address projection]
+    ├── outcome.rs                 [lossless outcome projection]
+    └── vocabulary.rs              [version-one wire names]
+```
+
+It receives remaining declared scopes, settled window observations, and
+counters from the managed handle. It cannot access media, lifecycle owners,
+allocation grants, or validated authority. Serialization never enters the
+physical runtime, and no guard exemption or alternate parser is permitted.
 
 `record_serving/work_semantics/integrity_admission.rs` states the narrow
 ordinary-work prerequisite and projects a family-specific admitted resident

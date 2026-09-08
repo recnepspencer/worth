@@ -1,3 +1,4 @@
+//! Canonical descriptive artifact addresses in the version-one protocol.
 use crate::physical_runtime::{
     PhysicalIntegrityScrubTarget, PhysicalIntegrityScrubWindowObservation,
 };

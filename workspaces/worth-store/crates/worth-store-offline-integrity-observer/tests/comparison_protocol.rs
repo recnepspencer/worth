@@ -191,18 +191,27 @@ fn real_compare_binary_preserves_inputs_and_rejects_alias_output_and_repair_flag
     let output_path = directory.join("comparison.json");
     std::fs::write(&runtime_path, runtime.to_string()).unwrap();
     std::fs::write(&offline_path, offline.to_string()).unwrap();
+    let guide = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../../_docs/worth-store/physical-integrity-and-offline-verification.md"
+    ));
+    let line = guide
+        .lines()
+        .find(|line| line.starts_with("physical_store_integrity_observer compare "))
+        .expect("documented comparison command");
     let invoke = |output: &std::path::Path, extra: &[&str]| {
-        std::process::Command::new(env!("CARGO_BIN_EXE_physical_store_integrity_observer"))
-            .arg("compare")
-            .arg("--runtime-observation")
-            .arg(&runtime_path)
-            .arg("--offline-observation")
-            .arg(&offline_path)
-            .arg("--report")
-            .arg(output)
-            .args(extra)
-            .output()
-            .unwrap()
+        let mut command =
+            std::process::Command::new(env!("CARGO_BIN_EXE_physical_store_integrity_observer"));
+        // Execute the actual guide syntax with path substitution, not a mirrored CLI.
+        for token in line.split_whitespace().skip(1) {
+            match token {
+                "<runtime-v1.json>" => command.arg(&runtime_path),
+                "<external-report.json>" => command.arg(&offline_path),
+                "<external-comparison.json>" => command.arg(output),
+                literal => command.arg(literal),
+            };
+        }
+        command.args(extra).output().unwrap()
     };
     let result = invoke(&output_path, &[]);
     assert!(

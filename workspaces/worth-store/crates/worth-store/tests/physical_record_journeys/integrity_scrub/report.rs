@@ -1,5 +1,5 @@
 use super::*;
-use worth_store::physical_runtime::{
+use worth_store::integrity_observation::{
     PhysicalIntegrityRuntimeReportContext as Context,
     PhysicalIntegrityRuntimeReportDenial as ReportDenial,
 };

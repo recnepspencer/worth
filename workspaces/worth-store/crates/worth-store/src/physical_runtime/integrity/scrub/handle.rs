@@ -1,5 +1,4 @@
 use super::{cancellation::ScrubRegistration, *};
-mod report;
 use crate::physical_runtime::record_serving::{
     residency::RecordFramePorts, CanonicalRecordReadPort,
 };
@@ -7,7 +6,6 @@ use crate::physical_runtime::{
     lifecycle::{LifecycleState, ObservedLifecyclePhase},
     LifecycleGeneration, RuntimeIdentity,
 };
-pub use report::{PhysicalIntegrityRuntimeReportContext, PhysicalIntegrityRuntimeReportDenial};
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use std::time::Instant;
 
@@ -85,6 +83,21 @@ impl ManagedPhysicalIntegrityScrubHandle {
     }
     pub const fn counters(&self) -> PhysicalIntegrityScrubCounters {
         self.counters
+    }
+    /// Descriptive remaining acquisition scope for the outer Store diagnostic
+    /// adapter. No lifecycle, media, allocation, or validation authority escapes.
+    pub(crate) fn remaining_scope(
+        &self,
+    ) -> (
+        worth_store_physical_format::store_namespace::StableStoreIdentity,
+        std::time::Duration,
+        &[PhysicalIntegrityScrubTarget],
+    ) {
+        (
+            self.request.store,
+            self.request.deadline,
+            &self.request.targets[self.next_target.min(self.request.targets.len())..],
+        )
     }
     pub fn pause(&mut self) -> PhysicalIntegrityScrubResume {
         self.paused = true;
