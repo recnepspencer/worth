@@ -43,6 +43,18 @@ impl CanonicalRecordReadPort {
             self.record.security(),
         )
         .map_err(|_| ScrubReadDeferral::Submission)?;
+        // Reserve provisional background capacity before publishing work. A denial
+        // must not leave a Ready command awaiting asynchronous Signal abandonment.
+        let (lease, capacity, backend, policy) = self.scheduler.scrub_background(
+            self.record.scheduler_security(), range.length() as u64,
+        ).map_err(|failure| {
+            use crate::physical_runtime::instance::PhysicalScrubSchedulerAdmissionDenial as Denial;
+            match failure {
+                Denial::Capacity(cause) => ScrubReadDeferral::Capacity(cause),
+                Denial::Pacing(cause) => ScrubReadDeferral::Pacing(cause),
+                Denial::Deferred => ScrubReadDeferral::PacingDeferred,
+            }
+        })?;
         let receipt = match self.submission.submit(request).into_raw() {
             TransitionOutcome::Success(receipt) => receipt,
             _ => return Err(ScrubReadDeferral::Submission),
@@ -56,16 +68,6 @@ impl CanonicalRecordReadPort {
                     _ => ScrubReadDeferral::DependencyBlocked,
                 },
             )?;
-        let (lease, capacity, backend, policy) = self.scheduler.scrub_background(
-            self.record.scheduler_security(), range.length() as u64,
-        ).map_err(|failure| {
-            use crate::physical_runtime::instance::PhysicalScrubSchedulerAdmissionDenial as Denial;
-            match failure {
-                Denial::Capacity(cause) => ScrubReadDeferral::Capacity(cause),
-                Denial::Pacing(cause) => ScrubReadDeferral::Pacing(cause),
-                Denial::Deferred => ScrubReadDeferral::PacingDeferred,
-            }
-        })?;
         let demand = PhysicalSchedulerDemand::scrub_background(ready, lease, capacity)
             .map_err(ScrubReadDeferral::Scheduler)?;
         let work = PhysicalWorkScheduler::admit(demand, &backend, policy)

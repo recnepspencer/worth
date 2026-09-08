@@ -768,9 +768,11 @@ the managed scrub handle, runtime-generation binding, C.5.1 scheduling,
 allocation, cancellation, close behavior, and public facade. C.10 may later
 schedule scrub by maintenance policy through that facade.
 
-Scrub is ordinary-priority-aware diagnostic work. It must be incremental over
-declared windows and must release all acquired resources at every terminal or
-paused boundary.
+Scrub is ordinary-priority-aware diagnostic work in the fixed background-scrub
+class. C.5.1 admission preserves foreground resource headroom; callers cannot
+promote a scrub window into foreground work. It must be incremental over declared
+windows and must release all acquired resources at every terminal or paused
+boundary.
 
 ### Decision 9: offline output never enters the Store root
 
@@ -1112,9 +1114,14 @@ pub enum PhysicalIntegrityScrubProgress {
 }
 ```
 
-The request declares Store scope, family scope, traversal and byte bounds,
-resource priority, and observation sink. The handle is Store-owned, bound to
-one runtime generation, and cannot outlive runtime close. Resume points are
+The request declares Store scope, exact family targets, traversal and byte
+bounds, and a bounded deadline. Scheduling uses the background-scrub class
+described in Decision 8, not a caller-supplied priority. Observations are pulled
+from the handle; the optional bounded report writer takes an explicit
+caller-owned output sink at the outer diagnostic boundary, not inside the
+request or integrity mechanism. Output failure cannot mutate Store state or
+silently restart inspection. The handle is Store-owned, bound to one runtime
+generation, and cannot perform work after runtime close. Resume points are
 descriptive continuation positions scoped to the unchanged Store/runtime
 generation; they are not integrity proofs and are rejected after generation
 change.
@@ -3019,7 +3026,9 @@ C.10 receives:
 C.10 adds scheduling policy, cadence, prioritization, operator workflow, and
 later authorized repair composition as siblings above this facade. It must not
 move scrub lifecycle into the integrity mechanism or turn C.9 observation into
-authority.
+authority. Prioritization chooses which bounded scrub handle to advance and
+when; changes to resource policy belong to the existing C.5.1 scheduler, never
+to a caller label that bypasses its admission or C.6 allocation bounds.
 
 ### C.11 indexes, blobs, and compaction may trust
 

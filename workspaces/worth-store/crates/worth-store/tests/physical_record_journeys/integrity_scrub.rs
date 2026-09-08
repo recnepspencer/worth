@@ -18,6 +18,10 @@ use worth_store_physical_integrity::{
 mod in_flight;
 #[path = "integrity_scrub/incomplete_source.rs"]
 mod incomplete_source;
+#[path = "integrity_scrub/pressure.rs"]
+mod pressure;
+#[path = "integrity_scrub/pressure_world.rs"]
+mod pressure_world;
 #[path = "integrity_scrub/report.rs"]
 mod report;
 
