@@ -15,6 +15,7 @@ use worth_store_physical_format::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalRedoAdmissionLimits {
+    pub recovery_memory_bytes: u64,
     pub targets: u64,
     pub distinct_targets: u64,
     pub projection: PhysicalRecoveryProjectionDecodeLimits,
@@ -22,6 +23,7 @@ pub struct PhysicalRedoAdmissionLimits {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmittedPhysicalRedoMembers {
+    scratch_bytes: u64,
     members: Box<[AdmittedPhysicalRedoMember]>,
     group_allocations: BTreeMap<[u8; 32], u64>,
 }
@@ -34,6 +36,7 @@ struct AdmittedPhysicalRedoMember {
     fate: RecoveryOperationFate,
     records: Box<[PhysicalRedoRecord]>,
     projection: PersistedPhysicalRecoveryProjection,
+    inline_frames: Box<[projection_admission::AdmittedInlineFrame]>,
 }
 use worth_store_wal::WalLsnRange;
 
@@ -44,6 +47,7 @@ mod group_admission;
 mod projection_admission;
 mod projection_materialization;
 mod projection_validation;
+mod supersession;
 
 pub use admission::{
     admit_physical_redo_members, physical_redo_observation_target_identities,
@@ -76,6 +80,7 @@ pub struct PhysicalRedoGroupBinding {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImmutablePhysicalRedoPlan {
+    scratch_bytes: u64,
     records: Box<[PhysicalRedoRecord]>,
     decisions: Box<[PhysicalRedoDecision]>,
     projections: Box<[PhysicalRedoProjection]>,
@@ -143,6 +148,7 @@ pub fn plan_physical_redo(
         store,
         format,
         PhysicalRedoAdmissionLimits {
+            recovery_memory_bytes: u64::MAX,
             targets: maximum_targets,
             distinct_targets: maximum_targets,
             projection: PhysicalRecoveryProjectionDecodeLimits {
@@ -186,7 +192,7 @@ fn decide(
             Err(PhysicalRedoPlanningDenial::ProvenNoEffectHasWalAttempt)
         }
         RecoveryOperationFate::Indeterminate => {
-            let observation = page_cursor.observe(target.identity())?;
+            let observation = page_cursor.observe_record(target.identity(), record_lsn)?;
             let page_lsn = observation.page_lsn();
             if page_lsn == record_lsn && observation.frame_digest() != target.resulting_digest() {
                 return Err(PhysicalRedoPlanningDenial::PageDigestMismatch);

@@ -83,6 +83,8 @@ mod record_chunk_views;
 mod residency_pressure_processes;
 #[path = "physical_record_journeys/residency_writeback_fresh_reopen.rs"]
 mod residency_writeback_fresh_reopen;
+#[path = "physical_record_journeys/resident_checksum_cost.rs"]
+mod resident_checksum_cost;
 #[path = "c5/scale_invalid_worlds.rs"]
 mod scale_invalid_worlds;
 #[path = "c5/scale_policy_evolution.rs"]

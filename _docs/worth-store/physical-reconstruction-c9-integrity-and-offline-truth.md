@@ -1495,10 +1495,20 @@ remain narrow byte mechanisms, not owner-facing decoder authority. After
 cutover, a mechanical source-route guard permits persisted-input calls only
 from named `worth-store-physical-integrity/src/artifact/**` family validators;
 format-owner implementation/tests may exercise the mechanisms directly.
-Store's only additional raw decode allowance is
-`worth-store/src/physical_runtime/integrity/dirty_decode/**`, whose functions
-require a C.6 `DirtyPhysicalFrame` and cannot accept a clean lease. The
-independent observer calls neither lane.
+Store's additional raw inspection allowances remain in the named canonical
+writer/dirty-frame owners under `physical_runtime/durability/data/`; they do
+not create a clean-resident decode lane. Exact path/operation pairs are enforced
+by `tools/boundary-check/src/source_rules/analysis/store_integrity_routes/policy.rs`,
+including new and renamed Store/recovery sources. The independent observer
+calls neither lane.
+
+Root-routing, segment-membership, free-space-membership, and free-space-header
+payload projection shares the format owner's canonical payload parser with its
+framed decoder. Projection grants no integrity or source authority. Persisted
+Store use is permitted only in each exact private admitted family-view method,
+entered through the live binding's pre/post decoder checks; raw framed decoding
+inside an admission callback is not an exception. Unchanged resident hits must
+perform zero actual CRC calls, and cache drain/reload must revalidate.
 
 Clean owner-facing decoding is exposed only by Store/recovery-private admission
 wrappers that bind a concrete `IntegrityValidated*` view to the matching live

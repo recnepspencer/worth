@@ -1,3 +1,5 @@
+mod payload_projection;
+
 use crate::record_framing::{decode_durable_frame, encode_durable_frame};
 use crate::{
     DurableFrameKind, PhysicalRecordFormatDeclaration, RecordAllocationClass,
@@ -205,76 +207,8 @@ impl PhysicalFreeSpaceMembershipBlock {
         let (format, frame) =
             decode_durable_frame(bytes, DurableFrameKind::FreeSpaceMembershipBlock)
                 .map_err(FreeSpaceRoutingDenial::Frame)?;
-        if frame.payload.len() < BLOCK_PREFIX_BYTES
-            || frame.payload[21..24] != [0; 3]
-            || frame.payload[32..40] != [0; 8]
-        {
-            return Err(FreeSpaceRoutingDenial::Malformed.into());
-        }
-        let tree_identity = read_u64(frame.payload, 0);
-        let block = read_u64(frame.payload, 8);
-        let level = u16::from_le_bytes(frame.payload[16..18].try_into().unwrap());
-        let count = u16::from_le_bytes(frame.payload[18..20].try_into().unwrap());
-        let generation = read_u64(frame.payload, 24);
-        if tree_identity == 0
-            || generation == 0
-            || block != frame.identity
-            || count == 0
-            || count > capacity
-        {
-            return Err(FreeSpaceRoutingDenial::IdentityOrCapacity.into());
-        }
-        let width = match frame.payload[20] {
-            1 if level == 0 => ENTRY_BYTES,
-            2 if level != 0 => REFERENCE_BYTES,
-            _ => return Err(FreeSpaceRoutingDenial::Malformed.into()),
-        };
-        if frame.payload.len() != BLOCK_PREFIX_BYTES + usize::from(count) * width {
-            return Err(FreeSpaceRoutingDenial::Malformed.into());
-        }
-        let observed = u64::from(count);
-        if level == 0 && observed > limits.leaf_entries {
-            return Err(BoundedFreeSpaceMembershipBlockDecodeDenial::LeafEntries {
-                observed,
-                admitted: limits.leaf_entries,
-            });
-        }
-        if level != 0 && observed > limits.branch_children {
-            return Err(
-                BoundedFreeSpaceMembershipBlockDecodeDenial::BranchChildren {
-                    observed,
-                    admitted: limits.branch_children,
-                },
-            );
-        }
-        let body = &frame.payload[BLOCK_PREFIX_BYTES..];
-        let decoded = if level == 0 {
-            Self::leaf(
-                tree_identity,
-                generation,
-                block,
-                body.chunks_exact(width)
-                    .map(decode_entry)
-                    .collect::<Option<Vec<_>>>()
-                    .ok_or(FreeSpaceRoutingDenial::Malformed)?,
-                capacity,
-            )
-        } else {
-            Self::branch(
-                tree_identity,
-                generation,
-                block,
-                level,
-                body.chunks_exact(width)
-                    .map(decode_reference)
-                    .collect::<Option<Vec<_>>>()
-                    .ok_or(FreeSpaceRoutingDenial::InvalidReference)?,
-                capacity,
-            )
-        };
-        decoded
-            .map(|value| (value, format))
-            .ok_or(FreeSpaceRoutingDenial::CanonicalOrder.into())
+        Self::project_payload(frame.payload, frame.identity, capacity, limits)
+            .map(|block| (block, format))
     }
     pub fn entries(&self) -> Option<&[RecordFreeSpaceManifestEntry]> {
         match self {

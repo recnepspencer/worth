@@ -55,6 +55,7 @@ fn admitted(
         test_store(),
         format,
         PhysicalRedoAdmissionLimits {
+            recovery_memory_bytes: u64::MAX,
             targets: 4,
             distinct_targets: 4,
             projection: PhysicalRecoveryProjectionDecodeLimits {

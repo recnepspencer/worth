@@ -18,10 +18,17 @@ pub(super) struct IntegrityAdmittedRecoveryProjection<'projection> {
     extent_manifests: Vec<AdmittedExtentManifest>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct AdmittedInlineFrame {
     pub frame_index: usize,
     pub page_lsn: PhysicalPageLsn,
     pub records: Vec<(DurableInlineRecordPlacement, Range<usize>)>,
+}
+
+impl IntegrityAdmittedRecoveryProjection<'_> {
+    pub(super) fn into_inline_frames(self) -> Box<[AdmittedInlineFrame]> {
+        self.inline_frames.into_boxed_slice()
+    }
 }
 
 pub(super) struct AdmittedExtentChunk {

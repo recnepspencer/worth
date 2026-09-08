@@ -20,7 +20,11 @@ impl ProducedRecord {
         let inline = profile.inline_records_per_batch(batch);
         assert_eq!(
             completed.persisted_records().len(),
-            inline + usize::from(profile == ProductionWorldProfile::Primary16KiB)
+            inline
+                + usize::from(matches!(
+                    profile,
+                    ProductionWorldProfile::Primary16KiB | ProductionWorldProfile::ReusedTails16KiB
+                ))
         );
         completed
             .persisted_records()

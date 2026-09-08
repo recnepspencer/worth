@@ -20,6 +20,37 @@ struct InlinePageObservationPlan {
     page_bytes: u32,
 }
 
+/// Choose an exact selected image anchor; physics proves historical supersession.
+pub(crate) fn selected_inline_target<'a>(
+    placement: DurableInlineRecordPlacement,
+    targets: &[&'a PhysicalRedoTarget],
+    format: PhysicalRecordFormatDeclaration,
+    entries: &BTreeMap<(u64, u64), RecoverySelectedSegmentPage>,
+) -> &'a PhysicalRedoTarget {
+    entries
+        .get(&(placement.segment().get(), placement.page().get()))
+        .and_then(|selected| {
+            targets.iter().copied().find(|target| {
+                target.identity()
+                    == PhysicalRedoTargetIdentity::InlinePage {
+                        segment: placement.segment().get(),
+                        page: placement.page().get(),
+                        generation: placement.page_generation(),
+                    }
+                    && target.artifact()
+                        == RecordArtifactFile::Segment {
+                            segment: placement.segment().get(),
+                            generation: selected.entry.data_generation(),
+                        }
+                    && target.artifact_offset()
+                        == u64::from(selected.entry.frame_index())
+                            * u64::from(format.page_size().bytes())
+                    && target.artifact_length() == format.page_size().bytes()
+            })
+        })
+        .unwrap_or(targets[0])
+}
+
 pub(crate) fn observe_inline(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     placement: DurableInlineRecordPlacement,

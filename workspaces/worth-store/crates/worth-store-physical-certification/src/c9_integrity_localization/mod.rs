@@ -96,6 +96,8 @@ mod recovery_adapter;
 #[cfg(test)]
 mod recovery_request;
 #[cfg(test)]
+mod reused_tails_recovery;
+#[cfg(test)]
 mod test_world;
 #[cfg(test)]
 mod tests;

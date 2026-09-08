@@ -8,7 +8,7 @@ pub(super) fn validate_projection_semantics(
     projection: &PersistedPhysicalRecoveryProjection,
     store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
-) -> Result<(), PhysicalRedoPlanningDenial> {
+) -> Result<Box<[super::projection_admission::AdmittedInlineFrame]>, PhysicalRedoPlanningDenial> {
     let admitted = admit_projection(projection, store, format)?;
     validate_root_state(projection)?;
     if records.len() != projection.record_identities().len() {
@@ -79,7 +79,8 @@ pub(super) fn validate_projection_semantics(
         }
     }
     validate_bidirectional_closure(projection, &admitted)?;
-    validate_resulting_lsns(records, projection, &admitted)
+    validate_resulting_lsns(records, projection, &admitted)?;
+    Ok(admitted.into_inline_frames())
 }
 
 fn validate_bidirectional_closure(

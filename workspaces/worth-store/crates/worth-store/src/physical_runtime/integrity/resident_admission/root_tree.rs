@@ -126,10 +126,6 @@ impl<'frame> IntegrityAdmittedResidentSegmentMembershipBlock<'frame> {
 macro_rules! resident_tree_view {
     ($view:ty) => {
         impl $view {
-            pub(in crate::physical_runtime) fn bytes(&self) -> &[u8] {
-                self.lease
-            }
-
             pub(in crate::physical_runtime) const fn scope(&self) -> PhysicalArtifactScope {
                 self.scope
             }
@@ -139,3 +135,58 @@ macro_rules! resident_tree_view {
 
 resident_tree_view!(IntegrityAdmittedResidentRootRoutingView<'_>);
 resident_tree_view!(IntegrityAdmittedResidentSegmentMembershipView<'_>);
+
+impl IntegrityAdmittedResidentRootRoutingView<'_> {
+    pub(in crate::physical_runtime) fn project_block(
+        &self,
+        capacity: u16,
+    ) -> Result<
+        worth_store_physical_format::PhysicalRootRoutingBlock,
+        worth_store_physical_format::BoundedRootRoutingBlockDecodeDenial,
+    > {
+        use worth_store_physical_format::{
+            PhysicalRootRoutingBlock, RootRoutingBlockDecodeLimits, DURABLE_FRAME_HEADER_BYTES,
+        };
+        let identity = self
+            .scope
+            .root_routing_block_identity()
+            .expect("admitted family scope");
+        PhysicalRootRoutingBlock::project_payload(
+            &self.lease[DURABLE_FRAME_HEADER_BYTES..],
+            identity.reference().block(),
+            capacity,
+            RootRoutingBlockDecodeLimits {
+                leaf_entries: u64::from(capacity),
+                branch_children: u64::from(capacity),
+            },
+        )
+    }
+}
+
+impl IntegrityAdmittedResidentSegmentMembershipView<'_> {
+    pub(in crate::physical_runtime) fn project_block(
+        &self,
+        capacity: u16,
+    ) -> Result<
+        worth_store_physical_format::PhysicalSegmentMembershipBlock,
+        worth_store_physical_format::BoundedSegmentMembershipBlockDecodeDenial,
+    > {
+        use worth_store_physical_format::{
+            PhysicalSegmentMembershipBlock, SegmentMembershipBlockDecodeLimits,
+            DURABLE_FRAME_HEADER_BYTES,
+        };
+        let identity = self
+            .scope
+            .segment_membership_block_identity()
+            .expect("admitted family scope");
+        PhysicalSegmentMembershipBlock::project_payload(
+            &self.lease[DURABLE_FRAME_HEADER_BYTES..],
+            identity.reference().block(),
+            capacity,
+            SegmentMembershipBlockDecodeLimits {
+                leaf_entries: u64::from(capacity),
+                branch_children: u64::from(capacity),
+            },
+        )
+    }
+}

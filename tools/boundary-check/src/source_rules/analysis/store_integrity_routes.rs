@@ -45,7 +45,8 @@ pub(super) fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diag
             path: &path,
             aliases: &aliases.0,
             found: BTreeSet::new(),
-            admitted_decoder: false,
+            projection_owner: None,
+            projection_method: None,
         };
         for item in &node.items {
             visitor.visit_item(item);
@@ -91,7 +92,8 @@ fn check_source(path: &str, source: &str) -> Vec<String> {
         path,
         aliases: &aliases.0,
         found: BTreeSet::new(),
-        admitted_decoder: false,
+        projection_owner: None,
+        projection_method: None,
     };
     visitor.visit_file(&file);
     visitor.found.into_iter().map(|route| format!("raw route `{route}` requires the family admitted view; only named canonical writer/dirty-frame mechanisms are exempt")).collect()
@@ -120,7 +122,8 @@ struct Routes<'a> {
     path: &'a str,
     aliases: &'a BTreeMap<String, String>,
     found: BTreeSet<String>,
-    admitted_decoder: bool,
+    projection_owner: Option<String>,
+    projection_method: Option<String>,
 }
 
 impl Routes<'_> {
@@ -147,7 +150,12 @@ impl Routes<'_> {
         let route = format!("{owner}::{method}");
         if policy::raw_method(&owner, method)
             && !policy::allows(self.path, &route)
-            && !(self.admitted_decoder && policy::admitted_decoder(self.path, &route))
+            && !policy::admitted_projection(
+                self.path,
+                self.projection_owner.as_deref(),
+                self.projection_method.as_deref(),
+                &route,
+            )
         {
             self.found.insert(route);
         }
@@ -185,17 +193,25 @@ impl Routes<'_> {
 }
 
 impl<'ast> Visit<'ast> for Routes<'_> {
-    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        self.identifier(&call.method.to_string());
-        self.visit_expr(&call.receiver);
-        for argument in &call.args {
-            let prior = self.admitted_decoder;
-            self.admitted_decoder =
-                call.method == "with_owner_decoder" && matches!(argument, syn::Expr::Closure(_));
-            self.visit_expr(argument);
-            self.admitted_decoder = prior;
+    fn visit_item_impl(&mut self, item: &'ast syn::ItemImpl) {
+        let prior = self.projection_owner.take();
+        if let syn::Type::Path(ty) = item.self_ty.as_ref() {
+            self.projection_owner = ty
+                .path
+                .segments
+                .last()
+                .map(|segment| segment.ident.to_string());
         }
+        visit::visit_item_impl(self, item);
+        self.projection_owner = prior;
     }
+
+    fn visit_impl_item_fn(&mut self, item: &'ast syn::ImplItemFn) {
+        let prior = self.projection_method.replace(item.sig.ident.to_string());
+        visit::visit_impl_item_fn(self, item);
+        self.projection_method = prior;
+    }
+
     fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
         if !test_only(&item.attrs) {
             visit::visit_item_mod(self, item);

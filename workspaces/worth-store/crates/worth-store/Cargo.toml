@@ -41,6 +41,7 @@ tempfile = "3"
 trybuild = "1.0"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-offline-verifier.workspace = true
+worth-store-physical-format = { workspace = true, features = ["certification-test-authority"] }
 
 [lints]
 workspace = true

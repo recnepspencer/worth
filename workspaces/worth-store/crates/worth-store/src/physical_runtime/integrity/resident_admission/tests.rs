@@ -12,6 +12,7 @@ use worth_store_physical_integrity::{
 
 mod bootstrap_catalog;
 mod counter_semantics;
+mod free_space_checksum_cost;
 mod support;
 use support::*;
 

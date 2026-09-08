@@ -37,6 +37,93 @@ fn new_page_in_reused_segment_crosses_process_death_and_stages_exactly() {
 }
 
 #[test]
+fn repeated_post_checkpoint_page_reuse_crosses_process_death_without_redo() {
+    let parent = tempfile::tempdir().expect("repeated page reuse parent");
+    let marker = parent.path().join("persisted-root");
+    assert_child_succeeded(
+        "repeated page reuse writer",
+        &run_child(
+            "phase_five_repeated_page_reuse_writer",
+            &marker,
+            parent.path(),
+        ),
+    );
+    let root = PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
+    assert_child_succeeded(
+        "repeated page reuse planner",
+        &run_child(
+            "phase_five_repeated_page_reuse_planner",
+            &root,
+            parent.path(),
+        ),
+    );
+}
+
+#[test]
+#[ignore = "launched by the repeated page reuse parent"]
+fn phase_five_repeated_page_reuse_writer() {
+    let marker = required_child_path();
+    let world = PhysicalResidencyStoreWorld::initialize_for_recovery_with_segment_pages(
+        "c8-phase5-repeated-page-reuse",
+        4,
+    )
+    .unwrap();
+    let retained_root = world.retained_root();
+    let base = [
+        vec![1_u8; 3_000],
+        vec![2_u8; 3_000],
+        vec![3_u8; 3_000],
+        vec![4_u8; 3_000],
+    ];
+    canonical_physical_batch_acknowledgment(&world, [0x81; 32], base.iter().map(Vec::as_slice));
+    let request = PhysicalCheckpointRequest::fuzzy(
+        PhysicalCheckpointIdempotencyKey::new([0x82; 32]),
+        PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+    );
+    let TransitionOutcome::Success(handle) =
+        world.serving().checkpoints().start(request).into_raw()
+    else {
+        panic!("repeated page reuse checkpoint admission")
+    };
+    assert!(matches!(
+        handle.wait(),
+        PhysicalCheckpointOutcome::Completed(_)
+    ));
+    canonical_physical_batch_acknowledgment(&world, [0x83; 32], [&vec![5_u8; 3_000][..]]);
+    canonical_physical_batch_acknowledgment(&world, [0x84; 32], [&vec![6_u8; 3_000][..]]);
+    drop(world);
+    let root = retained_root.persist();
+    std::fs::write(marker, root.to_string_lossy().as_bytes()).expect("persisted root marker");
+}
+
+#[test]
+#[ignore = "launched by the repeated page reuse parent"]
+fn phase_five_repeated_page_reuse_planner() {
+    let planned = plan(&required_child_path());
+    let decisions = planned.redo_plan().resolved_decisions().collect::<Vec<_>>();
+    assert_eq!(decisions.len(), 2);
+    assert!(decisions.iter().all(|decision| {
+        decision.kind() == PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn
+    }));
+    let PhysicalRedoTargetIdentity::InlinePage {
+        segment,
+        page,
+        generation: 1,
+    } = decisions[0].target().identity()
+    else {
+        panic!("the first append creates a new inline page")
+    };
+    assert_eq!(
+        decisions[1].target().identity(),
+        PhysicalRedoTargetIdentity::InlinePage {
+            segment,
+            page,
+            generation: 2,
+        }
+    );
+}
+
+#[test]
 #[ignore = "launched by the generation-axis parent"]
 fn phase_five_generation_axes_writer() {
     let marker = required_child_path();

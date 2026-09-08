@@ -47,6 +47,7 @@ pub(super) fn admit(
         .observed_pages
         .bytes_read
         .checked_add(candidate_lifecycle_peak)
+        .and_then(|bytes| bytes.checked_add(basis.redo.supersession_scratch_bytes()))
         .and_then(|bytes| bytes.checked_add(staging.allocated_bytes()))
         .and_then(|bytes| bytes.checked_add(staging.write_bytes()))
         .expect("admitted recovery memory accounting cannot overflow");

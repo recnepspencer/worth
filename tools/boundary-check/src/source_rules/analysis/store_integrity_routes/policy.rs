@@ -39,7 +39,9 @@ pub(super) fn raw_method(owner: &str, method: &str) -> bool {
         | "SlotDirectory"
         | "DurableSegmentManifest"
         | "PersistedPhysicalRecoveryProjection"
-        | "StoreNamespaceIdentityRecord" => matches!(method, "decode" | "decode_bounded"),
+        | "StoreNamespaceIdentityRecord" => {
+            matches!(method, "decode" | "decode_bounded" | "project_payload")
+        }
         "PhysicalBinaryEncodingWitness" => method == "decode_golden_format_header",
         "CheckpointBindingRecordFrameLength" => method == "decode_prefix",
         "CheckpointStreamDecoder" | "CheckpointBindingCompactionDecoder" => method == "begin",
@@ -74,28 +76,36 @@ pub(super) fn allows(path: &str, route: &str) -> bool {
     }
 }
 
-// These four legacy format projections consume the sealed borrowed family view
-// only inside with_owner_decoder. A raw call elsewhere in the same file fails.
-pub(super) fn admitted_decoder(path: &str, route: &str) -> bool {
-    let Some(path) = path.strip_prefix(
-        "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/",
-    ) else {
-        return false;
-    };
+// Persisted payload projection is confined to the sealed, source-bound family view.
+pub(super) fn admitted_projection(
+    path: &str,
+    owner: Option<&str>,
+    method: Option<&str>,
+    route: &str,
+) -> bool {
+    let Some(path) = path.strip_prefix("workspaces/worth-store/crates/worth-store/src/physical_runtime/integrity/resident_admission/") else { return false; };
     matches!(
-        (path, route),
+        (path, owner, method, route),
         (
-            "admission/open.rs",
-            "DurableFreeSpaceManifestHeader::decode"
+            "root_tree.rs",
+            Some("IntegrityAdmittedResidentRootRoutingView"),
+            Some("project_block"),
+            "PhysicalRootRoutingBlock::project_payload"
         ) | (
-            "access/manifest_routing/reader.rs",
-            "PhysicalRootRoutingBlock::decode"
+            "root_tree.rs",
+            Some("IntegrityAdmittedResidentSegmentMembershipView"),
+            Some("project_block"),
+            "PhysicalSegmentMembershipBlock::project_payload"
         ) | (
-            "access/segment_membership.rs",
-            "PhysicalSegmentMembershipBlock::decode"
+            "free_space.rs",
+            Some("IntegrityAdmittedResidentFreeSpaceMembershipView"),
+            Some("project_block"),
+            "PhysicalFreeSpaceMembershipBlock::project_payload"
         ) | (
-            "planning/free_space_routing/reader.rs",
-            "PhysicalFreeSpaceMembershipBlock::decode"
+            "free_space.rs",
+            Some("IntegrityAdmittedResidentFreeSpaceHeaderView"),
+            Some("project_header"),
+            "DurableFreeSpaceManifestHeader::project_payload"
         )
     )
 }

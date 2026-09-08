@@ -281,10 +281,7 @@ fn load_free_space_manifest(
             .map_err(classify_free_space)?;
     let (free_space, free_format) = admitted
         .with_owner_decoder(context, |view| {
-            DurableFreeSpaceManifestHeader::decode(
-                view.bytes(),
-                admission.limits.current_root_entries(),
-            )
+            view.project_header(admission.limits.current_root_entries())
         })
         .map_err(classify_free_space)?
         .map_err(classify_free_space_denial)?;

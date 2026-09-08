@@ -77,7 +77,11 @@ fn populate_and_close(
 ) -> Result<ClosedStoreProcessManifest, String> {
     let mut records = Vec::new();
     for batch in 0..profile.batches() {
-        if profile == ProductionWorldProfile::Primary16KiB && batch + 1 == profile.batches() / 2 {
+        if matches!(
+            profile,
+            ProductionWorldProfile::Primary16KiB | ProductionWorldProfile::ReusedTails16KiB
+        ) && batch + 1 == profile.batches() / 2
+        {
             let gate = serving.pause_physical_mutation_at(
                 worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterWritebackAdmissionBeforeEffect,
             );
@@ -104,7 +108,11 @@ fn populate_and_close(
             records.extend(super::production_record::ProducedRecord::completed(
                 &completed, batch, profile,
             ));
-            if profile != ProductionWorldProfile::Primary16KiB && batch == 0 {
+            if matches!(
+                profile,
+                ProductionWorldProfile::Pages32KiB | ProductionWorldProfile::Pages64KiB
+            ) && batch == 0
+            {
                 publish_checkpoint(&serving, false)?;
             }
         }
@@ -125,7 +133,10 @@ fn populate_and_close(
         .map_err(|error| format!("observe closed Store manifest: {error:?}"))?;
     manifest.records = records;
     super::production_world_shape::require_shape(root, &manifest, profile);
-    if profile == ProductionWorldProfile::Primary16KiB {
+    if matches!(
+        profile,
+        ProductionWorldProfile::Primary16KiB | ProductionWorldProfile::ReusedTails16KiB
+    ) {
         assert!(
             manifest.byte_count() >= 32 * profile.resident_bytes(),
             "production scale: {} occupied bytes / {} resident bytes",
@@ -186,7 +197,10 @@ pub(super) fn start_batch(
     let mut payloads = (0..profile.inline_records_per_batch(ordinal))
         .map(|record| vec![(ordinal * 17 + record) as u8; profile.inline_record_bytes()])
         .collect::<Vec<_>>();
-    if profile == ProductionWorldProfile::Primary16KiB {
+    if matches!(
+        profile,
+        ProductionWorldProfile::Primary16KiB | ProductionWorldProfile::ReusedTails16KiB
+    ) {
         payloads.push(vec![0xC9 ^ ordinal as u8; 64 * 1024]);
     }
     let prepared = match submission

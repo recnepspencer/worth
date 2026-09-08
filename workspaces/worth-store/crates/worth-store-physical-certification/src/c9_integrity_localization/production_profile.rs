@@ -12,6 +12,7 @@ pub(crate) enum ProductionWorldProfile {
     Primary16KiB,
     Pages32KiB,
     Pages64KiB,
+    ReusedTails16KiB,
 }
 
 impl ProductionWorldProfile {
@@ -20,12 +21,13 @@ impl ProductionWorldProfile {
             Self::Primary16KiB => "primary-16kib",
             Self::Pages32KiB => "pages-32kib",
             Self::Pages64KiB => "pages-64kib",
+            Self::ReusedTails16KiB => "reused-tails-16kib",
         }
     }
 
     pub(crate) const fn page_size(self) -> PhysicalPageSizeClass {
         match self {
-            Self::Primary16KiB => PhysicalPageSizeClass::KiB16,
+            Self::Primary16KiB | Self::ReusedTails16KiB => PhysicalPageSizeClass::KiB16,
             Self::Pages32KiB => PhysicalPageSizeClass::KiB32,
             Self::Pages64KiB => PhysicalPageSizeClass::KiB64,
         }
@@ -37,7 +39,7 @@ impl ProductionWorldProfile {
 
     pub(crate) const fn batches(self) -> usize {
         match self {
-            Self::Primary16KiB => 8,
+            Self::Primary16KiB | Self::ReusedTails16KiB => 8,
             Self::Pages32KiB | Self::Pages64KiB => 2,
         }
     }
@@ -49,13 +51,14 @@ impl ProductionWorldProfile {
             // transitions to every earlier checkpoint workload batch.
             Self::Primary16KiB if batch + 1 == self.batches() => 65,
             Self::Primary16KiB => 64,
+            Self::ReusedTails16KiB => 65,
             Self::Pages32KiB | Self::Pages64KiB => 2,
         }
     }
 
     pub(crate) const fn inline_record_bytes(self) -> usize {
         match self {
-            Self::Primary16KiB => 3_000,
+            Self::Primary16KiB | Self::ReusedTails16KiB => 3_000,
             // The default placement threshold is inclusive: half-page records
             // become extents. Stay inline while exceeding half the fill budget.
             Self::Pages32KiB | Self::Pages64KiB => self.page_size().bytes() as usize / 2 - 1,

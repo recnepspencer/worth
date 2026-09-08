@@ -65,7 +65,10 @@ pub(super) fn require_shape(
             .any(|path| path.ends_with("root-previous.selector")),
         "retainable previous selector required"
     );
-    if profile == ProductionWorldProfile::Primary16KiB {
+    if matches!(
+        profile,
+        ProductionWorldProfile::Primary16KiB | ProductionWorldProfile::ReusedTails16KiB
+    ) {
         assert!(segments >= 3, "three production data segments required");
         assert!(extents >= 1, "production extent required");
         assert!(

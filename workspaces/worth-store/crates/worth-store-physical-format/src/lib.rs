@@ -16,6 +16,8 @@ mod bootstrap;
 mod canonical_basis;
 mod checkpoint;
 mod checksum;
+#[cfg(feature = "certification-test-authority")]
+pub use record_framing::certification_crc32c_invocations;
 mod compile_fail;
 mod denial;
 mod extent_record;

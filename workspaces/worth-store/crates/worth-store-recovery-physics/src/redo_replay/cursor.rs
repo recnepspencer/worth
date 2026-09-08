@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use worth_store_physical_format::{
     ExtentChunkCoordinate, PersistedPhysicalDataFrameSubject, PersistedRecordIdentity,
     PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
@@ -83,6 +83,7 @@ impl RecoveryPageObservation {
 
 pub(super) struct RecoveryPageCursor {
     pages: BTreeMap<PhysicalRedoTargetLocation, CursorPage>,
+    observed_predecessors: BTreeSet<(u64, PhysicalRedoTargetIdentity)>,
 }
 
 struct CursorPage {
@@ -117,7 +118,32 @@ impl RecoveryPageCursor {
                 return Err(PhysicalRedoPlanningDenial::InvalidTarget);
             }
         }
-        Ok(Self { pages })
+        Ok(Self {
+            pages,
+            observed_predecessors: BTreeSet::new(),
+        })
+    }
+
+    pub(super) fn retain_observed_predecessors(
+        &mut self,
+        predecessors: BTreeSet<(u64, PhysicalRedoTargetIdentity)>,
+    ) {
+        self.observed_predecessors = predecessors;
+    }
+
+    pub(super) fn observe_record(
+        &self,
+        target: PhysicalRedoTargetIdentity,
+        lsn: u64,
+    ) -> Result<RecoveryPageObservation, PhysicalRedoPlanningDenial> {
+        if self.observed_predecessors.contains(&(lsn, target)) {
+            return self
+                .pages
+                .get(&location(target))
+                .map(|page| page.observation)
+                .ok_or(PhysicalRedoPlanningDenial::MissingPageObservation);
+        }
+        self.observe(target)
     }
 
     pub(super) fn observe(

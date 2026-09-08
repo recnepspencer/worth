@@ -17,6 +17,8 @@ mod group_atomic;
 mod observation_membership;
 #[path = "plan_tests/projection_mutants.rs"]
 mod projection_mutants;
+#[path = "plan_tests/supersession.rs"]
+mod supersession;
 
 use fixtures::*;
 

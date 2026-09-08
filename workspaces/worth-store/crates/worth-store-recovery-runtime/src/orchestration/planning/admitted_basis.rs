@@ -113,6 +113,7 @@ pub(super) fn admit(
         context.authority.media.store_identity(),
         format,
         PhysicalRedoAdmissionLimits {
+            recovery_memory_bytes: context.limits.recovery_memory_bytes,
             targets: context.limits.redo_targets,
             distinct_targets: context.limits.distinct_pages_and_extents,
             projection: PhysicalRecoveryProjectionDecodeLimits {
@@ -130,7 +131,18 @@ pub(super) fn admit(
         Err(denial) => {
             let planning_counters =
                 counters::after_fates(&sample, &fates, PhysicalRedoPlanCounters::default(), 0, 0);
-            return Err(context.redo_denial_block(planning_counters, None, denial));
+            let limit = match denial {
+                worth_store_recovery_physics::PhysicalRedoPlanningDenial::RecoveryMemoryLimit {
+                    observed,
+                    admitted,
+                } => Some(PhysicalRecoveryLimitFailure {
+                    dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+                    observed,
+                    admitted,
+                }),
+                _ => None,
+            };
+            return Err(context.redo_denial_block(planning_counters, limit, denial));
         }
     };
     let targets = redo.target_identities();

@@ -160,11 +160,11 @@ impl<'media> SegmentMembershipReader<'media> {
         );
         let decoded = admitted.and_then(|admitted| {
             admitted.with_owner_decoder(self.admission.clone(), |view| {
-                PhysicalSegmentMembershipBlock::decode(view.bytes(), self.root.node_capacity())
+                view.project_block(self.root.node_capacity())
             })
         });
         match decoded {
-            Ok(Ok((block, _))) => Ok(block),
+            Ok(Ok(block)) => Ok(block),
             Ok(Err(_)) => {
                 bytes.reject_projection_failure();
                 Err(ManifestLookupFailure::Damaged)

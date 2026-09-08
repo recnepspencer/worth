@@ -121,25 +121,33 @@ impl DurableFreeSpaceManifestHeader {
     ) -> Result<(Self, PhysicalRecordFormatDeclaration), FreeSpaceRoutingDenial> {
         let (format, frame) = decode_durable_frame(bytes, DurableFrameKind::FreeSpaceManifest)
             .map_err(FreeSpaceRoutingDenial::Frame)?;
-        if frame.payload.len() != 128
-            || frame.payload[22..24] != [0; 2]
-            || frame.payload[65..72] != [0; 7]
-        {
+        Self::project_payload(frame.payload, frame.identity, format, maximum_capacity)
+            .map(|header| (header, format))
+    }
+
+    /// Projects header payload fields; grants no integrity or persisted-source authority.
+    pub fn project_payload(
+        payload: &[u8],
+        frame_generation: u64,
+        format: PhysicalRecordFormatDeclaration,
+        maximum_capacity: u16,
+    ) -> Result<Self, FreeSpaceRoutingDenial> {
+        if payload.len() != 128 || payload[22..24] != [0; 2] || payload[65..72] != [0; 7] {
             return Err(FreeSpaceRoutingDenial::Malformed);
         }
-        let generation = read_u64(frame.payload, 0);
-        let capacity = u16::from_le_bytes(frame.payload[16..18].try_into().unwrap());
-        let segment_page_capacity = u32::from_le_bytes(frame.payload[18..22].try_into().unwrap());
-        let root = match frame.payload[64] {
-            0 if frame.payload[72..128].iter().all(|byte| *byte == 0) => None,
+        let generation = read_u64(payload, 0);
+        let capacity = u16::from_le_bytes(payload[16..18].try_into().unwrap());
+        let segment_page_capacity = u32::from_le_bytes(payload[18..22].try_into().unwrap());
+        let root = match payload[64] {
+            0 if payload[72..128].iter().all(|byte| *byte == 0) => None,
             0 => return Err(FreeSpaceRoutingDenial::Malformed),
             1 => Some(
-                decode_reference(&frame.payload[72..128])
+                decode_reference(&payload[72..128])
                     .ok_or(FreeSpaceRoutingDenial::InvalidReference)?,
             ),
             _ => return Err(FreeSpaceRoutingDenial::Malformed),
         };
-        if generation != frame.identity
+        if generation != frame_generation
             || capacity > maximum_capacity
             || segment_page_capacity > crate::maximum_segment_manifest_pages(format)
         {
@@ -147,17 +155,16 @@ impl DurableFreeSpaceManifestHeader {
         }
         Self::new(
             generation,
-            read_u64(frame.payload, 8),
+            read_u64(payload, 8),
             capacity,
             segment_page_capacity,
-            read_u64(frame.payload, 24),
-            read_u64(frame.payload, 32),
-            read_u64(frame.payload, 40),
-            read_u64(frame.payload, 48),
-            read_u64(frame.payload, 56),
+            read_u64(payload, 24),
+            read_u64(payload, 32),
+            read_u64(payload, 40),
+            read_u64(payload, 48),
+            read_u64(payload, 56),
             root,
         )
-        .map(|header| (header, format))
         .ok_or(FreeSpaceRoutingDenial::Malformed)
     }
 }

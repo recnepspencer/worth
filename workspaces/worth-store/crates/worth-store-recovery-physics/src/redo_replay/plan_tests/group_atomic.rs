@@ -57,6 +57,7 @@ fn incomplete_group_carriage_cannot_obtain_observation_authority() {
         test_store(),
         format,
         PhysicalRedoAdmissionLimits {
+            recovery_memory_bytes: u64::MAX,
             targets: 1,
             distinct_targets: 1,
             projection: PhysicalRecoveryProjectionDecodeLimits {
@@ -108,6 +109,7 @@ fn plan_with_group_decisions(
         target_index: 0,
     };
     ImmutablePhysicalRedoPlan {
+        scratch_bytes: base.supersession_scratch_bytes() * 2,
         records: base.records.clone(),
         decisions: vec![
             decision(

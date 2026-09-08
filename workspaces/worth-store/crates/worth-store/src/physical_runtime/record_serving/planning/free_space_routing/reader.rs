@@ -156,11 +156,11 @@ impl<'media> FreeSpaceReader<'media> {
         );
         let decoded = admitted.and_then(|admitted| {
             admitted.with_owner_decoder(self.admission.clone(), |view| {
-                PhysicalFreeSpaceMembershipBlock::decode(view.bytes(), self.header.node_capacity())
+                view.project_block(self.header.node_capacity())
             })
         });
         match decoded {
-            Ok(Ok((block, _))) => Ok(block),
+            Ok(Ok(block)) => Ok(block),
             Ok(Err(_)) => {
                 bytes.reject_projection_failure();
                 Err(ManifestLookupFailure::Damaged)

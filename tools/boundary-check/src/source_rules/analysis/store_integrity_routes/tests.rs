@@ -83,13 +83,18 @@ fn newly_added_nested_source_is_automatically_governed() {
 }
 
 #[test]
-fn legacy_projection_requires_the_admitted_decoder_closure() {
-    let owner = "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/access/manifest_routing/reader.rs";
-    assert!(check_source(owner, "fn read() { admitted.with_owner_decoder(context, |view| PhysicalRootRoutingBlock::decode(view.bytes(), capacity)); }").is_empty());
-    assert!(!check_source(
-        owner,
-        "fn read() { PhysicalRootRoutingBlock::decode(bytes, capacity); }"
-    )
-    .is_empty());
-    assert!(!check_source(NEW_CONSUMER, "fn read() { admitted.with_owner_decoder(context, |view| PhysicalRootRoutingBlock::decode(view.bytes(), capacity)); }").is_empty());
+fn payload_projection_requires_the_exact_private_family_method() {
+    let owner = "workspaces/worth-store/crates/worth-store/src/physical_runtime/integrity/resident_admission/root_tree.rs";
+    let valid = "impl IntegrityAdmittedResidentRootRoutingView<'_> { fn project_block(&self) { PhysicalRootRoutingBlock::project_payload(payload, identity, capacity, limits); } }";
+    assert!(check_source(owner, valid).is_empty());
+    assert!(!check_source(NEW_CONSUMER, valid).is_empty());
+    for source in [
+        "fn read() { PhysicalRootRoutingBlock::project_payload(payload, identity, capacity, limits); }",
+        "impl OtherView { fn project_block(&self) { PhysicalRootRoutingBlock::project_payload(payload, identity, capacity, limits); } }",
+        "impl IntegrityAdmittedResidentRootRoutingView<'_> { fn other(&self) { PhysicalRootRoutingBlock::project_payload(payload, identity, capacity, limits); } }",
+        "impl IntegrityAdmittedResidentRootRoutingView<'_> { fn project_block(&self) { PhysicalSegmentMembershipBlock::project_payload(payload, identity, capacity, limits); } }",
+        "fn read() { admitted.with_owner_decoder(context, |view| PhysicalRootRoutingBlock::decode(view.bytes(), capacity)); }",
+    ] {
+        assert!(!check_source(owner, source).is_empty(), "accepted {source}");
+    }
 }

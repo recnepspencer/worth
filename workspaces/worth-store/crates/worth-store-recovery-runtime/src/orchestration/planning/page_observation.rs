@@ -16,7 +16,7 @@ mod selected_basis;
 
 pub(in crate::orchestration::planning) use allocation_truth::InlineAllocationTruth;
 pub(super) use failure::PageObservationFailure;
-use materialized::{observe_extent, observe_inline};
+use materialized::{observe_extent, observe_inline, selected_inline_target};
 
 pub(super) struct PageObservationAttempt {
     pub(super) result: Result<ObservedPageBasis, PageObservationFailure>,
@@ -128,12 +128,15 @@ fn observe(
         source_artifacts.dedup();
         selected_source.source_artifacts = source_artifacts.into_boxed_slice();
     }
-    let mut inline_targets = BTreeMap::new();
+    let mut inline_targets = BTreeMap::<(u64, u64), Vec<&PhysicalRedoTarget>>::new();
     let mut extent_targets = BTreeMap::<u64, BTreeMap<u32, &PhysicalRedoTarget>>::new();
     for target in targets {
         match target.identity() {
             PhysicalRedoTargetIdentity::InlinePage { segment, page, .. } => {
-                inline_targets.entry((segment, page)).or_insert(target);
+                inline_targets
+                    .entry((segment, page))
+                    .or_default()
+                    .push(target);
             }
             PhysicalRedoTargetIdentity::ExtentChunk { extent, chunk, .. } => {
                 extent_targets
@@ -151,11 +154,17 @@ fn observe(
     for placement in placements {
         match *placement {
             CurrentPhysicalRecordPlacement::Inline(inline) => {
-                let Some(target) =
+                let Some(matching) =
                     inline_targets.remove(&(inline.segment().get(), inline.page().get()))
                 else {
                     continue;
                 };
+                let target = selected_inline_target(
+                    inline,
+                    &matching,
+                    format,
+                    &selected_source.segment_pages,
+                );
                 observations.push(observe_inline(
                     discovery,
                     inline,
@@ -186,6 +195,7 @@ fn observe(
     }
     let absent_targets = inline_targets
         .into_values()
+        .filter_map(|targets| targets.into_iter().next())
         .chain(extent_targets.into_values().flat_map(BTreeMap::into_values))
         .collect();
     let absent = allocation_truth::admit_absent_targets(

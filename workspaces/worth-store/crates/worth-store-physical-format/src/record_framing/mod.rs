@@ -1,4 +1,6 @@
 pub(crate) mod crc32c;
+#[cfg(feature = "certification-test-authority")]
+pub use crc32c::certification_crc32c_invocations;
 mod durable_frame;
 #[cfg(test)]
 mod durable_frame_canonicality;

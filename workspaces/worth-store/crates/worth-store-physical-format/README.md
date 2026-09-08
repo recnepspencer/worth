@@ -36,6 +36,14 @@ assert_eq!(declaration.version().envelope_schema(), Some(2));
 
 The frozen-family declaration tests exercise those exact version/coverage facts.
 
+Metadata `project_payload` methods share the canonical payload grammar with
+framed decoding but do not validate a frame checksum or grant decoder authority.
+Store may consume persisted payloads only through its exact private,
+source-bound admitted family views. This lets unchanged resident hits retain
+their integrity evidence without rehashing. Framed `decode` remains mandatory
+for untrusted validator input; the source-route guard rejects direct Store
+calls, including calls inside generic admission callbacks.
+
 `PhysicalArtifactReadTarget` and `PhysicalArtifactReadRange` describe bounded
 locations, not read authority. Checkpoint identities share the mutable
 `checkpoint.current` location, so overlap checks compare location as well as
