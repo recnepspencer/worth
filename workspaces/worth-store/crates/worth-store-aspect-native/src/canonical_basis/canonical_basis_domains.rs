@@ -67,9 +67,6 @@ pub const fn store_native_basis_domain_for_family(
         StoreCanonicalBasisFamily::S2EntryBoundaryEvidence => {
             CanonicalBasisDomain::Future("store.s2.entry.boundary.evidence")
         }
-        StoreCanonicalBasisFamily::IntegrityCloseoutHandoff => {
-            CanonicalBasisDomain::Future("store.new.integrity.closeout.handoff")
-        }
         StoreCanonicalBasisFamily::PhysicalSourceManifest => {
             CanonicalBasisDomain::Future("store.physical.source.manifest")
         }
@@ -97,26 +94,20 @@ pub const fn store_native_basis_domain_for_family(
         StoreCanonicalBasisFamily::PhysicalManifestDiscoveryEvidence => {
             CanonicalBasisDomain::Future("store.physical.manifest.discovery.evidence")
         }
-        StoreCanonicalBasisFamily::PhysicalIdentityEvidence => {
-            CanonicalBasisDomain::Future("store.physical.identity.evidence")
+        StoreCanonicalBasisFamily::PhysicalArtifactIdentity => {
+            CanonicalBasisDomain::Future("store.physical.artifact.identity")
         }
-        StoreCanonicalBasisFamily::PhysicalFoundationEvidence => {
-            CanonicalBasisDomain::Future("store.physical.foundation.evidence")
+        StoreCanonicalBasisFamily::PhysicalAdapterEvidence => {
+            CanonicalBasisDomain::Future("store.physical.adapter.evidence")
         }
         StoreCanonicalBasisFamily::PhysicalIntegrityChecksumCoverage => {
             CanonicalBasisDomain::Future("store.physical.integrity.checksum.coverage")
         }
-        StoreCanonicalBasisFamily::PhysicalIntegrityEvidence => {
-            CanonicalBasisDomain::Future("store.physical.integrity.evidence")
+        StoreCanonicalBasisFamily::PhysicalQuarantineObservation => {
+            CanonicalBasisDomain::Future("store.physical.quarantine.observation")
         }
-        StoreCanonicalBasisFamily::PhysicalIntegrityQuarantineReceipt => {
-            CanonicalBasisDomain::Future("store.physical.integrity.quarantine.receipt")
-        }
-        StoreCanonicalBasisFamily::PhysicalIntegrityScrubReceipt => {
-            CanonicalBasisDomain::Future("store.physical.integrity.scrub.receipt")
-        }
-        StoreCanonicalBasisFamily::PhysicalIntegrityCloseoutEvidence => {
-            CanonicalBasisDomain::Future("store.physical.integrity.closeout.evidence")
+        StoreCanonicalBasisFamily::PhysicalIntegrityScrubProgress => {
+            CanonicalBasisDomain::Future("store.physical.integrity.scrub.progress")
         }
         StoreCanonicalBasisFamily::WalFrameIntegrityEvidence => {
             CanonicalBasisDomain::Future("store.wal.frame.integrity.evidence")

@@ -32,8 +32,16 @@ const PHYSICAL_WITNESS: &[StoreCanonicalBasisSourceKind] =
     &[StoreCanonicalBasisSourceKind::StorePhysicalWitness];
 const PHYSICAL_RECORD: &[StoreCanonicalBasisSourceKind] =
     &[StoreCanonicalBasisSourceKind::StorePhysicalFormatRecord];
-const PHYSICAL_INTEGRITY: &[StoreCanonicalBasisSourceKind] =
-    &[StoreCanonicalBasisSourceKind::StorePhysicalIntegrityEvidence];
+const ARTIFACT_IDENTITY: &[StoreCanonicalBasisSourceKind] =
+    &[StoreCanonicalBasisSourceKind::FoundationalPhysicalArtifactIdentity];
+const ADAPTER_EVIDENCE: &[StoreCanonicalBasisSourceKind] =
+    &[StoreCanonicalBasisSourceKind::FoundationalPhysicalAdapterEvidence];
+const FORMAT_DECLARATION: &[StoreCanonicalBasisSourceKind] =
+    &[StoreCanonicalBasisSourceKind::StorePhysicalFormatDeclaration];
+const QUARANTINE_OBSERVATION: &[StoreCanonicalBasisSourceKind] =
+    &[StoreCanonicalBasisSourceKind::StorePhysicalQuarantineObservation];
+const SCRUB_PROGRESS: &[StoreCanonicalBasisSourceKind] =
+    &[StoreCanonicalBasisSourceKind::StorePhysicalIntegrityScrubProgress];
 const WAL: &[StoreCanonicalBasisSourceKind] = &[StoreCanonicalBasisSourceKind::StoreWalRecord];
 const PHYSICAL_MUTATION_REQUEST: &[StoreCanonicalBasisSourceKind] =
     &[StoreCanonicalBasisSourceKind::StorePhysicalMutationRequest];
@@ -90,13 +98,6 @@ pub const STORE_CANONICAL_BASIS_SOURCE_OWNERS: &[StoreCanonicalBasisSourceOwner]
         "worth-store-readiness",
         "S2 boundary readiness",
         PHYSICAL_WITNESS,
-        StoreCanonicalBasisLane::Handoff,
-    ),
-    owner(
-        StoreCanonicalBasisFamily::IntegrityCloseoutHandoff,
-        "worth-store-readiness",
-        "integrity handoff",
-        HANDOFF,
         StoreCanonicalBasisLane::Handoff,
     ),
     owner(
@@ -163,52 +164,38 @@ pub const STORE_CANONICAL_BASIS_SOURCE_OWNERS: &[StoreCanonicalBasisSourceOwner]
         StoreCanonicalBasisLane::PhysicalSourceManifest,
     ),
     owner(
-        StoreCanonicalBasisFamily::PhysicalIdentityEvidence,
-        "worth-store-physical-integrity",
-        "physical identity",
-        PHYSICAL_INTEGRITY,
+        StoreCanonicalBasisFamily::PhysicalArtifactIdentity,
+        "worth-foundational",
+        "physical artifact identity",
+        ARTIFACT_IDENTITY,
         StoreCanonicalBasisLane::PhysicalIntegrity,
     ),
     owner(
-        StoreCanonicalBasisFamily::PhysicalFoundationEvidence,
-        "worth-store-physical-integrity",
-        "physical foundation",
-        PHYSICAL_INTEGRITY,
+        StoreCanonicalBasisFamily::PhysicalAdapterEvidence,
+        "worth-foundational",
+        "descriptive physical adapter evidence",
+        ADAPTER_EVIDENCE,
         StoreCanonicalBasisLane::PhysicalIntegrity,
     ),
     owner(
         StoreCanonicalBasisFamily::PhysicalIntegrityChecksumCoverage,
-        "worth-store-physical-integrity",
-        "checksum coverage",
-        PHYSICAL_INTEGRITY,
+        "worth-store-physical-format",
+        "integrity checksum declaration",
+        FORMAT_DECLARATION,
+        StoreCanonicalBasisLane::PhysicalRecord,
+    ),
+    owner(
+        StoreCanonicalBasisFamily::PhysicalQuarantineObservation,
+        "worth-store",
+        "managed scrub quarantine observation",
+        QUARANTINE_OBSERVATION,
         StoreCanonicalBasisLane::PhysicalIntegrity,
     ),
     owner(
-        StoreCanonicalBasisFamily::PhysicalIntegrityEvidence,
-        "worth-store-physical-integrity",
-        "integrity evidence",
-        PHYSICAL_INTEGRITY,
-        StoreCanonicalBasisLane::PhysicalIntegrity,
-    ),
-    owner(
-        StoreCanonicalBasisFamily::PhysicalIntegrityQuarantineReceipt,
-        "worth-store-physical-integrity",
-        "quarantine receipt",
-        PHYSICAL_INTEGRITY,
-        StoreCanonicalBasisLane::PhysicalIntegrity,
-    ),
-    owner(
-        StoreCanonicalBasisFamily::PhysicalIntegrityScrubReceipt,
-        "worth-store-physical-integrity",
-        "scrub receipt",
-        PHYSICAL_INTEGRITY,
-        StoreCanonicalBasisLane::PhysicalIntegrity,
-    ),
-    owner(
-        StoreCanonicalBasisFamily::PhysicalIntegrityCloseoutEvidence,
-        "worth-store-physical-integrity",
-        "integrity closeout",
-        PHYSICAL_INTEGRITY,
+        StoreCanonicalBasisFamily::PhysicalIntegrityScrubProgress,
+        "worth-store",
+        "managed physical integrity scrub progress",
+        SCRUB_PROGRESS,
         StoreCanonicalBasisLane::PhysicalIntegrity,
     ),
     owner(
