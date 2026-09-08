@@ -1,5 +1,17 @@
 #[cfg(test)]
+mod artifact_courtroom;
+#[cfg(test)]
+mod journal_process_courtroom;
+#[cfg(test)]
+mod artifact_edit;
+#[cfg(test)]
 mod artifact_editor;
+#[cfg(test)]
+mod artifact_expectation;
+#[cfg(test)]
+mod artifact_inventory;
+#[cfg(test)]
+mod artifact_process;
 #[cfg(test)]
 mod clean_artifact_manifest;
 #[cfg(test)]
@@ -15,6 +27,10 @@ mod external_report_paths_tests;
 mod frame_checksum;
 #[cfg(test)]
 mod parent_oracle;
+#[cfg(test)]
+mod physical_work_courtroom;
+#[cfg(test)]
+mod namespace_courtroom;
 #[cfg(test)]
 mod producer_fixture;
 mod root_artifact_role;
@@ -32,7 +48,13 @@ mod process_courtroom;
 #[cfg(test)]
 mod process_courtroom_assertions;
 #[cfg(test)]
+mod process_execution;
+#[cfg(test)]
 mod process_identity_substitution;
+#[cfg(test)]
+mod process_ingress_observation;
+#[cfg(test)]
+mod process_integrity_projection;
 #[cfg(test)]
 mod process_integrity_vocabulary;
 #[cfg(test)]
@@ -44,9 +66,17 @@ mod process_protocol;
 #[cfg(test)]
 mod process_recovery_observation;
 #[cfg(test)]
+mod process_scope_identity;
+#[cfg(test)]
 mod process_subject;
 #[cfg(test)]
+mod production_open;
+#[cfg(test)]
+mod production_profile;
+#[cfg(test)]
 mod production_store;
+#[cfg(test)]
+mod production_world_shape;
 #[cfg(test)]
 mod recovery_adapter;
 #[cfg(test)]

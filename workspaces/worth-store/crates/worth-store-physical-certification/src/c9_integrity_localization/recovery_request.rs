@@ -20,7 +20,7 @@ pub(super) fn open_request(root: &Path) -> Result<PhysicalRecoveryOpenRequest, S
         distinct_pages_and_extents: 16_000_000,
         operation_bindings: 16_000_000,
         staging_bytes: u32::MAX as u64,
-        recovery_memory_bytes: 4 * 1024 * 1024,
+        recovery_memory_bytes: 64 * 1024 * 1024,
         dirty_frames: 1_000_000,
         concurrent_commands: 64,
         publication_effects: 256,

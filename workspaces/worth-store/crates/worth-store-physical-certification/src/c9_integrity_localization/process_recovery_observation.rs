@@ -8,6 +8,9 @@ pub(crate) struct ProcessRecoveryObservation {
     pub(crate) discovery: Option<ProcessRecoveryDiscoveryCounters>,
     pub(crate) root_protocol: ProcessRecoveryRootProtocolCounters,
     pub(crate) root_protocol_denials: Vec<ProcessRootProtocolDenial>,
+    pub(crate) ingress: Vec<super::process_ingress_observation::ProcessIngressObservation>,
+    pub(crate) wal: Vec<super::process_ingress_observation::ProcessIngressObservation>,
+    pub(crate) integrity_counters: super::process_ingress_observation::ProcessIngressCounters,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -145,6 +148,7 @@ pub(crate) struct ProcessDamageLocalization {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct ProcessIntegrityScope {
+    pub(crate) identity: super::process_scope_identity::ProcessScopeIdentity,
     pub(crate) store_identity: [u8; 16],
     pub(crate) family: ProcessIntegrityArtifactFamily,
     pub(crate) root_generation: Option<u64>,

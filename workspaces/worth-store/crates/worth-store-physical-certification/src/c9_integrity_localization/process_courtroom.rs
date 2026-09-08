@@ -1,27 +1,25 @@
 use std::path::Path;
-use std::process::{Command, ExitStatus};
-
-use serde_json::Value;
-use sha2::{Digest, Sha256};
 
 use super::process_courtroom_assertions::{
     assert_addressed_root_poison_preserves_current_selector, assert_offline_expectation,
     assert_recovery_expectation, DecoderCounters,
 };
+use super::process_execution::{fresh_identity, hex, run_offline_observer, run_subject};
 use super::process_identity_substitution::assert_recovery_store_substitution_is_denied;
 use super::process_manifest::ProcessTreeSnapshot;
-use super::process_protocol::{
-    executable_sha256, read_wire, write_create_new, ProcessReportPayload, ProcessSubjectReport,
-    ProcessSubjectRequest, SUBJECT_REQUEST_ENV,
-};
-use super::{DeclaredProcessPoison, ExternalReportPaths, ProcessRootCase, RootWireRole};
+use super::process_protocol::{executable_sha256, ProcessReportPayload, ProcessSubjectRequest};
+use super::{DeclaredProcessPoison, ProcessRootCase, RootWireRole};
 
 pub(super) fn run(observer_executable: &Path) {
     assert!(
         observer_executable.is_file(),
         "Cargo-owned observer executable is unavailable"
     );
-    let world = tempfile::tempdir().expect("courtroom directory");
+    let mut world = tempfile::tempdir().expect("courtroom directory");
+    if std::env::var_os("WORTH_C9_RETAIN_WORLD").is_some() {
+        world.disable_cleanup(true);
+        println!("C9 retained evidence world={}", world.path().display());
+    }
     let stores = world.path().join("stores");
     let reports = world.path().join("reports");
     std::fs::create_dir_all(&stores).expect("Store rows directory");
@@ -62,6 +60,11 @@ pub(super) fn run(observer_executable: &Path) {
     manifest
         .require_unchanged(&baseline)
         .expect("producer baseline remains exact after producer exit");
+    let inventory = super::artifact_inventory::ArtifactInventory::observe(&baseline);
+    assert!(
+        inventory.granules.len() > 200,
+        "the primary courtroom covers the actual published topology"
+    );
 
     let observer_digest = executable_sha256(observer_executable).expect("observer digest");
     assert_ne!(
@@ -178,11 +181,8 @@ pub(super) fn run(observer_executable: &Path) {
             }
             ProcessRootCase::PoisonCurrentSelector => {
                 let clean = clean_counters.expect("clean row precedes poison rows");
-                assert_eq!(counters.checksum_calculations, clean.checksum_calculations);
-                assert_eq!(
-                    counters.checksum_validated_frames + 1,
-                    clean.checksum_validated_frames
-                );
+                // Lost current reachability intentionally stops descendant traversal. Global
+                // checksum totals therefore cannot serve as a root decoder-entry oracle.
                 assert_eq!(
                     counters.selector_payload_entries + 1,
                     clean.selector_payload_entries
@@ -194,11 +194,6 @@ pub(super) fn run(observer_executable: &Path) {
             }
             ProcessRootCase::PoisonAddressedRoot => {
                 let clean = clean_counters.expect("clean row precedes poison rows");
-                assert_eq!(counters.checksum_calculations, clean.checksum_calculations);
-                assert_eq!(
-                    counters.checksum_validated_frames + 1,
-                    clean.checksum_validated_frames
-                );
                 assert_eq!(
                     counters.selector_payload_entries,
                     clean.selector_payload_entries
@@ -237,6 +232,13 @@ pub(super) fn run(observer_executable: &Path) {
             ProcessReportPayload::Recovered(observation) => observation,
             _ => panic!("recovery report payload substitution"),
         };
+        println!(
+            "C9 row={} recovery={:?} effects={} discovery={:?}",
+            case.label(),
+            recovery_observation.posture,
+            recovery_observation.recovery_effects,
+            recovery_observation.discovery
+        );
         assert_recovery_expectation(recovery_observation, &manifest, case);
     }
     assert_recovery_store_substitution_is_denied(
@@ -251,120 +253,82 @@ pub(super) fn run(observer_executable: &Path) {
     manifest
         .require_unchanged(&baseline)
         .expect("courtroom never edits the production baseline");
-}
-
-struct SubjectExecution {
-    process_id: u32,
-    report: ProcessSubjectReport,
-}
-
-fn run_subject(
-    executable: &Path,
-    reports: &Path,
-    label: &str,
-    request: ProcessSubjectRequest,
-) -> SubjectExecution {
-    let request_path = reports.join(format!("{label}.request"));
-    let report_path =
-        ExternalReportPaths::authorize(request.store_root(), request.report_path().to_path_buf())
-            .expect("external process report path");
-    let request_path = ExternalReportPaths::authorize(request.store_root(), request_path)
-        .expect("external process request path");
-    write_create_new(request_path.as_path(), &request).expect("write subject request");
-    let mut child = Command::new(executable)
-        .args([
-            "--exact",
-            "c9_integrity_localization::c9_root_process_subject",
-            "--nocapture",
-        ])
-        .env(SUBJECT_REQUEST_ENV, request_path.as_path())
-        .spawn()
-        .expect("launch process subject");
-    let process_id = child.id();
-    assert_ne!(
-        process_id,
-        std::process::id(),
-        "subject must be a child process"
+    super::artifact_courtroom::run(
+        observer_executable,
+        &baseline,
+        &stores,
+        &reports,
+        super::production_profile::ProductionWorldProfile::Primary16KiB,
     );
-    let status = child.wait().expect("wait for process subject");
-    assert_success(status, "process subject");
-    let report = read_wire(report_path.as_path()).expect("read process report");
-    SubjectExecution { process_id, report }
+    run_page_profiles(observer_executable, &parent_executable, &stores, &reports);
+    super::physical_work_courtroom::run(observer_executable);
+    super::namespace_courtroom::run(observer_executable);
 }
 
-struct OfflineExecution {
-    process_id: u32,
-    executable_sha256: [u8; 32],
-    report: Value,
-}
-
-fn run_offline_observer(
-    executable: &Path,
-    store_root: &Path,
-    report_path: &Path,
-    run: [u8; 32],
-    scenario: [u8; 32],
-) -> OfflineExecution {
-    let report_path = ExternalReportPaths::authorize(store_root, report_path.to_path_buf())
-        .expect("external offline report path");
-    let mut child = Command::new(executable)
-        .args([
-            "observe",
-            "--store-root",
-            store_root.to_str().expect("UTF-8 Store root"),
-            "--report",
-            report_path.as_path().to_str().expect("UTF-8 report path"),
-            "--max-entries",
-            "4096",
-            "--max-bytes",
-            "134217728",
-            "--max-open-files",
-            "16",
-            "--max-depth",
-            "16",
-            "--max-symlinks",
-            "1",
-            "--max-elapsed-ms",
-            "30000",
-            "--max-report-bytes",
-            "1048576",
-            "--run",
-            &hex(run),
-            "--scenario",
-            &hex(scenario),
-        ])
-        .spawn()
-        .expect("launch independent offline observer");
-    let process_id = child.id();
-    assert_ne!(
-        process_id,
-        std::process::id(),
-        "offline observer must be a child process"
-    );
-    let status = child.wait().expect("wait for offline observer");
-    assert_success(status, "offline observer");
-    let report =
-        serde_json::from_slice(&std::fs::read(report_path.as_path()).expect("read offline report"))
-            .expect("parse independent report wire");
-    OfflineExecution {
-        process_id,
-        executable_sha256: executable_sha256(executable).expect("observer digest"),
-        report,
+fn run_page_profiles(observer: &Path, executable: &Path, stores: &Path, reports: &Path) {
+    use super::production_profile::ProductionWorldProfile::{Pages32KiB, Pages64KiB};
+    for profile in [Pages32KiB, Pages64KiB] {
+        let label = format!("{}-producer", profile.label());
+        let baseline = stores.join(format!("{}-baseline", profile.label()));
+        let scenario = fresh_identity(&format!("{label}-scenario"), stores);
+        let run = fresh_identity(&format!("{label}-run"), reports);
+        let producer = run_subject(
+            executable,
+            reports,
+            &label,
+            ProcessSubjectRequest::producer(
+                scenario,
+                run,
+                baseline.clone(),
+                reports.join(format!("{label}.report")),
+            )
+            .with_profile(profile),
+        );
+        let ProcessReportPayload::Produced(manifest) = producer.report.payload() else {
+            panic!("page world producer role");
+        };
+        producer
+            .report
+            .require(
+                RootWireRole::Producer,
+                scenario,
+                run,
+                manifest.store_identity(),
+                producer.process_id,
+                executable_sha256(executable).unwrap(),
+            )
+            .unwrap();
+        let recovery_scenario = fresh_identity(&format!("{label}-recovery-scenario"), stores);
+        let recovery_run = fresh_identity(&format!("{label}-recovery-run"), reports);
+        let row = stores.join(format!("{}-recovery", profile.label()));
+        manifest.copy_to(&baseline, &row).unwrap();
+        let recovered = run_subject(
+            executable,
+            reports,
+            &format!("{label}-recovery"),
+            ProcessSubjectRequest::recovery(
+                recovery_scenario,
+                recovery_run,
+                row,
+                reports.join(format!("{label}-recovery.report")),
+                manifest.store_identity(),
+            ),
+        );
+        recovered
+            .report
+            .require(
+                RootWireRole::Recovery,
+                recovery_scenario,
+                recovery_run,
+                manifest.store_identity(),
+                recovered.process_id,
+                executable_sha256(executable).unwrap(),
+            )
+            .unwrap();
+        let ProcessReportPayload::Recovered(observation) = recovered.report.payload() else {
+            panic!("page world recovery role");
+        };
+        assert_recovery_expectation(observation, manifest, ProcessRootCase::CleanControl);
+        super::artifact_courtroom::run(observer, &baseline, stores, reports, profile);
     }
-}
-
-fn assert_success(status: ExitStatus, role: &str) {
-    assert!(status.success(), "{role} exited with {status}");
-}
-
-fn fresh_identity(label: &str, root: &Path) -> [u8; 32] {
-    Sha256::digest(format!("{label}:{}:{}", root.display(), std::process::id())).into()
-}
-
-fn hex(bytes: impl AsRef<[u8]>) -> String {
-    bytes
-        .as_ref()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
 }

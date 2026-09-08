@@ -26,6 +26,7 @@ pub(crate) struct ProcessSubjectRequest {
     store_identity: Option<[u8; 16]>,
     manifest: Option<ClosedStoreProcessManifest>,
     poison: Option<DeclaredProcessPoison>,
+    profile: super::production_profile::ProductionWorldProfile,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,6 +67,7 @@ impl ProcessSubjectRequest {
             store_identity: None,
             manifest: None,
             poison: None,
+            profile: super::production_profile::ProductionWorldProfile::Primary16KiB,
         }
     }
 
@@ -87,6 +89,7 @@ impl ProcessSubjectRequest {
             store_identity: Some(manifest.store_identity()),
             manifest: Some(manifest),
             poison: Some(poison),
+            profile: super::production_profile::ProductionWorldProfile::Primary16KiB,
         }
     }
 
@@ -107,11 +110,22 @@ impl ProcessSubjectRequest {
             store_identity: Some(store_identity),
             manifest: None,
             poison: None,
+            profile: super::production_profile::ProductionWorldProfile::Primary16KiB,
         }
     }
 
     pub(crate) const fn role(&self) -> RootWireRole {
         self.role
+    }
+    pub(crate) const fn profile(&self) -> super::production_profile::ProductionWorldProfile {
+        self.profile
+    }
+    pub(crate) fn with_profile(
+        mut self,
+        profile: super::production_profile::ProductionWorldProfile,
+    ) -> Self {
+        self.profile = profile;
+        self
     }
     pub(crate) const fn scenario_identity(&self) -> [u8; 32] {
         self.scenario_identity

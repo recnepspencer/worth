@@ -3,11 +3,13 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::{
-    DurablePhysicalRootManifest, DurableRootSelector, RecordArtifactFile, PHYSICAL_HEADER_LENGTH,
-};
+use worth_store_physical_format::RecordArtifactFile;
 
 use super::RootArtifactRole;
+
+mod tree_observation;
+mod snapshot;
+use tree_observation::observe_tree;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct ClosedStoreProcessManifest {
@@ -38,6 +40,7 @@ struct ProcessStoreFile {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ProcessTreeSnapshot {
+    live_lease_payload_excluded: bool,
     directories: BTreeSet<PathBuf>,
     files: BTreeMap<PathBuf, ProcessStoreFile>,
     contents: BTreeMap<PathBuf, Vec<u8>>,
@@ -70,9 +73,12 @@ impl ClosedStoreProcessManifest {
             .ok_or(ProcessManifestDenial::MissingCurrentSelector)?;
         let selector_bytes = std::fs::read(root.join(&selector_path))
             .map_err(|_| ProcessManifestDenial::MissingCurrentSelector)?;
-        let selector = DurableRootSelector::decode(&selector_bytes)
-            .map_err(|_| ProcessManifestDenial::InvalidCurrentSelector)?;
-        let root_generation = selector.root_generation();
+        // The manifest records the producer's bytes. It must not ask either
+        // implementation under test to classify those bytes for the oracle.
+        if selector_bytes.len() != 107 || &selector_bytes[..8] != b"WRC5FRM\0" {
+            return Err(ProcessManifestDenial::InvalidCurrentSelector);
+        }
+        let root_generation = u64::from_le_bytes(selector_bytes[65..73].try_into().unwrap());
         let root_path = PathBuf::from("families/records/roots").join(
             RecordArtifactFile::RootManifest {
                 generation: root_generation,
@@ -84,20 +90,21 @@ impl ClosedStoreProcessManifest {
             .ok_or(ProcessManifestDenial::MissingCurrentRoot)?;
         let root_bytes = std::fs::read(root.join(&root_path))
             .map_err(|_| ProcessManifestDenial::MissingCurrentRoot)?;
-        let (root_manifest, _) = DurablePhysicalRootManifest::decode(&root_bytes, u16::MAX)
-            .map_err(|_| ProcessManifestDenial::InvalidCurrentRoot)?;
-        if root_manifest.generation() != root_generation {
+        if root_bytes.len() < 48 || &root_bytes[..8] != b"WRC5FRM\0" || root_bytes[8] != 2 {
+            return Err(ProcessManifestDenial::InvalidCurrentRoot);
+        }
+        if u64::from_le_bytes(root_bytes[28..36].try_into().unwrap()) != root_generation {
             return Err(ProcessManifestDenial::RootGenerationMismatch);
         }
-        let store_identity = selector.store_identity().bytes();
+        let store_identity = selector_bytes[48..64].try_into().unwrap();
         let current_selector = ProcessRootArtifact {
             role: RootArtifactRole::CurrentSelector,
             relative_path: selector_path,
-            concrete_identity: selector.identity().get(),
+            concrete_identity: u64::from_le_bytes(selector_bytes[28..36].try_into().unwrap()),
             root_generation,
             exact_length: selector_file.exact_length,
             content_sha256: selector_file.content_sha256,
-            covered_edit_offset: u64::from(PHYSICAL_HEADER_LENGTH),
+            covered_edit_offset: 48,
         };
         let current_root = ProcessRootArtifact {
             role: RootArtifactRole::AddressedRootManifest,
@@ -106,8 +113,7 @@ impl ClosedStoreProcessManifest {
             root_generation,
             exact_length: root_file.exact_length,
             content_sha256: root_file.content_sha256,
-            covered_edit_offset: u64::from(PHYSICAL_HEADER_LENGTH)
-                + std::mem::size_of::<u64>() as u64,
+            covered_edit_offset: 56,
         };
         let identity = manifest_identity(
             store_identity,
@@ -179,72 +185,11 @@ impl ClosedStoreProcessManifest {
     pub(crate) fn byte_count(&self) -> u64 {
         self.files.values().map(|file| file.exact_length).sum()
     }
-}
-
-impl ProcessTreeSnapshot {
-    pub(crate) fn observe(root: &Path) -> Result<Self, ProcessManifestDenial> {
-        let (directories, files, contents) = observe_tree(root)?;
-        Ok(Self {
-            directories,
-            files,
-            contents,
-        })
-    }
-
-    pub(crate) fn require_unchanged(&self, root: &Path) -> Result<(), ProcessManifestDenial> {
-        let observed = Self::observe(root)?;
-        if observed == *self {
-            Ok(())
-        } else {
-            Err(ProcessManifestDenial::TreeMismatch)
-        }
-    }
-
-    pub(crate) fn require_exact_one_byte_delta(
-        &self,
-        root: &Path,
-        target: &Path,
-        offset: u64,
-        xor_mask: u8,
-    ) -> Result<([u8; 32], [u8; 32]), ProcessManifestDenial> {
-        let observed = Self::observe(root)?;
-        if self.directories != observed.directories
-            || self.contents.keys().ne(observed.contents.keys())
-        {
-            return Err(ProcessManifestDenial::MutationMismatch);
-        }
-        let target_offset =
-            usize::try_from(offset).map_err(|_| ProcessManifestDenial::MutationMismatch)?;
-        let mut target_digests = None;
-        for (relative, before) in &self.contents {
-            let after = observed
-                .contents
-                .get(relative)
-                .ok_or(ProcessManifestDenial::MutationMismatch)?;
-            if relative != target {
-                if before != after {
-                    return Err(ProcessManifestDenial::MutationMismatch);
-                }
-                continue;
-            }
-            if before.len() != after.len()
-                || target_offset >= before.len()
-                || before
-                    .iter()
-                    .zip(after)
-                    .enumerate()
-                    .filter(|(_, (left, right))| left != right)
-                    .map(|(index, _)| index)
-                    .ne([target_offset])
-                || after[target_offset] != before[target_offset] ^ xor_mask
-            {
-                return Err(ProcessManifestDenial::MutationMismatch);
-            }
-            target_digests = Some((Sha256::digest(before).into(), Sha256::digest(after).into()));
-        }
-        target_digests.ok_or(ProcessManifestDenial::MutationMismatch)
+    pub(crate) fn paths(&self) -> impl Iterator<Item = &Path> {
+        self.files.keys().map(PathBuf::as_path)
     }
 }
+
 
 impl ProcessRootArtifact {
     pub(crate) const fn role(&self) -> RootArtifactRole {
@@ -268,53 +213,6 @@ impl ProcessRootArtifact {
     pub(crate) const fn covered_edit_offset(&self) -> u64 {
         self.covered_edit_offset
     }
-}
-
-fn observe_tree(
-    root: &Path,
-) -> Result<
-    (
-        BTreeSet<PathBuf>,
-        BTreeMap<PathBuf, ProcessStoreFile>,
-        BTreeMap<PathBuf, Vec<u8>>,
-    ),
-    ProcessManifestDenial,
-> {
-    let mut observed_directories = BTreeSet::new();
-    let mut files = BTreeMap::new();
-    let mut contents = BTreeMap::new();
-    let mut directories = vec![PathBuf::new()];
-    while let Some(relative_directory) = directories.pop() {
-        let mut entries = std::fs::read_dir(root.join(&relative_directory))
-            .map_err(|_| ProcessManifestDenial::TreeRead)?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|_| ProcessManifestDenial::TreeRead)?;
-        entries.sort_by_key(std::fs::DirEntry::file_name);
-        for entry in entries.into_iter().rev() {
-            let relative = relative_directory.join(entry.file_name());
-            let kind = entry
-                .file_type()
-                .map_err(|_| ProcessManifestDenial::TreeRead)?;
-            if kind.is_dir() {
-                observed_directories.insert(relative.clone());
-                directories.push(relative);
-            } else if kind.is_file() {
-                let bytes =
-                    std::fs::read(entry.path()).map_err(|_| ProcessManifestDenial::TreeRead)?;
-                files.insert(
-                    relative.clone(),
-                    ProcessStoreFile {
-                        exact_length: bytes.len() as u64,
-                        content_sha256: Sha256::digest(&bytes).into(),
-                    },
-                );
-                contents.insert(relative, bytes);
-            } else {
-                return Err(ProcessManifestDenial::NonRegularEntry(relative));
-            }
-        }
-    }
-    Ok((observed_directories, files, contents))
 }
 
 fn manifest_identity(

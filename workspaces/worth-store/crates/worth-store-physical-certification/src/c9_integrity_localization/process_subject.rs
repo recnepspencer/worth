@@ -7,6 +7,15 @@ use super::{
 };
 
 pub(super) fn run() {
+    if super::namespace_courtroom::run_subject_if_requested() {
+        return;
+    }
+    if super::physical_work_courtroom::run_subject_if_requested() {
+        return;
+    }
+    if super::artifact_process::run_subject_if_requested() {
+        return;
+    }
     let Some(request_path) = std::env::var_os(SUBJECT_REQUEST_ENV) else {
         return;
     };
@@ -20,7 +29,7 @@ pub(super) fn run() {
             assert!(request.store_identity().is_none());
             assert!(request.manifest().is_none());
             assert!(request.poison().is_none());
-            let manifest = produce_closed_store(request.store_root())
+            let manifest = produce_closed_store(request.store_root(), request.profile())
                 .unwrap_or_else(|error| panic!("produce closed Store: {error}"));
             (
                 manifest.store_identity(),

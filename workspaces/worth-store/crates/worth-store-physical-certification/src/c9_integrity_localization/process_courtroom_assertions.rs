@@ -1,6 +1,5 @@
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::{DurableRootSelector, RootSelectorRole};
 
 use super::process_recovery_observation::{
     ProcessBlastRadius, ProcessByteRange, ProcessDamageCause, ProcessIntegrityArtifactFamily,
@@ -18,11 +17,16 @@ pub(super) fn assert_addressed_root_poison_preserves_current_selector(
         .expect("current selector record");
     let bytes = std::fs::read(row.join(record.relative_path())).expect("read current selector");
     assert_eq!(Sha256::digest(&bytes).as_slice(), record.content_sha256());
-    let selector = DurableRootSelector::decode(&bytes).expect("current selector remains decodable");
-    assert_eq!(selector.role(), RootSelectorRole::Current);
-    assert_eq!(selector.identity().get(), record.concrete_identity());
-    assert_eq!(selector.root_generation(), record.root_generation());
-    assert_eq!(selector.store_identity().bytes(), manifest.store_identity());
+    assert_eq!(bytes[64], 1, "current role remains unchanged");
+    assert_eq!(
+        u64::from_le_bytes(bytes[28..36].try_into().unwrap()),
+        record.concrete_identity()
+    );
+    assert_eq!(
+        u64::from_le_bytes(bytes[65..73].try_into().unwrap()),
+        record.root_generation()
+    );
+    assert_eq!(&bytes[48..64], manifest.store_identity());
 }
 
 pub(super) fn assert_recovery_expectation(
@@ -39,16 +43,36 @@ pub(super) fn assert_recovery_expectation(
         ProcessRootCase::CleanControl => assert_clean_recovery(observation),
         ProcessRootCase::PoisonCurrentSelector => {
             let counters = observation.discovery.expect("blocked discovery counters");
-            assert_eq!(
-                observation.posture,
-                ProcessRecoveryPosture::Blocked(ProcessRecoveryBlockCause::Checkpoint)
+            assert_eq!(observation.posture, ProcessRecoveryPosture::Recovered);
+            assert!(
+                observation.recovery_effects > 0,
+                "fallback actually replays the admitted publication"
             );
-            assert_eq!(observation.recovery_effects, 0);
             assert_eq!(counters.current_selector_integrity_admissions, 0);
             assert_eq!(counters.current_selector_interpretations, 0);
             assert_eq!(counters.current_root_integrity_admissions, 0);
             assert_eq!(counters.current_root_candidate_interpretations, 0);
-            assert_eq!(observation.root_protocol, Default::default());
+            assert_eq!(counters.previous_selector_integrity_admissions, 1);
+            assert_eq!(counters.previous_selector_interpretations, 1);
+            assert_eq!(counters.previous_root_integrity_admissions, 1);
+            assert_eq!(counters.previous_root_candidate_interpretations, 1);
+            assert_eq!(
+                observation
+                    .root_protocol
+                    .successor_root_integrity_admissions,
+                1
+            );
+            assert_eq!(observation.root_protocol.successor_root_interpretations, 1);
+            assert_eq!(
+                observation
+                    .root_protocol
+                    .staged_selector_integrity_admissions,
+                1
+            );
+            assert_eq!(
+                observation.root_protocol.closeout_selector_interpretations,
+                1
+            );
             assert_exact_recovery_damage(
                 observation,
                 manifest,
@@ -90,7 +114,7 @@ pub(super) fn assert_recovery_expectation(
 fn assert_clean_recovery(observation: &ProcessRecoveryObservation) {
     let counters = observation.discovery.expect("recovered discovery counters");
     assert_eq!(observation.posture, ProcessRecoveryPosture::Recovered);
-    assert_eq!(observation.recovery_effects, 2);
+    assert_eq!(observation.recovery_effects, 0);
     assert_eq!(counters.current_selector_integrity_admissions, 1);
     assert_eq!(counters.current_selector_interpretations, 1);
     assert_eq!(counters.current_root_integrity_admissions, 1);

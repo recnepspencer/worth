@@ -12,7 +12,9 @@ fn independent_observer_traverses_current_family_graph() {
     let observer = std::env::var_os(super::OBSERVER_EXECUTABLE_ENV).expect("observer executable");
     let world = tempfile::tempdir().unwrap();
     let root = world.path().join("store");
-    super::production_store::produce_closed_store_with_extent(&root).unwrap();
+    super::production_store::produce_closed_store(
+        &root, super::production_profile::ProductionWorldProfile::Primary16KiB,
+    ).unwrap();
     let original = snapshot(&root);
     let report = observe(Path::new(&observer), &root);
     let artifacts = report["artifacts"].as_array().unwrap();
