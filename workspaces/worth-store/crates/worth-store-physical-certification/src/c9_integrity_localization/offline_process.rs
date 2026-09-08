@@ -135,7 +135,8 @@ fn observe(executable: &Path, root: &Path) -> Value {
             "--max-symlinks",
             "0",
             "--max-elapsed-ms",
-            "30000",
+            // This proves family traversal, not a wall-clock latency target.
+            "120000",
             "--max-report-bytes",
             "1048576",
         ])

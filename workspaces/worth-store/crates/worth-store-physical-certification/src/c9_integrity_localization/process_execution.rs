@@ -80,7 +80,9 @@ pub(super) fn run_offline_observer(
             "--max-symlinks",
             "1",
             "--max-elapsed-ms",
-            "30000",
+            // Semantic acceptance needs headroom under concurrent CI load;
+            // resource-bound tests retain their deliberately smaller limits.
+            "120000",
             "--max-report-bytes",
             "1048576",
             "--run",

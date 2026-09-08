@@ -175,7 +175,8 @@ pub(super) fn create_marker(path: &std::path::Path) {
         .unwrap();
 }
 pub(super) fn wait_for_marker(path: &std::path::Path) {
-    let deadline = Instant::now() + Duration::from_secs(120);
+    // Parent observation has a 120s budget before releasing this barrier.
+    let deadline = Instant::now() + Duration::from_secs(180);
     while !path.is_file() {
         assert!(
             Instant::now() < deadline,
