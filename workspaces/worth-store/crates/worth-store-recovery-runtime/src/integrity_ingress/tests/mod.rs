@@ -1,3 +1,4 @@
+mod checkpoint_root_binding;
 mod checkpoint_source_binding;
 mod membership_projection_budget;
 mod observation_counters;

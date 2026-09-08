@@ -40,7 +40,7 @@ pub(crate) use planned_selector::admit_staged_current_selector;
 pub use rejection::RecoveryIntegrityIngressRejection;
 pub(crate) use root_protocol::{
     admit_addressed_root, admit_current_selector, admit_observed_bootstrap_catalog,
-    admit_previous_selector,
+    admit_observed_root_manifest, admit_previous_selector,
 };
 #[allow(unused_imports)]
 pub(crate) use routing::{observe_absent_recovery_artifact, RecoveryIntegrityIngressAttempt};

@@ -38,7 +38,10 @@ pub(crate) struct DiscoveryMaterial {
 pub(crate) enum CheckpointDiscovery {
     Absent,
     Rejected(crate::entry::PhysicalRecoveryCheckpointIntegrityDenial),
-    Admitted(crate::integrity_ingress::OwnerCheckpointProjection),
+    Admitted {
+        projection: crate::integrity_ingress::OwnerCheckpointProjection,
+        source_root: worth_store::physical_runtime::ObservedRecoveryArtifact,
+    },
 }
 
 pub(crate) enum BootstrapDiscovery {
@@ -171,7 +174,7 @@ pub(crate) fn discover_sources(
         .checked_mul(2)
         .and_then(|value| value.checked_add(2));
     let maximum_entries = match maximum_manifest_blocks.and_then(|blocks| {
-        5_u64
+        6_u64
             .checked_add(declaration.wal_segments)
             .and_then(|entries| entries.checked_add(blocks))
     }) {

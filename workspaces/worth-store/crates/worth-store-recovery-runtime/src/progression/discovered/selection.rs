@@ -17,9 +17,11 @@ use worth_store::physical_runtime::StoreRecoveryCheckpointBindingBasis;
 
 use super::PhysicalRecoveryDiscoveryCounters;
 
+mod checkpoint;
 mod failure;
 mod root;
 
+use checkpoint::select_checkpoint;
 use failure::SelectionFailure;
 
 pub(super) struct SelectionInput {
@@ -105,12 +107,14 @@ pub(super) fn select_sources(
             .with_integrity_observations(wal_integrity_observations.clone())
     })?;
     let (checkpoint, checkpoint_binding_basis) =
-        select_checkpoint(&root, input.checkpoint, counters).map_err(|failure| {
-            failure
-                .with_root_protocol_denials(&root_protocol_denials)
-                .with_integrity_trace(integrity_trace.clone())
-                .with_integrity_observations(wal_integrity_observations.clone())
-        })?;
+        select_checkpoint(&root, input.checkpoint, counters, &mut integrity_trace).map_err(
+            |failure| {
+                failure
+                    .with_root_protocol_denials(&root_protocol_denials)
+                    .with_integrity_trace(integrity_trace.clone())
+                    .with_integrity_observations(wal_integrity_observations.clone())
+            },
+        )?;
     let frontier = checkpoint
         .as_ref()
         .map_or(0, |checkpoint| checkpoint.wal_tail_begin_lsn());
@@ -230,51 +234,6 @@ fn select_manifest_facts(
         (None, _) | (_, None) => None,
     };
     Ok((page_facts, retained_previous_page_facts))
-}
-
-fn select_checkpoint(
-    root: &SelectedPhysicalRoot,
-    checkpoint: CheckpointDiscovery,
-    counters: PhysicalRecoveryDiscoveryCounters,
-) -> Result<
-    (
-        Option<PhysicalCheckpointBase>,
-        Option<StoreRecoveryCheckpointBindingBasis>,
-    ),
-    SelectionFailure,
-> {
-    let generation = root.selected().selector().root_generation();
-    match checkpoint {
-        CheckpointDiscovery::Absent => Ok((None, None)),
-        CheckpointDiscovery::Rejected(denial) => Err(SelectionFailure::new(
-            PhysicalRecoveryBlockKind::Checkpoint,
-            counters,
-            "families/checkpoint.current",
-        )
-        .with_generation(generation)
-        .with_source_denials(vec![PhysicalRecoverySourceDenial::CheckpointIntegrity(
-            denial,
-        )])),
-        CheckpointDiscovery::Admitted(checkpoint) => {
-            let crate::integrity_ingress::OwnerCheckpointProjection {
-                checkpoint,
-                binding_basis,
-            } = checkpoint;
-            PhysicalCheckpointBase::admit(root, checkpoint)
-                .map(|checkpoint| (Some(checkpoint), Some(binding_basis)))
-                .map_err(|denial| {
-                    SelectionFailure::new(
-                        PhysicalRecoveryBlockKind::Checkpoint,
-                        counters,
-                        "families/checkpoint.current",
-                    )
-                    .with_generation(generation)
-                    .with_source_denials(vec![
-                        PhysicalRecoverySourceDenial::CheckpointBinding(denial),
-                    ])
-                })
-        }
-    }
 }
 
 fn select_wal(

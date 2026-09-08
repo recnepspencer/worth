@@ -121,3 +121,31 @@ pub(crate) fn admit_addressed_root<'media>(
         }
     }
 }
+
+pub(crate) fn admit_observed_root_manifest<'media>(
+    observed: &'media worth_store::physical_runtime::ObservedRecoveryArtifact,
+    store: StableStoreIdentity,
+    format: PhysicalRecordFormatDeclaration,
+    generation: u64,
+    counters: &mut RecoveryIntegrityIngressCounters,
+) -> Result<RecoveryIntegrityIngressAttempt<'media>, RecoveryIntegrityIngressRejection> {
+    let observed_length = observed.bytes().map_or(1, |bytes| bytes.len().max(1)) as u64;
+    let scope = PhysicalArtifactScope::root_manifest(
+        store,
+        format,
+        generation,
+        PhysicalByteRange::new(0, observed_length).expect("nonzero observed source width"),
+    )
+    .map_err(|_| RecoveryIntegrityIngressRejection::ScopeMismatch)?;
+    if observed.bytes().is_none() {
+        return Ok(observe_absent_recovery_artifact(observed, scope, counters));
+    }
+    let source = ObservedRecoverySource::complete(observed, scope);
+    let validation = match source.input() {
+        Ok(input) => validate_root_manifest(input, scope).0,
+        Err(rejection) => return Ok(rejected_source_binding(scope, rejection, counters)),
+    };
+    Ok(IntegrityAdmittedRecoveryArtifact::bind_root_manifest(
+        observed, scope, validation, counters,
+    ))
+}

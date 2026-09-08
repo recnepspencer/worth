@@ -69,8 +69,15 @@ pub(super) fn observe_all(
             &previous_manifest_facts,
         )
     };
-    let checkpoint = observe_checkpoint(discovery, limits, counters, ingress_trace)
-        .map_err(&preserve_manifest_observations)?;
+    let checkpoint = observe_checkpoint(
+        discovery,
+        limits,
+        &mut roots.remaining_manifest_bytes,
+        counters,
+        ingress_trace,
+    )
+    .map_err(&preserve_manifest_observations)?;
+    counters.manifest_bytes = declaration.manifest_bytes - roots.remaining_manifest_bytes;
     record_checkpoint_counters(counters, &checkpoint);
     let (wal, residue, wal_entries) = observe_wal(discovery, coordination, limits, counters)
         .map_err(&preserve_manifest_observations)?;

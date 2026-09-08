@@ -13,6 +13,7 @@ pub enum PhysicalRecoveryRootProtocolArtifact {
     StagedCurrentSelector { publication: u64 },
     CurrentRoot { generation: u64 },
     PreviousRoot { generation: u64 },
+    CheckpointSourceRoot { generation: u64 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

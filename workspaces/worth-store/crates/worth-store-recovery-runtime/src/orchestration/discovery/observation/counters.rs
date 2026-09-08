@@ -25,7 +25,7 @@ pub(super) fn record_checkpoint_counters(
     checkpoint: &CheckpointDiscovery,
 ) {
     counters.checkpoint_candidates =
-        u64::from(matches!(checkpoint, CheckpointDiscovery::Admitted(_)));
+        u64::from(matches!(checkpoint, CheckpointDiscovery::Admitted { .. }));
     counters.checkpoints_admitted = counters.checkpoint_candidates;
     counters.checkpoints_rejected =
         u64::from(matches!(checkpoint, CheckpointDiscovery::Rejected(_)));

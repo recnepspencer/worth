@@ -136,7 +136,7 @@ fn root_manifest(
 }
 
 fn checkpoint_base(
-    _format: PhysicalRecordFormatDeclaration,
+    format: PhysicalRecordFormatDeclaration,
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
 ) -> worth_store_recovery_physics::PhysicalCheckpointBase {
     let identity = worth_store_physical_format::PhysicalCheckpointIdentity::new(
@@ -157,11 +157,26 @@ fn checkpoint_base(
     bytes.extend_from_slice(&compaction);
     bytes.extend_from_slice(&footer);
     let verified = admit_empty_checkpoint_stream(&bytes, source);
-    worth_store_recovery_physics::PhysicalCheckpointBase::admit(
-        &root_for_checkpoint(store),
-        verified,
+    let root = root_for_checkpoint(store);
+    let root_bytes = root.selected().manifest().encode(format);
+    let scope = PhysicalArtifactScope::root_manifest(
+        store,
+        format,
+        1,
+        PhysicalByteRange::new(0, root_bytes.len() as u64).unwrap(),
     )
-    .unwrap()
+    .unwrap();
+    let worth_store_physical_integrity::RootManifestIntegrityValidation::Intact(source_root) =
+        worth_store_physical_integrity::validate_root_manifest(
+            UntrustedPhysicalArtifact::from_bounded_bytes(&root_bytes),
+            scope,
+        )
+        .0
+    else {
+        panic!("canonical checkpoint source root must validate")
+    };
+    worth_store_recovery_physics::PhysicalCheckpointBase::admit(&root, verified, &source_root)
+        .unwrap()
 }
 
 fn admit_empty_checkpoint_stream(

@@ -62,6 +62,23 @@ impl<'media> IntegrityAdmittedRootManifest<'media> {
     pub(crate) fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
         self.source.scope()
     }
+
+    pub(crate) fn bind_checkpoint_base(
+        &self,
+        selected: &worth_store_recovery_physics::SelectedPhysicalRoot,
+        checkpoint: worth_store_physical_integrity::VerifiedCheckpointStream,
+        counters: &mut RecoveryIntegrityIngressCounters,
+    ) -> Result<
+        worth_store_recovery_physics::PhysicalCheckpointBase,
+        worth_store_recovery_physics::PhysicalCheckpointBaseDenial,
+    > {
+        counters.record_owner_projection();
+        worth_store_recovery_physics::PhysicalCheckpointBase::admit(
+            selected,
+            checkpoint,
+            &self.validated,
+        )
+    }
 }
 
 pub(crate) fn admit_root_manifest<'media>(
