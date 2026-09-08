@@ -15,8 +15,11 @@ use super::process_recovery_observation::{
 };
 use super::recovery_request::open_request;
 
-pub(crate) fn recover(root: &Path) -> Result<ProcessRecoveryObservation, String> {
-    let request = open_request(root)?;
+pub(crate) fn recover(
+    root: &Path,
+    profile: super::production_profile::ProductionWorldProfile,
+) -> Result<ProcessRecoveryObservation, String> {
+    let request = open_request(root, profile)?;
     Ok(project_outcome(WorthStoreRecovery::recover(request)))
 }
 

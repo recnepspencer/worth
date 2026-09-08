@@ -5,8 +5,15 @@ use worth_store_recovery_runtime::{
     PhysicalRecoveryPlatformAuthority, PhysicalRecoveryStaticConfiguration,
 };
 
-pub(super) fn open_request(root: &Path) -> Result<PhysicalRecoveryOpenRequest, String> {
-    let configuration = PhysicalRecoveryStaticConfiguration::current();
+pub(super) fn open_request(
+    root: &Path,
+    profile: super::production_profile::ProductionWorldProfile,
+) -> Result<PhysicalRecoveryOpenRequest, String> {
+    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+        .page_size(profile.page_size())
+        .admit()
+        .map_err(|error| format!("admit recovery record format: {error:?}"))?;
+    let configuration = PhysicalRecoveryStaticConfiguration::for_record_format(format);
     let limits = PhysicalRecoveryLimits::admit(PhysicalRecoveryLimitDeclaration {
         selector_candidates: 4,
         checkpoint_candidates: 64,

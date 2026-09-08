@@ -56,7 +56,9 @@ impl ProductionWorldProfile {
     pub(crate) const fn inline_record_bytes(self) -> usize {
         match self {
             Self::Primary16KiB => 3_000,
-            Self::Pages32KiB | Self::Pages64KiB => self.page_size().bytes() as usize / 2,
+            // The default placement threshold is inclusive: half-page records
+            // become extents. Stay inline while exceeding half the fill budget.
+            Self::Pages32KiB | Self::Pages64KiB => self.page_size().bytes() as usize / 2 - 1,
         }
     }
 

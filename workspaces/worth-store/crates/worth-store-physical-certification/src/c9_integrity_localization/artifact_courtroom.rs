@@ -249,6 +249,7 @@ fn run_selected(
                 &label,
                 manifest.store_identity(),
                 target,
+                profile,
             );
             if let Some(target) = target {
                 super::artifact_recovery::require_consumption(

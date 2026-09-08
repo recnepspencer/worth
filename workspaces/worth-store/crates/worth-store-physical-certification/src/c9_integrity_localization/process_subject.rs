@@ -55,8 +55,9 @@ pub(super) fn run() {
                 request.store_identity().expect("expected Store identity");
             assert!(request.manifest().is_none());
             assert!(request.poison().is_none());
-            let observation = super::recovery_adapter::recover(request.store_root())
-                .unwrap_or_else(|error| panic!("invoke C8 recovery root: {error}"));
+            let observation =
+                super::recovery_adapter::recover(request.store_root(), request.profile())
+                    .unwrap_or_else(|error| panic!("invoke C8 recovery root: {error}"));
             let observed_store_identity = observation
                 .require_store_identity(expected_store_identity)
                 .unwrap_or_else(|denial| panic!("recovery Store identity denied: {denial:?}"));

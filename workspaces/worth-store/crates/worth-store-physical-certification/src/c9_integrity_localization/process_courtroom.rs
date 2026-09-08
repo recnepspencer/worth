@@ -266,6 +266,23 @@ pub(super) fn run(observer_executable: &Path) {
     super::namespace_courtroom::run(observer_executable);
 }
 
+#[test]
+#[ignore = "requires the independently built C9 observer"]
+fn c9_page_profiles_process_courtroom() {
+    let observer = std::env::var_os(super::OBSERVER_EXECUTABLE_ENV).expect("Cargo-built observer");
+    let world = tempfile::tempdir().unwrap();
+    let stores = world.path().join("stores");
+    let reports = world.path().join("reports");
+    std::fs::create_dir(&stores).unwrap();
+    std::fs::create_dir(&reports).unwrap();
+    run_page_profiles(
+        Path::new(&observer),
+        &std::env::current_exe().unwrap(),
+        &stores,
+        &reports,
+    );
+}
+
 fn run_page_profiles(observer: &Path, executable: &Path, stores: &Path, reports: &Path) {
     use super::production_profile::ProductionWorldProfile::{Pages32KiB, Pages64KiB};
     for profile in [Pages32KiB, Pages64KiB] {
@@ -313,7 +330,8 @@ fn run_page_profiles(observer: &Path, executable: &Path, stores: &Path, reports:
                 row,
                 reports.join(format!("{label}-recovery.report")),
                 manifest.store_identity(),
-            ),
+            )
+            .with_profile(profile),
         );
         recovered
             .report

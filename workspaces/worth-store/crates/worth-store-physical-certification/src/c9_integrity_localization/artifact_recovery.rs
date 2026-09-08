@@ -20,6 +20,7 @@ pub(super) fn observe(
     label: &str,
     store: [u8; 16],
     target: Option<&ArtifactGranule>,
+    profile: super::production_profile::ProductionWorldProfile,
 ) -> ProcessRecoveryObservation {
     let snapshot = ProcessTreeSnapshot::observe(root).unwrap();
     let world = tempfile::tempdir_in(root.parent().unwrap()).unwrap();
@@ -38,7 +39,8 @@ pub(super) fn observe(
             copy,
             reports.join(format!("{label}-c8.report")),
             store,
-        ),
+        )
+        .with_profile(profile),
     );
     execution
         .report
