@@ -37,6 +37,7 @@ pub enum OfflineUnknownPhysicalReason {
     FilesystemEntryUnavailable,
     PhysicalAliasNotReinspected,
     ParentScopeUnavailable,
+    WalCoverageUnavailable,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

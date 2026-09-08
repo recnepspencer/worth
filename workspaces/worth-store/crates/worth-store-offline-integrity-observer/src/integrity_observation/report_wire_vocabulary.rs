@@ -155,6 +155,7 @@ pub(crate) fn unknown(value: OfflineUnknownPhysicalReason) -> &'static str {
         OfflineUnknownPhysicalReason::StoreIdentityUnavailable => "store_identity_unavailable",
         OfflineUnknownPhysicalReason::FilesystemEntryUnavailable => "filesystem_entry_unavailable",
         OfflineUnknownPhysicalReason::ParentScopeUnavailable => "parent_scope_unavailable",
+        OfflineUnknownPhysicalReason::WalCoverageUnavailable => "wal_coverage_unavailable",
         OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected => {
             "physical_alias_not_reinspected"
         }

@@ -11,6 +11,7 @@ use worth_foundational::{
     PhysicalArtifactFamily as Family, PhysicalArtifactGeneration, PhysicalArtifactIdentity,
     PhysicalByteRange,
 };
+use worth_store_physical_format::integrity_declarations::families::PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES;
 
 pub(crate) fn observe_journals(
     root: &Path,
@@ -18,7 +19,6 @@ pub(crate) fn observe_journals(
     walk: &mut BoundedMediaWalk,
 ) -> Vec<OfflineArtifactObservation> {
     let mut observations = Vec::new();
-    let mut wal_coverage = Vec::new();
     if walk.exhausted_reason().is_some() {
         return observations;
     }
@@ -34,7 +34,6 @@ pub(crate) fn observe_journals(
                 continue;
             };
             let relative = relative_path(root, &path);
-            let mut length = 0;
             let outcome = match walk.acquire(&path, 3) {
                 Err(outcome) => outcome,
                 Ok(acquired) if acquired.is_alias() => {
@@ -48,25 +47,19 @@ pub(crate) fn observe_journals(
                             identity.0, identity.1, identity.2
                         ),
                         Some(identity.1),
-                        acquired.byte_length as u64,
+                        PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES as u64,
                     ));
                     continue;
                 }
-                Ok(acquired) => {
-                    length = acquired.byte_length;
-                    match store {
-                        Some(store) => read_physical_work(
-                            &acquired.bytes,
-                            store,
-                            identity,
-                            walk.counters_mut(),
-                        )
-                        .map_or_else(|outcome| outcome, |()| Outcome::Intact),
-                        None => {
-                            Outcome::Unknown(OfflineUnknownPhysicalReason::StoreIdentityUnavailable)
-                        }
+                Ok(acquired) => match store {
+                    Some(store) => {
+                        read_physical_work(&acquired.bytes, store, identity, walk.counters_mut())
+                            .map_or_else(|outcome| outcome, |()| Outcome::Intact)
                     }
-                }
+                    None => {
+                        Outcome::Unknown(OfflineUnknownPhysicalReason::StoreIdentityUnavailable)
+                    }
+                },
             };
             walk.record_outcome(&outcome);
             observations.push(project(
@@ -78,13 +71,14 @@ pub(crate) fn observe_journals(
                 ),
                 Some(identity.1),
                 0,
-                length as u64,
+                PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES as u64,
                 outcome,
             ));
         }
     }
     let wal = root.join("families/wal");
     if let Ok(scan) = walk.scan_directory(&wal, 2) {
+        let mut wal_coverage = super::wal_coverage::WalCoverage::new(scan.incomplete_reason);
         for path in scan.entries {
             let Some((segment, generation)) = path
                 .file_name()
@@ -97,6 +91,7 @@ pub(crate) fn observe_journals(
             let relative = relative_path(root, &path);
             match walk.acquire(&path, 3) {
                 Err(outcome) => {
+                    wal_coverage.unresolved(&outcome);
                     walk.record_outcome(&outcome);
                     observations.push(project(
                         &relative,
@@ -109,6 +104,9 @@ pub(crate) fn observe_journals(
                     ));
                 }
                 Ok(acquired) if acquired.is_alias() => {
+                    wal_coverage.unresolved(&Outcome::Unknown(
+                        OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected,
+                    ));
                     observations.push(alias(
                         root,
                         &path,
@@ -130,7 +128,9 @@ pub(crate) fn observe_journals(
                     );
                     for frame in frames {
                         if let Some((start, end)) = frame.lsn {
-                            wal_coverage.push((start, end));
+                            wal_coverage.admit(segment, generation, start, end);
+                        } else {
+                            wal_coverage.unresolved(&frame.outcome);
                         }
                         walk.record_outcome(&frame.outcome);
                         observations.push(project(
@@ -146,11 +146,8 @@ pub(crate) fn observe_journals(
                 }
             }
         }
+        observations.extend(wal_coverage.finish(walk));
     }
-    observations.extend(super::wal_coverage::observe_missing_coverage(
-        wal_coverage,
-        walk,
-    ));
     let checkpoint = root.join("families/checkpoint.current");
     if checkpoint.try_exists().unwrap_or(true) {
         observe_checkpoint(root, &checkpoint, store, None, walk, &mut observations);
