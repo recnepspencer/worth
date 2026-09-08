@@ -11,6 +11,29 @@ use worth_store_offline_integrity_observer::{
 };
 
 #[test]
+fn namespace_truncation_and_absence_preserve_declared_seventy_two_byte_scope() {
+    let fixture = clean_store("namespace-expected-scope");
+    let path = fixture.store.join("namespace/identity");
+    let bytes = std::fs::read(&path).unwrap();
+    for absent in [false, true] {
+        if absent {
+            std::fs::remove_file(&path).unwrap();
+        } else {
+            std::fs::write(&path, &bytes[..71]).unwrap();
+        }
+        let report = observe_store(&request(&fixture)).unwrap();
+        let row = report
+            .artifacts()
+            .iter()
+            .find(|row| row.family() == Family::NamespaceIdentity)
+            .unwrap();
+        assert_eq!(row.range(), Some(PhysicalByteRange::new(0, 72).unwrap()));
+        assert!(matches!(row.outcome(), Outcome::Damaged(d)
+            if d.cause() == if absent { Cause::MissingArtifact } else { Cause::Truncation }));
+    }
+}
+
+#[test]
 fn present_rejected_middle_wal_retains_unknown_coverage_and_its_own_failure() {
     for (label, mutate) in [
         ("unsupported", 0),

@@ -48,12 +48,25 @@ fn crc_valid_noncanonical_successor_metadata_is_rejected() {
                 assert_eq!(counters.successor_root_integrity_admissions(), 0);
                 assert_eq!(counters.successor_root_interpretations(), 0);
             }
-            "noncanonical-free-header" => assert!(matches!(
-                blocked.evidence().planning_denial,
-                Some(PhysicalRecoveryPlanningDenial::SuccessorCandidate(
-                    PhysicalRecoverySuccessorCandidateDenial::InvalidArtifact { artifact, .. }
+            "noncanonical-free-header" => assert!(
+                matches!(
+                    blocked.evidence().planning_denial,
+                    Some(PhysicalRecoveryPlanningDenial::SuccessorCandidate(
+                    PhysicalRecoverySuccessorCandidateDenial::RootProtocol {
+                        artifact,
+                        denial: worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial::Integrity(
+                            worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(localization)
+                        ),
+                        ..
+                    }
                 )) if artifact == expected
-            )),
+                    && localization.cause() == worth_store_physical_integrity::PhysicalDamageCause::MalformedStructure
+                    && localization.damaged_range() == worth_store_physical_integrity::PhysicalByteRange::new(36, 8).unwrap()
+                    && localization.field() == Some(worth_store_physical_integrity::PhysicalFormatField::Reserved)
+                ),
+                "unexpected successor free-space denial: {:?}",
+                blocked.evidence().planning_denial
+            ),
             _ => unreachable!(),
         }
     }

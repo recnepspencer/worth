@@ -1,6 +1,12 @@
 use std::process::{Child, ExitStatus};
 use std::time::{Duration, Instant};
 
+#[path = "child_lifecycle/output_capture.rs"]
+mod output_capture;
+#[cfg(test)]
+#[path = "child_lifecycle/tests.rs"]
+mod tests;
+
 pub(super) struct ProcessChildGuard {
     child: Option<Child>,
     terminated: bool,
@@ -30,21 +36,22 @@ impl ProcessChildGuard {
         mut self,
         timeout: Duration,
     ) -> Result<std::process::Output, String> {
+        // Drain both pipes while the child is alive. Polling for exit first
+        // deadlocks once a truthful, verbose rejection fills either OS pipe.
+        let child = self.child.as_mut().expect("guarded child is present");
+        let stdout = output_capture::start(child.stdout.take(), "stdout");
+        let stderr = output_capture::start(child.stderr.take(), "stderr");
         let deadline = Instant::now() + timeout;
-        loop {
+        let status = loop {
             let poll = self
                 .child
                 .as_mut()
                 .expect("guarded child is present")
                 .try_wait();
             match poll {
-                Ok(Some(_)) => {
+                Ok(Some(status)) => {
                     self.terminated = true;
-                    let child = self.child.take().expect("guarded child is present");
-                    let output = child
-                        .wait_with_output()
-                        .map_err(|error| format!("collect guarded Phase 8 child output: {error}"));
-                    return output;
+                    break Ok(status);
                 }
                 Ok(None) if Instant::now() < deadline => {
                     std::thread::sleep(Duration::from_millis(20));
@@ -52,20 +59,28 @@ impl ProcessChildGuard {
                 Ok(None) => {
                     let timeout_error =
                         format!("Phase 8 child exceeded bounded wait of {:?}", timeout);
-                    return match self.terminate_and_reap("terminate timed-out Phase 8 child") {
+                    break match self.terminate_and_reap("terminate timed-out Phase 8 child") {
                         Ok(_) => Err(timeout_error),
                         Err(cleanup) => Err(format!("{timeout_error}; cleanup failed: {cleanup}")),
                     };
                 }
                 Err(error) => {
                     let poll_error = format!("poll guarded Phase 8 child: {error}");
-                    return match self.terminate_and_reap("terminate unpollable Phase 8 child") {
+                    break match self.terminate_and_reap("terminate unpollable Phase 8 child") {
                         Ok(_) => Err(poll_error),
                         Err(cleanup) => Err(format!("{poll_error}; cleanup failed: {cleanup}")),
                     };
                 }
             }
-        }
+        };
+        // Always join both collectors after exit/termination, including failures.
+        let stdout = output_capture::finish(stdout);
+        let stderr = output_capture::finish(stderr);
+        Ok(std::process::Output {
+            status: status?,
+            stdout: stdout?,
+            stderr: stderr?,
+        })
     }
 
     fn terminate_and_reap(&mut self, label: &str) -> Result<ExitStatus, String> {

@@ -52,12 +52,7 @@ fn observe_identity_file(
     match walk.acquire(path, 2) {
         Ok(acquired) if acquired.is_alias() => (
             None,
-            observation(
-                relative,
-                "namespace-identity",
-                acquired.byte_length,
-                duplicate_damage(),
-            ),
+            observation(relative, "namespace-identity", duplicate_damage()),
         ),
         Ok(acquired) => match read_namespace_identity(&acquired.bytes, walk.counters_mut()) {
             Ok(facts) => (
@@ -65,29 +60,17 @@ fn observe_identity_file(
                 observation(
                     relative,
                     &hex_bytes(&facts.store_identity),
-                    acquired.byte_length,
                     OfflineIntegrityOutcome::Intact,
                 ),
             ),
             Err(outcome) => {
                 walk.record_outcome(&outcome);
-                (
-                    None,
-                    observation(
-                        relative,
-                        "namespace-identity",
-                        acquired.byte_length,
-                        outcome,
-                    ),
-                )
+                (None, observation(relative, "namespace-identity", outcome))
             }
         },
         Err(outcome) => {
             walk.record_outcome(&outcome);
-            (
-                None,
-                observation(relative, "namespace-identity", 0, outcome),
-            )
+            (None, observation(relative, "namespace-identity", outcome))
         }
     }
 }
@@ -110,12 +93,7 @@ fn missing_identity(
     };
     (
         None,
-        observation(
-            "namespace/identity".into(),
-            "namespace-identity",
-            0,
-            outcome,
-        ),
+        observation("namespace/identity".into(), "namespace-identity", outcome),
     )
 }
 
@@ -134,7 +112,6 @@ fn unknown_entries(
 fn observation(
     relative: String,
     identity: &str,
-    byte_length: usize,
     outcome: OfflineIntegrityOutcome,
 ) -> OfflineArtifactObservation {
     OfflineArtifactObservation::new(
@@ -142,7 +119,7 @@ fn observation(
         PhysicalArtifactFamily::NamespaceIdentity.into(),
         PhysicalArtifactIdentity::new(identity).expect("namespace identity label"),
         PhysicalArtifactGeneration::NotEncoded,
-        (byte_length > 0).then(|| PhysicalByteRange::new(0, byte_length as u64).unwrap()),
+        Some(PhysicalByteRange::new(0, 72).expect("fixed namespace identity declaration")),
         outcome,
     )
 }

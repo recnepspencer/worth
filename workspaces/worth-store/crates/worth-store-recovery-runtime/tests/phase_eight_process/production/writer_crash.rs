@@ -26,6 +26,8 @@ mod successor_candidate_cost;
 mod successor_candidate_denials;
 #[path = "writer_crash/successor_candidate_media.rs"]
 mod successor_candidate_media;
+#[path = "writer_crash/successor_integrity_expectation.rs"]
+mod successor_integrity_expectation;
 
 use persisted_world::{changed_paths, copy_directory, raw_media_snapshot};
 use recovery_planning::{
@@ -194,7 +196,11 @@ fn hostile_successor_candidates_block_before_recovery_effects() {
                     && localization.cause() == PhysicalDamageCause::WrongMagic
             ));
         } else {
-            assert_eq!(blocked.evidence().planning_denial, Some(expected));
+            successor_integrity_expectation::require(
+                blocked.evidence().planning_denial.clone(),
+                expected,
+                hostile,
+            );
         }
 
         let report_path = world
