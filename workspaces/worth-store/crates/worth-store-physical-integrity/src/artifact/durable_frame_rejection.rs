@@ -14,6 +14,7 @@ const ARTIFACT_FAMILY_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::ne
 const FORMAT_DECLARATION_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::new(10, 10);
 const ENCODED_LENGTH_FIELDS: DurableFrameFieldRange = DurableFrameFieldRange::new(20, 8);
 const HEADER_RESERVED_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::new(22, 2);
+const NON_DATA_PAGE_LSN_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::new(36, 8);
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DurableFrameFieldRange {
@@ -124,6 +125,13 @@ pub(crate) fn from_frame_denial(
             scope,
             PhysicalDamageCause::MalformedStructure,
             HEADER_RESERVED_FIELD,
+            PhysicalFormatField::Reserved,
+            PhysicalBlastRadius::CompleteArtifact,
+        ),
+        DurableFrameDenial::NonDataPageLsnNonZero => field_damage(
+            scope,
+            PhysicalDamageCause::MalformedStructure,
+            NON_DATA_PAGE_LSN_FIELD,
             PhysicalFormatField::Reserved,
             PhysicalBlastRadius::CompleteArtifact,
         ),

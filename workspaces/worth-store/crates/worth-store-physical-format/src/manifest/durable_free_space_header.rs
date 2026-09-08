@@ -131,7 +131,8 @@ impl DurableFreeSpaceManifestHeader {
         let capacity = u16::from_le_bytes(frame.payload[16..18].try_into().unwrap());
         let segment_page_capacity = u32::from_le_bytes(frame.payload[18..22].try_into().unwrap());
         let root = match frame.payload[64] {
-            0 => None,
+            0 if frame.payload[72..128].iter().all(|byte| *byte == 0) => None,
+            0 => return Err(FreeSpaceRoutingDenial::Malformed),
             1 => Some(
                 decode_reference(&frame.payload[72..128])
                     .ok_or(FreeSpaceRoutingDenial::InvalidReference)?,

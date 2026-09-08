@@ -24,6 +24,7 @@ impl HeaderField {
     pub(super) const ROOT_REFERENCE: DurableFrameFieldRange = DurableFrameFieldRange::new(112, 64);
     const RESERVED_PREFIX: DurableFrameFieldRange = DurableFrameFieldRange::new(70, 2);
     const RESERVED_ROOT: DurableFrameFieldRange = DurableFrameFieldRange::new(113, 7);
+    const ABSENT_ROOT_REFERENCE: DurableFrameFieldRange = DurableFrameFieldRange::new(120, 56);
 }
 
 pub(super) fn free_space_header_denial(
@@ -81,8 +82,12 @@ fn header_reserved_damage(
     scope: PhysicalArtifactScope,
     bytes: &[u8],
 ) -> Option<PhysicalIntegrityRejection> {
+    let absent_root = (HeaderField::ROOT_PRESENCE.bytes(bytes)[0] == 0
+        && read_u64(bytes, HeaderField::ENTRY_COUNT) == 0)
+        .then_some(HeaderField::ABSENT_ROOT_REFERENCE);
     [HeaderField::RESERVED_PREFIX, HeaderField::RESERVED_ROOT]
         .into_iter()
+        .chain(absent_root)
         .find(|range| range.bytes(bytes).iter().any(|byte| *byte != 0))
         .map(|range| {
             field_damage(

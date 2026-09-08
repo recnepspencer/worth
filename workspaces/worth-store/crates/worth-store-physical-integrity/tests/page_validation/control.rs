@@ -6,8 +6,27 @@ use worth_store_physical_integrity::{
 };
 
 use super::support::{
-    assert_damage, clean_page, format, page, page_scope, store, PAGE_OFFSET, PAGE_SIZES,
+    assert_damage, clean_page, format, page, page_scope, reseal, store, PAGE_OFFSET, PAGE_SIZES,
 };
+
+#[test]
+fn nonzero_data_page_lsn_remains_intact_and_is_carried_into_the_validated_view() {
+    for page_size in PAGE_SIZES {
+        let identity = page(31, 47, 11);
+        let mut bytes = clean_page(page_size, identity);
+        bytes[36..44].copy_from_slice(&0x0807_0605_0403_0201_u64.to_le_bytes());
+        reseal(&mut bytes);
+        let scope = page_scope(store(7), page_size, identity);
+        let (InlinePageIntegrityValidation::Intact(validated), counters) =
+            validate_inline_page(UntrustedPhysicalArtifact::from_bounded_bytes(&bytes), scope)
+        else {
+            panic!("a legitimate data-page LSN was treated as metadata reserved bytes");
+        };
+        assert_eq!(validated.page_lsn().get(), 0x0807_0605_0403_0201);
+        assert_eq!(counters.intact_frames(), 1);
+        assert_eq!(counters.rejected_frames(), 0);
+    }
+}
 
 #[test]
 fn all_declared_page_sizes_seal_geometry_scope_and_exact_incarnation() {

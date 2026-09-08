@@ -1,5 +1,7 @@
 pub(crate) mod crc32c;
 mod durable_frame;
+#[cfg(test)]
+mod durable_frame_canonicality;
 mod framing;
 
 pub use durable_frame::{
