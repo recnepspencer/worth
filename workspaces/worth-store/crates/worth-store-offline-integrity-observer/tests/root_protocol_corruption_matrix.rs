@@ -169,6 +169,13 @@ fn target_observation(
 
 fn assert_localization(artifact: &OfflineArtifactObservation, target: Target, operator: Operator) {
     let artifact_bytes = if target == Target::Root { 368 } else { 107 };
+    assert_eq!(
+        artifact
+            .range()
+            .map(|range| (range.offset(), range.length())),
+        Some((0, artifact_bytes)),
+        "canonical scope must not shrink with acquired bytes: {target:?} {operator:?}"
+    );
     match operator {
         Operator::D => assert_eq!(artifact.outcome(), &OfflineIntegrityOutcome::Intact),
         Operator::USchema => assert_unsupported(

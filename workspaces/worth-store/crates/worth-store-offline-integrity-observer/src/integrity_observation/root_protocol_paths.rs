@@ -45,7 +45,6 @@ pub(crate) fn add_missing_selector(
         relative: format!("{RECORDS_RELATIVE}/{name}"),
         role,
         canonical: true,
-        byte_length: 0,
         facts: None,
         observed_identity: None,
         outcome,

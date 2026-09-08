@@ -4,7 +4,7 @@ use worth_foundational::{
     PhysicalArtifactFamily, PhysicalArtifactGeneration, PhysicalArtifactIdentity, PhysicalByteRange,
 };
 
-use super::families::SelectorRole;
+use super::families::{root_manifest::ROOT_MANIFEST_BYTES, SelectorRole, ROOT_SELECTOR_BYTES};
 use super::root_protocol_walk::{AddressedRootExpectation, RootEntry, SelectorEntry};
 use super::{
     OfflineArtifactDuplicateEvidence, OfflineArtifactObservation,
@@ -34,7 +34,7 @@ pub(crate) fn selector_observations(
                     family.into(),
                     identity,
                     PhysicalArtifactGeneration::NotEncoded,
-                    entry.byte_length,
+                    ROOT_SELECTOR_BYTES,
                     entry.outcome,
                 ),
                 entry.physical_alias_of,
@@ -61,7 +61,6 @@ pub(crate) fn root_observations(
                     entry.relative,
                     entry.expected_generation,
                     entry.facts.as_ref().map(|facts| facts.generation),
-                    entry.byte_length,
                     entry.outcome,
                 ),
                 entry.physical_alias_of,
@@ -77,7 +76,6 @@ pub(crate) fn root_observations(
             format!("{ROOTS_RELATIVE}/root-{generation:016x}.manifest"),
             *generation,
             None,
-            0,
             if let Some(reason) = incomplete {
                 OfflineIntegrityOutcome::Indeterminate(reason)
             } else {
@@ -115,7 +113,6 @@ fn root_observation(
     relative: String,
     expected_generation: u64,
     observed_generation: Option<u64>,
-    byte_length: usize,
     outcome: OfflineIntegrityOutcome,
 ) -> OfflineArtifactObservation {
     artifact_observation(
@@ -127,7 +124,7 @@ fn root_observation(
         ),
         PhysicalArtifactGeneration::encoded(expected_generation)
             .unwrap_or(PhysicalArtifactGeneration::NotEncoded),
-        byte_length,
+        ROOT_MANIFEST_BYTES,
         outcome,
     )
 }

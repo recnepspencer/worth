@@ -25,4 +25,4 @@ pub(crate) use current_selector::read_current_selector;
 pub(crate) use namespace_identity::read_namespace_identity;
 pub(crate) use previous_selector::read_previous_selector;
 pub(crate) use root_manifest::{read_root_manifest, OfflineRootManifestFacts};
-pub(crate) use selector::{OfflineSelectorFacts, SelectorRole};
+pub(crate) use selector::{OfflineSelectorFacts, SelectorRole, ROOT_SELECTOR_BYTES};

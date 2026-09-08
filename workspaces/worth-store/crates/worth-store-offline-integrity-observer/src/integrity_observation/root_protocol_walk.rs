@@ -29,7 +29,6 @@ pub(crate) struct SelectorEntry {
     pub(crate) relative: String,
     pub(crate) role: SelectorRole,
     pub(crate) canonical: bool,
-    pub(crate) byte_length: usize,
     pub(crate) facts: Option<OfflineSelectorFacts>,
     pub(crate) observed_identity: Option<u64>,
     pub(crate) outcome: OfflineIntegrityOutcome,
@@ -41,7 +40,6 @@ pub(crate) struct RootEntry {
     pub(crate) relative: String,
     pub(crate) expected_generation: u64,
     pub(crate) facts: Option<OfflineRootManifestFacts>,
-    pub(crate) byte_length: usize,
     pub(crate) outcome: OfflineIntegrityOutcome,
     pub(crate) exact_scope_established: bool,
     pub(crate) physical_alias_of: Option<String>,
@@ -164,7 +162,6 @@ fn read_selector_entry(
 ) -> SelectorEntry {
     let relative = relative_path(store_root, path);
     let acquired = walk.acquire(path, 3);
-    let byte_length = acquired.as_ref().map_or(0, |value| value.byte_length);
     let physical_alias_of = acquired
         .as_ref()
         .ok()
@@ -194,7 +191,6 @@ fn read_selector_entry(
         relative,
         role,
         canonical,
-        byte_length,
         facts,
         observed_identity,
         outcome,
@@ -259,7 +255,6 @@ fn read_root_entry(
 ) -> RootEntry {
     let relative = relative_path(store_root, path);
     let acquired = walk.acquire(path, 4);
-    let byte_length = acquired.as_ref().map_or(0, |value| value.byte_length);
     let physical_alias_of = acquired
         .as_ref()
         .ok()
@@ -307,7 +302,6 @@ fn read_root_entry(
         relative,
         expected_generation,
         facts,
-        byte_length,
         outcome,
         exact_scope_established,
         physical_alias_of,
