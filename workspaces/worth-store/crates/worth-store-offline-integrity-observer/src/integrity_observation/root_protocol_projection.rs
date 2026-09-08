@@ -57,12 +57,7 @@ pub(crate) fn root_observations(
         .into_iter()
         .map(|entry| {
             add_duplicate_evidence(
-                root_observation(
-                    entry.relative,
-                    entry.expected_generation,
-                    entry.facts.as_ref().map(|facts| facts.generation),
-                    entry.outcome,
-                ),
+                root_observation(entry.relative, entry.expected_generation, entry.outcome),
                 entry.physical_alias_of,
                 entry.semantic_duplicate,
             )
@@ -75,7 +70,6 @@ pub(crate) fn root_observations(
         observations.push(root_observation(
             format!("{ROOTS_RELATIVE}/root-{generation:016x}.manifest"),
             *generation,
-            None,
             if let Some(reason) = incomplete {
                 OfflineIntegrityOutcome::Indeterminate(reason)
             } else {
@@ -112,16 +106,14 @@ fn add_duplicate_evidence(
 fn root_observation(
     relative: String,
     expected_generation: u64,
-    observed_generation: Option<u64>,
     outcome: OfflineIntegrityOutcome,
 ) -> OfflineArtifactObservation {
     artifact_observation(
         relative,
         PhysicalArtifactFamily::RootManifest.into(),
-        format!(
-            "root:{:016x}",
-            observed_generation.unwrap_or(expected_generation)
-        ),
+        // Identity names the inspected, parent-addressed scope even when the
+        // decoded payload claims a different generation.
+        format!("root:{expected_generation:016x}"),
         PhysicalArtifactGeneration::encoded(expected_generation)
             .unwrap_or(PhysicalArtifactGeneration::NotEncoded),
         ROOT_MANIFEST_BYTES,

@@ -168,6 +168,13 @@ fn target_observation(
 }
 
 fn assert_localization(artifact: &OfflineArtifactObservation, target: Target, operator: Operator) {
+    if target == Target::Root {
+        assert_eq!(
+            artifact.identity().as_str(),
+            "root:0000000000000001",
+            "a substituted payload must not replace the parent-addressed artifact identity"
+        );
+    }
     let artifact_bytes = if target == Target::Root { 368 } else { 107 };
     assert_eq!(
         artifact
