@@ -1,17 +1,21 @@
 #[cfg(test)]
 mod artifact_courtroom;
 #[cfg(test)]
-mod journal_process_courtroom;
-#[cfg(test)]
 mod artifact_edit;
 #[cfg(test)]
 mod artifact_editor;
 #[cfg(test)]
 mod artifact_expectation;
 #[cfg(test)]
+mod artifact_family_processes;
+#[cfg(test)]
 mod artifact_inventory;
 #[cfg(test)]
+mod artifact_presence;
+#[cfg(test)]
 mod artifact_process;
+#[cfg(test)]
+mod artifact_recovery;
 #[cfg(test)]
 mod clean_artifact_manifest;
 #[cfg(test)]
@@ -26,11 +30,13 @@ mod external_report_paths_tests;
 #[cfg(test)]
 mod frame_checksum;
 #[cfg(test)]
+mod journal_process_courtroom;
+#[cfg(test)]
+mod namespace_courtroom;
+#[cfg(test)]
 mod parent_oracle;
 #[cfg(test)]
 mod physical_work_courtroom;
-#[cfg(test)]
-mod namespace_courtroom;
 #[cfg(test)]
 mod producer_fixture;
 mod root_artifact_role;
@@ -43,6 +49,12 @@ mod wire;
 mod offline_process;
 #[cfg(test)]
 mod oracle_expectation_assertions;
+#[cfg(test)]
+mod ordinary_allocation_observation;
+#[cfg(test)]
+mod ordinary_open_observation;
+#[cfg(test)]
+mod ordinary_record_observation;
 #[cfg(test)]
 mod process_courtroom;
 #[cfg(test)]
@@ -73,6 +85,8 @@ mod process_subject;
 mod production_open;
 #[cfg(test)]
 mod production_profile;
+#[cfg(test)]
+mod production_record;
 #[cfg(test)]
 mod production_store;
 #[cfg(test)]

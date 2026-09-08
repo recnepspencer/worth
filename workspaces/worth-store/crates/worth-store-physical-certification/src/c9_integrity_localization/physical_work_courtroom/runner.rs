@@ -12,8 +12,8 @@ use super::corruption::Operator;
 use super::process_protocol::{execute, read_report, spawn, Request, Role};
 
 pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
-    let world = tempfile::tempdir().unwrap().keep();
-    println!("C9 pending-obligation retained world={}", world.display());
+    let temporary = tempfile::tempdir().unwrap();
+    let world = temporary.path();
     let reports = world.join("reports");
     std::fs::create_dir(&reports).unwrap();
     let baseline = world.join("closed-baseline");
@@ -168,7 +168,6 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
             run: fresh_identity(&format!("{}-runtime", operator.label()), &world),
         });
         assert_eq!(runtime["store"], hex(artifact.store));
-        let lease_after = std::fs::read(&lease_path).unwrap();
         // Ordinary Store admission updates this one preexisting OS lease
         // payload. It is explicitly not a C9 integrity family. Once that child
         // has exited, restore only this exact payload before the full-tree
@@ -178,13 +177,6 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
             .require_unchanged(&root)
             .expect("Store PW diagnosis changes only owner-lease metadata");
         super::expectations::require(&artifact, operator, &runtime, &offline.report);
-        write_parent_audit(
-            &reports.join(format!("{}.parent-audit.json", operator.label())),
-            &lease_before,
-            &lease_after,
-            &artifact,
-            operator,
-        );
         super::corruption::restore(&root, &artifact, operator);
         pending_manifest.require_unchanged(&root).unwrap();
         println!("C9 physical-work {} passed", operator.label());
@@ -204,35 +196,6 @@ fn restore_lease_metadata(path: &Path, bytes: &[u8]) {
         .unwrap();
     file.write_all(bytes).unwrap();
     file.sync_all().unwrap();
-}
-
-fn write_parent_audit(
-    path: &Path,
-    before: &[u8],
-    after: &[u8],
-    artifact: &PendingArtifact,
-    operator: Operator,
-) {
-    use sha2::{Digest, Sha256};
-    let output = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .unwrap();
-    serde_json::to_writer_pretty(
-        output,
-        &serde_json::json!({
-            "operator": operator.label(),
-            "producer_artifact": artifact,
-            "ordinary_admission_metadata_path": "namespace/mutation.lock",
-            "ordinary_admission_metadata_changed": before != after,
-            "lease_before_sha256": hex(Sha256::digest(before)),
-            "lease_after_sha256": hex(Sha256::digest(after)),
-            "all_other_files_and_namespace_entries_unchanged": true,
-            "offline_whole_store_byte_exact": true,
-        }),
-    )
-    .unwrap();
 }
 
 struct PendingProducerProcess {

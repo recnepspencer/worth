@@ -10,23 +10,7 @@ pub(super) fn open(
     root: &Path,
     profile: ProductionWorldProfile,
 ) -> Result<ServingPhysicalRuntime, String> {
-    let runtime = PhysicalStore::admit(
-        PhysicalRuntimeAdmission::new(root)
-            .map_err(|error| format!("open runtime declaration: {error:?}"))?,
-    )
-    .map_err(|error| format!("open runtime: {error:?}"))?;
-    let media = super::production_store::admit_media(runtime)?;
-    let durability = super::production_store::admit_durability(&media)?;
-    let format = AdmittedPhysicalRecordFormat::admit(
-        PhysicalRecordFormatDeclaration::builder()
-            .page_size(profile.page_size())
-            .admit()
-            .unwrap(),
-    );
-    let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
-    let request = PhysicalRecordOpen::new(format, access, durability)
-        .with_residency_policy(profile.residency(format));
-    match media.open_record_store(request).into_raw() {
+    match outcome(root, profile)?.into_raw() {
         TransitionOutcome::Success(serving) => Ok(serving),
         TransitionOutcome::Denied(denial) => Err(format!(
             "ordinary clean Store reopen denied: {:?}",
@@ -46,4 +30,27 @@ pub(super) fn open(
         )),
         TransitionOutcome::Deferred(never) => match never {},
     }
+}
+
+pub(super) fn outcome(
+    root: &Path,
+    profile: ProductionWorldProfile,
+) -> Result<worth_store::physical_runtime::RecordStoreOpenOutcome, String> {
+    let runtime = PhysicalStore::admit(
+        PhysicalRuntimeAdmission::new(root)
+            .map_err(|error| format!("open runtime declaration: {error:?}"))?,
+    )
+    .map_err(|error| format!("open runtime: {error:?}"))?;
+    let media = super::production_store::admit_media(runtime)?;
+    let durability = super::production_store::admit_durability(&media)?;
+    let format = AdmittedPhysicalRecordFormat::admit(
+        PhysicalRecordFormatDeclaration::builder()
+            .page_size(profile.page_size())
+            .admit()
+            .unwrap(),
+    );
+    let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let request = PhysicalRecordOpen::new(format, access, durability)
+        .with_residency_policy(profile.residency(format));
+    Ok(media.open_record_store(request))
 }

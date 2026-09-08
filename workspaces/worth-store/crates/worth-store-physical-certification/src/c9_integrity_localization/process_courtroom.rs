@@ -259,6 +259,7 @@ pub(super) fn run(observer_executable: &Path) {
         &stores,
         &reports,
         super::production_profile::ProductionWorldProfile::Primary16KiB,
+        &manifest,
     );
     run_page_profiles(observer_executable, &parent_executable, &stores, &reports);
     super::physical_work_courtroom::run(observer_executable);
@@ -329,6 +330,6 @@ fn run_page_profiles(observer: &Path, executable: &Path, stores: &Path, reports:
             panic!("page world recovery role");
         };
         assert_recovery_expectation(observation, manifest, ProcessRootCase::CleanControl);
-        super::artifact_courtroom::run(observer, &baseline, stores, reports, profile);
+        super::artifact_courtroom::run(observer, &baseline, stores, reports, profile, manifest);
     }
 }

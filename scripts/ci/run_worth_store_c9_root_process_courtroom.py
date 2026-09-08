@@ -8,6 +8,8 @@ import os
 import pathlib
 import subprocess
 import sys
+import shutil
+import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -107,7 +109,15 @@ def main() -> int:
     required = "c9_integrity_localization::c9_root_protocol_process_courtroom: test"
     if required not in listing.stdout.splitlines():
         raise SystemExit("Cargo-built certification binary omits the required courtroom")
-    return run_courtroom(observer, certification)
+    # Running an executable locks its link output on Windows. Isolate the
+    # already Cargo-built binaries so a focused edit/rebuild can run concurrently.
+    with tempfile.TemporaryDirectory(prefix="worth-c9-courtroom-") as directory:
+        binaries = pathlib.Path(directory)
+        observer_copy = binaries / observer.name
+        certification_copy = binaries / certification.name
+        shutil.copy2(observer, observer_copy)
+        shutil.copy2(certification, certification_copy)
+        return run_courtroom(observer_copy, certification_copy)
 
 
 if __name__ == "__main__":

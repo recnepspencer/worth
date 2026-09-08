@@ -13,8 +13,10 @@ fn independent_observer_traverses_current_family_graph() {
     let world = tempfile::tempdir().unwrap();
     let root = world.path().join("store");
     super::production_store::produce_closed_store(
-        &root, super::production_profile::ProductionWorldProfile::Primary16KiB,
-    ).unwrap();
+        &root,
+        super::production_profile::ProductionWorldProfile::Primary16KiB,
+    )
+    .unwrap();
     let original = snapshot(&root);
     let report = observe(Path::new(&observer), &root);
     let artifacts = report["artifacts"].as_array().unwrap();
@@ -47,9 +49,21 @@ fn independent_observer_traverses_current_family_graph() {
             "missing production family {family}: {report}"
         );
         assert!(
-            rows.iter().all(|row| row["outcome"]["posture"] == "intact"),
+            rows.iter().any(|row| row["outcome"]["posture"] == "intact"),
             "{family}: {rows:?}"
         );
+        for row in rows {
+            let outcome = &row["outcome"];
+            assert!(
+                outcome["posture"] == "intact"
+                    || (outcome["posture"] == "unknown"
+                        && matches!(
+                            outcome["reason"].as_str(),
+                            Some("root_not_addressed" | "parent_scope_unavailable")
+                        )),
+                "unexpected production outcome: {row}"
+            );
+        }
     }
     assert_eq!(report["completeness"], "complete");
     assert_eq!(snapshot(&root), original);
@@ -66,7 +80,7 @@ fn independent_observer_traverses_current_family_graph() {
     ] {
         let expected = artifacts
             .iter()
-            .find(|row| row["family"] == family)
+            .find(|row| row["family"] == family && row["outcome"]["posture"] == "intact")
             .unwrap();
         let relative = expected["path"].as_str().unwrap();
         let offset = expected["range"]["offset"].as_u64().unwrap();
@@ -82,7 +96,11 @@ fn independent_observer_traverses_current_family_graph() {
             .as_array()
             .unwrap()
             .iter()
-            .find(|row| row["path"] == relative && row["family"] == family)
+            .find(|row| {
+                row["path"] == relative
+                    && row["family"] == family
+                    && row["range"]["offset"] == offset
+            })
             .unwrap();
         assert_eq!(
             row["outcome"],

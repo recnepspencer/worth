@@ -7,12 +7,13 @@ use worth_store_physical_format::RecordArtifactFile;
 
 use super::RootArtifactRole;
 
-mod tree_observation;
 mod snapshot;
+mod tree_observation;
 use tree_observation::observe_tree;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct ClosedStoreProcessManifest {
+    pub(super) records: Vec<super::production_record::ProducedRecord>,
     store_identity: [u8; 16],
     current_selector: ProcessRootArtifact,
     current_root: ProcessRootArtifact,
@@ -123,6 +124,7 @@ impl ClosedStoreProcessManifest {
             files,
         )?;
         Ok(Self {
+            records: Vec::new(),
             store_identity,
             current_selector,
             current_root,
@@ -189,7 +191,6 @@ impl ClosedStoreProcessManifest {
         self.files.keys().map(PathBuf::as_path)
     }
 }
-
 
 impl ProcessRootArtifact {
     pub(crate) const fn role(&self) -> RootArtifactRole {

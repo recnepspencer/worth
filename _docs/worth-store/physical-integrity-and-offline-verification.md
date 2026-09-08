@@ -14,6 +14,13 @@ that binding; queries do not rehash an already-admitted frame. Recovery uses
 the same integrity front door but retains its separate C.8 precedence, redo,
 publication, and recovered-runtime handoff rules.
 
+Ordinary record-store open follows the bootstrap catalog to the current and
+retained previous root manifests, then admits current free-space metadata.
+It does not select between the C.8 current/previous selector files. Record
+reads and mutation planning subsequently admit the routing, membership, page,
+extent, and allocation artifacts they actually consume. Scrub observations
+cannot substitute for any of these owner admissions.
+
 The current families include bootstrap catalogs, current/previous selectors,
 root manifests, routing and membership nodes, free-space header/nodes, pages,
 extent manifests/chunks, WAL records, physical-work obligations, and checkpoint
@@ -29,6 +36,13 @@ These outcomes remain distinct from the owner's authoritative-versus-derived
 disposition: a derived artifact may be rebuildable, but integrity cannot decide
 to rebuild it. A checksum mismatch cannot identify which covered byte was
 originally wrong, so its localization may cover the whole canonical frame.
+
+An observation's identity names its expected inspected scope even when the
+bytes claim another generation. Runtime and offline localization can differ
+legitimately: for example, the offline page walk may reject a short segment's
+parent-declared length before inspecting an embedded page, while runtime
+acquisition reports that page's incomplete range. Compare both reports;
+agreement is not a prerequisite for an honest diagnosis.
 
 ## Bounded online scrub
 

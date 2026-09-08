@@ -42,8 +42,12 @@ impl ProductionWorldProfile {
         }
     }
 
-    pub(crate) const fn inline_records_per_batch(self) -> usize {
+    pub(crate) const fn inline_records_per_batch(self, batch: usize) -> usize {
         match self {
+            // Leave the final segment partially occupied for the subsequent
+            // poisoned allocation journey, without adding unrelated reuse
+            // transitions to every earlier checkpoint workload batch.
+            Self::Primary16KiB if batch + 1 == self.batches() => 65,
             Self::Primary16KiB => 64,
             Self::Pages32KiB | Self::Pages64KiB => 2,
         }

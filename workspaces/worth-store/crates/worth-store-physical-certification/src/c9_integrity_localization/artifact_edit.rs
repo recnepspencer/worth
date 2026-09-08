@@ -5,20 +5,24 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-mod journal;
+mod common_mutation;
 mod common_scope;
 mod common_target;
 mod enclosures;
-mod common_mutation;
+mod journal;
 
+pub(super) use common_mutation::{audit_enclosures, enclosing_paths};
 pub(super) use common_target::common_inspection_target;
-pub(super) use common_mutation::{audit_enclosures,enclosing_paths};
 
 pub(super) fn inspection_target(
-    target: &ArtifactGranule, operator: ArtifactOperator,
+    target: &ArtifactGranule,
+    operator: ArtifactOperator,
 ) -> worth_store::physical_runtime::PhysicalIntegrityScrubTarget {
-    if target.grammar == FrameGrammar::Common { target.scrub_target() }
-    else { journal::inspection_target(target, operator) }
+    if target.grammar == FrameGrammar::Common {
+        target.scrub_target()
+    } else {
+        journal::inspection_target(target, operator)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -55,20 +59,28 @@ impl ArtifactOperator {
 
 pub(super) fn operators(granule: &ArtifactGranule) -> Vec<ArtifactOperator> {
     use ArtifactOperator::*;
-    if granule.grammar != FrameGrammar::Common { return journal::operators(granule); }
-        let mut operators = vec![
-            CoveredByte,
-            Checksum,
-            Length,
-            ScopeSubstitution,
-            Truncate,
-            EnvelopeVersion,
-            RecordVersion,
-        ];
-        if !matches!(granule.family,"bootstrap_catalog"|"inline_page"|"extent_chunk") {
-            operators.push(Pointer);
-        }
-        operators
+    if granule.grammar != FrameGrammar::Common {
+        return journal::operators(granule);
+    }
+    let mut operators = vec![
+        CoveredByte,
+        Checksum,
+        Length,
+        ScopeSubstitution,
+        Truncate,
+        EnvelopeVersion,
+        RecordVersion,
+    ];
+    if !matches!(
+        granule.family,
+        "bootstrap_catalog" | "inline_page" | "extent_chunk"
+    ) {
+        operators.push(Pointer);
+    }
+    if !matches!(granule.family, "inline_page" | "extent_chunk") {
+        operators.extend([Remove, Duplicate]);
+    }
+    operators
 }
 
 pub(super) fn apply(
@@ -79,14 +91,25 @@ pub(super) fn apply(
     operator: ArtifactOperator,
 ) {
     let granule = &inventory.granules[index];
+    if matches!(
+        operator,
+        ArtifactOperator::Remove | ArtifactOperator::Duplicate
+    ) {
+        return super::artifact_presence::apply(root, baseline, granule, operator);
+    }
     if granule.grammar != FrameGrammar::Common {
         return journal::apply(root, baseline, inventory, index, operator);
     }
-    common_mutation::apply(root,baseline,inventory,index,operator);
+    common_mutation::apply(root, baseline, inventory, index, operator);
 }
 
-pub(super) fn common_render(baseline:&Path,inventory:&ArtifactInventory,index:usize,operator:ArtifactOperator)->Vec<u8> {
-    let granule=&inventory.granules[index];
+pub(super) fn common_render(
+    baseline: &Path,
+    inventory: &ArtifactInventory,
+    index: usize,
+    operator: ArtifactOperator,
+) -> Vec<u8> {
+    let granule = &inventory.granules[index];
     let mut bytes = std::fs::read(baseline.join(&granule.path)).unwrap();
     let start = granule.offset();
     let end = start + granule.length();
@@ -110,10 +133,14 @@ pub(super) fn common_render(baseline:&Path,inventory:&ArtifactInventory,index:us
         }
         ArtifactOperator::Truncate => bytes.truncate(start + granule.length() / 2),
         ArtifactOperator::ScopeSubstitution => {
-            common_scope::substitute(&mut bytes,baseline,inventory,index);
+            common_scope::substitute(&mut bytes, baseline, inventory, index);
         }
-        ArtifactOperator::Pointer => common_scope::corrupt_pointer(&mut bytes,granule),
-        ArtifactOperator::Remove | ArtifactOperator::Duplicate | ArtifactOperator::SelectiveAggregate => unreachable!("presence operators have a separate namespace contract"),
+        ArtifactOperator::Pointer => common_scope::corrupt_pointer(&mut bytes, granule),
+        ArtifactOperator::Remove
+        | ArtifactOperator::Duplicate
+        | ArtifactOperator::SelectiveAggregate => {
+            unreachable!("presence operators have a separate namespace contract")
+        }
     }
     bytes
 }
@@ -125,7 +152,9 @@ pub(super) fn audit(
     operator: ArtifactOperator,
 ) {
     use ArtifactOperator::*;
-    if granule.grammar != FrameGrammar::Common { return journal::audit(before, after, granule, operator); }
+    if granule.grammar != FrameGrammar::Common {
+        return journal::audit(before, after, granule, operator);
+    }
     let start = granule.offset();
     let end = start + granule.length();
     if operator == Truncate {
@@ -149,7 +178,11 @@ pub(super) fn audit(
         Length => (24..28).chain(44..48).collect(),
         EnvelopeVersion => std::iter::once(9).chain(44..48).collect(),
         RecordVersion => (10..12).chain(44..48).collect(),
-        ScopeSubstitution => common_scope::substitution_fields(granule).into_iter().flatten().chain(44..48).collect(),
+        ScopeSubstitution => common_scope::substitution_fields(granule)
+            .into_iter()
+            .flatten()
+            .chain(44..48)
+            .collect(),
         Pointer => common_scope::pointer_field(granule).chain(44..48).collect(),
         Truncate => unreachable!(),
         Remove | Duplicate | SelectiveAggregate => unreachable!(),
@@ -171,10 +204,19 @@ pub(super) fn audit(
         RecordVersion => assert_eq!(&after[start + 10..start + 12], &2_u16.to_le_bytes()),
         ScopeSubstitution => {
             for range in common_scope::substitution_fields(granule) {
-                assert_ne!(&before[start+range.start..start+range.end],&after[start+range.start..start+range.end]);
+                assert_ne!(
+                    &before[start + range.start..start + range.end],
+                    &after[start + range.start..start + range.end]
+                );
             }
         }
-        Pointer => {let range=common_scope::pointer_field(granule);assert_ne!(&before[start+range.start..start+range.end],&after[start+range.start..start+range.end]);}
+        Pointer => {
+            let range = common_scope::pointer_field(granule);
+            assert_ne!(
+                &before[start + range.start..start + range.end],
+                &after[start + range.start..start + range.end]
+            );
+        }
         Truncate => unreachable!(),
         Remove | Duplicate | SelectiveAggregate => unreachable!(),
     }

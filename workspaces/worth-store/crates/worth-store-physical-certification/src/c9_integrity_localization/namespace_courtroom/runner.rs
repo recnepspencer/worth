@@ -9,8 +9,8 @@ use sha2::{Digest, Sha256};
 use std::path::Path;
 
 pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
-    let world = tempfile::tempdir().unwrap().keep();
-    println!("C9 namespace retained world={}", world.display());
+    let temporary = tempfile::tempdir().unwrap();
+    let world = temporary.path();
     let root = world.join("store");
     let reports = world.join("reports");
     std::fs::create_dir(&reports).unwrap();
@@ -98,7 +98,6 @@ pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
         let lease = root.join("namespace/mutation.lock");
         let lease_before = std::fs::read(&lease).unwrap();
         let runtime = execute(request_for("runtime", Role::C4Observer));
-        let lease_after = std::fs::read(&lease).unwrap();
         corruption::write(&lease, &lease_before);
         before
             .require_unchanged(&root)
@@ -109,19 +108,6 @@ pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
             &runtime,
             &offline.report,
         );
-        let audit = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(reports.join(format!("{}.parent-audit.json", operator.label())))
-            .unwrap();
-        serde_json::to_writer_pretty(audit, &serde_json::json!({
-            "operator": operator.label(), "producer_identity_sha256": hex(Sha256::digest(&pristine)),
-            "ordinary_admission_metadata_path": "namespace/mutation.lock",
-            "lease_before_sha256": hex(Sha256::digest(&lease_before)),
-            "lease_after_sha256": hex(Sha256::digest(&lease_after)),
-            "all_other_bytes_and_namespace_entries_unchanged": true,
-            "offline_whole_store_byte_exact": true,
-        })).unwrap();
         corruption::write(&root.join(IDENTITY), &pristine);
         manifest.require_unchanged(&root).unwrap();
         pristine_tree.require_unchanged(&root).unwrap();

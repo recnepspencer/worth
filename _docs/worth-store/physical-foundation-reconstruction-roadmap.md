@@ -1016,7 +1016,7 @@ permission to publish C.6 internals early.
 | --- | --- | --- | --- |
 | [C.7 durability ordering](#c7-wal-checkpoint-root-publication-and-acknowledgment-join) | Store-composed dirty/writeback typestate and `PhysicalWritebackSettlement` identity, effect fate, recovery disposition, and Signal settlement | pool construction, frame-table or clean-transition control, or a durability decision inferred from dirty state; C.7 supplies WAL and durability policy | `record_serving/residency/dirty/`; the Store-owned `FrameWritebackPort` remains private and the successor typestate is not ordinarily exported before C.7 installs its adapter |
 | [C.8 fresh-process recovery](#c8-fresh-process-recovery-and-reopen) | `RecoveryPhysicalAllocation`, runtime/generation binding, and public physical effect-fate and recovery-disposition evidence | live pool contents, frame-table constructors, eviction control, or a hidden unlimited reconstruction mode | `worth-store-recovery-physics::RecoveryMemoryAllocation` consumes the runtime-borrowed Recovery allocation; reconstruction must enter through a future Recovery-owned port |
-| [C.9 physical integrity](#c9-physical-integrity-corruption-localization-and-offline-truth) | borrowed `PhysicalRecordChunkView`, `PhysicalRecordChunkBasis`, and Verification/Scrub-scoped allocation | pool, pin, eviction, frame-loading, or integrity authority inferred from unverified bytes | `worth-store-physical-integrity::ProtectedPhysicalByteView::from_store_chunk` copies only the basis and borrow before integrity admission |
+| [C.9 physical integrity](#c9-physical-integrity-corruption-localization-and-offline-truth) | frame-owned exact-source admission and Verification/Scrub-scoped allocation | pool, pin, eviction, frame-loading, or integrity authority inferred from unverified bytes | Store's private resident admission binds validated results to the C.6 frame lifetime; scrub emits descriptive observations only |
 | [C.10 stable reads and scheduled I/O](#c10-stable-reads-scheduled-io-and-maintenance-interference) | lease-bound chunks, `PhysicalRecordPressureEvidence`, Maintenance-scoped allocation, and Store-composed scheduler-ready physical work | semantic MVCC, Query authority, direct scheduler ownership, or a second scheduler | `worth-store-physical-isolation::PhysicalByteGuard::from_record_chunk` owns the current lease adapter; future scheduling enters through the Store composition boundary |
 | [C.11 layout, indexes, and native blobs](#c11-layout-index-and-native-blob-adoption) | `BlobPhysicalAllocation` and bounded `RecordReadSession` chunk streaming with Store/runtime/generation evidence | whole-blob materialization, pool control, or semantic liveness inferred from physical residency | `worth-store-blob-chunks::streaming` consumes exact Blob allocations and bounded source/observation streams; whole-object vector substitutes remain explicit denials |
 
@@ -1260,6 +1260,11 @@ authority.
 
 ## C.9: Physical Integrity, Corruption Localization, And Offline Truth
 
+The governing [C.9 specification](physical-reconstruction-c9-integrity-and-offline-truth.md)
+freezes the current family matrix and implementation boundaries. Caller and
+operator behavior is documented in the
+[integrity guide](physical-integrity-and-offline-verification.md).
+
 ### Goal
 
 Bind checksums, framing, generation validation, quarantine, scrub, and offline
@@ -1293,10 +1298,10 @@ logical mutation may be retried.
   quarantined region, unsupported version, unknown, and indeterminate
 - verifier/runtime disagreement as explicit evidence rather than hidden
   reconciliation
-- typed integrity evidence stable enough to cross the future adapter boundary:
+- descriptive integrity observations stable enough to cross the future adapter boundary:
   exact artifact identity, generation, damaged range, authority/derivation
-  class, quarantine posture, and physical recovery options without semantic
-  policy conclusions
+  class and quarantine posture, without recovery options, mutation authority,
+  or semantic policy conclusions
 - exact checked, failed, skipped-decode, quarantined, rebuildable, unknown,
   and bytes-read counters
 
@@ -1307,8 +1312,9 @@ logical mutation may be retried.
   seams or by an offline artifact editor only after the process is dead and the
   target field is predeclared.
 - **Initial world:** independently recorded clean artifact manifest containing
-  at least authority pages, derived pages, WAL, checkpoint, root manifest, and
-  free-space metadata.
+  every current authoritative family, including pages/extents, WAL, checkpoint,
+  root protocol, and free-space metadata. C.9 has no current derived family;
+  dormant index/blob formats cannot stand in for one.
 - **Execution:** apply checksum, length, generation, pointer, payload, removal,
   duplication, and stale-version operators to isolated copies; run runtime
   reopen and offline verification independently.

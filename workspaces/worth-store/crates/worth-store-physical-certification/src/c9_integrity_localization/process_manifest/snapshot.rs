@@ -1,23 +1,50 @@
 use super::*;
 impl ProcessTreeSnapshot {
-    pub(crate) fn require_only_files_delta(
-        &self, root: &Path, allowed: &[PathBuf], target: &Path,
-    ) -> Result<(Vec<u8>, Vec<u8>), ProcessManifestDenial> {
-        let observed = Self::observe_with_lease(root, self.live_lease_payload_excluded)?;
-        if self.directories != observed.directories || self.contents.keys().ne(observed.contents.keys()) {
-            return Err(ProcessManifestDenial::MutationMismatch);
+    pub(crate) fn copy_to(&self, source: &Path, destination: &Path) {
+        self.require_unchanged(source).unwrap();
+        assert!(!destination.exists());
+        std::fs::create_dir(destination).unwrap();
+        for relative in &self.directories {
+            std::fs::create_dir_all(destination.join(relative)).unwrap();
         }
-        for (path, before) in &self.contents {
-            if !allowed.contains(path) && observed.contents.get(path) != Some(before) {
-                return Err(ProcessManifestDenial::MutationMismatch);
-            }
+        for relative in self.files.keys() {
+            std::fs::copy(source.join(relative), destination.join(relative)).unwrap();
         }
-        Ok((self.contents.get(target).ok_or(ProcessManifestDenial::MutationMismatch)?.clone(),
-            observed.contents.get(target).ok_or(ProcessManifestDenial::MutationMismatch)?.clone()))
+        self.require_unchanged(destination).unwrap();
     }
-    pub(crate) fn require_only_file_delta(
+    pub(crate) fn require_presence_delta(
         &self,
         root: &Path,
+        target: &Path,
+        duplicate: Option<&Path>,
+    ) {
+        let observed = Self::observe_with_lease(root, self.live_lease_payload_excluded).unwrap();
+        assert_eq!(
+            self.directories, observed.directories,
+            "presence operator changes no directories"
+        );
+        let mut expected = self.contents.clone();
+        let original = expected
+            .get(target)
+            .expect("producer target exists")
+            .clone();
+        if let Some(duplicate) = duplicate {
+            assert!(
+                expected.insert(duplicate.to_owned(), original).is_none(),
+                "copy must not replace another artifact"
+            );
+        } else {
+            expected.remove(target).unwrap();
+        }
+        assert_eq!(
+            expected, observed.contents,
+            "only the declared presence changes; all surviving bytes are exact"
+        );
+    }
+    pub(crate) fn require_only_files_delta(
+        &self,
+        root: &Path,
+        allowed: &[PathBuf],
         target: &Path,
     ) -> Result<(Vec<u8>, Vec<u8>), ProcessManifestDenial> {
         let observed = Self::observe_with_lease(root, self.live_lease_payload_excluded)?;
@@ -27,21 +54,21 @@ impl ProcessTreeSnapshot {
             return Err(ProcessManifestDenial::MutationMismatch);
         }
         for (path, before) in &self.contents {
-            if path != target && observed.contents.get(path) != Some(before) {
+            if !allowed.contains(path) && observed.contents.get(path) != Some(before) {
                 return Err(ProcessManifestDenial::MutationMismatch);
             }
         }
-        let before = self
-            .contents
-            .get(target)
-            .ok_or(ProcessManifestDenial::MutationMismatch)?
-            .clone();
-        let after = observed
-            .contents
-            .get(target)
-            .ok_or(ProcessManifestDenial::MutationMismatch)?
-            .clone();
-        Ok((before, after))
+        Ok((
+            self.contents
+                .get(target)
+                .ok_or(ProcessManifestDenial::MutationMismatch)?
+                .clone(),
+            observed
+                .contents
+                .get(target)
+                .ok_or(ProcessManifestDenial::MutationMismatch)?
+                .clone(),
+        ))
     }
     pub(crate) fn observe(root: &Path) -> Result<Self, ProcessManifestDenial> {
         Self::observe_with_lease(root, false)

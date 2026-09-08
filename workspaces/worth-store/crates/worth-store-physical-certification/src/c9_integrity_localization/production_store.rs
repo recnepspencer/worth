@@ -75,6 +75,7 @@ fn populate_and_close(
     serving: ServingPhysicalRuntime,
     placement: worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
 ) -> Result<ClosedStoreProcessManifest, String> {
+    let mut records = Vec::new();
     for batch in 0..profile.batches() {
         if profile == ProductionWorldProfile::Primary16KiB && batch + 1 == profile.batches() / 2 {
             let gate = serving.pause_physical_mutation_at(
@@ -90,12 +91,19 @@ fn populate_and_close(
             let checkpoint = publish_checkpoint(&serving, true);
             gate.release();
             checkpoint?;
-            require_mutation(mutation.wait(), batch)?;
+            records.extend(super::production_record::ProducedRecord::completed(
+                &require_mutation(mutation.wait(), batch)?,
+                batch,
+                profile,
+            ));
         } else {
-            require_mutation(
+            let completed = require_mutation(
                 start_batch(&serving, placement, profile, batch)?.wait(),
                 batch,
             )?;
+            records.extend(super::production_record::ProducedRecord::completed(
+                &completed, batch, profile,
+            ));
             if profile != ProductionWorldProfile::Primary16KiB && batch == 0 {
                 publish_checkpoint(&serving, false)?;
             }
@@ -113,8 +121,9 @@ fn populate_and_close(
     {
         return Err("clean Store close required inspection".to_owned());
     }
-    let manifest = ClosedStoreProcessManifest::observe(root)
+    let mut manifest = ClosedStoreProcessManifest::observe(root)
         .map_err(|error| format!("observe closed Store manifest: {error:?}"))?;
+    manifest.records = records;
     super::production_world_shape::require_shape(root, &manifest, profile);
     if profile == ProductionWorldProfile::Primary16KiB {
         assert!(
@@ -174,7 +183,7 @@ pub(super) fn start_batch(
         PhysicalMutationDeadline::after_milliseconds(30_000)
             .ok_or_else(|| "admit deadline".to_owned())?,
     );
-    let mut payloads = (0..profile.inline_records_per_batch())
+    let mut payloads = (0..profile.inline_records_per_batch(ordinal))
         .map(|record| vec![(ordinal * 17 + record) as u8; profile.inline_record_bytes()])
         .collect::<Vec<_>>();
     if profile == ProductionWorldProfile::Primary16KiB {
@@ -202,9 +211,12 @@ pub(super) fn start_batch(
     Ok(prepared.start())
 }
 
-fn require_mutation(outcome: PhysicalMutationOutcome, ordinal: usize) -> Result<(), String> {
+fn require_mutation(
+    outcome: PhysicalMutationOutcome,
+    ordinal: usize,
+) -> Result<worth_store::physical_runtime::CompletedPhysicalMutation, String> {
     match outcome {
-        PhysicalMutationOutcome::Completed(_) => Ok(()),
+        PhysicalMutationOutcome::Completed(completed) => Ok(completed),
         PhysicalMutationOutcome::ProvenNoEffect(fate) => Err(format!(
             "execute durable mutation {ordinal} no effect: {fate:?}"
         )),

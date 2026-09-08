@@ -1,6 +1,9 @@
 use super::{ProcessManifestDenial, ProcessStoreFile};
-use std::{collections::{BTreeMap, BTreeSet},path::{Path,PathBuf}};
-use sha2::{Digest,Sha256};
+use sha2::{Digest, Sha256};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::{Path, PathBuf},
+};
 
 pub(super) fn observe_tree(
     root: &Path,
@@ -55,4 +58,3 @@ pub(super) fn observe_tree(
     }
     Ok((observed_directories, files, contents))
 }
-
