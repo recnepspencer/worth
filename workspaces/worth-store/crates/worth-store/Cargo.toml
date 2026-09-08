@@ -30,12 +30,12 @@ worth-proof = { path = "../../../../crates/worth-proof" }
 worth-signal = { path = "../../../../crates/worth-signal" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 sha2 = "0.10"
+serde_json = "1"
 getrandom = "0.4"
 tracking-allocator = { version = "0.4", default-features = false }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 stats_alloc = "0.1"
 tempfile = "3"
 trybuild = "1.0"

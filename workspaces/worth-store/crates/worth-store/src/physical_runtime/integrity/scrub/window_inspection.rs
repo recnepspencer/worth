@@ -14,6 +14,7 @@ pub(super) fn inspect(
     checkpoint_source: &mut Option<worth_store_physical_backend::InspectionSourceVersion>,
 ) -> PhysicalIntegrityScrubWindowObservation {
     counters.acquired_bytes += evidence.completed_payload_bytes();
+    let mut selector_identity = None;
     let (outcome, validation_counters) = match evidence {
         PhysicalWorkSettlementEvidence::Inspection {
             physical,
@@ -60,6 +61,7 @@ pub(super) fn inspect(
                     UntrustedPhysicalArtifact::from_bounded_bytes(&bytes),
                 );
                 let (inspection, validation) = validator.inspect(window);
+                selector_identity = inspection.selector_identity();
                 (inspection.outcome(), validation)
             }
         }
@@ -116,6 +118,7 @@ pub(super) fn inspect(
         }
     };
     PhysicalIntegrityScrubWindowObservation {
+        selector_identity,
         ordinal,
         outcome,
         validation_counters,

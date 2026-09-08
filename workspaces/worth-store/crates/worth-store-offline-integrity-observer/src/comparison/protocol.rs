@@ -64,6 +64,8 @@ pub(super) enum Outcome {
     },
     Indeterminate {
         reason: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        observed_range: Option<Range>,
     },
 }
 
@@ -175,7 +177,16 @@ fn validate_artifact(artifact: &Artifact) -> Result<(), Denial> {
             identity(supported)?;
             range(value)?;
         }
-        Outcome::Unknown { reason } | Outcome::Indeterminate { reason } => identity(reason)?,
+        Outcome::Unknown { reason } => identity(reason)?,
+        Outcome::Indeterminate {
+            reason,
+            observed_range,
+        } => {
+            identity(reason)?;
+            if let Some(value) = observed_range {
+                range(value)?;
+            }
+        }
     }
     Ok(())
 }

@@ -1,4 +1,5 @@
 mod comparison_protocol;
+mod documented_commands;
 mod journal_traversal;
 mod phase_4_literal_vectors;
 mod report_boundary_and_binary;

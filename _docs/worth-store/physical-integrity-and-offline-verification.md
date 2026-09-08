@@ -101,6 +101,20 @@ reachability, revoke unrelated serving authority, alter bytes, release a
 quarantine, or authorize repair. Repair/recovery selection/semantic readmission
 require their own owner-controlled workflows.
 
+For comparison input, call `handle.write_observation_report(context, max_bytes,
+&mut sink)`, with `PhysicalIntegrityRuntimeReportContext::new(run, scenario)`.
+This acquires the remaining targets and streams version-1 JSON to a caller-owned
+`Write` sink; Store does not allocate a report-sized buffer. Process/executable
+identity is sampled by the runtime. The sink must be outside the Store if it is
+a file. Source allocations are released before writing each observation.
+Sink failure or report-size exhaustion can leave a partial document: discard
+it; the handle's actual completed cursor/counters remain available. Paused or
+deferred scans emit an indeterminate partial-scope report without retries.
+`report_bytes` is exact; source-window high water excludes caller-owned output.
+Checksum-call counts are explicitly unavailable (`null`) rather than inferred
+from frame counts. The comparator preserves an indeterminate `observed_range`
+when the runtime observed only a prefix.
+
 ## Independent offline observation
 
 Close or isolate the Store first. The independent executable does not import

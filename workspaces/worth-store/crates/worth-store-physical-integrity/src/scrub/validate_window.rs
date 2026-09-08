@@ -31,14 +31,9 @@ pub fn inspect_physical_integrity_window(
     use PhysicalIntegrityArtifactFamily as Family;
     match scope.artifact_family() {
         Family::BootstrapCatalog => super::bootstrap_inspection::inspect(input, scope),
-        Family::CurrentRootSelector => inspect!(
-            validate_current_root_selector,
-            CurrentRootSelectorIntegrityValidation
-        ),
-        Family::PreviousRootSelector => inspect!(
-            validate_previous_root_selector,
-            PreviousRootSelectorIntegrityValidation
-        ),
+        Family::CurrentRootSelector | Family::PreviousRootSelector => {
+            super::selector_inspection::inspect(input, scope)
+        }
         Family::RootManifest => inspect!(validate_root_manifest, RootManifestIntegrityValidation),
         Family::RootRoutingBlock => inspect!(
             validate_root_routing_block,

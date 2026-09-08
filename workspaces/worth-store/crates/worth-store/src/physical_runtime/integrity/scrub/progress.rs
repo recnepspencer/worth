@@ -28,6 +28,7 @@ pub enum PhysicalIntegrityScrubDeferral {
 
 #[derive(Debug, Clone, Copy)]
 pub struct PhysicalIntegrityScrubWindowObservation {
+    pub selector_identity: Option<worth_store_physical_format::RootSelectorIdentity>,
     pub ordinal: u64,
     pub outcome: PhysicalIntegrityObservationOutcome,
     pub validation_counters: PhysicalIntegrityObservationCounters,

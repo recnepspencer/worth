@@ -12,3 +12,4 @@ pub use inspection::PhysicalIntegrityScrubInspection;
 pub use outcome::PhysicalIntegrityScrubWindowOutcome;
 pub use validate_window::inspect_physical_integrity_window;
 pub use window::PhysicalIntegrityScrubWindow;
+mod selector_inspection;

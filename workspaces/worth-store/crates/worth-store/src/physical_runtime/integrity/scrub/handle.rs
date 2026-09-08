@@ -1,4 +1,5 @@
 use super::{cancellation::ScrubRegistration, *};
+mod report;
 use crate::physical_runtime::record_serving::{
     residency::RecordFramePorts, CanonicalRecordReadPort,
 };
@@ -6,6 +7,7 @@ use crate::physical_runtime::{
     lifecycle::{LifecycleState, ObservedLifecyclePhase},
     LifecycleGeneration, RuntimeIdentity,
 };
+pub use report::{PhysicalIntegrityRuntimeReportContext, PhysicalIntegrityRuntimeReportDenial};
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use std::time::Instant;
 

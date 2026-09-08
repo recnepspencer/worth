@@ -21,6 +21,21 @@ field and covered ranges, then add writer/runtime/independent-reader literal
 vectors. Changing bytes or coverage requires explicit format-version and
 compatibility handling; never silently widen an existing declaration.
 
+For example, inspect an existing family declaration before defining its sibling:
+
+```rust
+use worth_store_physical_format::integrity_declarations::{
+    families::PAGE_FRAME_INTEGRITY_DECLARATION,
+    PhysicalIntegrityArtifactFamily,
+};
+let declaration = PAGE_FRAME_INTEGRITY_DECLARATION;
+assert_eq!(declaration.family(), PhysicalIntegrityArtifactFamily::PageFrame);
+assert_eq!(declaration.version().format_version(), 1);
+assert_eq!(declaration.version().envelope_schema(), Some(2));
+```
+
+The frozen-family declaration tests exercise those exact version/coverage facts.
+
 `PhysicalArtifactReadTarget` and `PhysicalArtifactReadRange` describe bounded
 locations, not read authority. Checkpoint identities share the mutable
 `checkpoint.current` location, so overlap checks compare location as well as

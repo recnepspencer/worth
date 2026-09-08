@@ -18,6 +18,8 @@ use worth_store_physical_integrity::{
 mod in_flight;
 #[path = "integrity_scrub/incomplete_source.rs"]
 mod incomplete_source;
+#[path = "integrity_scrub/report.rs"]
+mod report;
 
 fn target(serving: &ServingPhysicalRuntime, root: &Path) -> Target {
     let length = std::fs::metadata(root.join("families/records/root-current.selector"))

@@ -54,6 +54,32 @@ fn comparison_preserves_both_identities_and_exact_disagreements_without_a_winner
 }
 
 #[test]
+fn runtime_partial_source_range_is_preserved_and_validated_in_version_one() {
+    let (mut runtime, offline) = reports();
+    runtime["artifacts"][0]["outcome"] = json!({"posture":"indeterminate","reason":"stable_range_not_proven","observed_range":{"offset":0,"length":16}});
+    let compared = compare_integrity_observations(
+        &runtime.to_string(),
+        &offline.to_string(),
+        Limits::default(),
+    )
+    .unwrap();
+    let wire: Value = serde_json::from_str(compared.encoded_report()).unwrap();
+    assert_eq!(
+        wire["runtime"]["artifacts"][0]["outcome"]["observed_range"]["length"],
+        16
+    );
+    runtime["artifacts"][0]["outcome"]["observed_range"]["length"] = json!(0);
+    assert_eq!(
+        compare_integrity_observations(
+            &runtime.to_string(),
+            &offline.to_string(),
+            Limits::default()
+        ),
+        Err(Denial::InvalidObservation)
+    );
+}
+
+#[test]
 fn comparison_does_not_flatten_same_posture_localization_or_unsupported_windows() {
     let (mut runtime, mut offline) = reports();
     let damaged = json!({"posture":"damaged","cause":"checksum_mismatch","damaged_range":{"offset":44,"length":4},"field":"frame_checksum","blast_radius":"artifact"});
