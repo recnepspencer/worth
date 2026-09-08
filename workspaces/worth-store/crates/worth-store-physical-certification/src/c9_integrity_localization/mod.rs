@@ -24,6 +24,8 @@ mod scenario;
 mod wire;
 
 #[cfg(test)]
+mod offline_process;
+#[cfg(test)]
 mod oracle_expectation_assertions;
 #[cfg(test)]
 mod process_courtroom;

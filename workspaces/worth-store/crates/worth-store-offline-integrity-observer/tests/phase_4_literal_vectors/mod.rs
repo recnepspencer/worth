@@ -21,6 +21,10 @@ pub(crate) fn routing_block() -> Vec<u8> {
     oracle::decode_hex(durable_frames::ROOT_ROUTING)
 }
 
+pub(crate) fn bootstrap_catalog() -> Vec<u8> {
+    oracle::decode_hex(durable_frames::BOOTSTRAP)
+}
+
 pub(crate) fn wal_range(segment: u64, start: u64, end: u64) -> Vec<u8> {
     let mut bytes = oracle::decode_hex(wal_frame::FRAME_HEX);
     bytes[12..20].copy_from_slice(&segment.to_le_bytes());

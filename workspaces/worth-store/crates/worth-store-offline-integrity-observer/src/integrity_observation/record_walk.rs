@@ -239,7 +239,7 @@ fn observe_bootstrap(
 ) -> OfflineArtifactObservation {
     let relative = "families/records/bootstrap.catalog";
     let path = root.join(relative);
-    let mut length = 0;
+    let mut alias = None;
     let outcome = if let Some(reason) = walk.exhausted_reason() {
         Outcome::Indeterminate(reason)
     } else if !path.try_exists().unwrap_or(true) {
@@ -249,28 +249,43 @@ fn observe_bootstrap(
         match walk.acquire(&path, 3) {
             Err(outcome) => outcome,
             Ok(acquired) => {
-                length = acquired.byte_length;
-                match store {
-                    None => {
-                        Outcome::Unknown(OfflineUnknownPhysicalReason::StoreIdentityUnavailable)
-                    }
-                    Some(store) => {
-                        read_bootstrap_catalog(&acquired.bytes, store, walk.counters_mut())
-                            .map_or_else(|outcome| outcome, |()| Outcome::Intact)
+                alias = acquired
+                    .physical_alias_of
+                    .as_ref()
+                    .map(|path| super::unknown_artifact::relative_path(root, path));
+                if alias.is_some() {
+                    Outcome::Unknown(OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected)
+                } else {
+                    match store {
+                        None => {
+                            Outcome::Unknown(OfflineUnknownPhysicalReason::StoreIdentityUnavailable)
+                        }
+                        Some(store) => {
+                            read_bootstrap_catalog(&acquired.bytes, store, walk.counters_mut())
+                                .map_or_else(|outcome| outcome, |()| Outcome::Intact)
+                        }
                     }
                 }
             }
         }
     };
     walk.record_outcome(&outcome);
-    OfflineArtifactObservation::new(
+    let observation = OfflineArtifactObservation::new(
         relative,
         Family::BootstrapCatalog.into(),
         PhysicalArtifactIdentity::new("bootstrap-catalog").unwrap(),
         PhysicalArtifactGeneration::NotEncoded,
-        PhysicalByteRange::new(0, length as u64).ok(),
+        PhysicalByteRange::new(0, 82).ok(),
         outcome,
-    )
+    );
+    match alias {
+        Some(first_path) => {
+            observation.with_duplicate(OfflineArtifactDuplicateEvidence::PhysicalAlias {
+                first_path: first_path.into(),
+            })
+        }
+        None => observation,
+    }
 }
 
 fn project(

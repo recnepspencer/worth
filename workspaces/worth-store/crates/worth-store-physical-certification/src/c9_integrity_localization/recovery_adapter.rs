@@ -167,6 +167,12 @@ fn project_root_protocol_artifact(
     artifact: PhysicalRecoveryRootProtocolArtifact,
 ) -> ProcessRootProtocolArtifact {
     match artifact {
+        PhysicalRecoveryRootProtocolArtifact::BootstrapCatalog => {
+            ProcessRootProtocolArtifact::BootstrapCatalog
+        }
+        PhysicalRecoveryRootProtocolArtifact::CheckpointSourceRoot { generation } => {
+            ProcessRootProtocolArtifact::CheckpointSourceRoot { generation }
+        }
         PhysicalRecoveryRootProtocolArtifact::CurrentSelector => {
             ProcessRootProtocolArtifact::CurrentSelector
         }

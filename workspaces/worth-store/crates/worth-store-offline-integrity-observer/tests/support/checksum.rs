@@ -5,7 +5,7 @@ pub(crate) fn refresh_crc32c(bytes: &mut [u8]) {
     bytes[44..48].copy_from_slice(&checksum.to_le_bytes());
 }
 
-fn checksum(parts: &[&[u8]]) -> u32 {
+pub(crate) fn checksum(parts: &[&[u8]]) -> u32 {
     let mut crc = u32::MAX;
     for byte in parts.iter().flat_map(|part| part.iter()) {
         crc ^= u32::from(*byte);

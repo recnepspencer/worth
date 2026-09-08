@@ -102,6 +102,13 @@ timestamp, or identity change across bounded acquisition is `Indeterminate`;
 the observer does not claim detection when a filesystem preserves all compared
 snapshot metadata, and it does not retry until a convenient answer appears.
 
+On Windows, an existing write-capable handle can prevent acquisition altogether:
+the report preserves `indeterminate` / `io_failure`, not damage or a stable
+snapshot. Once mutation contention ends, a separate invocation may observe the
+quiescent source. Changes detected across acquisition use `source_changed`;
+successful share exclusion prevents a mid-read edit instead of pretending to
+detect one afterward.
+
 ## Version-1 report wire
 
 `encode_offline_integrity_report` emits deterministic UTF-8 JSON with:

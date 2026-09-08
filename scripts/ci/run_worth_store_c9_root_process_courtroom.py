@@ -69,6 +69,16 @@ def run_courtroom(observer: pathlib.Path) -> int:
     owner_result = subprocess.run(owner_tests, cwd=ROOT, env=environment)
     if owner_result.returncode != 0:
         return owner_result.returncode
+    family_graph = owner_tests[:-1] + [
+        "c9_integrity_localization::offline_process::independent_observer_traverses_current_family_graph",
+        "--",
+        "--exact",
+        "--ignored",
+        "--nocapture",
+    ]
+    family_result = subprocess.run(family_graph, cwd=ROOT, env=environment)
+    if family_result.returncode != 0:
+        return family_result.returncode
     courtroom = [
         "cargo",
         "test",

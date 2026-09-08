@@ -15,14 +15,23 @@ fn hard_link_alias_is_reported_twice_but_read_once() {
         .filter(|artifact| {
             artifact.family() == PhysicalArtifactFamily::CurrentRootSelector
                 && artifact.duplicates().iter().any(|evidence| {
-                    matches!(evidence, OfflineArtifactDuplicateEvidence::SemanticIdentity)
+                    matches!(
+                        evidence,
+                        OfflineArtifactDuplicateEvidence::PhysicalAlias { .. }
+                    )
                 })
         })
         .collect();
-    assert_eq!(duplicates.len(), 2);
+    assert_eq!(duplicates.len(), 1);
     assert!(duplicates
         .iter()
-        .all(|artifact| artifact.outcome() == &OfflineIntegrityOutcome::Intact));
+        .all(|artifact| artifact.outcome() == &OfflineIntegrityOutcome::Unknown(
+            worth_store_offline_integrity_observer::OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected)));
+    assert!(matches!(duplicates[0].duplicates(),
+        [OfflineArtifactDuplicateEvidence::PhysicalAlias { first_path }]
+        if &**first_path == "families/records/root-current.selector"));
+    assert_eq!(report.counters().checksum_calculations(), 4);
+    assert_eq!(report.counters().selector_payload_decoder_entries(), 2);
     assert_eq!(report.counters().duplicate_identities(), 1);
     assert_eq!(report.counters().bytes_read(), 654);
     assert_eq!(report.counters().files_opened(), 20);
@@ -43,10 +52,10 @@ fn hard_link_across_protocol_scopes_is_still_read_once() {
         .iter()
         .find(|artifact| artifact.family() == PhysicalArtifactFamily::RootManifest)
         .unwrap();
-    assert!(matches!(
-        root.outcome(),
-        OfflineIntegrityOutcome::Damaged(_)
-    ));
+    assert_eq!(root.outcome(), &OfflineIntegrityOutcome::Unknown(
+        worth_store_offline_integrity_observer::OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected));
+    assert_eq!(report.counters().root_manifest_payload_decoder_entries(), 0);
+    assert_eq!(report.counters().checksum_calculations(), 3);
 }
 
 #[test]

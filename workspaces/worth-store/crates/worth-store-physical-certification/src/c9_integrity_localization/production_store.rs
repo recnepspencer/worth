@@ -21,6 +21,17 @@ use worth_store_physical_backend::FilesystemAccessPosture;
 use super::ClosedStoreProcessManifest;
 
 pub(crate) fn produce_closed_store(root: &Path) -> Result<ClosedStoreProcessManifest, String> {
+    produce_records(root, &[b"c9-production-root"])
+}
+
+pub(super) fn produce_closed_store_with_extent(
+    root: &Path,
+) -> Result<ClosedStoreProcessManifest, String> {
+    let extent = vec![0x5a; 40_000];
+    produce_records(root, &[b"ordinary-inline-record", &extent])
+}
+
+fn produce_records(root: &Path, records: &[&[u8]]) -> Result<ClosedStoreProcessManifest, String> {
     std::fs::create_dir(root).map_err(|error| format!("create Store root: {error}"))?;
     let runtime = PhysicalStore::admit(
         PhysicalRuntimeAdmission::new(root).map_err(|error| format!("admit root: {error:?}"))?,
@@ -45,7 +56,7 @@ pub(crate) fn produce_closed_store(root: &Path) -> Result<ClosedStoreProcessMani
             format, placement, access, durability,
         )),
     )?;
-    publish_one_root(&serving, placement)?;
+    publish_one_root(&serving, placement, records)?;
     publish_checkpoint(&serving)?;
     let shutdown = serving.close();
     if shutdown.records().posture() == RecordServingTerminalPosture::InspectionRequired
@@ -79,6 +90,7 @@ fn publish_checkpoint(serving: &ServingPhysicalRuntime) -> Result<(), String> {
 fn publish_one_root(
     serving: &ServingPhysicalRuntime,
     placement: worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    records: &[&[u8]],
 ) -> Result<(), String> {
     let submission = serving.record_submission();
     let key = submission
@@ -91,7 +103,7 @@ fn publish_one_root(
     );
     let prepared = match submission
         .prepare_durable_append(
-            RecordAppendBatch::try_from_iter([b"c9-production-root".as_slice()])
+            RecordAppendBatch::try_from_iter(records.iter().copied())
                 .map_err(|error| format!("admit record batch: {error:?}"))?,
             placement,
             request,

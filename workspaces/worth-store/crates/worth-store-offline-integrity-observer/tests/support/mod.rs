@@ -3,7 +3,7 @@ mod fixtures;
 mod json;
 mod temporary_root;
 
-pub(crate) use checksum::refresh_crc32c;
+pub(crate) use checksum::{checksum, refresh_crc32c};
 pub(crate) use fixtures::{
     clean_store, current_selector_bytes, namespace_identity_bytes, previous_selector_bytes,
     root_manifest_bytes, StoreFixture,

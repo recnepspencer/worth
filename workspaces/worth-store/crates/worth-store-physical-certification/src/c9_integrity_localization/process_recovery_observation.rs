@@ -96,6 +96,8 @@ pub(crate) struct ProcessRootProtocolDenial {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum ProcessRootProtocolArtifact {
+    BootstrapCatalog,
+    CheckpointSourceRoot { generation: u64 },
     CurrentSelector,
     PreviousSelector,
     StagedCurrentSelector { publication: u64 },

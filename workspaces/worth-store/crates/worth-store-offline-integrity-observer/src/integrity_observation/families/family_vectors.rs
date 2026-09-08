@@ -182,6 +182,25 @@ fn every_durable_family_reader_consumes_frozen_bytes_and_rejects_poison() {
                 scope.family
             );
         }
+        for prefix in [60, clean.len() - 1] {
+            let Err(Outcome::Damaged(short)) = inspect(&clean[..prefix], &scope) else {
+                panic!("{:?}: exact missing suffix", scope.family);
+            };
+            assert_eq!(short.cause(), Cause::Truncation, "{:?}", scope.family);
+            let range = short.damaged_range().unwrap();
+            assert_eq!(
+                (range.offset(), range.length()),
+                (prefix as u64, (clean.len() - prefix) as u64)
+            );
+        }
+        if matches!(scope.scope, ChildScope::Tree { .. }) {
+            let mut count_poison = clean.clone();
+            count_poison[66] ^= 1;
+            assert!(
+                matches!(inspect(&count_poison, &scope), Err(Outcome::Damaged(damage)) if damage.cause() == Cause::ChecksumMismatch),
+                "untrusted count must not outrank the checksum"
+            );
+        }
     }
     let bootstrap = hex(durable_frames::BOOTSTRAP);
     assert_eq!(

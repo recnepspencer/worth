@@ -124,6 +124,9 @@ fn read_selector_entries(
         };
         selector_paths.push((path.clone(), role, canonical));
     }
+    selector_paths.sort_by(|left, right| {
+        (!left.2, left.1 as u8, &left.0).cmp(&(!right.2, right.1 as u8, &right.0))
+    });
     let mut selectors: Vec<_> = selector_paths
         .into_iter()
         .map(|(path, role, canonical)| {
@@ -167,9 +170,16 @@ fn read_selector_entry(
         .ok()
         .and_then(|value| value.physical_alias_of.as_ref())
         .map(|path| relative_path(store_root, path));
-    let parsed = acquired.and_then(|acquired| match role {
-        SelectorRole::Current => read_current_selector(&acquired.bytes, walk.counters_mut()),
-        SelectorRole::Previous => read_previous_selector(&acquired.bytes, walk.counters_mut()),
+    let parsed = acquired.and_then(|acquired| {
+        if acquired.physical_alias_of.is_some() {
+            return Err(OfflineIntegrityOutcome::Unknown(
+                OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected,
+            ));
+        }
+        match role {
+            SelectorRole::Current => read_current_selector(&acquired.bytes, walk.counters_mut()),
+            SelectorRole::Previous => read_previous_selector(&acquired.bytes, walk.counters_mut()),
+        }
     });
     let (facts, observed_identity, outcome) = match parsed {
         Ok(facts) => {
@@ -255,8 +265,14 @@ fn read_root_entry(
         .ok()
         .and_then(|value| value.physical_alias_of.as_ref())
         .map(|path| relative_path(store_root, path));
-    let parsed =
-        acquired.and_then(|acquired| read_root_manifest(&acquired.bytes, walk.counters_mut()));
+    let parsed = acquired.and_then(|acquired| {
+        if acquired.physical_alias_of.is_some() {
+            return Err(OfflineIntegrityOutcome::Unknown(
+                OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected,
+            ));
+        }
+        read_root_manifest(&acquired.bytes, walk.counters_mut())
+    });
     let (facts, outcome, exact_scope_established) = match (parsed, addressed) {
         (Ok(facts), None) => (
             Some(facts),

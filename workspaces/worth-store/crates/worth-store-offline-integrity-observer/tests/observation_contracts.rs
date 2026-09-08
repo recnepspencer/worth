@@ -1,8 +1,10 @@
 mod comparison_protocol;
 mod documented_commands;
+mod hostile_process;
 mod journal_coverage;
 mod journal_traversal;
 mod phase_4_literal_vectors;
+mod record_truncation;
 mod report_boundary_and_binary;
 mod resource_bounds;
 mod root_protocol_adversarial;

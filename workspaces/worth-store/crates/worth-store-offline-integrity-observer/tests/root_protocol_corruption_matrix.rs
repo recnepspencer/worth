@@ -288,37 +288,22 @@ fn assert_related_observations(
             .iter()
             .filter(|artifact| !artifact.duplicates().is_empty())
             .collect();
-        if target == Target::Root {
-            assert_eq!(
-                duplicates.len(),
-                1,
-                "{target:?} D: {:?}",
-                report.artifacts()
-            );
-            assert_eq!(
-                duplicates[0].outcome(),
-                &OfflineIntegrityOutcome::Unknown(OfflineUnknownPhysicalReason::RootNotAddressed)
-            );
-            assert!(matches!(
-                duplicates[0].duplicates(),
-                [OfflineArtifactDuplicateEvidence::PhysicalAlias { .. }]
-            ));
-        } else {
-            assert_eq!(
-                duplicates.len(),
-                2,
-                "{target:?} D: {:?}",
-                report.artifacts()
-            );
-            assert!(duplicates
-                .iter()
-                .all(
-                    |artifact| artifact.duplicates().iter().any(|evidence| matches!(
-                        evidence,
-                        OfflineArtifactDuplicateEvidence::SemanticIdentity
-                    ))
-                ));
-        }
+        assert_eq!(
+            duplicates.len(),
+            1,
+            "{target:?} D: {:?}",
+            report.artifacts()
+        );
+        assert_eq!(
+            duplicates[0].outcome(),
+            &OfflineIntegrityOutcome::Unknown(
+                OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected
+            )
+        );
+        assert!(matches!(
+            duplicates[0].duplicates(),
+            [OfflineArtifactDuplicateEvidence::PhysicalAlias { .. }]
+        ));
     }
     if matches!(target, Target::Current | Target::Previous) && matches!(operator, Operator::P) {
         let missing = report
