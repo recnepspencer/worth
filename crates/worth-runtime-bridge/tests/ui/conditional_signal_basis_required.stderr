@@ -1,0 +1,31 @@
+error[E0308]: mismatched types
+  --> tests/ui/conditional_signal_basis_required.rs:13:9
+   |
+12 |     let _ = BridgeConditionalEvaluationAdmissionRequest::source_present_at_signal_basis(
+   |             --------------------------------------------------------------------------- arguments to this function are incorrect
+13 |         lowering, snapshot,
+   |         ^^^^^^^^ expected `&BridgeConditionalSignalBasisBinding`, found `&BridgeInstalledConditionalLowering`
+   |
+   = note: expected reference `&BridgeConditionalSignalBasisBinding`
+              found reference `&BridgeInstalledConditionalLowering`
+note: associated function defined here
+  --> src/conditional_execution/evaluation_session.rs
+   |
+   |     pub fn source_present_at_signal_basis(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/conditional_signal_basis_required.rs:15:49
+   |
+15 |     let _ = bridge.deliver_authoritative_change(lowering, 0, patch);
+   |                    ---------------------------- ^^^^^^^^ expected `&BridgeConditionalSignalBasisBinding`, found `&BridgeInstalledConditionalLowering`
+   |                    |
+   |                    arguments to this method are incorrect
+   |
+   = note: expected reference `&BridgeConditionalSignalBasisBinding`
+              found reference `&BridgeInstalledConditionalLowering`
+note: method defined here
+  --> src/conditional_execution/sealed_runtime_assembly.rs
+   |
+   |     pub fn deliver_authoritative_change(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

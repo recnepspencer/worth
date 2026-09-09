@@ -16,7 +16,7 @@ worth-foundational.workspace = true
 worth-query.workspace = true
 worth-query-decl.workspace = true
 worth-query-admission = { path = "../worth-query-admission" }
-worth-query-execution = { path = "../worth-query-execution" }
+worth-query-execution = { path = "../worth-query-execution", features = ["test-primary-graph-faults"] }
 worth-proof.workspace = true
 worth-relational.workspace = true
 worth-runtime-bridge.workspace = true

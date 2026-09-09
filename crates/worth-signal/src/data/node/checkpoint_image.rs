@@ -30,6 +30,8 @@ pub(crate) struct CheckpointNodeImageParts {
         Option<crate::data::proof::invalidation::source_seed::DirectInvalidationBasis>,
     pub(crate) direct_invalidation_generation: u64,
     pub(crate) tombstoned: bool,
+    pub(crate) conditional_contract_generation: u64,
+    pub(crate) conditional_contract_occurrence: u64,
     pub(crate) runtime_artifact_state: Option<RuntimeArtifactState>,
     pub(crate) retained_artifact: Option<RetainedDiagnosticArtifact>,
     pub(crate) causality: Option<CausalityMetadata>,
@@ -60,6 +62,10 @@ pub struct CheckpointNodeImage {
     direct_invalidation_generation: u64,
     tombstoned: bool,
     #[serde(default)]
+    conditional_contract_generation: u64,
+    #[serde(default)]
+    conditional_contract_occurrence: u64,
+    #[serde(default)]
     runtime_artifact_state: Option<RuntimeArtifactState>,
     #[serde(default)]
     retained_artifact: Option<RetainedDiagnosticArtifact>,
@@ -87,6 +93,8 @@ impl CheckpointNodeImage {
             direct_invalidation_basis: parts.direct_invalidation_basis,
             direct_invalidation_generation: parts.direct_invalidation_generation,
             tombstoned: parts.tombstoned,
+            conditional_contract_generation: parts.conditional_contract_generation,
+            conditional_contract_occurrence: parts.conditional_contract_occurrence,
             runtime_artifact_state: parts.runtime_artifact_state,
             retained_artifact: parts.retained_artifact,
             causality: parts.causality,
@@ -110,6 +118,8 @@ impl CheckpointNodeImage {
             direct_invalidation_basis: self.direct_invalidation_basis,
             direct_invalidation_generation: self.direct_invalidation_generation,
             tombstoned: self.tombstoned,
+            conditional_contract_generation: self.conditional_contract_generation,
+            conditional_contract_occurrence: self.conditional_contract_occurrence,
             runtime_artifact_state: self.runtime_artifact_state,
             retained_artifact: self.retained_artifact,
             causality: self.causality,

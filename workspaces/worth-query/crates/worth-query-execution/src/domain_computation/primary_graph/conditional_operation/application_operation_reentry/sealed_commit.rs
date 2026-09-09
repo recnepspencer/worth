@@ -91,6 +91,12 @@ fn classify_commit(
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> WorthQueryTemporalReentryOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryTemporalReentryOutcome::ProductStale(stale)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryTemporalReentryOutcome::ProductUnpublished(unpublished)
+        }
         WorthQueryApplicationCommitOutcome::Committed(_) => {
             WorthQueryTemporalReentryOutcome::Committed
         }

@@ -20,6 +20,7 @@ pub(super) struct WorthQueryCommittedApplicationPublicationSeal {
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
+    product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
 }
 
 pub(super) struct WorthQueryPublishedApplicationCommit {
@@ -50,6 +51,7 @@ fn publish_retained(
         before,
         next_basis,
         committed,
+        product_publication,
         ..
     } = committed;
     let changed_record_count = committed.patch().len();
@@ -64,6 +66,7 @@ fn publish_retained(
         outcome_identity,
         basis_descriptor,
         evidence,
+        product_publication,
     };
     let application = WorthQueryPrimaryGraphCommittedApplication::from_publication(seal);
     provider.install_and_publish_application(

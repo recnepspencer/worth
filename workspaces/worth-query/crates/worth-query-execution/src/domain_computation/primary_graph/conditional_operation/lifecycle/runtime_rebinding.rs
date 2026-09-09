@@ -5,15 +5,14 @@ use worth_query_installation::facade::{
     WorthQueryInstalledTemporalConditionalOperation, WorthQueryNamedClock,
     WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
 };
-use worth_runtime_bridge::facade::{BridgeManagedClockInstallationParts, BridgeOwnedSignalRuntime};
+use worth_runtime_bridge::facade::{
+    BridgeManagedClockInstallationParts, BridgePreparedConditionalReconstitution,
+};
 
 use super::WorthQueryPreparedConditionalRuntimeBinding;
-use crate::domain_computation::primary_graph::conditional_operation::{
-    installation::{
-        WorthQueryConditionalRuntimeInstallationDenial,
-        WorthQueryConditionalRuntimeInstallationDenialKind,
-    },
-    publication::ConditionalRuntimeAffinity,
+use crate::domain_computation::primary_graph::conditional_operation::installation::{
+    WorthQueryConditionalRuntimeInstallationDenial,
+    WorthQueryConditionalRuntimeInstallationDenialKind,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -51,10 +50,10 @@ pub(super) fn prepare_temporal_runtime_binding<
         Scope,
         Projector,
     >,
-    graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    bridge: &mut BridgeOwnedSignalRuntime,
-    affinity: &ConditionalRuntimeAffinity,
-    binding_identity: &crate::domain_computation::primary_graph::conditional_operation::canonical_identity::WorthQueryTemporalBindingIdentity,
+    bridge: &mut BridgePreparedConditionalReconstitution,
+    predecessor: &Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+    runtime_binding_identity: Arc<str>,
+    product: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<
     WorthQueryPreparedConditionalRuntimeBinding,
     WorthQueryConditionalRuntimeInstallationDenial,
@@ -66,22 +65,22 @@ where
     Source: WorthQueryNamedClockSource<Clock>,
     Projector: WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>,
 {
-    let lowering = super::super::predicate_admission::install_temporal_predicate_lowering(
-        binding, graph, bridge,
-    )?;
+    let lowering = bridge.readmit_lowering(predecessor).map_err(|denial| {
+        WorthQueryConditionalRuntimeInstallationDenial::new(
+            WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+            format!("{:?}: {}", denial.kind(), denial.detail()),
+        )
+    })?;
     let bounds = binding.bounds();
-    let runtime_canonical_identity =
-        Arc::new(affinity.bind(binding_identity).map_err(|denial| {
+    let clock = binding.clocked_node();
+    let signal_basis = bridge
+        .admit_exact_conditional_signal_basis(&lowering, product.signal_basis())
+        .map_err(|denial| {
             WorthQueryConditionalRuntimeInstallationDenial::new(
                 WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
-                format!("conditional runtime identity was denied: {denial:?}"),
+                denial.detail(),
             )
-        })?);
-    let runtime_binding_identity = Arc::clone(runtime_canonical_identity.bridge_identity());
-    let installation_canonical_work = binding_identity
-        .canonical_work()
-        .combine(runtime_canonical_identity.canonical_work());
-    let clock = binding.clocked_node();
+        })?;
     let managed_clock = bridge
         .install_managed_clock(BridgeManagedClockInstallationParts {
             lowering: &lowering,
@@ -100,10 +99,13 @@ where
     Ok(WorthQueryPreparedConditionalRuntimeBinding {
         lowering,
         managed_clock,
-        runtime_binding_identity,
-        runtime_canonical_identity,
-        installation_canonical_work,
-        runtime_capability_identity: affinity.runtime_authority(),
+        affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity::new(
+            product,
+            signal_basis,
+        ),
+        authoritative_commit_cursor: 0,
+        commit_watch: Default::default(),
+        reconstructed_intent_count: 0,
         authoritative_reconstruction: Box::new(()),
     })
 }

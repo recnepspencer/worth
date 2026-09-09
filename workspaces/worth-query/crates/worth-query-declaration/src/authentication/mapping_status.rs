@@ -1,6 +1,6 @@
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
-use crate::application_schema::TypedApplicationValue;
+use crate::application_schema::{TypedApplicationReadableValue, TypedApplicationValue};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryPrincipalMappingStatus {
@@ -16,5 +16,15 @@ impl TypedApplicationValue for WorthQueryPrincipalMappingStatus {
 
     fn into_foundational_value(self) -> AspectValue {
         AspectValue::Bool(matches!(self, Self::Enabled))
+    }
+}
+
+impl TypedApplicationReadableValue for WorthQueryPrincipalMappingStatus {
+    fn from_foundational_value(value: &AspectValue) -> Option<Self> {
+        match value {
+            AspectValue::Bool(true) => Some(Self::Enabled),
+            AspectValue::Bool(false) => Some(Self::Disabled),
+            _ => None,
+        }
     }
 }

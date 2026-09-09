@@ -57,13 +57,14 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         &foreign_world.application,
         &admission,
         lease.snapshot(),
+        lease.product_publication(),
     )
     .is_err());
 
     let substitute_lease = WorthQueryApplicationSnapshotLease::acquire(
         lease.handle().clone(),
         std::sync::Arc::clone(&lease.layout),
-        admission.graph_work_branch(),
+        lease.product_publication().clone(),
     )
     .expect("the real branch must issue a second exact snapshot handle");
     assert_ne!(substitute_lease.snapshot(), lease.snapshot());
@@ -71,6 +72,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         &world.application,
         &admission,
         substitute_lease.snapshot(),
+        substitute_lease.product_publication(),
     )
     .expect("same-runtime same-branch snapshot remains a valid pre-session basis");
     assert!(staged
@@ -98,6 +100,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         &world.application,
         &admission,
         &foreign_branch_snapshot,
+        lease.product_publication(),
     )
     .is_err());
     assert!(lease.handle().with_runtime_mut(|runtime| {

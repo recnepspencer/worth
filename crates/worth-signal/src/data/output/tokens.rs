@@ -1,5 +1,7 @@
 use std::hash::{Hash, Hasher};
 
+mod retained_charge;
+
 use serde::{Deserialize, Serialize};
 
 use crate::data::core_profile::StableHashValue;

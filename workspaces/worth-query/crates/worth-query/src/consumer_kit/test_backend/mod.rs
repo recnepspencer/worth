@@ -1,9 +1,12 @@
 mod backend;
 mod builder;
+mod conditional_installation;
 mod domain_package_installation;
 mod equivalence_report;
 mod error;
 mod installation_generation;
+mod prepared_seed;
+mod runtime_installation;
 mod schema;
 mod seed;
 mod support_profile;

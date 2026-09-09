@@ -18,6 +18,8 @@ pub enum WorthQueryConditionalOutcomeClass {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorthQueryConditionalAdmissionDenial {
     ForeignOperation,
+    ProductBasisRequired,
+    ProductSelectionMismatch,
     ForeignRuntime,
     StaleInstallation,
     LoweringMismatch,
@@ -41,6 +43,8 @@ pub struct WorthQueryConditionalProvenance {
         std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
     pub(crate) class: WorthQueryConditionalOutcomeClass,
     pub(crate) _admission: WorthQueryOperationPhaseProof<WorthQueryConditionalReentryPhase>,
+    pub(super) product:
+        std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease>,
 }
 
 pub struct WorthQueryConditionalSemanticObservation<'a> {
@@ -48,6 +52,8 @@ pub struct WorthQueryConditionalSemanticObservation<'a> {
 }
 
 pub(crate) struct WorthQueryConditionalAuthorityAdmission {
+    product:
+        std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease>,
     lowering: std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
     location: worth_query_installation::facade::WorthQueryConditionalNodeLocation,
     declaration: worth_query_installation::facade::WorthQueryPortableConditionalNodeDeclaration,
@@ -239,19 +245,27 @@ where
 pub(crate) fn admit_conditional_decision<D, O, F, L: BasisOperationLane>(
     bound: &super::super::WorthQueryBoundDomainOperation<D, O, F, L>,
     authority: WorthQueryConditionalAuthorityAdmission,
+    product: std::sync::Arc<
+        worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+    >,
     bridge: worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
     snapshot_identity: &str,
-    bridge_snapshot_identity: Option<&worth_runtime_bridge::facade::TruthSnapshotIdentity>,
     execution_identity: &str,
     attempt: u64,
 ) -> Result<WorthQueryConditionalProvenance, WorthQueryConditionalAdmissionDenial> {
+    if !authority.product.has_same_selected_occurrence(&product)
+        || !product.has_same_selected_occurrence(bound.product()?)
+    {
+        return Err(WorthQueryConditionalAdmissionDenial::ProductSelectionMismatch);
+    }
     if !bridge.admits_query_continuation(
         worth_runtime_bridge::facade::BridgeConditionalQueryContinuationAdmission {
             lowering: &authority.lowering,
             query_binding_identity: authority.binding_identity.as_ref(),
             query_capability_identity: authority.capability_identity,
             signal_snapshot_projection: snapshot_identity,
-            bridge_snapshot_identity,
+            bridge_snapshot_identity: (authority.lowering.correspondence_count() != 0)
+                .then(|| product.bridge_snapshot_identity()),
             signal_execution_projection: execution_identity,
             attempt,
         },
@@ -276,6 +290,7 @@ pub(crate) fn admit_conditional_decision<D, O, F, L: BasisOperationLane>(
         bridge,
         class,
         _admission: admission,
+        product,
     })
 }
 
@@ -283,6 +298,7 @@ pub(crate) fn admit_conditional_authority<D, O, F, L: BasisOperationLane>(
     bound: &super::super::WorthQueryBoundDomainOperation<D, O, F, L>,
     node: &super::WorthQueryInstalledConditionalNode,
 ) -> Result<WorthQueryConditionalAuthorityAdmission, WorthQueryConditionalAdmissionDenial> {
+    let product = std::sync::Arc::clone(bound.product()?);
     if node.operation_identity != bound.definition().canonical_identity() {
         return Err(WorthQueryConditionalAdmissionDenial::ForeignOperation);
     }
@@ -297,7 +313,7 @@ pub(crate) fn admit_conditional_authority<D, O, F, L: BasisOperationLane>(
     }
     if authority_basis.operation_identity != node.operation_identity
         || authority_basis.installation_runtime_authority != node.installation_runtime_authority
-        || authority_basis.installation_generation != node.installation_generation
+        || authority_basis.installation_generation != node.source_installation_generation
     {
         return Err(WorthQueryConditionalAdmissionDenial::AuthorityContinuity(
             worth_runtime_bridge::facade::BridgeConditionalDenialKind::OperationAuthorityMismatch,
@@ -317,6 +333,7 @@ pub(crate) fn admit_conditional_authority<D, O, F, L: BasisOperationLane>(
         ));
     }
     Ok(WorthQueryConditionalAuthorityAdmission {
+        product,
         lowering: std::sync::Arc::clone(&node.lowering),
         location: node.location.clone(),
         declaration: node.declaration.clone(),

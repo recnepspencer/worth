@@ -65,7 +65,6 @@ fn invalidation_authority_stays_component_owned_and_responsibility_specific() {
         "advance_node_dependency_revision(",
         "replace_node_invalidation_cache(",
         "install_node_dependency_revalidation(",
-        "resolve_node_dependency_revalidation_producer(",
     ] {
         let definition = format!("fn {accessor}");
         assert!(

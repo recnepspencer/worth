@@ -237,17 +237,18 @@ impl WorthQueryDomainInstallationRegistry {
         WorthQueryDomainExecutionIndexRebuildReport::new(retired_identity, rebuilt_identity, shape)
     }
 
-    pub(crate) fn prepare_successor_generation(&self) -> Self {
+    pub(crate) fn prepare_runtime_reconstitution(&self) -> Self {
         let artifacts = self
             .records
             .iter()
             .map(|record| record.artifact.clone())
             .collect::<Vec<_>>();
         let generation = self.generation.successor();
-        let portable_index = Arc::new(self.portable_index.successor_generation());
+        let portable_index = Arc::clone(&self.portable_index);
         // Staging authority is current only inside this unexposed registry.
         // Committing later advances the prior registry's separate lease, so a
-        // failed conditional reinstall leaves every published handle current.
+        // failed conditional reconstitution leaves every published handle current.
+        // Portable source authority stays exact: only runtime handles retire.
         Self::from_artifacts_and_portable_index(
             artifacts,
             self.runtime_authority,
@@ -263,9 +264,10 @@ impl WorthQueryDomainInstallationRegistry {
         Arc::clone(&self.portable_index)
     }
 
-    pub(crate) fn commit_successor_generation(&mut self, successor: Self) {
+    pub(crate) fn commit_runtime_reconstitution(&mut self, successor: Self) {
         debug_assert_eq!(successor.runtime_authority, self.runtime_authority);
         debug_assert_eq!(successor.generation, self.generation.successor());
+        debug_assert!(Arc::ptr_eq(&self.portable_index, &successor.portable_index));
         self.generation_lease.advance_to(successor.generation);
         *self = successor;
     }

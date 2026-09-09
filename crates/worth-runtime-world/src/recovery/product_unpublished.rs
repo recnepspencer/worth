@@ -39,7 +39,6 @@ mod abandoned;
 /// Catalog-owned recovery custody. The public returned value below is only a
 /// view over this allocation, so dropping the caller capability cannot drop
 /// the component pins, history protection, or deferred owner route.
-#[derive(Debug)]
 pub(crate) struct ProductUnpublishedOwnerEffectsRecord {
     identity: ProductUnpublishedOwnerEffectsIdentity,
     attempt_identity: CompositePublicationAttemptIdentity,
@@ -90,13 +89,14 @@ impl std::fmt::Debug for ProductUnpublishedOwnerEffects {
 }
 
 impl ProductUnpublishedOwnerEffects {
-    /// Exact reservation charge for the inline retained-record representation.
-    /// Actions are stored in a fixed bounded array, so no allocator capacity or
-    /// lower-bound vector hint can undercharge an installed record.
+    /// Reservation charge for the larger record representation plus its bounded
+    /// conditional-definition custody. Every attempt reserves that maximum before
+    /// execution, so installing definition custody cannot exceed the admitted slot.
     pub(crate) const fn metadata_charge_hint() -> usize {
         let retained = std::mem::size_of::<ProductUnpublishedOwnerEffectsRecord>();
         let active = crate::publication::ActiveAttemptRecord::metadata_charge_hint();
         (if active > retained { active } else { retained })
+            + std::mem::size_of::<crate::publication::ConditionalDefinitionAttemptCustody>()
             + super::catalog::ProductUnpublishedRecoveryCatalog::slot_metadata_charge_hint()
     }
 
@@ -202,6 +202,25 @@ impl ProductUnpublishedOwnerEffects {
             self.record.identity.clone(),
             self.record.catalog_affinity,
         )
+    }
+
+    pub fn retains_signal_definition(&self) -> bool {
+        self.record.retention.retains_signal_definition()
+    }
+}
+
+impl std::fmt::Debug for ProductUnpublishedOwnerEffectsRecord {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ProductUnpublishedOwnerEffectsRecord")
+            .field("identity", &self.identity)
+            .field("attempt_identity", &self.attempt_identity)
+            .field("cause", &self.cause)
+            .field(
+                "retains_conditional_definition",
+                &self.retention.retains_signal_definition(),
+            )
+            .finish_non_exhaustive()
     }
 }
 

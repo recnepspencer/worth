@@ -13,6 +13,8 @@ pub enum WorthQueryConditionalSignalDecision {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionTerminal {
+    ProductStale,
+    ProductUnpublished,
     EligibleRetained,
     SuppressedRetained,
     DeferredRetained,
@@ -26,6 +28,7 @@ pub enum WorthQueryConditionalExecutionTerminal {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
+    ProductHeadChanged,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
@@ -126,6 +129,9 @@ fn cause(
     };
     use super::signal_decision_reentry::WorthQueryOperationBackpressureCause as Backpressure;
     match decision {
+        WorthQueryRetainedConditionalDecision::OperationProductStale(_, _) => {
+            Some(WorthQueryConditionalExecutionCause::ProductHeadChanged)
+        }
         WorthQueryRetainedConditionalDecision::OperationBackpressured(_, cause) => match cause {
             Backpressure::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
@@ -295,6 +301,12 @@ fn terminal(
         }
         WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _) => {
             WorthQueryConditionalExecutionTerminal::Indeterminate
+        }
+        WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _) => {
+            WorthQueryConditionalExecutionTerminal::ProductUnpublished
+        }
+        WorthQueryRetainedConditionalDecision::OperationProductStale(_, _) => {
+            WorthQueryConditionalExecutionTerminal::ProductStale
         }
         WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(_, _) => {
             WorthQueryConditionalExecutionTerminal::DeferredRetained

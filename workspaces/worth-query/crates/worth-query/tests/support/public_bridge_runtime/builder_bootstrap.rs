@@ -35,10 +35,6 @@ impl PublicBridgeRuntimeHarness {
     pub fn advance_snapshot(&self) {
         self.state.borrow_mut().next_snapshot_token += 1;
     }
-
-    pub fn set_relational_snapshot(&self, snapshot: u64, version: u64) {
-        self.state.borrow_mut().current_snapshot_parts = Some((snapshot, version));
-    }
 }
 
 impl PublicBridgeRuntimeBootstrapBuilder {

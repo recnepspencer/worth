@@ -70,6 +70,16 @@ impl domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
 
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
+
     fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
         crate::suite::installed_operation_fixture::execution_resource_support()
     }

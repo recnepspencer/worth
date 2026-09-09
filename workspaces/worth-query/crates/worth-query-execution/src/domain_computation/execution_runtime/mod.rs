@@ -1,5 +1,6 @@
 mod application_query_resources;
 mod installation_authority;
+pub(crate) mod product_world;
 mod runtime_identity;
 mod runtime_root;
 

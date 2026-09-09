@@ -5233,6 +5233,8 @@ without a second Signal graph or an erased compatibility lane.
 
 #### Milestone 9.17.3: Query Product-Branch Carriage, Facade, And Certification
 
+Status: Phase 1 is certified. Later phases have not started.
+
 Query carries the exact admitted composite basis and performed successor
 through every plan/session/read-set/proposal/invariant/effect/terminal/receipt/
 history/live/inspection boundary, publishes the public product-branch
@@ -5240,6 +5242,24 @@ workflow, deletes the Relational-only and ambient-Signal lane, and runs the
 cumulative hostile court through the real composition root. It permits
 existing-outbox dispatch only from performed composite publication in the live
 runtime. Its closure closes the umbrella and unlocks 9.18.
+
+The [9.17.3 specification](./milestone-9.17.3.md) requires the one-sealed-graph
+Signal-owned conditional service and complete installation/re-entry lifecycle
+before broad carriage migration. Phase 1 establishes shared host/Query/Bridge
+operation entry, Bridge-only conditional-service issuance, bounded source-affine
+evaluation reuse, and authoritative post-seal definition publication. The World
+Signal bundle retains its three existing ports. Query strengthens its existing
+provider-session affinity without adding a second phase protocol. Bridge observations and Signal
+derived reuse bind the exact source world even when distinct product branches
+share a Signal basis. A surviving loser outbox row stays ineligible for its
+original occurrence even inside a later performed
+descendant or fresh adoption after settlement; both dispatch and redispatch bind
+the original operation's exact performed publication attempt. Partial terminals
+cannot construct committed receipts or committed recovery bindings.
+The six phases close on real public-root scenario evidence, bounded resource and
+cost contracts, and deletion of each migrated legacy authority path. 9.18 adds
+fresh correction meaning and admission to this same publication/terminal path;
+it does not move history ownership or introduce persistence.
 
 ### Must Ship
 

@@ -14,7 +14,9 @@ mod domain_packages;
 mod graph_participation;
 mod host_installation;
 mod lowering;
+mod owned_async_source;
 mod primary_graph;
+mod product_source;
 mod workflow_parallel_admission;
 mod workflow_stage_executors;
 pub use primary_graph::{
@@ -79,9 +81,11 @@ pub struct WorthQueryRuntimeBuilder {
     native_aspect_contracts:
         crate::runtime::native_aspect_contracts::WorthQueryNativeAspectContractRegistry,
     conditional_runtime_bridge: Option<worth_runtime_bridge::facade::RuntimeBridge>,
-    conditional_signal_graph: Option<worth_signal::facade::SignalGraph>,
+    conditional_signal_graph: Option<Box<worth_signal::facade::SignalGraph>>,
+    conditional_execution_resources: Option<super::WorthQueryConditionalExecutionResources>,
     pending_conditional_installations:
         Vec<Box<dyn crate::domain_installation::PendingConditionalInstallation>>,
+    pending_owned_async_declarations: Vec<super::WorthQueryOwnedAsyncRequestDeclaration>,
     pending_primary_graph_installation:
         Option<Box<dyn primary_graph::PendingPrimaryGraphInstallation>>,
     primary_runtime_invalidation_installation: Option<
@@ -119,6 +123,14 @@ impl WorthQueryRuntimeBuilder {
 
     pub fn relational_runtime(mut self, runtime: RelationalRuntime) -> Self {
         self.backend_parts = self.backend_parts.relational_runtime(runtime);
+        self
+    }
+
+    pub fn relational_source_owner(
+        mut self,
+        owner: worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
+    ) -> Self {
+        self.backend_parts = self.backend_parts.relational_source_owner(owner);
         self
     }
 

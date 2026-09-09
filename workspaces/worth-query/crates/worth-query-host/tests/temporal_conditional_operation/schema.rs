@@ -53,6 +53,11 @@ worth_query_application_schema! {
                         .no_aftermath()
                         .finish(),
                 )
+                .operation(RevokeTemporalPrincipal::reference().definition().no_external_effect().no_aftermath().finish())
+                .operation_decision_fact_budget(RevokeTemporalPrincipal::reference(), 1)
+                .operation_projection_work_budget(RevokeTemporalPrincipal::reference(), 3)
+                .operation_read_field(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
+                .operation_write(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
                 .operation_decision_fact_budget(ExecuteTemporal::reference(), 4)
                 .operation_projection_work_budget(ExecuteTemporal::reference(), 16)
                 .operation_read_field(ExecuteTemporal::reference(), IntentIdentityField::reference())
@@ -129,6 +134,9 @@ worth_query_operation_writes!(ExecuteTemporal => [IntentRevisionField, IntentLif
 worth_query_operation!(pub AmendTemporal(AmendTemporalInput) in TemporalHostSchema);
 worth_query_operation_reads!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
 worth_query_operation_writes!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
+worth_query_operation!(pub RevokeTemporalPrincipal(TemporalInput) in TemporalHostSchema);
+worth_query_operation_reads!(RevokeTemporalPrincipal => [MappingStatusField]);
+worth_query_operation_writes!(RevokeTemporalPrincipal => [MappingStatusField]);
 pub struct IntentQueryParameters;
 pub struct IntentIdentitySlot;
 pub struct IntentRevisionSlot;

@@ -31,14 +31,14 @@ impl WorthQueryAdmittedStagedOwnerDelivery {
 
     pub(crate) fn retained_decision_seed(
         &self,
-    ) -> Option<Arc<worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed>> {
+    ) -> Option<Arc<crate::domain_installation::WorthQueryRetainedConditionalDecision>> {
         self.queued.continuation().seed()
     }
 
     pub(crate) fn retain_decision_seed(
         &self,
-        seed: worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed,
-    ) -> Arc<worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed> {
+        seed: crate::domain_installation::WorthQueryRetainedConditionalDecision,
+    ) -> Arc<crate::domain_installation::WorthQueryRetainedConditionalDecision> {
         self.queued.continuation().retain_seed(seed)
     }
 }

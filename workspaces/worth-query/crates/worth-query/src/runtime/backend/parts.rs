@@ -16,7 +16,8 @@ use crate::runtime::WorthQueryRuntimeSupportProfile;
 
 #[derive(Default)]
 pub struct WorthQueryRuntimeBackendParts {
-    pub(super) relational_runtime: Option<RelationalRuntime>,
+    pub(super) relational_runtime:
+        Option<super::relational_owner::WorthQueryBackendRelationalOwner>,
     pub(super) runtime_bridge: Option<RuntimeBridge>,
     pub(super) schema_adapter: Option<Box<dyn WorthQueryRuntimeSchemaAdapter>>,
     pub(super) source_adapter: Option<Box<dyn WorthQueryRuntimeSourceAdapter>>,
@@ -68,7 +69,17 @@ impl WorthQueryRuntimeBackendParts {
     }
 
     pub fn relational_runtime(mut self, runtime: RelationalRuntime) -> Self {
-        self.relational_runtime = Some(runtime);
+        self.relational_runtime =
+            Some(super::relational_owner::WorthQueryBackendRelationalOwner::Unpublished(runtime));
+        self
+    }
+
+    pub fn relational_source_owner(
+        mut self,
+        owner: worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
+    ) -> Self {
+        self.relational_runtime =
+            Some(super::relational_owner::WorthQueryBackendRelationalOwner::ProductSource(owner));
         self
     }
 

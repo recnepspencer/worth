@@ -51,15 +51,22 @@ fn conditional_execution_cost_ignores_unrelated_signal_nodes_and_dependencies() 
             baseline,
         );
         let lowering = owner.install(request).unwrap();
+        let owner = owner.seal().unwrap();
+        let signal_basis = owner
+            .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
+            .unwrap();
         let decision = owner
             .execute(
+                &signal_basis,
                 crate::facade::BridgeConditionalExecutionRequest {
                     lowering: &lowering,
                     query_binding_identity: "query-binding-a",
                     query_capability_identity: 1,
                     snapshot_identity: "snapshot-a",
                     truth_branch_identity: None,
-                    bridge_snapshot_identity: None,
+                    bridge_snapshot_identity: Some(
+                        &crate::truth_identity_fixtures::truth_snapshot(1, 1),
+                    ),
                     execution_identity: "execution-a",
                     attempt: 1,
                 },
@@ -179,7 +186,7 @@ fn equivalent_reinstallation_preserves_semantics_but_not_execution_affinity() {
             .compare_execution_affinity(&candidate)
             .unwrap_err()
             .mismatch(),
-        BridgeConditionalExecutionAffinityMismatch::BridgeRuntime
+        BridgeConditionalExecutionAffinityMismatch::SourceCorrespondenceAuthority { ordinal: 0 }
     ));
 }
 
@@ -274,7 +281,7 @@ fn neutral_contract_drift_denies_before_correspondence_work() {
 }
 
 #[test]
-fn successor_preserves_builder_authority_without_carrying_conditional_registrations() {
+fn reconstitution_preserves_owner_definition_and_rebuilds_derived_correspondences() {
     let mut graph = SignalGraph::new();
     let baseline_node = graph.node().build();
     let conditional_node_id = graph.node().build();
@@ -336,9 +343,13 @@ fn successor_preserves_builder_authority_without_carrying_conditional_registrati
             .collect::<Vec<_>>()
     };
     assert_eq!(baseline_aspects, vec![Aspect::new(0), Aspect::new(1)]);
-    let mut owner = BridgeOwnedSignalRuntime::new(runtime, graph)
-        .expect("Bridge owns the runtime with builder authority");
-    owner
+    let mut owner = BridgeConditionalRuntimeBuilder::new(
+        runtime,
+        Box::new(graph),
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+    )
+    .expect("Bridge owns the runtime with builder authority");
+    let incumbent = owner
         .install(BridgeConditionalInstallationRequest {
             contract: conditional_contract("query:one"),
             location: BridgeConditionalLocation::operation("query:one"),
@@ -348,42 +359,27 @@ fn successor_preserves_builder_authority_without_carrying_conditional_registrati
         .expect("conditional authority extends the baseline registry");
     assert_eq!(owner.baseline_semantic_dependency_count(), 1);
     assert_eq!(owner.active_semantic_dependency_count(), 2);
+    let mut owner = owner.seal().expect("conditional owner seals once");
     owner.destroy_reconstitutable_indexes_for_test();
-
-    let mut successor = owner
-        .successor_installation_runtime()
-        .expect("successor stages from the exact builder baseline");
-    assert_eq!(successor.baseline_semantic_dependency_count(), 1);
-    assert_eq!(successor.active_semantic_dependency_count(), 1);
-    let rebuilt = successor
-        .reconstitution_report()
-        .expect("successor must retain its completed reconstruction report")
-        .correspondence();
-    assert!(rebuilt.exact_semantic_dependency_index_parity());
-    assert!(rebuilt.exact_mapping_index_parity());
-    assert!(rebuilt.exact_index_parity());
-    let rebound_baseline = baseline_targets
-        .iter()
-        .map(|target| {
-            successor
-                .rebind_signal_target(target)
-                .expect("baseline target must bind to the reconstructed Signal graph")
-        })
-        .collect();
-    let reinstalled = successor
-        .install(BridgeConditionalInstallationRequest {
-            contract: conditional_contract("query:first"),
-            location: BridgeConditionalLocation::operation("query:first"),
-            registrations: vec![registration(baseline_dependency, rebound_baseline)],
-            providers: BridgeConditionalProviderSet::new().compute(Compute(1)),
-        })
-        .expect("the reconstructed nonempty baseline must admit ordinary installation");
-    assert_eq!(
-        reinstalled.correspondences[0]
-            .targets()
-            .map(|target| target.aspect())
-            .collect::<Vec<_>>(),
-        baseline_aspects,
-        "restored allocation authority must retain each target's exact baseline aspect slot",
-    );
+    let graph = owner.owned_signal_graph_instance_id();
+    let basis = owner.admitted_signal_basis().clone();
+    let candidate = owner
+        .prepare_conditional_reconstitution(&basis)
+        .expect("same owner readmits derived services");
+    let readmitted = candidate.readmit_lowering(&incumbent).unwrap();
+    assert_eq!(readmitted.signal_node(), incumbent.signal_node());
+    assert!(incumbent.compare_semantic_continuity(&readmitted).is_ok());
+    let report = owner
+        .activate_conditional_reconstitution(candidate)
+        .unwrap();
+    assert_eq!(report.signal_graph_instance_id(), graph);
+    assert_eq!(owner.owned_signal_graph_instance_id(), graph);
+    assert_eq!(report.signal().service_readmission_count(), 1);
+    assert_eq!(report.readmitted_lowering_count(), 1);
+    assert!(report
+        .correspondence()
+        .exact_semantic_dependency_index_parity());
+    assert!(report.correspondence().exact_mapping_index_parity());
+    assert!(report.correspondence().exact_index_parity());
+    assert!(incumbent.compare_execution_affinity(&readmitted).is_err());
 }

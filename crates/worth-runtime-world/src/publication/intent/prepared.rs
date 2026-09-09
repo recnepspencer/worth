@@ -71,6 +71,12 @@ pub struct PreparedCompositePublicationWithSignal {
 }
 
 impl PreparedCompositePublicationWithSignal {
+    pub(crate) fn reserve_conditional_definition_custody(
+        &mut self,
+    ) -> std::sync::Arc<crate::publication::ConditionalDefinitionAttemptCustody> {
+        self.attempt.reserve_conditional_definition_custody()
+    }
+
     pub fn expected_head(&self) -> &ProductBranchObservation {
         self.attempt.expected_head()
     }

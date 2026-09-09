@@ -1,7 +1,11 @@
 mod aggregate_projection;
+pub use crate::domain_computation::{
+    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
+    WorthQueryProductUnpublishedRecovery,
+};
 mod application_attempt;
 mod application_branch;
-mod application_query;
+pub(crate) mod application_query;
 mod application_runtime;
 mod authenticated_principal;
 mod authentication_clock;
@@ -26,6 +30,14 @@ mod managed_bridge;
 mod observations;
 mod ordinary_read;
 mod principal_key;
+pub(crate) mod product_activation;
+mod product_operation;
+pub use product_operation::{
+    WorthQueryConditionalDefinitionPublicationDenial,
+    WorthQueryConditionalDefinitionPublicationOutcome,
+    WorthQueryPerformedConditionalDefinitionPublication, WorthQueryProductQueryControls,
+    WorthQuerySelectedProductOperation,
+};
 mod provider;
 mod resolution;
 mod resolution_denial;
@@ -103,6 +115,7 @@ pub use application_query::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationAuthorizationWorkEvidence,
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
+    WorthQueryApplicationBasisSelectionIdentity,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseReceipt,
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
     WorthQueryApplicationContinuationPageResult, WorthQueryApplicationDisclosed,
@@ -144,6 +157,7 @@ pub use authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,
 };
 pub use bootstrap::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphPublication};
+pub use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity};
 pub use conditional_operation::{
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalClockHandle,

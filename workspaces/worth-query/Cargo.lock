@@ -700,6 +700,7 @@ dependencies = [
  "worth-query-installation",
  "worth-relational",
  "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-signal",
 ]
 
@@ -786,6 +787,17 @@ dependencies = [
  "worth-foundational",
  "worth-harness",
  "worth-proof",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-runtime-world"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-runtime-bridge",
  "worth-signal",
 ]
 

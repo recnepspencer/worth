@@ -1,3 +1,7 @@
+mod fork_growth;
+mod reserved_fork;
+mod retained_charge;
+
 use serde::{Deserialize, Serialize};
 
 use super::OutputChange;
@@ -38,6 +42,10 @@ pub struct CanonicalChangedRegions {
 }
 
 impl CanonicalChangedRegions {
+    pub(crate) fn from_canonical_regions(regions: Vec<ChangedRegion>) -> Option<Self> {
+        is_strict_region_order(&regions).then_some(Self { regions })
+    }
+
     pub fn new(regions: impl IntoIterator<Item = ChangedRegion>) -> Self {
         Self::canonicalize_unordered(regions)
     }
@@ -361,3 +369,5 @@ impl ChangedRegion {
         self
     }
 }
+
+mod subscription_lookup;

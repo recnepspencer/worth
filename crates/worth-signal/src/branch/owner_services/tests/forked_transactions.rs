@@ -60,9 +60,15 @@ fn forked_owner_cell_transactions_restore_abort_and_isolate_commit() {
     let mut aborted = None;
     with_movement_permit(|permit| {
         aborted = Some(
-            destination.with_state(&destination_admission, |destination, _| {
-                destination.execute_canonical_transaction::<(), (), _>(
+            destination.with_state(&destination_admission, |destination_state, _| {
+                let operation_scope = super::super::conditional_execution::SignalConditionalOperationScopeBinding::issue(
+                    &destination_basis,
+                    destination.incarnation(),
+                    destination_state.state().installed_definition().cloned(),
+                );
+                destination_state.execute_canonical_transaction::<(), (), _>(
                     permit,
+                    operation_scope,
                     &mut (),
                     |transaction| {
                         transaction.set_dependencies(
@@ -78,6 +84,7 @@ fn forked_owner_cell_transactions_restore_abort_and_isolate_commit() {
     assert!(aborted
         .expect("aborted transaction executes")
         .expect("destination cell admits")
+        .expect("callback error rollback does not unwind")
         .is_err());
     assert_destination_dependency(&destination, &destination_admission, derived, source_a);
     let source_after_abort = source_cell
@@ -101,9 +108,15 @@ fn forked_owner_cell_transactions_restore_abort_and_isolate_commit() {
     let mut committed = None;
     with_movement_permit(|permit| {
         committed = Some(
-            destination.with_state(&destination_admission, |destination, _| {
-                destination.execute_canonical_transaction::<(), (), _>(
+            destination.with_state(&destination_admission, |destination_state, _| {
+                let operation_scope = super::super::conditional_execution::SignalConditionalOperationScopeBinding::issue(
+                    &destination_basis,
+                    destination.incarnation(),
+                    destination_state.state().installed_definition().cloned(),
+                );
+                destination_state.execute_canonical_transaction::<(), (), _>(
                     permit,
+                    operation_scope,
                     &mut (),
                     |transaction| {
                         transaction.set_dependencies(
@@ -118,6 +131,7 @@ fn forked_owner_cell_transactions_restore_abort_and_isolate_commit() {
     committed
         .expect("committed transaction executes")
         .expect("destination cell admits")
+        .expect("successful callback does not unwind")
         .expect("destination transaction commits");
     assert_destination_dependency(&destination, &destination_admission, derived, source_b);
     source_cell

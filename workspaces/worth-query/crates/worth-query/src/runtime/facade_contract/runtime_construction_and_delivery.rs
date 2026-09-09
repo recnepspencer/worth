@@ -7,6 +7,7 @@ pub use super::owned_async_source::{
     WorthQueryInstalledOwnedAsyncDeclaration, WorthQueryOwnedAsyncRequestDeclaration,
     WorthQueryOwnedAsyncRuntimeDenial, WorthQueryOwnedAsyncRuntimeTopology,
 };
+pub use super::product_branching::WorthQueryProductBranchCreationDenial;
 
 pub use super::async_source_binding::{
     WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError,
@@ -26,8 +27,9 @@ pub use super::backend::{
     SubscriptionActivationReceipt, WorthQueryBackendEntityLookup, WorthQueryBackendInspectionError,
     WorthQueryBackendInspectionErrorKind, WorthQueryBackendMergeAuthority,
     WorthQueryBridgeBackedRuntimeBackend, WorthQueryIntentAuthorityAdapter,
-    WorthQueryMergeSnapshotOwner, WorthQueryPrimaryGraphBackendHandle, WorthQueryRuntimeBackend,
-    WorthQueryRuntimeBackendParts, WorthQueryRuntimeDeclarationInitializationAdapter,
+    WorthQueryMergeSnapshotOwner, WorthQueryPrimaryGraphBackendHandle,
+    WorthQueryProductSourceDenial, WorthQueryRuntimeBackend, WorthQueryRuntimeBackendParts,
+    WorthQueryRuntimeDeclarationInitializationAdapter,
     WorthQueryRuntimeExistingTruthVerificationAdapter, WorthQueryRuntimeInspectorEvidenceAdapter,
     WorthQueryRuntimeIntentAuthorityAdapter, WorthQueryRuntimePreviewBasisAdapter,
     WorthQueryRuntimeSchemaAdapter, WorthQueryRuntimeSignalSinkAdapter,

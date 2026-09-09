@@ -1,3 +1,6 @@
+#[path = "application_attempt/product_races.rs"]
+mod product_races;
+
 use std::time::Duration;
 
 use super::fixture::{
@@ -52,44 +55,6 @@ use program_fixture::{
 };
 
 #[test]
-fn same_fact_race_stales_loser_while_unrelated_drift_does_not_conflict() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let unrelated = resolved_account(&world, "unrelated", &request);
-
-    let first = admitted_program(&world, &principal, &account, &request, "first");
-    let losing = admitted_program(&world, &principal, &account, &request, "losing");
-    let unrelated_program =
-        admitted_program(&world, &principal, &unrelated, &request, "unrelated-after");
-
-    let unrelated_outcome = world
-        .application
-        .compare_and_commit_application(unrelated_program, idempotency(1, 1));
-    assert!(
-        matches!(
-            unrelated_outcome,
-            WorthQueryApplicationCommitOutcome::Committed(_)
-        ),
-        "unexpected unrelated outcome: {unrelated_outcome:?}"
-    );
-    assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, idempotency(2, 2)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-    let WorthQueryApplicationCommitOutcome::Stale(stale) = world
-        .application
-        .compare_and_commit_application(losing, idempotency(3, 3))
-    else {
-        panic!("the second same-fact attempt must be stale");
-    };
-    assert_eq!(stale.stale_fact_count(), 1);
-}
-
-#[test]
 fn concurrent_equivalent_attempts_publish_one_transaction() {
     let world = installed_authorization_world(true);
     let request = live_scope();
@@ -126,51 +91,6 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
         .collect::<Vec<_>>();
     assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Executed));
     assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Recovered));
-}
-
-#[test]
-fn concurrent_independent_attempts_both_commit() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let first_account = resolved_account(&world, "open", &request);
-    let second_account = resolved_account(&world, "unrelated", &request);
-    let first = admitted_program(
-        &world,
-        &principal,
-        &first_account,
-        &request,
-        "first-independent",
-    );
-    let second = admitted_program(
-        &world,
-        &principal,
-        &second_account,
-        &request,
-        "second-independent",
-    );
-
-    let (left, right) = std::thread::scope(|scope| {
-        let left = scope.spawn(|| {
-            world
-                .application
-                .compare_and_commit_application(first, idempotency(13, 13))
-        });
-        let right = scope.spawn(|| {
-            world
-                .application
-                .compare_and_commit_application(second, idempotency(14, 14))
-        });
-        (left.join().unwrap(), right.join().unwrap())
-    });
-    assert!(
-        matches!(left, WorthQueryApplicationCommitOutcome::Committed(_)),
-        "first independent outcome: {left:?}"
-    );
-    assert!(
-        matches!(right, WorthQueryApplicationCommitOutcome::Committed(_)),
-        "second independent outcome: {right:?}"
-    );
 }
 
 #[test]

@@ -1,11 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::data::handle::NodeId;
+use crate::data::persistent_hash_map::PersistentHashMap;
 
 use super::fork_overlay::{
     extend_merged_set, BucketDelta, ReverseSubscriptionFlat, ReverseSubscriptionStorage, SetDelta,
 };
-use super::{ForkConsumerMemberships, ReverseSubscriptionIndex, SubscriberScopeBuckets};
+use super::{ForkConsumerMembershipChange, ReverseSubscriptionIndex, SubscriberScopeBuckets};
 
 impl ReverseSubscriptionIndex {
     pub(crate) fn operational_clone(&self) -> Self {
@@ -26,11 +27,11 @@ impl ReverseSubscriptionIndex {
 
 fn materialize_flat(
     base: &ReverseSubscriptionFlat,
-    bucket_changes: &im::OrdMap<super::ProducerAspectKey, BucketDelta>,
-    consumer_changes: &im::OrdMap<NodeId, Option<ForkConsumerMemberships>>,
+    bucket_changes: &PersistentHashMap<super::ProducerAspectKey, BucketDelta>,
+    consumer_changes: &PersistentHashMap<NodeId, ForkConsumerMembershipChange>,
 ) -> ReverseSubscriptionFlat {
     let mut bucket_keys = base.buckets.keys().copied().collect::<BTreeSet<_>>();
-    bucket_keys.extend(bucket_changes.keys().copied());
+    bucket_keys.extend(bucket_changes.iter().map(|(key, _)| *key));
     let mut buckets = BTreeMap::new();
     for key in bucket_keys {
         let values = materialize_bucket(base.buckets.get(&key), bucket_changes.get(&key));
@@ -40,12 +41,12 @@ fn materialize_flat(
     }
 
     let mut by_consumer = base.by_consumer.clone();
-    for (consumer, memberships) in consumer_changes {
-        match memberships {
-            Some(memberships) => {
+    for (consumer, change) in consumer_changes.iter() {
+        match change {
+            ForkConsumerMembershipChange::Replaced(memberships) => {
                 by_consumer.insert(*consumer, memberships.to_owned());
             }
-            None => {
+            ForkConsumerMembershipChange::Removed => {
                 by_consumer.remove(consumer);
             }
         }
@@ -78,9 +79,9 @@ fn materialize_bucket(
     }
 }
 
-fn materialize_map<K: Copy + Ord>(
+fn materialize_map<K: Copy + Ord + std::hash::Hash>(
     base: Option<&BTreeMap<K, BTreeSet<NodeId>>>,
-    changes: Option<&im::OrdMap<K, SetDelta>>,
+    changes: Option<&PersistentHashMap<K, SetDelta>>,
 ) -> BTreeMap<K, BTreeSet<NodeId>> {
     let mut keys = base
         .into_iter()
@@ -88,7 +89,7 @@ fn materialize_map<K: Copy + Ord>(
         .map(|(key, _)| *key)
         .collect::<BTreeSet<_>>();
     if let Some(changes) = changes {
-        keys.extend(changes.keys().copied());
+        keys.extend(changes.iter().map(|(key, _)| *key));
     }
     keys.into_iter()
         .filter_map(|key| {
@@ -103,6 +104,12 @@ fn materialize_map<K: Copy + Ord>(
 
 fn materialize_set(base: Option<&BTreeSet<NodeId>>, delta: Option<&SetDelta>) -> BTreeSet<NodeId> {
     let mut values = Vec::new();
-    let _ = extend_merged_set(base, delta, &mut values);
+    let _ = extend_merged_set(
+        base,
+        delta,
+        &mut values,
+        &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+    )
+    .expect("materializable reverse subscription set");
     values.into_iter().collect()
 }

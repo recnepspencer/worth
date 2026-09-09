@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
 
+use crate::data::retained_storage::{
+    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
+};
+
 /// A slot in the node arena that may be occupied or vacant.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Slot {
@@ -9,6 +14,18 @@ pub(crate) struct Slot {
     pub(crate) retired: bool,
     /// Whether this slot currently owns a live node lane payload.
     pub(crate) occupied: bool,
+}
+
+impl RetainedStorageMeasurement for Slot {
+    fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
+        work.visit()?;
+        let Self {
+            generation: _,
+            retired: _,
+            occupied: _,
+        } = self;
+        Ok(Charge::ZERO)
+    }
 }
 
 impl Slot {

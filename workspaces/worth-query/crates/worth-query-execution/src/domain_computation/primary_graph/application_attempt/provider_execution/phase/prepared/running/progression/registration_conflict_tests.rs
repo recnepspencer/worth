@@ -1,8 +1,8 @@
-use super::admit_provider_session;
 use super::super::{
     WorthQueryApplicationCommitProgressionAuthority, WorthQueryProgressedApplicationCommit,
     WorthQueryProviderProgressionCompletion,
 };
+use super::admit_provider_session;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::{
     finish_application_commit, prepare_application_commit, start_managed_application_commit,
     WorthQueryApplicationCommitPreparation, WorthQueryApplicationCommitPreparationRequest,
@@ -75,6 +75,7 @@ fn reject_occupied_registration(
         &world.application,
         &admission,
         lease.snapshot(),
+        lease.product_publication(),
     )
     .expect("the real running attempt must recapture its own exact basis");
     let admitted_session = admit_provider_session(

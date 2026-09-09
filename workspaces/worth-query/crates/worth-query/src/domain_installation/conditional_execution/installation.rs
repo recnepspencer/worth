@@ -11,10 +11,8 @@ pub(crate) use compute_contract::WorthQueryConditionalComputeContextParts;
 pub use compute_contract::{
     WorthQueryConditionalComputeContext, WorthQueryConditionalNodeComputeProvider,
 };
+pub(crate) use owned_topology::PendingOwnedConditionalNode;
 pub use owned_topology::WorthQueryOwnedConditionalDependencyInstallation;
-pub(crate) use owned_topology::{
-    PendingOwnedConditionalInstanceFamily, PendingOwnedConditionalNode,
-};
 
 use super::QueryComputeProvider;
 use authority_resolution::{installed_conditional_graph, installed_conditional_operation};
@@ -52,28 +50,6 @@ impl WorthQueryConditionalDependencyInstallation {
     pub fn signal_targets(&self) -> &[BridgeSignalAspectTargetDeclaration] {
         &self.targets
     }
-
-    fn rebound_for(
-        &self,
-        signal: &worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
-    ) -> Result<Self, WorthQueryConditionalNodeInstallationDenial> {
-        let targets = self
-            .targets
-            .iter()
-            .map(|target| signal.rebind_signal_target(target))
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(
-                |denial| WorthQueryConditionalNodeInstallationDenial::Bridge {
-                    kind: denial.kind(),
-                    detail: denial.detail().to_string(),
-                },
-            )?;
-        Ok(Self {
-            source_record_identity: self.source_record_identity,
-            observation_record_identity: self.observation_record_identity,
-            targets,
-        })
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -87,6 +63,7 @@ pub enum WorthQueryConditionalNodeInstallationDenial {
     InvalidConditionalContract,
     UnsupportedMaintenancePosture,
     UnsupportedArtifactPosture,
+    CompositeCorrespondenceRebindRequired,
     Correspondence(worth_runtime_bridge::facade::BridgeCorrespondenceDenialKind),
     Bridge {
         kind: worth_runtime_bridge::facade::BridgeConditionalDenialKind,
@@ -195,7 +172,7 @@ pub(crate) trait PendingConditionalInstallation: Send {
         &self,
         domains: &super::super::WorthQueryDomainInstallationRegistry,
         graphs: &super::super::WorthQueryInstalledGraphParticipationRegistry,
-        signal: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
+        signal: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         registry: &mut super::WorthQueryConditionalExecutionRegistry,
     ) -> Result<(), WorthQueryConditionalNodeInstallationDenial>;
 }
@@ -234,12 +211,12 @@ where
         &self,
         domains: &super::super::WorthQueryDomainInstallationRegistry,
         graphs: &super::super::WorthQueryInstalledGraphParticipationRegistry,
-        signal: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
+        signal: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         registry: &mut super::WorthQueryConditionalExecutionRegistry,
     ) -> Result<(), WorthQueryConditionalNodeInstallationDenial> {
         let operation = installed_conditional_operation::<D, O, F>(domains)?;
         let graph = installed_conditional_graph::<G>(graphs)?;
-        let request = self.installation_request(signal, &operation, &graph)?;
+        let request = self.installation_request(&operation, &graph)?;
         let lowering = signal.install(request).map_err(|denial| {
             WorthQueryConditionalNodeInstallationDenial::Bridge {
                 kind: denial.kind(),
@@ -258,6 +235,10 @@ where
                 operation_identity: operation.definition().canonical_identity().to_string(),
                 runtime_authority: operation.domain_authority().runtime_authority().as_u64(),
                 installation_runtime_authority: operation.operation_authority().runtime_ordinal(),
+                source_installation_generation: operation
+                    .operation_authority()
+                    .generation()
+                    .ordinal(),
                 installation_generation: operation.installation_generation().ordinal(),
                 resource_support: self.compute.execution_resource_support(),
             })
@@ -271,7 +252,6 @@ where
 {
     fn installation_request(
         &self,
-        signal: &worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
         operation: &super::super::WorthQueryInstalledDomainOperation<D, O, F>,
         graph: &super::super::WorthQueryInstalledGraphParticipation<G>,
     ) -> Result<
@@ -290,16 +270,11 @@ where
                 detail: "Query conditional registrations own the sole compute provider".into(),
             });
         }
-        let dependencies = self
-            .dependencies
-            .iter()
-            .map(|dependency| dependency.rebound_for(signal))
-            .collect::<Result<Vec<_>, _>>()?;
         let registrations = build_correspondence_registrations(
             operation,
             graph,
             self.location.clone(),
-            dependencies,
+            self.dependencies.clone(),
         )?;
         Ok(
             worth_runtime_bridge::facade::BridgeConditionalInstallationRequest {

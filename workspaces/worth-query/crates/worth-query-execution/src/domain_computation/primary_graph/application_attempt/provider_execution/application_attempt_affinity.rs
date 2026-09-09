@@ -27,6 +27,8 @@ pub(in crate::domain_computation) struct WorthQueryApplicationAttemptBasis {
     graph_work_session: WorthQueryGraphWorkSessionIdentity,
     graph_work_managed_run: WorthQueryGraphWorkManagedRunIdentity,
     branch: BranchId,
+    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 }
 
 /// Inseparable authority association retained by the provider attempt store.
@@ -111,9 +113,24 @@ impl WorthQueryApplicationAttemptBasis {
         application: &super::super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         snapshot: &SnapshotHandle,
+        product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     ) -> Result<Self, ()> {
         if admission.runtime_authority() != application.runtime.authority_identity()
             || snapshot.branch_id() != admission.graph_work_branch()
+            || snapshot.branch_id()
+                != product
+                    .observation()
+                    .basis()
+                    .relational_basis()
+                    .identity()
+                    .branch_id()
+            || snapshot.version_id()
+                != product
+                    .observation()
+                    .basis()
+                    .relational_basis()
+                    .observation()
+                    .version_id()
         {
             return Err(());
         }
@@ -128,6 +145,8 @@ impl WorthQueryApplicationAttemptBasis {
             graph_work_session: admission.graph_work_session_identity(),
             graph_work_managed_run: admission.graph_work_managed_run_identity(),
             branch: admission.graph_work_branch().clone(),
+            product: product.clone(),
+            request: admission.publication_request().clone(),
         })
     }
 
@@ -197,6 +216,15 @@ impl WorthQueryApplicationAttemptBasis {
 }
 
 impl WorthQueryApplicationAttemptAffinity {
+    pub(in crate::domain_computation::primary_graph) fn publication_request(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        &self.basis.request
+    }
+    pub(in crate::domain_computation::primary_graph) fn product_publication(&self) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
+        &self.basis.product
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn lookup_identity(
         &self,
     ) -> WorthQueryProviderSessionAffinityIdentity {

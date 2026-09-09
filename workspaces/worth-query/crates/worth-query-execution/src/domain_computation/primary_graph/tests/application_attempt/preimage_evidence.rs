@@ -20,6 +20,15 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
     let unrelated = resolved_account(&world, "unrelated", &request);
+    let selected = world.application.admit_current_product_branch().unwrap();
+    let commit_count = || {
+        world
+            .application
+            .primary_provider
+            .graph
+            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+    };
+    let baseline = commit_count();
     let first = retained_status_program(
         &world,
         &principal,
@@ -52,12 +61,47 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let WorthQueryApplicationCommitOutcome::Committed(original) = outcome else {
         panic!("response-loss recovery must return the authoritative commit: {outcome:?}");
     };
+    let after_original = world.application.admit_current_product_branch().unwrap();
+    assert_ne!(after_original.selected_commit(), selected.selected_commit());
+    assert_eq!(commit_count(), baseline + 1);
+    let outcome = world
+        .application
+        .compare_and_commit_application(interleaved, idempotency(83, 84));
+    let WorthQueryApplicationCommitOutcome::ProductStale(stale) = outcome else {
+        panic!("preadmitted independent interleave must reject its old product: {outcome:?}");
+    };
+    assert_eq!(
+        stale.expected_product().selected_commit(),
+        selected.selected_commit()
+    );
+    if let Some(observed) = stale.observed_product() {
+        assert_eq!(observed.selected_commit(), after_original.selected_commit());
+    }
+    assert_eq!(commit_count(), baseline + 1);
+    assert_eq!(
+        world
+            .application
+            .admit_current_product_branch()
+            .unwrap()
+            .selected_commit(),
+        after_original.selected_commit()
+    );
+
+    let readmitted_interleave = retained_status_program(
+        &world,
+        &principal,
+        &unrelated,
+        &request,
+        "changed-between",
+        RetentionMutationBreadth::Narrow,
+    );
     assert!(matches!(
         world
             .application
-            .compare_and_commit_application(interleaved, idempotency(83, 84)),
+            .compare_and_commit_application(readmitted_interleave, idempotency(83, 84)),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
+    assert_eq!(commit_count(), baseline + 2);
     let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
         .application
         .compare_and_commit_application(retry, idempotency(81, 82))
@@ -73,6 +117,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     assert_eq!(recovered.terminal().attempt_resources_released(), None);
     assert!(recovered.dispatch_outbox().is_some());
     assert_retained_status(&recovered, "open");
+    assert_eq!(commit_count(), baseline + 2);
 }
 
 #[test]

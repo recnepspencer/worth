@@ -7,13 +7,14 @@ pub(super) fn public_world() -> (
     ProductBranchObservation,
 ) {
     let mut fixture = reference_test_fixture::real_fixture(12, 12);
-    let (relational, signal, bridge, budgets, clock) = fixture
+    let (relational, signal, signal_publication, bridge, budgets, clock) = fixture
         .owner_inputs(budgets(4), RuntimeWorldClock::from_source(FixedClock))
         .into_parts();
     let owner = RuntimeWorldOwner::builder()
         .with_bridge_correspondence(bridge)
         .with_relational_services(relational)
         .with_signal_services(signal)
+        .with_signal_definition_publication(signal_publication)
         .with_budgets(budgets)
         .with_clock(clock)
         .build()

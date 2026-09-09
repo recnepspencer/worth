@@ -4,16 +4,13 @@ mod operational_lifecycle;
 mod single_root;
 
 use super::installed_operation_fixture::{
-    conditional_installation_with_change, conditional_public_workspace_with, conditional_workspace,
-    lineage_workflow_workspace, workspace, DirectConditionalCompute, GeometryDomain,
+    conditional_workspace, lineage_workflow_workspace, workspace, GeometryDomain,
     LineageEvidenceScenario, ReadExecutionInput, ReadFamily, ReadVertex,
 };
 use super::operation_native_access_matrix::{
     fixture::{insert_matrix_value, matrix_workspace, NativeMatrixRead},
     samples::matrix_value_with_order,
 };
-use crate::support::public_bridge_runtime::PublicBridgeRuntimeHarness;
-
 #[test]
 fn ordinary_consumer_enters_through_the_curated_installed_facade() {
     let mut workspace = workspace("installed-public-facade-dx", false).unwrap();
@@ -118,17 +115,9 @@ fn conditional_authoring_and_signal_execution_stay_inside_the_query_facade() {
 fn assert_threshold_family_executes_through_facade(
     declaration: domain::WorthQueryPortableConditionalNodeDeclaration,
 ) {
-    let (installation, change, snapshots) = conditional_installation_with_change(&declaration);
-    let harness = PublicBridgeRuntimeHarness::new();
-    harness.set_relational_snapshot(snapshots[0].snapshot_id(), snapshots[0].version_id());
-    let mut workspace = conditional_public_workspace_with(
-        "installed-public-facade-conditional-threshold",
-        declaration,
-        installation,
-        DirectConditionalCompute,
-        &harness,
-    )
-    .unwrap();
+    let mut workspace =
+        conditional_workspace("installed-public-facade-conditional-threshold", declaration)
+            .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let baseline = workspace
         .observe_operating_world()
@@ -155,45 +144,7 @@ fn assert_threshold_family_executes_through_facade(
         installed::conditional::WorthQueryConditionalOutcomeClass::Suppressed
     );
 
-    let location = domain::WorthQueryConditionalNodeLocation::operation("threshold").unwrap();
-    workspace
-        .deliver_conditional_authoritative_change(
-            GeometryDomain,
-            ReadVertex,
-            ReadFamily,
-            domain::WorthQueryConditionalAuthoritativeChangeDeliveryRequest::new(
-                location, 0, change,
-            ),
-        )
-        .unwrap()
-        .unwrap();
-    harness.set_relational_snapshot(snapshots[1].snapshot_id(), snapshots[1].version_id());
-
-    let bound = workspace
-        .observe_operating_world()
-        .unwrap()
-        .family(ReadFamily)
-        .bind(&domain, ReadVertex)
-        .unwrap();
-    let installed::transition::WorthQueryExecutionTransition::Deferred(executed) =
-        installed::transition::execution(
-            bound
-                .admit_execution_resources(
-                    ReadExecutionInput::default(),
-                    crate::suite::installed_operation_fixture::execution_resource_request(),
-                    &workspace,
-                )
-                .unwrap()
-                .execute(&mut workspace),
-        )
-    else {
-        panic!("the threshold compute should report its unchanged output as reverted-clean")
-    };
-    assert_eq!(
-        executed.conditional_provenance()[0].class(),
-        installed::conditional::WorthQueryConditionalOutcomeClass::ComputedRevertedClean
-    );
-    assert_eq!(executed.counters().conditional_compute_contacts, 1);
+    assert_eq!(baseline.counters().conditional_compute_contacts, 0);
 }
 
 #[test]

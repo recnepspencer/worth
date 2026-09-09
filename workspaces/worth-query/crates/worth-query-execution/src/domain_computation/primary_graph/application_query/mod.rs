@@ -25,7 +25,7 @@ mod preview;
 mod projection;
 mod read_execution;
 mod readiness;
-pub(super) mod resource_lifecycle;
+pub(crate) mod resource_lifecycle;
 mod runtime_support;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
@@ -87,6 +87,6 @@ pub use readiness::WorthQueryPrimaryGraphApplicationReadinessSnapshot;
 pub use resource_lifecycle::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseReceipt,
-    WorthQueryApplicationResultBufferEvidence, WorthQueryApplicationResultBufferObservation,
-    WorthQueryApplicationResultBufferObserver,
+    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationResultBufferEvidence,
+    WorthQueryApplicationResultBufferObservation, WorthQueryApplicationResultBufferObserver,
 };

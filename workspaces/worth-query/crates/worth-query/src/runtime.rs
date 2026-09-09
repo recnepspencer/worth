@@ -71,12 +71,21 @@ mod bridge_mutation_lowering;
 mod builder;
 mod computed;
 mod concurrent_hostile_matrix;
+mod conditional_execution;
+mod conditional_resources;
+pub use conditional_resources::{
+    WorthQueryConditionalEvaluationCacheBudget, WorthQueryConditionalEvaluationCacheBudgetDenial,
+    WorthQueryConditionalEvaluationResourceObservation, WorthQueryConditionalExecutionResources,
+};
 mod conditional_owner_delivery_admission;
 mod conditional_owner_delivery_continuation;
 mod facade_contract;
 mod installed_live_routing;
+mod installed_product;
+pub(crate) use installed_product::WorthQueryExecutedConditional;
 mod live_subscription_target_index;
 mod primary_graph_source;
+mod product_branching;
 mod runtime_root_state;
 mod settlement_repair;
 mod shared_projection_owners;
@@ -167,12 +176,9 @@ use runtime_authoritative_mutation_routing::{
     WorthQueryPreparedAuthoritativeMutationRouting,
 };
 mod bridge_async_live_view_declaration;
+mod owned_async_lifecycle;
 mod owned_async_source;
 mod owned_async_supersession;
-mod owned_conditional_instance;
-pub use owned_conditional_instance::{
-    WorthQueryInstalledOwnedConditionalInstance, WorthQueryOwnedConditionalInstanceDenial,
-};
 mod runtime_batch_write_entrypoints;
 mod runtime_batch_write_intents;
 mod runtime_batch_writes;

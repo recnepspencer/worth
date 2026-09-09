@@ -171,7 +171,7 @@ impl LoweredBridgeAsyncSourceDeclaration {
                 )
             })?;
 
-        Ok(Self::new_request_response(
+        Ok(Self::from_request_response_parts(
             validated,
             remapped,
             descriptor.clone(),
@@ -203,7 +203,7 @@ impl LoweredBridgeAsyncSourceDeclaration {
         Ok(Self::new_subscription_backed(validated, remapped, bundle))
     }
 
-    fn new_request_response(
+    pub(crate) fn from_request_response_parts(
         validated: &ValidatedBridgeAsyncSourceDeclaration,
         declaration: ResourceNodeDeclaration,
         descriptor: LoweredResourceDescriptor,

@@ -10,7 +10,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::{
-    application_resource_request, primary_relational_branch_id, WorthQueryApplicationSnapshotLease,
+    application_resource_request, WorthQueryApplicationSnapshotLease,
     WorthQueryApplicationSnapshotLeaseDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::domain_computation::provider_session::{
@@ -38,7 +38,9 @@ where
     let lease = WorthQueryApplicationSnapshotLease::acquire(
         graph.integration_handle(),
         graph.retain_layout(),
-        &primary_relational_branch_id(),
+        runtime
+            .admit_product_publication()
+            .map_err(|_| graph_work_denial(operation.operation()))?,
     )
     .map_err(|denial| snapshot_lease_denial(denial, operation.operation()))?;
     let intent = if operation
@@ -102,7 +104,9 @@ where
     let lease = WorthQueryApplicationSnapshotLease::acquire(
         graph.integration_handle(),
         graph.retain_layout(),
-        &primary_relational_branch_id(),
+        runtime
+            .admit_product_publication()
+            .map_err(|_| graph_work_denial(operation.operation()))?,
     )
     .map_err(|denial| snapshot_lease_denial(denial, operation.operation()))?;
     let mutating = operation.graph_obligations().rows().iter().any(|row| {
@@ -179,12 +183,6 @@ fn snapshot_lease_denial(
         } => WorthQueryOperationAuthorizationDenialKind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        WorthQueryApplicationSnapshotLeaseDenial::RetentionCapacityExhausted => {
-            WorthQueryOperationAuthorizationDenialKind::RetentionCapacityExhausted
-        }
-        WorthQueryApplicationSnapshotLeaseDenial::RetentionIdentityExhausted => {
-            WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted
-        }
         WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted => {
             WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted
         }

@@ -66,27 +66,31 @@ where
         .operation_graph_participation::<WorkflowRead, ReadFamily, ConditionalModelGraph>(
         "model",
     );
-    configured_runtime_without_executors(package)
-        .graph_participation(conditional_model_graph_definition())
-        .graph_participation_provider(ConditionalModelGraph, ConditionalModelGraphProvider)
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .conditional_runtime(installation.bridge, installation.graph)
-        .conditional_node(
+    super::conditional_workspace::source_seed::seeded_builder(
+        configured_runtime_without_executors(package),
+        [installation.semantic().clone()],
+    )
+    .graph_participation(conditional_model_graph_definition())
+    .graph_participation_provider(ConditionalModelGraph, ConditionalModelGraphProvider)
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .with_seeded_conditional_installation(move |builder, source, seed| {
+        let installation = installation.prepare_seeded(source, seed);
+        let builder = builder.conditional_node(
             GeometryDomain,
             WorkflowRead,
             ReadFamily,
@@ -96,20 +100,22 @@ where
             vec![installation.dependency],
             installation.providers,
             compute,
-        )
-        .replayable_workflow_stage_executor(
-            GeometryDomain,
-            WorkflowRead,
-            ReadFamily,
-            WorkflowStageExecutor,
-        )
-        .workflow_parallel_admission_provider(
-            GeometryDomain,
-            WorkflowRead,
-            ReadFamily,
-            WorkflowParallelProvider,
-        )
-        .workspace(name)
+        );
+        Ok((builder, installation.bridge, installation.graph))
+    })
+    .replayable_workflow_stage_executor(
+        GeometryDomain,
+        WorkflowRead,
+        ReadFamily,
+        WorkflowStageExecutor,
+    )
+    .workflow_parallel_admission_provider(
+        GeometryDomain,
+        WorkflowRead,
+        ReadFamily,
+        WorkflowParallelProvider,
+    )
+    .workspace(name)
 }
 
 pub(crate) fn stage_conditional_workflow_workspace_with<P>(
@@ -170,32 +176,37 @@ where
         workflow_package(workflow, true)
     }
     .operation_graph_participation::<WorkflowRead, ReadFamily, ConditionalModelGraph>("model");
+    let conditional_stage = conditional_stage.to_string();
     let graph_definition = if with_lineage {
         conditional_lineage_model_graph_definition()
     } else {
         conditional_model_graph_definition()
     };
-    configured_runtime_without_executors(package)
-        .graph_participation(graph_definition)
-        .graph_participation_provider(ConditionalModelGraph, ConditionalModelGraphProvider)
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .conditional_runtime(installation.bridge, installation.graph)
-        .conditional_node(
+    super::conditional_workspace::source_seed::seeded_builder(
+        configured_runtime_without_executors(package),
+        [installation.semantic().clone()],
+    )
+    .graph_participation(graph_definition)
+    .graph_participation_provider(ConditionalModelGraph, ConditionalModelGraphProvider)
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .with_seeded_conditional_installation(move |builder, source, seed| {
+        let installation = installation.prepare_seeded(source, seed);
+        let builder = builder.conditional_node(
             GeometryDomain,
             WorkflowRead,
             ReadFamily,
@@ -208,20 +219,22 @@ where
             vec![installation.dependency],
             installation.providers,
             compute,
-        )
-        .replayable_workflow_stage_executor(
-            GeometryDomain,
-            WorkflowRead,
-            ReadFamily,
-            WorkflowStageExecutor,
-        )
-        .workflow_parallel_admission_provider(
-            GeometryDomain,
-            WorkflowRead,
-            ReadFamily,
-            WorkflowParallelProvider,
-        )
-        .workspace(name)
+        );
+        Ok((builder, installation.bridge, installation.graph))
+    })
+    .replayable_workflow_stage_executor(
+        GeometryDomain,
+        WorkflowRead,
+        ReadFamily,
+        WorkflowStageExecutor,
+    )
+    .workflow_parallel_admission_provider(
+        GeometryDomain,
+        WorkflowRead,
+        ReadFamily,
+        WorkflowParallelProvider,
+    )
+    .workspace(name)
 }
 
 struct WorkflowConditionalCompute(u64);
@@ -232,6 +245,16 @@ impl domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, WorkflowRe
 
     fn semantic_contract(&self) -> Self::SemanticContract {
         self.0
+    }
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
     }
 
     fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {

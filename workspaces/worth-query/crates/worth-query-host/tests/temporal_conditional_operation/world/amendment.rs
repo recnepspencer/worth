@@ -15,7 +15,16 @@ impl CourtroomWorld {
     }
 
     pub fn amend_gate_only(&mut self, gate: &str) {
-        self.commit_amendment(1, 5, "active", "payload", gate, AmendmentWidth::GateOnly);
+        self.amendment_ordinal += 1;
+        self.commit_amendment(
+            1,
+            5,
+            "active",
+            "payload",
+            gate,
+            AmendmentWidth::GateOnly,
+            self.amendment_ordinal,
+        );
     }
 
     pub fn intent_record_identity(&self) -> primary_graph::RelationalBridgeRecordIdentityParts {
@@ -38,17 +47,31 @@ impl CourtroomWorld {
         input: &str,
         gate: &str,
     ) {
-        self.commit_amendment(revision, due, lifecycle, input, gate, AmendmentWidth::Full);
+        self.amendment_ordinal += 1;
+        self.commit_amendment(
+            revision,
+            due,
+            lifecycle,
+            input,
+            gate,
+            AmendmentWidth::Full,
+            self.amendment_ordinal,
+        );
+    }
+
+    pub fn change_input_after_query_admission(&self, input: &str) {
+        self.commit_amendment(2, 11, "active", input, "ready", AmendmentWidth::Full, 0xED);
     }
 
     fn commit_amendment(
-        &mut self,
+        &self,
         revision: u64,
         due: u64,
         lifecycle: &str,
         input: &str,
         gate: &str,
         width: AmendmentWidth,
+        amendment_ordinal: u8,
     ) {
         let schema = self.application.installed_schema();
         let principal_binding = schema
@@ -139,10 +162,9 @@ impl CourtroomWorld {
         effects
             .write_field(&intent, IntentGateField::reference(), gate.to_string())
             .unwrap();
-        self.amendment_ordinal = self.amendment_ordinal.saturating_add(1);
         let idempotency = primary_graph::WorthQueryApplicationIdempotencyBinding::new(
-            [0x91 ^ self.amendment_ordinal; 32],
-            [0xA0 ^ self.amendment_ordinal; 32],
+            [0x91 ^ amendment_ordinal; 32],
+            [0xA0 ^ amendment_ordinal; 32],
         );
         let outcome = self
             .application

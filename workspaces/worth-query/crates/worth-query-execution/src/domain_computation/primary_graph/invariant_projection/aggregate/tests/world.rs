@@ -187,16 +187,24 @@ impl AggregateWorld {
     pub(super) fn observe_bounded(&self, maximum_work: usize) -> BoundedAggregateObservation {
         let denial = Cell::new(None);
         let work = Cell::new(WorthQueryInvariantProjectionWork::default());
-        let completed = self.authority.project_bounded(maximum_work, |reader| {
-            let result = reader.summarize_exclusive_incoming(
-                AggregateContribution::reference(),
-                SourceAmount::reference(),
-                &self.target,
-            );
-            denial.set(result.as_ref().err().map(|error| error.kind()));
-            work.set(reader.work);
-            result
-        });
+        let product = self
+            ._runtime
+            .admit_product_publication()
+            .expect("aggregate product basis");
+        let completed = self.authority.project_bounded(
+            maximum_work,
+            product.observation().basis().relational_basis().clone(),
+            |reader| {
+                let result = reader.summarize_exclusive_incoming(
+                    AggregateContribution::reference(),
+                    SourceAmount::reference(),
+                    &self.target,
+                );
+                denial.set(result.as_ref().err().map(|error| error.kind()));
+                work.set(reader.work);
+                result
+            },
+        );
         BoundedAggregateObservation {
             exhausted: completed.is_err(),
             denial: denial.get(),

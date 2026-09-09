@@ -1,3 +1,5 @@
+mod retained_charge;
+
 use std::fmt;
 
 use serde::{Deserialize, Serialize};

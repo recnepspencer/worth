@@ -22,10 +22,21 @@ where
         &self,
         mut observe_detached_batch: impl FnMut(SignalOwnerCloseBatchKind, usize),
     ) {
+        self.conditional_retention.close();
         let Some(cleanup_claim) = self.lifecycle.claim_cleanup() else {
             return;
         };
         self.retention.close_owner();
+        loop {
+            let temporal_batch = self
+                .conditional_temporal
+                .take_close_batch(OWNER_CLOSE_BATCH_SIZE);
+            if temporal_batch.is_empty() {
+                break;
+            }
+            self.counters.record_close_batch();
+            drop(temporal_batch);
+        }
         loop {
             let registry_batch = self.registry.take_close_batch(OWNER_CLOSE_BATCH_SIZE);
             if !registry_batch.is_empty() {

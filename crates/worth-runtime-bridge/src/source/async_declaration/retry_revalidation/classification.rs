@@ -212,6 +212,20 @@ pub fn admit_revalidation_lineage(
         request.signal_report.async_decision_digest(),
     )
     .map_err(map_request_identity_rejection)?;
+    finalize_revalidation_lineage(prior, newer, resource_report)
+}
+
+pub(super) fn finalize_revalidation_lineage(
+    prior: AdmittedBridgeAsyncRequestIdentity,
+    newer: AdmittedBridgeAsyncRequestIdentity,
+    resource_report: &ResourceRevalidationReport,
+) -> Result<BridgeAsyncRevalidationLineage, BridgeAsyncForwardCausalityRejection> {
+    let admitted = resource_report.admitted_revalidation().ok_or_else(|| {
+        rejected(
+            BridgeAsyncForwardCausalityRejectionKind::RevalidationAdmissionMissing,
+            "revalidation report must admit one replacement request",
+        )
+    })?;
     let class = classify_revalidation_class(&prior, &newer, resource_report)?;
     let counters = match class {
         BridgeAsyncForwardCausalityClass::RevalidationAfterTruthBasisDrift => {

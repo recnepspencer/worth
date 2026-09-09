@@ -12,7 +12,7 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 
 use super::super::{WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal};
 use super::{
-    resource_lifecycle::WorthQueryApplicationBasisLease, WorthQueryAdmittedApplicationQueryControls,
+    basis::WorthQueryApplicationQueryBasisCustody, WorthQueryAdmittedApplicationQueryControls,
 };
 
 /// Sealed execution authority for one exact installed query admission.
@@ -42,7 +42,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) canonical_work: WorthQueryCanonicalWorkPhases,
     pub(super) continuation_index_id: Option<DerivedIndexId>,
     pub(super) continuation_state: Option<WorthQueryAdmittedContinuationState>,
-    pub(super) basis: WorthQueryApplicationBasisLease,
+    pub(super) basis: WorthQueryApplicationQueryBasisCustody,
     pub(super) graph_work:
         crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(super) authorization:

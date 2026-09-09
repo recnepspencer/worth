@@ -40,11 +40,7 @@ pub(super) fn outcome_kind<Clock>(
 pub(super) fn raw_observe(
     world: &mut CourtroomWorld,
 ) -> primary_graph::WorthQueryConditionalClockObservationOutcome<super::adapters::CourtroomClock> {
-    world
-        .application
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe()
+    world.conditional_clock().observe()
 }
 
 pub(super) fn assert_authoritative_value<Entity, Aspect, Field, Value, Write, Unit>(

@@ -2,7 +2,7 @@ use worth_query::facade::runtime;
 
 use super::{
     WorthUiPresentationAsyncDeclaration, WorthUiPresentationAsyncObservation,
-    WorthUiPresentationAsyncPosture, WorthUiPresentationRequestBasis,
+    WorthUiPresentationAsyncPosture,
 };
 
 type PresentationLiveView = runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape>;
@@ -13,15 +13,18 @@ use schema::{presentation_live_request, presentation_schema_view, presentation_v
 #[path = "runtime_bridge/completion_progress.rs"]
 mod completion_progress;
 pub(super) use completion_progress::WorthUiPresentationCompletionProgress;
+#[path = "runtime_bridge/owned_source.rs"]
+mod owned_source;
+pub(super) use owned_source::installed_presentation_owned_async_source;
+pub(crate) use owned_source::presentation_owned_async_source_declaration;
+#[path = "runtime_bridge/request_admission.rs"]
+mod request_admission;
 
 pub struct WorthUiPresentationRuntimeAdmission {
-    declaration: WorthUiPresentationAsyncDeclaration,
-    query_declaration: runtime::WorthQueryInstalledOwnedAsyncDeclaration,
-    request: worth_runtime_bridge::facade::AdmittedBridgeAsyncRequestIdentity,
+    request: worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
     effects_indeterminate_issuer:
         worth_runtime_bridge::facade::BridgeOwnedAsyncEffectsIndeterminateIssuer,
     view: PresentationLiveView,
-    semantic_instances: Box<[runtime::WorthQueryInstalledOwnedConditionalInstance]>,
 }
 
 pub struct WorthUiPresentationCompletionAdvance {
@@ -41,8 +44,6 @@ pub(crate) enum WorthUiPresentationRuntimeAdmissionDenial {
     QueryLive(Box<runtime::WorthQueryRuntimeError>),
     MissingAsyncResultState,
     MissingSemanticRuntime,
-    QueryDeclarationMismatch,
-    SemanticInstallation(Box<runtime::WorthQueryOwnedConditionalInstanceDenial>),
     CleanupRequired {
         cause: Box<WorthUiPresentationRuntimeAdmissionDenial>,
         recovery: Box<WorthUiPresentationRuntimeCleanup>,
@@ -53,133 +54,56 @@ pub(crate) enum WorthUiPresentationRuntimeAdmissionDenial {
 #[derive(Debug)]
 pub(crate) enum WorthUiPresentationRuntimeCleanupDenial {
     Query(runtime::WorthQueryOwnedAsyncRuntimeDenial),
-    Semantic(runtime::WorthQueryOwnedConditionalInstanceDenial),
 }
 
-#[derive(Debug)]
 pub(crate) struct WorthUiPresentationRuntimeCleanup {
-    request: Option<worth_runtime_bridge::facade::AdmittedBridgeAsyncRequestIdentity>,
-    semantic_instances: Box<[runtime::WorthQueryInstalledOwnedConditionalInstance]>,
+    request: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission>,
     request_retired: bool,
-    next_semantic_retirement: usize,
 }
 
 impl WorthUiPresentationRuntimeAdmission {
     pub(super) fn admit_in_workspace(
         workspace: &mut runtime::WorthQueryWorkspace,
         declaration: WorthUiPresentationAsyncDeclaration,
-        truth_basis: worth_runtime_bridge::facade::BridgeAsyncRequestTruthViewBasis,
-        semantic_installations: Vec<(
-            [worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts; 8],
-            u64,
-        )>,
+        query_declaration: &runtime::WorthQueryInstalledOwnedAsyncDeclaration,
+        product: &runtime::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthUiPresentationRuntimeAdmissionDenial> {
-        let query_declaration =
-            runtime::WorthQueryOwnedAsyncRequestDeclaration::from_async_resource_identity(
-                declaration.request_identity().clone(),
-                0x5755_4950_5245_5345,
-                16 * 1024 * 1024,
-                3,
-            );
-        let mut semantic_instances = Vec::with_capacity(semantic_installations.len());
-        for (semantic_records, semantic_version) in semantic_installations {
-            match super::semantic_invalidation::install_presentation_semantic_instance(
-                workspace,
-                semantic_records,
-                semantic_version,
-            ) {
-                Ok(instance) => {
-                    semantic_instances.push(instance);
-                }
-                Err(denial) if semantic_instances.is_empty() => {
-                    return Err(
-                        WorthUiPresentationRuntimeAdmissionDenial::SemanticInstallation(Box::new(
-                            denial,
-                        )),
-                    );
-                }
-                Err(denial) => {
-                    return Err(cleanup_after_admission_failure(
-                        workspace,
-                        semantic_instances.into_boxed_slice(),
-                        None,
-                        WorthUiPresentationRuntimeAdmissionDenial::SemanticInstallation(Box::new(
-                            denial,
-                        )),
-                    ));
-                }
+        let request_admission = match request_admission::admit_presentation_owned_request(
+            workspace,
+            query_declaration,
+            product,
+        ) {
+            Ok(request) => request,
+            Err(denial) => {
+                return Err(cleanup_after_admission_failure(
+                    workspace,
+                    None,
+                    WorthUiPresentationRuntimeAdmissionDenial::QueryOwned(Box::new(denial)),
+                ));
             }
-        }
-        let query_declaration =
-            match workspace.install_owned_bridge_async_declaration(query_declaration) {
-                Ok(declaration) => declaration,
-                Err(denial) => {
-                    return Err(cleanup_after_admission_failure(
-                        workspace,
-                        semantic_instances.into_boxed_slice(),
-                        None,
-                        WorthUiPresentationRuntimeAdmissionDenial::QueryOwned(Box::new(denial)),
-                    ));
-                }
-            };
-        if query_declaration.identity() != declaration.request_identity()
-            || query_declaration.clause() != declaration.clause()
-        {
-            return Err(cleanup_after_admission_failure(
-                workspace,
-                semantic_instances.into_boxed_slice(),
-                None,
-                WorthUiPresentationRuntimeAdmissionDenial::QueryDeclarationMismatch,
-            ));
-        }
-        let request_admission =
-            match workspace.admit_owned_bridge_async_request(&query_declaration, truth_basis) {
-                Ok(request) => request,
-                Err(denial) => {
-                    return Err(cleanup_after_admission_failure(
-                        workspace,
-                        semantic_instances.into_boxed_slice(),
-                        None,
-                        WorthUiPresentationRuntimeAdmissionDenial::QueryOwned(Box::new(denial)),
-                    ));
-                }
-            };
-        let (request, effects_indeterminate_issuer) = request_admission.into_parts();
+        };
+        let effects_indeterminate_issuer = request_admission.effects_indeterminate_issuer();
         let view = match workspace.declare_bridge_async_live_view_with_typed_identity(
             presentation_view_name(&declaration),
             presentation_live_request(),
             presentation_schema_view(),
-            query_declaration.identity().request_identity(),
-            &request,
+            declaration.request_identity().request_identity(),
+            request_admission.request(),
         ) {
             Ok(view) => view,
             Err(denial) => {
                 return Err(cleanup_after_admission_failure(
                     workspace,
-                    semantic_instances.into_boxed_slice(),
-                    Some(request),
+                    Some(request_admission),
                     WorthUiPresentationRuntimeAdmissionDenial::QueryLive(Box::new(denial)),
                 ));
             }
         };
         Ok(Self {
-            declaration,
-            query_declaration,
-            request,
+            request: request_admission,
             effects_indeterminate_issuer,
             view,
-            semantic_instances: semantic_instances.into_boxed_slice(),
         })
-    }
-
-    pub fn basis(&self) -> &WorthUiPresentationRequestBasis {
-        self.declaration.basis()
-    }
-
-    pub(super) fn semantic_instances(
-        &self,
-    ) -> &[runtime::WorthQueryInstalledOwnedConditionalInstance] {
-        &self.semantic_instances
     }
 
     pub(crate) fn admit_transitions(
@@ -199,11 +123,7 @@ impl WorthUiPresentationRuntimeAdmission {
         displacing: &Self,
     ) -> Result<(), WorthUiPresentationCompletionDenial> {
         let _supersession = workspace
-            .supersede_owned_bridge_async_live_view(
-                &self.view,
-                &self.query_declaration,
-                &displacing.query_declaration,
-            )
+            .supersede_owned_bridge_async_live_view(&self.view, &self.request, &displacing.request)
             .map_err(|error| {
                 WorthUiPresentationCompletionDenial::QueryTransition(Box::new(error))
             })?;
@@ -215,7 +135,7 @@ impl WorthUiPresentationRuntimeAdmission {
         workspace: &mut runtime::WorthQueryWorkspace,
     ) -> Result<(), WorthUiPresentationCompletionDenial> {
         let _denial = workspace
-            .deny_owned_bridge_async_live_view(&self.view, &self.query_declaration)
+            .deny_owned_bridge_async_live_view(&self.view, &self.request)
             .map_err(|error| {
                 WorthUiPresentationCompletionDenial::QueryTransition(Box::new(error))
             })?;
@@ -227,7 +147,7 @@ impl WorthUiPresentationRuntimeAdmission {
         workspace: &mut runtime::WorthQueryWorkspace,
     ) -> Result<(), WorthUiPresentationCompletionDenial> {
         let _cancellation = workspace
-            .cancel_owned_bridge_async_live_view(&self.view, &self.query_declaration)
+            .cancel_owned_bridge_async_live_view(&self.view, &self.request)
             .map_err(|error| {
                 WorthUiPresentationCompletionDenial::QueryTransition(Box::new(error))
             })?;
@@ -268,30 +188,16 @@ impl WorthUiPresentationRuntimeAdmission {
             graph.signal_graph_instance(),
         ))
     }
-
-    pub(super) fn retire_semantic_at(
-        &self,
-        workspace: &mut runtime::WorthQueryWorkspace,
-        index: usize,
-    ) -> Result<(), runtime::WorthQueryOwnedConditionalInstanceDenial> {
-        super::semantic_invalidation::retire_presentation_semantic_instance(
-            workspace,
-            &self.semantic_instances[index],
-        )
-    }
 }
 
 fn cleanup_after_admission_failure(
     workspace: &mut runtime::WorthQueryWorkspace,
-    semantic_instances: Box<[runtime::WorthQueryInstalledOwnedConditionalInstance]>,
-    request: Option<worth_runtime_bridge::facade::AdmittedBridgeAsyncRequestIdentity>,
+    request: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission>,
     denial: WorthUiPresentationRuntimeAdmissionDenial,
 ) -> WorthUiPresentationRuntimeAdmissionDenial {
     let mut recovery = WorthUiPresentationRuntimeCleanup {
         request,
-        semantic_instances,
         request_retired: false,
-        next_semantic_retirement: 0,
     };
     match recovery.resume(workspace) {
         Ok(()) => denial,
@@ -300,6 +206,16 @@ fn cleanup_after_admission_failure(
             recovery: Box::new(recovery),
             last_denial: Box::new(last_denial),
         },
+    }
+}
+
+impl std::fmt::Debug for WorthUiPresentationRuntimeCleanup {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthUiPresentationRuntimeCleanup")
+            .field("request_retained", &self.request.is_some())
+            .field("request_retired", &self.request_retired)
+            .finish()
     }
 }
 
@@ -315,14 +231,6 @@ impl WorthUiPresentationRuntimeCleanup {
                     .map_err(WorthUiPresentationRuntimeCleanupDenial::Query)?;
             }
             self.request_retired = true;
-        }
-        while self.next_semantic_retirement < self.semantic_instances.len() {
-            super::semantic_invalidation::retire_presentation_semantic_instance(
-                workspace,
-                &self.semantic_instances[self.next_semantic_retirement],
-            )
-            .map_err(WorthUiPresentationRuntimeCleanupDenial::Semantic)?;
-            self.next_semantic_retirement += 1;
         }
         Ok(())
     }
@@ -369,18 +277,13 @@ impl std::fmt::Display for WorthUiPresentationRuntimeAdmissionDenial {
             Self::QueryLive(denial) => write!(formatter, "Query live-view admission: {denial:?}"),
             Self::MissingAsyncResultState => formatter.write_str("missing async result state"),
             Self::MissingSemanticRuntime => formatter.write_str("missing semantic runtime"),
-            Self::QueryDeclarationMismatch => formatter.write_str("Query declaration mismatch"),
-            Self::SemanticInstallation(denial) => {
-                write!(formatter, "semantic installation: {denial:?}")
-            }
             Self::CleanupRequired {
                 cause,
                 recovery,
                 last_denial,
             } => write!(
                 formatter,
-                "admission cleanup required after {cause}; next semantic retirement {}, request retained: {}, last denial: {last_denial}",
-                recovery.next_semantic_retirement,
+                "admission cleanup required after {cause}; request retained: {}, last denial: {last_denial}",
                 recovery.request.is_some(),
             ),
         }
@@ -391,7 +294,6 @@ impl std::fmt::Display for WorthUiPresentationRuntimeCleanupDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Query(denial) => write!(formatter, "Query cleanup: {denial:?}"),
-            Self::Semantic(denial) => write!(formatter, "semantic cleanup: {denial:?}"),
         }
     }
 }

@@ -1,6 +1,15 @@
+mod fork_growth;
+mod insertion;
+pub(crate) use insertion::PreparedSnapshotInsertion;
+mod reserved_fork;
 use std::num::NonZeroU32;
 
 use serde::{Deserialize, Serialize};
+
+mod retained_charge;
+mod retained_publication;
+mod retention_readiness;
+pub(crate) use retention_readiness::DependencySnapshotIndexDenial;
 
 use super::{DependencySnapshot, DependencySnapshotShapeStore, SnapshotShapeHandle};
 
@@ -67,10 +76,8 @@ impl DependencySnapshotId {
 pub struct DependencySnapshotStore {
     snapshots: crate::data::persistent_vector::PersistentVector<DependencySnapshot>,
     #[serde(skip, default)]
-    interner: crate::data::persistent_hash_map::PersistentHashMap<
-        DependencySnapshot,
-        DependencySnapshotId,
-    >,
+    interner:
+        crate::data::persistent_ord_map::PersistentOrdMap<DependencySnapshot, DependencySnapshotId>,
     #[serde(skip, default)]
     shape_handles: crate::data::persistent_vector::PersistentVector<SnapshotShapeHandle>,
 }
@@ -84,6 +91,13 @@ impl DependencySnapshotStore {
             self.interner
                 .insert(snapshot, DependencySnapshotId::from_index(index + 1));
         }
+    }
+
+    pub(crate) fn lookup_steps(&self) -> usize {
+        self.snapshots.lookup_steps()
+            + crate::data::retained_storage::ordered_lookup_steps(
+                self.snapshots.len().saturating_add(1),
+            )
     }
 
     /// Read one snapshot by id.
@@ -142,27 +156,14 @@ impl DependencySnapshotStore {
         snapshot: DependencySnapshot,
         shape_store: &mut DependencySnapshotShapeStore,
     ) -> (DependencySnapshotId, SnapshotShapeHandle) {
-        let snapshot = snapshot.canonicalize_unordered();
-        if snapshot.entries().is_empty() {
-            return (DependencySnapshotId::EMPTY, SnapshotShapeHandle::EMPTY);
-        }
-        self.rebuild_interner_if_needed();
-        self.rebuild_shape_handles_if_needed(shape_store);
-        if let Some(id) = self.interner.get(&snapshot).copied() {
-            let handle = self
-                .shape_handles
-                .get(id.index().expect("snapshot id should index") - 1)
-                .copied()
-                .unwrap_or_else(|| snapshot.shape().intern(shape_store));
-            return (id, handle);
-        }
-        let shape_handle = snapshot.shape().intern(shape_store);
-        self.snapshots.push_back(snapshot);
-        self.shape_handles.push_back(shape_handle);
-        let id = DependencySnapshotId::from_index(self.snapshots.len());
-        let snapshot = self.snapshots[id.index().expect("snapshot id should index") - 1].clone();
-        self.interner.insert(snapshot, id);
-        (id, shape_handle)
+        let insertion = self
+            .prepare_insertion(
+                snapshot,
+                shape_store,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+            )
+            .expect("ordinary snapshot insertion must remain representable");
+        insertion.publish(self, shape_store)
     }
 
     #[cfg(test)]

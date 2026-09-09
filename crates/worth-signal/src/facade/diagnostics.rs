@@ -23,8 +23,8 @@ pub use crate::diagnostics::{
     GraphInspectDiagnostics, GraphInspector, GraphSummary, HistoryDiff, InvalidationCause,
     InvalidationSummary, LineageArtifactId, LineageDiff, LineageRecordKind, PlanDiff,
     PlanInspector, PlanningSummary, PrecomputeSummary, ReconstructionBudget, ReplayCursor,
-    ReplayDetailPolicy, ReplayDiff, ReplayEventKind, ReplayFrame, ReportInspector, RetentionBudget,
-    RollbackDiagnostic, RollbackSummary, SemanticRetentionPolicy, SnapshotRestoreKind,
-    SnapshotRestoreLineageMode, TemporalCostContractSummary, TemporalDiagnosticsSummary,
-    TemporalPerformanceFailureMode,
+    ReplayDetailPolicy, ReplayDiff, ReplayEventKind, ReplayFrame, ReportInspector,
+    RetainedExecutionHistoryView, RetainedFlowSummaryView, RetentionBudget, RollbackDiagnostic,
+    RollbackSummary, SemanticRetentionPolicy, SnapshotRestoreKind, SnapshotRestoreLineageMode,
+    TemporalCostContractSummary, TemporalDiagnosticsSummary, TemporalPerformanceFailureMode,
 };

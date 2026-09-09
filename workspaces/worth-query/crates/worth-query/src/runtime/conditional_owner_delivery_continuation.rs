@@ -36,20 +36,20 @@ impl WorthQueryRetainedOwnerDeliveryClassification {
 
 #[derive(Default)]
 pub(super) struct WorthQueryOwnerDeliveryContinuation {
-    seed: OnceLock<Arc<worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed>>,
+    seed: OnceLock<Arc<crate::domain_installation::WorthQueryRetainedConditionalDecision>>,
 }
 
 impl WorthQueryOwnerDeliveryContinuation {
     pub(super) fn seed(
         &self,
-    ) -> Option<Arc<worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed>> {
+    ) -> Option<Arc<crate::domain_installation::WorthQueryRetainedConditionalDecision>> {
         self.seed.get().cloned()
     }
 
     pub(super) fn retain_seed(
         &self,
-        seed: worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed,
-    ) -> Arc<worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed> {
+        seed: crate::domain_installation::WorthQueryRetainedConditionalDecision,
+    ) -> Arc<crate::domain_installation::WorthQueryRetainedConditionalDecision> {
         if let Some(retained) = self.seed() {
             return retained;
         }

@@ -11,7 +11,7 @@ mod schema;
 #[path = "../../worth-query-host/tests/temporal_conditional_operation/world.rs"]
 mod world;
 
-use courtroom_support::{assert_authoritative_value, observe, raw_observe};
+use courtroom_support::{assert_authoritative_value, observe};
 use schema::IntentEffectField;
 use world::CourtroomWorld;
 use worth_query::facade::{
@@ -166,30 +166,46 @@ fn assert_case(case: Case) {
             assert_computed_changed(world);
         }
         Case::DuplicateClock => {
-            let mut world = CourtroomWorld::publish("ready");
-            let receipt = observe(&mut world);
+            let world = CourtroomWorld::publish("ready");
+            let product = world.application.product_runtime().default_branch().clone();
+            let mut clock = world
+                .application
+                .select_product_branch(&product)
+                .unwrap()
+                .conditional_clock(&world.clock)
+                .unwrap();
+            let ClockOutcome::Accepted(receipt) = clock.observe() else {
+                panic!("the first exact-lane observation must be accepted")
+            };
             assert_oracle(SignalClass::ComputedChanged, &receipt);
             world.clock_control.push(1, 10);
-            assert!(matches!(
-                raw_observe(&mut world),
-                ClockOutcome::Duplicate(_)
-            ));
+            assert!(matches!(clock.observe(), ClockOutcome::Duplicate(_)));
         }
         Case::ReorderedClock => {
-            let mut world = CourtroomWorld::publish("ready");
-            let receipt = observe(&mut world);
+            let world = CourtroomWorld::publish("ready");
+            let product = world.application.product_runtime().default_branch().clone();
+            let mut clock = world
+                .application
+                .select_product_branch(&product)
+                .unwrap()
+                .conditional_clock(&world.clock)
+                .unwrap();
+            let ClockOutcome::Accepted(receipt) = clock.observe() else {
+                panic!("the first exact-lane observation must be accepted")
+            };
             assert_oracle(SignalClass::ComputedChanged, &receipt);
             world.clock_control.push(2, 9);
-            assert!(matches!(raw_observe(&mut world), ClockOutcome::Reordered));
+            assert!(matches!(clock.observe(), ClockOutcome::Reordered));
         }
         Case::ProviderReplaced => assert_provider_replacement(),
         Case::GenerationChanged => {
             let mut world = CourtroomWorld::publish("ready");
             let successor = std::sync::Arc::new(world.installation.successor_generation());
+            let product = world.application.product_runtime().default_branch().clone();
             assert_eq!(
                 world
                     .application
-                    .reinstall_conditional_runtime_for_installation(successor)
+                    .reinstall_conditional_runtime_for_installation(successor, &product)
                     .unwrap_err()
                     .kind(),
                 InstallationDenial::RebindRequired
@@ -251,6 +267,8 @@ fn assert_provider_replacement() {
     let mut replacement = CourtroomWorld::publish_replacement("ready");
     assert!(replacement
         .application
+        .select_product_branch(replacement.application.product_runtime().default_branch())
+        .unwrap()
         .conditional_clock(&incumbent.clock)
         .is_err());
     drop(incumbent);

@@ -4,12 +4,14 @@ mod config;
 mod execution;
 mod state;
 mod transaction;
+pub(crate) use state::TemporalRuntimeState;
 
 pub use computation::{DefinedComputation, DefinedKeyedComputation, Recipe};
 pub use config::SignalRuntimeConfig;
 pub use execution::{RuntimeExecutionRequest, TransactionExecutionRequest};
 pub(crate) use state::admit_signal_observation_request;
 pub(crate) use state::RuntimeObservationRegistry;
+pub(crate) use state::SignalCanonicalCallerUnwind;
 pub use state::{branch_state_proof_report, canonical_digest};
 #[allow(unused_imports)]
 pub use state::{

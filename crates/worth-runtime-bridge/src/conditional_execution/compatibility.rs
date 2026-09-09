@@ -155,8 +155,8 @@ impl BridgeInstalledConditionalLowering {
         )
         .map_err(|mismatch| BridgeConditionalContinuityDenial::new(mismatch, work))?;
         let _signal = self
-            .signal_contract
-            .compare_semantic_continuity(&candidate.signal_contract)
+            .signal_contract()
+            .compare_semantic_continuity(candidate.signal_contract())
             .map_err(|denial| {
                 work.record_signal(denial.work());
                 BridgeConditionalContinuityDenial::new(
@@ -205,21 +205,21 @@ impl BridgeInstalledConditionalLowering {
         work = continuity.work();
         work.inspect_liveness();
         work.inspect_bridge_affinity();
-        if self.bridge_runtime_key != candidate.bridge_runtime_key {
-            return Err(BridgeConditionalExecutionAffinityDenial::new(
-                BridgeConditionalExecutionAffinityMismatch::BridgeRuntime,
-                work,
-            ));
-        }
         correspondence::compare_exact_correspondences(
             &self.correspondences,
             &candidate.correspondences,
             &mut work,
         )
         .map_err(|mismatch| BridgeConditionalExecutionAffinityDenial::new(mismatch, work))?;
+        if self.bridge_runtime_key != candidate.bridge_runtime_key {
+            return Err(BridgeConditionalExecutionAffinityDenial::new(
+                BridgeConditionalExecutionAffinityMismatch::BridgeRuntime,
+                work,
+            ));
+        }
         let _signal = self
-            .signal_contract
-            .compare_execution_affinity(&candidate.signal_contract)
+            .signal_contract()
+            .compare_execution_affinity(candidate.signal_contract())
             .map_err(|denial| {
                 work.record_signal(denial.work());
                 BridgeConditionalExecutionAffinityDenial::new(

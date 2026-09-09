@@ -25,7 +25,7 @@ pub use publication_source::{
     WorthQueryApplicationCommitPublicationSource,
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct WorthQueryApplicationCommitReceipt {
     pub(super) authoritative_provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
@@ -53,9 +53,40 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) expected_retry_session: Option<
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     >,
+    pub(super) performed_product_change: Option<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
+    >,
 }
 
 impl Eq for WorthQueryApplicationCommitReceipt {}
+
+/// Receipt copies are descriptive historical evidence. The unique performed
+/// product-change witness remains with the original fresh receipt.
+impl Clone for WorthQueryApplicationCommitReceipt {
+    fn clone(&self) -> Self {
+        Self {
+            authoritative_provider_session: self.authoritative_provider_session.clone(),
+            outcome_identity: self.outcome_identity,
+            provider_runtime_instance_id: self.provider_runtime_instance_id,
+            commit: self.commit.clone(),
+            basis_descriptor: self.basis_descriptor.clone(),
+            changed_record_count: self.changed_record_count,
+            emitted_effect_count: self.emitted_effect_count,
+            mutation_work: self.mutation_work.clone(),
+            precondition_comparison: self.precondition_comparison.clone(),
+            canonical_work: self.canonical_work,
+            terminal: self.terminal.clone(),
+            committed_dispatch_outbox: self.committed_dispatch_outbox.clone(),
+            external_dispatch: self.external_dispatch.clone(),
+            external_dispatch_preparation_denial: self.external_dispatch_preparation_denial,
+            authority_binding: self.authority_binding.clone(),
+            retained_preimage: self.retained_preimage.clone(),
+            aftermath_causality: self.aftermath_causality.clone(),
+            expected_retry_session: self.expected_retry_session.clone(),
+            performed_product_change: None,
+        }
+    }
+}
 
 impl WorthQueryApplicationCommitReceipt {
     pub const fn outcome_identity(
@@ -183,6 +214,17 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn aftermath_causality(&self) -> Option<&WorthQueryCommittedAftermathCausality> {
         self.aftermath_causality.as_ref()
+    }
+
+    /// Takes the one conditional-delivery witness from a fresh performed
+    /// application publication. Recovered and already-committed receipts
+    /// return `None`.
+    pub fn take_performed_relational_product_change(
+        &mut self,
+    ) -> Option<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
+    >{
+        self.performed_product_change.take()
     }
 
     pub(in crate::domain_computation::primary_graph) fn with_aftermath_causality(

@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use worth_runtime_bridge::facade::{
-    BridgeInstalledConditionalLowering, BridgeManagedClockBinding, BridgeOwnedSignalRuntime,
+    BridgeInstalledConditionalLowering, BridgeManagedClockBinding, BridgeSealedRuntimeAssembly,
 };
 
 use super::{
@@ -24,17 +24,21 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
-    fn matches_clock_lease(&self, lease: &Arc<ConditionalClockLease>) -> bool;
+    fn clock_lease(&self) -> Arc<ConditionalClockLease>;
+
+    fn lowering_anchor(&self) -> Arc<BridgeInstalledConditionalLowering>;
+
+    fn select_product_binding(
+        &mut self,
+        bridge: &BridgeSealedRuntimeAssembly,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        truth: &WorthQueryConditionalTruthBasis,
+    ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
 
     fn reconstruct(
         &mut self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
-
-    fn intent_entity_kind(
-        &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ) -> Option<worth_relational::facade::identity::KindId>;
 
     fn authoritative_commit_routes(
         &self,
@@ -42,23 +46,20 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
         (Vec::new(), false)
     }
 
-    fn refresh_authoritative(
-        &mut self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        bridge: &mut BridgeOwnedSignalRuntime,
-    ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
+    fn bootstrap_commit_route_pending(&self) -> bool {
+        false
+    }
 
     fn reconcile_reconstruction(
         &mut self,
-        bridge: &mut BridgeOwnedSignalRuntime,
+        bridge: &mut BridgeSealedRuntimeAssembly,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
 
     fn prepare_derived_runtime_reinstallation(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        bridge: &mut BridgeOwnedSignalRuntime,
-        graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-        affinity: &super::super::publication::ConditionalRuntimeAffinity,
+        bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
+        product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
         WorthQueryPreparedConditionalRuntimeBinding,
         WorthQueryConditionalRuntimeInstallationDenial,
@@ -66,7 +67,7 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
 
     fn reconcile_prepared_runtime_reinstallation(
         &self,
-        bridge: &mut BridgeOwnedSignalRuntime,
+        bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         prepared: &mut WorthQueryPreparedConditionalRuntimeBinding,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
 
@@ -77,7 +78,7 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
 
     fn observe_clock(
         &mut self,
-        bridge: &mut BridgeOwnedSignalRuntime,
+        bridge: &BridgeSealedRuntimeAssembly,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome;
@@ -101,16 +102,23 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalRet
     pub(in crate::domain_computation::primary_graph::conditional_operation) attempts: usize,
 }
 
+impl WorthQueryConditionalRetainedResourceCounts {
+    pub(super) fn add(&mut self, other: Self) {
+        self.wakes += other.wakes;
+        self.intents += other.intents;
+        self.attempts += other.attempts;
+    }
+}
+
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPreparedConditionalRuntimeBinding
 {
     pub(super) lowering: Arc<BridgeInstalledConditionalLowering>,
     pub(super) managed_clock: BridgeManagedClockBinding,
-    pub(super) runtime_binding_identity: Arc<str>,
-    pub(super) runtime_canonical_identity:
-        Arc<super::super::canonical_identity::WorthQueryTemporalRuntimeBindingIdentity>,
-    pub(super) installation_canonical_work:
-        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
-    pub(super) runtime_capability_identity: u64,
+    pub(super) affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity,
+    pub(super) authoritative_commit_cursor: u64,
+    pub(super) commit_watch: super::commit_watch::WorthQueryConditionalCommitWatchSet,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) reconstructed_intent_count:
+        usize,
     pub(super) authoritative_reconstruction: Box<dyn std::any::Any + Send>,
 }
 
@@ -123,20 +131,16 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
 > {
     pub(in crate::domain_computation::primary_graph::conditional_operation) lifecycle_token:
         Arc<()>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) binding_identity:
-        Arc<crate::domain_computation::primary_graph::conditional_operation::canonical_identity::WorthQueryTemporalBindingIdentity>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) installation_canonical_work:
-        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) clock_lease:
-        Arc<ConditionalClockLease>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) binding: Binding,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) reconstruction:
-        Reconstruction,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) execution: Execution,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) lowering:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) definition:
+        Arc<super::super::definition::WorthQueryTemporalOperationDefinition<Binding, Reconstruction, Execution>>,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) bootstrap_lowering:
+        Arc<BridgeInstalledConditionalLowering>,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) active_affinity:
+        Option<super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity>,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) lowering_anchor:
         Arc<BridgeInstalledConditionalLowering>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) managed_clock:
-        BridgeManagedClockBinding,
+        Option<BridgeManagedClockBinding>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) runtime_binding_identity:
         Arc<str>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) runtime_canonical_identity:
@@ -150,13 +154,18 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
     pub(in crate::domain_computation::primary_graph::conditional_operation) reconstruction_work:
         crate::domain_computation::primary_graph::conditional_operation::temporal_reconstruction::WorthQueryTemporalReconstructionWork,
     pub(in crate::domain_computation::primary_graph::conditional_operation) authoritative_commit_cursor:
-        Option<u64>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) committed_operation_count:
-        usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) already_committed_operation_count:
-        usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) failed_operation_count:
-        usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) indeterminate_operation_count:
-        usize,
+        u64,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) bootstrap_commit_catch_up_pending:
+        bool,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) commit_watch:
+        super::commit_watch::WorthQueryConditionalCommitWatchSet,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) operation_totals:
+        super::operation_totals::WorthQueryTemporalOperationTotals,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) inactive_bindings:
+        BTreeMap<
+            crate::basis::WorthQueryProductBranchReadIdentity,
+            super::evaluation_binding::WorthQueryInactiveTemporalEvaluationBinding<Clock, Input>,
+        >,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) next_evaluation_binding_ordinal:
+        u64,
 }

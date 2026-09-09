@@ -40,7 +40,7 @@ pub(super) fn admit_live_managed_basis<Schema>(
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
     admit_managed_lower_execution_basis(
         &request_bridge,
-        &application.relational_source,
+        &application.product_runtime.source,
         binding,
         request,
     )

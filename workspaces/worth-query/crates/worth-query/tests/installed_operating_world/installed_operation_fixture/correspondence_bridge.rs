@@ -1,8 +1,8 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use worth_foundational::facade::{
-    AspectBinding, AspectContract, AspectFieldLocator, AspectValue, CanonicalF64,
-    CanonicalFieldPath, FieldKey, LocatorAuthority, ScalarAspectType,
+    AspectBinding, AspectContract, AspectFieldLocator, AspectValue, CanonicalFieldPath, FieldKey,
+    LocatorAuthority,
 };
 use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
 use worth_relational::facade::identity::{KindId, PartitionId};
@@ -29,15 +29,9 @@ use worth_runtime_bridge::facade::{
 };
 
 mod commit_snapshot_closeout;
-mod delivery_patch;
 mod retained_relational_source;
-pub(super) mod versioned_snapshot;
-pub(crate) use delivery_patch::{
-    conditional_runtime_bridge_with_change, conditional_runtime_bridge_with_repeated_value_changes,
-};
 
 use retained_relational_source::RetainedRelationalSource;
-use versioned_snapshot::VersionedFixtureSnapshotSource;
 
 struct CorrespondenceSink;
 
@@ -166,33 +160,23 @@ pub(crate) fn correspondence_bridge(
         field,
         dependency.projection_mask().is_whole_aspect(),
         locality,
-        None,
         Some(registration),
+        Some(
+            worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
+                PartitionId::main().0,
+                entity.local_slot_value(),
+                entity.generation_value(),
+            ),
+        ),
     );
     (bridge, request)
 }
 
-pub(crate) fn conditional_runtime_bridge(
+pub(crate) fn conditional_runtime_bridge_from_source(
+    owner: &worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
     dependency: &worth_query::facade::domain::WorthQuerySemanticTruthDependency,
+    record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
 ) -> RuntimeBridge {
-    let relational = RelationalRuntimeApi::builder()
-        .schema_registry(
-            RelationalSchemaRegistry::new()
-                .register_entity_kind(EntityKindRegistration {
-                    kind_id: KindId(1),
-                    kind_name: "conditional.geometry".into(),
-                    schema_id: SchemaId("conditional-geometry".into()),
-                    schema_version_id: SchemaVersionId(1),
-                    aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
-                        DeclaredAspectContractBinding {
-                            binding: dependency.binding().clone(),
-                            contract: dependency.contract().clone(),
-                        },
-                    ]),
-                })
-                .expect("conditional correspondence schema should register"),
-        )
-        .build();
     let locality = match dependency.locality() {
         worth_query::facade::domain::WorthQuerySemanticLocality::SourceRecord => {
             FixtureLocality::Record
@@ -204,9 +188,7 @@ pub(crate) fn conditional_runtime_bridge(
             FixtureLocality::Graph
         }
     };
-    let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::new(relational), "model")
-        .expect("model is a valid graph role");
-    let (source, _) = RetainedRelationalSource::new(source, Vec::new());
+    let (source, _) = RetainedRelationalSource::new(owner.bridge_source(), Vec::new());
     build_bridge(
         source,
         dependency.contract(),
@@ -214,10 +196,9 @@ pub(crate) fn conditional_runtime_bridge(
         dependency.projection_mask().is_whole_aspect(),
         locality,
         None,
-        None,
+        Some(record),
     )
 }
-
 #[derive(Clone, Copy)]
 enum FixtureLocality {
     Record,
@@ -231,8 +212,8 @@ fn build_bridge(
     field: FieldKey,
     whole_aspect: bool,
     locality: FixtureLocality,
-    snapshot_source: Option<VersionedFixtureSnapshotSource>,
     registration: Option<BridgeSemanticCorrespondenceRegistration>,
+    record: Option<worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts>,
 ) -> RuntimeBridge {
     let target = if whole_aspect {
         TruthPatchTargetSelector::authoritative_aspect()
@@ -246,7 +227,8 @@ fn build_bridge(
     };
     let entity_selector = match locality {
         FixtureLocality::Record => MappingSelector::exact(
-            worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(0, 0, 1)
+            record
+                .expect("record mapping requires the committed source identity")
                 .terminal_projection_for_reporting(),
         ),
         FixtureLocality::Partition | FixtureLocality::Graph => MappingSelector::any(),
@@ -284,15 +266,11 @@ fn build_bridge(
         slice,
         widening,
     );
-    let builder = match snapshot_source {
-        Some(snapshot_source) => RuntimeBridgeBuilder::new()
-            .with_committed_patch_source(source)
-            .with_snapshot_read_source(snapshot_source),
-        None => RuntimeBridgeBuilder::new().with_relational_source(source),
-    }
-    .with_signal_sink(CorrespondenceSink)
-    .register_mapping(mapping)
-    .register_aspect_mapping(aspect_mapping);
+    let builder = RuntimeBridgeBuilder::new()
+        .with_relational_source(source)
+        .with_signal_sink(CorrespondenceSink)
+        .register_mapping(mapping)
+        .register_aspect_mapping(aspect_mapping);
     match registration {
         Some(registration) => builder
             .register_semantic_correspondence(registration)
@@ -318,27 +296,5 @@ fn dependency_field(binding: &AspectBinding) -> FieldKey {
             field.clone()
         }
         _ => FieldKey::new("id").unwrap(),
-    }
-}
-
-fn fixture_values(contract: &AspectContract) -> (AspectValue, AspectValue) {
-    match contract.shape() {
-        worth_foundational::facade::AspectShape::Scalar(ScalarAspectType::Float64) => (
-            AspectValue::Float64(CanonicalF64::from_f64(10.0)),
-            AspectValue::Float64(CanonicalF64::from_f64(10.02)),
-        ),
-        _ => (
-            AspectValue::String("before".into()),
-            AspectValue::String("after".into()),
-        ),
-    }
-}
-
-fn repeated_raw_fixture_value(contract: &AspectContract) -> AspectValue {
-    match contract.shape() {
-        worth_foundational::facade::AspectShape::Scalar(ScalarAspectType::Float64) => {
-            AspectValue::Float64(CanonicalF64::from_f64(10.03))
-        }
-        _ => AspectValue::String("after-raw-revision".into()),
     }
 }

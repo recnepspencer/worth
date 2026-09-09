@@ -95,7 +95,8 @@ impl WorthQueryMemoryWorkspace {
         for custom_invariant in custom_invariants {
             runtime_builder = runtime_builder.custom_invariant(custom_invariant);
         }
-        let runtime = runtime_builder.build();
+        let runtime = WorthQueryRelationalSourceOwner::new(runtime_builder.build(), "model")
+            .map_err(|error| WorthQueryWorkspaceError::new(format!("{error:?}")))?;
         Ok(Self {
             runtime,
             kind_id,
@@ -139,33 +140,16 @@ impl WorthQueryMemoryWorkspace {
         entity_identity: WorthQueryEntityIdentity,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         let entity_id = super::runtime_identity::entity_id_from_identity(entity_identity.clone())?;
-        let main_identity = self.runtime.main_branch_identity();
-        let options = self
-            .runtime
-            .admit_branch_basis(&main_identity)
-            .map_err(super::transaction_denial::basis)?;
-        let mut txn = self
-            .runtime
-            .begin_branch_transaction(
-                &options,
-                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-            )
-            .map_err(super::transaction_denial::admission)?;
-        txn.push_batch(
+        let (result, snapshot) = self.commit_batch(
             WorkerIntentBatch::new("query-memory-delete").push(MutationIntent::Entity(
                 EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
             )),
-        )
-        .map_err(super::transaction_denial::staging)?;
-        let result = txn
-            .commit(&self.runtime)
-            .map_err(super::transaction_denial::commit)?;
-        let published_snapshot = result.snapshot.clone();
-        let mut receipt =
-            self.receipt_from_commit(result, WorthQueryMutationKind::Deleted, Vec::new());
-        super::commit_snapshot_closeout::release_commit_snapshot(
-            &mut self.runtime,
-            &published_snapshot,
+        )?;
+        let mut receipt = self.receipt_from_commit(
+            result,
+            snapshot,
+            WorthQueryMutationKind::Deleted,
+            Vec::new(),
         );
         if receipt.deltas.is_empty() {
             receipt
@@ -181,25 +165,28 @@ impl WorthQueryMemoryWorkspace {
     }
 
     pub fn entities(&self) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError> {
-        let basis = self.current_main_basis()?;
-        let projection_scope = self.workspace_projection_scope();
-        let view = self
-            .runtime
-            .read_truth()
-            .project_observation(&basis.observation())
-            .map_err(|_| workspace_basis_unavailable("workspace entity collection"))?;
-        Ok(
-            view.entity_records_with_projection_scope(self.kind_id, projection_scope, |record| {
-                let (aspect_values, struct_aspect_values, native_field_values) =
-                    self.aspect_projection_from_projection_record(record);
-                Some(WorthQueryEntity::from_aspect_projection(
-                    super::runtime_identity::entity_identity(record.entity_id()),
-                    aspect_values,
-                    struct_aspect_values,
-                    native_field_values,
-                ))
-            }),
-        )
+        self.runtime.with_runtime(|runtime| {
+            let basis = Self::current_main_basis(runtime)?;
+            let projection_scope = self.workspace_projection_scope();
+            let view = runtime
+                .read_truth()
+                .project_observation(&basis.observation())
+                .map_err(|_| workspace_basis_unavailable("workspace entity collection"))?;
+            Ok(view.entity_records_with_projection_scope(
+                self.kind_id,
+                projection_scope,
+                |record| {
+                    let (aspect_values, struct_aspect_values, native_field_values) =
+                        self.aspect_projection_from_projection_record(record);
+                    Some(WorthQueryEntity::from_aspect_projection(
+                        super::runtime_identity::entity_identity(record.entity_id()),
+                        aspect_values,
+                        struct_aspect_values,
+                        native_field_values,
+                    ))
+                },
+            ))
+        })
     }
 
     pub(crate) fn entity(
@@ -208,58 +195,63 @@ impl WorthQueryMemoryWorkspace {
     ) -> Result<Option<WorthQueryEntity>, WorthQueryWorkspaceError> {
         let entity_id = super::runtime_identity::entity_id_from_identity(identity.clone())
             .map_err(|_| WorthQueryWorkspaceError::new("entity identity is malformed"))?;
-        let basis = self.current_main_basis()?;
-        let projection_scope = self.workspace_projection_scope();
-        Ok(self
-            .runtime
-            .read_truth()
-            .project_observation(&basis.observation())
-            .map_err(|_| workspace_basis_unavailable("workspace entity lookup"))?
-            .entity_record_with_projection_scope(entity_id, projection_scope, |record| {
-                let (aspect_values, struct_aspect_values, native_field_values) =
-                    self.aspect_projection_from_projection_record(record);
-                Some(WorthQueryEntity::from_aspect_projection(
-                    super::runtime_identity::entity_identity(record.entity_id()),
-                    aspect_values,
-                    struct_aspect_values,
-                    native_field_values,
-                ))
-            }))
+        self.runtime.with_runtime(|runtime| {
+            let basis = Self::current_main_basis(runtime)?;
+            let projection_scope = self.workspace_projection_scope();
+            Ok(runtime
+                .read_truth()
+                .project_observation(&basis.observation())
+                .map_err(|_| workspace_basis_unavailable("workspace entity lookup"))?
+                .entity_record_with_projection_scope(entity_id, projection_scope, |record| {
+                    let (aspect_values, struct_aspect_values, native_field_values) =
+                        self.aspect_projection_from_projection_record(record);
+                    Some(WorthQueryEntity::from_aspect_projection(
+                        super::runtime_identity::entity_identity(record.entity_id()),
+                        aspect_values,
+                        struct_aspect_values,
+                        native_field_values,
+                    ))
+                }))
+        })
     }
 
     pub fn snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        super::runtime_identity::snapshot_identity_from_runtime(&self.runtime)
+        self.runtime
+            .with_runtime(super::runtime_identity::snapshot_identity_from_runtime)
     }
 
     pub(super) fn ensure_entity_exists(
         &self,
         entity_id: EntityId,
     ) -> Result<(), WorthQueryWorkspaceError> {
-        let basis = self.current_main_basis()?;
-        self.runtime
-            .read_truth()
-            .project_observation(&basis.observation())
-            .map_err(|_| WorthQueryWorkspaceError::new("entity basis is unavailable"))?
-            .entity_record_with_projection_scope(entity_id, ProjectionAspectScope::empty(), |_| {
-                Some(())
-            })
-            .ok_or_else(|| WorthQueryWorkspaceError::new("entity not found"))?;
-        Ok(())
+        self.runtime.with_runtime(|runtime| {
+            let basis = Self::current_main_basis(runtime)?;
+            runtime
+                .read_truth()
+                .project_observation(&basis.observation())
+                .map_err(|_| WorthQueryWorkspaceError::new("entity basis is unavailable"))?
+                .entity_record_with_projection_scope(
+                    entity_id,
+                    ProjectionAspectScope::empty(),
+                    |_| Some(()),
+                )
+                .ok_or_else(|| WorthQueryWorkspaceError::new("entity not found"))?;
+            Ok(())
+        })
     }
 
     fn current_main_basis(
-        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<
         worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         WorthQueryWorkspaceError,
     > {
-        let identity = self.runtime.main_branch_identity();
-        self.runtime
+        let identity = runtime.main_branch_identity();
+        runtime
             .observe_branch(&identity)
             .map_err(super::transaction_denial::basis)
             .map(|(_, basis)| basis)
     }
-
     fn workspace_projection_scope(&self) -> ProjectionAspectScope {
         ProjectionAspectScope::whole_aspects(
             self.aspects
@@ -304,10 +296,10 @@ impl WorthQueryMemoryWorkspace {
     pub(super) fn receipt_from_commit(
         &self,
         result: worth_relational::facade::transactions::CommitResult,
+        snapshot_identity: WorthQuerySnapshotIdentity,
         kind: WorthQueryMutationKind,
         touched_aspects: Vec<WorthQueryAspectTouch>,
     ) -> WorthQueryMutationReceipt {
-        let snapshot_identity = self.snapshot_identity();
         let deltas = result
             .changed_records
             .iter()

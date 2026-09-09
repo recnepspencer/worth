@@ -47,23 +47,10 @@ impl WorthUiPresentationAsyncOwner {
         &mut self,
         key: PresentationAdmissionKey,
     ) -> Result<(), WorthUiPresentationSettlementDenial> {
-        let mut pending = self
+        let pending = self
             .superseded_pending
             .remove(&key)
             .expect("validated superseded receipt remains retained");
-        if !pending.supersession_semantic_retired {
-            if self
-                .registry
-                .retire(&mut self.workspace, &pending.admission)
-                .is_err()
-            {
-                self.superseded_pending.insert(key, pending);
-                return Err(WorthUiPresentationSettlementDenial::Progress(
-                    WorthUiPresentationSettlementStop::SemanticRetirement,
-                ));
-            }
-            pending.supersession_semantic_retired = true;
-        }
         if pending
             .admission
             .close_query_live_view(&mut self.workspace)
@@ -108,16 +95,6 @@ impl WorthUiPresentationAsyncOwner {
                 ));
             }
             pending.rejection.query_denial_observed = true;
-        }
-        if !pending.rejection.semantic_retired {
-            self.registry
-                .retire(&mut self.workspace, &pending.admission)
-                .map_err(|_| {
-                    WorthUiPresentationSettlementDenial::Progress(
-                        WorthUiPresentationSettlementStop::SemanticRetirement,
-                    )
-                })?;
-            pending.rejection.semantic_retired = true;
         }
         if !pending.rejection.query_closed {
             pending

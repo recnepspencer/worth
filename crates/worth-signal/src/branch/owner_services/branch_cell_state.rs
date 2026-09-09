@@ -1,7 +1,8 @@
 use crate::data::error::SignalError;
 use crate::logic::transaction::BranchState;
 use crate::logic::transaction::{
-    SignalTransaction, SnapshotBranchState, SnapshotStatePacket, TransactionResult,
+    SignalCanonicalCallerUnwind, SignalTransaction, SnapshotBranchState, SnapshotStatePacket,
+    TransactionResult,
 };
 use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId, SignalSnapshotV1};
 use worth_foundational::{FoundationalBranchReferenceGeneration, FoundationalBranchTarget};
@@ -9,6 +10,11 @@ use worth_foundational::{FoundationalBranchReferenceGeneration, FoundationalBran
 use crate::branch::{signal_branch_observation, SignalBranchObservation, SignalBranchTarget};
 
 use super::SignalOwnerMovementPermit;
+mod committed_patch;
+mod conditional_capture;
+mod conditional_execution;
+mod conditional_owned_async;
+use conditional_capture::SignalPublishedConditionalExecutionBasis;
 
 /// The one canonical mutable state payload for a sealed live branch.
 ///
@@ -28,6 +34,7 @@ where
     state: BranchState<D, I, T>,
     head_generation: u64,
     restore_snapshot_id: Option<SignalSnapshotId>,
+    conditional_execution_basis: Option<SignalPublishedConditionalExecutionBasis>,
 }
 
 pub(crate) struct SignalPreparedBranchSnapshot<D, I, T>
@@ -80,6 +87,9 @@ where
         restore_snapshot_id: Option<SignalSnapshotId>,
     ) -> Self {
         debug_assert_eq!(handle.id, state.branch_id());
+        let definition_basis = state
+            .installed_definition()
+            .map_or(definition_basis, |binding| binding.definition_basis());
         Self {
             handle,
             owner_runtime_instance_id,
@@ -87,6 +97,7 @@ where
             state,
             head_generation,
             restore_snapshot_id,
+            conditional_execution_basis: None,
         }
     }
 
@@ -150,6 +161,7 @@ where
         self.handle.head_snapshot_id = Some(prepared.snapshot.meta.snapshot_id);
         self.head_generation = prepared.generation;
         self.restore_snapshot_id = None;
+        self.conditional_execution_basis = None;
     }
 
     pub(crate) fn prepare_restore(
@@ -176,6 +188,7 @@ where
         self.handle.head_snapshot_id = Some(prepared.snapshot_id);
         self.head_generation = prepared.generation;
         self.restore_snapshot_id = Some(prepared.snapshot_id);
+        self.conditional_execution_basis = None;
     }
 
     pub(crate) fn fork_state(
@@ -242,15 +255,17 @@ where
     pub(crate) fn execute_canonical_transaction<E, Ctx, F>(
         &mut self,
         _permit: &SignalOwnerMovementPermit<'_>,
+        conditional_operation_scope: super::conditional_execution::SignalConditionalOperationScopeBinding,
         runtime_ctx: &mut Ctx,
         apply: F,
-    ) -> Result<TransactionResult, SignalError>
+    ) -> Result<Result<TransactionResult, SignalError>, SignalCanonicalCallerUnwind>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
         self.state.execute_canonical_transaction(
             &mut self.head_generation,
             &mut self.restore_snapshot_id,
+            Some(conditional_operation_scope),
             runtime_ctx,
             apply,
         )

@@ -10,8 +10,18 @@ mod courtroom_lifecycle;
 mod courtroom_settlement;
 #[path = "temporal_conditional_operation/courtroom_support.rs"]
 mod courtroom_support;
+#[path = "temporal_conditional_operation/product_query_support.rs"]
+mod product_query_support;
+#[path = "temporal_conditional_operation/public_product_journey.rs"]
+mod public_product_journey;
 #[path = "temporal_conditional_operation/schema.rs"]
 mod schema;
+#[path = "temporal_conditional_operation/selected_product_lifecycle.rs"]
+mod selected_product_lifecycle;
+#[path = "temporal_conditional_operation/selected_product_reads.rs"]
+mod selected_product_reads;
+#[path = "temporal_conditional_operation/shared_root_progress.rs"]
+mod shared_root_progress;
 #[path = "temporal_conditional_operation/world.rs"]
 mod world;
 
@@ -25,7 +35,10 @@ fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
     let mut world =
         CourtroomWorld::publish_with_active_snapshot_limit("ready", MAXIMUM_ACTIVE_SNAPSHOTS);
     let (_, before) = world.application.relational_snapshot_state_for_test();
-    let pinned = (0..MAXIMUM_ACTIVE_SNAPSHOTS)
+    let branch = world.application.product_runtime().default_branch().clone();
+    let selected = world.application.select_product_branch(&branch).unwrap();
+    let already_active = world.application.relational_snapshot_state_for_test().0;
+    let pinned = (already_active..MAXIMUM_ACTIVE_SNAPSHOTS)
         .map(|_| {
             world
                 .application
@@ -33,38 +46,42 @@ fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
                 .expect("each basis inside the configured limit must be admitted")
         })
         .collect::<Vec<_>>();
+    let retained_after_failed_admission = pinned.len();
     assert_eq!(
         world.application.relational_snapshot_state_for_test().0,
         MAXIMUM_ACTIVE_SNAPSHOTS
     );
 
-    let outcome = world
-        .application
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe();
-    let primary_graph::WorthQueryConditionalClockObservationOutcome::Failed(failure) = outcome
-    else {
-        panic!("capacity exhaustion must be a typed public conditional failure")
+    let denial = match selected.conditional_clock(&world.clock) {
+        Ok(_) => panic!("capacity exhaustion must deny public product admission"),
+        Err(denial) => denial,
     };
     assert_eq!(
-        failure.kind(),
-        primary_graph::WorthQueryConditionalClockObservationFailureKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots: MAXIMUM_ACTIVE_SNAPSHOTS,
-        }
+        denial.kind(),
+        primary_graph::WorthQueryConditionalClockObservationDenialKind::ProductAdmission(
+            primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots: MAXIMUM_ACTIVE_SNAPSHOTS,
+            },
+        )
     );
     assert_eq!(world.contacts.snapshot(), (0, 0, 0, 0));
     assert_eq!(
         world.application.relational_snapshot_state_for_test().0,
-        MAXIMUM_ACTIVE_SNAPSHOTS
+        retained_after_failed_admission,
+        "failed selected-product admission must release its own retained truth"
     );
-
     for basis in pinned {
         assert!(basis.release().released());
     }
     let (active, after) = world.application.relational_snapshot_state_for_test();
     assert_eq!(active, 0);
     assert_eq!(after, before);
+    let retry = world.conditional_clock().observe();
+    assert!(matches!(
+        retry,
+        primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(_)
+    ));
+    assert_eq!(world.application.relational_snapshot_state_for_test().0, 0);
 }
 
 #[test]
@@ -114,7 +131,10 @@ fn successor_generation_requires_fresh_typed_rebinding() {
 
     let denial = world
         .application
-        .reinstall_conditional_runtime_for_installation(successor)
+        .reinstall_conditional_runtime_for_installation(
+            successor,
+            &world.application.product_runtime().default_branch().clone(),
+        )
         .unwrap_err();
 
     assert_eq!(
@@ -128,10 +148,10 @@ fn reconstruction_panic_restores_runtime_owners_for_retry() {
     let mut world = CourtroomWorld::publish("ready");
     world.reconstruction_panic.set(true);
 
-    assert!(world.application.reinstall_conditional_runtime().is_err());
+    assert!(world.reinstall_conditional_runtime().is_err());
 
     world.reconstruction_panic.set(false);
-    assert!(world.application.reinstall_conditional_runtime().is_ok());
+    assert!(world.reinstall_conditional_runtime().is_ok());
     let receipt = observe(&mut world);
     assert_eq!(receipt.committed_operation_count(), 1);
 }
@@ -142,13 +162,18 @@ fn host_installs_and_executes_a_due_temporal_application_operation() {
 }
 
 #[test]
-fn temporal_wake_repairs_durable_settlement_before_exact_retirement() {
-    courtroom_settlement::temporal_wake_repairs_durable_settlement_before_exact_retirement();
+fn public_product_journey_publishes_delivers_executes_and_cleans_up() {
+    public_product_journey::publishes_delivers_executes_and_cleans_up();
 }
 
 #[test]
-fn temporal_wake_retries_query_publication_after_settlement_repair() {
-    courtroom_settlement::temporal_wake_retries_query_publication_after_settlement_repair();
+fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() {
+    courtroom_settlement::temporal_wake_settlement_repair_keeps_the_original_product_unpublished();
+}
+
+#[test]
+fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() {
+    courtroom_settlement::temporal_wake_post_performed_index_repair_preserves_its_product_commit();
 }
 
 #[test]

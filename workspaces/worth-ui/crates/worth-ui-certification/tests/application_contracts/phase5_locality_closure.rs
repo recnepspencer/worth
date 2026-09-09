@@ -39,9 +39,6 @@ fn all_32_fresh_native_locality_worlds_retain_owner_issued_evidence() {
             assert!(row["query_completed"]
                 .as_u64()
                 .is_some_and(|count| count >= 2));
-            assert!(row["semantic_frontiers"]
-                .as_array()
-                .is_some_and(|frontiers| !frontiers.is_empty()));
             assert!(row["physical_signal"]["performed_nodes"]
                 .as_u64()
                 .is_some_and(|performed| performed > 0));

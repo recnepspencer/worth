@@ -1,9 +1,11 @@
 use std::time::Duration;
 
+#[path = "decision_adjacency/product_currentness.rs"]
+mod product_currentness;
+
 use super::super::fixture::{
-    installed_two_principal_authorization_world, AccountOwner, AccountStatus, ChangeOwnershipInput,
-    ChangeOwnershipOperation, IdentityExecutionSchema, Principal, PrincipalIdentityField,
-    TouchAccountOperation,
+    AccountOwner, AccountStatus, ChangeOwnershipInput, ChangeOwnershipOperation,
+    IdentityExecutionSchema, Principal, PrincipalIdentityField, TouchAccountOperation,
 };
 use super::{idempotency, installed_authorization_world, live_scope, resolved_account};
 use crate::domain_computation::primary_graph::{
@@ -39,49 +41,6 @@ fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
         panic!("the edge entering the sealed empty adjacency must stale the loser");
     };
     assert_eq!(stale.stale_fact_count(), 1);
-}
-
-#[test]
-fn growth_at_an_unrelated_anchor_does_not_stale_the_attempt() {
-    let world = installed_two_principal_authorization_world(false);
-    let request = live_scope();
-    let alice = authenticated(&world, "alice", &request);
-    let bob = authenticated(&world, "bob", &request);
-    let alice_identity = resolved_principal(&world, 1, &request);
-    let bob_identity = resolved_principal(&world, 2, &request);
-    let first_account = resolved_account(&world, "open", &request);
-    let second_account = resolved_account(&world, "unrelated", &request);
-    let alice_program = link_program(
-        &world,
-        &alice,
-        &alice_identity,
-        &first_account,
-        &request,
-        "open",
-        "alice-owner",
-    );
-    let bob_program = link_program(
-        &world,
-        &bob,
-        &bob_identity,
-        &second_account,
-        &request,
-        "unrelated",
-        "bob-owner",
-    );
-
-    assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(bob_program, idempotency(33, 33)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-    assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(alice_program, idempotency(34, 34)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
 }
 
 #[test]

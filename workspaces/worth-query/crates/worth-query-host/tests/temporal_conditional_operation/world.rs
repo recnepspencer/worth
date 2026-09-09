@@ -15,6 +15,8 @@ use super::schema::*;
 
 #[path = "world/amendment.rs"]
 mod amendment;
+#[path = "world/security.rs"]
+mod security;
 
 pub struct CourtroomWorld {
     pub application: primary_graph::WorthQueryPrimaryGraphApplicationRuntime<TemporalHostSchema>,
@@ -35,6 +37,31 @@ pub struct CourtroomWorld {
 }
 
 impl CourtroomWorld {
+    pub fn reinstall_conditional_runtime(
+        &mut self,
+    ) -> Result<
+        primary_graph::WorthQueryConditionalRuntimeReinstallationReceipt,
+        primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
+    > {
+        let branch = self.application.product_runtime().default_branch().clone();
+        self.application.reinstall_conditional_runtime(&branch)
+    }
+
+    pub fn conditional_clock(
+        &self,
+    ) -> primary_graph::WorthQueryConditionalClockObservationPort<
+        '_,
+        TemporalHostSchema,
+        TemporalReadyNode,
+        CourtroomClock,
+    > {
+        self.application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .unwrap()
+            .conditional_clock(&self.clock)
+            .unwrap()
+    }
+
     pub fn publish(gate: &str) -> Self {
         Self::publish_with_unrelated_rows(gate, 0)
     }
@@ -64,7 +91,7 @@ impl CourtroomWorld {
         Self::publish_with_predicate(gate, 0, contacts, predicate, predicate_panic, None)
     }
 
-    fn publish_with_predicate<Provider>(
+    pub(super) fn publish_with_predicate<Provider>(
         gate: &str,
         unrelated_row_count: usize,
         contacts: ContactCounters,
@@ -185,7 +212,7 @@ impl CourtroomWorld {
     }
 }
 
-fn admit_identity_adapter(
+pub(super) fn admit_identity_adapter(
     schema: &domain::WorthQueryInstalledApplicationSchema<TemporalHostSchema>,
 ) -> admission::authenticated_principal::WorthQueryAdmittedAuthenticationAdapter<
     TemporalHostSchema,

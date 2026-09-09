@@ -165,6 +165,43 @@ pub(super) fn node(
     .unwrap()
 }
 
+pub(super) fn resource_lifecycle_node() -> domain::WorthQueryPortableConditionalNodeDeclaration {
+    let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
+    let output = AspectContract::scalar(
+        AspectKey::new("conditional-resource-output").unwrap(),
+        AspectIdentity(0x9173_0001),
+        AspectContractRevision(1),
+        ScalarAspectType::UInt64,
+    );
+    domain::WorthQueryPortableConditionalNodeDeclaration::declare(
+        "conditional-resource",
+        domain::WorthQueryConditionalNodeRole::Computed,
+    )
+    .dependencies([dependency.clone()])
+    .outputs([domain::WorthQueryConditionalNodeOutput::DerivedAspect {
+        contract: output,
+        locality: domain::WorthQuerySemanticLocality::SourceRecord,
+        consequences: vec![domain::WorthQueryConditionalConsequenceRole::DerivedOnly],
+    }])
+    .required_context([domain::WorthQueryConditionalNodeContext::Basis])
+    .evaluation(
+        domain::WorthQueryConditionalEvaluationCondition::aspect_filtered([dependency]).unwrap(),
+        domain::WorthQueryConditionalTrigger::DependencyChange,
+    )
+    .comparison(
+        domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
+        domain::WorthQueryOutputEquivalenceRequirement::FoundationalContractEquivalence,
+    )
+    .artifact_policy(
+        domain::WorthQueryArtifactReuseEquivalence::DependencyAndOutputEquivalent,
+        domain::WorthQueryMaintenancePosture::LazyUntilObserved,
+        domain::WorthQueryArtifactPosture::ReusableWhenEquivalent,
+    )
+    .output_relationship(domain::WorthQueryOutputRelationship::IntermediateOnly)
+    .finish()
+    .unwrap()
+}
+
 fn conditional_node(
     identity: &str,
     dependency: domain::WorthQuerySemanticTruthDependency,

@@ -13,7 +13,9 @@ impl WorthQueryWorkspace {
     ) -> crate::domain_installation::WorthQueryInstalledOperatingWorld<'_, L> {
         crate::domain_installation::WorthQueryInstalledOperatingWorld::new(
             &self.runtime,
-            entry.into_capability(),
+            crate::domain_installation::WorthQueryOperatingWorldBasis::Component(
+                entry.into_capability(),
+            ),
         )
     }
 
@@ -26,6 +28,15 @@ impl WorthQueryWorkspace {
         >,
         crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
     > {
+        if let Some(installed) = &self.runtime.installed_product {
+            let product = installed
+                .world
+                .admit_product_branch(installed.world.default_branch())
+                .map_err(product_admission_denial)?;
+            let entry =
+                crate::domain_installation::WorthQueryOperatingWorldEntry::observe_current()?;
+            return Ok(self.product_operating_world(entry, product));
+        }
         crate::domain_installation::WorthQueryOperatingWorldEntry::observe_current()
             .map(|entry| self.operating_world(entry))
     }
@@ -40,6 +51,7 @@ impl WorthQueryWorkspace {
         >,
         crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
     > {
+        self.require_component_operating_world()?;
         crate::domain_installation::WorthQueryOperatingWorldEntry::observe_branch(&branch_identity)
             .map(|entry| self.operating_world(entry))
     }
@@ -53,6 +65,14 @@ impl WorthQueryWorkspace {
         >,
         crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
     > {
+        if let Some(installed) = &self.runtime.installed_product {
+            let product = installed
+                .world
+                .admit_product_branch(installed.world.default_branch())
+                .map_err(product_admission_denial)?;
+            let entry = crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_current_mutation()?;
+            return Ok(self.product_operating_world(entry, product));
+        }
         crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_current_mutation()
             .map(|entry| self.operating_world(entry))
     }
@@ -67,10 +87,72 @@ impl WorthQueryWorkspace {
         >,
         crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
     > {
+        self.require_component_operating_world()?;
         crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_branch_mutation(
             &branch_identity,
         )
         .map(|entry| self.operating_world(entry))
+    }
+
+    pub fn observe_product_operating_world(
+        &self,
+        identity: &worth_query_execution::facade::runtime::ProductBranchIdentity,
+    ) -> Result<
+        crate::domain_installation::WorthQueryInstalledOperatingWorld<
+            '_,
+            crate::basis_lifecycle::ObservationLaneWitness,
+        >,
+        crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
+    > {
+        let installed = self.runtime.installed_product.as_ref().ok_or_else(|| crate::domain_installation::WorthQueryOperatingWorldEntryDenial::product(crate::domain_installation::WorthQueryOperatingWorldProductDenial::RuntimeUnavailable))?;
+        let product = installed
+            .world
+            .admit_product_branch(identity)
+            .map_err(product_admission_denial)?;
+        let entry = if identity == installed.world.default_branch() {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::observe_current()?
+        } else {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::observe_product_component(
+                &product,
+            )?
+        };
+        Ok(self.product_operating_world(entry, product))
+    }
+
+    pub fn create_product_branch(
+        &self,
+        source: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+        intent: worth_query_execution::facade::runtime::ProductBranchCreationIntent,
+        cancellation: &worth_query_execution::facade::runtime::RuntimeWorldCancellationToken,
+    ) -> Result<
+        worth_query_execution::facade::runtime::RuntimeWorldBranchCreationOutcome,
+        super::WorthQueryProductBranchCreationDenial,
+    > {
+        self.runtime
+            .create_product_branch(source, intent, cancellation)
+    }
+
+    fn product_operating_world<L: crate::basis_lifecycle::BasisOperationLane>(
+        &self,
+        entry: crate::domain_installation::WorthQueryOperatingWorldEntry<L>,
+        product: worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+    ) -> crate::domain_installation::WorthQueryInstalledOperatingWorld<'_, L> {
+        crate::domain_installation::WorthQueryInstalledOperatingWorld::new(
+            &self.runtime,
+            crate::domain_installation::WorthQueryOperatingWorldBasis::Product {
+                capability: entry.into_capability(),
+                product: std::sync::Arc::new(product),
+            },
+        )
+    }
+
+    fn require_component_operating_world(
+        &self,
+    ) -> Result<(), crate::domain_installation::WorthQueryOperatingWorldEntryDenial> {
+        if self.runtime.installed_product.is_some() {
+            return Err(crate::domain_installation::WorthQueryOperatingWorldEntryDenial::product(crate::domain_installation::WorthQueryOperatingWorldProductDenial::SelectionRequired));
+        }
+        Ok(())
     }
 
     pub fn graph_participation<G: 'static>(
@@ -140,4 +222,12 @@ impl WorthQueryWorkspace {
         self.runtime
             .replace_domain_installation_with_successor_generation()
     }
+}
+
+fn product_admission_denial(
+    denial: worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+) -> crate::domain_installation::WorthQueryOperatingWorldEntryDenial {
+    crate::domain_installation::WorthQueryOperatingWorldEntryDenial::product(
+        crate::domain_installation::WorthQueryOperatingWorldProductDenial::Admission(denial),
+    )
 }

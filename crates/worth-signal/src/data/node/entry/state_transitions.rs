@@ -19,6 +19,7 @@ impl NodeEntry {
     /// Create a new node entry in the `Dirty` state.
     pub fn new() -> Self {
         Self {
+            definition: super::NodeDefinitionData::default(),
             hot: super::layout::NodeHotData {
                 state: NodeState::Dirty,
                 dirty_aspects: AspectMask::ALL,

@@ -132,9 +132,9 @@ pub(crate) fn projection_runtime_builder(
         .map_err(|error| {
         WorthUiScalarProjectionInstallationError::AspectContract(Box::new(error))
     })?;
-    Ok(projection_consumer_support(
-        configure_product_projection_backend(builder, bridge, source),
-    ))
+    let builder = configure_product_projection_backend(builder, bridge, source)
+        .map_err(WorthUiScalarProjectionInstallationError::SourceLifecycle)?;
+    Ok(projection_consumer_support(builder))
 }
 
 fn projection_consumer_support(

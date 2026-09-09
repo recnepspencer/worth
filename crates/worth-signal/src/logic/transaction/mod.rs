@@ -7,6 +7,8 @@ mod tests;
 
 pub(crate) use runtime::admit_signal_observation_request;
 pub(crate) use runtime::RuntimeObservationRegistry;
+pub(crate) use runtime::SignalCanonicalCallerUnwind;
+pub(crate) use runtime::TemporalRuntimeState;
 pub use runtime::{branch_state_proof_report, canonical_digest};
 #[allow(unused_imports)]
 pub use runtime::{

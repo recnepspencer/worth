@@ -46,6 +46,7 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     DelegationCycle,
     DelegationLineageChanged,
     StaleAuthorization,
+    ProductSecurityBasis(crate::basis::WorthQueryProductBranchAdmissionDenial),
     AdmissionIdentityExhausted,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     SnapshotIdentityExhausted,

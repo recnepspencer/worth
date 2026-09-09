@@ -47,6 +47,7 @@ pub struct WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Ou
         (Output, BTreeSet<WorthQueryApplicationFactKey>),
     >,
     admission_identity: WorthQueryOperationAdmissionIdentity,
+    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     _operation: PhantomData<fn() -> Operation>,
 }
 
@@ -59,6 +60,7 @@ pub struct WorthQueryInspectedOperationInvariantProjection<Operation, Output> {
 pub struct WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation> {
     snapshot: WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
     admission_identity: WorthQueryOperationAdmissionIdentity,
+    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     decision_facts: BTreeSet<WorthQueryApplicationFactKey>,
     _operation: PhantomData<fn() -> Operation>,
 }
@@ -126,9 +128,16 @@ where
         WorthQueryOperationProjectionDenial,
     > {
         admission.validate_projection_authority(self.runtime_authority, &self.binding_identity)?;
+        let product = admission
+            .graph_work()
+            .mutation_lease()
+            .expect("admitted operation retains its selected mutation lease")
+            .product_publication()
+            .clone();
         let completed = self
             .project_bounded(
                 admission.allowed_graph_contract().projection_work_budget(),
+                product.observation().basis().relational_basis().clone(),
                 |reader| {
                     let mut decision_facts = BTreeSet::new();
                     let mut operation_reader =
@@ -161,6 +170,7 @@ where
         Ok(WorthQueryCompletedOperationInvariantProjection {
             completed,
             admission_identity: admission.admission_identity(),
+            product,
             _operation: PhantomData,
         })
     }
@@ -204,6 +214,7 @@ impl<Schema, Operation, Output>
             WorthQueryApplicationOperationInvariantProjectionSnapshot {
                 snapshot,
                 admission_identity: self.admission_identity,
+                product: self.product,
                 decision_facts,
                 _operation: PhantomData,
             },
@@ -380,7 +391,7 @@ where
         super::WorthQueryRealizedProjectionScope,
         BTreeSet<WorthQueryApplicationFactKey>,
     ) {
-        let (lease, scope) = self.snapshot.into_lease_and_realized_scope();
+        let (lease, scope) = self.snapshot.into_lease_and_realized_scope(self.product);
         (lease, scope, self.decision_facts)
     }
 }

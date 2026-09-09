@@ -3,7 +3,9 @@
 //! The catalog holds the record. A phase holds the one caller capability;
 //! losing that capability exposes the existing effects without owner calls.
 
+mod conditional_definition;
 mod creation;
+pub(crate) use conditional_definition::ConditionalDefinitionAttemptCustody;
 #[cfg(test)]
 mod creation_rehearsal;
 mod head;

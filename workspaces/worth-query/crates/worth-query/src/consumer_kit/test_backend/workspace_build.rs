@@ -51,6 +51,7 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
             )
             .map_err(workspace_error)?;
         let seed = apply_initial_seed(&mut memory, schema.collection(), self.initial_seed)?;
+        let source = memory.relational_source_owner();
         let backend = WorthQueryInMemoryTestBackend::with_close_failures(
             memory,
             self.support_profile,
@@ -62,7 +63,7 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
             .backend(backend)
             .with_precompiled_domain_installations(installations);
         for install in self.runtime_installers {
-            runtime = install(runtime);
+            runtime = install.install(runtime, &source, &seed)?;
         }
         runtime = runtime
             .aspect_contracts(schema.contracts().cloned())

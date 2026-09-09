@@ -22,97 +22,6 @@ impl WorthQueryRuntime {
         &self.execution_installation_authority
     }
 
-    pub(crate) fn deliver_conditional_authoritative_change(
-        &mut self,
-        node: &crate::domain_installation::WorthQueryInstalledConditionalNode,
-        dependency_ordinal: usize,
-        request: worth_runtime_bridge::facade::RelationalCommittedPatchRequest,
-    ) -> Result<
-        worth_runtime_bridge::facade::CorrespondenceDeliveryOutcome,
-        crate::domain_installation::WorthQueryConditionalDeliveryDenial,
-    > {
-        let runtime = self.conditional_signal_runtime.as_mut().ok_or(
-            crate::domain_installation::WorthQueryConditionalDeliveryDenial::NodeNotInstalled,
-        )?;
-        runtime
-            .deliver_authoritative_change(&node.lowering, dependency_ordinal, request)
-            .map_err(crate::domain_installation::WorthQueryConditionalDeliveryDenial::bridge)
-    }
-
-    pub(crate) fn conditional_nodes<D: 'static, O: 'static, F: 'static>(
-        &self,
-    ) -> Vec<std::sync::Arc<crate::domain_installation::WorthQueryInstalledConditionalNode>> {
-        self.conditional_execution_registry
-            .operation_nodes::<D, O, F>()
-    }
-
-    pub(crate) fn conditional_instance_families<D: 'static, O: 'static, F: 'static>(
-        &self,
-    ) -> Vec<crate::domain_installation::WorthQueryInstalledConditionalInstanceFamily> {
-        self.conditional_execution_registry
-            .owned_instance_families::<D, O, F>()
-    }
-
-    pub fn rebuild_conditional_execution_index(
-        &mut self,
-    ) -> crate::domain_installation::WorthQueryConditionalExecutionIndexRebuildReport {
-        self.conditional_execution_registry
-            .destroy_and_rebuild_index()
-    }
-
-    pub(crate) fn execute_conditional(
-        &mut self,
-        request: worth_runtime_bridge::facade::BridgeConditionalExecutionRequest<'_>,
-        context: &mut dyn std::any::Any,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
-        (
-            worth_runtime_bridge::facade::BridgeConditionalDenialKind,
-            String,
-            worth_signal::facade::SignalConditionalDecisionCounters,
-            usize,
-        ),
-    > {
-        let runtime = self.conditional_signal_runtime.as_mut().ok_or_else(|| {
-            (
-                worth_runtime_bridge::facade::BridgeConditionalDenialKind::StaleLowering,
-                "installed conditional runtime is unavailable".to_string(),
-                worth_signal::facade::SignalConditionalDecisionCounters::default(),
-                0,
-            )
-        })?;
-        runtime.execute(request, context).map_err(|denial| {
-            (
-                denial.kind(),
-                denial.detail().to_string(),
-                denial.signal_counters(),
-                denial.semantic_observation_reads(),
-            )
-        })
-    }
-
-    pub(crate) fn reenter_retained_conditional_decision(
-        &self,
-        request: worth_runtime_bridge::facade::BridgeConditionalDecisionReentryRequest<'_>,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
-        (
-            String,
-            worth_runtime_bridge::facade::BridgeConditionalReentryCounters,
-        ),
-    > {
-        self.conditional_signal_runtime
-            .as_ref()
-            .ok_or_else(|| {
-                (
-                    "installed conditional runtime is unavailable".to_string(),
-                    Default::default(),
-                )
-            })?
-            .reenter_retained_conditional_decision(request)
-            .map_err(|denial| (denial.detail().to_string(), denial.reentry_counters()))
-    }
-
     pub(crate) fn workflow_parallel_admission_provider<D: 'static, O: 'static, F: 'static>(
         &self,
     ) -> Option<
@@ -329,24 +238,37 @@ impl WorthQueryRuntime {
     ) -> Result<(), crate::runtime::WorthQueryRuntimeError> {
         let successor = self
             .domain_installation_registry
-            .prepare_successor_generation();
-        let (conditional_signal_runtime, conditional_execution_registry) =
-            crate::runtime::WorthQueryRuntimeBuilder::reinstall_conditional_execution(
-                self.conditional_signal_runtime.as_ref(),
-                &self.conditional_installations,
-                &successor,
-                &self.graph_participation_registry,
-            )?;
-        self.execution_runtime
-            .commit_successor_installation(successor.retain_portable_index())
-            .expect("the staged successor must advance the current execution installation");
-        self.domain_installation_registry
-            .commit_successor_generation(successor);
-        if let Some(current) = self.conditional_signal_runtime.as_mut() {
-            current.revoke_conditional_liveness();
+            .prepare_runtime_reconstitution();
+        if let Some(product) = self.installed_product.as_mut() {
+            let selected = product
+                .world
+                .admit_product_branch(product.world.default_branch())
+                .map_err(|denial| {
+                    crate::runtime::WorthQueryRuntimeError::InvariantRegistration {
+                        stage: "conditional_product_reconstitution_admission",
+                        message: format!("{denial:?}"),
+                    }
+                })?;
+            let current = &mut product.conditional;
+            let (candidate, registry) =
+                crate::runtime::WorthQueryRuntimeBuilder::prepare_conditional_reconstitution(
+                    current,
+                    &selected,
+                    &self.conditional_execution_registry,
+                    &successor,
+                )?;
+            current
+                .activate_conditional_reconstitution(candidate)
+                .map_err(|denial| {
+                    crate::runtime::WorthQueryRuntimeError::InvariantRegistration {
+                        stage: "conditional_runtime_reconstitution",
+                        message: format!("{:?}: {}", denial.kind(), denial.detail()),
+                    }
+                })?;
+            self.conditional_execution_registry = registry;
         }
-        self.conditional_signal_runtime = conditional_signal_runtime;
-        self.conditional_execution_registry = conditional_execution_registry;
+        self.domain_installation_registry
+            .commit_runtime_reconstitution(successor);
         Ok(())
     }
 }

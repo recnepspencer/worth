@@ -4,28 +4,26 @@ use crate::evidence_identity::{
 
 use super::{
     WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError,
-    WorthQueryAsyncSourceBindingErrorKind, WorthQueryInstalledOwnedAsyncDeclaration,
-    WorthQueryLiveArtifactTarget, WorthQueryLiveView, WorthQueryRuntime,
-    WorthQueryRuntimeAsyncResultState, WorthQueryRuntimeAsyncResultStateKind,
+    WorthQueryAsyncSourceBindingErrorKind, WorthQueryLiveArtifactTarget, WorthQueryLiveView,
+    WorthQueryRuntime, WorthQueryRuntimeAsyncResultState, WorthQueryRuntimeAsyncResultStateKind,
 };
 
 impl WorthQueryRuntime {
     pub fn supersede_owned_bridge_async_live_view<T>(
         &mut self,
         view: &WorthQueryLiveView<T>,
-        prior: &WorthQueryInstalledOwnedAsyncDeclaration,
-        displacing: &WorthQueryInstalledOwnedAsyncDeclaration,
+        prior: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+        displacing: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
     ) -> Result<WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError> {
-        if prior.runtime_provenance() != self.runtime_provenance()
-            || displacing.runtime_provenance() != self.runtime_provenance()
-            || prior.signal_graph_instance() != displacing.signal_graph_instance()
-            || prior.identity() == displacing.identity()
-        {
-            return Err(WorthQueryAsyncSourceBindingError::new(
-                WorthQueryAsyncSourceBindingErrorKind::ForeignRequest,
-                "owned async supersession requires distinct declarations from this runtime graph",
-            ));
-        }
+        let product = self.installed_product.as_ref().ok_or_else(|| {
+            foreign_request("owned async supersession requires an installed product runtime")
+        })?;
+        let supersession = product
+            .conditional
+            .admit_owned_async_supersession(prior, displacing)
+            .map_err(|denial| foreign_request(denial.detail().to_owned()))?;
+        let prior_request = supersession.prior();
+        let displacing_request = supersession.displacing();
         let runtime_provenance = self.runtime_provenance();
         let target = WorthQueryLiveArtifactTarget::from_view_name(view.name());
         let state = self.live_subscriptions.get_mut(&target).ok_or_else(|| {
@@ -58,7 +56,10 @@ impl WorthQueryRuntime {
                 format!("live view `{}` has no async binding", view.name()),
             )
         })?;
-        if binding.declaration_identity_reference() != prior.lowered_declaration_identity() {
+        if binding.declaration_identity_reference()
+            != prior_request.lowered().declaration_identity()
+            || binding.current_request_identity_reference() != prior_request.request_identity()
+        {
             return Err(WorthQueryAsyncSourceBindingError::new(
                 WorthQueryAsyncSourceBindingErrorKind::ForeignRequest,
                 format!(
@@ -82,11 +83,11 @@ impl WorthQueryRuntime {
                 .field_shape(WorthQueryEvidenceTag::new("live_target"), view.name())
                 .field_shape(
                     WorthQueryEvidenceTag::new("prior_request"),
-                    prior.identity().canonical_identity(),
+                    prior_request.request_identity_for_reporting(),
                 )
                 .field_shape(
                     WorthQueryEvidenceTag::new("displacing_request"),
-                    displacing.identity().canonical_identity(),
+                    displacing_request.request_identity_for_reporting(),
                 )
                 .seal();
         let superseded = WorthQueryRuntimeAsyncResultState::new(
@@ -112,11 +113,11 @@ impl WorthQueryRuntime {
     pub fn deny_owned_bridge_async_live_view<T>(
         &mut self,
         view: &WorthQueryLiveView<T>,
-        declaration: &WorthQueryInstalledOwnedAsyncDeclaration,
+        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
     ) -> Result<WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError> {
         self.transition_owned_bridge_async_live_view(
             view,
-            declaration,
+            request,
             WorthQueryRuntimeAsyncResultStateKind::Denied,
             "worth_query_owned_async_before_effects_denial_v1",
             "denied_request",
@@ -126,11 +127,11 @@ impl WorthQueryRuntime {
     pub fn cancel_owned_bridge_async_live_view<T>(
         &mut self,
         view: &WorthQueryLiveView<T>,
-        declaration: &WorthQueryInstalledOwnedAsyncDeclaration,
+        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
     ) -> Result<WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError> {
         self.transition_owned_bridge_async_live_view(
             view,
-            declaration,
+            request,
             WorthQueryRuntimeAsyncResultStateKind::Cancelled,
             "worth_query_owned_async_before_effects_cancellation_v1",
             "cancelled_request",
@@ -140,24 +141,18 @@ impl WorthQueryRuntime {
     fn transition_owned_bridge_async_live_view<T>(
         &mut self,
         view: &WorthQueryLiveView<T>,
-        declaration: &WorthQueryInstalledOwnedAsyncDeclaration,
+        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
         terminal_kind: WorthQueryRuntimeAsyncResultStateKind,
         evidence_family: &'static str,
         request_field: &'static str,
     ) -> Result<WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError> {
-        if declaration.runtime_provenance() != self.runtime_provenance()
-            || self
-                .conditional_signal_runtime
-                .as_ref()
-                .is_none_or(|runtime| {
-                    declaration.signal_graph_instance() != runtime.owned_signal_graph_instance_id()
-                })
-        {
-            return Err(WorthQueryAsyncSourceBindingError::new(
-                WorthQueryAsyncSourceBindingErrorKind::ForeignRequest,
-                "owned async denial requires a declaration from this runtime graph",
-            ));
-        }
+        let admitted = self
+            .installed_product
+            .as_ref()
+            .ok_or_else(|| foreign_request("owned async transition requires an installed product"))?
+            .conditional
+            .validate_owned_async_request_occurrence(request)
+            .map_err(|denial| foreign_request(denial.detail()))?;
         let runtime_provenance = self.runtime_provenance();
         let target = WorthQueryLiveArtifactTarget::from_view_name(view.name());
         let state = self.live_subscriptions.get_mut(&target).ok_or_else(|| {
@@ -170,6 +165,23 @@ impl WorthQueryRuntime {
             .async_result_state
             .as_ref()
             .map(WorthQueryRuntimeAsyncResultState::kind);
+        let binding = state.async_source_binding.as_ref().ok_or_else(|| {
+            WorthQueryAsyncSourceBindingError::new(
+                WorthQueryAsyncSourceBindingErrorKind::MissingBinding,
+                format!("live view `{}` has no async binding", view.name()),
+            )
+        })?;
+        if binding.declaration_identity_reference() != admitted.lowered().declaration_identity()
+            || binding.current_request_identity_reference() != admitted.request_identity()
+        {
+            return Err(WorthQueryAsyncSourceBindingError::new(
+                WorthQueryAsyncSourceBindingErrorKind::ForeignRequest,
+                format!(
+                    "live view `{}` is not bound to the denied declaration",
+                    view.name()
+                ),
+            ));
+        }
         if current == Some(terminal_kind) {
             return retained_terminal_batch(runtime_provenance, view, state);
         }
@@ -177,21 +189,6 @@ impl WorthQueryRuntime {
             return Err(WorthQueryAsyncSourceBindingError::new(
                 WorthQueryAsyncSourceBindingErrorKind::IllegalResultTransition,
                 format!("live view `{}` is no longer pending", view.name()),
-            ));
-        }
-        let binding = state.async_source_binding.as_ref().ok_or_else(|| {
-            WorthQueryAsyncSourceBindingError::new(
-                WorthQueryAsyncSourceBindingErrorKind::MissingBinding,
-                format!("live view `{}` has no async binding", view.name()),
-            )
-        })?;
-        if binding.declaration_identity_reference() != declaration.lowered_declaration_identity() {
-            return Err(WorthQueryAsyncSourceBindingError::new(
-                WorthQueryAsyncSourceBindingErrorKind::ForeignRequest,
-                format!(
-                    "live view `{}` is not bound to the denied declaration",
-                    view.name()
-                ),
             ));
         }
         let basis = binding.current_basis_identity();
@@ -206,7 +203,7 @@ impl WorthQueryRuntime {
                 .field_shape(WorthQueryEvidenceTag::new("live_target"), view.name())
                 .field_shape(
                     WorthQueryEvidenceTag::new(request_field),
-                    declaration.identity().canonical_identity(),
+                    admitted.request_identity_for_reporting(),
                 )
                 .seal();
         let terminal =
@@ -224,6 +221,13 @@ impl WorthQueryRuntime {
             0,
         ))
     }
+}
+
+fn foreign_request(detail: impl Into<std::sync::Arc<str>>) -> WorthQueryAsyncSourceBindingError {
+    WorthQueryAsyncSourceBindingError::new(
+        WorthQueryAsyncSourceBindingErrorKind::ForeignRequest,
+        detail,
+    )
 }
 
 fn retained_terminal_batch<T>(

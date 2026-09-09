@@ -1,3 +1,6 @@
+use crate::data::retained_storage::{
+    arc_allocation_charge, RetainedStorageCharge, RetainedStoragePreparationDenial,
+};
 use crate::data::telemetry::{InvalidationPerformedCounter, SignalInvalidationRealizedCounters};
 use crate::logic::transaction::{SignalObservationCaptureGate, SignalObservationSurface};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -19,10 +22,15 @@ impl Default for InvalidationPerformedCounterState {
 }
 
 impl InvalidationPerformedCounterState {
+    pub(crate) fn initial_heap_charge(
+    ) -> Result<RetainedStorageCharge, RetainedStoragePreparationDenial> {
+        arc_allocation_charge::<[AtomicU64; 24]>()
+    }
+
     pub(crate) fn with_capture_gate(capture_gate: SignalObservationCaptureGate) -> Self {
         Self {
             capture_gate,
-            ..Self::default()
+            values: Arc::new(std::array::from_fn(|_| AtomicU64::new(0))),
         }
     }
 

@@ -11,6 +11,7 @@ use crate::diagnostics::policy::{DetailLimit, OrdinaryAccessLane};
 use crate::diagnostics::profile::DiagnosticsTier;
 
 mod execution_facts;
+mod node_definitions;
 
 use execution_facts::{
     assert_forked_cold_facts, assert_populated_cold_facts, set_causality, set_execution_record,

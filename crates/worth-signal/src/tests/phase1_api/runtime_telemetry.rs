@@ -175,7 +175,7 @@ fn node_storage_is_physically_split_into_index_addressed_lanes() {
             && PERSISTENT_PAGED_VECTOR_SOURCE.contains("PersistentVector<T, 64>")
             && PERSISTENT_VECTOR_SOURCE.contains("Exclusive(Vec<T>)")
             && PERSISTENT_VECTOR_SOURCE.contains("ForkShared {")
-            && PERSISTENT_VECTOR_SOURCE.contains("base: Arc<Vec<T>>")
+            && PERSISTENT_VECTOR_SOURCE.contains("base: Arc<RetainedStorageBacking<Vec<T>>>")
             && PERSISTENT_VECTOR_SOURCE.contains("changed_pages: im::OrdMap")
             && PERSISTENT_VECTOR_SOURCE.contains("install_changed_page::<T, PAGE_LEN>")
             && PERSISTENT_VECTOR_SOURCE.contains("Arc::make_mut(")

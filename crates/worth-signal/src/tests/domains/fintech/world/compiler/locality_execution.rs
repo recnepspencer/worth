@@ -93,7 +93,7 @@ impl CompiledFinancialLocalityWorld {
             .graph()
             .observe()
             .lineage_records()
-            .back()
+            .last()
             .map(|record| record.sequence);
         self.apply_declared_mutation()?;
         let evaluated_outputs = self.settle_declared_mutation()?;
@@ -104,7 +104,7 @@ impl CompiledFinancialLocalityWorld {
             .graph()
             .observe()
             .lineage_records()
-            .back()
+            .last()
             .map(|record| record.sequence);
         let baseline_retained_outputs = self.baseline_retained_outputs(&evaluated_outputs)?;
         let graph = self.runtime.graph();

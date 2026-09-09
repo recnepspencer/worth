@@ -72,9 +72,6 @@ impl WorthUiPresentationAsyncOwner {
                 super::super::runtime_bridge::WorthUiPresentationRuntimeCleanupDenial::Query(_) => {
                     WorthUiPresentationRuntimeCleanupStop::Query
                 }
-                super::super::runtime_bridge::WorthUiPresentationRuntimeCleanupDenial::Semantic(
-                    _,
-                ) => WorthUiPresentationRuntimeCleanupStop::Semantic,
             };
             return Err(WorthUiPresentationSettlementDenial::RuntimeCleanup(stop));
         }

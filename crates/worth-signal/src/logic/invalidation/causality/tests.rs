@@ -29,7 +29,21 @@ fn publish_scoped_delta(
     )
     .unwrap();
     let prepared = graph
-        .prepare_direct_output_causes(&delta, &mut DefaultComparatorPolicyResolver::default())
+        .prepare_direct_output_causes(
+            &delta,
+            &mut DefaultComparatorPolicyResolver::default(),
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+        .unwrap();
+    let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(10_000);
+    let projection = crate::data::graph::PendingRevalidationNodeProjection::capture(
+        &graph,
+        delta.producer,
+        &mut work,
+    )
+    .unwrap();
+    let prepared = graph
+        .prepare_direct_cause_publication(prepared, projection, false, &mut work)
         .unwrap();
     graph.publish_direct_output_causes(prepared).unwrap();
     graph.cause_sets.publish_output_commit(delta);
@@ -165,3 +179,5 @@ fn restore_rejects_delta_whose_internal_ordinal_contradicts_its_ledger_key() {
 
     assert!(SignalGraph::restore_from_checkpoint_image(&image).is_err());
 }
+
+mod work;

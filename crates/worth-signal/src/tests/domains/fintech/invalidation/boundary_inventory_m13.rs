@@ -23,7 +23,6 @@ mod constructors;
 mod counters;
 mod owners;
 mod planner;
-mod source_edges;
 use counters::COUNTER_AND_EXPORT_BOUNDARIES;
 use planner::PLANNER_AND_EXECUTOR_BOUNDARIES;
 
@@ -173,8 +172,8 @@ const OPERATIONAL_BOUNDARIES: &[ExactBoundarySymbol] = &[
     ),
     boundary!(
         "direct output cause publication",
-        "logic/invalidation/causality/dependency_admission.rs",
-        "../../../../logic/invalidation/causality/dependency_admission.rs",
+        "logic/invalidation/causality/dependency_admission/publication.rs",
+        "../../../../logic/invalidation/causality/dependency_admission/publication.rs",
         "publish_direct_output_causes",
         1
     ),

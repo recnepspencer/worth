@@ -6,30 +6,24 @@ use super::{
     ReadVertex,
 };
 
-mod causal_mismatch;
 mod controlled_workspace;
 mod installation;
 mod providers;
-mod public_runtime;
-mod sibling_live;
+mod resource_lifecycle;
+pub(super) mod source_seed;
 
-pub(crate) use causal_mismatch::conditional_causal_mismatch_installation;
 pub(crate) use controlled_workspace::{
     conditional_controlled_workspace, conditional_controlled_workspace_with_donor,
     ConditionalDonorWorkspaceScenario, ConditionalWorkspacePlacement,
 };
 pub(crate) use installation::{
-    conditional_installation, conditional_installation_with_change,
-    conditional_installation_with_repeated_value_changes, ConditionalInstallation,
+    conditional_installation, conditional_installation_without_observation, ConditionalInstallation,
 };
-pub(crate) use public_runtime::{
-    conditional_public_controlled_workspace_with,
-    conditional_public_observe_workspace_with_invalidation, conditional_public_workspace_with,
-};
-pub(crate) use sibling_live::conditional_public_sibling_workspace_with_change;
-
 use providers::providers_for;
 pub(crate) use providers::DirectConditionalCompute;
+pub(crate) use resource_lifecycle::{
+    conditional_resource_workspace, ConditionalResourceFamily, ConditionalResourceOperation,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ConditionalModelGraph;
@@ -131,23 +125,35 @@ pub(crate) fn conditional_workspace_with<P>(
 where
     P: domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex, ReadFamily>,
 {
-    conditional_workspace_builder(vec![node])
-        .conditional_runtime(installation.bridge, installation.graph)
-        .conditional_node(
-            GeometryDomain,
-            ReadVertex,
-            ReadFamily,
-            ConditionalModelGraph,
-            domain::WorthQueryConditionalNodeLocation::operation(installation.node_identity)
-                .unwrap(),
-            vec![installation.dependency],
-            installation.providers,
-            compute,
-        )
-        .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
-        .workspace(name)
+    conditional_workspace_with_builder(node, installation, compute).workspace(name)
 }
 
+pub(crate) fn conditional_workspace_with_builder<P>(
+    node: domain::WorthQueryPortableConditionalNodeDeclaration,
+    installation: ConditionalInstallation,
+    compute: P,
+) -> worth_query::facade::consumer_kit::WorthQueryInMemoryTestRuntimeBuilder
+where
+    P: domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex, ReadFamily>,
+{
+    conditional_workspace_builder(vec![node])
+        .with_seeded_conditional_installation(move |builder, source, seed| {
+            let installation = installation.prepare_seeded(source, seed);
+            let builder = builder.conditional_node(
+                GeometryDomain,
+                ReadVertex,
+                ReadFamily,
+                ConditionalModelGraph,
+                domain::WorthQueryConditionalNodeLocation::operation(installation.node_identity)
+                    .unwrap(),
+                vec![installation.dependency],
+                installation.providers,
+                compute,
+            );
+            Ok((builder, installation.bridge, installation.graph))
+        })
+        .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
+}
 pub(crate) fn conditional_workspace_without_lowering(
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
@@ -163,25 +169,32 @@ pub(crate) fn conditional_workspace_without_lowering(
 fn conditional_workspace_builder(
     nodes: Vec<domain::WorthQueryPortableConditionalNodeDeclaration>,
 ) -> worth_query::facade::consumer_kit::WorthQueryInMemoryTestRuntimeBuilder {
-    configured_runtime_without_executors(conditional_package(nodes))
-        .graph_participation(conditional_model_graph_definition())
-        .graph_participation_provider(ConditionalModelGraph, ConditionalModelGraphProvider)
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
+    let dependencies = nodes
+        .iter()
+        .flat_map(|node| node.dependencies().iter().cloned())
+        .collect::<Vec<_>>();
+    source_seed::seeded_builder(
+        configured_runtime_without_executors(conditional_package(nodes)),
+        dependencies,
+    )
+    .graph_participation(conditional_model_graph_definition())
+    .graph_participation_provider(ConditionalModelGraph, ConditionalModelGraphProvider)
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
 }
 
 fn conditional_package(
@@ -259,39 +272,36 @@ pub(crate) fn shared_signal_node_workspace(
         worth_signal::facade::PartitionToken::new("geometry-signal"),
         second_node,
     );
-    let second_dependency = domain::WorthQueryConditionalDependencyInstallation::new(
-        Some(worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(0, 0, 1)),
-        vec![second_target],
-    );
-    let ConditionalInstallation {
-        bridge,
-        graph,
-        dependency: first_dependency,
-        providers: first_providers,
-        ..
-    } = installation;
     conditional_workspace_builder(vec![first, second])
-        .conditional_runtime(bridge, graph)
-        .conditional_node(
-            GeometryDomain,
-            ReadVertex,
-            ReadFamily,
-            ConditionalModelGraph,
-            domain::WorthQueryConditionalNodeLocation::operation(first_identity).unwrap(),
-            vec![first_dependency],
-            first_providers,
-            DirectConditionalCompute,
-        )
-        .conditional_node(
-            GeometryDomain,
-            ReadVertex,
-            ReadFamily,
-            ConditionalModelGraph,
-            domain::WorthQueryConditionalNodeLocation::operation(second_identity).unwrap(),
-            vec![second_dependency],
-            second_providers,
-            DirectConditionalCompute,
-        )
+        .with_seeded_conditional_installation(move |builder, source, seed| {
+            let installation = installation.prepare_seeded(source, seed);
+            let second_dependency = domain::WorthQueryConditionalDependencyInstallation::new(
+                Some(installation.record),
+                vec![second_target],
+            );
+            let builder = builder
+                .conditional_node(
+                    GeometryDomain,
+                    ReadVertex,
+                    ReadFamily,
+                    ConditionalModelGraph,
+                    domain::WorthQueryConditionalNodeLocation::operation(first_identity).unwrap(),
+                    vec![installation.dependency],
+                    installation.providers,
+                    DirectConditionalCompute,
+                )
+                .conditional_node(
+                    GeometryDomain,
+                    ReadVertex,
+                    ReadFamily,
+                    ConditionalModelGraph,
+                    domain::WorthQueryConditionalNodeLocation::operation(second_identity).unwrap(),
+                    vec![second_dependency],
+                    second_providers,
+                    DirectConditionalCompute,
+                );
+            Ok((builder, installation.bridge, installation.graph))
+        })
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
         .workspace(name)
 }

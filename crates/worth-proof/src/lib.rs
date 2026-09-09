@@ -16,6 +16,7 @@ pub mod prelude;
 mod proof;
 pub mod raw;
 mod recipe;
+mod source_observation;
 mod transition;
 mod type_level;
 
@@ -83,6 +84,10 @@ pub use raw::{
 pub use raw::{Binding, BindingAxes};
 pub use raw::{CanonicalVec, DisjointPair, ExactlyOne, NonEmpty, Pair, UniqueVec};
 pub use raw::{LinearResource, TerminalReceipt, TerminalState};
+pub use source_observation::{
+    AdmittedConditionalSourceObservation, ConditionalEvaluationSource,
+    ConditionalSourceObservationAuthority, ConditionalSourceObservationOwner,
+};
 
 #[doc(hidden)]
 pub use band::__band_guard_package_matches_any_prefix;

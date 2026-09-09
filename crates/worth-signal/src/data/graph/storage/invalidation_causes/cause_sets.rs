@@ -1,4 +1,17 @@
-use std::num::NonZeroU32;
+mod fork_growth;
+mod normalization;
+mod release_work;
+mod replacement_work;
+mod retained_publication;
+mod slot_preparation;
+pub(crate) use retained_publication::{
+    PreparedRetainedCauseStorePublication, RetainedCauseStorePublicationDraft,
+};
+pub(crate) use slot_preparation::{CauseSlotPreparation, PreparedCauseSlot};
+mod reserved_fork;
+pub(crate) use normalization::NormalizedCauseSet;
+
+mod retained_charge;
 
 use serde::Serialize;
 
@@ -30,17 +43,30 @@ pub(crate) struct CanonicalCauseSetStore {
     pub(super) output_commit_reference_counts:
         crate::data::persistent_ord_map::PersistentOrdMap<u64, usize>,
     #[serde(skip)]
+    pub(super) retained_custody: Option<
+        std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionReservation>,
+    >,
+    #[serde(skip)]
     pub(super) deserialized_quarantine: bool,
     #[cfg(test)]
     #[serde(skip)]
-    pub(super) published_order_probe:
-        crate::data::persistent_vector::PersistentVector<(u64, crate::data::handle::NodeId)>,
+    // Test observation only. It is not retained runtime meaning and therefore
+    // must not participate in production fork admission or storage custody.
+    pub(super) published_order_probe: Vec<(u64, crate::data::handle::NodeId)>,
     #[cfg(test)]
     #[serde(skip)]
     pub(super) last_compaction_slot_visits: usize,
 }
 
 impl CanonicalCauseSetStore {
+    /// A rejected evaluation can retain its performed publication evidence.
+    /// Preserve ordinal issuance without installing its causes or publications.
+    pub(in crate::data::graph) fn preserve_output_issuance_from(&mut self, performed: &Self) {
+        self.next_output_commit_ordinal = self
+            .next_output_commit_ordinal
+            .max(performed.next_output_commit_ordinal);
+    }
+
     #[cfg(test)]
     pub(crate) const fn output_commit_ordinal_for_test(&self) -> u64 {
         self.next_output_commit_ordinal
@@ -76,7 +102,7 @@ impl CanonicalCauseSetStore {
         self.publish_output_commit_ordinal(delta.output_commit_ordinal);
         #[cfg(test)]
         self.published_order_probe
-            .push_back((delta.output_commit_ordinal.0, delta.producer));
+            .push((delta.output_commit_ordinal.0, delta.producer));
         if self
             .output_commit_reference_counts
             .contains_key(&delta.output_commit_ordinal.0)
@@ -84,6 +110,10 @@ impl CanonicalCauseSetStore {
             self.published_output_commits
                 .insert(delta.output_commit_ordinal.0, delta);
         }
+    }
+
+    pub(crate) fn published_output_lookup_steps(&self) -> usize {
+        self.published_output_commits.lookup_steps()
     }
 
     pub(crate) fn published_output_commit(
@@ -97,27 +127,17 @@ impl CanonicalCauseSetStore {
         &mut self,
         causes: impl IntoIterator<Item = ResolvedDependencyCause>,
     ) -> PendingCauseSetId {
-        let mut causes = causes.into_iter().collect::<Vec<_>>();
-        causes.sort_by(|left, right| left.key.cmp(&right.key));
-        causes.dedup_by(|left, right| left.key == right.key);
-        if causes.is_empty() {
-            return PendingCauseSetId::EMPTY;
-        }
-        self.normalize_slot_metadata();
-        let index = if let Some(index) = self.free_indices.pop_back() {
-            self.sets[index as usize] = causes;
-            index as usize
-        } else {
-            self.sets.push_back(causes);
-            self.slot_generations.push_back(self.generation);
-            self.sets.len() - 1
-        };
-        self.occupied_set_count += 1;
-        self.add_output_commit_references(index);
-        PendingCauseSetId {
-            index: NonZeroU32::new(index as u32 + 1),
-            generation: self.slot_generations[index],
-        }
+        let causes = NormalizedCauseSet::prepare(
+            causes.into_iter().collect(),
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+        .expect("ordinary cause normalization");
+        self.insert_normalized(causes)
+    }
+
+    fn insert_normalized(&mut self, causes: NormalizedCauseSet) -> PendingCauseSetId {
+        self.replace_normalized(PendingCauseSetId::EMPTY, causes)
+            .expect("ordinary cause slot insertion")
     }
 
     pub(crate) fn get(
@@ -147,22 +167,25 @@ impl CanonicalCauseSetStore {
         current: PendingCauseSetId,
         causes: impl IntoIterator<Item = ResolvedDependencyCause>,
     ) -> Result<PendingCauseSetId, SignalError> {
-        let mut causes = causes.into_iter().collect::<Vec<_>>();
-        causes.sort_by(|left, right| left.key.cmp(&right.key));
-        causes.dedup_by(|left, right| left.key == right.key);
-        if causes.is_empty() {
-            self.release(current)?;
-            return Ok(PendingCauseSetId::EMPTY);
-        }
-        let Some(index) = current.index else {
-            return Ok(self.insert(causes));
-        };
-        self.get(current)?;
-        let index = index.get() as usize - 1;
-        self.add_output_commit_references_from(&causes);
-        let previous = std::mem::replace(&mut self.sets[index], causes);
-        self.remove_output_commit_references_from(&previous);
-        Ok(current)
+        let causes = NormalizedCauseSet::prepare(
+            causes.into_iter().collect(),
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )?;
+        self.replace_normalized(current, causes)
+    }
+
+    pub(crate) fn replace_normalized(
+        &mut self,
+        current: PendingCauseSetId,
+        causes: NormalizedCauseSet,
+    ) -> Result<PendingCauseSetId, SignalError> {
+        self.normalize_slot_metadata();
+        let slot = self.prepare_cause_slots()?.replacement(
+            current,
+            causes.is_empty(),
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )?;
+        self.publish_prepared_cause_slot(slot, causes)
     }
 
     pub(crate) fn release(&mut self, current: PendingCauseSetId) -> Result<(), SignalError> {
@@ -172,8 +195,8 @@ impl CanonicalCauseSetStore {
         self.get(current)?;
         self.normalize_slot_metadata();
         let index = index.get() as usize - 1;
-        let released = std::mem::take(&mut self.sets[index]);
-        self.remove_output_commit_references_from(&released);
+        self.remove_output_commit_references_at(index);
+        self.sets.replace_discard(index, Vec::new());
         self.occupied_set_count = self.occupied_set_count.saturating_sub(1);
         self.slot_generations[index] = self.slot_generations[index].wrapping_add(1);
         self.free_indices.push_back(index as u32);
@@ -194,9 +217,10 @@ impl CanonicalCauseSetStore {
             published_output_commits: self.published_output_commits.operational_clone(),
             occupied_set_count: self.occupied_set_count,
             output_commit_reference_counts: self.output_commit_reference_counts.operational_clone(),
+            retained_custody: None,
             deserialized_quarantine: self.deserialized_quarantine,
             #[cfg(test)]
-            published_order_probe: self.published_order_probe.operational_clone(),
+            published_order_probe: self.published_order_probe.clone(),
             #[cfg(test)]
             last_compaction_slot_visits: self.last_compaction_slot_visits,
         }
@@ -212,9 +236,10 @@ impl CanonicalCauseSetStore {
             published_output_commits: self.published_output_commits.fork_persistent(),
             occupied_set_count: self.occupied_set_count,
             output_commit_reference_counts: self.output_commit_reference_counts.fork_persistent(),
+            retained_custody: self.retained_custody.clone(),
             deserialized_quarantine: self.deserialized_quarantine,
             #[cfg(test)]
-            published_order_probe: self.published_order_probe.fork_persistent(),
+            published_order_probe: self.published_order_probe.clone(),
             #[cfg(test)]
             last_compaction_slot_visits: self.last_compaction_slot_visits,
         }
@@ -233,6 +258,7 @@ impl CanonicalCauseSetStore {
             output_commit_reference_counts: self
                 .output_commit_reference_counts
                 .fork_storage_identity(),
+            retained_custody: self.retained_custody.clone(),
             deserialized_quarantine: self.deserialized_quarantine,
             published_order_probe: self.published_order_probe.clone(),
             last_compaction_slot_visits: self.last_compaction_slot_visits,
@@ -252,9 +278,6 @@ impl CanonicalCauseSetStore {
             && self
                 .output_commit_reference_counts
                 .ptr_eq(&other.output_commit_reference_counts)
-            && self
-                .published_order_probe
-                .shares_storage_with(&other.published_order_probe)
     }
 
     #[cfg(test)]

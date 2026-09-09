@@ -168,6 +168,9 @@ fn try_build_primary_query_world_with_dimensions(
         .graph_participation(domain::graph_definition())
         .graph_participation_provider(domain::PrimaryGraph, domain::PrimaryGraphProvider)
         .runtime_bridge(bridge)
+        .conditional_execution_resources(
+            runtime::WorthQueryConditionalExecutionResources::development(),
+        )
         .conditional_signal_graph(signal)
         .conditional_node(
             TemporalDomain,
@@ -198,7 +201,7 @@ fn try_build_primary_query_world_with_dimensions(
     } else {
         builder
     };
-    let mut workspace = builder
+    let backend = builder
         .consumer_support_posture(
             query_domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
             query_domain::WorthQueryConsumerSupportPosture::Supported,
@@ -249,9 +252,9 @@ fn try_build_primary_query_world_with_dimensions(
         .subscription_activation(backend::SubscriptionActivation)
         .preview_basis(backend::PreviewBasis)
         .inspector_evidence(backend::InspectorEvidence)
-        .build_backend_from_parts()
-        .build()
-        .map_err(|error| error.to_string())?
+        .build_backend_from_parts();
+    let runtime = backend.build().map_err(|error| error.to_string())?;
+    let mut workspace = runtime
         .workspace("temporal-primary-query")
         .map_err(|error| error.to_string())?;
     if profile == domain::ConsumerProfile::SharedValuePatch {
@@ -260,7 +263,22 @@ fn try_build_primary_query_world_with_dimensions(
     let settled = settle_primary_projection(&mut workspace);
     let live = match settled.into_lifecycle().promote(&mut workspace) {
         query_domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
-        _ => panic!("the temporal primary projection must promote"),
+        query_domain::WorthQueryProjectionPromotionOutcome::Denied(stop)
+        | query_domain::WorthQueryProjectionPromotionOutcome::Deferred(stop)
+        | query_domain::WorthQueryProjectionPromotionOutcome::Failed(stop) => panic!(
+            "the temporal primary projection must promote: {:?}: {}",
+            stop.kind(),
+            stop.detail()
+        ),
+        query_domain::WorthQueryProjectionPromotionOutcome::Stale(_) => {
+            panic!("the temporal primary projection unexpectedly became stale")
+        }
+        query_domain::WorthQueryProjectionPromotionOutcome::RebindRequired(_) => {
+            panic!("the temporal primary projection unexpectedly required rebinding")
+        }
+        query_domain::WorthQueryProjectionPromotionOutcome::AuthorityRevalidationRequired(_) => {
+            panic!("the temporal primary projection unexpectedly required authority revalidation")
+        }
     };
     Ok(PrimaryQueryWorld {
         workspace,

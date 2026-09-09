@@ -1,5 +1,8 @@
+mod conditional_service;
 mod envelope;
 mod failure_capture;
+#[cfg(test)]
+mod test_faults;
 mod transaction_commit;
 mod transaction_mutation;
 mod transaction_observation;

@@ -244,6 +244,15 @@ impl WorthQueryManagedGraphWorkSession {
         }
     }
 
+    pub(in crate::domain_computation) fn mutation_lease(
+        &self,
+    ) -> Option<&WorthQueryApplicationSnapshotLease> {
+        match &self.basis {
+            WorthQueryGraphWorkBasis::Query { .. } => None,
+            WorthQueryGraphWorkBasis::Mutation(lease) => lease.as_ref(),
+        }
+    }
+
     pub(in crate::domain_computation) fn take_operation_capacity(
         &mut self,
     ) -> Option<worth_query_admission::integration::WorthQueryCapacityReservedExecutionResourcePlan>

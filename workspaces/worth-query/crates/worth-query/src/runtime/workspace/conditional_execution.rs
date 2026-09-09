@@ -1,6 +1,12 @@
 use super::WorthQueryWorkspace;
 
 impl WorthQueryWorkspace {
+    pub fn conditional_evaluation_resource_observation(
+        &self,
+    ) -> Option<super::super::WorthQueryConditionalEvaluationResourceObservation> {
+        self.runtime.conditional_evaluation_resource_observation()
+    }
+
     pub(crate) fn inject_classified_live_emission_failures(&mut self, count: usize) {
         self.runtime.inject_classified_live_emission_failures(count);
     }
@@ -26,37 +32,6 @@ impl WorthQueryWorkspace {
                 current_domain.authority().runtime_authority().as_u64(),
                 current_domain.installation_generation().ordinal(),
             )
-    }
-
-    pub fn deliver_conditional_authoritative_change<D: 'static, O: 'static, F: 'static>(
-        &mut self,
-        _domain: D,
-        _operation: O,
-        _family: F,
-        delivery: crate::domain_installation::WorthQueryConditionalAuthoritativeChangeDeliveryRequest,
-    ) -> Result<
-        worth_runtime_bridge::facade::CorrespondenceDeliveryOutcome,
-        crate::domain_installation::WorthQueryConditionalDeliveryDenial,
-    > {
-        let (location, dependency_ordinal, committed_patch) = delivery.into_parts();
-        let node = self
-            .runtime
-            .conditional_nodes::<D, O, F>()
-            .into_iter()
-            .find(|node| node.location == location)
-            .ok_or(
-                crate::domain_installation::WorthQueryConditionalDeliveryDenial::NodeNotInstalled,
-            )?;
-        let outcome = self.runtime.deliver_conditional_authoritative_change(
-            node.as_ref(),
-            dependency_ordinal,
-            committed_patch,
-        )?;
-        if let worth_proof::TransitionOutcome::Success(receipt) = &outcome {
-            self.runtime
-                .stage_conditional_owner_delivery::<D, O, F>(receipt);
-        }
-        Ok(outcome)
     }
 
     pub(crate) fn admit_staged_conditional_owner_delivery<D: 'static, O: 'static, F: 'static>(
@@ -104,11 +79,14 @@ impl WorthQueryWorkspace {
     }
 
     pub(crate) fn execute_installed_conditional(
-        &mut self,
+        &self,
+        selected: &std::sync::Arc<
+            worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+        >,
         request: worth_runtime_bridge::facade::BridgeConditionalExecutionRequest<'_>,
         context: &mut dyn std::any::Any,
     ) -> Result<
-        worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
+        super::super::WorthQueryExecutedConditional,
         (
             worth_runtime_bridge::facade::BridgeConditionalDenialKind,
             String,
@@ -116,11 +94,12 @@ impl WorthQueryWorkspace {
             usize,
         ),
     > {
-        self.runtime.execute_conditional(request, context)
+        self.runtime.execute_conditional(selected, request, context)
     }
 
     pub(crate) fn reenter_retained_conditional_decision(
         &self,
+        selected: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
         request: worth_runtime_bridge::facade::BridgeConditionalDecisionReentryRequest<'_>,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
@@ -129,6 +108,7 @@ impl WorthQueryWorkspace {
             worth_runtime_bridge::facade::BridgeConditionalReentryCounters,
         ),
     > {
-        self.runtime.reenter_retained_conditional_decision(request)
+        self.runtime
+            .reenter_retained_conditional_decision(selected, request)
     }
 }

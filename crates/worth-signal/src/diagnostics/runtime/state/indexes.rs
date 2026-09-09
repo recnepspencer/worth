@@ -1,3 +1,5 @@
+use super::DiagnosticHistory;
+use crate::data::persistent_ord_map::PersistentOrdMap;
 use crate::diagnostics::replay::ReplayEvent;
 
 use super::DiagnosticsState;
@@ -10,22 +12,25 @@ impl DiagnosticsState {
         self.replay_cursor_offsets.clear();
         self.snapshot_replay_cursors.clear();
         self.replay_cursor_offset_base = 0;
-        for event in &self.replay_events {
+        for event in self.replay_events.iter() {
             self.replay_events_by_branch
                 .entry(event.branch_id)
                 .or_default()
-                .push_back(event.clone());
+                .push_back(event.clone())
+                .expect("diagnostic history exhausted its private position space");
             if let Some(node) = event.node {
                 self.replay_events_by_node
                     .entry(node)
                     .or_default()
-                    .push_back(event.clone());
+                    .push_back(event.clone())
+                    .expect("diagnostic history exhausted its private position space");
             }
             if let Some(artifact_id) = event.lineage_artifact_id {
                 self.replay_events_by_artifact
                     .entry(artifact_id)
                     .or_default()
-                    .push_back(event.clone());
+                    .push_back(event.clone())
+                    .expect("diagnostic history exhausted its private position space");
             }
             if let Some(snapshot_id) = event.snapshot_id {
                 self.snapshot_replay_cursors
@@ -35,18 +40,20 @@ impl DiagnosticsState {
         self.rebuild_replay_cursor_offsets();
         self.lineage_records_by_artifact.clear();
         self.lineage_records_by_node.clear();
-        for record in &self.lineage_records {
+        for record in self.lineage_records.iter() {
             if let Some(node) = record.node() {
                 self.lineage_records_by_node
                     .entry(node)
                     .or_default()
-                    .push_back(record.clone());
+                    .push_back(record.clone())
+                    .expect("diagnostic history exhausted its private position space");
             }
             if let Some(artifact_id) = record.subject_artifact_id() {
                 self.lineage_records_by_artifact
                     .entry(artifact_id)
                     .or_default()
-                    .push_back(record.clone());
+                    .push_back(record.clone())
+                    .expect("diagnostic history exhausted its private position space");
             }
         }
     }
@@ -60,9 +67,10 @@ impl DiagnosticsState {
             remove_event_from_index(&mut self.replay_events_by_artifact, &artifact_id, event);
         }
         self.replay_cursor_offsets.remove(&event.cursor);
-        if event.snapshot_id.is_some() {
-            self.snapshot_replay_cursors
-                .retain(|_, cursor| *cursor != event.cursor);
+        if let Some(snapshot_id) = event.snapshot_id {
+            if self.snapshot_replay_cursors.get(&snapshot_id) == Some(&event.cursor) {
+                self.snapshot_replay_cursors.remove(&snapshot_id);
+            }
         }
     }
 
@@ -87,8 +95,12 @@ impl DiagnosticsState {
     }
 }
 
-fn remove_event_from_index<K: Ord>(
-    index: &mut std::collections::BTreeMap<K, std::collections::VecDeque<ReplayEvent>>,
+#[cfg(test)]
+#[path = "index_fork_tests.rs"]
+mod tests;
+
+fn remove_event_from_index<K: Clone + Ord>(
+    index: &mut PersistentOrdMap<K, DiagnosticHistory<ReplayEvent>>,
     key: &K,
     event: &ReplayEvent,
 ) {
@@ -96,8 +108,11 @@ fn remove_event_from_index<K: Ord>(
         if let Some(front) = events.front() {
             if front == event {
                 events.pop_front();
-            } else if let Some(position) = events.iter().position(|candidate| candidate == event) {
-                events.remove(position);
+            } else {
+                let position = events.iter().position(|candidate| candidate == event);
+                if let Some(position) = position {
+                    events.remove(position);
+                }
             }
         }
         events.is_empty()
@@ -109,11 +124,8 @@ fn remove_event_from_index<K: Ord>(
     }
 }
 
-fn remove_lineage_from_index<K: Ord>(
-    index: &mut std::collections::BTreeMap<
-        K,
-        std::collections::VecDeque<crate::diagnostics::lineage::LineageRecord>,
-    >,
+fn remove_lineage_from_index<K: Clone + Ord>(
+    index: &mut PersistentOrdMap<K, DiagnosticHistory<crate::diagnostics::lineage::LineageRecord>>,
     key: &K,
     record: &crate::diagnostics::lineage::LineageRecord,
 ) {
@@ -121,9 +133,11 @@ fn remove_lineage_from_index<K: Ord>(
         if let Some(front) = records.front() {
             if front == record {
                 records.pop_front();
-            } else if let Some(position) = records.iter().position(|candidate| candidate == record)
-            {
-                records.remove(position);
+            } else {
+                let position = records.iter().position(|candidate| candidate == record);
+                if let Some(position) = position {
+                    records.remove(position);
+                }
             }
         }
         records.is_empty()

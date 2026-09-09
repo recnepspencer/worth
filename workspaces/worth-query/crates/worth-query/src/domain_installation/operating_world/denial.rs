@@ -35,6 +35,7 @@ pub enum WorthQueryOperationBindingDenialKind {
     GraphAuthorityInsufficient,
     BasisLaneInsufficient,
     BasisExecutionUnsupported,
+    ProductBasisRequired,
     ConditionalLoweringNotInstalled,
     ConditionalLoweringDrift,
     IncoherentAuthoritySet,

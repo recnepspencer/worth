@@ -15,11 +15,26 @@ pub mod domain_computation {
 }
 
 pub mod runtime {
+    pub use crate::domain_computation::execution_runtime::product_world::{
+        WorthQueryPerformedRelationalProductChange,
+        WorthQueryPerformedRelationalProductChangeDeliveryDenial,
+        WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
+        WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
+        WorthQueryProductBranchCreationDenial, WorthQueryProductRuntime,
+    };
     pub use crate::domain_computation::execution_runtime::*;
     pub use crate::domain_computation::{
         WorthQueryExecutionBoundOperationAuthority, WorthQueryExecutionOperationBindingDenial,
         WorthQueryInstalledDomainExecutionAuthority,
     };
+    pub use worth_relational::facade::history::BranchId;
+    pub use worth_runtime_world::facade::{
+        ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchIdentity,
+        ProductBranchRetirementReport, RelationalBranchCreationPlan,
+        RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource,
+        RuntimeWorldCancellationToken, SignalBranchCreationPlan,
+    };
+    pub use worth_signal::facade::branch::ValidatedSignalBranchName;
 }
 
 pub mod provider_session {
@@ -55,11 +70,11 @@ pub mod primary_graph {
         WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationAttemptDenial,
         WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationAuthorizationExplanationCause,
         WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationBasisObservation,
-        WorthQueryApplicationBasisObserver, WorthQueryApplicationCommitAuthorityBinding,
-        WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
-        WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-        WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
-        WorthQueryApplicationCommitOutcomeIdentity,
+        WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisSelectionIdentity,
+        WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDeferred,
+        WorthQueryApplicationCommitDeferredKind, WorthQueryApplicationCommitDenial,
+        WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+        WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitOutcomeIdentity,
         WorthQueryApplicationCommitPublicationExternalEffect,
         WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
         WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommitTerminalEvidence,
@@ -121,7 +136,9 @@ pub mod primary_graph {
         WorthQueryConditionalClockObservationFailure,
         WorthQueryConditionalClockObservationFailureKind,
         WorthQueryConditionalClockObservationOutcome, WorthQueryConditionalClockObservationPort,
-        WorthQueryConditionalClockObservationReceipt, WorthQueryConditionalExecutionCause,
+        WorthQueryConditionalClockObservationReceipt,
+        WorthQueryConditionalDefinitionPublicationDenial,
+        WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
         WorthQueryConditionalExecutionProvenance, WorthQueryConditionalExecutionTerminal,
         WorthQueryConditionalRuntimeInspection, WorthQueryConditionalRuntimeInstallationDenial,
         WorthQueryConditionalRuntimeInstallationDenialKind,
@@ -155,22 +172,27 @@ pub mod primary_graph {
         WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
         WorthQueryOrdinaryApplicationRead, WorthQueryOrdinaryReadBatch,
         WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
-        WorthQueryOrdinaryReadVersion, WorthQueryPrimaryGraph,
-        WorthQueryPrimaryGraphApplicationReadinessSnapshot,
+        WorthQueryOrdinaryReadVersion, WorthQueryPerformedConditionalDefinitionPublication,
+        WorthQueryPrimaryGraph, WorthQueryPrimaryGraphApplicationReadinessSnapshot,
         WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
         WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
         WorthQueryPrimaryGraphPublication, WorthQueryPrimaryMutationWorkEvidence,
         WorthQueryPrincipalResolutionDenial, WorthQueryPrincipalResolutionDenialKind,
-        WorthQueryPrincipalResolutionMode, WorthQueryProjectedApplicationMutation,
-        WorthQueryPublicTemporalOperationAuthorization, WorthQueryPublicTemporalQueryAuthorization,
-        WorthQueryRequestedElevation, WorthQueryReviewedElevation, WorthQueryRuntimeTimeSource,
-        WorthQueryRuntimeTimeSourceDenial, WorthQueryTemporalInvocationFailure,
-        WorthQueryTemporalInvocationFailureKind, WorthQueryTemporalOperationAuthorization,
-        WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
-        WorthQueryTemporalPrincipalAdmission, WorthQueryTemporalPrincipalFailure,
-        WorthQueryTemporalPrincipalFailureKind, WorthQueryTemporalPrincipalSource,
-        WorthQueryTemporalQueryAuthorization, WorthQueryTemporalQueryAuthorizationDenial,
-        WorthQueryTemporalReconstructionAccess, WorthQueryTouchedRecordIdentity,
+        WorthQueryPrincipalResolutionMode, WorthQueryProductBranchAdmissionDenial,
+        WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity,
+        WorthQueryProductQueryControls, WorthQueryProductStaleApplication,
+        WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
+        WorthQueryProjectedApplicationMutation, WorthQueryPublicTemporalOperationAuthorization,
+        WorthQueryPublicTemporalQueryAuthorization, WorthQueryRequestedElevation,
+        WorthQueryReviewedElevation, WorthQueryRuntimeTimeSource,
+        WorthQueryRuntimeTimeSourceDenial, WorthQuerySelectedProductOperation,
+        WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
+        WorthQueryTemporalOperationAuthorization, WorthQueryTemporalOperationExecution,
+        WorthQueryTemporalOperationInvoker, WorthQueryTemporalPrincipalAdmission,
+        WorthQueryTemporalPrincipalFailure, WorthQueryTemporalPrincipalFailureKind,
+        WorthQueryTemporalPrincipalSource, WorthQueryTemporalQueryAuthorization,
+        WorthQueryTemporalQueryAuthorizationDenial, WorthQueryTemporalReconstructionAccess,
+        WorthQueryTouchedRecordIdentity,
     };
     pub use crate::domain_computation::primary_graph::{
         WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
@@ -178,6 +200,11 @@ pub mod primary_graph {
     };
     pub use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
     pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
+    pub use worth_runtime_world::facade::{
+        OwnerRetirementWork, ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle,
+        RecoveryContinuationContract, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
+        RuntimeWorldRecoveryPage,
+    };
 }
 
 /// Compatibility surface for the current undo/redo experiment.
@@ -207,10 +234,18 @@ pub mod installed {
 
 #[doc(hidden)]
 pub mod integration {
+    pub use crate::domain_computation::execution_runtime::product_world::{
+        WorthQueryProductRelationalInstallation, WorthQueryProductRuntime,
+        WorthQueryProductRuntimeInstallationDenial, WorthQueryProductSharedRoot,
+        WorthQueryRelationalSourceOwner,
+    };
     use worth_query_installation::facade::{
         ApplicationSchema, WorthQueryInstalledApplicationSchema,
     };
     use worth_relational::facade::runtime::RelationalRuntime;
+    pub use worth_runtime_world::facade::{
+        RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+    };
 
     use crate::domain_computation::execution_runtime::{
         WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,

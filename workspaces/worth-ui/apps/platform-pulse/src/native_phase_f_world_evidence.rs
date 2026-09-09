@@ -22,20 +22,6 @@ fn evidence(
             })
         })
         .collect::<Vec<_>>();
-    let semantic_frontiers = shutdown
-        .presentation_semantic_frontiers()
-        .iter()
-        .map(|frontier| {
-            serde_json::json!({
-                "change": format!("{:?}", frontier.change()),
-                "subscribers": frontier.subscribers().iter().copied().map(semantic_subscriber_evidence).collect::<Vec<_>>(),
-                "source_deliveries": frontier.source_deliveries(),
-                "outcomes": frontier.outcomes().iter().map(|outcome| format!("{outcome:?}")).collect::<Vec<_>>(),
-                "performed_counter_rows": frontier.performed_counter_rows(),
-                "scope_rejections": frontier.scope_rejections(),
-            })
-        })
-        .collect::<Vec<_>>();
     let text_work = shutdown
         .text_presentation_work()
         .iter()
@@ -117,8 +103,6 @@ fn evidence(
         "presentation_transitions": transitions,
         "presentation_transition_count": transitions.len(),
         "presentation_transition_trace_complete": shutdown.presentation_transition_trace_complete(),
-        "semantic_frontiers": semantic_frontiers,
-        "semantic_frontier_trace_complete": shutdown.presentation_semantic_frontier_trace_complete(),
         "text_presentation_work": text_work,
         "text_presentation_work_trace_complete": shutdown.text_presentation_work_trace_complete(),
         "text_atlas_plans": atlas_plans,
@@ -154,29 +138,6 @@ fn evidence(
             "attempt": attribution.presentation_attempt(),
         },
         "retained_frames": retained_frames,
-    })
-}
-
-fn semantic_subscriber_evidence(
-    subscriber: worth_ui_native_platform::UiNativeClientPresentationSemanticSubscriberObservation,
-) -> serde_json::Value {
-    serde_json::json!({
-        "mounted_instance": subscriber.mounted_instance(),
-        "semantic_slot": subscriber.semantic_slot(),
-        "collection_row": subscriber.collection_row().map(crate::native_phase_f_evidence::hex_digest),
-        "mounted_frame": subscriber.mounted_frame(),
-        "removal": subscriber.removal(),
-        "content_digest": crate::native_phase_f_evidence::hex_digest(subscriber.content_digest()),
-        "layout_digest": crate::native_phase_f_evidence::hex_digest(subscriber.layout_digest()),
-        "foreground_digest": crate::native_phase_f_evidence::hex_digest(subscriber.foreground_digest()),
-        "raster_key_set_digest": crate::native_phase_f_evidence::hex_digest(subscriber.raster_key_set_digest()),
-        "source_digest": crate::native_phase_f_evidence::hex_digest(subscriber.source_digest()),
-        "immediate_dependency_digest": crate::native_phase_f_evidence::hex_digest(subscriber.immediate_dependency_digest()),
-        "attempt": subscriber.attempt(),
-        "semantic_surface": subscriber.semantic_surface(),
-        "host_surface": subscriber.host_surface(),
-        "binding": subscriber.binding(),
-        "host_lineage": subscriber.host_lineage(),
     })
 }
 

@@ -1,3 +1,6 @@
+mod fork_growth;
+mod persistent_fork;
+use crate::data::retained_storage::RetainedStorageBacking;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -11,6 +14,23 @@ mod serialization;
 #[path = "persistent_hash_map/traits.rs"]
 mod traits;
 
+#[cfg(test)]
+#[path = "persistent_hash_map/collision_extent_tests.rs"]
+mod collision_extent_tests;
+#[path = "persistent_hash_map/collision_extents.rs"]
+mod collision_extents;
+
+#[path = "persistent_hash_map/charge_updates.rs"]
+mod charge_updates;
+#[path = "persistent_hash_map/retained_charge.rs"]
+mod retained_charge;
+#[cfg(test)]
+#[path = "persistent_hash_map/retained_charge_tests.rs"]
+mod retained_charge_tests;
+
+use crate::data::retained_storage::RetainedStorageCharge;
+pub(crate) use charge_updates::{RetainedHashMutationDenial, RetainedHashMutationOutcome};
+use collision_extents::CollisionExtents;
 use entry_handle::SharedKey;
 use iteration::PersistentHashMapIter;
 
@@ -25,8 +45,9 @@ mod fork_granule_tests;
 enum PersistentHashMapStorage<K, V> {
     Exclusive(HashMap<K, V>),
     ForkShared {
-        base: Arc<HashMap<K, V>>,
+        base: Arc<RetainedStorageBacking<HashMap<K, V>>>,
         changes: im::HashMap<SharedKey<K>, Option<Arc<V>>>,
+        collision_extents: Option<CollisionExtents>,
         len: usize,
     },
 }
@@ -34,6 +55,8 @@ enum PersistentHashMapStorage<K, V> {
 /// A hash map with flat ordinary storage and per-key fork overlays.
 pub(crate) struct PersistentHashMap<K, V> {
     storage: PersistentHashMapStorage<K, V>,
+    base_capacity: Option<usize>,
+    retained_charge: Option<RetainedStorageCharge>,
 }
 
 impl<K, V> PersistentHashMap<K, V>
@@ -44,6 +67,8 @@ where
     pub(crate) fn new() -> Self {
         Self {
             storage: PersistentHashMapStorage::Exclusive(HashMap::new()),
+            base_capacity: Some(0),
+            retained_charge: Some(RetainedStorageCharge::ZERO),
         }
     }
 
@@ -69,12 +94,23 @@ where
     }
 
     pub(crate) fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.retained_charge = None;
         match &mut self.storage {
             PersistentHashMapStorage::Exclusive(values) => values.get_mut(key),
-            PersistentHashMapStorage::ForkShared { base, changes, .. } => {
+            PersistentHashMapStorage::ForkShared {
+                base,
+                changes,
+                collision_extents,
+                ..
+            } => {
                 if !changes.contains_key(key) {
                     let value = Arc::new(base.get(key).cloned()?);
-                    changes.insert(SharedKey::new(key.clone()), Some(value));
+                    collision_extents::insert(
+                        changes,
+                        collision_extents,
+                        SharedKey::new(key.clone()),
+                        Some(value),
+                    );
                 }
                 changes
                     .get_mut(key)
@@ -86,9 +122,21 @@ where
 
     #[inline]
     pub(crate) fn insert(&mut self, key: K, value: V) -> Option<V> {
+        self.retained_charge = None;
         match &mut self.storage {
-            PersistentHashMapStorage::Exclusive(values) => values.insert(key, value),
-            PersistentHashMapStorage::ForkShared { base, changes, len } => {
+            PersistentHashMapStorage::Exclusive(values) => {
+                let previous_capacity = self.base_capacity.take();
+                let previous = values.insert(key, value);
+                self.base_capacity =
+                    previous_capacity.map(|capacity| capacity.max(values.capacity()));
+                previous
+            }
+            PersistentHashMapStorage::ForkShared {
+                base,
+                changes,
+                collision_extents,
+                len,
+            } => {
                 let prior = changes
                     .get(&key)
                     .map_or_else(|| base.get(&key), |value| value.as_ref().map(Arc::as_ref))
@@ -96,16 +144,27 @@ where
                 if prior.is_none() {
                     *len += 1;
                 }
-                changes.insert(SharedKey::new(key), Some(Arc::new(value)));
+                collision_extents::insert(
+                    changes,
+                    collision_extents,
+                    SharedKey::new(key),
+                    Some(Arc::new(value)),
+                );
                 prior
             }
         }
     }
 
     pub(crate) fn remove(&mut self, key: &K) -> Option<V> {
+        self.retained_charge = None;
         match &mut self.storage {
             PersistentHashMapStorage::Exclusive(values) => values.remove(key),
-            PersistentHashMapStorage::ForkShared { base, changes, len } => {
+            PersistentHashMapStorage::ForkShared {
+                base,
+                changes,
+                collision_extents,
+                len,
+            } => {
                 let prior = changes
                     .get(key)
                     .map_or_else(|| base.get(key), |value| value.as_ref().map(Arc::as_ref))
@@ -117,9 +176,9 @@ where
                             .get_key_value(key)
                             .map(|(stored, _)| stored.clone())
                             .unwrap_or_else(|| SharedKey::new(key.clone()));
-                        changes.insert(shared_key, None);
+                        collision_extents::insert(changes, collision_extents, shared_key, None);
                     } else {
-                        changes.remove(key);
+                        collision_extents::remove(changes, collision_extents, key);
                     }
                 }
                 prior
@@ -128,7 +187,11 @@ where
     }
 
     pub(crate) fn clear(&mut self) {
+        self.retained_charge = None;
+        self.base_capacity = None;
         self.storage = PersistentHashMapStorage::Exclusive(HashMap::new());
+        self.base_capacity = Some(0);
+        self.retained_charge = Some(RetainedStorageCharge::ZERO);
     }
 
     pub(crate) fn entry(&mut self, key: K) -> PersistentHashMapEntry<'_, K, V> {
@@ -173,6 +236,8 @@ where
         match &self.storage {
             PersistentHashMapStorage::Exclusive(values) => Self {
                 storage: PersistentHashMapStorage::Exclusive(values.clone()),
+                base_capacity: self.base_capacity,
+                retained_charge: None,
             },
             PersistentHashMapStorage::ForkShared { .. } => self
                 .iter()
@@ -181,29 +246,24 @@ where
         }
     }
 
-    pub(crate) fn fork_persistent(&mut self) -> Self {
-        if let PersistentHashMapStorage::Exclusive(values) = &mut self.storage {
-            let base = Arc::new(std::mem::take(values));
-            let len = base.len();
-            self.storage = PersistentHashMapStorage::ForkShared {
-                base,
-                changes: im::HashMap::new(),
-                len,
-            };
-        }
-        self.fork_storage_identity()
-    }
-
     #[cfg(test)]
     pub(crate) fn fork_storage_identity(&self) -> Self {
         match &self.storage {
             PersistentHashMapStorage::Exclusive(_) => self.operational_clone(),
-            PersistentHashMapStorage::ForkShared { base, changes, len } => Self {
+            PersistentHashMapStorage::ForkShared {
+                base,
+                changes,
+                collision_extents,
+                len,
+            } => Self {
                 storage: PersistentHashMapStorage::ForkShared {
                     base: Arc::clone(base),
                     changes: changes.clone(),
+                    collision_extents: collision_extents.clone(),
                     len: *len,
                 },
+                base_capacity: self.base_capacity,
+                retained_charge: self.retained_charge,
             },
         }
     }
@@ -212,12 +272,20 @@ where
     fn fork_storage_identity(&self) -> Self {
         match &self.storage {
             PersistentHashMapStorage::Exclusive(_) => unreachable!("fork converts storage"),
-            PersistentHashMapStorage::ForkShared { base, changes, len } => Self {
+            PersistentHashMapStorage::ForkShared {
+                base,
+                changes,
+                collision_extents,
+                len,
+            } => Self {
                 storage: PersistentHashMapStorage::ForkShared {
                     base: Arc::clone(base),
                     changes: changes.clone(),
+                    collision_extents: collision_extents.clone(),
                     len: *len,
                 },
+                base_capacity: self.base_capacity,
+                retained_charge: self.retained_charge,
             },
         }
     }

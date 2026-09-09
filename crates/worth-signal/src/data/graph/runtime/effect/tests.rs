@@ -1,4 +1,5 @@
-use super::vocabulary::{build_cold_artifact_intent, record_reuse_telemetry};
+use super::cold_artifact::build_cold_artifact_intent;
+use super::vocabulary::record_reuse_telemetry;
 use crate::data::aspect::AspectVersion;
 use crate::data::dependency::{
     CommittedSnapshotUpdate, DependencySnapshot, ReplacementSnapshotUpdate,
@@ -21,7 +22,6 @@ use crate::logic::evaluation::{
 
 pub(super) fn test_effect_with_labels(labels: Vec<String>) -> EvaluationEffect {
     let node = NodeId::new(0, 0);
-    let mut shape_store = crate::data::dependency::DependencySnapshotShapeStore::default();
     EvaluationEffect {
         operational: OperationalEffect {
             node,
@@ -53,10 +53,7 @@ pub(super) fn test_effect_with_labels(labels: Vec<String>) -> EvaluationEffect {
             }
             .authority(),
             dependency_snapshot_update: CommittedSnapshotUpdate::Replace(
-                ReplacementSnapshotUpdate::from_snapshot(
-                    DependencySnapshot::empty(),
-                    &mut shape_store,
-                ),
+                ReplacementSnapshotUpdate::from_snapshot(DependencySnapshot::empty()),
             ),
             snapshot_delta: SnapshotDeltaRecord::between(
                 node,
@@ -89,7 +86,9 @@ fn contradictory_unchanged_output_is_rejected_before_graph_mutation() {
         .compare_effect(
             &effect,
             None,
+            None,
             crate::data::output_equivalence::OutputEquivalencePolicy::ExactAspectVersion,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
         )
         .expect_err("contradictory output must fail before apply");
 
@@ -106,7 +105,6 @@ fn contradictory_unchanged_output_is_rejected_before_graph_mutation() {
 fn retained_reuse_certification_increments_cold_materialization_counter() {
     let mut telemetry = RuntimeTelemetry::default();
     let node = NodeId::new(0, 0);
-    let mut shape_store = crate::data::dependency::DependencySnapshotShapeStore::default();
     let effect = EvaluationEffect {
         operational: OperationalEffect {
             node,
@@ -140,10 +138,7 @@ fn retained_reuse_certification_increments_cold_materialization_counter() {
             }
             .authority(),
             dependency_snapshot_update: CommittedSnapshotUpdate::Replace(
-                ReplacementSnapshotUpdate::from_snapshot(
-                    DependencySnapshot::empty(),
-                    &mut shape_store,
-                ),
+                ReplacementSnapshotUpdate::from_snapshot(DependencySnapshot::empty()),
             ),
             snapshot_delta: SnapshotDeltaRecord::between(
                 node,
@@ -198,7 +193,14 @@ fn cold_artifact_intent_is_bypassed_under_omit_policy() {
         ..RetentionBudget::operational()
     };
 
-    assert!(build_cold_artifact_intent(&effect, &retention).is_none());
+    assert!(build_cold_artifact_intent(
+        &effect,
+        &retention,
+        &crate::data::proof::PartitionScopeSet::default(),
+        &mut crate::logic::evaluation::EvaluationWork::Ordinary
+    )
+    .unwrap()
+    .is_none());
 }
 
 #[test]
@@ -217,10 +219,21 @@ fn cold_artifact_intent_caps_label_count() {
         ..RetentionBudget::development()
     };
 
-    let intent = build_cold_artifact_intent(&effect, &retention).expect("cold intent");
+    let intent = build_cold_artifact_intent(
+        &effect,
+        &retention,
+        &crate::data::proof::PartitionScopeSet::default(),
+        &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+    )
+    .unwrap()
+    .expect("cold intent");
     assert_eq!(
         intent.labels.len(),
         crate::data::trace::COLD_ARTIFACT_INTENT_LABEL_LIMIT
     );
     assert_eq!(intent.labels.as_slice(), &["a", "b", "c", "d"]);
 }
+
+mod comparison_work;
+
+mod artifact_work;

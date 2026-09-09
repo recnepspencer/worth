@@ -13,6 +13,10 @@ use crate::domain_computation::primary_graph::{
 #[test]
 fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let world = installed_authorization_world(true);
+    let root = world
+        .application
+        .granular_invalidation_installation()
+        .retain_product_shared_root();
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
@@ -20,13 +24,24 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let retry = admitted_program(&world, &principal, &account, &request, "committed");
     let drift = admitted_program(&world, &principal, &account, &request, "different");
 
-    let WorthQueryApplicationCommitOutcome::Committed(original) = world
+    let WorthQueryApplicationCommitOutcome::Committed(mut original) = world
         .application
         .compare_and_commit_application(first, idempotency(9, 7))
     else {
         panic!("the first idempotent application attempt must commit");
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
+    let mut descriptive_copy = original.clone();
+    assert!(descriptive_copy
+        .take_performed_relational_product_change()
+        .is_none());
+    let performed = original
+        .take_performed_relational_product_change()
+        .expect("the fresh performed publication carries one delivery witness");
+    assert!(original
+        .take_performed_relational_product_change()
+        .is_none());
+
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(mut recovered) = world
         .application
         .compare_and_commit_application(retry, idempotency(9, 7))
     else {
@@ -42,6 +57,32 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
         WorthQueryApplicationCommitTerminalKind::Recovered
     );
     assert_eq!(recovered.terminal().attempt_resources_released(), None);
+    assert!(recovered
+        .take_performed_relational_product_change()
+        .is_none());
+    let first_root = world
+        .application
+        .granular_invalidation_installation()
+        .retain_product_shared_root();
+    let second_root = world
+        .application
+        .granular_invalidation_installation()
+        .retain_product_shared_root();
+    assert!(first_root.is_same_root_as(&second_root));
+    assert!(first_root.accepts_performed_change(&performed));
+
+    let commit = performed.product_commit().clone();
+    let failed = crate::domain_computation::execution_runtime::product_world::preserve_delivery_authority(
+        worth_proof::TransitionOutcome::Failed(
+            worth_runtime_bridge::facade::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed,
+        ),
+        performed,
+    );
+    let returned = failed
+        .into_retry_change()
+        .expect("a Bridge failure must return the exact performed-change authority");
+    assert_eq!(returned.product_commit(), &commit);
+    assert!(first_root.accepts_performed_change(&returned));
 
     let WorthQueryApplicationCommitOutcome::Denied(denial) = world
         .application

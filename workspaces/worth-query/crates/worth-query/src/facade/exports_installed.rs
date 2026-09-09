@@ -9,8 +9,8 @@ pub use crate::domain_installation::{
     WorthQueryBoundDomainOperation, WorthQueryBranchHeadIdentity,
     WorthQueryBranchHeadIdentityError, WorthQueryInstalledOperatingWorld,
     WorthQueryOperatingWorldEntryDenial, WorthQueryOperatingWorldEntryDenialKind,
-    WorthQueryOperationBindingDenial, WorthQueryOperationBindingDenialKind,
-    WorthQueryOperationFamilyView,
+    WorthQueryOperatingWorldProductDenial, WorthQueryOperationBindingDenial,
+    WorthQueryOperationBindingDenialKind, WorthQueryOperationFamilyView,
 };
 
 pub mod transition {

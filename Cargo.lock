@@ -2322,6 +2322,7 @@ dependencies = [
  "worth-query-installation",
  "worth-relational",
  "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-signal",
 ]
 

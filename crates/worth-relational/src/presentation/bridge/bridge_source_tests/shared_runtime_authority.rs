@@ -7,7 +7,7 @@ use worth_foundational::ScalarAspectType;
 use worth_runtime_bridge::facade::{
     CommittedPatchSource, RelationalBridgeRecordIdentityParts, RelationalCommittedPatchRequest,
     SnapshotReadContract, SnapshotReadPacket, SnapshotReadRequest, SnapshotReadSource,
-    TruthCommitIdentity,
+    TruthCommitIdentity, TruthSnapshotReader,
 };
 
 use super::super::RuntimeBridgeRelationalSource;
@@ -67,7 +67,7 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
     let (_, basis) = source
         .observe_branch_basis(&branch_identity)
         .expect("source must observe the live owner basis");
-    let _lease = source
+    let lease = source
         .retain_branch_basis_for_bridge(&basis)
         .expect("source must retain the live owner observation");
     let envelope = source
@@ -76,8 +76,10 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
         ))
         .expect("source must observe commits made after its construction");
     let reader = source
-        .open_snapshot(envelope.snapshot_identity())
-        .expect("source must open the live runtime snapshot");
+        .clone()
+        .open_retained_snapshot(lease)
+        .expect("a source clone must open the exact retained observation");
+    assert_eq!(reader.snapshot_identity(), *envelope.snapshot_identity());
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
         RelationalBridgeRecordIdentityParts::entity(
             entity.partition_id.0,
@@ -97,4 +99,44 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
             "alice".into()
         ))
     );
+    assert!(source.open_snapshot(envelope.snapshot_identity()).is_ok());
+    drop(reader);
+    assert!(source.open_snapshot(envelope.snapshot_identity()).is_err());
+}
+
+#[test]
+fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
+    fn retained_source() -> (
+        RuntimeBridgeRelationalSource,
+        crate::facade::bridge::RelationalBridgeObservationLease,
+    ) {
+        let runtime = runtime_with_test_schema();
+        crate::tests::support::create_entity_outcome(&runtime, "retained-reader");
+        let identity = runtime
+            .branch_identity(&crate::history::data::BranchId("main".to_owned()))
+            .unwrap();
+        let source =
+            RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime), "model").unwrap();
+        let (_, basis) = source.observe_branch_basis(&identity).unwrap();
+        let lease = source.retain_branch_basis_for_bridge(&basis).unwrap();
+        (source, lease)
+    }
+
+    let (first, first_lease) = retained_source();
+    let (second, second_lease) = retained_source();
+    let snapshot = first_lease.snapshot_identity().clone();
+    assert_eq!(snapshot, *second_lease.snapshot_identity());
+    assert!(second.open_snapshot(&snapshot).is_ok());
+
+    let denial = second.open_retained_snapshot(first_lease).unwrap_err();
+    assert!(denial
+        .to_string()
+        .contains("another source registration owner"));
+    assert!(first.open_snapshot(&snapshot).is_err());
+
+    let valid = second.open_retained_snapshot(second_lease).unwrap();
+    assert_eq!(valid.snapshot_identity(), snapshot);
+    assert!(second.open_snapshot(&snapshot).is_ok());
+    drop(valid);
+    assert!(second.open_snapshot(&snapshot).is_err());
 }

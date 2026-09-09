@@ -55,8 +55,8 @@ pub(super) use session_commit::{
     WorthQueryRetainedApplicationCommitBasis,
 };
 
-pub(super) struct WorthQueryPrimaryGraphProvider {
-    pub(super) graph: WorthQueryPrimaryGraphIntegrationHandle,
+pub(crate) struct WorthQueryPrimaryGraphProvider {
+    pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
     resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
     commit_serialization: Mutex<()>,
     pub(super) live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
@@ -68,7 +68,6 @@ pub(super) struct WorthQueryPrimaryGraphProvider {
         Mutex<Option<pending_application_publication::WorthQueryPendingApplicationPublication>>,
     conditional_commit_journal:
         Mutex<conditional_commit_journal::WorthQueryConditionalCommitJournal>,
-    conditional_maintenance_failure: Mutex<Option<String>>,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
 }
 
@@ -88,95 +87,60 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
         include_whole_graph: bool,
+        bootstrap_identities: impl IntoIterator<Item = String>,
     ) {
-        self.conditional_commit_journal
+        let mut journal = self
+            .conditional_commit_journal
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .replace_routes(records, include_whole_graph);
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        journal.replace_routes(records, include_whole_graph);
+        journal.replace_bootstrap_routes(bootstrap_identities);
     }
 
     pub(in crate::domain_computation::primary_graph) fn record_conditional_commit(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
         records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
-    ) -> std::collections::BTreeSet<worth_relational::facade::identity::KindId> {
-        let records = records.into_iter().collect::<Vec<_>>();
-        let entity_kinds = self.graph.with_runtime(|runtime| {
-            let previous_version = worth_relational::facade::identity::VersionId(
-                commit.version_id.0.saturating_sub(1),
-            );
-            records
-                .iter()
-                .filter_map(|record| {
-                    let worth_relational::facade::transactions::RecordRef::Entity(entity) = record
-                    else {
-                        return None;
-                    };
-                    runtime
-                        .read_truth()
-                        .visible_entity_at_version(*entity, commit.version_id)
-                        .or_else(|| {
-                            runtime
-                                .read_truth()
-                                .visible_entity_at_version(*entity, previous_version)
-                        })
-                        .map(|record| record.kind.kind_id)
-                })
-                .collect::<Vec<_>>()
-        });
+    ) {
         self.conditional_commit_journal
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .record(commit.commit_id, records);
-        entity_kinds.into_iter().collect()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn conditional_entity_kind(
-        &self,
-        entity: &str,
-    ) -> Option<worth_relational::facade::identity::KindId> {
-        self.graph.layout.entity_kind(entity)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn record_conditional_maintenance_failure(
-        &self,
-        detail: impl Into<String>,
-    ) {
-        *self
-            .conditional_maintenance_failure
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(detail.into());
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn clear_conditional_maintenance_failure(
-        &self,
-    ) {
-        *self
-            .conditional_maintenance_failure
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn conditional_maintenance_failure(
-        &self,
-    ) -> Option<String> {
-        self.conditional_maintenance_failure
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clone()
+            .record(commit, records);
     }
 
     pub(in crate::domain_computation::primary_graph) fn conditional_commits_after_records(
         &self,
+        branch: &worth_relational::facade::history::BranchId,
+        commit_ceiling: Option<worth_relational::facade::history::CommitId>,
         sequence: u64,
         maximum: usize,
         records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
         include_whole_graph: bool,
+        bootstrap_identity: Option<&str>,
     ) -> Result<conditional_commit_journal::WorthQueryConditionalCommitBatch, &'static str> {
         self.conditional_commit_journal
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .after_records(sequence, maximum, records, include_whole_graph)
+            .after_records_with_bootstrap(
+                branch,
+                commit_ceiling,
+                sequence,
+                maximum,
+                records,
+                include_whole_graph,
+                bootstrap_identity,
+            )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn narrow_conditional_bootstrap_route_if_current(
+        &self,
+        identity: &str,
+        expected_frontier: u64,
+    ) -> bool {
+        self.conditional_commit_journal
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .narrow_bootstrap_route_if_current(identity, expected_frontier)
     }
 
     pub(super) fn application_resource_support(

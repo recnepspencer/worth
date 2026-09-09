@@ -13,7 +13,8 @@ pub struct BridgeConditionalResolverContext {
     pub max_signal_version_delta: u64,
     truth_branch_identity: Option<Arc<str>>,
     truth_snapshot_identity: Arc<str>,
-    observations: Arc<[BridgeConditionalSemanticObservation]>,
+    observations: super::observation_retention::BridgeRetainedObservations,
+    _reservation: Arc<super::retention::BridgeRetentionReservation>,
 }
 
 impl BridgeConditionalResolverContext {
@@ -22,7 +23,8 @@ impl BridgeConditionalResolverContext {
         max_signal_version_delta: u64,
         truth_branch_identity: Option<&str>,
         truth_snapshot_identity: &str,
-        observations: Arc<[BridgeConditionalSemanticObservation]>,
+        observations: super::observation_retention::BridgeRetainedObservations,
+        reservation: Arc<super::retention::BridgeRetentionReservation>,
     ) -> Self {
         Self {
             dirty_aspects,
@@ -30,6 +32,7 @@ impl BridgeConditionalResolverContext {
             truth_branch_identity: truth_branch_identity.map(Arc::from),
             truth_snapshot_identity: Arc::from(truth_snapshot_identity),
             observations,
+            _reservation: reservation,
         }
     }
 
@@ -216,5 +219,42 @@ impl BridgeConditionalProviderSet {
 
     pub fn has_compute_provider(&self) -> bool {
         self.compute.is_some()
+    }
+
+    pub(super) fn retained_arc_bytes(
+        &self,
+    ) -> Result<u64, super::retention::BridgeRetentionDenial> {
+        let provider_bytes = [
+            self.condition
+                .as_deref()
+                .map(super::retention::arc_value_charge),
+            self.dependency_comparator
+                .as_deref()
+                .map(super::retention::arc_value_charge),
+            self.output_comparator
+                .as_deref()
+                .map(super::retention::arc_value_charge),
+            self.reuse_comparator
+                .as_deref()
+                .map(super::retention::arc_value_charge),
+            self.trigger
+                .as_deref()
+                .map(super::retention::arc_value_charge),
+            self.wake.as_deref().map(super::retention::arc_value_charge),
+            self.compute
+                .as_deref()
+                .map(super::retention::arc_value_charge),
+        ]
+        .into_iter()
+        .flatten()
+        .try_fold(0u64, |total, charge| {
+            total
+                .checked_add(charge?)
+                .ok_or(super::retention::BridgeRetentionDenial::BytesExhausted)
+        })?;
+        super::retention::sum(&[
+            provider_bytes,
+            self.semantic_contracts.retained_arc_bytes()?,
+        ])
     }
 }

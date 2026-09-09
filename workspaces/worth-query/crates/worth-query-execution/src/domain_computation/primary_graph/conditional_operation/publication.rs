@@ -81,8 +81,9 @@ pub(in crate::domain_computation::primary_graph) fn require_complete_binding_inv
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Schema>(
     bindings: Vec<Box<dyn WorthQueryPendingConditionalOperation<Schema>>>,
-    bridge: &mut super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    bridge: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    authoritative_commit_cursor: u64,
     runtime_authority: u64,
     installation_runtime: u64,
     installation_generation: u64,
@@ -101,7 +102,7 @@ pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Sch
     };
     let mut registry = WorthQueryConditionalOperationRegistry::default();
     for binding in bindings {
-        let installed = binding.install(bridge.conditional_mut(), graph, &affinity)?;
+        let installed = binding.install(bridge, graph, &affinity, authoritative_commit_cursor)?;
         registry.install(installed).map_err(|()| {
             WorthQueryConditionalRuntimeInstallationDenial::new(
                 WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,

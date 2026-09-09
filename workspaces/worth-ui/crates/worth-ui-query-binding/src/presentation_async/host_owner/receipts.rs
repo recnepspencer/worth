@@ -1,7 +1,4 @@
-use super::{
-    correspondence, WorthUiPresentationAsyncObservation,
-    WorthUiPresentationSemanticFrontierObservation,
-};
+use super::{correspondence, WorthUiPresentationAsyncObservation};
 
 type CorrespondenceAuthority = std::sync::Arc<correspondence::PresentationCorrespondenceAuthority>;
 type PresentationAttempt = worth_ui_host_contract::UiMountedPresentationAttemptIdentity;
@@ -13,7 +10,6 @@ pub struct WorthUiPresentationPendingReceipt {
     pub(super) attempt: PresentationAttempt,
     pub(super) binding: SurfaceBinding,
     pub(super) observation: WorthUiPresentationAsyncObservation,
-    pub(super) frontiers: Box<[WorthUiPresentationSemanticFrontierObservation]>,
     pub(super) nonce: u64,
 }
 
@@ -46,7 +42,6 @@ pub enum WorthUiPresentationRecoveryReceipt {
 }
 
 pub struct WorthUiPresentationPresentedReceipt {
-    pub(super) frontiers: Box<[WorthUiPresentationSemanticFrontierObservation]>,
     pub(super) observation: WorthUiPresentationAsyncObservation,
     pub(super) predecessor_observation: Option<WorthUiPresentationAsyncObservation>,
 }
@@ -76,10 +71,6 @@ impl WorthUiPresentationPendingReceipt {
 
     pub const fn observation(&self) -> WorthUiPresentationAsyncObservation {
         self.observation
-    }
-
-    pub fn semantic_frontiers(&self) -> &[WorthUiPresentationSemanticFrontierObservation] {
-        &self.frontiers
     }
 }
 
@@ -162,10 +153,6 @@ impl From<WorthUiPresentationAdmissionRecovery> for WorthUiPresentationRecoveryR
 }
 
 impl WorthUiPresentationPresentedReceipt {
-    pub fn semantic_frontiers(&self) -> &[WorthUiPresentationSemanticFrontierObservation] {
-        &self.frontiers
-    }
-
     pub const fn observation(&self) -> WorthUiPresentationAsyncObservation {
         self.observation
     }

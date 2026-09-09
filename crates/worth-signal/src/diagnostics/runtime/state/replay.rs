@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use super::DiagnosticHistory;
 
 use crate::data::handle::NodeId;
 use crate::diagnostics::lineage::LineageArtifactId;
@@ -8,25 +8,25 @@ use crate::state::{SignalBranchId, SignalSnapshotId};
 use super::DiagnosticsState;
 
 impl DiagnosticsState {
-    pub fn replay_events(&self) -> &VecDeque<ReplayEvent> {
+    pub fn replay_events(&self) -> &DiagnosticHistory<ReplayEvent> {
         &self.replay_events
     }
 
     pub fn replay_events_for_branch(
         &self,
         branch_id: SignalBranchId,
-    ) -> Option<&VecDeque<ReplayEvent>> {
+    ) -> Option<&DiagnosticHistory<ReplayEvent>> {
         self.replay_events_by_branch.get(&branch_id)
     }
 
-    pub fn replay_events_for_node(&self, node: NodeId) -> Option<&VecDeque<ReplayEvent>> {
+    pub fn replay_events_for_node(&self, node: NodeId) -> Option<&DiagnosticHistory<ReplayEvent>> {
         self.replay_events_by_node.get(&node)
     }
 
     pub fn replay_events_for_artifact(
         &self,
         artifact_id: LineageArtifactId,
-    ) -> Option<&VecDeque<ReplayEvent>> {
+    ) -> Option<&DiagnosticHistory<ReplayEvent>> {
         self.replay_events_by_artifact.get(&artifact_id)
     }
 
@@ -55,24 +55,29 @@ impl DiagnosticsState {
         self.replay_events_by_branch
             .entry(event.branch_id)
             .or_default()
-            .push_back(event.clone());
+            .push_back(event.clone())
+            .expect("diagnostic history exhausted its private position space");
         if let Some(node) = event.node {
             self.replay_events_by_node
                 .entry(node)
                 .or_default()
-                .push_back(event.clone());
+                .push_back(event.clone())
+                .expect("diagnostic history exhausted its private position space");
         }
         if let Some(artifact_id) = event.lineage_artifact_id {
             self.replay_events_by_artifact
                 .entry(artifact_id)
                 .or_default()
-                .push_back(event.clone());
+                .push_back(event.clone())
+                .expect("diagnostic history exhausted its private position space");
         }
         if let Some(snapshot_id) = event.snapshot_id {
             self.snapshot_replay_cursors
                 .insert(snapshot_id, event.cursor);
         }
-        self.replay_events.push_back(event);
+        self.replay_events
+            .push_back(event)
+            .expect("diagnostic history exhausted its private position space");
         let absolute_index = self.replay_cursor_offset_base + self.replay_events.len() - 1;
         if let Some(cursor) = self.replay_events.back().map(|latest| latest.cursor) {
             self.replay_cursor_offsets.insert(cursor, absolute_index);

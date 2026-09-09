@@ -2,14 +2,27 @@ use std::collections::BTreeSet;
 
 const DIRECT_CAUSE_OWNER: &str =
     include_str!("../../../../../logic/invalidation/causality/dependency_admission.rs");
+const DIRECT_PUBLICATION_OWNER: &str =
+    include_str!("../../../../../logic/invalidation/causality/dependency_admission/publication.rs");
+const SEMANTIC_DECISION_OWNER: &str =
+    include_str!("../../../../../data/graph/runtime/effect/output_commit/semantic_decision.rs");
+const PRODUCED_DELTA_OWNER: &str =
+    include_str!("../../../../../data/graph/runtime/effect/output_commit/produced_delta.rs");
 const REVALIDATION_OWNER: &str =
     include_str!("../../../../../logic/invalidation/causality/revalidation.rs");
+const CAUSE_VALIDATION_OWNER: &str =
+    include_str!("../../../../../logic/invalidation/causality/revalidation/cause_validation.rs");
 const CAUSE_AGGREGATION_OWNER: &str =
     include_str!("../../../../../logic/invalidation/causality/cause_aggregation.rs");
 const OUTPUT_COMMIT_OWNER: &str =
     include_str!("../../../../../data/graph/runtime/effect/output_commit.rs");
 const EFFECT_TELEMETRY_OWNER: &str =
     include_str!("../../../../../data/graph/runtime/effect/evidence.rs");
+const ARTIFACT_PREPARATION_OWNER: &str =
+    include_str!("../../../../../data/graph/runtime/effect/artifact_preparation.rs");
+const WAITER_PREPARATION_OWNER: &str = include_str!(
+    "../../../../../data/graph/topology/pending_revalidation/resolution_preparation.rs"
+);
 const ROUTING_COUNTER_OWNER: &str =
     include_str!("../../../../../logic/invalidation/routing/counters.rs");
 const CHECKPOINT_OWNER: &str =
@@ -35,15 +48,52 @@ const GRAPH_DIAGNOSTIC_SCAN_OWNER: &str =
 #[test]
 fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
     assert_owner_functions(
+        DIRECT_PUBLICATION_OWNER,
+        &[
+            "suppressed_downstream_count",
+            "admit_node_and_waiter_publication_work",
+            "validate_packet",
+            "prepare_direct_cause_publication",
+            "publish_direct_output_causes",
+        ],
+    );
+    assert_owner_functions(
+        SEMANTIC_DECISION_OWNER,
+        &[
+            "build_semantic_artifact_write",
+            "apply_semantic_output_commit_decision",
+        ],
+    );
+
+    assert_owner_functions(PRODUCED_DELTA_OWNER, &["prepare_produced_delta"]);
+
+    assert_owner_functions(
+        WAITER_PREPARATION_OWNER,
+        &[
+            "from",
+            "capture",
+            "into_signal_error",
+            "prepare_pending_revalidation_resolution",
+            "load_node",
+            "current_waiters",
+            "resolve",
+        ],
+    );
+    assert_owner_functions(
+        ARTIFACT_PREPARATION_OWNER,
+        &[
+            "prepare_effect_artifact_write",
+            "record_prepared_artifact_work",
+        ],
+    );
+    assert_owner_functions(
         DIRECT_CAUSE_OWNER,
         &[
             "merge",
-            "suppressed_downstream_count",
             "validate_packet",
             "prepare_direct_output_causes",
             "prepare_stable_output_resolution",
             "prepare_consumer_cause_set",
-            "publish_direct_output_causes",
         ],
     );
     assert_owner_functions(
@@ -55,12 +105,18 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
             "ensure_cause_readmission_complete",
             "readmit_checkpoint_causes",
             "validate_direct_invalidation_storage",
+            "inject_pending_causes_unchecked_for_test",
+        ],
+    );
+    assert_owner_functions(
+        CAUSE_VALIDATION_OWNER,
+        &[
+            "validate_prepared_causes_before_evaluation",
             "validate_pending_causes",
             "validate_prepared_pending_causes",
             "validate_pending_cause",
             "commit_authority_matches",
             "validate_cause_identity_axes",
-            "inject_pending_causes_unchecked_for_test",
         ],
     );
     assert_owner_functions(
@@ -69,6 +125,7 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
             "capture_checkpoint_authority",
             "restore_from_checkpoint_authority",
             "restore_from_checkpoint_image",
+            "restore_node_arena",
             "rebuild_checkpoint_topology",
             "checkpoint_authority_arena_capacity",
             "checkpoint_authority_live_node_id_at",
@@ -92,9 +149,6 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
             "apply_effect",
             "prepare_output_commit_packet",
             "prepare_output_commit_packet_with_probe",
-            "rebuild_semantic_artifact_write",
-            "prepare_produced_delta",
-            "apply_semantic_output_commit_decision",
             "prevalidate_output_commit_packet",
             "publish_output_commit_packet",
             "publish_prepared_parallel_apply_commit_packet",
@@ -198,6 +252,7 @@ fn phase_7_inventory_freezes_canonical_graph_owner_functions() {
         &[
             "node_dependency_revision",
             "node_pending_cause_set_id",
+            "admit_pending_cause_handle_reads",
             "node_direct_invalidation_basis",
             "node_direct_invalidation_generation",
             "node_dirty_partition_scope_payload",
@@ -206,7 +261,7 @@ fn phase_7_inventory_freezes_canonical_graph_owner_functions() {
             "advance_node_dependency_revision",
             "replace_node_invalidation_cache",
             "install_node_dependency_revalidation",
-            "resolve_node_dependency_revalidation_producer",
+            "publish_node_revalidation_resolution",
         ],
     );
     assert_owner_functions(

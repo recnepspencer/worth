@@ -16,14 +16,25 @@ pub(crate) fn preflight(
     correspondence: &BridgeInstalledSemanticCorrespondence,
     graph: &SignalGraph,
 ) -> Option<CorrespondenceDeliveryOutcome> {
+    preflight_graph_instance(
+        runtime,
+        correspondence,
+        graph.installed_graph_capability().graph_instance_id(),
+    )
+}
+
+pub(crate) fn preflight_graph_instance(
+    runtime: &RuntimeBridge,
+    correspondence: &BridgeInstalledSemanticCorrespondence,
+    graph_instance_id: u64,
+) -> Option<CorrespondenceDeliveryOutcome> {
     let basis = correspondence.basis();
     if basis.bridge_runtime_key != runtime.signal_runtime_key {
         return Some(TransitionOutcome::Stale(
             BridgeCorrespondenceStale::BridgeRuntimeBasis,
         ));
     }
-    let graph = graph.installed_graph_capability();
-    if basis.signal_graph_instance_id != graph.graph_instance_id() {
+    if basis.signal_graph_instance_id != graph_instance_id {
         return Some(TransitionOutcome::RebindRequired(
             BridgeCorrespondenceRebindRequired::SignalGraphGeneration,
         ));

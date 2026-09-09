@@ -129,6 +129,12 @@ pub(super) fn finish_authorized_compare(
                 stale.stale_fact_count(),
             ))
         }
+        WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryProviderProgressionOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryProviderCompareAndCommitOutcome::ProductStale(stale) => {
+            WorthQueryProviderProgressionOutcome::ProductStale(stale)
+        }
         WorthQueryProviderCompareAndCommitOutcome::Denied(denial) => {
             provider_compare_denied(denial)
         }

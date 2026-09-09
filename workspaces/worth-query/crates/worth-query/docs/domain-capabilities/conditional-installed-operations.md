@@ -390,7 +390,7 @@ Inspect:
   `installation_canonical_work()`, and provenance `canonical_work()` when
   auditing the cold-binding, runtime-binding, and fresh-admission seams
 - `inspect_conditional_runtime()` before and after lifecycle transitions
-- `reinstall_conditional_runtime()` receipts with separate reconstructed
+- `reinstall_conditional_runtime(product_branch)` receipts with separate reconstructed
   binding/intent counts and structural query work: examined candidates,
   projected records, projected fields, and total work units
 - `conditional_runtime_lifecycle_probe()` retained outside the application

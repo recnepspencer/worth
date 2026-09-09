@@ -21,7 +21,6 @@ mod graph_read_access;
 mod invalidation_attachment;
 mod invalidation_maintenance;
 mod owned_async_source;
-mod owned_conditional_instance;
 mod primary_source_rebind;
 pub use primary_source_rebind::WorthQueryPrimaryGraphSourceRebindReceipt;
 pub struct WorthQueryWorkspace {

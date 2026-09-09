@@ -67,7 +67,8 @@ pub use crate::lifecycle::{
     MissingRuntimeWorldInput, RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort,
     RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial, RuntimeWorldCloseReport,
     RuntimeWorldInspectionPort, RuntimeWorldInstant, RuntimeWorldLifecyclePort,
-    RuntimeWorldObservationPort, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
+    RuntimeWorldObservationPort, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
     RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
     RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort, RuntimeWorldRetainedRecordReport,
     RuntimeWorldServiceDenial,
@@ -82,9 +83,10 @@ pub use crate::publication::{
     PreparedCompositePublicationWithSignal, PreparedCompositePublicationWithoutSignal,
     RelationalAttemptProgress, RelationalAttemptProgressPosture, RelationalComponentPlan,
     RelationalComponentPlanPosture, RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
-    RuntimeWorldPublicationOutcome, RuntimeWorldPublicationPhase, SignalAttemptProgress,
-    SignalAttemptProgressPosture, SignalComponentPlan, SignalComponentPlanPosture, WithSignal,
-    WithoutSignal,
+    RuntimeWorldConditionalDefinitionPublicationOutcome, RuntimeWorldPublicationOutcome,
+    RuntimeWorldPublicationPhase, RuntimeWorldUnpublishedConditionalDefinition,
+    SignalAttemptProgress, SignalAttemptProgressPosture, SignalComponentPlan,
+    SignalComponentPlanPosture, WithSignal, WithoutSignal,
 };
 
 pub use crate::recovery::{

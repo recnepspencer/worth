@@ -1,4 +1,3 @@
-use super::completion_semantic_changes::completion_semantic_changes;
 use super::*;
 
 impl WorthUiPresentationAsyncOwner {
@@ -85,9 +84,6 @@ impl WorthUiPresentationAsyncOwner {
             .settlement
             .completion
             .expect("completed settlement retains Query observation");
-        let mut frontiers = std::mem::take(&mut pending.pending_frontiers);
-        frontiers.append(&mut pending.settlement.frontiers);
-        let frontiers = frontiers.into_boxed_slice();
         self.retained
             .insert(pending.lineage, pending.transition.successor().clone());
         self.current
@@ -101,7 +97,6 @@ impl WorthUiPresentationAsyncOwner {
             key,
         );
         Ok(WorthUiPresentationPresentedReceipt {
-            frontiers,
             observation,
             predecessor_observation: pending.settlement.predecessor_observation,
         })
@@ -112,34 +107,6 @@ impl WorthUiPresentationAsyncOwner {
         pending: &mut PendingPresentationAdmission,
         payload_byte_len: u64,
     ) -> Result<(), WorthUiPresentationSettlementDenial> {
-        let changes = completion_semantic_changes(pending.admission.basis());
-        while let Some(change) = changes.get(pending.settlement.publication_index).copied() {
-            let publication = self
-                .registry
-                .publication_for_admission(&pending.admission, change)
-                .map_err(|_| {
-                    WorthUiPresentationSettlementDenial::Progress(
-                        WorthUiPresentationSettlementStop::SemanticExecution,
-                    )
-                })?;
-            let semantic = self
-                .registry
-                .publish_and_execute_publication(
-                    &mut self.workspace,
-                    &pending.admission,
-                    &publication,
-                )
-                .map_err(|_| {
-                    WorthUiPresentationSettlementDenial::Progress(
-                        WorthUiPresentationSettlementStop::SemanticExecution,
-                    )
-                })?;
-            pending
-                .settlement
-                .frontiers
-                .push(semantic_frontier_observation(change, &semantic));
-            pending.settlement.publication_index += 1;
-        }
         if pending.settlement.completion.is_none() {
             if pending.settlement.completion_progress.is_none() {
                 pending.settlement.completion_progress = Some(
@@ -222,16 +189,6 @@ impl WorthUiPresentationAsyncOwner {
             }
             pending.settlement.predecessor_observation = Some(observation);
         }
-        if !pending.settlement.predecessor_semantic_retired {
-            self.registry
-                .retire(&mut self.workspace, prior)
-                .map_err(|_| {
-                    WorthUiPresentationSettlementDenial::Progress(
-                        WorthUiPresentationSettlementStop::SemanticRetirement,
-                    )
-                })?;
-            pending.settlement.predecessor_semantic_retired = true;
-        }
         if !pending.settlement.predecessor_query_closed {
             prior
                 .close_query_live_view(&mut self.workspace)
@@ -256,34 +213,7 @@ fn reconstruction_predecessor_stop(
         WorthUiPresentationAdmissionStop::UnexpectedSupersessionPosture => {
             WorthUiPresentationSettlementStop::UnexpectedQueryPosture
         }
-        WorthUiPresentationAdmissionStop::SemanticRetirement => {
-            WorthUiPresentationSettlementStop::SemanticRetirement
-        }
         _ => WorthUiPresentationSettlementStop::QuerySupersession,
     };
     WorthUiPresentationSettlementDenial::Progress(stop)
-}
-
-pub(super) fn semantic_frontier_observation(
-    change: WorthUiPresentationSemanticChange,
-    execution: &super::super::semantic_registry::WorthUiPresentationSemanticExecution,
-) -> WorthUiPresentationSemanticFrontierObservation {
-    WorthUiPresentationSemanticFrontierObservation {
-        change,
-        subscribers: execution.subscribers().into(),
-        source_deliveries: u32::try_from(execution.deliveries().len()).unwrap_or(u32::MAX),
-        outcomes: execution
-            .query_observations()
-            .iter()
-            .map(WorthUiPresentationSemanticQueryObservation::outcome)
-            .collect::<Vec<_>>()
-            .into_boxed_slice(),
-        performed: execution
-            .query_observations()
-            .iter()
-            .map(|observation| *observation.performed_signal_invalidation())
-            .collect::<Vec<_>>()
-            .into_boxed_slice(),
-        scope_rejections: execution.scope_rejections(),
-    }
 }

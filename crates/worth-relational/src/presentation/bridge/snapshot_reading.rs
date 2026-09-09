@@ -8,6 +8,10 @@ use super::snapshot_values::{
     export_entity_aspect_snapshot_value, export_relation_aspect_snapshot_value,
 };
 
+/// Shares the admitted observation's bounded owner retention obligation.
+/// Reader clones neither reacquire a head nor create another obligation; the
+/// last observation reference releases it. Bridge registration has a separate
+/// external pin and may end while an already-open reader remains alive.
 #[derive(Debug, Clone)]
 pub(crate) struct RuntimePublicationSnapshotReader {
     runtime: crate::visibility::runtime_authority::RelationalVisibilityRuntimeAuthority,

@@ -14,18 +14,6 @@ use super::super::lowering::{
 
 pub(crate) type BridgeSignalRuntime = SignalRuntime<(), (), (), (), ()>;
 
-#[derive(Default)]
-pub(crate) struct BridgeAsyncDeclarationRegistry {
-    resource: HashMap<String, ResourceNodeDeclaration>,
-    asynchronous: HashMap<String, AsyncNodeCapabilityDeclaration>,
-}
-
-impl BridgeAsyncDeclarationRegistry {
-    pub(crate) fn len(&self) -> usize {
-        self.resource.len() + self.asynchronous.len()
-    }
-}
-
 thread_local! {
     static SIGNAL_RUNTIMES: RefCell<HashMap<u64, BridgeSignalRuntime>> =
         RefCell::new(HashMap::new());
@@ -89,68 +77,6 @@ pub(crate) fn live_async_declaration_for_lowering(
         declarations.insert(lowering_identity.to_owned(), live.clone());
         Ok(live)
     })
-}
-
-pub(crate) fn live_owned_resource_declaration_for_lowering(
-    registry: &mut BridgeAsyncDeclarationRegistry,
-    runtime: &mut BridgeSignalRuntime,
-    lowering_identity: &str,
-    declaration: &ResourceNodeDeclaration,
-) -> Result<(ResourceNodeDeclaration, bool), SignalError> {
-    if let Some(declaration) = registry.resource.get(lowering_identity) {
-        return Ok((declaration.clone(), false));
-    }
-    let live = remap_resource_declaration_to_live_graph(runtime, declaration);
-    runtime.declare_resource_node(live.clone())?;
-    registry
-        .resource
-        .insert(lowering_identity.to_owned(), live.clone());
-    Ok((live, true))
-}
-
-pub(crate) fn live_owned_async_declaration_for_lowering(
-    registry: &mut BridgeAsyncDeclarationRegistry,
-    runtime: &mut BridgeSignalRuntime,
-    lowering_identity: &str,
-    declaration: &AsyncNodeCapabilityDeclaration,
-) -> Result<(AsyncNodeCapabilityDeclaration, bool), SignalError> {
-    if let Some(declaration) = registry.asynchronous.get(lowering_identity) {
-        return Ok((declaration.clone(), false));
-    }
-    let live = remap_async_node_declaration_to_live_graph(runtime, declaration);
-    runtime.declare_async_node_capability(live.clone())?;
-    registry
-        .asynchronous
-        .insert(lowering_identity.to_owned(), live.clone());
-    Ok((live, true))
-}
-
-pub(crate) fn retire_owned_resource_declaration_for_lowering(
-    registry: &mut BridgeAsyncDeclarationRegistry,
-    runtime: &mut BridgeSignalRuntime,
-    lowering_identity: &str,
-) -> Result<bool, SignalError> {
-    let Some(declaration) = registry.resource.get(lowering_identity).cloned() else {
-        return Ok(false);
-    };
-    runtime
-        .graph_mut()
-        .unregister_node(declaration.node().node())?;
-    registry.resource.remove(lowering_identity);
-    Ok(true)
-}
-
-pub(crate) fn retire_owned_async_declaration_for_lowering(
-    registry: &mut BridgeAsyncDeclarationRegistry,
-    runtime: &mut BridgeSignalRuntime,
-    lowering_identity: &str,
-) -> Result<bool, SignalError> {
-    let Some(declaration) = registry.asynchronous.get(lowering_identity).cloned() else {
-        return Ok(false);
-    };
-    runtime.graph_mut().unregister_node(declaration.node())?;
-    registry.asynchronous.remove(lowering_identity);
-    Ok(true)
 }
 
 fn new_signal_runtime() -> BridgeSignalRuntime {

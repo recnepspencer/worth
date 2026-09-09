@@ -33,3 +33,12 @@ pub(crate) use storage::{
     DependencyEdgeStore, DependencySetId, SubscriberEdgeStore, SubscriberSetId,
 };
 pub(crate) use topology::ReverseSubscriptionIndex;
+pub(crate) use topology::{
+    PendingRevalidationNodeProjection, PendingRevalidationPreparationDenial,
+    PreparedPendingRevalidationIndex, PreparedPendingRevalidationResolution,
+    PreparedRetainedPendingRevalidationIndex,
+};
+
+pub(crate) use topology::subscription_candidates;
+
+pub(crate) use topology::waiter_preparation_work;

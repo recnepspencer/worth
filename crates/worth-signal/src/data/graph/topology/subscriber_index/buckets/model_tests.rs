@@ -28,29 +28,70 @@ fn inherited_multi_membership_readmission_does_not_resurrect_retired_scope() {
     fork.replace_consumer(consumer, memberships(producer, aspect, &[Some(retained)]));
 
     assert!(fork
-        .query_scope(producer, aspect, retained)
+        .query_scope(
+            producer,
+            aspect,
+            retained,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary
+        )
+        .unwrap()
         .candidates
         .contains(&consumer));
     assert!(!fork
-        .query_scope(producer, aspect, retired)
+        .query_scope(
+            producer,
+            aspect,
+            retired,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary
+        )
+        .unwrap()
         .candidates
         .contains(&consumer));
     assert!(fork
-        .query_whole_aspect(producer, aspect)
+        .query_whole_aspect(
+            producer,
+            aspect,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary
+        )
+        .unwrap()
         .candidates
         .contains(&unrelated));
     assert!(source
-        .query_scope(producer, aspect, retained)
+        .query_scope(
+            producer,
+            aspect,
+            retained,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary
+        )
+        .unwrap()
         .candidates
         .contains(&consumer));
     assert!(source
-        .query_scope(producer, aspect, retired)
+        .query_scope(
+            producer,
+            aspect,
+            retired,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary
+        )
+        .unwrap()
         .candidates
         .contains(&consumer));
     assert_eq!(
         fork.operational_clone()
-            .query_scope(producer, aspect, retired),
-        fork.query_scope(producer, aspect, retired)
+            .query_scope(
+                producer,
+                aspect,
+                retired,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary
+            )
+            .unwrap(),
+        fork.query_scope(
+            producer,
+            aspect,
+            retired,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary
+        )
+        .unwrap()
     );
 }
 
@@ -89,7 +130,14 @@ fn forked_replace_sequences_match_independent_scope_model() {
         for query in [whole(1), detail(1, 7), detail(2, 8)] {
             let expected = expected_scope_candidates(&model, query);
             assert_eq!(
-                fork.query_scope(producer, aspect, query).candidates,
+                fork.query_scope(
+                    producer,
+                    aspect,
+                    query,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap()
+                .candidates,
                 expected,
                 "step {step} query {query:?}"
             );
@@ -98,7 +146,15 @@ fn forked_replace_sequences_match_independent_scope_model() {
 
     for query in [whole(1), detail(1, 7), detail(2, 8)] {
         assert_eq!(
-            source.query_scope(producer, aspect, query).candidates,
+            source
+                .query_scope(
+                    producer,
+                    aspect,
+                    query,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap()
+                .candidates,
             expected_scope_candidates(&source_model, query),
             "mutating the fork must preserve the source model"
         );

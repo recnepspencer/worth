@@ -15,6 +15,13 @@ use super::lifecycle_state::{
 
 pub(crate) mod advance;
 pub(crate) mod basis;
+mod committed_patch_delivery;
+mod conditional_execution;
+mod conditional_installation;
+mod conditional_issuance;
+mod conditional_owned_async;
+mod conditional_retirement;
+mod conditional_topology;
 pub(crate) mod fork;
 #[path = "branch_execution_cell/fork_custody.rs"]
 mod fork_custody;

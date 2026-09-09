@@ -99,6 +99,7 @@ impl SignalBranchBasisRegistry {
                             retention,
                         )
                     } else {
+                        drop(state);
                         drop(retention);
                         Err(SignalBranchRetentionAcquisitionDenial::OwnerOperationPanicked)
                     }

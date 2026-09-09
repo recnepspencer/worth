@@ -15,10 +15,29 @@ pub struct WorthQueryApplicationAuthorizationWorkEvidence {
     reconstructive_graph_scans: usize,
     reconstructive_relation_records_scanned: usize,
     signal_dependency_count: usize,
+    admission_security_product_resolutions: usize,
+    execution_security_product_resolutions: usize,
     canonical_work: WorthQueryCanonicalWorkEvidence,
 }
 
 impl WorthQueryApplicationAuthorizationWorkEvidence {
+    pub(super) fn with_admission_security_product_resolution(mut self) -> Self {
+        self.admission_security_product_resolutions += 1;
+        self
+    }
+
+    pub(super) fn with_execution_security_product_resolution(mut self) -> Self {
+        self.execution_security_product_resolutions += 1;
+        self
+    }
+
+    pub const fn admission_security_product_resolutions(self) -> usize {
+        self.admission_security_product_resolutions
+    }
+
+    pub const fn execution_security_product_resolutions(self) -> usize {
+        self.execution_security_product_resolutions
+    }
     pub(super) fn from_dependencies(dependencies: &[WorthQueryAuthorizationDecisionFact]) -> Self {
         dependencies.iter().fold(
             Self {

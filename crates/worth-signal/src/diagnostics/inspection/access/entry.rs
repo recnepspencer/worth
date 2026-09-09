@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use crate::data::handle::NodeId;
 #[cfg(test)]
 use crate::data::proof::FrontierDiagnosticsSidecar;
@@ -10,7 +8,7 @@ use crate::diagnostics::compare::{
     serial_parallel_reports_equivalent,
 };
 use crate::diagnostics::failure::{FailureSummary, RollbackDiagnostic};
-use crate::diagnostics::flow::FlowSummary;
+use crate::diagnostics::flow::{FlowSummary, RetainedFlowSummaryView};
 use crate::diagnostics::history::{
     inspect_execution, inspect_flow, inspect_graph, inspect_plan, inspect_report,
     ExecutionInspector, FlowInspector, GraphInspector, PlanInspector, ReportInspector,
@@ -83,7 +81,7 @@ impl<'a> GraphDiagnostics<'a> {
         self.summary_now()
     }
 
-    pub fn latest_flow(&self) -> Option<&'a FlowSummary> {
+    pub fn latest_flow(&self) -> Option<RetainedFlowSummaryView<'a>> {
         self.graph.observe().latest_flow_diagnostics()
     }
 
@@ -114,7 +112,7 @@ impl<'a> GraphDiagnostics<'a> {
         self.graph.observe().latest_invalidation_trace_records()
     }
 
-    pub fn recent_history(&self) -> &'a VecDeque<ExecutionHistorySummary> {
+    pub fn recent_history(&self) -> crate::diagnostics::summary::RetainedExecutionHistoryView<'a> {
         self.graph.observe().recent_execution_history_diagnostics()
     }
 

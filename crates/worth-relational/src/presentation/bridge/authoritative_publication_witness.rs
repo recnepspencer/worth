@@ -22,7 +22,7 @@ pub(super) struct RelationalPublicationRequest {
 pub(super) struct RelationalPublicationBasis {
     pub(super) version_id: u64,
     pub(super) branch_id: Arc<str>,
-    pub(super) adapter_identity: Arc<str>,
+    pub(super) adapter_semantic_identity: Arc<str>,
     pub(super) source_basis: Arc<str>,
 }
 

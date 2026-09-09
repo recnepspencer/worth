@@ -1,0 +1,15 @@
+error[E0624]: associated function `issue` is private
+ --> tests/signal_owner_services/ui/conditional_issuance_is_owner_private.rs:6:59
+  |
+6 |       let _ = SignalConditionalExecutionPort::<(), (), ()>::issue(
+  |                                                             ^^^^^ private associated function
+  |
+ ::: src/branch/owner_services/conditional_execution/issuance.rs
+  |
+  | /     pub(crate) fn issue(
+  | |         weak: Weak<SignalOwner<D, I, T>>,
+  | |         basis: &AdmittedSignalBranchBasis,
+  | |         claimant: &SignalAspectLoweringOwner,
+  | |         source_authority: &worth_proof::ConditionalSourceObservationAuthority,
+  | |     ) -> Result<Self, SignalConditionalServiceIssuanceDenial> {
+  | |_____________________________________________________________- private associated function defined here

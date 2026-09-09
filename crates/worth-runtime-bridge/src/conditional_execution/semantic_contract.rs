@@ -44,6 +44,19 @@ impl BridgeConditionalLocation {
                 .as_deref()
                 .is_none_or(|identity| !identity.trim().is_empty())
     }
+
+    pub(in crate::conditional_execution) fn retained_heap_bytes(
+        &self,
+    ) -> Result<u64, super::retention::BridgeRetentionDenial> {
+        super::retention::sum(&[
+            super::retention::arc_slice_charge::<u8>(self.node_identity.len())?,
+            self.stage_identity
+                .as_deref()
+                .map(|identity| super::retention::arc_slice_charge::<u8>(identity.len()))
+                .transpose()?
+                .unwrap_or(0),
+        ])
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -121,6 +134,15 @@ impl BridgeConditionalContract {
         self.artifact_reuse
     }
 
+    pub(in crate::conditional_execution) fn retained_heap_bytes(
+        &self,
+    ) -> Result<u64, super::retention::BridgeRetentionDenial> {
+        super::retention::sum(&[
+            super::retention::arc_slice_charge::<u8>(self.identity.len())?,
+            super::retention::array_charge::<usize>(self.condition_dependency_ordinals.capacity())?,
+        ])
+    }
+
     pub(crate) fn requires_condition_provider(&self) -> bool {
         matches!(self.condition, BridgeConditionalCondition::RuntimePredicate)
     }
@@ -156,7 +178,14 @@ impl BridgeConditionalContract {
 
     pub(crate) fn is_valid(&self) -> bool {
         !self.identity.trim().is_empty()
-            && self.dependency_count > 0
+            && (self.dependency_count > 0
+                || matches!(
+                    self.condition,
+                    BridgeConditionalCondition::Always
+                        | BridgeConditionalCondition::OnDemand
+                        | BridgeConditionalCondition::RuntimePredicate
+                        | BridgeConditionalCondition::TemporalWake
+                ))
             && self
                 .condition_dependency_ordinals
                 .iter()

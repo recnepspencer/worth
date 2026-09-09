@@ -1,3 +1,8 @@
+use crate::data::retained_storage::{
+    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
+};
+
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -227,4 +232,10 @@ fn registry_digest(descriptors: &[DeletionPolicyDescriptor]) -> String {
     let bytes = serde_json::to_vec(&canonical).expect("deletion policy registry serialization");
     let digest = Sha256::digest(bytes);
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+impl RetainedStorageMeasurement for DeletionPolicyName {
+    fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
+        self.0.retained_heap_charge(work)
+    }
 }

@@ -204,6 +204,8 @@ impl WorthQueryApplicationCommitDenial {
 
 #[derive(Debug)]
 pub enum WorthQueryApplicationCommitOutcome {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     Committed(super::WorthQueryApplicationCommitReceipt),
     AlreadyCommitted(super::WorthQueryApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),

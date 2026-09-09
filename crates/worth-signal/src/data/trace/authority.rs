@@ -1,5 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
+mod retained_charge;
+
 use serde::{Deserialize, Serialize};
 
 use crate::data::output::ArtifactContinuityToken;

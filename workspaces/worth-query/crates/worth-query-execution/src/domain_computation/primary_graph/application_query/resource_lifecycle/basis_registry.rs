@@ -24,7 +24,7 @@ struct WorthQueryApplicationBasisRegistryState {
 }
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationBasisRegistry {
+pub(crate) struct WorthQueryApplicationBasisRegistry {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
 }
 
@@ -39,6 +39,14 @@ pub struct WorthQueryApplicationBasisIdentity {
     branch_id: BranchId,
     snapshot_id: SnapshotId,
     descriptor: RelationalBranchBasisDescriptor,
+    selection: WorthQueryApplicationBasisSelectionIdentity,
+}
+
+/// Descriptive origin of this exact snapshot; it grants no read authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationBasisSelectionIdentity {
+    Relational,
+    Product(crate::basis::WorthQueryProductBranchReadIdentity),
 }
 
 impl WorthQueryApplicationBasisIdentity {
@@ -56,6 +64,10 @@ impl WorthQueryApplicationBasisIdentity {
 
     pub fn descriptor(&self) -> &RelationalBranchBasisDescriptor {
         &self.descriptor
+    }
+
+    pub fn selection(&self) -> &WorthQueryApplicationBasisSelectionIdentity {
+        &self.selection
     }
 }
 
@@ -110,8 +122,7 @@ pub struct WorthQueryApplicationBasisObservation {
     acquisitions: usize,
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationBasisLease
-{
+pub(crate) struct WorthQueryApplicationBasisLease {
     identity: WorthQueryApplicationBasisIdentity,
     basis: Option<AdmittedRelationalBranchBasis>,
     retention: Option<RelationalBranchRetentionLease>,
@@ -121,8 +132,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
     state: Arc<WorthQueryApplicationBasisRegistryState>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) enum WorthQueryApplicationBasisRegistrationDenial
-{
+pub(crate) enum WorthQueryApplicationBasisRegistrationDenial {
     Basis(worth_relational::facade::branch::RelationalBranchBasisDenial),
     Snapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
 }
@@ -136,14 +146,18 @@ impl WorthQueryApplicationBasisRegistry {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn register(
+    pub(crate) fn register(
         &self,
         basis: AdmittedRelationalBranchBasis,
         graph: WorthQueryPrimaryGraphIntegrationHandle,
     ) -> Result<WorthQueryApplicationBasisLease, WorthQueryApplicationBasisRegistrationDenial> {
-        let observation = basis.observation();
         let snapshot = graph
-            .with_runtime_mut(|runtime| runtime.snapshots().snapshot_for_observation(&observation))
+            .with_runtime_mut(|runtime| {
+                crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                    runtime,
+                    &basis,
+                )
+            })
             .map_err(WorthQueryApplicationBasisRegistrationDenial::Snapshot)?;
         let retention = graph.with_runtime(|runtime| runtime.retain_component_basis(&basis));
         let retention = match retention {
@@ -165,6 +179,7 @@ impl WorthQueryApplicationBasisRegistry {
                 branch_id: basis.identity().branch_id().clone(),
                 snapshot_id: snapshot.snapshot_id(),
                 descriptor: basis.descriptor().clone(),
+                selection: WorthQueryApplicationBasisSelectionIdentity::Relational,
             },
             basis: Some(basis),
             retention: Some(retention),
@@ -201,6 +216,20 @@ impl WorthQueryApplicationBasisObservation {
 }
 
 impl WorthQueryApplicationBasisLease {
+    pub(crate) fn bind_product_observation(
+        &mut self,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+    ) {
+        assert_eq!(
+            self.identity.descriptor(),
+            product.basis().relational_basis().descriptor(),
+            "product custody retains the exact query snapshot basis"
+        );
+        self.identity.selection = WorthQueryApplicationBasisSelectionIdentity::Product(
+            crate::basis::WorthQueryProductBranchReadIdentity::from_observation(product),
+        );
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn bind_preview_session(
         mut self,
         liveness: BridgePreviewSessionLivenessObserver,

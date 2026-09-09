@@ -45,7 +45,7 @@ fn diagnostics_grouped_job_views_are_discoverable() {
 
     assert_eq!(health.current_now().active_node_count, 1);
     assert!(health.latest_flow().is_some());
-    assert!(health.recent_history().back().is_some());
+    assert!(health.recent_history().last().is_some());
     assert!(inspect
         .graph()
         .nodes_with_execution_record()

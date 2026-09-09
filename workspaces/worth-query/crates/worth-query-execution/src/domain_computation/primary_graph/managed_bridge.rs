@@ -3,8 +3,9 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
 use worth_runtime_bridge::facade::{
-    AspectKeySelector, BridgeAspectRegistration, BridgeAspectRegistrationId, BridgeDeliveryReceipt,
-    BridgeMappingId, BridgeMappingRegistration, BridgeOwnedSignalRuntime, BridgeRuntimePolicy,
+    AspectKeySelector, BridgeAspectRegistration, BridgeAspectRegistrationId,
+    BridgeConditionalRuntimeBuilder, BridgeDeliveryReceipt, BridgeMappingId,
+    BridgeMappingRegistration, BridgeRuntimePolicy, BridgeSealedRuntimeAssembly,
     BridgeSourceAdapter, BridgeSourceCapability, BridgeSourceCapabilitySet,
     BridgeTruthViewSelector, CoarseRoutingMode, InvalidationSink, MappingSelector, RuntimeBridge,
     RuntimeBridgeBuilder, SignalBridgeSinkError, SignalInvalidationScope, SliceWideningPolicy,
@@ -29,9 +30,32 @@ struct WorthQueryApplicationFieldMappings {
     aspect: BridgeAspectRegistration,
 }
 
-pub(super) struct WorthQueryInstalledApplicationBridge {
+pub(super) struct WorthQueryApplicationBridgeInstallation {
     ordinary: RuntimeBridge,
-    conditional: std::sync::Mutex<Option<BridgeOwnedSignalRuntime>>,
+    conditional: BridgeConditionalRuntimeBuilder,
+}
+
+impl WorthQueryApplicationBridgeInstallation {
+    pub(super) fn conditional_builder(&mut self) -> &mut BridgeConditionalRuntimeBuilder {
+        &mut self.conditional
+    }
+
+    pub(super) fn seal(
+        self,
+    ) -> Result<
+        WorthQueryInstalledApplicationBridge,
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
+    > {
+        Ok(WorthQueryInstalledApplicationBridge {
+            ordinary: self.ordinary,
+            conditional: std::sync::Arc::new(std::sync::RwLock::new(self.conditional.seal()?)),
+        })
+    }
+}
+
+pub(crate) struct WorthQueryInstalledApplicationBridge {
+    ordinary: RuntimeBridge,
+    conditional: std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
 }
 
 impl WorthQueryInstalledApplicationBridge {
@@ -39,50 +63,26 @@ impl WorthQueryInstalledApplicationBridge {
         &self.ordinary
     }
 
-    pub(super) fn conditional_mut(&mut self) -> &mut BridgeOwnedSignalRuntime {
-        self.conditional
-            .get_mut()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .as_mut()
-            .expect("exclusive conditional runtime access cannot overlap")
-    }
-
-    pub(super) fn take_conditional(&mut self) -> BridgeOwnedSignalRuntime {
-        self.conditional
-            .get_mut()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take()
-            .expect("exclusive conditional runtime access cannot overlap")
-    }
-
-    pub(super) fn take_conditional_if_present(&self) -> Option<BridgeOwnedSignalRuntime> {
-        self.conditional
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take()
-    }
-
-    pub(super) fn restore_conditional(&mut self, conditional: BridgeOwnedSignalRuntime) {
-        let slot = self
-            .conditional
-            .get_mut()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        assert!(slot.replace(conditional).is_none());
-    }
-
-    pub(super) fn restore_conditional_shared(&self, conditional: BridgeOwnedSignalRuntime) {
-        let mut slot = self
-            .conditional
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        assert!(slot.replace(conditional).is_none());
-    }
-
-    pub(super) fn fresh_conditional_runtime(
+    pub(crate) fn conditional(
         &self,
-    ) -> Result<BridgeOwnedSignalRuntime, worth_runtime_bridge::facade::BridgeConditionalDenial>
-    {
-        BridgeOwnedSignalRuntime::with_owned_signal_graph(self.ordinary.clone())
+    ) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
+        self.conditional
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    pub(super) fn conditional_lifecycle(
+        &self,
+    ) -> std::sync::RwLockWriteGuard<'_, BridgeSealedRuntimeAssembly> {
+        self.conditional
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    pub(super) fn conditional_operations(
+        &self,
+    ) -> std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>> {
+        std::sync::Arc::clone(&self.conditional)
     }
 }
 
@@ -90,7 +90,7 @@ pub(super) fn install_application_bridge<Schema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
     source: RuntimeBridgeRelationalSource,
-) -> Result<WorthQueryInstalledApplicationBridge, WorthQueryPrimaryGraphInstallationDenial>
+) -> Result<WorthQueryApplicationBridgeInstallation, WorthQueryPrimaryGraphInstallationDenial>
 where
     Schema: ApplicationSchema,
 {
@@ -124,11 +124,14 @@ where
         })
         .build()
         .map_err(|error| bridge_denial(format!("{error:?}")))?;
-    let conditional = BridgeOwnedSignalRuntime::with_owned_signal_graph(ordinary.clone())
-        .map_err(|error| bridge_denial(format!("{error:?}")))?;
-    Ok(WorthQueryInstalledApplicationBridge {
+    let conditional = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
+        ordinary.clone(),
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+    )
+    .map_err(|error| bridge_denial(format!("{error:?}")))?;
+    Ok(WorthQueryApplicationBridgeInstallation {
         ordinary,
-        conditional: std::sync::Mutex::new(Some(conditional)),
+        conditional,
     })
 }
 

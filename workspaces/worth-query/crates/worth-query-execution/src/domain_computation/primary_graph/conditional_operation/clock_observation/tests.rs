@@ -8,21 +8,7 @@ fn granular_installation(
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
         );
-    let integration = world
-        .application
-        .runtime
-        .primary_graph()
-        .expect("the fixture publishes one primary graph")
-        .integration_handle();
-    crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation::new(
-        worth_query_installation::facade::ApplicationSchemaBindingIdentity::from_installed_parts(
-            7,
-            3,
-            worth_foundational::facade::CanonicalDigestId::new([0x11; 32]),
-            worth_foundational::facade::CanonicalDigestId::new([0x22; 32]),
-        ),
-        integration,
-    )
+    world.application.granular_invalidation_installation()
 }
 
 fn receipt() -> ErasedClockObservationReceipt {

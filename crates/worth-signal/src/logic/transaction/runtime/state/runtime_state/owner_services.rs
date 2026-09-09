@@ -19,6 +19,29 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    /// Issue a separate conditional capability for an exact sealed definition.
+    /// The ordinary component bundle grants no access to this issuance route.
+    pub fn issue_conditional_execution_service(
+        &self,
+        basis: &crate::branch::AdmittedSignalBranchBasis,
+        claimant: &crate::data::aspect::SignalAspectLoweringOwner,
+        source_authority: &worth_proof::ConditionalSourceObservationAuthority,
+    ) -> Result<
+        crate::branch::SignalConditionalExecutionPort<D, I, T>,
+        crate::branch::SignalConditionalServiceIssuanceDenial,
+    > {
+        let owner = self
+            .owner_services
+            .downgrade_owner()
+            .map_err(crate::branch::SignalConditionalServiceIssuanceDenial::OwnerUnavailable)?;
+        crate::branch::SignalConditionalExecutionPort::issue(
+            owner,
+            basis,
+            claimant,
+            source_authority,
+        )
+    }
+
     /// Issue deterministic control over the real owner progression in test builds.
     #[cfg(feature = "test-operation-control")]
     pub fn owner_operation_control(
@@ -79,7 +102,18 @@ where
                 },
             ),
             Err(denial) => panic!("Signal branch owner partition invariant failed: {denial:?}"),
+        }?;
+        if !self.branches.conditional_retention_budget_matches(
+            self.graph
+                .installed_runtime_policy()
+                .conditional_evaluation_budget(),
+            self.graph
+                .installed_runtime_policy()
+                .conditional_temporal_budget(),
+        ) {
+            return Err(SignalOwnerServiceIssuanceDenial::ConditionalRetentionBudgetMismatch);
         }
+        Ok(())
     }
 
     pub(crate) fn owner_port_slots(
@@ -94,7 +128,15 @@ where
     {
         self.owner_service_issuance_capability()?;
         if !self.owner_services.is_sealed() {
+            let conditional_budget = self
+                .graph
+                .installed_runtime_policy()
+                .conditional_evaluation_budget();
             let runtime_instance_id = self.branches.owner_runtime_instance_id();
+            let temporal_budget = self
+                .graph
+                .installed_runtime_policy()
+                .conditional_temporal_budget();
             let active_state = self
                 .take_heavy_active_branch_state()
                 .expect("issuance preflight rejects non-transferable active state");
@@ -102,7 +144,8 @@ where
                 BranchManager::with_live_catalog(Default::default(), runtime_instance_id);
             let branches = std::mem::replace(&mut self.branches, empty_legacy);
             let partition = branches.into_owner_partition(active_state);
-            self.owner_services.seal(partition);
+            self.owner_services
+                .seal(partition, conditional_budget, temporal_budget);
         }
         let weak_owner = self
             .owner_services
@@ -139,5 +182,27 @@ where
     {
         let (basis, mutation, lifecycle) = self.owner_port_slots()?;
         Ok(SignalOwnerServicePorts::new(basis, mutation, lifecycle))
+    }
+
+    /// Claim the one non-cloneable definition-publication capability for the
+    /// Runtime World that owns this sealed Signal component.
+    pub fn runtime_world_definition_publication_port(
+        &mut self,
+    ) -> Result<
+        crate::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
+        SignalOwnerServiceIssuanceDenial,
+    >
+    where
+        D: Send + Sync + 'static,
+        I: Send + Sync + 'static,
+        E: Send + Sync + 'static,
+        Ctx: Send + Sync + 'static,
+        T: Send + Sync + 'static,
+    {
+        let (_, mutation, _) = self.owner_port_slots()?;
+        if !self.owner_services.claim_definition_publication() {
+            return Err(SignalOwnerServiceIssuanceDenial::DefinitionPublicationAlreadyIssued);
+        }
+        Ok(crate::branch::SignalConditionalDefinitionPublicationPort::new(mutation))
     }
 }

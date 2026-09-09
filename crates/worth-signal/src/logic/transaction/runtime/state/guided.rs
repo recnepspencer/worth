@@ -1,8 +1,6 @@
-use std::collections::VecDeque;
-
 use crate::data::aspect::Aspect;
 use crate::data::error::SignalError;
-use crate::diagnostics::{LineageEvent, ReplayView, SynthesizedLineageChain};
+use crate::diagnostics::{ReplayView, SynthesizedLineageChain};
 use crate::state::{SignalBranchHandle, SignalBranchId};
 
 use super::merge::{
@@ -118,7 +116,7 @@ where
         self.runtime.observe().lineage_chain_for_node(node)
     }
 
-    pub fn latest_lineage(&self) -> &VecDeque<LineageEvent> {
+    pub fn latest_lineage(&self) -> crate::diagnostics::lineage::RetainedLineageView<'_> {
         self.runtime.graph().observe().lineage_records()
     }
 }

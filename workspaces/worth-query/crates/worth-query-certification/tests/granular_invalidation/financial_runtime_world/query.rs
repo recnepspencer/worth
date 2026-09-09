@@ -200,6 +200,9 @@ fn build(
             crate::query_runtime_world::PrimaryGraphProvider,
         )
         .runtime_bridge(bridge)
+        .conditional_execution_resources(
+            runtime::WorthQueryConditionalExecutionResources::development(),
+        )
         .conditional_signal_graph(signal)
         .conditional_node(
             FinancialDomain,

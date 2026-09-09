@@ -1,6 +1,7 @@
 //! Exact Relational truth used to resolve one application entity.
 
 mod freshness;
+mod product;
 mod resolved;
 #[cfg(test)]
 mod tests;

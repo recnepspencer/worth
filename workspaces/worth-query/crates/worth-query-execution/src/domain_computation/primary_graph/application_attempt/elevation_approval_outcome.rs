@@ -218,6 +218,11 @@ impl WorthQueryApprovedElevation {
 
 #[derive(Debug)]
 pub enum WorthQueryElevationApprovalOutcome {
+    ProductStale(
+        crate::domain_computation::WorthQueryProductStaleApplication,
+        WorthQueryRequestedElevation,
+    ),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     Approved(WorthQueryApprovedElevation),
     AlreadyApproved(WorthQueryApprovedElevation),
     Stale(
@@ -250,6 +255,9 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryElevationApprovalOutcome::Stale(stale, binding.into_requested())
         }
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryElevationApprovalOutcome::ProductStale(stale, binding.into_requested())
+        }
         WorthQueryApplicationCommitOutcome::Cancelled => {
             WorthQueryElevationApprovalOutcome::Cancelled(binding.into_requested())
         }
@@ -264,6 +272,9 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
         }
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
             WorthQueryElevationApprovalOutcome::Deferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryElevationApprovalOutcome::ProductUnpublished(unpublished)
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryElevationApprovalOutcome::SettlementDeferred(deferred)

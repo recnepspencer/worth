@@ -1,12 +1,13 @@
 use super::GraphObserver;
 use crate::data::handle::NodeId;
 use crate::diagnostics::lineage::{
-    LineageArtifactId, LineageRecord, RetainedLineageView, SynthesizedLineageChain,
+    LineageArtifactId, RetainedLineageView, SynthesizedLineageChain,
 };
 
 impl<'a> GraphObserver<'a> {
-    pub fn lineage_records(&self) -> &'a std::collections::VecDeque<LineageRecord> {
-        self.graph.observation.diagnostics.lineage_records()
+    pub fn lineage_records(&self) -> RetainedLineageView<'a> {
+        let records = self.graph.observation.diagnostics.lineage_records();
+        RetainedLineageView::new(records, 0, records.len())
     }
 
     pub fn lineage_for_node(&self, node: NodeId) -> RetainedLineageView<'a> {

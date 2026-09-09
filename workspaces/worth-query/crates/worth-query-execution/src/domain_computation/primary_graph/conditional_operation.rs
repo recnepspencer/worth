@@ -5,6 +5,7 @@ mod authorization_sources;
 mod canonical_identity;
 mod clock_observation;
 mod commit_maintenance;
+mod definition;
 mod execution_provenance;
 mod inspection;
 mod installation;
@@ -17,7 +18,6 @@ mod predicate_observation;
 mod publication;
 mod reconstruction_authority;
 mod reinstallation;
-mod runtime_owners;
 mod signal_decision_reentry;
 pub(crate) use signal_decision_reentry::classify_bridge_signal;
 mod temporal_intent_projection;
@@ -52,6 +52,7 @@ pub use operation_invocation::{
     WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
     WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
 };
+pub(in crate::domain_computation::primary_graph) use predicate_observation::QueryTemporalPredicateProvider;
 pub(in crate::domain_computation::primary_graph) use publication::{
     install_pending_bindings, publication_denial, require_complete_binding_inventory,
 };

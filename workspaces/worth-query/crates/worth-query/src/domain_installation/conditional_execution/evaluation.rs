@@ -22,7 +22,7 @@ pub(crate) enum WorthQueryConditionalEvaluationScope<'a> {
 }
 
 pub(crate) struct WorthQueryConditionalEvaluationPass<'a> {
-    pub(crate) workspace: &'a mut crate::runtime::WorthQueryWorkspace,
+    pub(crate) workspace: &'a crate::runtime::WorthQueryWorkspace,
     pub(crate) snapshot: &'a crate::memory_workspace::WorthQuerySnapshotIdentity,
     pub(crate) execution_identity: &'a str,
     pub(crate) scope: WorthQueryConditionalEvaluationScope<'a>,
@@ -131,29 +131,18 @@ pub(crate) fn evaluate_installed_conditional_node<D, O, F, L: BasisOperationLane
     node: &WorthQueryInstalledConditionalNode,
     evaluation: &mut WorthQueryConditionalEvaluationPass<'_>,
 ) -> Result<WorthQueryConditionalProvenance, WorthQueryConditionalEvaluationStop> {
-    evaluate_conditional_node(
-        bound,
-        node,
-        evaluation,
-        evaluation.snapshot.bridge_identity(),
-    )
-}
-
-pub(crate) fn evaluate_owned_conditional_node<D, O, F, L: BasisOperationLane>(
-    bound: &super::super::WorthQueryBoundDomainOperation<D, O, F, L>,
-    node: &WorthQueryInstalledConditionalNode,
-    evaluation: &mut WorthQueryConditionalEvaluationPass<'_>,
-) -> Result<WorthQueryConditionalProvenance, WorthQueryConditionalEvaluationStop> {
-    evaluate_conditional_node(bound, node, evaluation, None)
+    evaluate_conditional_node(bound, node, evaluation)
 }
 
 fn evaluate_conditional_node<D, O, F, L: BasisOperationLane>(
     bound: &super::super::WorthQueryBoundDomainOperation<D, O, F, L>,
     node: &WorthQueryInstalledConditionalNode,
     evaluation: &mut WorthQueryConditionalEvaluationPass<'_>,
-    bridge_snapshot_identity: Option<&worth_runtime_bridge::facade::TruthSnapshotIdentity>,
 ) -> Result<WorthQueryConditionalProvenance, WorthQueryConditionalEvaluationStop> {
     let authority = super::reentry::admit_conditional_authority(bound, node)
+        .map_err(WorthQueryConditionalEvaluationStop::Reentry)?;
+    let product = bound
+        .product()
         .map_err(WorthQueryConditionalEvaluationStop::Reentry)?;
     let snapshot_identity = evaluation.snapshot.evidence_identity();
     let mut context =
@@ -171,13 +160,15 @@ fn evaluate_conditional_node<D, O, F, L: BasisOperationLane>(
     let bridge = evaluation
         .workspace
         .execute_installed_conditional(
+            product,
             worth_runtime_bridge::facade::BridgeConditionalExecutionRequest {
                 lowering: &node.lowering,
                 query_binding_identity: bound.binding_identity(),
                 query_capability_identity: bound.capability_identity(),
                 snapshot_identity: snapshot_identity.as_str(),
                 truth_branch_identity: None,
-                bridge_snapshot_identity,
+                bridge_snapshot_identity: (node.lowering.correspondence_count() != 0)
+                    .then(|| product.bridge_snapshot_identity()),
                 execution_identity: evaluation.execution_identity,
                 attempt: evaluation.attempt,
             },
@@ -190,13 +181,14 @@ fn evaluate_conditional_node<D, O, F, L: BasisOperationLane>(
                 WorthQueryConditionalEvaluationStop::Failed { kind, detail }
             },
         )?;
+    let (bridge, product) = bridge.into_parts();
     retain_conditional_evidence_counters(evaluation.counters, &bridge);
     admit_conditional_decision(
         bound,
         authority,
+        product,
         bridge,
         snapshot_identity.as_str(),
-        bridge_snapshot_identity,
         evaluation.execution_identity,
         evaluation.attempt,
     )

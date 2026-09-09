@@ -68,6 +68,9 @@ impl CompositeSupplyChainCourt {
         let services = signal
             .owner_component_services()
             .expect("component owner: seal actual graph");
+        let signal_definition_publication = signal
+            .runtime_world_definition_publication_port()
+            .expect("component owner: dedicate definition publication to World");
         let reference = services
             .basis_port()
             .issue_managed_branch_reference(&signal_basis)
@@ -95,6 +98,7 @@ impl CompositeSupplyChainCourt {
             .with_bridge_correspondence(bridge_port)
             .with_relational_services(records.runtime.owner_component_services())
             .with_signal_services(services)
+            .with_signal_definition_publication(signal_definition_publication)
             .with_budgets(limits)
             .with_clock(RuntimeWorldClock::from_source(budgets::CourtClock))
             .build()

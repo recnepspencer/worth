@@ -1,16 +1,11 @@
-use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
+use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
     TypedApplicationIdentityValue, TypedApplicationReadableValue, TypedApplicationValue,
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
-    WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentLifecycle,
-    WorthQueryTemporalIntentProjector, WritePosture,
-};
-use worth_runtime_bridge::facade::{
-    BridgeManagedClockBinding, BridgeManagedTemporalIntentIdentity,
-    BridgeManagedTemporalIntentLifecycle, BridgeManagedTemporalIntentReconciliation,
-    BridgeManagedTemporalIntentReconciliationParts, BridgeOwnedSignalRuntime,
+    WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
+    WritePosture,
 };
 
 use super::installation::{
@@ -21,13 +16,14 @@ use super::reconstruction_authority::{
     WorthQueryTemporalPrincipalSource, WorthQueryTemporalReconstructionAccess,
 };
 mod denial;
-mod refresh;
+mod reconciliation;
 mod source_record_binding;
 pub(super) use denial::{
     bridge_reconstruction_denial, reconstruction_denial, retention_capacity_reconstruction_denial,
     retention_identity_reconstruction_denial, snapshot_capacity_reconstruction_denial,
     snapshot_identity_reconstruction_denial,
 };
+pub(super) use reconciliation::{reconcile_prepared_temporal_intents, reconcile_temporal_intents};
 #[cfg(test)]
 mod tests;
 use crate::domain_computation::primary_graph::{
@@ -35,7 +31,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryControls, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
 };
-pub(super) use refresh::reconcile_refreshed_temporal_intents;
 use source_record_binding::bind_source_records;
 pub(super) use source_record_binding::WorthQueryReconstructedTemporalIntent;
 
@@ -129,6 +124,7 @@ pub(super) fn reconstruct_temporal_intents<
         EqualityPredicate,
         IdentityUnit,
     >,
+    product: Option<&crate::basis::WorthQueryProductBranchLease>,
 ) -> Result<
     WorthQueryTemporalReconstruction<Clock, Input>,
     WorthQueryConditionalRuntimeInstallationDenial,
@@ -168,23 +164,52 @@ where
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .map_err(denial::principal)?;
-    let scope = runtime
-        .resolve_entity(
-            access.scope_field,
-            access.scope_value.clone(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .map_err(denial::entity)?;
+    let scope = match product {
+        Some(product) => runtime
+            .on_product(product.retained_clone())
+            .map_err(product_denial)?
+            .resolve_entity(
+                access.scope_field,
+                access.scope_value.clone(),
+                &request,
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+            .map_err(denial::entity)?,
+        None => runtime
+            .resolve_entity(
+                access.scope_field,
+                access.scope_value.clone(),
+                &request,
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+            .map_err(denial::entity)?,
+    };
     let query_access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let bounds = binding.bounds();
-    let controls = WorthQueryApplicationQueryControls::current_one_shot(
-        NonZeroUsize::new(bounds.maximum_reconstruction_rows())
-            .expect("installed temporal bounds are non-zero"),
-        NonZeroUsize::new(bounds.maximum_query_work())
-            .expect("installed temporal bounds are non-zero"),
-        &request,
-    );
+    let maximum_results = NonZeroUsize::new(bounds.maximum_reconstruction_rows())
+        .expect("installed temporal bounds are non-zero");
+    let maximum_work = NonZeroUsize::new(bounds.maximum_query_work())
+        .expect("installed temporal bounds are non-zero");
+    let controls = match product {
+        Some(product) => {
+            let (_, product, application_basis) = runtime
+                .on_product(product.retained_clone())
+                .map_err(product_denial)?
+                .into_parts();
+            WorthQueryApplicationQueryControls::product_one_shot(
+                product,
+                application_basis,
+                maximum_results,
+                maximum_work,
+                &request,
+            )
+        }
+        None => WorthQueryApplicationQueryControls::current_one_shot(
+            maximum_results,
+            maximum_work,
+            &request,
+        ),
+    };
     let plan = access
         .query_authorization
         .admit(
@@ -207,8 +232,17 @@ where
     };
     let candidates =
         super::temporal_intent_projection::project_unique_candidates(binding, result.into_rows())?;
-    let intents = bind_source_records(runtime, candidates, identity_field, &request)?;
+    let intents = bind_source_records(runtime, candidates, identity_field, &request, product)?;
     Ok(WorthQueryTemporalReconstruction { intents, work })
+}
+
+fn product_denial(
+    denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
+) -> WorthQueryConditionalRuntimeInstallationDenial {
+    reconstruction_denial(
+        WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
+        format!("selected product admission failed: {denial:?}"),
+    )
 }
 
 fn isolate_principal_source<
@@ -259,60 +293,4 @@ where
             format!("{:?}: {}", failure.kind(), failure.detail()),
         )),
     }
-}
-
-pub(super) fn reconcile_temporal_intents<Clock, Input>(
-    bridge: &mut BridgeOwnedSignalRuntime,
-    clock: &BridgeManagedClockBinding,
-    candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
-) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
-    for reconstructed in candidates.values() {
-        let candidate = reconstructed.candidate();
-        let identity = BridgeManagedTemporalIntentIdentity::declare(Arc::<str>::from(
-            candidate.identity().as_str(),
-        ))
-        .map_err(|denial| bridge_reconstruction_denial(denial.detail()))?;
-        let lifecycle = match candidate.lifecycle() {
-            WorthQueryTemporalIntentLifecycle::Active => {
-                BridgeManagedTemporalIntentLifecycle::Active
-            }
-            WorthQueryTemporalIntentLifecycle::Cancelled => {
-                BridgeManagedTemporalIntentLifecycle::Cancelled
-            }
-            WorthQueryTemporalIntentLifecycle::Completed => {
-                BridgeManagedTemporalIntentLifecycle::Completed
-            }
-        };
-        let outcome = bridge
-            .reconcile_managed_temporal_intent(BridgeManagedTemporalIntentReconciliationParts {
-                binding: clock,
-                identity,
-                revision: candidate.revision(),
-                due_coordinate: candidate.due().nanoseconds(),
-                idempotency_identity: Arc::from(candidate.idempotency().as_str()),
-                source_record_identity: reconstructed.source_record(),
-                lifecycle,
-            })
-            .map_err(|denial| bridge_reconstruction_denial(denial.detail()))?;
-        let expected = matches!(
-            (candidate.lifecycle(), outcome),
-            (
-                WorthQueryTemporalIntentLifecycle::Active,
-                BridgeManagedTemporalIntentReconciliation::Installed
-            ) | (
-                WorthQueryTemporalIntentLifecycle::Cancelled
-                    | WorthQueryTemporalIntentLifecycle::Completed,
-                BridgeManagedTemporalIntentReconciliation::TerminalNoop
-            )
-        );
-        if !expected {
-            return Err(bridge_reconstruction_denial(
-                "fresh conditional publication observed non-fresh temporal intent state",
-            ));
-        }
-    }
-    candidates.retain(|_, intent| {
-        intent.candidate().lifecycle() == WorthQueryTemporalIntentLifecycle::Active
-    });
-    Ok(())
 }

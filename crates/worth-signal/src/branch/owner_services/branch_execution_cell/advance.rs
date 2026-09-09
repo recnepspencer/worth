@@ -63,6 +63,7 @@ where
             cancellation,
             apply,
             &mut outcome,
+            None,
         )?;
         Ok(outcome.expect("successful cell advancement installs its exact result"))
     }
@@ -75,6 +76,9 @@ where
         cancellation: &SignalOwnerCancellationToken,
         apply: F,
         output: &mut Option<SignalBranchAdvanceCellOutcome>,
+        definition_publication: Option<
+            super::super::conditional_execution::SignalConditionalDefinitionPublicationScope,
+        >,
     ) -> Result<(), SignalBranchAdvanceDenial>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -113,9 +117,29 @@ where
         let permit = cancellation
             .preflight_movement()
             .map_err(|_| SignalBranchAdvanceDenial::CancelledNoMovement)?;
-        let transaction = state
-            .execute_canonical_transaction(&permit, runtime_ctx, apply)
-            .map_err(|error| SignalBranchAdvanceDenial::MutationFailedNoMovement { error })?;
+        let mut conditional_operation_scope =
+            super::super::conditional_execution::SignalConditionalOperationScopeBinding::issue(
+                expected,
+                self.incarnation(),
+                state.state().installed_definition().cloned(),
+            );
+        if let Some(publication) = definition_publication {
+            conditional_operation_scope =
+                conditional_operation_scope.with_definition_publication(publication);
+        }
+        let transaction = match state.execute_canonical_transaction(
+            &permit,
+            conditional_operation_scope,
+            runtime_ctx,
+            apply,
+        ) {
+            Ok(transaction) => transaction
+                .map_err(|error| SignalBranchAdvanceDenial::MutationFailedNoMovement { error })?,
+            Err(caller_unwind) => {
+                drop(state);
+                caller_unwind.resume()
+            }
+        };
         SignalBranchCellWork {
             counters: &self.counters,
             movements: &self.movements,

@@ -50,7 +50,8 @@ pub use host_provider_contract::{
     WorthQueryConditionalProjectedValue, WorthQueryHostConditionalOutputComparatorProvider,
     WorthQueryHostConditionalOutputVersionProvider, WorthQueryHostConditionalPredicateProvider,
     WorthQueryHostPredicateDecision, WorthQueryHostPredicateFailure,
-    WorthQueryHostPredicateFailureKind,
+    WorthQueryHostPredicateFailureKind, WorthQueryHostProviderHeapRetention,
+    WorthQueryHostProviderRetentionOverflow,
 };
 pub use location::WorthQueryConditionalNodeLocation;
 pub use markers::{

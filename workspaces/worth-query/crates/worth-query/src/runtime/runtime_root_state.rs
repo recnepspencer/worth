@@ -44,14 +44,13 @@ pub struct WorthQueryRuntime {
         crate::domain_installation::WorthQueryWorkflowParallelAdmissionProviderRegistry,
     pub(super) graph_participation_registry:
         crate::domain_installation::WorthQueryInstalledGraphParticipationRegistry,
-    pub(super) conditional_signal_runtime:
-        Option<worth_runtime_bridge::facade::BridgeOwnedSignalRuntime>,
+    pub(super) installed_product: Option<super::installed_product::WorthQueryInstalledProduct>,
     pub(super) conditional_execution_registry:
         crate::domain_installation::WorthQueryConditionalExecutionRegistry,
+    pub(super) installed_owned_async_declarations:
+        BTreeMap<String, super::WorthQueryInstalledOwnedAsyncDeclaration>,
     pub(super) installed_live_routes: WorthQueryInstalledLiveRoutes,
     pub(super) shared_projection_owners: WorthQuerySharedProjectionOwnerRegistry,
-    pub(super) conditional_installations:
-        Vec<Box<dyn crate::domain_installation::PendingConditionalInstallation>>,
     pub(super) consumer_support_profile:
         crate::domain_installation::WorthQueryConsumerSupportProfile,
     pub(super) native_aspect_contracts: WorthQueryNativeAspectContractRegistry,

@@ -105,6 +105,7 @@ impl WorthQueryApplicationCommitReceipt {
             retained_preimage,
             aftermath_causality: None,
             expected_retry_session,
+            performed_product_change: None,
         }
     }
 

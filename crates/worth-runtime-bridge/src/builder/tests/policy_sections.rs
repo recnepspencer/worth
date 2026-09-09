@@ -36,6 +36,7 @@ fn build_accepts_policy_sections_without_losing_canonical_runtime_policy() {
                 .with_route_record_limit(17)
                 .with_failure_record_limit(9),
             BridgeArtifactPolicyBaseline::new(true, false),
+            crate::policy::BridgeConditionalRetentionBudget::development(),
         )
     );
 }

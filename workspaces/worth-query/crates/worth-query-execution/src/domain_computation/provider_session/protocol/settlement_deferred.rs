@@ -157,6 +157,8 @@ impl WorthQueryProviderSessionCommitDeferred {
 
 #[derive(Debug)]
 pub enum WorthQueryProviderSessionCommitStop {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     Denied(WorthQueryProviderSessionFailure),
     Deferred(WorthQueryProviderSessionCommitDeferred),
     ControlStopped(super::WorthQueryProviderSessionCommitControlStopped),

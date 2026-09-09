@@ -44,6 +44,7 @@ impl Clone for SignalGraph {
             conditional_dependency_versions: self
                 .conditional_dependency_versions
                 .operational_clone(),
+            conditional_dependency_versions_custody: None,
             authorization_policy_identities: self
                 .authorization_policy_identities
                 .operational_clone(),
@@ -93,6 +94,7 @@ impl SignalGraph {
             lifecycle_token: Default::default(),
             instance_id: super::next_signal_graph_instance_id(),
             arena: NodeArena {
+                definitions: Default::default(),
                 nodes: crate::data::persistent_paged_vector::PersistentPagedVector::new(),
                 hot: crate::data::persistent_paged_vector::PersistentPagedVector::new(),
                 warm: crate::data::persistent_paged_vector::PersistentPagedVector::new(),
@@ -101,6 +103,9 @@ impl SignalGraph {
                 free_slots: DenseBitset::default(),
                 active_nodes: 0,
                 compaction: CompactionState::default(),
+                retained_node_ledger: None,
+                retained_node_custody: None,
+                retained_seed_custody: None,
             },
             topology: EdgeTopology::default(),
             cause_sets: Default::default(),
@@ -110,6 +115,7 @@ impl SignalGraph {
             schema_registry: std::sync::Arc::new(SignalSchemaRegistry::default()),
             aspect_lowering_owner: None,
             conditional_dependency_versions: Default::default(),
+            conditional_dependency_versions_custody: None,
             authorization_policy_identities: crate::data::persistent_ord_set::PersistentOrdSet::new(
             ),
             invalidation_readiness_epoch: 0,

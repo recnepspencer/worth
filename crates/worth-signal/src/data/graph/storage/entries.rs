@@ -1,10 +1,19 @@
 mod access;
 mod allocation;
+mod cause_validation_work;
+mod conditional_versions;
 mod construction;
 mod contracts;
 mod diagnostic_artifacts;
+mod evaluation_mutation;
+pub(in crate::data::graph) mod evaluation_payload;
 mod invalidation_authority;
 mod iteration;
+mod node_copy_work;
+mod node_mutation_work;
+pub(in crate::data::graph) use evaluation_mutation::NodeEvaluationMutation;
+mod prepared_invalidation_cache;
+pub(crate) use prepared_invalidation_cache::PreparedInvalidationCache;
 mod snapshots;
 mod transitions;
 
@@ -80,6 +89,7 @@ impl SignalGraph {
     fn materialize_entry(&self, id: NodeId) -> Result<NodeEntry, SignalError> {
         crate::data::access_counters::note_materialized_entry_read();
         Ok(NodeEntry::from_storage_parts(
+            self.definition_ref(id)?.clone(),
             self.hot_ref(id)?.clone(),
             self.warm_ref(id)?.clone(),
             self.cold_ref(id)?.map(|cold| Box::new(cold.clone())),
@@ -89,7 +99,10 @@ impl SignalGraph {
     fn write_back_materialized_entry(&mut self, id: NodeId, entry: NodeEntry) {
         crate::data::access_counters::note_materialized_entry_write();
         let index = id.index() as usize;
-        let (hot, warm, cold) = entry.into_storage_parts();
+        let (definition, hot, warm, cold) = entry.into_storage_parts();
+        if self.arena.definitions[index] != definition {
+            self.arena.definitions[index] = definition;
+        }
         self.arena.hot[index] = Some(hot);
         self.arena.warm[index] = warm;
         self.arena.cold[index] = cold;

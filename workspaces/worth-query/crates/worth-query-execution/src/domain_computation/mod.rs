@@ -12,6 +12,7 @@ pub(crate) mod execution_runtime;
 pub(crate) mod managed_run;
 pub(crate) mod operation_binding;
 pub(crate) mod primary_graph;
+mod product_publication;
 pub(crate) mod provider_session;
 pub(crate) mod runtime_time;
 
@@ -27,4 +28,8 @@ pub use evidence_material::{canonical_indexed_operation_material, canonical_oper
 pub use execution_runtime::*;
 pub use managed_run::*;
 pub use operation_binding::*;
+pub use product_publication::{
+    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
+    WorthQueryProductUnpublishedRecovery,
+};
 pub use provider_session::*;

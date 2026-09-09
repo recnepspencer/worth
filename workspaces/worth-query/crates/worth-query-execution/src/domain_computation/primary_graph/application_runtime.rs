@@ -55,21 +55,22 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation) authorization: WorthQueryInstalledAuthorizationRegistry,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     authentication_clock: WorthQueryAuthenticationClock,
-    pub(super) relational_source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
     pub(super) relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
-    pub(super) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    pub(crate) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    pub(crate) product_runtime:
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+    pub(super) basis_leases:
+        super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
     pub(super) granular_invalidation: super::WorthQueryGranularInvalidationInstallation,
     pub(super) conditional_operations: std::sync::Mutex<
         super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
     >,
-    pub(super) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+    pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     pub(super) primary_graph_authority:
         worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     pub(super) result_buffers:
         super::application_query::resource_lifecycle::WorthQueryApplicationResultBufferRegistry,
-    pub(super) basis_leases:
-        super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
     pub(super) next_preview_session: AtomicU64,
     pub(super) next_external_dispatch_attempt: AtomicU64,
     pub(super) external_effect_transport:
@@ -188,6 +189,29 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[cfg(test)]
     pub(crate) fn fix_authentication_time(&mut self, now: std::time::Instant) {
         self.authentication_clock = WorthQueryAuthenticationClock::fixed(now);
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn release_conditional_runtime_resources(
+        &mut self,
+    ) {
+        self.bridge
+            .conditional_lifecycle()
+            .close_conditional_resources();
+        *self
+            .conditional_operations
+            .get_mut()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
+        self.primary_provider.replace_conditional_commit_routes(
+            std::iter::empty(),
+            false,
+            std::iter::empty(),
+        );
+    }
+}
+
+impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn drop(&mut self) {
+        self.release_conditional_runtime_resources();
     }
 }
 

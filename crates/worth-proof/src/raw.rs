@@ -31,6 +31,10 @@ pub use crate::recipe::{
     Admitted, ExecutedRecipe, ExecutionReadyRecipe, Lowered, Recipe, RecipeStageMarker, Resolved,
     Unresolved,
 };
+pub use crate::source_observation::{
+    AdmittedConditionalSourceObservation, ConditionalEvaluationSource,
+    ConditionalSourceObservationAuthority, ConditionalSourceObservationOwner,
+};
 pub use crate::transition::{
     admit_ready_and_execute_recipe, apply_contextual_transition, apply_transition,
     checked_admit_ready_and_execute_recipe, checked_readmit_ready_and_execute_recipe,

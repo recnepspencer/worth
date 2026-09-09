@@ -35,6 +35,17 @@ pub struct WorthQueryPrimaryGraphBackendHandle {
 }
 
 impl WorthQueryPrimaryGraphBackendHandle {
+    pub(super) fn prepare_product_source(
+        &self,
+    ) -> Result<
+        worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
+        worth_relational::facade::branch::RelationalBranchBasisDenial,
+    > {
+        let branch = self
+            .integration
+            .with_runtime(|runtime| runtime.main_branch_identity());
+        self.integration.prepare_product_source(&branch)
+    }
     pub(in crate::runtime) fn new(integration: WorthQueryPrimaryGraphIntegrationHandle) -> Self {
         Self { integration }
     }
@@ -44,36 +55,6 @@ impl WorthQueryPrimaryGraphBackendHandle {
         read: impl FnOnce(&RelationalRuntime) -> T,
     ) -> T {
         self.integration.with_runtime(read)
-    }
-
-    pub(in crate::runtime) fn repair_deferred_publication_settlement(
-        &self,
-        settlement: &worth_relational::facade::publication::DeferredPublicationSettlement,
-    ) -> Result<
-        worth_relational::facade::history::RelationalCommitReceipt,
-        crate::runtime::WorthQuerySettlementRepairError,
-    > {
-        self.integration
-            .execute_mutation_with_index_refresh(|runtime| {
-                runtime.repair_deferred_publication_settlement(settlement)
-            })
-            .map_err(crate::runtime::WorthQuerySettlementRepairError::PrimaryGraphIndexRefresh)?
-            .map_err(Into::into)
-    }
-
-    pub(in crate::runtime) fn repair_pending_publication_settlement(
-        &self,
-        commit_id: worth_relational::facade::history::CommitId,
-    ) -> Result<
-        worth_relational::facade::history::RelationalCommitReceipt,
-        crate::runtime::WorthQuerySettlementRepairError,
-    > {
-        self.integration
-            .execute_mutation_with_index_refresh(|runtime| {
-                runtime.repair_pending_publication_settlement(commit_id)
-            })
-            .map_err(crate::runtime::WorthQuerySettlementRepairError::PrimaryGraphIndexRefresh)?
-            .map_err(Into::into)
     }
 
     pub(in crate::runtime) fn execute_mutation<T, E>(

@@ -10,15 +10,12 @@ impl WorthQuerySettlementRecoveryBackend for WorthQueryBridgeBackedRuntimeBacken
         crate::runtime::WorthQuerySettlementRepairError,
     > {
         let settlement = deferred.settlement();
-        match self.primary_graph_runtime.as_ref() {
-            Some(primary_graph) => primary_graph.repair_deferred_publication_settlement(settlement),
-            None => self
-                .relational_runtime
-                .as_mut()
-                .ok_or(crate::runtime::WorthQuerySettlementRepairError::RelationalOwnerUnavailable)?
-                .repair_deferred_publication_settlement(settlement)
-                .map_err(Into::into),
-        }
+        self.relational_runtime
+            .as_mut()
+            .ok_or(crate::runtime::WorthQuerySettlementRepairError::RelationalOwnerUnavailable)?
+            .execute_mutation(|runtime| runtime.repair_deferred_publication_settlement(settlement))
+            .map_err(crate::runtime::WorthQuerySettlementRepairError::PrimaryGraphIndexRefresh)?
+            .map_err(Into::into)
     }
 
     fn repair_pending_branch_merge_settlement(
@@ -28,14 +25,11 @@ impl WorthQuerySettlementRecoveryBackend for WorthQueryBridgeBackedRuntimeBacken
         worth_relational::facade::history::RelationalCommitReceipt,
         crate::runtime::WorthQuerySettlementRepairError,
     > {
-        match self.primary_graph_runtime.as_ref() {
-            Some(primary_graph) => primary_graph.repair_pending_publication_settlement(commit_id),
-            None => self
-                .relational_runtime
-                .as_mut()
-                .ok_or(crate::runtime::WorthQuerySettlementRepairError::RelationalOwnerUnavailable)?
-                .repair_pending_publication_settlement(commit_id)
-                .map_err(Into::into),
-        }
+        self.relational_runtime
+            .as_mut()
+            .ok_or(crate::runtime::WorthQuerySettlementRepairError::RelationalOwnerUnavailable)?
+            .execute_mutation(|runtime| runtime.repair_pending_publication_settlement(commit_id))
+            .map_err(crate::runtime::WorthQuerySettlementRepairError::PrimaryGraphIndexRefresh)?
+            .map_err(Into::into)
     }
 }

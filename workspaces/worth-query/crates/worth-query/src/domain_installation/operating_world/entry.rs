@@ -17,12 +17,24 @@ pub(crate) struct WorthQueryOperatingWorldEntry<L: BasisOperationLane> {
 pub enum WorthQueryOperatingWorldEntryDenial {
     Intent(BasisIntentDenial),
     Admission(DeniedBasisCapability),
+    Product {
+        kind: WorthQueryOperatingWorldProductDenial,
+        basis_eligibility: BasisEligibilityCounters,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryOperatingWorldProductDenial {
+    SelectionRequired,
+    RuntimeUnavailable,
+    Admission(worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperatingWorldEntryDenialKind {
     Intent(BasisIntentDenialKind),
     Admission(DeniedBasisCapabilityKind),
+    Product(WorthQueryOperatingWorldProductDenial),
 }
 
 impl WorthQueryOperatingWorldEntry<ObservationLaneWitness> {
@@ -42,8 +54,18 @@ impl WorthQueryOperatingWorldEntry<ObservationLaneWitness> {
     pub(crate) fn observe_branch(
         branch_identity: &super::WorthQueryBranchHeadIdentity,
     ) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
+        Self::observe_branch_name(branch_identity.as_str())
+    }
+
+    pub(crate) fn observe_product_component(
+        product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+    ) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
+        Self::observe_branch_name(&product.relational_basis_descriptor().branch_id().0)
+    }
+
+    fn observe_branch_name(branch: &str) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
         let path = basis_lifecycle()
-            .branch_head(branch_identity.as_str(), true)
+            .branch_head(branch, true)
             .for_observation()
             .map_err(WorthQueryOperatingWorldEntryDenial::Intent)?;
         let admitted = path
@@ -85,6 +107,13 @@ impl<L: BasisOperationLane> WorthQueryOperatingWorldEntry<L> {
 }
 
 impl WorthQueryOperatingWorldEntryDenial {
+    pub(crate) fn product(kind: WorthQueryOperatingWorldProductDenial) -> Self {
+        Self::Product {
+            kind,
+            basis_eligibility: BasisEligibilityCounters::default(),
+        }
+    }
+
     pub fn kind(&self) -> WorthQueryOperatingWorldEntryDenialKind {
         match self {
             Self::Intent(denial) => {
@@ -93,6 +122,7 @@ impl WorthQueryOperatingWorldEntryDenial {
             Self::Admission(denial) => {
                 WorthQueryOperatingWorldEntryDenialKind::Admission(denial.denial_kind())
             }
+            Self::Product { kind, .. } => WorthQueryOperatingWorldEntryDenialKind::Product(*kind),
         }
     }
 
@@ -100,6 +130,9 @@ impl WorthQueryOperatingWorldEntryDenial {
         match self {
             Self::Intent(denial) => denial.counters(),
             Self::Admission(denial) => denial.counters(),
+            Self::Product {
+                basis_eligibility, ..
+            } => basis_eligibility,
         }
     }
 }

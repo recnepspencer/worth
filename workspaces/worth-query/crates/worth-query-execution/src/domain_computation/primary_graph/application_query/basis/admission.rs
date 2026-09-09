@@ -74,20 +74,28 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_app
 >(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: WorthQueryApplicationQueryBasis<Schema>,
-) -> Result<WorthQueryApplicationBasisLease, WorthQueryApplicationQueryAdmissionDenial>
+) -> Result<super::WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial>
 where
     Schema: ApplicationSchema,
 {
     match basis {
-        WorthQueryApplicationQueryBasis::Current => admit_current_execution_basis(application),
+        WorthQueryApplicationQueryBasis::Product {
+            product,
+            application_basis,
+        } => super::product_admission::admit(application, product, application_basis),
+        WorthQueryApplicationQueryBasis::Current => admit_current_execution_basis(application)
+            .map(super::WorthQueryApplicationQueryBasisCustody::Relational),
         WorthQueryApplicationQueryBasis::Pinned(pinned) => {
             admit_pinned_execution_basis(application, pinned)
+                .map(super::WorthQueryApplicationQueryBasisCustody::Relational)
         }
         WorthQueryApplicationQueryBasis::Historical(historical) => {
             admit_historical_execution_basis(application, historical)
+                .map(super::WorthQueryApplicationQueryBasisCustody::Relational)
         }
         WorthQueryApplicationQueryBasis::Preview(preview) => {
             admit_preview_execution_basis(application, preview)
+                .map(super::WorthQueryApplicationQueryBasisCustody::Relational)
         }
         WorthQueryApplicationQueryBasis::Continuation {
             descriptor,
@@ -96,6 +104,7 @@ where
             let basis =
                 admit_retained_descriptor_execution_basis(application, &descriptor, &retention)?;
             register_basis(application, basis)
+                .map(super::WorthQueryApplicationQueryBasisCustody::Relational)
         }
     }
 }
@@ -230,7 +239,8 @@ where
         })
         .map_err(map_index_currency_denial)?;
     let (_, basis) = application
-        .relational_source
+        .product_runtime
+        .source
         .observe_branch_basis(&application.relational_branch_identity)
         .map_err(map_basis_denial)?;
     register_basis(application, basis)
@@ -341,3 +351,7 @@ fn admit_pin_request(
         None => Ok(()),
     }
 }
+
+#[cfg(test)]
+#[path = "admission/product_carriage.rs"]
+mod product_carriage_tests;

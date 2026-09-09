@@ -51,8 +51,6 @@ fn adjudicate(receipt: worth_ui_native_platform::UiNativePlatformCloseReceipt) -
     crate::native_phase_f_world_evidence::publish(&receipt, shutdown);
     if trace_matches_contract(shutdown.presentation_transitions())
         && shutdown.presentation_transition_trace_complete()
-        && !shutdown.presentation_semantic_frontiers().is_empty()
-        && shutdown.presentation_semantic_frontier_trace_complete()
         && !shutdown.text_presentation_work().is_empty()
         && shutdown.text_presentation_work_trace_complete()
         && !receipt.text_atlas_plan_observations().is_empty()

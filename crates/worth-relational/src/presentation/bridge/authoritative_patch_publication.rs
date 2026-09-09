@@ -166,21 +166,21 @@ impl RelationalRuntime {
             envelope,
             &selected_branch,
         );
-        let adapter_identity =
-            super::identities::relational_bridge_adapter_identity(self.runtime_instance_id());
+        let adapter_semantic_identity =
+            super::identities::relational_bridge_adapter_semantic_identity();
         let resolved = resolve_publication(
             unresolved,
             RelationalPublicationBasis {
                 version_id: envelope.commit.version_id.0,
                 branch_id: std::sync::Arc::from(selected_branch.0.clone()),
-                adapter_identity: adapter_identity.clone(),
+                adapter_semantic_identity: adapter_semantic_identity.clone(),
                 source_basis: source_basis.clone(),
             },
         );
         let source = publication_source_provenance(
             self.runtime_instance_id(),
             resolved.payload(),
-            adapter_identity,
+            adapter_semantic_identity,
             source_basis,
         );
         let metadata =
@@ -249,21 +249,21 @@ fn publication_source_basis(
 fn publication_source_provenance(
     runtime_instance_id: u64,
     request: &RelationalPublicationRequest,
-    adapter_identity: std::sync::Arc<str>,
+    adapter_semantic_identity: std::sync::Arc<str>,
     source_basis: std::sync::Arc<str>,
 ) -> worth_runtime_bridge::facade::BridgeAuthoritativeSourceProvenance {
     match request.partition_role.clone() {
             Some(partition_role) => worth_runtime_bridge::facade::BridgeAuthoritativeSourceProvenance::from_owner_partition_publication(
                 runtime_instance_id,
                 request.graph_role.clone(),
-                adapter_identity,
+                adapter_semantic_identity,
                 source_basis,
                 partition_role,
             ),
             None => worth_runtime_bridge::facade::BridgeAuthoritativeSourceProvenance::from_owner_publication(
                 runtime_instance_id,
                 request.graph_role.clone(),
-                adapter_identity,
+                adapter_semantic_identity,
                 source_basis,
             ),
     }

@@ -16,8 +16,8 @@ mod provider_fixtures;
 use super::conditional_node_contract::{conditional_node_result, dependency, node, ManualRefresh};
 use super::installed_operation_fixture::conditional_workspace::shared_signal_node_workspace;
 use super::installed_operation_fixture::{
-    conditional_installation, conditional_installation_with_change, conditional_workspace_with,
-    GeometryDomain, ReadExecutionInput, ReadFamily, ReadVertex,
+    conditional_installation, conditional_workspace_with, GeometryDomain, ReadExecutionInput,
+    ReadFamily, ReadVertex,
 };
 use provider_fixtures::{CountedCompute, DeferredWake, DetachedCompute, UnrequestedTrigger};
 
@@ -280,100 +280,4 @@ fn temporal_wake_defers_without_compute_or_query_work() {
     assert_eq!(deferred.counters().conditional_decisions_delivered, 1);
     assert_eq!(deferred.counters().graph_provider_contacts, 0);
     assert_eq!(deferred.counters().executor_contacts, 0);
-}
-
-#[test]
-fn authoritative_patch_reenters_the_exact_query_owned_signal_graph() {
-    let node = node(
-        "authoritative-change",
-        domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
-        domain::WorthQuerySemanticLocality::SourceRecord,
-    );
-    let location = domain::WorthQueryConditionalNodeLocation::operation(node.identity()).unwrap();
-    let (installation, request, _) = conditional_installation_with_change(&node);
-    let contacts = Arc::new(AtomicUsize::new(0));
-    let mut workspace = conditional_workspace_with(
-        "authoritative-change",
-        node,
-        installation,
-        CountedCompute(Arc::clone(&contacts)),
-    )
-    .unwrap();
-    let installed = workspace.domain(GeometryDomain).unwrap();
-
-    execute_changed(&mut workspace, &installed);
-    execute_unchanged(&mut workspace, &installed);
-    assert_eq!(contacts.load(Ordering::SeqCst), 1);
-
-    let TransitionOutcome::Success(delivery) = workspace
-        .deliver_conditional_authoritative_change(
-            GeometryDomain,
-            ReadVertex,
-            ReadFamily,
-            domain::WorthQueryConditionalAuthoritativeChangeDeliveryRequest::new(
-                location.clone(),
-                0,
-                request,
-            ),
-        )
-        .unwrap()
-    else {
-        panic!("the authoritative patch must reach the retained conditional graph")
-    };
-    assert_eq!(delivery.signal_seeds_emitted(), 1);
-    assert_eq!(delivery.slots_touched(), 1);
-
-    execute_changed(&mut workspace, &installed);
-    assert_eq!(contacts.load(Ordering::SeqCst), 2);
-}
-
-fn execute_changed(
-    workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
-    installed: &domain::WorthQueryInstalledDomainHandle<GeometryDomain>,
-) {
-    let bound = workspace
-        .observe_operating_world()
-        .unwrap()
-        .family(ReadFamily)
-        .bind(installed, ReadVertex)
-        .unwrap();
-    let TransitionOutcome::Success(executed) = bound
-        .admit_execution_resources(
-            ReadExecutionInput::default(),
-            crate::suite::installed_operation_fixture::execution_resource_request(),
-            &*workspace,
-        )
-        .unwrap()
-        .execute(workspace)
-    else {
-        panic!("changed conditional dependency must compute")
-    };
-    drop(executed);
-}
-
-fn execute_unchanged(
-    workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
-    installed: &domain::WorthQueryInstalledDomainHandle<GeometryDomain>,
-) {
-    let bound = workspace
-        .observe_operating_world()
-        .unwrap()
-        .family(ReadFamily)
-        .bind(installed, ReadVertex)
-        .unwrap();
-    let TransitionOutcome::Deferred(deferred) = bound
-        .admit_execution_resources(
-            ReadExecutionInput::default(),
-            crate::suite::installed_operation_fixture::execution_resource_request(),
-            &*workspace,
-        )
-        .unwrap()
-        .execute(workspace)
-    else {
-        panic!("unchanged conditional dependency must stop before compute")
-    };
-    assert_eq!(
-        deferred.conditional_provenance()[0].class(),
-        domain::WorthQueryConditionalOutcomeClass::DependencyUnchanged
-    );
 }

@@ -10,6 +10,16 @@ impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for Eligib
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 }
 
 impl worth_runtime_bridge::facade::BridgeConditionalWakeProvider for EligibleProvider {
@@ -32,6 +42,16 @@ impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for QueryQ
 
     fn semantic_contract(&self) -> Self::SemanticContract {
         "worth.query.financial.quote-tolerance-5"
+    }
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
     }
 }
 
@@ -56,6 +76,16 @@ impl
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 
     fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
         crate::query_runtime_world::resource_support()

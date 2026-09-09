@@ -25,7 +25,6 @@ impl WorthQueryPrimaryGraphProvider {
             receipt_basis_retention: std::sync::Mutex::new(Default::default()),
             pending_application_publication: std::sync::Mutex::new(None),
             conditional_commit_journal: std::sync::Mutex::new(Default::default()),
-            conditional_maintenance_failure: std::sync::Mutex::new(None),
             fault_port,
         });
         let anchor = Arc::new(

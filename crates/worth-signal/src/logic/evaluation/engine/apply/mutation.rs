@@ -10,11 +10,13 @@ pub(super) fn apply_evaluation_effect(
     output_equivalence: OutputEquivalencePolicy,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     defer_snapshot_commit: bool,
+    work: &mut crate::logic::evaluation::EvaluationWork<'_>,
 ) -> Result<(AppliedEffectReport, Option<PendingDependencySnapshot>), SignalError> {
     graph.apply_effect(
         effect,
         output_equivalence,
         comparator_resolver,
         defer_snapshot_commit,
+        work,
     )
 }

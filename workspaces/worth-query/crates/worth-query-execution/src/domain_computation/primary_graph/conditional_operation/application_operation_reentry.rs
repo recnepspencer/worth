@@ -1,6 +1,7 @@
 mod admitted_projection;
 mod denial;
 mod invoker_isolation;
+mod outcome_application;
 mod processing;
 mod provider_commit_deferred;
 mod reentry_counts;
@@ -31,6 +32,8 @@ use super::reconstruction_authority::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) enum WorthQueryTemporalReentryOutcome {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     Committed,
     AlreadyCommitted,
     Obsolete,

@@ -37,10 +37,23 @@ fn descriptive_surfaces_are_each_selectable_without_performed_counter_capture() 
             .begin_observation_session(request)
             .unwrap();
         let graph = compiled.locality().runtime.graph();
-        let before_lineage = graph.observe().lineage_records().clone();
-        let before_replay = graph.observe().replay_events().clone();
+        let before_lineage = graph
+            .observe()
+            .lineage_records()
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>();
+        let before_replay = graph
+            .observe()
+            .replay_events()
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>();
         let before_frontier = graph.observe().latest_frontier_execution_summary().cloned();
-        let before_flow = graph.observe().latest_flow_diagnostics().cloned();
+        let before_flow = graph
+            .observe()
+            .latest_flow_diagnostics()
+            .map(|flow| flow.to_owned_summary());
         let before_facts = compiled
             .locality()
             .handles
@@ -66,7 +79,11 @@ fn descriptive_surfaces_are_each_selectable_without_performed_counter_capture() 
                 .into_iter()
                 .all(|counter| receipt.realized_counters().value(counter) == 0));
         }
-        let lineage_nonempty = graph.observe().lineage_records() != &before_lineage;
+        let lineage_nonempty = graph
+            .observe()
+            .lineage_records()
+            .iter()
+            .ne(before_lineage.iter());
         let facts_nonempty = compiled
             .locality()
             .handles
@@ -76,8 +93,16 @@ fn descriptive_surfaces_are_each_selectable_without_performed_counter_capture() 
             != before_facts;
         let frontier_nonempty =
             graph.observe().latest_frontier_execution_summary().cloned() != before_frontier;
-        let replay_nonempty = graph.observe().replay_events() != &before_replay;
-        let telemetry_nonempty = graph.observe().latest_flow_diagnostics().cloned() != before_flow;
+        let replay_nonempty = graph
+            .observe()
+            .replay_events()
+            .iter()
+            .ne(before_replay.iter());
+        let telemetry_nonempty = graph
+            .observe()
+            .latest_flow_diagnostics()
+            .map(|flow| flow.to_owned_summary())
+            != before_flow;
 
         assert_eq!(
             counters_nonzero,

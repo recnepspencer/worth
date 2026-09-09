@@ -62,6 +62,7 @@ pub(super) fn bind_source_records<
         IdentityUnit,
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    product: Option<&crate::basis::WorthQueryProductBranchLease>,
 ) -> Result<
     BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
     WorthQueryConditionalRuntimeInstallationDenial,
@@ -84,13 +85,28 @@ where
                         ),
                     )
                 })?;
-            let record = runtime
-                .resolve_entity(
+            let record = match product {
+                Some(product) => runtime
+                    .on_product(product.retained_clone())
+                    .map_err(|denial| {
+                        reconstruction_denial(
+                            WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
+                            format!("selected product admission failed: {denial:?}"),
+                        )
+                    })?
+                    .resolve_entity(
+                        identity_field,
+                        value,
+                        request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    ),
+                None => runtime.resolve_entity(
                     identity_field,
                     value,
                     request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
-                )
+                ),
+            }
                 .map_err(|denial| match denial.kind() {
                     crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,

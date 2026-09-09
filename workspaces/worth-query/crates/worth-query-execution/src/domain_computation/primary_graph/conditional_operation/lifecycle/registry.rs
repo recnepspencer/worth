@@ -1,31 +1,41 @@
 use std::{collections::BTreeMap, sync::Arc};
 
-use worth_runtime_bridge::facade::BridgeOwnedSignalRuntime;
+use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
-use super::WorthQueryInstalledConditionalOperation;
-use crate::domain_computation::primary_graph::conditional_operation::{
-    clock_observation::ErasedClockObservationOutcome,
-    installation::{ConditionalClockLease, WorthQueryConditionalRuntimeInstallationDenial},
-    signal_decision_reentry::WorthQueryConditionalTruthBasis,
+use super::{WorthQueryConditionalOperationCell, WorthQueryInstalledConditionalOperation};
+use crate::domain_computation::primary_graph::conditional_operation::installation::{
+    ConditionalClockLease, WorthQueryConditionalRuntimeInstallationDenial,
 };
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalOperationRegistry<
     Schema,
 > {
-    installed: BTreeMap<String, Box<dyn WorthQueryInstalledConditionalOperation<Schema>>>,
+    installed: Arc<BTreeMap<String, WorthQueryConditionalOperationCell<Schema>>>,
+    route_publication: Arc<std::sync::Mutex<()>>,
     marker: std::marker::PhantomData<fn() -> Schema>,
 }
 
 impl<Schema> Default for WorthQueryConditionalOperationRegistry<Schema> {
     fn default() -> Self {
         Self {
-            installed: BTreeMap::new(),
+            installed: Arc::new(BTreeMap::new()),
+            route_publication: Arc::default(),
             marker: std::marker::PhantomData,
         }
     }
 }
 
 impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
+    /// Snapshot only routing and managed ownership; no operation callback runs
+    /// while the application registry is borrowed.
+    pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> Self {
+        Self {
+            installed: Arc::clone(&self.installed),
+            route_publication: Arc::clone(&self.route_publication),
+            marker: std::marker::PhantomData,
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn lifecycle_probe(
         &self,
         bridge: worth_runtime_bridge::facade::BridgeConditionalRuntimeLifecycleProbe,
@@ -33,7 +43,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         super::super::WorthQueryConditionalRuntimeLifecycleProbe::from_resources(
             self.installed
                 .values()
-                .map(|operation| operation.lifecycle_resources()),
+                .map(|operation| operation.lock_operation().lifecycle_resources()),
             bridge,
         )
     }
@@ -48,7 +58,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         self.installed.values().fold(
             super::WorthQueryConditionalRetainedResourceCounts::default(),
             |mut total, operation| {
-                let counts = operation.retained_resource_counts();
+                let counts = operation.lock_operation().retained_resource_counts();
                 total.wakes = total.wakes.saturating_add(counts.wakes);
                 total.intents = total.intents.saturating_add(counts.intents);
                 total.attempts = total.attempts.saturating_add(counts.attempts);
@@ -62,7 +72,9 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence {
         self.installed.values().fold(
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
-            |total, operation| total.combine(operation.installation_canonical_work()),
+            |total, operation| {
+                total.combine(operation.lock_operation().installation_canonical_work())
+            },
         )
     }
 
@@ -72,7 +84,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         self.installed
             .values()
             .fold(Default::default(), |mut total, operation| {
-                let work = operation.reconstruction_work();
+                let work = operation.lock_operation().reconstruction_work();
                 total.examined_candidates = total
                     .examined_candidates
                     .saturating_add(work.examined_candidates);
@@ -90,9 +102,8 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     pub(in crate::domain_computation::primary_graph) fn prepare_derived_runtime_reinstallation(
         &self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        bridge: &mut BridgeOwnedSignalRuntime,
-        graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-        affinity: &super::super::publication::ConditionalRuntimeAffinity,
+        bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
+        product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
         BTreeMap<String, super::WorthQueryPreparedConditionalRuntimeBinding>,
         WorthQueryConditionalRuntimeInstallationDenial,
@@ -101,38 +112,45 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
             .iter()
             .map(|(identity, operation)| {
                 operation
-                    .prepare_derived_runtime_reinstallation(runtime, bridge, graph, affinity)
+                    .lock_operation()
+                    .prepare_derived_runtime_reinstallation(runtime, bridge, product)
                     .map(|prepared| (identity.clone(), prepared))
             })
             .collect()
     }
 
     pub(in crate::domain_computation::primary_graph) fn apply_derived_runtime_reinstallation(
-        &mut self,
+        &self,
         mut prepared: BTreeMap<String, super::WorthQueryPreparedConditionalRuntimeBinding>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) {
-        for (identity, operation) in &mut self.installed {
-            operation.apply_derived_runtime_reinstallation(
+        for (identity, operation) in self.installed.iter() {
+            let mut installed = operation.lock_operation();
+            installed.apply_derived_runtime_reinstallation(
                 prepared
                     .remove(identity)
                     .expect("prepared conditional inventory matches installed registry"),
             );
+            operation.publish_routes(installed.as_ref());
         }
         assert!(prepared.is_empty());
+        self.synchronize_commit_routes(runtime);
     }
 
     pub(in crate::domain_computation::primary_graph) fn reconcile_prepared_runtime_reinstallation(
         &mut self,
-        bridge: &mut BridgeOwnedSignalRuntime,
+        bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         prepared: &mut BTreeMap<String, super::WorthQueryPreparedConditionalRuntimeBinding>,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
-        for (identity, operation) in &self.installed {
-            operation.reconcile_prepared_runtime_reinstallation(
-                bridge,
-                prepared
-                    .get_mut(identity)
-                    .expect("prepared conditional inventory matches installed registry"),
-            )?;
+        for (identity, operation) in self.installed.iter() {
+            operation
+                .lock_operation()
+                .reconcile_prepared_runtime_reinstallation(
+                    bridge,
+                    prepared
+                        .get_mut(identity)
+                        .expect("prepared conditional inventory matches installed registry"),
+                )?;
         }
         Ok(())
     }
@@ -145,34 +163,20 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         if self.installed.contains_key(&identity) {
             return Err(());
         }
-        self.installed.insert(identity, operation);
+        Arc::make_mut(&mut self.installed)
+            .insert(identity, WorthQueryConditionalOperationCell::new(operation));
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph::conditional_operation) fn contains_clock(
+    pub(in crate::domain_computation::primary_graph) fn admit_clock(
         &self,
         identity: &str,
         lease: &Arc<ConditionalClockLease>,
-    ) -> bool {
+    ) -> Option<WorthQueryConditionalOperationCell<Schema>> {
         self.installed
             .get(identity)
-            .is_some_and(|operation| operation.matches_clock_lease(lease))
-    }
-
-    pub(in crate::domain_computation::primary_graph::conditional_operation) fn observe_clock(
-        &mut self,
-        identity: &str,
-        lease: &Arc<ConditionalClockLease>,
-        bridge: &mut BridgeOwnedSignalRuntime,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
-        truth: &WorthQueryConditionalTruthBasis,
-    ) -> Option<ErasedClockObservationOutcome> {
-        let operation = self.installed.get_mut(identity)?;
-        operation
-            .matches_clock_lease(lease)
-            .then(|| operation.observe_clock(bridge, runtime, truth))
+            .filter(|operation| operation.matches_clock_lease(lease))
+            .cloned()
     }
 
     pub(in crate::domain_computation::primary_graph) fn reconstruct_all(
@@ -181,25 +185,10 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
             Schema,
         >,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
-        for operation in self.installed.values_mut() {
+        for cell in self.installed.values() {
+            let mut operation = cell.lock_operation();
             operation.reconstruct(runtime)?;
-        }
-        self.synchronize_commit_routes(runtime);
-        Ok(())
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn refresh_changed_intent_kinds(
-        &mut self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        bridge: &mut BridgeOwnedSignalRuntime,
-        changed: &std::collections::BTreeSet<worth_relational::facade::identity::KindId>,
-    ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
-        for operation in self.installed.values_mut().filter(|operation| {
-            operation
-                .intent_entity_kind(runtime)
-                .is_some_and(|kind| changed.contains(&kind))
-        }) {
-            operation.refresh_authoritative(runtime, bridge)?;
+            cell.publish_routes(operation.as_ref());
         }
         self.synchronize_commit_routes(runtime);
         Ok(())
@@ -209,25 +198,37 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         &self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) {
+        let _publication = self
+            .route_publication
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut records = std::collections::BTreeSet::new();
         let mut whole_graph = false;
-        for operation in self.installed.values() {
-            let (operation_records, operation_whole_graph) =
-                operation.authoritative_commit_routes();
+        let mut bootstrap_identities = Vec::new();
+        for (identity, operation) in self.installed.iter() {
+            let (operation_records, operation_whole_graph, operation_bootstrap) =
+                operation.commit_routes();
             records.extend(operation_records);
             whole_graph |= operation_whole_graph;
+            if operation_bootstrap {
+                bootstrap_identities.push(identity.clone());
+            }
         }
-        runtime
-            .primary_provider
-            .replace_conditional_commit_routes(records, whole_graph);
+        runtime.primary_provider.replace_conditional_commit_routes(
+            records,
+            whole_graph,
+            bootstrap_identities,
+        );
     }
 
     pub(in crate::domain_computation::primary_graph) fn reconcile_all(
         &mut self,
-        bridge: &mut BridgeOwnedSignalRuntime,
+        bridge: &mut BridgeSealedRuntimeAssembly,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
-        for operation in self.installed.values_mut() {
-            operation.reconcile_reconstruction(bridge)?;
+        for operation in self.installed.values() {
+            operation
+                .lock_operation()
+                .reconcile_reconstruction(bridge)?;
         }
         Ok(())
     }

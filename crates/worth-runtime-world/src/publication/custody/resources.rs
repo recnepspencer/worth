@@ -17,6 +17,7 @@ use crate::retention::{
 /// resource lease may take them out while calling an owner, then restores them.
 #[derive(Debug)]
 pub(crate) struct ActiveAttemptResources {
+    pub(super) conditional_definition: Option<Arc<super::ConditionalDefinitionAttemptCustody>>,
     pub(crate) product_comparison_costs:
         Option<crate::publication::CompositePublicationCostCounters>,
     pub(super) commit_identity: CompositeCommitIdentity,
@@ -51,6 +52,12 @@ pub(super) enum ActivePinCustody {
 }
 
 impl ActiveAttemptResources {
+    pub(crate) fn retains_signal_definition(&self) -> bool {
+        self.conditional_definition
+            .as_ref()
+            .is_some_and(|custody| custody.retains_definition())
+    }
+
     /// Abandonment retains the exact custody already held; inspection does not
     /// acquire pins or retag their dependency class.
     pub(crate) fn retention_posture(&self) -> crate::recovery::ProductUnpublishedRetentionPosture {

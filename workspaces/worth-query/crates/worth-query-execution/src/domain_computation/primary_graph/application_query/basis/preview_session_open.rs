@@ -111,11 +111,13 @@ where
         WorthQueryApplicationPreviewSessionDenial,
     > {
         let (_, source_basis) = self
-            .relational_source
+            .product_runtime
+            .source
             .observe_branch_basis(&self.relational_branch_identity)
             .map_err(current_truth_denial)?;
         let source_observation = self
-            .relational_source
+            .product_runtime
+            .source
             .retain_branch_basis_for_bridge(&source_basis)
             .map_err(current_truth_denial)?;
         let sequence = next_preview_sequence(&self.next_preview_session)?;

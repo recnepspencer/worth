@@ -13,6 +13,7 @@ pub enum BridgeAsyncCompletionRejectionKind {
     SignalRuntimeThreadAffinityViolation,
     SignalCompletionAdmissionUnavailable,
     ForeignOwnerObservationAuthority,
+    SupersessionMismatch,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

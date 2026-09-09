@@ -103,6 +103,11 @@ impl WorthQueryReviewedElevation {
 
 #[derive(Debug)]
 pub enum WorthQueryMandatoryReviewOutcome {
+    ProductStale(
+        crate::domain_computation::WorthQueryProductStaleApplication,
+        WorthQueryMandatoryReview,
+    ),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     Reviewed(WorthQueryReviewedElevation),
     AlreadyReviewed(WorthQueryReviewedElevation),
     Stale(WorthQueryApplicationStaleAttempt, WorthQueryMandatoryReview),
@@ -129,6 +134,9 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryMandatoryReviewOutcome::Stale(stale, binding.into_mandatory())
         }
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryMandatoryReviewOutcome::ProductStale(stale, binding.into_mandatory())
+        }
         WorthQueryApplicationCommitOutcome::Cancelled => {
             WorthQueryMandatoryReviewOutcome::Cancelled(binding.into_mandatory())
         }
@@ -141,6 +149,9 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
         }
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
             WorthQueryMandatoryReviewOutcome::Deferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryMandatoryReviewOutcome::ProductUnpublished(unpublished)
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryMandatoryReviewOutcome::SettlementDeferred(deferred)

@@ -81,9 +81,13 @@ where
         aftermath_causality,
     } = prepared;
     let snapshot = lease.snapshot();
-    let attempt_basis =
-        WorthQueryApplicationAttemptBasis::capture(application, &admission, snapshot)
-            .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
+    let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
+        application,
+        &admission,
+        snapshot,
+        lease.product_publication(),
+    )
+    .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
     let operation = bind_execution_operation(application, &admission, &lease)?;
     let reserved = admission
         .graph_work_mut()
@@ -100,7 +104,7 @@ where
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
     let running = application
         .runtime
-        .managed_run_admission(&request_bridge, &application.relational_source)
+        .managed_run_admission(&request_bridge, &application.product_runtime.source)
         .admit_direct(&operation, attempt, read_request)
         .map_err(|_| denied(DenialStage::ManagedRunAdmission))?
         .start();
@@ -137,11 +141,13 @@ where
         .observe_managed_application_bridge_plan();
     let branch = admission.graph_work().branch().truth().clone();
     let basis = application
-        .relational_source
+        .product_runtime
+        .source
         .readmit_branch_basis(lease.basis_descriptor())
         .map_err(bridge_basis_denied)?;
     let bridge_observation = application
-        .relational_source
+        .product_runtime
+        .source
         .retain_branch_basis_for_bridge(&basis)
         .map_err(bridge_basis_denied)?;
     let bridge_snapshot = bridge_observation.snapshot_identity().clone();

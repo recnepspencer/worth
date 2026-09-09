@@ -1,0 +1,5 @@
+error[E0599]: no function or associated item named `admit` found for struct `AdmittedConditionalSourceObservation` in the current scope
+ --> tests/ui/milestone_17/arbitrary_marker_cannot_mint_source.rs:4:64
+  |
+4 |     let _ = worth_proof::AdmittedConditionalSourceObservation::admit(
+  |                                                                ^^^^^ function or associated item not found in `AdmittedConditionalSourceObservation`

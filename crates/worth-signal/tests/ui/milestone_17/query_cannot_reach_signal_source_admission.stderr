@@ -1,0 +1,5 @@
+error[E0599]: no method named `admit_source` found for reference `&SignalConditionalExecutionPort<(), (), ()>` in the current scope
+ --> tests/ui/milestone_17/query_cannot_reach_signal_source_admission.rs:7:18
+  |
+7 |     let _ = port.admit_source(source);
+  |                  ^^^^^^^^^^^^ method not found in `&SignalConditionalExecutionPort<(), (), ()>`

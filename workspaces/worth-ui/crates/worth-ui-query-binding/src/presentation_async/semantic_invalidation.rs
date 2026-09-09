@@ -1,23 +1,16 @@
 mod bridge_registrations;
-mod compute;
 mod graph_participation;
 mod installed_operation;
-mod instance;
+mod runtime_resources;
 
 use worth_query::facade::{domain, runtime};
 
 pub(crate) use bridge_registrations::presentation_bridge_registrations;
-pub(crate) use installed_operation::WorthUiPresentationAsyncDomainEntry;
-pub(super) use instance::{
-    install_presentation_semantic_instance, publish_presentation_semantic_change,
-    retire_presentation_semantic_instance,
-};
-
-use compute::WorthUiPresentationConditionalCompute;
 use graph_participation::{
     presentation_graph_definition, WorthUiPresentationGraphProvider,
     WorthUiPresentationSemanticGraph,
 };
+pub(crate) use installed_operation::WorthUiPresentationAsyncDomainEntry;
 use installed_operation::{
     presentation_aspect_contracts, presentation_async_definition,
     WorthUiPresentationAsyncOperationExecutor,
@@ -56,19 +49,14 @@ pub(crate) fn install_worth_ui_presentation_async_runtime(
 {
     let builder = builder.aspect_contracts(presentation_aspect_contracts())?;
     Ok(builder
+        .conditional_execution_resources(runtime_resources::presentation_async_resources())
+        .owned_bridge_async_declaration(
+            super::runtime_bridge::presentation_owned_async_source_declaration(),
+        )
         .graph_participation(presentation_graph_definition())
         .graph_participation_provider(
             WorthUiPresentationSemanticGraph,
             WorthUiPresentationGraphProvider,
-        )
-        .owned_topology_conditional_instances(
-            WorthUiPresentationAsyncDomainEntry,
-            WorthUiPresentationAsyncOperation,
-            WorthUiPresentationAsyncOperationFamily,
-            WorthUiPresentationSemanticGraph,
-            domain::WorthQueryConditionalNodeLocation::operation("presentation-currentness")
-                .expect("static WUI conditional location must admit"),
-            WorthUiPresentationConditionalCompute::new(0),
         )
         .domain_operation_executor(
             WorthUiPresentationAsyncDomainEntry,

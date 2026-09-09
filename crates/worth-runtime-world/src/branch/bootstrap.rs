@@ -50,6 +50,18 @@ impl RuntimeWorldBootstrapIntent {
         &self.creation
     }
 
+    pub fn relational_basis(&self) -> &AdmittedRelationalBranchBasis {
+        &self.relational_basis
+    }
+
+    pub fn signal_basis(&self) -> &AdmittedSignalBranchBasis {
+        &self.signal_basis
+    }
+
+    pub fn correspondence_basis(&self) -> &AdmittedRuntimeWorldCorrespondenceBasis {
+        &self.correspondence_basis
+    }
+
     pub(crate) fn into_parts(
         self,
     ) -> (

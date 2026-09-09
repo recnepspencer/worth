@@ -78,13 +78,14 @@ where
     let authorization = compile_authorization(&bootstrap, &installed_schema)?;
     let graph =
         publish_application_graph(bootstrap, runtime, authority, &installed_schema, fault_port)?;
-    Ok(assemble_application_runtime(
+    let graph = seal_application_graph(graph)?;
+    assemble_application_runtime(
         graph,
         installed_schema,
         authorization,
         authorization_clock,
         Default::default(),
-    ))
+    )
 }
 
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
@@ -123,25 +124,30 @@ where
     let mut graph =
         publish_application_graph(bootstrap, runtime, authority, &installed_schema, fault_port)
             .map_err(super::super::conditional_operation::publication_denial)?;
+    let authoritative_commit_cursor = graph.primary_provider.conditional_commit_sequence();
     let mut conditional_operations = super::super::conditional_operation::install_pending_bindings(
         bindings,
-        &mut graph.bridge,
+        graph.bridge.conditional_builder(),
         &graph.primary_graph_authority,
+        authoritative_commit_cursor,
         graph.runtime.authority_identity().as_u64(),
         graph.runtime.installed_packages().runtime_ordinal(),
         graph.runtime.installed_packages().generation().ordinal(),
         graph.primary_graph_authority.provider_identity(),
         super::super::application_branch::PRIMARY_APPLICATION_BRANCH,
     )?;
+    let graph = seal_application_graph(graph)
+        .map_err(super::super::conditional_operation::publication_denial)?;
     let mut application = assemble_application_runtime(
         graph,
         installed_schema,
         authorization,
         authorization_clock,
         Default::default(),
-    );
+    )
+    .map_err(super::super::conditional_operation::publication_denial)?;
     conditional_operations.reconstruct_all(&application)?;
-    conditional_operations.reconcile_all(application.bridge.conditional_mut())?;
+    conditional_operations.reconcile_all(&mut application.bridge.conditional_lifecycle())?;
     *application
         .conditional_operations
         .get_mut()
@@ -149,12 +155,11 @@ where
     Ok(application)
 }
 
-struct PublishedApplicationGraph {
+pub(super) struct PublishedApplicationGraph<Bridge> {
     runtime: WorthQueryExecutionRuntime,
     publication: super::WorthQueryPrimaryGraphPublication,
-    relational_source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
     relational_branch_identity: worth_relational::facade::branch::RelationalBranchIdentity,
-    bridge: super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    bridge: Bridge,
     primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     primary_graph_authority: WorthQueryInstalledGraphParticipationAuthority,
 }
@@ -201,7 +206,12 @@ fn publish_application_graph<Schema>(
     fault_port: std::sync::Arc<
         dyn super::super::provider::fault_port::WorthQueryPrimaryGraphFaultPort,
     >,
-) -> Result<PublishedApplicationGraph, WorthQueryPrimaryGraphInstallationDenial>
+) -> Result<
+    PublishedApplicationGraph<
+        super::super::managed_bridge::WorthQueryApplicationBridgeInstallation,
+    >,
+    WorthQueryPrimaryGraphInstallationDenial,
+>
 where
     Schema: ApplicationSchema,
 {
@@ -246,11 +256,33 @@ where
     Ok(PublishedApplicationGraph {
         runtime,
         publication,
-        relational_source,
         relational_branch_identity,
         bridge,
         primary_provider,
         primary_graph_authority,
+    })
+}
+
+fn seal_application_graph(
+    graph: PublishedApplicationGraph<
+        super::super::managed_bridge::WorthQueryApplicationBridgeInstallation,
+    >,
+) -> Result<
+    PublishedApplicationGraph<super::super::managed_bridge::WorthQueryInstalledApplicationBridge>,
+    WorthQueryPrimaryGraphInstallationDenial,
+> {
+    Ok(PublishedApplicationGraph {
+        runtime: graph.runtime,
+        publication: graph.publication,
+        relational_branch_identity: graph.relational_branch_identity,
+        bridge: graph.bridge.seal().map_err(|denial| {
+            WorthQueryPrimaryGraphInstallationDenial::new(
+                WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
+                format!("{denial:?}"),
+            )
+        })?,
+        primary_provider: graph.primary_provider,
+        primary_graph_authority: graph.primary_graph_authority,
     })
 }
 
@@ -280,16 +312,32 @@ fn install_graph_participation_authority(
 }
 
 fn assemble_application_runtime<Schema>(
-    graph: PublishedApplicationGraph,
+    graph: PublishedApplicationGraph<
+        super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    >,
     installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
     authorization: WorthQueryInstalledAuthorizationRegistry,
     authorization_clock: WorthQueryRuntimeClock,
     conditional_operations:
         super::super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
-) -> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+) -> Result<
+    WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    WorthQueryPrimaryGraphInstallationDenial,
+>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
+    let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
+        graph.primary_provider.graph.prepare_product_source(&graph.relational_branch_identity)
+            .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
+                WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
+                format!("Product source admission: {denial:?}"),
+            ))?,
+        &mut graph.bridge.conditional_lifecycle(),
+    ).map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
+        WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
+        denial.detail(),
+    ))?;
     let runtime_authority = graph.runtime.authority_identity();
     let schema_binding = installed_schema.binding_identity();
     let application_readiness_schema_token = format!(
@@ -301,6 +349,10 @@ where
     let granular_invalidation = super::super::WorthQueryGranularInvalidationInstallation::new(
         schema_binding.clone(),
         graph.primary_provider.graph.clone(),
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot::new(
+            product_runtime.clone(),
+            graph.bridge.conditional_operations(),
+        ),
     );
     // One clock, shared. The registry hands it back to any handle that needs to
     // re-check its own deadline, which is why no recovery transition takes a
@@ -312,7 +364,7 @@ where
             std::sync::Arc::clone(&authorization_clock),
         ),
     );
-    WorthQueryPrimaryGraphApplicationRuntime {
+    Ok(WorthQueryPrimaryGraphApplicationRuntime {
         runtime: graph.runtime,
         installed_schema,
         application_readiness_schema_token,
@@ -320,9 +372,9 @@ where
         authorization,
         authorization_clock,
         authentication_clock: WorthQueryAuthenticationClock::system(),
-        relational_source: graph.relational_source,
         relational_branch_identity: graph.relational_branch_identity,
         bridge: graph.bridge,
+        product_runtime,
         granular_invalidation,
         conditional_operations: std::sync::Mutex::new(conditional_operations),
         primary_provider: graph.primary_provider,
@@ -333,5 +385,5 @@ where
         next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
         external_effect_transport: std::sync::OnceLock::new(),
         recovery_handles,
-    }
+    })
 }

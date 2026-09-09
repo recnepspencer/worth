@@ -1,5 +1,4 @@
 use crate::domain_capabilities::WorthQueryInvariantCatalogRegistrationArtifact;
-use crate::runtime::WorthQueryRuntimeBuilder;
 use worth_relational::facade::runtime::{
     CustomInvariantRegistration, CustomInvariantRule, InvariantCatalog,
 };
@@ -8,7 +7,7 @@ use super::domain_package_installation::{domain_package_installer, TestDomainIns
 use super::error::{WorthQueryTestBackendError, WorthQueryTestBackendErrorKind};
 use super::schema::WorthQueryTestBackendSchema;
 
-type TestRuntimeInstaller = Box<dyn FnOnce(WorthQueryRuntimeBuilder) -> WorthQueryRuntimeBuilder>;
+use super::runtime_installation::TestRuntimeInstaller;
 
 #[derive(Default)]
 pub struct WorthQueryInMemoryTestRuntimeBuilder {
@@ -57,125 +56,6 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
             .map(super::WorthQueryControlledTestWorkspace::new)
     }
 
-    pub fn conditional_runtime(
-        mut self,
-        bridge: worth_runtime_bridge::facade::RuntimeBridge,
-        graph: worth_signal::facade::SignalGraph,
-    ) -> Self {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.conditional_runtime_for_test(bridge, graph)
-        }));
-        self
-    }
-
-    pub fn owned_conditional_runtime(
-        mut self,
-        bridge: worth_runtime_bridge::facade::RuntimeBridge,
-    ) -> Self {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.owned_conditional_runtime_for_test(bridge)
-        }));
-        self
-    }
-
-    pub fn owned_topology_conditional_node<D, O, F, G, P>(
-        mut self,
-        domain: D,
-        operation: O,
-        family: F,
-        graph: G,
-        location: crate::domain_installation::WorthQueryConditionalNodeLocation,
-        dependencies: Vec<
-            crate::domain_installation::WorthQueryOwnedConditionalDependencyInstallation,
-        >,
-        providers: worth_runtime_bridge::facade::BridgeConditionalProviderSet,
-        compute: P,
-    ) -> Self
-    where
-        D: 'static,
-        O: 'static,
-        F: 'static,
-        G: 'static,
-        P: crate::domain_installation::WorthQueryConditionalNodeComputeProvider<D, O, F>,
-    {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.owned_topology_conditional_node(
-                domain,
-                operation,
-                family,
-                graph,
-                location,
-                dependencies,
-                providers,
-                compute,
-            )
-        }));
-        self
-    }
-
-    pub fn owned_topology_conditional_instances<D, O, F, G, P>(
-        mut self,
-        domain: D,
-        operation: O,
-        family: F,
-        graph: G,
-        location: crate::domain_installation::WorthQueryConditionalNodeLocation,
-        compute_contract: P,
-    ) -> Self
-    where
-        D: 'static,
-        O: 'static,
-        F: 'static,
-        G: 'static,
-        P: crate::domain_installation::WorthQueryConditionalNodeComputeProvider<D, O, F>,
-    {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.owned_topology_conditional_instances(
-                domain,
-                operation,
-                family,
-                graph,
-                location,
-                compute_contract,
-            )
-        }));
-        self
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn conditional_node<D, O, F, G, P>(
-        mut self,
-        domain: D,
-        operation: O,
-        family: F,
-        graph: G,
-        location: crate::domain_installation::WorthQueryConditionalNodeLocation,
-        dependencies: Vec<crate::domain_installation::WorthQueryConditionalDependencyInstallation>,
-        providers: worth_runtime_bridge::facade::BridgeConditionalProviderSet,
-        compute: P,
-    ) -> Self
-    where
-        D: 'static,
-        O: 'static,
-        F: 'static,
-        G: 'static,
-        P: crate::domain_installation::WorthQueryConditionalNodeComputeProvider<D, O, F>,
-    {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.conditional_node(
-                domain,
-                operation,
-                family,
-                graph,
-                location,
-                dependencies,
-                providers,
-                compute,
-            )
-        }));
-        self
-    }
-
     pub fn with_schema(mut self, schema: WorthQueryTestBackendSchema) -> Self {
         self.schema = Some(schema);
         self
@@ -212,9 +92,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
         dimension: crate::domain_installation::WorthQueryConsumerSupportDimension,
         posture: crate::domain_installation::WorthQueryConsumerSupportPosture,
     ) -> Self {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.consumer_support_posture(dimension, posture)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.consumer_support_posture(dimension, posture)
+            })));
         self
     }
 
@@ -244,9 +125,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
         mut self,
         definition: crate::domain_installation::WorthQueryGraphParticipationDefinition<G>,
     ) -> Self {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.graph_participation(definition)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.graph_participation(definition)
+            })));
         self
     }
 
@@ -265,9 +147,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
         >,
         E: crate::domain_installation::WorthQueryDomainOperationExecutor<D, O, F>,
     {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.domain_operation_executor(domain, operation, family, executor)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.domain_operation_executor(domain, operation, family, executor)
+            })));
         self
     }
 
@@ -287,9 +170,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
             >,
         E: crate::domain_installation::WorthQueryDomainWorkflowStageExecutor<D, O, F>,
     {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.workflow_stage_executor(domain, operation, family, executor)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.workflow_stage_executor(domain, operation, family, executor)
+            })));
         self
     }
 
@@ -310,9 +194,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
         E: crate::domain_installation::WorthQueryDomainWorkflowStageExecutor<D, O, F>
             + crate::domain_installation::WorthQueryDomainReplaySemanticComparator<D, O, F>,
     {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.replayable_workflow_stage_executor(domain, operation, family, executor)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.replayable_workflow_stage_executor(domain, operation, family, executor)
+            })));
         self
     }
 
@@ -326,9 +211,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
     where
         P: crate::domain_installation::WorthQueryWorkflowParallelAdmissionProvider<D, O, F>,
     {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.workflow_parallel_admission_provider(domain, operation, family, provider)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.workflow_parallel_admission_provider(domain, operation, family, provider)
+            })));
         self
     }
 
@@ -340,9 +226,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
         marker: G,
         provider: P,
     ) -> Self {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.graph_participation_provider(marker, provider)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.graph_participation_provider(marker, provider)
+            })));
         self
     }
 
@@ -355,9 +242,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
     where
         P: crate::domain_installation::WorthQueryGraphParticipationProvider<G>,
     {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.atomic_graph_participation_provider(marker, provider, commit)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.atomic_graph_participation_provider(marker, provider, commit)
+            })));
         self
     }
 
@@ -365,9 +253,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
     where
         P: crate::domain_installation::WorthQueryGraphCommitProvider<C>,
     {
-        self.runtime_installers.push(Box::new(move |builder| {
-            builder.graph_commit_provider(commit, provider)
-        }));
+        self.runtime_installers
+            .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
+                builder.graph_commit_provider(commit, provider)
+            })));
         self
     }
 

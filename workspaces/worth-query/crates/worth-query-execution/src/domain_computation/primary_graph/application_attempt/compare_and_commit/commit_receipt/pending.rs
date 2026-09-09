@@ -68,6 +68,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
             return None;
         }
         let mutation_work = self.provider.mutation_work()?.clone();
+        let performed_product_change = self.provider.take_fresh_product_change()?;
         Some(WorthQueryApplicationCommitReceipt {
             authoritative_provider_session: self
                 .provider
@@ -94,6 +95,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
             retained_preimage: self.retained_preimage,
             aftermath_causality: self.aftermath_causality,
             expected_retry_session: None,
+            performed_product_change: Some(performed_product_change),
         })
     }
 }

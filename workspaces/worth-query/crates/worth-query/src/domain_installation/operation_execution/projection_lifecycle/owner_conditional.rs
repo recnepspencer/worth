@@ -16,7 +16,8 @@ static NEXT_OWNER_DELIVERY_ATTEMPT: AtomicU64 = AtomicU64::new(1);
 pub(super) struct WorthQueryOwnerConditionalEvaluation {
     pub(super) provenance: crate::domain_installation::WorthQueryConditionalProvenance,
     pub(super) counters: WorthQueryOperationExecutionCounters,
-    pub(super) retained_seed: worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed,
+    pub(super) retained_seed:
+        crate::domain_installation::conditional_execution::WorthQueryRetainedConditionalDecision,
 }
 
 pub(super) fn evaluate_owner_delivered_conditional<
@@ -96,7 +97,7 @@ pub(super) fn evaluate_owner_delivered_conditional<
                 counters,
             )
         })?;
-    let retained_seed = provenance.bridge.retain_for_reentry();
+    let retained_seed = provenance.retain_for_reentry();
     Ok(WorthQueryOwnerConditionalEvaluation {
         provenance,
         counters: operation_counters,
@@ -107,7 +108,7 @@ pub(super) fn evaluate_owner_delivered_conditional<
 pub(super) struct WorthQueryOwnerConditionalReentryPass<'a, S> {
     pub(super) source: &'a S,
     pub(super) delivery: &'a worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
-    pub(super) seed: &'a worth_runtime_bridge::facade::BridgeRetainedConditionalDecisionSeed,
+    pub(super) seed: &'a crate::domain_installation::conditional_execution::WorthQueryRetainedConditionalDecision,
     pub(super) workspace: &'a crate::runtime::WorthQueryWorkspace,
     pub(super) work: &'a mut super::WorthQueryLiveProjectionRefreshWork,
 }
@@ -140,6 +141,16 @@ pub(super) fn reenter_owner_delivered_conditional<
     require_owner_conditional_location(source, &location, counters)?;
     let snapshot = owner_snapshot(delivery, counters)?;
     let bound = source.bound_operation();
+    let product = seed
+        .admit_product(bound.product().map_err(|_| {
+            owner_reentry_stop("conditional reentry requires product custody", counters)
+        })?)
+        .map_err(|_| {
+            owner_reentry_stop(
+                "retained conditional belongs to a different product occurrence",
+                counters,
+            )
+        })?;
     let node = installed_owner_conditional_node(bound, &location, counters)?;
     let authority =
         crate::domain_installation::conditional_execution::admit_conditional_authority(bound, node)
@@ -148,13 +159,14 @@ pub(super) fn reenter_owner_delivered_conditional<
             })?;
     let bridge = workspace
         .reenter_retained_conditional_decision(
+            &product,
             worth_runtime_bridge::facade::BridgeConditionalDecisionReentryRequest {
-                seed,
+                seed: seed.seed(),
                 lowering: &node.lowering,
                 query_binding_identity: bound.binding_identity(),
                 query_capability_identity: bound.capability_identity(),
                 snapshot_identity: snapshot.evidence_identity().as_str(),
-                bridge_snapshot_identity: snapshot.bridge_identity(),
+                bridge_snapshot_identity: Some(product.bridge_snapshot_identity()),
             },
         )
         .map_err(|(detail, reentry_counters)| {
@@ -165,6 +177,7 @@ pub(super) fn reenter_owner_delivered_conditional<
     admit_reentered_query_decision(ReenteredQueryDecisionAdmission {
         bound,
         authority,
+        product,
         bridge,
         snapshot: &snapshot,
         counters,
@@ -230,6 +243,8 @@ struct ReenteredQueryDecisionAdmission<'a, D, O, F, L: BasisOperationLane> {
     bound: &'a crate::domain_installation::WorthQueryBoundDomainOperation<D, O, F, L>,
     authority:
         crate::domain_installation::conditional_execution::WorthQueryConditionalAuthorityAdmission,
+    product:
+        std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease>,
     bridge: worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
     snapshot: &'a crate::memory_workspace::WorthQuerySnapshotIdentity,
     counters: WorthQueryProjectionPromotionCounters,
@@ -246,9 +261,9 @@ fn admit_reentered_query_decision<D, O, F, L: BasisOperationLane>(
     crate::domain_installation::conditional_execution::admit_conditional_decision(
         admission.bound,
         admission.authority,
+        admission.product,
         admission.bridge,
         admission.snapshot.evidence_identity().as_str(),
-        admission.snapshot.bridge_identity(),
         &execution_identity,
         attempt,
     )

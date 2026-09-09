@@ -63,6 +63,13 @@ pub(super) fn execute_authorized_read<
 where
     Schema: ApplicationSchema,
 {
+    let security = plan.basis.product().map(|product| application.admit_product_security_basis(product))
+        .transpose().map_err(|denial| WorthQueryAuthorizedApplicationReadDenial::Authorization(
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
+                plan.query.name(),
+            ),
+        ))?;
     let basis = plan.basis.identity();
     let entity_resolution = application
         .runtime
@@ -72,7 +79,10 @@ where
     let (read_outcome, proof) = plan
         .graph_work
         .execute_query_read(basis, |runtime, layout| {
-            let current = super::super::exact_basis_access::open_current_main_snapshot(runtime)
+            let current = if let Some(security) = security.as_ref() {
+                std::borrow::Cow::Borrowed(security.snapshot_handle())
+            } else {
+                std::borrow::Cow::Owned(super::super::exact_basis_access::open_current_main_snapshot(runtime)
                 .map_err(|basis_denial| {
                     let kind = match basis_denial {
                         super::super::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
@@ -97,7 +107,8 @@ where
                             "authorized application read",
                         ),
                     )
-                })?;
+                })?)
+            };
             let authorization_work = validate_current_authorization(
                 application,
                 &entity_resolution,
@@ -105,8 +116,13 @@ where
                 &current,
                 plan,
             );
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &current);
+            if let std::borrow::Cow::Owned(current) = current {
+                crate::relational_snapshot_release::release_query_snapshot(runtime, &current);
+            }
             let authorization_work = authorization_work?;
+            let authorization_work = if security.is_some() {
+                authorization_work.with_execution_security_product_resolution()
+            } else { authorization_work };
             entity_resolution
                 .at_snapshot(
                     runtime,

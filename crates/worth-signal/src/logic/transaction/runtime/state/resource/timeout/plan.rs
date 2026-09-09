@@ -59,6 +59,30 @@ impl ResolvedResourceTimeoutPlan {
     }
 }
 
+pub(in crate::logic::transaction::runtime::state) fn resolve_descriptor_timeout_plan(
+    plan: &ResourceTimeoutDecisionPlan,
+    current_tick: crate::data::temporal::ClockTick,
+    generation_started_tick: crate::data::temporal::ClockTick,
+) -> Option<ResolvedResourceTimeoutPlan> {
+    let timeout_duration = plan.timeout_for_lineage(current_tick, generation_started_tick)?;
+    let due_tick = crate::data::temporal::ClockTick::new(
+        current_tick.get().saturating_add(timeout_duration.get()),
+    );
+    let decision_digest = ResourcePolicyDigest::new(format!(
+        "resolved-timeout-decision:{}:{}:{}:descriptor",
+        plan.decision_digest().as_str(),
+        timeout_duration.get(),
+        plan.outcome_class().as_str(),
+    ));
+    Some(ResolvedResourceTimeoutPlan::new(
+        timeout_duration,
+        due_tick,
+        plan.outcome_class(),
+        ResourceTimeoutDeadlineAuthority::Descriptor,
+        decision_digest,
+    ))
+}
+
 #[derive(Debug)]
 pub(in crate::logic::transaction::runtime::state) struct ScheduledResourceTimeoutAdmission {
     pub(in crate::logic::transaction::runtime::state::resource) timeout_duration:

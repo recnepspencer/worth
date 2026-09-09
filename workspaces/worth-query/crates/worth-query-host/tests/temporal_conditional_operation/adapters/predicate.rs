@@ -38,6 +38,31 @@ impl ReplacementPredicate {
 impl domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> for Predicate {
     const SEMANTIC_IDENTITY: &'static str = "worth.query.host.courtroom.predicate";
 
+    fn retained_heap_bytes(
+        &self,
+    ) -> Result<
+        domain::WorthQueryHostProviderHeapRetention,
+        domain::WorthQueryHostProviderRetentionOverflow,
+    > {
+        domain::WorthQueryHostProviderHeapRetention::try_from_parts([
+            domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(
+                self.panic.panic.as_ref(),
+            ),
+            domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(
+                self.contacts.predicate.as_ref(),
+            ),
+            domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(
+                self.contacts.preconditions.as_ref(),
+            ),
+            domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(
+                self.contacts.projection.as_ref(),
+            ),
+            domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(
+                self.contacts.apply.as_ref(),
+            ),
+        ])
+    }
+
     fn evaluate(
         &self,
         observation: domain::WorthQueryConditionalObservationView<'_>,
@@ -51,6 +76,17 @@ impl domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode>
     for ReplacementPredicate
 {
     const SEMANTIC_IDENTITY: &'static str = "worth.query.host.courtroom.replacement-predicate";
+
+    fn retained_heap_bytes(
+        &self,
+    ) -> Result<
+        domain::WorthQueryHostProviderHeapRetention,
+        domain::WorthQueryHostProviderRetentionOverflow,
+    > {
+        domain::WorthQueryHostConditionalPredicateProvider::<TemporalReadyNode>::retained_heap_bytes(
+            &self.0,
+        )
+    }
 
     fn evaluate(
         &self,

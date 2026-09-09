@@ -61,6 +61,10 @@ pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
 }
 
 pub(super) enum WorthQueryApplicationQueryBasis<Schema> {
+    Product {
+        product: crate::basis::WorthQueryProductBranchLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
+    },
     Current,
     Pinned(WorthQueryApplicationPinnedBasis<Schema>),
     Historical(WorthQueryApplicationHistoricalBasis<Schema>),
@@ -72,6 +76,28 @@ pub(super) enum WorthQueryApplicationQueryBasis<Schema> {
 }
 
 impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
+    pub(super) fn has_product_basis(&self) -> bool {
+        matches!(self.basis, WorthQueryApplicationQueryBasis::Product { .. })
+    }
+    pub(in crate::domain_computation::primary_graph) fn product_one_shot(
+        product: crate::basis::WorthQueryProductBranchLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
+        maximum_result_count: NonZeroUsize,
+        maximum_work: NonZeroUsize,
+        request_scope: &'a WorthQueryRequestScope,
+    ) -> Self {
+        Self {
+            basis: WorthQueryApplicationQueryBasis::Product {
+                product,
+                application_basis,
+            },
+            lane: WorthQueryApplicationQueryLane::OneShot,
+            maximum_result_count,
+            maximum_work,
+            request_scope,
+        }
+    }
+
     pub fn current_one_shot(
         maximum_result_count: NonZeroUsize,
         maximum_work: NonZeroUsize,
@@ -176,6 +202,9 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
     pub const fn basis_posture(&self) -> WorthQueryApplicationQueryBasisPosture {
         match &self.basis {
+            WorthQueryApplicationQueryBasis::Product { .. } => {
+                WorthQueryApplicationQueryBasisPosture::Pinned
+            }
             WorthQueryApplicationQueryBasis::Current => {
                 WorthQueryApplicationQueryBasisPosture::Current
             }
@@ -251,6 +280,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         WorthQueryAdmittedApplicationQueryControls<'a>,
     ) {
         let basis_deadline = match &self.basis {
+            WorthQueryApplicationQueryBasis::Product { .. } => Some(self.request_scope.deadline()),
             WorthQueryApplicationQueryBasis::Current => None,
             WorthQueryApplicationQueryBasis::Pinned(basis) => Some(basis.expires_at()),
             WorthQueryApplicationQueryBasis::Historical(basis) => Some(basis.expires_at()),

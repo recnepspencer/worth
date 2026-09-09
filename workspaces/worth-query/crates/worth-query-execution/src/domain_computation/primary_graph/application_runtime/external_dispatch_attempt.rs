@@ -39,7 +39,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     {
         self.primary_provider.observe_external_dispatch_admission();
         let relational_runtime = self
-            .relational_source
+            .product_runtime
+            .source
             .authoritative_source_profile()
             .runtime_instance_id();
         if committed.relational_runtime_instance_id() != relational_runtime {

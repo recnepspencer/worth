@@ -1,5 +1,6 @@
 mod intent_authority;
 mod mutation_authority;
+mod product_world;
 mod runtime_evidence;
 mod schema;
 mod signal;
@@ -16,8 +17,14 @@ pub(crate) fn configure_product_projection_backend(
     builder: runtime::WorthQueryRuntimeBuilder,
     bridge: worth_runtime_bridge::facade::RuntimeBridge,
     source: SharedSourceState,
-) -> runtime::WorthQueryRuntimeBuilder {
-    builder
+) -> Result<runtime::WorthQueryRuntimeBuilder, String> {
+    let builder = builder
+        .relational_product_source(
+            product_world::ui_product_relational_runtime(),
+            "worth-ui-product",
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    Ok(builder
         .runtime_bridge(bridge)
         .schema_adapter(schema::WorthUiScalarProjectionSchema)
         .source_adapter(source::WorthUiScalarProjectionSource::new(source.clone()))
@@ -31,7 +38,7 @@ pub(crate) fn configure_product_projection_backend(
         .inspector_evidence(runtime_evidence::WorthUiScalarProjectionUnsupportedInspection)
         .intent_authority(intent_authority::WorthUiScalarProjectionIntentAuthority::new(source))
         .support_profile(product_projection_support_profile())
-        .build_backend_from_parts()
+        .build_backend_from_parts())
 }
 
 fn product_projection_support_profile() -> runtime::WorthQueryRuntimeSupportProfile {

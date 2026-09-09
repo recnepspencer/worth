@@ -61,6 +61,28 @@ pub struct FinancialCourtroomWorld {
 }
 
 impl FinancialCourtroomWorld {
+    pub fn conditional_clock<'world, Node>(
+        &'world self,
+        handle: &'world primary_graph::WorthQueryConditionalClockHandle<
+            FinancialHostSchema,
+            Node,
+            crate::adapters::CourtroomClock,
+        >,
+    ) -> Result<
+        primary_graph::WorthQueryConditionalClockObservationPort<
+            'world,
+            FinancialHostSchema,
+            Node,
+            crate::adapters::CourtroomClock,
+        >,
+        primary_graph::WorthQueryConditionalClockObservationDenial,
+    > {
+        self.application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .unwrap()
+            .conditional_clock(handle)
+    }
+
     pub fn publish_curve() -> Self {
         Self::publish("curve-usd-rates-5y", 4_250, 100, 5_100)
     }

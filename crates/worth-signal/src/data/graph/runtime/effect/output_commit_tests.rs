@@ -31,6 +31,8 @@ fn every_prepublication_seam_leaves_semantic_state_untouched() {
         OutputCommitPreparationSeam::SemanticDecision,
         OutputCommitPreparationSeam::ProducedDelta,
         OutputCommitPreparationSeam::DirectCauseAdmission,
+        OutputCommitPreparationSeam::WaiterResolution,
+        OutputCommitPreparationSeam::ArtifactStorage,
         OutputCommitPreparationSeam::PacketPrevalidation,
     ];
     for seam in seams {
@@ -160,6 +162,7 @@ fn output_tolerance_cannot_suppress_a_nodes_first_committed_truth() {
 
 fn assert_prepublication_failure_is_atomic(seam: OutputCommitPreparationSeam) {
     let mut graph = SignalGraph::new();
+    graph.set_runtime_policy(crate::facade::SignalRuntimePolicy::development());
     let producer = graph.node().produces_aspects(ASPECT_A).build();
     let consumer = graph.node().build();
     graph
@@ -183,12 +186,22 @@ fn assert_prepublication_failure_is_atomic(seam: OutputCommitPreparationSeam) {
     let before_ordinal = graph.cause_sets.output_commit_ordinal_for_test();
     let before_observation = graph.observe().explain(producer).unwrap().output_change;
 
-    let mut effect = super::super::tests::test_effect_with_labels(Vec::new());
+    let materializations = graph
+        .telemetry()
+        .storage
+        .hot_write_cold_record_materialization_count;
+    let installations = graph.telemetry().storage.hot_write_runtime_artifact_count;
+    let mut effect = super::super::tests::test_effect_with_labels(vec!["prepared-cold".into()]);
     effect.operational.node = producer;
     effect.operational.aspect_version = version_ab(2, 0);
     effect.operational.output_change = OutputChange::Replaced;
     let apply = graph
-        .build_apply_commit_packet(effect, OutputEquivalencePolicy::ExactAspectVersion, false)
+        .build_apply_commit_packet(
+            effect,
+            OutputEquivalencePolicy::ExactAspectVersion,
+            false,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
         .unwrap();
     let error = graph
         .prepare_output_commit_packet_with_probe(
@@ -200,12 +213,29 @@ fn assert_prepublication_failure_is_atomic(seam: OutputCommitPreparationSeam) {
                 }
                 Ok(())
             },
+            &mut EvaluationWork::Ordinary,
         )
         .expect_err("injected seam must reject preparation");
 
     assert!(error
         .to_string()
         .contains("injected prepublication failure"));
+    let materialized = matches!(
+        seam,
+        OutputCommitPreparationSeam::ArtifactStorage
+            | OutputCommitPreparationSeam::PacketPrevalidation
+    );
+    assert_eq!(
+        graph
+            .telemetry()
+            .storage
+            .hot_write_cold_record_materialization_count,
+        materializations + u64::from(materialized)
+    );
+    assert_eq!(
+        graph.telemetry().storage.hot_write_runtime_artifact_count,
+        installations
+    );
     assert_eq!(graph.node_aspect_version(producer).unwrap(), before_version);
     assert_eq!(graph.get_state(producer).unwrap(), before_producer_state);
     assert_eq!(graph.get_state(consumer).unwrap(), before_consumer_state);
@@ -218,5 +248,77 @@ fn assert_prepublication_failure_is_atomic(seam: OutputCommitPreparationSeam) {
     assert_eq!(
         graph.observe().explain(producer).unwrap().output_change,
         before_observation
+    );
+}
+
+#[test]
+fn canonical_packet_owns_materialized_artifact_before_publication() {
+    let mut graph = SignalGraph::new();
+    graph.set_runtime_policy(crate::facade::SignalRuntimePolicy::development());
+    let node = graph.node().produces_aspects(ASPECT_A).build();
+    let mut effect = super::super::tests::test_effect_with_labels(vec!["prepared-cold".into()]);
+    effect.operational.node = node;
+    effect.operational.aspect_version = version_ab(2, 0);
+    let apply = graph
+        .build_apply_commit_packet(
+            effect,
+            OutputEquivalencePolicy::ExactAspectVersion,
+            false,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+        .unwrap();
+    let packet = graph
+        .prepare_output_commit_packet(
+            apply,
+            &mut DefaultComparatorPolicyResolver::default(),
+            &mut EvaluationWork::Ordinary,
+        )
+        .unwrap();
+    assert_eq!(
+        packet
+            .storage
+            .artifact_write
+            .retained
+            .as_ref()
+            .unwrap()
+            .labels,
+        vec!["prepared-cold".to_string()]
+    );
+    assert!(graph
+        .get_entry(node)
+        .unwrap()
+        .retained_diagnostic_artifact()
+        .is_none());
+    assert_eq!(
+        graph
+            .telemetry()
+            .storage
+            .hot_write_cold_record_materialization_count,
+        1
+    );
+    assert_eq!(
+        graph.telemetry().storage.hot_write_runtime_artifact_count,
+        0
+    );
+    graph.publish_output_commit_packet(packet);
+    assert_eq!(
+        graph
+            .get_entry(node)
+            .unwrap()
+            .retained_diagnostic_artifact()
+            .unwrap()
+            .labels,
+        vec!["prepared-cold".to_string()]
+    );
+    assert_eq!(
+        graph
+            .telemetry()
+            .storage
+            .hot_write_cold_record_materialization_count,
+        1
+    );
+    assert_eq!(
+        graph.telemetry().storage.hot_write_runtime_artifact_count,
+        1
     );
 }

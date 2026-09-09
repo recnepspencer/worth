@@ -1,9 +1,18 @@
 use worth_relational::facade::{
-    branch::RelationalBranchBasisDenial,
+    branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDenial},
     history::{BranchId, RelationalCommitReceipt},
     runtime::RelationalRuntime,
     snapshots::{RelationalSnapshotAdmissionDenial, SnapshotHandle},
 };
+
+pub(crate) fn open_exact_basis_snapshot(
+    runtime: &mut RelationalRuntime,
+    basis: &AdmittedRelationalBranchBasis,
+) -> Result<SnapshotHandle, RelationalSnapshotAdmissionDenial> {
+    runtime
+        .snapshots()
+        .snapshot_for_observation(&basis.observation())
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryExactBasisSnapshotDenial {

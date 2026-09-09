@@ -36,7 +36,7 @@ where
     T: Copy + Ord,
 {
     pub(crate) fn new(
-        graph: SignalGraph,
+        graph: Box<SignalGraph>,
         mut schema_registry: SignalSchemaRegistry,
         checkpoint: CheckpointRuntime<D, I>,
         event_bus: EventBus<E, D, Ctx>,
@@ -47,7 +47,12 @@ where
         let mut config = SignalRuntimeConfig::default();
         config.sync_graph_capacity(&graph);
         let branches = BranchManager::<D, I, T>::with_live_catalog(
-            graph.diagnostics_state().branch_catalog().clone(),
+            graph
+                .diagnostics_state()
+                .branch_catalog()
+                .iter()
+                .map(|(id, handle)| (*id, handle.clone()))
+                .collect(),
             graph.runtime_instance_id(),
         );
         let basis_registry = SignalBranchBasisRegistry::new();

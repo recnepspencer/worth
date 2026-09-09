@@ -10,6 +10,8 @@ use super::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+mod access_observation;
+mod authorization;
 mod denial;
 mod finish;
 mod governed_access;

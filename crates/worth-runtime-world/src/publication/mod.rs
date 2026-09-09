@@ -1,9 +1,11 @@
 mod cancellation;
 mod component_plan;
+mod conditional_definition;
 mod cost_counters;
 mod custody;
 pub(crate) use custody::{
-    ActiveAttemptCustody, ActiveAttemptRecord, ActiveAttemptResources, RetainedCommitDisposition,
+    ActiveAttemptCustody, ActiveAttemptRecord, ActiveAttemptResources,
+    ConditionalDefinitionAttemptCustody, RetainedCommitDisposition,
 };
 mod intent;
 mod no_effect;
@@ -23,6 +25,10 @@ pub(crate) use component_plan::lower_component_plans;
 pub use component_plan::{
     LoweredOwnerComponentPlan, RelationalComponentPlan, RelationalComponentPlanPosture,
     SignalComponentPlan, SignalComponentPlanPosture,
+};
+pub use conditional_definition::{
+    RuntimeWorldConditionalDefinitionPublicationOutcome,
+    RuntimeWorldUnpublishedConditionalDefinition,
 };
 pub use cost_counters::CompositePublicationCostCounters;
 pub(crate) use intent::CompositePublicationStage;

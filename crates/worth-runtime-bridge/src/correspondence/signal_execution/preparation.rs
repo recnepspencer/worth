@@ -1,3 +1,4 @@
+use worth_proof::TransitionOutcome;
 use worth_signal::facade::{CanonicalChangedRegions, InstalledSignalScopedChange};
 
 use super::super::{BridgeDeliveredCorrespondenceChangeSet, BridgeInstalledSemanticCorrespondence};
@@ -47,40 +48,67 @@ impl BridgePreparedScopedSignalInvalidation {
             .iter()
             .all(|target| bindings.insert((target.node, target.aspect)))
     }
+
+    pub(crate) fn signal_delivery_request(
+        &self,
+    ) -> worth_signal::facade::branch::SignalCommittedPatchDeliveryRequest {
+        worth_signal::facade::branch::SignalCommittedPatchDeliveryRequest::new(
+            self.targets.iter().map(|target| {
+                worth_signal::facade::branch::SignalCommittedPatchTarget::new(
+                    self.graph_instance_id,
+                    target.node,
+                    target.aspect,
+                    target.changed_regions.as_slice().iter().cloned(),
+                )
+            }),
+        )
+    }
+
+    pub(crate) fn admit_raw_graph(
+        &self,
+        graph: &mut worth_signal::facade::SignalGraph,
+        counters: &mut super::super::CorrespondenceDeliveryCounters,
+    ) -> Result<Vec<InstalledSignalScopedChange>, ()> {
+        let mut changes = Vec::with_capacity(self.targets.len());
+        for target in &self.targets {
+            let TransitionOutcome::Success(capability) =
+                graph.admit_installed_aspect(target.node, target.aspect)
+            else {
+                return Err(());
+            };
+            if capability.graph_instance_id() != self.graph_instance_id {
+                return Err(());
+            }
+            changes.push(InstalledSignalScopedChange::new(
+                capability,
+                target.changed_regions.as_slice().iter().cloned(),
+            ));
+            counters.signal_capability_admissions += 1;
+        }
+        Ok(changes)
+    }
 }
 
 pub(crate) fn prepare_scoped_signal_invalidation_for_targets(
     correspondence: &BridgeInstalledSemanticCorrespondence,
     targets: &[super::super::InstalledCorrespondenceTarget],
     change_set: &BridgeDeliveredCorrespondenceChangeSet,
-    capabilities: Vec<worth_signal::facade::InstalledSignalAspectCapability>,
-) -> (
-    Vec<InstalledSignalScopedChange>,
-    BridgePreparedScopedSignalInvalidation,
-) {
-    let mut scoped_changes = Vec::with_capacity(capabilities.len());
-    let mut prepared_targets = Vec::with_capacity(capabilities.len());
-    for (capability, target) in capabilities.into_iter().zip(targets) {
+) -> BridgePreparedScopedSignalInvalidation {
+    let mut prepared_targets = Vec::with_capacity(targets.len());
+    for target in targets {
         let regions = super::super::locality_lowering::lower_installed_target_regions(
             change_set.dependency(),
             target,
             change_set.changes(),
         );
         prepared_targets.push(BridgePreparedScopedSignalTarget {
-            node: capability.node(),
-            aspect: capability.aspect(),
+            node: target.node,
+            aspect: target.aspect,
             changed_regions: regions.clone(),
         });
-        scoped_changes.push(InstalledSignalScopedChange::new(
-            capability,
-            regions.into_vec(),
-        ));
     }
-    (
-        scoped_changes,
-        BridgePreparedScopedSignalInvalidation {
-            graph_instance_id: correspondence.basis().signal_graph_instance_id,
-            targets: prepared_targets,
-        },
-    )
+    BridgePreparedScopedSignalInvalidation {
+        graph_instance_id: correspondence.basis().signal_graph_instance_id,
+        targets: prepared_targets,
+    }
 }

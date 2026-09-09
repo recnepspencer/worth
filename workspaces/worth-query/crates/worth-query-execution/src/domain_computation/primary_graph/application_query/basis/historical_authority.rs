@@ -36,7 +36,8 @@ impl WorthQueryApplicationHistoricalRead {
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Self {
         let (descriptor, basis) = application
-            .relational_source
+            .product_runtime
+            .source
             .observe_branch_basis(&application.relational_branch_identity)
             .expect("test application primary basis remains owner-observable");
         let commit = application.primary_provider.graph.with_runtime(|runtime| {

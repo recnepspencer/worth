@@ -178,6 +178,30 @@ pub(crate) trait RuntimeWorldOwnerExecutionService {
                 Self::SignalTransactionKey,
             >,
         ) -> Result<(), SignalError>;
+
+    fn execute_conditional_definition_with_signal<F, H>(
+        &self,
+        prepared: PreparedCompositePublicationWithSignal,
+        publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
+        runtime_ctx: &mut Self::SignalContext,
+        cancellation: &RuntimeWorldCancellationToken,
+        apply: F,
+        admit_activation: H,
+    ) -> OwnerExecutionOutcome
+    where
+        F: FnOnce(
+            &mut SignalTransaction<
+                '_,
+                Self::SignalDefinition,
+                Self::SignalIdentity,
+                Self::SignalEvent,
+                Self::SignalContext,
+                Self::SignalTransactionKey,
+            >,
+        ) -> Result<(), SignalError>,
+        H: FnOnce(
+            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
+        ) -> Result<(), SignalError>;
 }
 
 #[cfg(test)]

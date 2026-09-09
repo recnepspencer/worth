@@ -37,59 +37,6 @@ pub(crate) struct PendingOwnedConditionalNode<D, O, F, G, P> {
     _marker: std::marker::PhantomData<fn() -> (D, O, F, G)>,
 }
 
-pub(crate) struct PendingOwnedConditionalInstanceFamily<D, O, F, G, P> {
-    location: worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-    compute: std::sync::Arc<P>,
-    _marker: std::marker::PhantomData<fn() -> (D, O, F, G)>,
-}
-
-impl<D, O, F, G, P> PendingOwnedConditionalInstanceFamily<D, O, F, G, P> {
-    pub(crate) fn new(
-        location: worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-        compute: P,
-    ) -> Self {
-        Self {
-            location,
-            compute: std::sync::Arc::new(compute),
-            _marker: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<D: 'static, O: 'static, F: 'static, G: 'static, P> PendingConditionalInstallation
-    for PendingOwnedConditionalInstanceFamily<D, O, F, G, P>
-where
-    P: super::super::WorthQueryConditionalNodeComputeProvider<D, O, F>,
-{
-    fn requires_external_signal_graph(&self) -> bool {
-        false
-    }
-
-    fn install(
-        &self,
-        domains: &super::super::super::WorthQueryDomainInstallationRegistry,
-        graphs: &super::super::super::WorthQueryInstalledGraphParticipationRegistry,
-        _signal: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
-        registry: &mut super::super::WorthQueryConditionalExecutionRegistry,
-    ) -> Result<(), super::WorthQueryConditionalNodeInstallationDenial> {
-        let operation = installed_conditional_operation::<D, O, F>(domains)?;
-        installed_conditional_graph::<G>(graphs)?;
-        declared_node(operation.definition(), &self.location)
-            .ok_or(super::WorthQueryConditionalNodeInstallationDenial::DeclarationLookupDrift)?;
-        registry
-            .install_owned_instance_family::<D, O, F>(
-                super::super::WorthQueryInstalledConditionalInstanceFamily {
-                    location: self.location.clone(),
-                    operation_identity: operation.definition().canonical_identity().to_string(),
-                    runtime_authority: operation.domain_authority().runtime_authority().as_u64(),
-                    installation_generation: operation.installation_generation().ordinal(),
-                    resource_support: self.compute.execution_resource_support(),
-                },
-            )
-            .map_err(|_| super::WorthQueryConditionalNodeInstallationDenial::DuplicateInstallation)
-    }
-}
-
 impl<D, O, F, G, P> PendingOwnedConditionalNode<D, O, F, G, P> {
     pub(crate) fn new(
         location: worth_query_installation::facade::WorthQueryConditionalNodeLocation,
@@ -120,10 +67,10 @@ where
         &self,
         domains: &super::super::super::WorthQueryDomainInstallationRegistry,
         graphs: &super::super::super::WorthQueryInstalledGraphParticipationRegistry,
-        signal: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
+        signal: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         registry: &mut super::super::WorthQueryConditionalExecutionRegistry,
     ) -> Result<(), super::WorthQueryConditionalNodeInstallationDenial> {
-        let node = self.install_node(domains, graphs, signal)?;
+        let node = self.install_node_with_builder(domains, graphs, signal)?;
         registry
             .install::<D, O, F>(node)
             .map_err(|_| super::WorthQueryConditionalNodeInstallationDenial::DuplicateInstallation)
@@ -134,30 +81,30 @@ impl<D: 'static, O: 'static, F: 'static, G: 'static, P> PendingOwnedConditionalN
 where
     P: super::super::WorthQueryConditionalNodeComputeProvider<D, O, F>,
 {
-    pub(crate) fn install_owned_instance(
+    fn install_node_with_builder(
         &self,
         domains: &super::super::super::WorthQueryDomainInstallationRegistry,
         graphs: &super::super::super::WorthQueryInstalledGraphParticipationRegistry,
-        signal: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
-        registry: &mut super::super::WorthQueryConditionalExecutionRegistry,
+        signal: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
     ) -> Result<
-        (
-            u64,
-            std::sync::Arc<super::super::WorthQueryInstalledConditionalNode>,
-        ),
+        super::super::WorthQueryInstalledConditionalNode,
         super::WorthQueryConditionalNodeInstallationDenial,
     > {
-        let node = self.install_node(domains, graphs, signal)?;
-        registry
-            .install_owned_instance::<D, O, F>(node)
-            .map_err(|_| super::WorthQueryConditionalNodeInstallationDenial::DuplicateInstallation)
+        self.install_node_with(domains, graphs, |request| {
+            signal.install_owned_conditional(request)
+        })
     }
 
-    fn install_node(
+    fn install_node_with(
         &self,
         domains: &super::super::super::WorthQueryDomainInstallationRegistry,
         graphs: &super::super::super::WorthQueryInstalledGraphParticipationRegistry,
-        signal: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
+        install: impl FnOnce(
+            BridgeOwnedConditionalInstallationRequest,
+        ) -> Result<
+            std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+            worth_runtime_bridge::facade::BridgeConditionalDenial,
+        >,
     ) -> Result<
         super::super::WorthQueryInstalledConditionalNode,
         super::WorthQueryConditionalNodeInstallationDenial,
@@ -194,22 +141,21 @@ where
                 detail: "Query conditional registrations own the sole compute provider".into(),
             });
         }
-        let lowering = signal
-            .install_owned_conditional(BridgeOwnedConditionalInstallationRequest {
-                contract: super::super::bridge_lowering::lower_bridge_contract(&declaration)?,
-                location: super::super::bridge_lowering::lower_bridge_location(&self.location),
-                dependencies,
-                providers: with_compute_provider::<D, O, F, P>(
-                    self.providers.clone(),
-                    std::sync::Arc::clone(&self.compute),
-                ),
-            })
-            .map_err(
-                |denial| super::WorthQueryConditionalNodeInstallationDenial::Bridge {
-                    kind: denial.kind(),
-                    detail: denial.detail().to_string(),
-                },
-            )?;
+        let lowering = install(BridgeOwnedConditionalInstallationRequest {
+            contract: super::super::bridge_lowering::lower_bridge_contract(&declaration)?,
+            location: super::super::bridge_lowering::lower_bridge_location(&self.location),
+            dependencies,
+            providers: with_compute_provider::<D, O, F, P>(
+                self.providers.clone(),
+                std::sync::Arc::clone(&self.compute),
+            ),
+        })
+        .map_err(
+            |denial| super::WorthQueryConditionalNodeInstallationDenial::Bridge {
+                kind: denial.kind(),
+                detail: denial.detail().to_string(),
+            },
+        )?;
         Ok(super::super::WorthQueryInstalledConditionalNode {
             lowering,
             location: self.location.clone(),
@@ -218,6 +164,7 @@ where
             operation_identity: operation.definition().canonical_identity().to_string(),
             runtime_authority: operation.domain_authority().runtime_authority().as_u64(),
             installation_runtime_authority: operation.operation_authority().runtime_ordinal(),
+            source_installation_generation: operation.operation_authority().generation().ordinal(),
             installation_generation: operation.installation_generation().ordinal(),
             resource_support: self.compute.execution_resource_support(),
         })
