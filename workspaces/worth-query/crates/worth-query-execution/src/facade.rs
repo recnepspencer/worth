@@ -205,6 +205,7 @@ pub mod primary_graph {
         RecoveryContinuationContract, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
         RuntimeWorldRecoveryPage,
     };
+    pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 }
 
 /// Compatibility surface for the current undo/redo experiment.

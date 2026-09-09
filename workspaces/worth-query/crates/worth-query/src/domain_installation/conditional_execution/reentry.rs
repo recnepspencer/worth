@@ -122,6 +122,19 @@ impl WorthQueryConditionalProvenance {
     pub fn semantic_observation_count(&self) -> usize {
         self.bridge.semantic_observations().len()
     }
+    pub fn source_admission_attempts(&self) -> usize {
+        self.bridge
+            .bridge_execution_counters()
+            .snapshot_admission_attempts
+    }
+    pub fn signal_slot_reuse_hits(&self) -> usize {
+        self.bridge
+            .bridge_execution_counters()
+            .signal_slot_reuse_hits
+    }
+    pub fn compute_contacts(&self) -> usize {
+        self.bridge.signal().counters().compute_contacts
+    }
     pub fn semantic_observation(
         &self,
         dependency_ordinal: usize,

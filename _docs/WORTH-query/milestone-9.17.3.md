@@ -705,8 +705,15 @@ expresses retained-decision re-entry, owned async supersession, managed-clock
 wake, post-seal installation, and successor reconstitution without graph
 escape. Exact-source denial, definition-generation isolation, bounded slot
 admission/reuse, and terminal retry affinity have positive and hostile twins.
-The Phase 1 owner, certification, and UI-binding suites pass together with the
-dirty Rust line-cap, boundary topology, and generated-context gates.
+The retained B/A/B court reports one Signal-owner slot reuse, zero source
+admissions, and zero recomputation on the third B execution. Its cold twin
+performs one recomputation, then holds that live session while a second admission
+receives the typed capacity denial. Hostile generation courts reject both a D0
+lowering at D1 and a D1 lowering at retained D0, while the exact retained D0
+sibling remains executable. Application publication and Query test installation
+require their evaluation resources explicitly. The Phase 1 owner, certification,
+and UI-binding suites pass together with the dirty Rust line-cap, boundary
+topology, and generated-context gates.
 
 ### Phase 2: Planning Through Invariant Carriage
 

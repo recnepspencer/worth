@@ -115,6 +115,15 @@ fn performed_definition_successor_isolated_from_sibling_product_and_pinned_gener
         current.basis().signal_basis().observation(),
         fixture.root.basis().signal_basis().observation()
     );
+    let stale_d0 = fixture
+        .bridge
+        .admit_conditional_signal_basis(&fixture.lowering, current.basis().signal_basis())
+        .err()
+        .expect("the D0 lowering cannot bind the published D1 Signal basis");
+    assert_eq!(
+        stale_d0.kind(),
+        worth_runtime_bridge::facade::BridgeConditionalDenialKind::StaleLowering
+    );
     let sibling_after = fixture
         .owner
         .observation_port()
@@ -123,6 +132,15 @@ fn performed_definition_successor_isolated_from_sibling_product_and_pinned_gener
     assert_eq!(
         sibling_after.basis().signal_basis().observation(),
         sibling.basis().signal_basis().observation()
+    );
+    let premature_d1 = fixture
+        .bridge
+        .admit_conditional_signal_basis(&next.1, sibling_after.basis().signal_basis())
+        .err()
+        .expect("the D1 lowering cannot bind the sibling's retained D0 Signal basis");
+    assert_eq!(
+        premature_d1.kind(),
+        worth_runtime_bridge::facade::BridgeConditionalDenialKind::StaleLowering
     );
     execute_source_free(&fixture.bridge, &fixture.lowering, &pinned, 1);
     let successor_binding = fixture

@@ -4,6 +4,7 @@ mod capture_tests;
 mod committed_patch;
 #[cfg(test)]
 mod committed_patch_tests;
+mod contract_admission;
 mod definition_binding;
 pub(crate) use capture::{SignalConditionalBasisCaptureDenial, SignalRetainedExecutionBasis};
 mod admission_retention;

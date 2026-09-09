@@ -314,8 +314,10 @@ impl AggregateWorld {
             .expect("aggregate principal binds");
         bind_world(&mut bootstrap, values, ambiguous);
         let projection = bootstrap.retain_invariant_projection_authority();
+        let budget =
+            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development();
         let runtime = bootstrap
-            .publish_application_runtime(runtime, authority, installed)
+            .publish_application_runtime(runtime, authority, installed, budget)
             .expect("primary graph publishes");
         let target = projection
             .project(|reader| {

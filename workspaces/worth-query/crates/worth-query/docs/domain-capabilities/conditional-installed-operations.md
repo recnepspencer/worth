@@ -273,7 +273,12 @@ Bridge and Signal types never appear in the host manifest or source.
 
 ```rust
 let mut publication = graph
-    .conditional_application_runtime_installation(runtime, authority, schema)?;
+    .conditional_application_runtime_installation(
+        runtime,
+        authority,
+        schema,
+        conditional_evaluation_budget,
+    )?;
 let clock = publication.bind_temporal_operation(
     installed_temporal_binding,
     operation_execution,

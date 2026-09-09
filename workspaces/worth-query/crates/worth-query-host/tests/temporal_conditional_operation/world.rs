@@ -191,7 +191,12 @@ impl CourtroomWorld {
         )
         .unwrap();
         let mut conditional_installation = graph
-            .conditional_application_runtime_installation(runtime, authority, schema)
+            .conditional_application_runtime_installation(
+                runtime,
+                authority,
+                schema,
+                primary_graph::SignalConditionalEvaluationBudget::development(),
+            )
             .unwrap();
         let clock = conditional_installation
             .bind_temporal_operation(conditional, execution, reconstruction)

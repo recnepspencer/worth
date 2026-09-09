@@ -127,7 +127,13 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
         .unwrap();
 
     let application = graph
-        .publish_application_runtime(runtime, authority, schema)
+        .publish_application_runtime(
+            runtime,
+            authority,
+            schema,
+            worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(
+            ),
+        )
         .unwrap();
 
     assert_eq!(application.publication().principal_binding_count(), 1);

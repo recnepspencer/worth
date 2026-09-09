@@ -54,7 +54,7 @@ impl BridgeOwnedSignalRuntime {
             if installed_port.issuance_basis().admission_identity() == basis.admission_identity() {
                 installed_port.clone()
             } else {
-                super::signal_port::BridgeConditionalSignalPort::shared(Arc::new(
+                let reissued_port =
                     installed_port
                         .reissue_for_successor_basis(basis)
                         .map_err(|denial| {
@@ -64,8 +64,18 @@ impl BridgeOwnedSignalRuntime {
                                     "Signal definition generation admission was denied: {denial:?}"
                                 ),
                             )
-                        })?,
-                ))
+                        })?;
+                reissued_port
+                    .validate_installed_contract(lowering.signal_contract())
+                    .map_err(|denial| {
+                        BridgeConditionalDenial::new(
+                            BridgeConditionalDenialKind::StaleLowering,
+                            format!(
+                                "selected Signal basis rejected the lowering generation: {denial:?}"
+                            ),
+                        )
+                    })?;
+                super::signal_port::BridgeConditionalSignalPort::shared(Arc::new(reissued_port))
             };
         Ok(BridgeConditionalSignalBasisBinding {
             lowering: Arc::clone(lowering),

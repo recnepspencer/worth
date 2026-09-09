@@ -30,6 +30,7 @@ pub(in crate::branch::owner_services) struct SignalConditionalExecutionSlot {
 pub(in crate::branch::owner_services) struct SignalConditionalEvaluationState {
     pub(in crate::branch::owner_services) admission_custody: SignalConditionalRetentionReservation,
     pub(in crate::branch::owner_services) slot: Option<SignalConditionalExecutionSlot>,
+    pub(in crate::branch::owner_services) has_completed_execution: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -176,11 +177,16 @@ pub struct SignalConditionalServiceCompletion {
     decision: Result<SignalConditionalDecisionEvidence, SignalConditionalExecutionFailure>,
     observation: Result<Option<SignalInvalidationExecutionReceipt>, SignalError>,
     binding: SignalConditionalEvaluationBindingEvidence,
+    slot_reused: bool,
 }
 
 impl SignalConditionalServiceCompletion {
     pub fn binding(&self) -> &SignalConditionalEvaluationBindingEvidence {
         &self.binding
+    }
+
+    pub const fn slot_reused(&self) -> bool {
+        self.slot_reused
     }
 
     pub fn into_parts(
@@ -224,25 +230,7 @@ where
             }
             _ => {}
         }
-        let owner = SignalOwner::upgrade(&self.owner).map_err(Denial::OwnerUnavailable)?;
-        let admission = owner
-            .admit()
-            .map_err(map_observation_admission_denial)
-            .map_err(Denial::OwnerAdmission)?;
-        let branch = self.basis.owner_branch_id();
-        let cell = owner
-            .lookup_cell(&admission, branch)
-            .map_err(|denial| Denial::OwnerAdmission(map_basis_registry_denial(denial, branch)))?;
-        if cell.incarnation() != self.incarnation {
-            return Err(Denial::StaleBasisAdmission);
-        }
-        let (contract_binding, retained_basis) = cell.admit_conditional_evaluation(
-            &admission,
-            &self.basis,
-            &self.definition,
-            contract,
-            &self._issuance_basis_custody,
-        )?;
+        let (contract_binding, retained_basis) = self.admit_contract_binding(contract)?;
         let ordinal = self
             .next_evaluation_ordinal
             .fetch_update(
@@ -286,6 +274,7 @@ where
             execution: Mutex::new(SignalConditionalEvaluationState {
                 admission_custody,
                 slot: None,
+                has_completed_execution: false,
             }),
         })
     }
@@ -329,6 +318,7 @@ where
         if request.force_on_demand {
             kernel_request = kernel_request.force_on_demand();
         }
+        let slot_reused = evaluation_state.has_completed_execution;
         let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             cell.execute_conditional(
                 &admission,
@@ -343,7 +333,12 @@ where
             )
         }));
         match execution {
-            Ok(completion) => completion,
+            Ok(Ok(mut completion)) => {
+                evaluation_state.has_completed_execution = true;
+                completion.slot_reused = slot_reused;
+                Ok(completion)
+            }
+            Ok(Err(denial)) => Err(denial),
             Err(payload) => {
                 drop(evaluation_state);
                 std::panic::resume_unwind(payload)
@@ -384,6 +379,7 @@ impl SignalConditionalServiceCompletion {
                 source: Arc::clone(&evaluation.source),
                 _execution_identity: Arc::clone(&evaluation.execution_identity),
             },
+            slot_reused: false,
         }
     }
 }

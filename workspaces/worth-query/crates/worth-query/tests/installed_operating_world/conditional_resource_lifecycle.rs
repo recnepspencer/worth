@@ -30,9 +30,9 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
         .domain(installed_operation_fixture::GeometryDomain)
         .unwrap();
 
-    execute_default(&mut workspace, &installed);
     let first = create_sibling(&workspace, "conditional-resource-first", 1);
     execute_selected(&mut workspace, &installed, &first);
+    execute_default(&mut workspace, &installed);
     let full = workspace
         .conditional_evaluation_resource_observation()
         .unwrap();
@@ -41,7 +41,7 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
     assert!(full.query_retained_bytes() > 0);
     assert!(full.signal_retained_bytes() > 0);
 
-    execute_selected(&mut workspace, &installed, &first);
+    let reused = execute_selected(&mut workspace, &installed, &first);
     let warm = workspace
         .conditional_evaluation_resource_observation()
         .unwrap();
@@ -49,6 +49,9 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
     assert_eq!(warm.query_cache_misses(), full.query_cache_misses());
     assert_eq!(warm.query_retained_bytes(), full.query_retained_bytes());
     assert_eq!(warm.signal_retained_bytes(), full.signal_retained_bytes());
+    assert_eq!(reused.slot_reuse_hits, 1);
+    assert_eq!(reused.source_admission_attempts, 0);
+    assert_eq!(reused.compute_contacts, 0);
 
     let second = create_sibling(&workspace, "conditional-resource-second", 2);
     execute_selected(&mut workspace, &installed, &second);
@@ -121,9 +124,9 @@ fn execute_default(
     installed: &domain::WorthQueryInstalledDomainHandle<
         installed_operation_fixture::GeometryDomain,
     >,
-) {
+) -> ConditionalExecutionObservation {
     let bound = bind_default(workspace, installed);
-    execute_bound(workspace, bound);
+    execute_bound(workspace, bound)
 }
 
 fn execute_selected(
@@ -132,9 +135,9 @@ fn execute_selected(
         installed_operation_fixture::GeometryDomain,
     >,
     selected: &runtime::ProductBranchIdentity,
-) {
+) -> ConditionalExecutionObservation {
     let bound = bind_selected(workspace, installed, selected);
-    execute_bound(workspace, bound);
+    execute_bound(workspace, bound)
 }
 
 fn bind_default(
@@ -182,6 +185,13 @@ fn bind_selected(
         .unwrap()
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ConditionalExecutionObservation {
+    slot_reuse_hits: usize,
+    source_admission_attempts: usize,
+    compute_contacts: usize,
+}
+
 fn execute_bound(
     workspace: &mut runtime::WorthQueryWorkspace,
     bound: domain::WorthQueryBoundDomainOperation<
@@ -190,7 +200,7 @@ fn execute_bound(
         installed_operation_fixture::ConditionalResourceFamily,
         foundation::ObservationLaneWitness,
     >,
-) {
+) -> ConditionalExecutionObservation {
     let outcome = bound
         .admit_execution_resources(
             (),
@@ -200,10 +210,24 @@ fn execute_bound(
         .unwrap()
         .execute(workspace);
     match outcome {
-        TransitionOutcome::Success(_) | TransitionOutcome::Deferred(_) => {}
+        TransitionOutcome::Success(executed) => observation(executed.conditional_provenance()),
+        TransitionOutcome::Deferred(deferred) => observation(deferred.conditional_provenance()),
         TransitionOutcome::Denied(denial) | TransitionOutcome::Failed(denial) => {
             panic!("selected conditional execution failed: {denial:?}")
         }
         _ => panic!("selected conditional execution did not complete"),
+    }
+}
+
+fn observation(
+    provenance: &[domain::WorthQueryConditionalProvenance],
+) -> ConditionalExecutionObservation {
+    let [conditional] = provenance else {
+        panic!("the resource operation must execute one conditional node")
+    };
+    ConditionalExecutionObservation {
+        slot_reuse_hits: conditional.signal_slot_reuse_hits(),
+        source_admission_attempts: conditional.source_admission_attempts(),
+        compute_contacts: conditional.compute_contacts(),
     }
 }

@@ -127,6 +127,7 @@ exports = [
     "RuntimeWorldRecoveryCursor",
     "RuntimeWorldRecoveryDenial",
     "RuntimeWorldRecoveryPage",
+    "SignalConditionalEvaluationBudget",
     "WorthQueryAdmittedApplicationCapabilityAccess",
     "WorthQueryAdmittedApplicationOperation",
     "WorthQueryAdmittedApplicationQueryControls",

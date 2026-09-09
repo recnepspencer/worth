@@ -50,7 +50,12 @@ pub(super) fn install_world(composition_scenario: CompositionScenario) -> Instal
     scenario::bind(&mut graph, composition_scenario);
 
     let runtime = graph
-        .publish_application_runtime(runtime, authority, schema)
+        .publish_application_runtime(
+            runtime,
+            authority,
+            schema,
+            worth_query_execution::facade::primary_graph::SignalConditionalEvaluationBudget::development(),
+        )
         .unwrap();
     InstalledWorld { runtime, binding }
 }

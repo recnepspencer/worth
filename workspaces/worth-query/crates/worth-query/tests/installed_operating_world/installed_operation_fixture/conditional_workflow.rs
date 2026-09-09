@@ -101,7 +101,12 @@ where
             installation.providers,
             compute,
         );
-        Ok((builder, installation.bridge, installation.graph))
+        Ok((
+            builder,
+            installation.bridge,
+            installation.graph,
+            runtime::WorthQueryConditionalExecutionResources::development(),
+        ))
     })
     .replayable_workflow_stage_executor(
         GeometryDomain,
@@ -220,7 +225,12 @@ where
             installation.providers,
             compute,
         );
-        Ok((builder, installation.bridge, installation.graph))
+        Ok((
+            builder,
+            installation.bridge,
+            installation.graph,
+            runtime::WorthQueryConditionalExecutionResources::development(),
+        ))
     })
     .replayable_workflow_stage_executor(
         GeometryDomain,

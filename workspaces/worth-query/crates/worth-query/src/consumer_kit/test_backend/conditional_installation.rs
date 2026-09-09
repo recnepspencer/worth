@@ -15,10 +15,11 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
     pub fn owned_conditional_runtime(
         mut self,
         bridge: worth_runtime_bridge::facade::RuntimeBridge,
+        resources: crate::runtime::WorthQueryConditionalExecutionResources,
     ) -> Self {
         self.runtime_installers
             .push(TestRuntimeInstaller::Immediate(Box::new(move |builder| {
-                builder.owned_conditional_runtime_for_test(bridge)
+                builder.owned_conditional_runtime_for_test(bridge, resources)
             })));
         self
     }

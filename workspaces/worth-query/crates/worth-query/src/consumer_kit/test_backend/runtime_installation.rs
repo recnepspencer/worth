@@ -8,6 +8,7 @@ type SeededConditionalInstallation = (
     WorthQueryRuntimeBuilder,
     worth_runtime_bridge::facade::RuntimeBridge,
     worth_signal::facade::SignalGraph,
+    crate::runtime::WorthQueryConditionalExecutionResources,
 );
 type SeededInstaller = Box<
     dyn FnOnce(
@@ -32,8 +33,8 @@ impl TestRuntimeInstaller {
         match self {
             Self::Immediate(install) => Ok(install(runtime)),
             Self::SeededConditional(install) => {
-                let (runtime, bridge, graph) = install(runtime, source, seed)?;
-                Ok(runtime.install_seeded_conditional_runtime(bridge, graph))
+                let (runtime, bridge, graph, resources) = install(runtime, source, seed)?;
+                Ok(runtime.install_seeded_conditional_runtime(bridge, graph, resources))
             }
         }
     }

@@ -150,7 +150,12 @@ where
                 installation.providers,
                 compute,
             );
-            Ok((builder, installation.bridge, installation.graph))
+            Ok((
+                builder,
+                installation.bridge,
+                installation.graph,
+                runtime::WorthQueryConditionalExecutionResources::development(),
+            ))
         })
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
 }
@@ -300,7 +305,12 @@ pub(crate) fn shared_signal_node_workspace(
                     second_providers,
                     DirectConditionalCompute,
                 );
-            Ok((builder, installation.bridge, installation.graph))
+            Ok((
+                builder,
+                installation.bridge,
+                installation.graph,
+                runtime::WorthQueryConditionalExecutionResources::development(),
+            ))
         })
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
         .workspace(name)

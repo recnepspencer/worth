@@ -13,11 +13,11 @@ impl WorthQueryRuntimeBuilder {
         mut self,
         bridge: worth_runtime_bridge::facade::RuntimeBridge,
         graph: worth_signal::facade::SignalGraph,
+        resources: super::super::WorthQueryConditionalExecutionResources,
     ) -> Self {
         self.conditional_runtime_bridge = Some(bridge);
         self.conditional_signal_graph = Some(Box::new(graph));
-        self.conditional_execution_resources =
-            Some(super::super::WorthQueryConditionalExecutionResources::development());
+        self.conditional_execution_resources = Some(resources);
         self
     }
 
@@ -61,10 +61,10 @@ impl WorthQueryRuntimeBuilder {
     pub(crate) fn owned_conditional_runtime_for_test(
         mut self,
         bridge: worth_runtime_bridge::facade::RuntimeBridge,
+        resources: super::super::WorthQueryConditionalExecutionResources,
     ) -> Self {
         self.conditional_runtime_bridge = Some(bridge);
-        self.conditional_execution_resources =
-            Some(super::super::WorthQueryConditionalExecutionResources::development());
+        self.conditional_execution_resources = Some(resources);
         self
     }
 

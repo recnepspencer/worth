@@ -189,6 +189,7 @@ where
                 execution: std::sync::Mutex::new(SignalConditionalEvaluationState {
                     admission_custody,
                     slot: Some(SignalConditionalExecutionSlot { partition }),
+                    has_completed_execution: predecessor.has_completed_execution,
                 }),
             },
             counters,

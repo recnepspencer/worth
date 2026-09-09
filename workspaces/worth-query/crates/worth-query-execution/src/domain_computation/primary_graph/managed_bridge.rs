@@ -90,6 +90,7 @@ pub(super) fn install_application_bridge<Schema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
     source: RuntimeBridgeRelationalSource,
+    conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
 ) -> Result<WorthQueryApplicationBridgeInstallation, WorthQueryPrimaryGraphInstallationDenial>
 where
     Schema: ApplicationSchema,
@@ -126,7 +127,7 @@ where
         .map_err(|error| bridge_denial(format!("{error:?}")))?;
     let conditional = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
         ordinary.clone(),
-        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+        conditional_evaluation_budget,
     )
     .map_err(|error| bridge_denial(format!("{error:?}")))?;
     Ok(WorthQueryApplicationBridgeInstallation {

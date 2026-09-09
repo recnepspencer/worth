@@ -14,6 +14,7 @@ use super::{
 pub struct BridgeConditionalExecutionCounters {
     pub signal_graph_checks: usize,
     pub snapshot_admission_attempts: usize,
+    pub signal_slot_reuse_hits: usize,
     pub compute_provider_checks: usize,
     pub signal_execution_contacts: usize,
     pub observation_baseline_writes: usize,
@@ -112,7 +113,7 @@ impl BridgeOwnedSignalRuntime {
     ) -> Result<BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
         let mut counters = BridgeConditionalExecutionCounters {
             signal_graph_checks: 1,
-            snapshot_admission_attempts: session.snapshot_admission_attempts,
+            snapshot_admission_attempts: 0,
             ..BridgeConditionalExecutionCounters::default()
         };
         self.validate_evaluation_session(session, &request)
@@ -205,6 +206,10 @@ impl BridgeOwnedSignalRuntime {
                 },
             )
             .map_err(signal_service_denial)?;
+        counters.signal_slot_reuse_hits = usize::from(completion.slot_reused());
+        if !completion.slot_reused() {
+            counters.snapshot_admission_attempts = session.snapshot_admission_attempts;
+        }
         let (signal, performed_signal_invalidation) = completion.into_parts();
         let signal = admit_signal_execution(signal, &mut condition)?;
         let performed_signal_invalidation = performed_signal_invalidation.map_err(|error| {
@@ -286,9 +291,33 @@ fn admit_signal_execution(
     }
 }
 
-pub(super) fn signal_service_denial(error: impl std::fmt::Debug) -> BridgeConditionalDenial {
+pub(super) fn signal_service_denial(
+    error: worth_signal::facade::branch::SignalConditionalServiceExecutionDenial,
+) -> BridgeConditionalDenial {
+    use worth_signal::facade::branch::SignalConditionalServiceExecutionDenial as Denial;
+    let kind = match error {
+        Denial::AdmissionCapacityExhausted => {
+            BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity
+        }
+        Denial::SlotBusy => BridgeConditionalDenialKind::ConditionalEvaluationBusy,
+        Denial::SlotPoisoned => BridgeConditionalDenialKind::ConditionalEvaluationPoisoned,
+        Denial::UnconsumedUnwind => BridgeConditionalDenialKind::ConditionalEvaluationUnwindPending,
+        Denial::StaleBasisAdmission
+        | Denial::DefinitionReadmissionRequired
+        | Denial::DefinitionMismatch => BridgeConditionalDenialKind::StaleLowering,
+        Denial::MissingSourceEvidence => BridgeConditionalDenialKind::MissingSourceObservation,
+        Denial::UnexpectedSourceEvidence => BridgeConditionalDenialKind::SourcePostureMismatch,
+        Denial::SourceAuthorityMismatch => BridgeConditionalDenialKind::OperationAuthorityMismatch,
+        Denial::OwnerUnavailable(_)
+        | Denial::OwnerAdmission(_)
+        | Denial::NestedOperationScopeMismatch
+        | Denial::EvaluationIdentityExhausted
+        | Denial::AdmissionUnavailable
+        | Denial::SlotAdmission(_)
+        | Denial::ObservationAdmission(_) => BridgeConditionalDenialKind::SignalExecution,
+    };
     BridgeConditionalDenial::new(
-        BridgeConditionalDenialKind::SignalExecution,
+        kind,
         format!("Signal conditional service denied execution: {error:?}"),
     )
 }

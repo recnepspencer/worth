@@ -277,7 +277,12 @@ impl FinancialCourtroomWorld {
         let portfolio_authentication = Arc::new(admitted_identity_adapter(&schema));
         let sibling_portfolio_authentication = Arc::new(admitted_identity_adapter(&schema));
         let mut conditional_installation = graph
-            .conditional_application_runtime_installation(installed_runtime, authority, schema)
+            .conditional_application_runtime_installation(
+                installed_runtime,
+                authority,
+                schema,
+                primary_graph::SignalConditionalEvaluationBudget::development(),
+            )
             .unwrap();
         let curve_clock = conditional_installation
             .bind_temporal_operation(

@@ -242,7 +242,12 @@ fn primary_graph_application(
         )
         .expect("test principal must bind");
     graph
-        .publish_application_runtime(runtime, authority, schema)
+        .publish_application_runtime(
+            runtime,
+            authority,
+            schema,
+            primary_graph::SignalConditionalEvaluationBudget::development(),
+        )
         .expect("test application must publish")
 }
 

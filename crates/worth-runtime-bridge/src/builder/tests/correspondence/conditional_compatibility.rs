@@ -16,6 +16,7 @@ use crate::facade::{
 };
 
 mod certification;
+mod evaluation_budget;
 mod managed_time;
 mod owned_installation;
 mod provider_semantics;
@@ -140,6 +141,48 @@ fn installation_fixture_with_runtime(
     BridgeConditionalRuntimeBuilder,
     BridgeConditionalInstallationRequest,
 ) {
+    installation_fixture_with_runtime_and_budget(
+        contract,
+        partitions,
+        providers,
+        baseline_labels,
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+        build_runtime,
+    )
+}
+
+pub(super) fn installation_fixture_with_budget(
+    contract: BridgeConditionalContract,
+    partitions: &[&str],
+    providers: BridgeConditionalProviderSet,
+    budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
+) -> (
+    BridgeConditionalRuntimeBuilder,
+    BridgeConditionalInstallationRequest,
+) {
+    installation_fixture_with_runtime_and_budget(
+        contract,
+        partitions,
+        providers,
+        &[],
+        budget,
+        |baseline| runtime(exact_mapping(), baseline),
+    )
+}
+
+fn installation_fixture_with_runtime_and_budget(
+    contract: BridgeConditionalContract,
+    partitions: &[&str],
+    providers: BridgeConditionalProviderSet,
+    baseline_labels: &[&str],
+    budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
+    build_runtime: impl FnOnce(
+        Vec<crate::facade::BridgeSemanticCorrespondenceRegistration>,
+    ) -> crate::facade::RuntimeBridge,
+) -> (
+    BridgeConditionalRuntimeBuilder,
+    BridgeConditionalInstallationRequest,
+) {
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let targets = partitions
@@ -198,12 +241,9 @@ fn installation_fixture_with_runtime(
             )
         })
         .collect();
-    let owner = BridgeConditionalRuntimeBuilder::new(
-        build_runtime(baseline),
-        Box::new(graph),
-        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-    )
-    .expect("Bridge owns the fresh Signal runtime");
+    let owner =
+        BridgeConditionalRuntimeBuilder::new(build_runtime(baseline), Box::new(graph), budget)
+            .expect("Bridge owns the fresh Signal runtime");
     (
         owner,
         BridgeConditionalInstallationRequest {
