@@ -30,7 +30,6 @@ pub(in crate::branch::owner_services) struct SignalConditionalExecutionSlot {
 pub(in crate::branch::owner_services) struct SignalConditionalEvaluationState {
     pub(in crate::branch::owner_services) admission_custody: SignalConditionalRetentionReservation,
     pub(in crate::branch::owner_services) slot: Option<SignalConditionalExecutionSlot>,
-    pub(in crate::branch::owner_services) has_completed_execution: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -189,6 +188,11 @@ impl SignalConditionalServiceCompletion {
         self.slot_reused
     }
 
+    pub(in crate::branch::owner_services) fn with_slot_reuse(mut self, slot_reused: bool) -> Self {
+        self.slot_reused = slot_reused;
+        self
+    }
+
     pub fn into_parts(
         self,
     ) -> (
@@ -274,7 +278,6 @@ where
             execution: Mutex::new(SignalConditionalEvaluationState {
                 admission_custody,
                 slot: None,
-                has_completed_execution: false,
             }),
         })
     }
@@ -318,7 +321,7 @@ where
         if request.force_on_demand {
             kernel_request = kernel_request.force_on_demand();
         }
-        let slot_reused = evaluation_state.has_completed_execution;
+        let slot_reused = evaluation_state.slot.is_some();
         let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             cell.execute_conditional(
                 &admission,
@@ -333,11 +336,7 @@ where
             )
         }));
         match execution {
-            Ok(Ok(mut completion)) => {
-                evaluation_state.has_completed_execution = true;
-                completion.slot_reused = slot_reused;
-                Ok(completion)
-            }
+            Ok(Ok(completion)) => Ok(completion.with_slot_reuse(slot_reused)),
             Ok(Err(denial)) => Err(denial),
             Err(payload) => {
                 drop(evaluation_state);

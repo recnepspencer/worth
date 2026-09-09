@@ -59,6 +59,7 @@ where
         if request.force_on_demand {
             kernel_request = kernel_request.force_on_demand();
         }
+        let slot_reused = evaluation_state.slot.is_some();
         let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             super::execute_conditional_against_graph(
                 transaction.conditional_execution_graph_mut(),
@@ -71,7 +72,8 @@ where
             )
         }));
         match execution {
-            Ok(completion) => completion,
+            Ok(Ok(completion)) => Ok(completion.with_slot_reuse(slot_reused)),
+            Ok(Err(denial)) => Err(denial),
             Err(payload) => {
                 drop(evaluation_state);
                 std::panic::resume_unwind(payload)
