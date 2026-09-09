@@ -5,7 +5,10 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryCommittedReceiptProjection,
 };
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::{progression_denied, WorthQueryProviderProgressionOutcome};
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::{
+    progression_denied, progression_from_authorization_denial,
+    WorthQueryProviderProgressionOutcome,
+};
 use super::commit_resolution::{finish_authorized_compare, WorthQueryAuthorizedCompareContext};
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
 
@@ -90,18 +93,18 @@ where
         authority.serialization(),
     ) {
         Ok(proof) => proof,
-        Err(_) => {
+        Err(denial) => {
             candidate.discard();
-            return progression_denied(DenialStage::DecisionReadSet);
+            return progression_from_authorization_denial(denial, DenialStage::DecisionReadSet);
         }
     };
     match proof.govern(candidate, |candidate| {
         resolve_idempotency_under_authority(candidate, authority, dispatch_outbox)
     }) {
         Ok(outcome) => outcome,
-        Err(candidate) => {
+        Err((candidate, denial)) => {
             candidate.discard();
-            WorthQueryProviderProgressionOutcome::Cancelled
+            progression_from_authorization_denial(denial, DenialStage::DecisionReadSet)
         }
     }
 }
@@ -170,6 +173,10 @@ where
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
+            candidate.discard();
+            progression_denied(DenialStage::Idempotency)
         }
         Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,

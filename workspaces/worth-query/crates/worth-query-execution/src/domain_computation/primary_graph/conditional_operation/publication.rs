@@ -16,23 +16,6 @@ pub(in crate::domain_computation::primary_graph) struct ConditionalRuntimeAffini
 }
 
 impl ConditionalRuntimeAffinity {
-    pub(super) fn for_installation<Schema>(
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        installation: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-    ) -> ConditionalRuntimeAffinity {
-        ConditionalRuntimeAffinity {
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            installation_runtime: installation.runtime_ordinal(),
-            installation_generation: installation.generation().ordinal(),
-            provider_identity: runtime
-                .primary_graph_authority
-                .provider_identity()
-                .to_string(),
-            branch_identity: super::super::application_branch::PRIMARY_APPLICATION_BRANCH
-                .to_string(),
-        }
-    }
-
     pub(super) fn bind(
         &self,
         identity: &super::canonical_identity::WorthQueryTemporalBindingIdentity,

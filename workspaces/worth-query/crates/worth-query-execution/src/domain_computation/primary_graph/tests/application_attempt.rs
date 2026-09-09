@@ -7,6 +7,7 @@ use super::fixture::{
     installed_authorization_world, live_scope, AccountStatus, TouchAccountOperation,
 };
 use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitTerminalKind,
     WorthQueryApplicationIdempotencyBinding, WorthQueryPrincipalResolutionMode,
 };
@@ -48,11 +49,31 @@ mod settlement_failures;
 mod terminal_failures;
 #[path = "application_attempt/touched_graph_closure.rs"]
 mod touched_graph_closure;
+#[cfg(feature = "test-world-operation-control")]
+#[path = "application_attempt/unwind_custody.rs"]
+mod unwind_custody;
 
 use program_fixture::{
     admitted_mutation_free_program, admitted_program, admitted_program_with_emit,
     admitted_program_with_expected_status,
 };
+
+pub(in crate::domain_computation::primary_graph) fn assert_product_basis_stale(
+    outcome: WorthQueryApplicationCommitOutcome,
+    cause: &str,
+) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("{cause} must deny before effects: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
+}
 
 #[test]
 fn concurrent_equivalent_attempts_publish_one_transaction() {
@@ -194,6 +215,37 @@ pub(in crate::domain_computation::primary_graph) fn idempotency(
     WorthQueryApplicationIdempotencyBinding::new([key; 32], [intent; 32])
 }
 
+pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_material(
+    seed: u8,
+) -> (
+    worth_runtime_world::facade::ProductBranchObservation,
+    WorthQueryApplicationIdempotencyBinding,
+    worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+) {
+    let world = installed_authorization_world(true);
+    let request = live_scope();
+    let principal = authenticated_principal(&world, &request);
+    let account = resolved_account(&world, "open", &request);
+    let binding = idempotency(seed, seed);
+    let program = admitted_program(
+        &world,
+        &principal,
+        &account,
+        &request,
+        "bounded-unpublished-material",
+    );
+    world.application.fail_next_durable_append_for_test();
+    let outcome = world
+        .application
+        .compare_and_commit_application(program, binding);
+    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
+        panic!("the real World must issue unpublished recovery material: {outcome:?}")
+    };
+    let observation = partial.expected_product().clone();
+    let handle = partial.into_recovery().record_handle().clone();
+    (observation, binding, handle)
+}
+
 pub(in crate::domain_computation::primary_graph) fn authenticated_principal(
     world: &super::fixture::AuthorizationWorld,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -205,6 +257,8 @@ pub(in crate::domain_computation::primary_graph) fn authenticated_principal(
     let external = world.authenticate("alice", Duration::from_secs(60), request);
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -224,6 +278,8 @@ pub(in crate::domain_computation::primary_graph) fn resolved_account(
 > {
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             status.to_string(),

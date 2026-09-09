@@ -27,6 +27,8 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -41,6 +43,8 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -50,7 +54,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         .unwrap();
     let observer = world.application.result_buffer_observer();
     let mut lease = world
-        .application
+        .selected_product()
         .open_application_query_live::<
             LiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -104,6 +108,8 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -114,6 +120,8 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let committer_external = world.authenticate("bob", Duration::from_secs(60), &request);
     let committer = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             committer_external,
@@ -128,6 +136,8 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -137,7 +147,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .unwrap();
     let capability = admit_touch_account_capability(&world, &principal, &request).unwrap();
     let mut lease = world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -190,6 +200,8 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -200,6 +212,8 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let committer_external = world.authenticate("bob", Duration::from_secs(60), &request);
     let committer = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             committer_external,
@@ -214,6 +228,8 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -223,7 +239,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
         .unwrap();
     let capability = admit_touch_account_capability(&world, &principal, &request).unwrap();
     let mut lease = world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,

@@ -36,8 +36,8 @@ impl WorthQueryApplicationCommitReceipt {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn from_stale_equivalent(
-        permit: super::super::super::provider_execution::WorthQueryStaleEquivalentCommitReceiptPermit,
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn from_registered_equivalent(
+        permit: super::super::super::provider_execution::WorthQueryRegisteredEquivalentCommitReceiptPermit,
         projection: WorthQueryCommittedReceiptProjection,
         precondition_comparison: WorthQueryMutationPreconditionComparisonEvidence,
         canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,

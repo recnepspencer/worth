@@ -17,7 +17,11 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
         .installed_schema()
         .application_query(TemporalIntentQuery::reference())
         .unwrap();
-    let old = world.application.admit_current_product_branch().unwrap();
+    let old = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let old_commit = old.selected_commit().clone();
     let sibling = fork_relational_product(&world, &old, "read-sibling", "read-sibling-data");
     let selected = world.application.on_product(old).unwrap();
@@ -40,7 +44,11 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
         .unwrap();
 
     world.change_input_after_query_admission("changed-after-admission");
-    let current = world.application.admit_current_product_branch().unwrap();
+    let current = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_ne!(current.selected_commit(), &old_commit);
     let result = world
         .application
@@ -107,7 +115,11 @@ fn revoke_after_product_query_admission_denies_a_and_leaves_b_security_independe
         .installed_schema()
         .application_query(TemporalIntentQuery::reference())
         .unwrap();
-    let source = world.application.admit_current_product_branch().unwrap();
+    let source = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let sibling =
         fork_relational_product(&world, &source, "security-sibling", "security-sibling-data");
     let selected_a = world.application.on_product(source).unwrap();

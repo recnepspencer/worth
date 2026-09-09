@@ -32,6 +32,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(WorthQueryProductUnpublishedRecovery::new(
             handle.clone(),
             recovery,
+            self.primary_provider.unpublished_idempotency_disposition(),
         ))
     }
 }

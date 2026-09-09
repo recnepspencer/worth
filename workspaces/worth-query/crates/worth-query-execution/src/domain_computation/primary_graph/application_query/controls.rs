@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 use std::time::Instant;
 
@@ -6,41 +7,28 @@ use worth_query_admission::facade::{
     authenticated_principal::WorthQueryRequestScope,
 };
 
-use super::basis::{
-    WorthQueryApplicationHistoricalBasis, WorthQueryApplicationPinnedBasis,
-    WorthQueryApplicationPreviewBasis,
-};
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryBasisPosture {
-    Current,
-    Pinned,
-    Historical,
-    Preview,
+    SelectedProduct,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryConsistency {
-    Committed,
-    PinnedSnapshot,
-    HistoricalSnapshot,
-    PreviewSnapshot,
+    SelectedProductSnapshot,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryFreshness {
-    CurrentAtAdmission,
-    Pinned,
-    Historical,
-    PreviewAtAdmission,
+    SelectedAtAdmission,
 }
 
 pub struct WorthQueryApplicationQueryControls<'a, Schema> {
-    basis: WorthQueryApplicationQueryBasis<Schema>,
+    basis: WorthQueryApplicationQueryBasis,
     lane: WorthQueryApplicationQueryLane,
     maximum_result_count: NonZeroUsize,
     maximum_work: NonZeroUsize,
     request_scope: &'a WorthQueryRequestScope,
+    _schema: PhantomData<fn() -> Schema>,
 }
 
 pub struct WorthQueryApplicationQueryResumeControls<'a> {
@@ -60,24 +48,29 @@ pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
     request_scope: &'a WorthQueryRequestScope,
 }
 
-pub(super) enum WorthQueryApplicationQueryBasis<Schema> {
-    Product {
+pub(super) enum WorthQueryApplicationQueryBasis {
+    Selected {
         product: crate::basis::WorthQueryProductBranchLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
     },
-    Current,
-    Pinned(WorthQueryApplicationPinnedBasis<Schema>),
-    Historical(WorthQueryApplicationHistoricalBasis<Schema>),
-    Preview(WorthQueryApplicationPreviewBasis<Schema>),
-    Continuation {
-        descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
-        retention: worth_relational::facade::branch::RelationalBranchRetentionLease,
+    RetainedContinuation {
+        product: crate::basis::WorthQueryProductBranchLease,
     },
 }
 
+impl WorthQueryApplicationQueryBasis {
+    fn product(&self) -> &crate::basis::WorthQueryProductBranchLease {
+        match self {
+            Self::Selected { product, .. } | Self::RetainedContinuation { product } => product,
+        }
+    }
+}
+
 impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
-    pub(super) fn has_product_basis(&self) -> bool {
-        matches!(self.basis, WorthQueryApplicationQueryBasis::Product { .. })
+    pub(in crate::domain_computation::primary_graph) fn product_branch(
+        &self,
+    ) -> &crate::basis::WorthQueryProductBranchLease {
+        self.basis.product()
     }
     pub(in crate::domain_computation::primary_graph) fn product_one_shot(
         product: crate::basis::WorthQueryProductBranchLease,
@@ -87,7 +80,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         Self {
-            basis: WorthQueryApplicationQueryBasis::Product {
+            basis: WorthQueryApplicationQueryBasis::Selected {
                 product,
                 application_basis,
             },
@@ -95,166 +88,60 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             maximum_result_count,
             maximum_work,
             request_scope,
+            _schema: PhantomData,
         }
     }
 
-    pub fn current_one_shot(
-        maximum_result_count: NonZeroUsize,
-        maximum_work: NonZeroUsize,
-        request_scope: &'a WorthQueryRequestScope,
-    ) -> Self {
-        Self {
-            basis: WorthQueryApplicationQueryBasis::Current,
-            lane: WorthQueryApplicationQueryLane::OneShot,
-            maximum_result_count,
-            maximum_work,
-            request_scope,
-        }
-    }
-
-    pub fn pinned_one_shot(
-        basis: WorthQueryApplicationPinnedBasis<Schema>,
-        maximum_result_count: NonZeroUsize,
-        maximum_work: NonZeroUsize,
-        request_scope: &'a WorthQueryRequestScope,
-    ) -> Self {
-        Self {
-            basis: WorthQueryApplicationQueryBasis::Pinned(basis),
-            lane: WorthQueryApplicationQueryLane::OneShot,
-            maximum_result_count,
-            maximum_work,
-            request_scope,
-        }
-    }
-
-    pub fn historical(
-        basis: WorthQueryApplicationHistoricalBasis<Schema>,
-        maximum_result_count: NonZeroUsize,
-        maximum_work: NonZeroUsize,
-        request_scope: &'a WorthQueryRequestScope,
-    ) -> Self {
-        Self {
-            basis: WorthQueryApplicationQueryBasis::Historical(basis),
-            lane: WorthQueryApplicationQueryLane::Historical,
-            maximum_result_count,
-            maximum_work,
-            request_scope,
-        }
-    }
-
-    pub fn preview(
-        basis: WorthQueryApplicationPreviewBasis<Schema>,
-        maximum_result_count: NonZeroUsize,
-        maximum_work: NonZeroUsize,
-        request_scope: &'a WorthQueryRequestScope,
-    ) -> Self {
-        Self {
-            basis: WorthQueryApplicationQueryBasis::Preview(basis),
-            lane: WorthQueryApplicationQueryLane::Preview,
-            maximum_result_count,
-            maximum_work,
-            request_scope,
-        }
-    }
-
-    pub fn current_continuation_page(
+    pub(in crate::domain_computation::primary_graph) fn product_continuation(
+        product: crate::basis::WorthQueryProductBranchLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_page_width: NonZeroUsize,
         maximum_work: NonZeroUsize,
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         Self {
-            basis: WorthQueryApplicationQueryBasis::Current,
+            basis: WorthQueryApplicationQueryBasis::Selected {
+                product,
+                application_basis,
+            },
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: maximum_page_width,
             maximum_work,
             request_scope,
+            _schema: PhantomData,
         }
     }
 
-    pub(super) fn current_live(
+    pub(super) fn product_live(
+        product: crate::basis::WorthQueryProductBranchLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_materialized_record_count: NonZeroUsize,
         maximum_work: NonZeroUsize,
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         Self {
-            basis: WorthQueryApplicationQueryBasis::Current,
+            basis: WorthQueryApplicationQueryBasis::Selected {
+                product,
+                application_basis,
+            },
             lane: WorthQueryApplicationQueryLane::Live,
             maximum_result_count: maximum_materialized_record_count,
             maximum_work,
             request_scope,
-        }
-    }
-
-    pub fn pinned_continuation_page(
-        basis: WorthQueryApplicationPinnedBasis<Schema>,
-        maximum_page_width: NonZeroUsize,
-        maximum_work: NonZeroUsize,
-        request_scope: &'a WorthQueryRequestScope,
-    ) -> Self {
-        Self {
-            basis: WorthQueryApplicationQueryBasis::Pinned(basis),
-            lane: WorthQueryApplicationQueryLane::Continuation,
-            maximum_result_count: maximum_page_width,
-            maximum_work,
-            request_scope,
+            _schema: PhantomData,
         }
     }
 
     pub const fn basis_posture(&self) -> WorthQueryApplicationQueryBasisPosture {
-        match &self.basis {
-            WorthQueryApplicationQueryBasis::Product { .. } => {
-                WorthQueryApplicationQueryBasisPosture::Pinned
-            }
-            WorthQueryApplicationQueryBasis::Current => {
-                WorthQueryApplicationQueryBasisPosture::Current
-            }
-            WorthQueryApplicationQueryBasis::Pinned(_) => {
-                WorthQueryApplicationQueryBasisPosture::Pinned
-            }
-            WorthQueryApplicationQueryBasis::Historical(_) => {
-                WorthQueryApplicationQueryBasisPosture::Historical
-            }
-            WorthQueryApplicationQueryBasis::Preview(_) => {
-                WorthQueryApplicationQueryBasisPosture::Preview
-            }
-            WorthQueryApplicationQueryBasis::Continuation { .. } => {
-                WorthQueryApplicationQueryBasisPosture::Pinned
-            }
-        }
+        WorthQueryApplicationQueryBasisPosture::SelectedProduct
     }
 
     pub const fn consistency(&self) -> WorthQueryApplicationQueryConsistency {
-        match self.basis_posture() {
-            WorthQueryApplicationQueryBasisPosture::Current => {
-                WorthQueryApplicationQueryConsistency::Committed
-            }
-            WorthQueryApplicationQueryBasisPosture::Pinned => {
-                WorthQueryApplicationQueryConsistency::PinnedSnapshot
-            }
-            WorthQueryApplicationQueryBasisPosture::Historical => {
-                WorthQueryApplicationQueryConsistency::HistoricalSnapshot
-            }
-            WorthQueryApplicationQueryBasisPosture::Preview => {
-                WorthQueryApplicationQueryConsistency::PreviewSnapshot
-            }
-        }
+        WorthQueryApplicationQueryConsistency::SelectedProductSnapshot
     }
 
     pub const fn freshness(&self) -> WorthQueryApplicationQueryFreshness {
-        match self.basis_posture() {
-            WorthQueryApplicationQueryBasisPosture::Current => {
-                WorthQueryApplicationQueryFreshness::CurrentAtAdmission
-            }
-            WorthQueryApplicationQueryBasisPosture::Pinned => {
-                WorthQueryApplicationQueryFreshness::Pinned
-            }
-            WorthQueryApplicationQueryBasisPosture::Historical => {
-                WorthQueryApplicationQueryFreshness::Historical
-            }
-            WorthQueryApplicationQueryBasisPosture::Preview => {
-                WorthQueryApplicationQueryFreshness::PreviewAtAdmission
-            }
-        }
+        WorthQueryApplicationQueryFreshness::SelectedAtAdmission
     }
 
     pub const fn lane(&self) -> WorthQueryApplicationQueryLane {
@@ -276,19 +163,10 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     pub(super) fn into_admission_parts(
         self,
     ) -> (
-        WorthQueryApplicationQueryBasis<Schema>,
+        WorthQueryApplicationQueryBasis,
         WorthQueryAdmittedApplicationQueryControls<'a>,
     ) {
-        let basis_deadline = match &self.basis {
-            WorthQueryApplicationQueryBasis::Product { .. } => Some(self.request_scope.deadline()),
-            WorthQueryApplicationQueryBasis::Current => None,
-            WorthQueryApplicationQueryBasis::Pinned(basis) => Some(basis.expires_at()),
-            WorthQueryApplicationQueryBasis::Historical(basis) => Some(basis.expires_at()),
-            WorthQueryApplicationQueryBasis::Preview(basis) => Some(basis.expires_at()),
-            WorthQueryApplicationQueryBasis::Continuation { .. } => {
-                Some(self.request_scope.deadline())
-            }
-        };
+        let basis_deadline = Some(self.request_scope.deadline());
         let admitted = WorthQueryAdmittedApplicationQueryControls {
             basis: self.basis_posture(),
             consistency: self.consistency(),
@@ -303,19 +181,16 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     }
 
     pub(super) fn continuation_resume(
-        descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
-        retention: worth_relational::facade::branch::RelationalBranchRetentionLease,
+        product: crate::basis::WorthQueryProductBranchLease,
         controls: WorthQueryApplicationQueryResumeControls<'a>,
     ) -> Self {
         Self {
-            basis: WorthQueryApplicationQueryBasis::Continuation {
-                descriptor,
-                retention,
-            },
+            basis: WorthQueryApplicationQueryBasis::RetainedContinuation { product },
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: controls.maximum_page_width,
             maximum_work: controls.maximum_work,
             request_scope: controls.request_scope,
+            _schema: PhantomData,
         }
     }
 }

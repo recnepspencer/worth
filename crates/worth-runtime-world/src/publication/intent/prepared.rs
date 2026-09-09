@@ -53,6 +53,13 @@ impl PreparedCompositePublicationWithoutSignal {
         self.attempt.expected_head()
     }
 
+    /// The non-authorizing identity of the recovery slot already reserved for
+    /// this attempt. It permits exact lifecycle correlation only; it cannot
+    /// execute, publish, inspect, or clean up the prepared attempt.
+    pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.attempt.unpublished_recovery_handle()
+    }
+
     pub fn cancel(self) -> NoEffectCompositePublication {
         self.attempt.cancel()
     }

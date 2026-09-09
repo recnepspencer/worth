@@ -50,21 +50,21 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         attempt_basis,
         aftermath_causality: _aftermath_causality,
     } = running;
-    let staged = real_terminal_session(&world, &mut running);
+    let staged = real_terminal_session(&world, &mut running, lease.product().retained_clone());
     assert!(staged.bind_application_attempt(attempt_basis).is_ok());
 
     assert!(WorthQueryApplicationAttemptBasis::capture(
         &foreign_world.application,
         &admission,
         lease.snapshot(),
-        lease.product_publication(),
+        lease.product(),
     )
     .is_err());
 
     let substitute_lease = WorthQueryApplicationSnapshotLease::acquire(
         lease.handle().clone(),
         std::sync::Arc::clone(&lease.layout),
-        lease.product_publication().clone(),
+        lease.product().retained_clone(),
     )
     .expect("the real branch must issue a second exact snapshot handle");
     assert_ne!(substitute_lease.snapshot(), lease.snapshot());
@@ -72,7 +72,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         &world.application,
         &admission,
         substitute_lease.snapshot(),
-        substitute_lease.product_publication(),
+        substitute_lease.product(),
     )
     .expect("same-runtime same-branch snapshot remains a valid pre-session basis");
     assert!(staged
@@ -100,7 +100,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         &world.application,
         &admission,
         &foreign_branch_snapshot,
-        lease.product_publication(),
+        lease.product(),
     )
     .is_err());
     assert!(lease.handle().with_runtime_mut(|runtime| {
@@ -148,8 +148,16 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
         attempt_basis: second_basis,
         aftermath_causality: _second_aftermath,
     } = second;
-    let first_staged = real_terminal_session(&world, &mut first_running);
-    let second_staged = real_terminal_session(&world, &mut second_running);
+    let first_staged = real_terminal_session(
+        &world,
+        &mut first_running,
+        first_lease.product().retained_clone(),
+    );
+    let second_staged = real_terminal_session(
+        &world,
+        &mut second_running,
+        second_lease.product().retained_clone(),
+    );
     let first_terminal = first_staged.provider_session_terminal_binding();
     let second_terminal = second_staged.provider_session_terminal_binding();
     assert_ne!(first_terminal, second_terminal);
@@ -174,13 +182,108 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
     finish_uncommitted(second_mutation_run, second_running, second_lease);
 }
 
+#[test]
+fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
+    let world = installed_authorization_world(true);
+    let running = start(
+        &world,
+        retained_program(&world, "product-owner"),
+        idempotency(193, 194),
+    );
+    let WorthQueryRunningApplicationCommit {
+        admission: _admission,
+        lease,
+        provider_attempt: _provider_attempt,
+        authorization: _authorization,
+        idempotency: _idempotency,
+        running: mut direct_run,
+        mutation_run,
+        attempt_basis: _attempt_basis,
+        aftermath_causality: _aftermath_causality,
+    } = running;
+    let sibling = fork_product(&world, lease.product());
+    let sibling = world
+        .application
+        .select_product_branch(&sibling)
+        .expect("the exact sibling product remains selectable");
+    let (_, sibling_product, sibling_application_basis) = sibling.into_parts();
+    drop(sibling_application_basis);
+
+    let result = direct_run
+        .admit_provider_execution_plan(&world.application.primary_graph_authority)
+        .expect("the application authorities admit the provider plan")
+        .bind_application_product(sibling_product);
+    assert!(result.is_err());
+    finish_uncommitted(mutation_run, direct_run, lease);
+}
+
+#[test]
+fn the_exact_selected_product_binds_at_provider_plan_boundary() {
+    let world = installed_authorization_world(true);
+    let running = start(
+        &world,
+        retained_program(&world, "product-owner"),
+        idempotency(195, 196),
+    );
+    let WorthQueryRunningApplicationCommit {
+        admission: _admission,
+        lease,
+        provider_attempt: _provider_attempt,
+        authorization: _authorization,
+        idempotency: _idempotency,
+        running: mut direct_run,
+        mutation_run,
+        attempt_basis: _attempt_basis,
+        aftermath_causality: _aftermath_causality,
+    } = running;
+    let result = direct_run
+        .admit_provider_execution_plan(&world.application.primary_graph_authority)
+        .expect("the application authorities admit the provider plan")
+        .bind_application_product(lease.product().retained_clone());
+    assert!(result.is_ok());
+    drop(result);
+    finish_uncommitted(mutation_run, direct_run, lease);
+}
+
+fn fork_product(
+    world: &AuthorizationWorld,
+    source: &crate::basis::WorthQueryProductBranchLease,
+) -> worth_runtime_world::facade::ProductBranchIdentity {
+    let intent = worth_runtime_world::facade::ProductBranchCreationIntent::from_source(
+        "provider-affinity-sibling",
+        worth_runtime_world::facade::ProductBranchCreationPlans::new(
+            worth_runtime_world::facade::RelationalBranchCreationPlan::ReuseExact,
+            worth_runtime_world::facade::SignalBranchCreationPlan::ReuseExact,
+        ),
+    )
+    .expect("the sibling intent is valid");
+    let outcome = world
+        .application
+        .product_runtime()
+        .create_product_branch(
+            source,
+            intent,
+            &worth_runtime_world::facade::RuntimeWorldCancellationSource::new().token(),
+        )
+        .expect("the product owner accepts the sibling request");
+    let worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome::Performed(observation) =
+        outcome
+    else {
+        panic!("the product owner must create an exact sibling: {outcome:?}")
+    };
+    observation.branch_identity().clone()
+}
+
 fn real_terminal_session<'run>(
     world: &AuthorizationWorld,
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
+    product: crate::basis::WorthQueryProductBranchLease,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
     running
         .admit_provider_execution_plan(&world.application.primary_graph_authority)
         .expect("real application authorities must admit their provider plan")
+        .bind_application_product(product)
+        .expect("the exact selected product must bind its provider plan")
         .readmit()
         .expect("the real provider must readmit its exact plan")
         .prepare()

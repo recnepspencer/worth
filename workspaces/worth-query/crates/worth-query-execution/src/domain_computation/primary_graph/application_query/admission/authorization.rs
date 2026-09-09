@@ -67,14 +67,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ),
         )
         .map_err(|kind| governance_denial(kind, query.name()))?;
-        let security = basis.product().map(|product| self.admit_product_security_basis(product))
-            .transpose().map_err(|denial| WorthQueryApplicationQueryAdmissionDenial::from_authorization(
+        let security = self.admit_product_security_basis(basis.product())
+            .map_err(|denial| WorthQueryApplicationQueryAdmissionDenial::from_authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
                     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial), query.name(),
                 ),
             ))?;
         let (authorization, authorization_work) =
-            self.observe_application_query_access(graph_work, query, access, security.as_ref())?;
+            self.observe_application_query_access(graph_work, query, access, &security)?;
         let authorization_work = authorization_work.with_capability_authorization(
             governance.authorization(),
             governance.authorization_canonical_work(),

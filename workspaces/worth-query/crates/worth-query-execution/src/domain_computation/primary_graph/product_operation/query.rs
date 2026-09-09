@@ -1,5 +1,6 @@
 use std::num::NonZeroUsize;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
@@ -76,6 +77,193 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             access,
             parameters,
             WorthQueryApplicationQueryControls::product_one_shot(
+                product,
+                application_basis,
+                controls.maximum_results,
+                controls.maximum_work,
+                controls.request,
+            ),
+        )
+    }
+
+    pub fn admit_application_query_continuation<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        self,
+        query: &'runtime WorthQueryInstalledApplicationQuery<
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Scope,
+        >,
+        access: &WorthQueryApplicationQueryAccessContext<
+            'runtime,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        parameters: ApplicationQueryParameterSet<Query>,
+        controls: WorthQueryProductQueryControls<'runtime>,
+    ) -> Result<
+        WorthQueryAdmittedApplicationQueryPlan<
+            'runtime,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        WorthQueryApplicationQueryAdmissionDenial,
+    > {
+        let (application, product, application_basis) = self.into_parts();
+        application.admit_application_query(
+            query,
+            access,
+            parameters,
+            WorthQueryApplicationQueryControls::product_continuation(
+                product,
+                application_basis,
+                controls.maximum_results,
+                controls.maximum_work,
+                controls.request,
+            ),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn admit_governed_application_query<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Capability,
+        Operation,
+        Input,
+    >(
+        self,
+        query: &'runtime WorthQueryInstalledApplicationQuery<
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Scope,
+        >,
+        access: &WorthQueryApplicationQueryAccessContext<
+            'runtime,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        capability: crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
+            Schema,
+            Capability,
+            Operation,
+            Input,
+        >,
+        parameters: ApplicationQueryParameterSet<Query>,
+        controls: WorthQueryProductQueryControls<'runtime>,
+    ) -> Result<
+        WorthQueryAdmittedApplicationQueryPlan<
+            'runtime,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        WorthQueryApplicationQueryAdmissionDenial,
+    >
+    where
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
+    {
+        let (application, product, application_basis) = self.into_parts();
+        application.admit_governed_application_query(
+            query,
+            access,
+            capability,
+            parameters,
+            WorthQueryApplicationQueryControls::product_one_shot(
+                product,
+                application_basis,
+                controls.maximum_results,
+                controls.maximum_work,
+                controls.request,
+            ),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn admit_governed_application_query_continuation<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Capability,
+        Operation,
+        Input,
+    >(
+        self,
+        query: &'runtime WorthQueryInstalledApplicationQuery<
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Scope,
+        >,
+        access: &WorthQueryApplicationQueryAccessContext<
+            'runtime,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        capability: crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
+            Schema,
+            Capability,
+            Operation,
+            Input,
+        >,
+        parameters: ApplicationQueryParameterSet<Query>,
+        controls: WorthQueryProductQueryControls<'runtime>,
+    ) -> Result<
+        WorthQueryAdmittedApplicationQueryPlan<
+            'runtime,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        WorthQueryApplicationQueryAdmissionDenial,
+    >
+    where
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
+    {
+        let (application, product, application_basis) = self.into_parts();
+        application.admit_governed_application_query(
+            query,
+            access,
+            capability,
+            parameters,
+            WorthQueryApplicationQueryControls::product_continuation(
                 product,
                 application_basis,
                 controls.maximum_results,

@@ -21,7 +21,7 @@ mod session_admission;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) use authorized::WorthQueryManagedEquivalentCommitReceiptPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use commit_resolution::WorthQueryFreshCommitReceiptPermit;
-pub(in crate::domain_computation::primary_graph::application_attempt) use fresh::WorthQueryStaleEquivalentCommitReceiptPermit;
+pub(in crate::domain_computation::primary_graph::application_attempt) use fresh::WorthQueryRegisteredEquivalentCommitReceiptPermit;
 use mutation_cleanup::WorthQueryApplicationMutationCleanupOwner;
 pub(in crate::domain_computation) use registered::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
@@ -218,7 +218,8 @@ where
         serialization,
         aftermath_causality,
     } = progression;
-    let admitted_session = match admit_provider_session(running, graph, mutation_run) {
+    let product = attempt_basis.retained_product();
+    let admitted_session = match admit_provider_session(running, graph, product, mutation_run) {
         Ok(admitted) => admitted,
         Err(failure) => return failure.into_completion(),
     };

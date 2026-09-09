@@ -7,7 +7,11 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_authoriz
 #[test]
 fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     let world = installed_authorization_world(true);
-    let product = world.application.admit_current_product_branch().unwrap();
+    let product = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let limit = installed_budgets().live_product_branches();
     let registry = WorthQueryProductActivationRegistry::new(limit).unwrap();
     registry.reserve().unwrap().commit(product.observation());
@@ -59,7 +63,11 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
 fn foreign_product_is_denied_by_owner_affinity_before_local_coordination() {
     let local = installed_authorization_world(true);
     let foreign = installed_authorization_world(true);
-    let selection = foreign.application.admit_current_product_branch().unwrap();
+    let selection = foreign
+        .application
+        .product_runtime()
+        .admit_product_branch(foreign.application.product_runtime().default_branch())
+        .unwrap();
     assert!(matches!(
         local
             .application

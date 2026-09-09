@@ -3,75 +3,62 @@ use super::super::resource_lifecycle::{
     WorthQueryApplicationBasisReleaseReceipt,
 };
 
-/// The basis admitted by the query pipeline owns every obligation for its
-/// selected truth. A product selection cannot enter through a component lease.
-pub(in crate::domain_computation::primary_graph::application_query) enum WorthQueryApplicationQueryBasisCustody
+/// The basis admitted by the query pipeline owns the exact selected World
+/// occurrence and its matching application component lease.
+pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationQueryBasisCustody
 {
-    Relational(WorthQueryApplicationBasisLease),
-    Product {
-        product: crate::basis::WorthQueryProductBranchLease,
-        application_basis: WorthQueryApplicationBasisLease,
-    },
+    product: crate::basis::WorthQueryProductBranchLease,
+    application_basis: WorthQueryApplicationBasisLease,
 }
 
 impl WorthQueryApplicationQueryBasisCustody {
-    pub(in crate::domain_computation::primary_graph::application_query) fn product(
-        &self,
-    ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
-        match self {
-            Self::Relational(_) => None,
-            Self::Product { product, .. } => Some(product),
+    pub(super) fn new(
+        product: crate::basis::WorthQueryProductBranchLease,
+        application_basis: WorthQueryApplicationBasisLease,
+    ) -> Self {
+        Self {
+            product,
+            application_basis,
         }
     }
-    fn component(&self) -> &WorthQueryApplicationBasisLease {
-        match self {
-            Self::Relational(basis) => basis,
-            Self::Product {
-                application_basis, ..
-            } => application_basis,
-        }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn product(
+        &self,
+    ) -> &crate::basis::WorthQueryProductBranchLease {
+        &self.product
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn retained_product(
+        &self,
+    ) -> crate::basis::WorthQueryProductBranchLease {
+        self.product.retained_clone()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn identity(
         &self,
     ) -> &WorthQueryApplicationBasisIdentity {
-        self.component().identity()
+        self.application_basis.identity()
     }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn version_id(
         &self,
     ) -> worth_relational::facade::identity::VersionId {
-        self.component().version_id()
+        self.application_basis.version_id()
     }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn snapshot_handle(
         &self,
     ) -> &worth_relational::facade::snapshots::SnapshotHandle {
-        self.component().snapshot_handle()
+        self.application_basis.snapshot_handle()
     }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn is_live(&self) -> bool {
-        self.component().is_live()
-    }
-    pub(in crate::domain_computation::primary_graph::application_query) fn preview_session_liveness(
-        &self,
-    ) -> Option<&worth_runtime_bridge::facade::BridgePreviewSessionLivenessObserver> {
-        self.component().preview_session_liveness()
-    }
-    pub(in crate::domain_computation::primary_graph::application_query) fn retain_for_continuation(
-        &self,
-    ) -> Result<
-        worth_relational::facade::branch::RelationalBranchRetentionLease,
-        worth_relational::facade::branch::RelationalBranchBasisDenial,
-    > {
-        self.component().retain_for_continuation()
+        self.application_basis.is_live()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn release(
         self,
     ) -> WorthQueryApplicationBasisReleaseReceipt {
-        match self {
-            Self::Relational(basis) => basis.release(),
-            Self::Product {
-                application_basis, ..
-            } => application_basis.release(),
-        }
+        self.application_basis.release()
     }
 }

@@ -13,7 +13,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
     handle: WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: Option<SnapshotHandle>,
     basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    product: crate::basis::WorthQueryProductBranchLease,
     pub(super) layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
 }
 
@@ -21,9 +21,9 @@ impl WorthQueryApplicationSnapshotLease {
     pub(in crate::domain_computation) fn acquire(
         handle: WorthQueryPrimaryGraphIntegrationHandle,
         layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
-        product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryApplicationSnapshotLeaseDenial> {
-        let basis = product.observation().basis().relational_basis().clone();
+        let basis = product.relational_basis().clone();
         let snapshot = handle.with_runtime_mut(|runtime| {
             let snapshot = runtime
                 .snapshots()
@@ -57,7 +57,7 @@ impl WorthQueryApplicationSnapshotLease {
         layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
         basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         snapshot: SnapshotHandle,
-        product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> Self {
         assert_eq!(
             basis.observation().version_id(),
@@ -71,11 +71,7 @@ impl WorthQueryApplicationSnapshotLease {
         );
         assert_eq!(
             basis.descriptor(),
-            product
-                .observation()
-                .basis()
-                .relational_basis()
-                .descriptor(),
+            product.relational_basis().descriptor(),
             "existing application snapshot must carry the admitted composite occurrence"
         );
         Self {
@@ -93,7 +89,9 @@ impl WorthQueryApplicationSnapshotLease {
             .expect("application snapshot lease remains live until consumed")
     }
 
-    pub(in crate::domain_computation) fn product_publication(&self) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
+    pub(in crate::domain_computation) fn product(
+        &self,
+    ) -> &crate::basis::WorthQueryProductBranchLease {
         &self.product
     }
 

@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryControls, WorthQueryPrincipalResolutionMode,
+    WorthQueryPrincipalResolutionMode,
 };
 
 #[test]
@@ -22,6 +22,8 @@ fn nested_query_total_work_exhaustion_returns_no_plan_authority() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -31,6 +33,8 @@ fn nested_query_total_work_exhaustion_returns_no_plan_authority() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -40,14 +44,14 @@ fn nested_query_total_work_exhaustion_returns_no_plan_authority() {
         .unwrap();
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let controls = WorthQueryApplicationQueryControls::current_one_shot(
+    let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(10).unwrap(),
         NonZeroUsize::new(1).unwrap(),
         &request,
     );
 
     let denial = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
@@ -71,6 +75,8 @@ fn caller_work_cannot_widen_the_installed_index_profile() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -80,6 +86,8 @@ fn caller_work_cannot_widen_the_installed_index_profile() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -89,14 +97,14 @@ fn caller_work_cannot_widen_the_installed_index_profile() {
         .unwrap();
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let controls = WorthQueryApplicationQueryControls::current_one_shot(
+    let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(10).unwrap(),
         NonZeroUsize::new(100_000).unwrap(),
         &request,
     );
 
     let denial = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
@@ -129,6 +137,8 @@ fn installer_profile_changes_admission_without_changing_query_identity() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -138,6 +148,8 @@ fn installer_profile_changes_admission_without_changing_query_identity() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -147,13 +159,13 @@ fn installer_profile_changes_admission_without_changing_query_identity() {
         .unwrap();
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let controls = WorthQueryApplicationQueryControls::current_one_shot(
+    let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(10).unwrap(),
         NonZeroUsize::new(20_000).unwrap(),
         &request,
     );
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,

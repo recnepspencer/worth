@@ -122,6 +122,12 @@ impl ReservedCompositePublicationAttempt {
         &self.progress
     }
 
+    pub(crate) fn unpublished_recovery_handle(
+        &self,
+    ) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.custody.unpublished_recovery_handle()
+    }
+
     pub(crate) fn record_progress(&mut self, progress: &CompositeAttemptProgress) {
         self.progress = self.custody.record_progress(progress.retained_image());
     }

@@ -24,6 +24,10 @@ mod publication_recovery;
 mod resource_support;
 mod session_commit;
 mod session_lifecycle;
+mod unpublished_idempotency;
+#[cfg(all(test, feature = "test-world-operation-control"))]
+pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::unwind_recovery_inspection_count;
+pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
 
 use std::sync::{Arc, Mutex};
 
@@ -45,7 +49,8 @@ pub use committed_dispatch_outbox::{
     WorthQueryCommittedDispatchOutboxReadWork,
 };
 pub(super) use idempotency::{
-    WorthQueryProviderIdempotencyResolution, WorthQueryProviderIdempotencyResolutionDenial,
+    WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
+    WorthQueryProviderIdempotencyResolutionDenial,
 };
 pub use mutation_work::{WorthQueryPrimaryMutationWorkEvidence, WorthQueryTouchedRecordIdentity};
 pub(in crate::domain_computation) use session_commit::WorthQueryCommittedDispatchOutboxBinding;
@@ -63,6 +68,8 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     attempts: Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>,
     application_attempt_work: application_attempt_work::WorthQueryApplicationAttemptWorkLedger,
     completed_commit_evidence: Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>,
+    unpublished_idempotency:
+        Arc<Mutex<unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore>>,
     receipt_basis_retention: Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>,
     pending_application_publication:
         Mutex<Option<pending_application_publication::WorthQueryPendingApplicationPublication>>,
@@ -302,6 +309,23 @@ impl WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .acquire(commit.commit_id)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn resolve_completed_application_idempotency(
+        &self,
+        product: &WorthQueryProductIdempotencyAffinity,
+        binding: super::application_attempt::WorthQueryApplicationIdempotencyBinding,
+    ) -> Option<WorthQueryProviderIdempotencyResolution> {
+        let (committed_binding, committed) = self
+            .completed_commit_evidence
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .observe_idempotency(product, binding)?;
+        Some(if committed_binding == binding {
+            WorthQueryProviderIdempotencyResolution::Equivalent(committed)
+        } else {
+            WorthQueryProviderIdempotencyResolution::Drift
+        })
     }
 
     #[cfg(test)]

@@ -8,15 +8,16 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, AccountLabel, AccountStatus, AuthorizationWorld,
     MultiFieldRetentionOperation, WrongFieldRetentionOperation,
 };
-use crate::domain_computation::primary_graph::{
-    primary_relational_branch_id, WorthQueryApplicationCommitOutcome,
-};
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 
 fn relational_head(world: &AuthorizationWorld) -> RelationalCommitReceipt {
     world
-        .application
-        .relational_branch_head(&primary_relational_branch_id())
-        .expect("fixture branch-head observation is admitted")
+        .selected_product()
+        .product()
+        .relational_basis()
+        .observation()
+        .commit_receipt()
+        .cloned()
         .expect("fixture has a Relational head")
 }
 
@@ -40,7 +41,7 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
         .installed_operation(WrongFieldRetentionOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -103,7 +104,7 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
         .installed_operation(MultiFieldRetentionOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -170,7 +171,7 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
         .installed_operation(MultiFieldRetentionOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,

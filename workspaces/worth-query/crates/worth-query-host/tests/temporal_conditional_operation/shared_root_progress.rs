@@ -90,13 +90,19 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
         }
         let (read, completed) = mpsc::channel();
         let reader = scope.spawn(move || {
-            let product = application.admit_current_product_branch().is_ok();
-            let entity = application.resolve_entity(
-                IntentIdentityField::reference(),
-                "intent-1".to_string(),
-                &request_scope(),
-                primary_graph::WorthQueryPrincipalResolutionMode::Certification,
-            );
+            let product = application
+                .product_runtime()
+                .admit_product_branch(application.product_runtime().default_branch())
+                .is_ok();
+            let entity = application
+                .select_product_branch(application.product_runtime().default_branch())
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    IntentIdentityField::reference(),
+                    "intent-1".to_string(),
+                    &request_scope(),
+                    primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                );
             read.send((product, entity.is_ok())).unwrap();
         });
         let progress = completed.recv_timeout(Duration::from_secs(5));

@@ -10,8 +10,8 @@ use worth_query_installation::facade::{
 };
 
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryRetainedGovernedInput,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryRetainedGovernedInput,
+    WorthQuerySelectedProductOperation,
 };
 use worth_relational::facade::history::RelationalCommitReceipt;
 
@@ -23,30 +23,22 @@ use super::redo_intent::{WorthQueryProvedUndo, WorthQueryRedoIntent};
 use super::redo_recovery::WorthQueryRedoRecovery;
 use super::{WorthQueryAftermathDerivationFailure, WorthQueryPendingAftermathCausality};
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Derive a redo intent from the exact current Relational branch head.
+    /// Derive a redo intent from this exact retained product occurrence.
     pub fn derive_redo_intent(
         &self,
         proved: &WorthQueryProvedUndo,
     ) -> Result<WorthQueryRedoIntent, WorthQueryAftermathDerivationFailure> {
         let head = self
-            .relational_branch_head(&proved.undo_commit().branch_id)
-            .map_err(|denial| match denial {
-                crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted => {
-                    WorthQueryAftermathDerivationFailure::RetentionCapacityExhausted
-                }
-                crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionIdentityExhausted => {
-                    WorthQueryAftermathDerivationFailure::RetentionIdentityExhausted
-                }
-                crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::SnapshotIdentityExhausted => {
-                    WorthQueryAftermathDerivationFailure::SnapshotIdentityExhausted
-                }
-                _ => WorthQueryAftermathDerivationFailure::BasisRejected,
-            })?
-            .filter(|head| head == proved.undo_commit())
+            .product()
+            .relational_basis()
+            .observation()
+            .commit_receipt()
+            .filter(|head| *head == proved.undo_commit())
+            .cloned()
             .ok_or(WorthQueryAftermathDerivationFailure::BasisRejected)?;
         WorthQueryRedoIntent::derive(proved, head)
     }
@@ -58,29 +50,27 @@ where
         authority: &WorthQueryRecoveryEffectAuthority,
         intent: &WorthQueryRedoIntent,
     ) -> Result<WorthQueryRedoAdmission, WorthQueryRedoDenial> {
-        // Reading current Relational truth can itself deny (`Stale`). That is a
-        // non-event for the recovery, so it relinquishes rather than dropping
-        // the handle it is holding (Q8.21-L11).
+        // Reading the selected product can itself deny. That is a non-event for
+        // the recovery, so it relinquishes rather than dropping the handle it
+        // is holding (Q8.21-L11).
         let (recovery, (current_head, prior_redo)) = recovery.admit_deriving(|_| {
             let current_head = self
-                .relational_branch_head(&intent.bound_relational_head().branch_id)
-                .map_err(|denial| match denial {
-                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted => {
-                        WorthQueryRedoDenial::retention_capacity_exhausted()
-                    }
-                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionIdentityExhausted => {
-                        WorthQueryRedoDenial::retention_identity_exhausted()
-                    }
-                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::SnapshotIdentityExhausted => {
-                        WorthQueryRedoDenial::snapshot_identity_exhausted()
-                    }
-                    _ => WorthQueryRedoDenial::stale(),
-                })?
+                .product()
+                .relational_basis()
+                .observation()
+                .commit_receipt()
+                .cloned()
                 .ok_or_else(WorthQueryRedoDenial::stale)?;
             let pending =
                 WorthQueryPendingAftermathCausality::redo_of(intent.undo_commit().clone());
             let prior_redo = self
-                .committed_aftermath_causality(&pending)
+                .application()
+                .primary_provider
+                .resolve_aftermath_causality_at_basis(
+                    self.product().relational_basis(),
+                    &pending,
+                    None,
+                )
                 .map_err(|denial| match denial {
                     crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,

@@ -284,7 +284,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn into_lease(
         mut self,
-        product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease {
         let basis = self
             .basis
@@ -305,7 +305,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn into_lease_and_realized_scope(
         mut self,
-        product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> (
         super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         WorthQueryRealizedProjectionScope,

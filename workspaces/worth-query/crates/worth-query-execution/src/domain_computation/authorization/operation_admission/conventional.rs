@@ -118,6 +118,7 @@ where
     } = bound;
     let super::super::super::super::ValidatedConventionalOperation {
         runtime,
+        product,
         principal,
         scope,
         operation,
@@ -133,6 +134,7 @@ where
     let graph_work =
         crate::domain_computation::authorization::graph_work_session::start_operation_graph_work(
             runtime,
+            product.retained_clone(),
             operation,
             &resource_binding_identity,
             principal.principal_entity_id(),

@@ -8,8 +8,7 @@ use super::super::fixture::{
     OptionalAccountFieldQuery, OptionalAccountFieldResult,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationQueryAccessContext, WorthQueryPrincipalResolutionMode,
 };
 
 #[test]
@@ -29,6 +28,8 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -38,6 +39,8 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
         .unwrap();
     let scope = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             account.to_owned(),
@@ -52,12 +55,12 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
             ApplicationQueryParameterSet::<OptionalAccountFieldQuery>::new(),
-            WorthQueryApplicationQueryControls::current_one_shot(
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
                 NonZeroUsize::new(256).unwrap(),
                 &request,

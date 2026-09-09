@@ -242,14 +242,17 @@ where
         >,
         WorthQueryTemporalQueryAuthorizationDenial,
     > {
-        let capability = runtime
-            .admit_capability_access(
-                access.principal(),
-                &self.capability,
-                self.input.clone(),
-                controls.request_scope(),
-            )
-            .map_err(WorthQueryTemporalQueryAuthorizationDenial::Authorization)?;
+        let product = controls.product_branch();
+        let capability = crate::domain_computation::authorization::admit_capability_access(
+            runtime,
+            product,
+            access.principal(),
+            &self.capability,
+            self.input.clone(),
+            controls.request_scope(),
+            None,
+        )
+        .map_err(WorthQueryTemporalQueryAuthorizationDenial::Authorization)?;
         runtime
             .admit_governed_application_query(query, access, capability, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
@@ -263,7 +266,10 @@ where
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
             Schema,
@@ -290,7 +296,10 @@ where
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
             Schema,
@@ -304,7 +313,7 @@ where
         WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         WorthQueryOperationAuthorizationDenial,
     > {
-        runtime.authorize_operation(principal, scope, operation, preconditions, request)
+        product.authorize_operation(principal, scope, operation, preconditions, request)
     }
 }
 
@@ -342,7 +351,10 @@ where
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         _scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
             Schema,
@@ -357,7 +369,9 @@ where
         WorthQueryOperationAuthorizationDenial,
     > {
         let capability =
-            runtime.admit_capability_access(principal, &self.capability, input.clone(), request)?;
-        runtime.authorize_capability_operation(capability, operation, preconditions)
+            product.admit_capability_access(principal, &self.capability, input.clone(), request)?;
+        product
+            .application()
+            .authorize_capability_operation(capability, operation, preconditions)
     }
 }

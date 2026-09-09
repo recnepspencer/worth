@@ -9,14 +9,21 @@ use worth_runtime_world::facade::{
 pub struct WorthQueryProductUnpublishedApplication {
     effects: ProductUnpublishedOwnerEffects,
     recovery: RuntimeWorldRecoveryPort,
+    disposition:
+        crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
 }
 
 impl WorthQueryProductUnpublishedApplication {
     pub(in crate::domain_computation) fn new(
         effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
+        disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
     ) -> Self {
-        Self { effects, recovery }
+        Self {
+            effects,
+            recovery,
+            disposition,
+        }
     }
 
     pub fn cause(&self) -> worth_runtime_world::facade::ProductUnpublishedCause {
@@ -46,7 +53,7 @@ impl WorthQueryProductUnpublishedApplication {
     pub fn into_recovery(self) -> super::WorthQueryProductUnpublishedRecovery {
         let handle = self.effects.recovery_handle();
         drop(self.effects);
-        super::WorthQueryProductUnpublishedRecovery::new(handle, self.recovery)
+        super::WorthQueryProductUnpublishedRecovery::new(handle, self.recovery, self.disposition)
     }
 
     /// Refresh descriptive recovery facts through the same owning catalog.
@@ -55,7 +62,11 @@ impl WorthQueryProductUnpublishedApplication {
         let effects = self
             .recovery
             .inspect_effects(&self.effects.recovery_handle())?;
-        Ok(Self::new(effects, self.recovery.clone()))
+        Ok(Self::new(
+            effects,
+            self.recovery.clone(),
+            self.disposition.clone(),
+        ))
     }
 }
 

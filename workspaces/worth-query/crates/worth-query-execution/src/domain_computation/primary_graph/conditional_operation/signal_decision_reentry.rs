@@ -4,9 +4,7 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::predicate_admission::QueryConditionalComputeContext;
-use crate::domain_computation::primary_graph::{
-    primary_truth_branch_identity, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::primary_truth_branch_identity;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalTruthBasis {
     product: crate::basis::WorthQueryProductBranchLease,

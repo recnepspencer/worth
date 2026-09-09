@@ -61,3 +61,29 @@ pub(in crate::domain_computation) fn progression_denied(
         WorthQueryApplicationCommitDenial::provider_rejected(stage),
     )
 }
+
+pub(in crate::domain_computation::primary_graph::application_attempt) fn progression_from_authorization_denial(
+    denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    stage: WorthQueryApplicationCommitDenialStage,
+) -> WorthQueryProviderProgressionOutcome {
+    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+    match denial.kind() {
+        Kind::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
+        Kind::DeadlineExceeded => WorthQueryProviderProgressionOutcome::TimedOut,
+        _ => progression_denied(stage),
+    }
+}
+
+pub(in crate::domain_computation::primary_graph::application_attempt) fn commit_outcome_from_authorization_denial(
+    denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    stage: WorthQueryApplicationCommitDenialStage,
+) -> WorthQueryApplicationCommitOutcome {
+    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+    match denial.kind() {
+        Kind::Cancelled => WorthQueryApplicationCommitOutcome::Cancelled,
+        Kind::DeadlineExceeded => WorthQueryApplicationCommitOutcome::TimedOut,
+        _ => WorthQueryApplicationCommitOutcome::Denied(
+            WorthQueryApplicationCommitDenial::provider_rejected(stage),
+        ),
+    }
+}

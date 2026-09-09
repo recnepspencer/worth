@@ -9,10 +9,7 @@ use super::super::tests::fixture::{
     AuthorizationWorld, GovernedAccountOmissionQuery, GovernedLiveAccountActivityQuery,
     IdentityExecutionSchema, Principal,
 };
-use super::{
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryControls,
-};
+use super::{WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
     WorthQueryPrincipalResolutionMode,
@@ -93,6 +90,8 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
     let account_two = context
         .world
         .application
+        .select_product_branch(context.world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-2".to_owned(),
@@ -181,6 +180,8 @@ fn governance_context(label: &str) -> GovernanceContext {
     let principal = resolve_principal(&world, &request, "alice");
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -204,6 +205,8 @@ fn resolve_principal(
     let external = world.authenticate(subject, Duration::from_secs(60), request);
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -244,7 +247,7 @@ fn admit_plan<'a>(
             .unwrap();
     context
         .world
-        .application
+        .selected_product()
         .admit_governed_application_query(
             query,
             access,
@@ -289,8 +292,8 @@ fn governance_matches_plan(
 
 fn controls(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-) -> WorthQueryApplicationQueryControls<'_, IdentityExecutionSchema> {
-    WorthQueryApplicationQueryControls::current_one_shot(
+) -> crate::domain_computation::primary_graph::WorthQueryProductQueryControls<'_> {
+    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(4).unwrap(),
         NonZeroUsize::new(512).unwrap(),
         request,

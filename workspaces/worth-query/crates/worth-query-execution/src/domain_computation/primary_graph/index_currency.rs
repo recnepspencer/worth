@@ -1,5 +1,5 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
-use worth_relational::facade::history::{BranchId, RelationalCommitReceipt};
+use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
 
@@ -21,16 +21,6 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             return Ok(());
         };
         self.ensure_primary_indexes_for_commit(runtime, head)
-    }
-
-    pub(crate) fn ensure_primary_indexes_current_for_branch(
-        &self,
-        runtime: &mut RelationalRuntime,
-        branch: &BranchId,
-    ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
-        let basis = super::exact_basis_access::current_branch_basis(runtime, branch)
-            .map_err(WorthQueryPrimaryIndexCurrencyDenial::Basis)?;
-        self.ensure_primary_indexes_for_basis(runtime, &basis)
     }
 
     pub(crate) fn ensure_primary_indexes_for_basis(
@@ -56,6 +46,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         self.require_complete_build(build)
     }
 
+    #[cfg(test)]
     fn ensure_primary_indexes_for_commit(
         &self,
         runtime: &mut RelationalRuntime,

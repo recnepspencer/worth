@@ -3,6 +3,8 @@ use std::sync::{
     Arc,
 };
 
+use super::lifecycle_count::{acquire, record_one_saturating, release};
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 use worth_relational::facade::{
     branch::{
         AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor,
@@ -11,10 +13,6 @@ use worth_relational::facade::{
     history::BranchId,
     snapshots::{SnapshotHandle, SnapshotId},
 };
-use worth_runtime_bridge::facade::BridgePreviewSessionLivenessObserver;
-
-use super::lifecycle_count::{acquire, record_one_saturating, release};
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 
 #[derive(Default)]
 struct WorthQueryApplicationBasisRegistryState {
@@ -128,7 +126,6 @@ pub(crate) struct WorthQueryApplicationBasisLease {
     retention: Option<RelationalBranchRetentionLease>,
     snapshot: Option<SnapshotHandle>,
     graph: WorthQueryPrimaryGraphIntegrationHandle,
-    preview_session_liveness: Option<BridgePreviewSessionLivenessObserver>,
     state: Arc<WorthQueryApplicationBasisRegistryState>,
 }
 
@@ -185,7 +182,6 @@ impl WorthQueryApplicationBasisRegistry {
             retention: Some(retention),
             snapshot: Some(snapshot),
             graph,
-            preview_session_liveness: None,
             state: Arc::clone(&self.state),
         })
     }
@@ -230,20 +226,6 @@ impl WorthQueryApplicationBasisLease {
         );
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn bind_preview_session(
-        mut self,
-        liveness: BridgePreviewSessionLivenessObserver,
-    ) -> Self {
-        self.preview_session_liveness = Some(liveness);
-        self
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_query) fn preview_session_liveness(
-        &self,
-    ) -> Option<&BridgePreviewSessionLivenessObserver> {
-        self.preview_session_liveness.as_ref()
-    }
-
     pub fn identity(&self) -> &WorthQueryApplicationBasisIdentity {
         &self.identity
     }
@@ -265,16 +247,6 @@ impl WorthQueryApplicationBasisLease {
                     runtime.read_truth().project_snapshot(snapshot).is_some()
                 })
             })
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_query) fn retain_for_continuation(
-        &self,
-    ) -> Result<
-        RelationalBranchRetentionLease,
-        worth_relational::facade::branch::RelationalBranchBasisDenial,
-    > {
-        self.graph
-            .with_runtime(|runtime| runtime.retain_component_basis(self.basis()))
     }
 
     pub fn release(mut self) -> WorthQueryApplicationBasisReleaseReceipt {

@@ -26,6 +26,8 @@ pub(in crate::domain_computation::primary_graph) fn commit_live_activity_with_la
 ) -> WorthQueryApplicationCommitReceipt {
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_owned(),
@@ -61,7 +63,7 @@ fn live_activity_program(
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(principal, account, &operation, Default::default(), request)
         .unwrap();
     let (_, projection, _) = world

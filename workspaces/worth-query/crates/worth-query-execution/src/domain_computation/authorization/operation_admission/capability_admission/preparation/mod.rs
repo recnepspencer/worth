@@ -162,6 +162,7 @@ pub(super) fn prepare_capability_admission<
     Input,
 >(
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &crate::basis::WorthQueryProductBranchLease,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &'a WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     input: Input,
@@ -192,7 +193,13 @@ where
     let sample = preflight::sample_trusted_time(runtime, capability, installed)?;
     let operation = preflight::resolve_installed_operation(runtime, capability)?;
     let operation_admission_identity = preflight::mint_operation_admission(capability)?;
-    let graph_work = preflight::start_graph_work(runtime, principal, capability, &operation)?;
+    let graph_work = preflight::start_graph_work(
+        runtime,
+        product.retained_clone(),
+        principal,
+        capability,
+        &operation,
+    )?;
     Ok(PreparedCapabilityAdmission {
         runtime,
         principal,

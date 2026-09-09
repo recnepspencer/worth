@@ -10,7 +10,7 @@ pub(super) use prepared::{
 };
 pub(in crate::domain_computation::primary_graph::application_attempt) use prepared::running::progression::{
     WorthQueryFreshCommitReceiptPermit, WorthQueryManagedEquivalentCommitReceiptPermit,
-    WorthQueryStaleEquivalentCommitReceiptPermit,
+    WorthQueryRegisteredEquivalentCommitReceiptPermit,
 };
 pub(in crate::domain_computation) use prepared::running::progression::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,

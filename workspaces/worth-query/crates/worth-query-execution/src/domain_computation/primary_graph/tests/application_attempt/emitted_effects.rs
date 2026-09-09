@@ -305,7 +305,7 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,

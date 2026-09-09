@@ -34,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             PrincipalIdentity,
             Scope,
         >,
-        security: Option<&crate::domain_computation::primary_graph::product_operation::WorthQueryProductSecurityBasis>,
+        security: &crate::domain_computation::primary_graph::product_operation::WorthQueryProductSecurityBasis,
     ) -> Result<
         (
             WorthQueryRetainedAuthorizationDecisionFacts,
@@ -72,32 +72,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         let entity_resolution = graph.retain_entity_resolution_context();
         let policy = graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = if let Some(security) = security {
-                std::borrow::Cow::Borrowed(security.snapshot_handle())
-            } else {
-                std::borrow::Cow::Owned(crate::domain_computation::primary_graph::exact_basis_access::open_current_main_snapshot(runtime)
-                .map_err(|basis_denial| {
-                    let kind = match basis_denial {
-                        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
-                            maximum_active_snapshots,
-                        } => WorthQueryApplicationQueryAdmissionDenialKind::ActiveSnapshotCapacityExhausted {
-                            maximum_active_snapshots,
-                        },
-                        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
-                            WorthQueryApplicationQueryAdmissionDenialKind::RetentionCapacityExhausted
-                        }
-                        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
-                            WorthQueryApplicationQueryAdmissionDenialKind::RetentionIdentityExhausted
-                        }
-                        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
-                            WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted
-                        }
-                        _ => WorthQueryApplicationQueryAdmissionDenialKind::TruthViewUnavailable,
-                    };
-                    denial(kind, query.name())
-                })?)
-            };
-            let result = if !graph_work.admits_snapshot(&snapshot) {
+            let snapshot = security.snapshot_handle();
+            if !graph_work.admits_snapshot(snapshot) {
                 Err(denial(
                     WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable,
                     query.name(),
@@ -105,7 +81,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             } else {
                 validate_freshness_at_snapshot(
                     runtime,
-                    &snapshot,
+                    snapshot,
                     principal,
                     &principal_layout,
                     &expected_external_identity,
@@ -120,7 +96,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     entity_resolution
                         .at_snapshot(
                             runtime,
-                            &snapshot,
+                            snapshot,
                             WorthQueryPrincipalResolutionMode::Ordinary,
                         )
                         .and_then(|truth| truth.validate_entity_freshness(scope))
@@ -135,24 +111,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     self.observe_query_authorization(
                         session_identity,
                         runtime,
-                        snapshot.as_ref().clone(),
+                        snapshot.clone(),
                         query,
                         access,
                     )
                     .map_err(map_authorization_denial)
                 })
-            };
-            if let std::borrow::Cow::Owned(snapshot) = snapshot {
-                crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             }
-            result
         })?;
         let work = WorthQueryApplicationAuthorizationWorkEvidence::from_dependencies(&policy);
-        let work = if security.is_some() {
-            work.with_admission_security_product_resolution()
-        } else {
-            work
-        };
+        let work = work.with_admission_security_product_resolution();
         let authorization = if policy.is_empty() {
             WorthQueryRetainedAuthorizationDecisionFacts::principal(principal_currentness)
         } else {

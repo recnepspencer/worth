@@ -17,8 +17,7 @@ use crate::domain_computation::primary_graph::conditional_operation::{
     WorthQueryTemporalOperationAuthorization,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationOperationInvariantProjectionSnapshot, WorthQuerySelectedProductOperation,
 };
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryAdmittedTemporalProjection<
@@ -57,7 +56,7 @@ where
 {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_current_projection<Principal, PrincipalIdentity, Clock>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &WorthQuerySelectedProductOperation<'_, Schema>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
         fresh: &WorthQueryFreshTemporalOperationAccess<Schema, Principal, PrincipalIdentity, Scope>,
@@ -71,7 +70,7 @@ where
         let admission = self
             .authorization
             .authorize(
-                runtime,
+                product,
                 &fresh.principal,
                 &fresh.scope,
                 operation,

@@ -387,7 +387,6 @@ where
         primary_graph_authority: graph.primary_graph_authority,
         result_buffers: Default::default(),
         basis_leases: Default::default(),
-        next_preview_session: std::sync::atomic::AtomicU64::new(1),
         next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
         external_effect_transport: std::sync::OnceLock::new(),
         recovery_handles,

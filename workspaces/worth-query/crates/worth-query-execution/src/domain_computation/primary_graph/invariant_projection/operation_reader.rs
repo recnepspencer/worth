@@ -47,7 +47,7 @@ pub struct WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Ou
         (Output, BTreeSet<WorthQueryApplicationFactKey>),
     >,
     admission_identity: WorthQueryOperationAdmissionIdentity,
-    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    product: crate::basis::WorthQueryProductBranchLease,
     _operation: PhantomData<fn() -> Operation>,
 }
 
@@ -60,7 +60,7 @@ pub struct WorthQueryInspectedOperationInvariantProjection<Operation, Output> {
 pub struct WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation> {
     snapshot: WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
     admission_identity: WorthQueryOperationAdmissionIdentity,
-    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    product: crate::basis::WorthQueryProductBranchLease,
     decision_facts: BTreeSet<WorthQueryApplicationFactKey>,
     _operation: PhantomData<fn() -> Operation>,
 }
@@ -116,6 +116,41 @@ where
         })
     }
 
+    pub(in crate::domain_computation::primary_graph) fn project_operation_on_product<
+        Operation,
+        Output,
+    >(
+        &self,
+        product: &crate::basis::WorthQueryProductBranchLease,
+        projection: impl FnOnce(
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
+        ) -> Output,
+    ) -> Result<
+        WorthQueryInspectedOperationInvariantProjection<Operation, Output>,
+        WorthQueryInvariantProjectionDenial,
+    > {
+        let completed =
+            self.project_bounded(usize::MAX, product.relational_basis().clone(), |reader| {
+                let mut decision_facts = BTreeSet::new();
+                let mut operation_reader =
+                    WorthQueryApplicationOperationInvariantProjectionReader {
+                        reader,
+                        admitted_graph_reads: None,
+                        decision_facts: &mut decision_facts,
+                        _operation: PhantomData,
+                    };
+                let output = projection(&mut operation_reader);
+                (output, decision_facts)
+            })?;
+        let ((output, _), snapshot, work) = completed.into_parts();
+        drop(snapshot);
+        Ok(WorthQueryInspectedOperationInvariantProjection {
+            output,
+            work,
+            _operation: PhantomData,
+        })
+    }
+
     pub fn project_admitted_operation<Operation, Input, Scope, Output>(
         &self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -132,12 +167,12 @@ where
             .graph_work()
             .mutation_lease()
             .expect("admitted operation retains its selected mutation lease")
-            .product_publication()
-            .clone();
+            .product()
+            .retained_clone();
         let completed = self
             .project_bounded(
                 admission.allowed_graph_contract().projection_work_budget(),
-                product.observation().basis().relational_basis().clone(),
+                product.relational_basis().clone(),
                 |reader| {
                     let mut decision_facts = BTreeSet::new();
                     let mut operation_reader =
@@ -223,147 +258,8 @@ impl<Schema, Operation, Output>
     }
 }
 
-impl<'reader, 'runtime, Schema, Operation>
-    WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
-where
-    Schema: ApplicationSchema,
-{
-    pub const fn version(&self) -> worth_relational::facade::identity::VersionId {
-        self.reader.version()
-    }
-
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
-        &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
-    where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationValue,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        self.reader.resolve_entity(field, value)
-    }
-
-    pub fn resolve_optional_entity<Aspect, Entity, Field, Value, Write, Unit>(
-        &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Result<
-        Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
-        WorthQueryEntityResolutionDenial,
-    >
-    where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationValue,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        self.reader.resolve_optional_entity(field, value)
-    }
-
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        &mut self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Option<Value>
-    where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationReadableValue,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        self.reader.field(identity, field)
-    }
-
-    pub fn mutation_target<Entity>(
-        &self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-    ) -> Result<WorthQueryInvariantMutationTarget<Schema, Entity>, &'static str> {
-        if identity.authority_identity != self.reader.authority_identity {
-            return Err("foreign-invariant-mutation-target");
-        }
-        Ok(WorthQueryInvariantMutationTarget {
-            entity_id: identity.entity_id,
-            entity: Arc::clone(&identity.entity),
-            _marker: PhantomData,
-        })
-    }
-
-    pub fn relations_from<Relation, From, To>(
-        &mut self,
-        relation: ApplicationRelationRef<Schema, Relation, From, To>,
-        from: &WorthQueryInvariantEntityIdentity<Schema, From>,
-    ) -> Result<
-        Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
-        WorthQueryInvariantProjectionTraversalDenial,
-    >
-    where
-        Relation: OperationReads<Operation>,
-    {
-        self.reader.relations_from(relation, from)
-    }
-
-    pub fn relations_to<Relation, From, To>(
-        &mut self,
-        relation: ApplicationRelationRef<Schema, Relation, From, To>,
-        to: &WorthQueryInvariantEntityIdentity<Schema, To>,
-    ) -> Result<
-        Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
-        WorthQueryInvariantProjectionTraversalDenial,
-    >
-    where
-        Relation: OperationReads<Operation>,
-    {
-        self.reader.relations_to(relation, to)
-    }
-
-    pub fn summarize_exclusive_incoming<
-        Relation,
-        From,
-        To,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >(
-        &mut self,
-        relation: ApplicationRelationRef<Schema, Relation, From, To>,
-        field: ApplicationFieldRef<Schema, From, Aspect, Field, Value, Write, Equality, Unit>,
-        target: &WorthQueryInvariantEntityIdentity<Schema, To>,
-    ) -> Result<super::WorthQueryInvariantAggregate<Value>, WorthQueryInvariantAggregateDenial>
-    where
-        Relation: OperationReads<Operation>,
-        Field: OperationReads<Operation>,
-        Value: worth_query_installation::facade::TypedApplicationSignedAggregateValue,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        self.reader
-            .summarize_exclusive_incoming(relation, field, target)
-    }
-}
+#[path = "operation_reader/read_access.rs"]
+mod read_access;
 
 impl<Schema, Operation> WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>
 where

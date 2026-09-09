@@ -17,8 +17,7 @@ use super::super::authority::WorthQueryApplicationQueryContinuation;
 use crate::domain_computation::primary_graph::{
     application_query::{
         WorthQueryApplicationContinuationPageResult, WorthQueryApplicationQueryAccessContext,
-        WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryControls,
-        WorthQueryApplicationQueryResumeControls,
+        WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryResumeControls,
     },
     tests::fixture::{
         installed_authorization_world, live_account_parameters, Account, AccountIdentity,
@@ -57,6 +56,8 @@ impl ContinuationTestContext {
         let external = world.authenticate("alice", authentication_lifetime, &request);
         let principal = world
             .application
+            .select_product_branch(world.application.product_runtime().default_branch())
+            .expect("the selected product branch remains admitted")
             .resolve_authenticated_principal(
                 &world.binding,
                 external,
@@ -66,6 +67,8 @@ impl ContinuationTestContext {
             .unwrap();
         let account = world
             .application
+            .select_product_branch(world.application.product_runtime().default_branch())
+            .expect("the selected product branch remains admitted")
             .resolve_entity(
                 AccountIdentity::reference(),
                 "account-1".to_owned(),
@@ -91,12 +94,12 @@ impl ContinuationTestContext {
         let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
         let plan = self
             .world
-            .application
-            .admit_application_query(
+            .selected_product()
+            .admit_application_query_continuation(
                 &self.query,
                 &access,
                 parameters("account-1"),
-                WorthQueryApplicationQueryControls::current_continuation_page(
+                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                     NonZeroUsize::new(1).unwrap(),
                     NonZeroUsize::new(10_000).unwrap(),
                     &request,
@@ -203,7 +206,7 @@ impl ContinuationTestContext {
             .expect("test principal binding is installed")
             .clone();
         mutate_field(
-            graph,
+            &self.world,
             self.principal.mapping_entity_id(),
             layout.status_locator,
             WorthQueryPrincipalMappingStatus::Disabled.into_foundational_value(),
@@ -225,7 +228,7 @@ impl ContinuationTestContext {
             .expect("account identity is installed")
             .clone();
         mutate_field(
-            graph,
+            &self.world,
             self.account.entity_id(),
             locator,
             "account-renamed".to_owned().into_foundational_value(),
@@ -239,33 +242,17 @@ fn parameters(account: &str) -> ApplicationQueryParameterSet<LiveAccountActivity
 }
 
 fn mutate_field(
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraph,
+    world: &AuthorizationWorld,
     entity_id: worth_relational::facade::identity::EntityId,
     locator: worth_relational::facade::transactions::AspectFieldLocator,
     value: worth_foundational::facade::AspectValue,
     batch: &str,
 ) {
-    let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let fields = AspectFieldPatch::from(BTreeMap::from([(locator, value)]));
-        let mut transaction = {
-            let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-            runtime
-                .begin_branch_transaction(
-                    &transaction_validation_input,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("owner-admitted transaction context")
-        };
-        transaction
-            .push_batch(WorkerIntentBatch::new(batch).push(MutationIntent::Entity(
-                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
-            )))
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &committed.snapshot);
-        handle.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    let fields = AspectFieldPatch::from(BTreeMap::from([(locator, value)]));
+    crate::domain_computation::primary_graph::tests::fixture::publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new(batch).push(MutationIntent::Entity(
+            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
+        )),
+    );
 }

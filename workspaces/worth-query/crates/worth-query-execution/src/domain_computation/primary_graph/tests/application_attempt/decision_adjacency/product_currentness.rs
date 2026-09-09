@@ -14,7 +14,11 @@ fn unrelated_adjacency_growth_requires_fresh_product_admission_for_unchanged_fac
     let bob_identity = resolved_principal(&world, 2, &request);
     let first_account = resolved_account(&world, "open", &request);
     let second_account = resolved_account(&world, "unrelated", &request);
-    let selected = world.application.admit_current_product_branch().unwrap();
+    let selected = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let commit_count = || {
         world
             .application
@@ -47,28 +51,34 @@ fn unrelated_adjacency_growth_requires_fresh_product_admission_for_unchanged_fac
             .compare_and_commit_application(bob_program, idempotency(33, 33)),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let current = world.application.admit_current_product_branch().unwrap();
+    let current = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_ne!(current.selected_commit(), selected.selected_commit());
     assert_eq!(commit_count(), baseline + 1);
 
     let outcome = world
         .application
         .compare_and_commit_application(alice_program, idempotency(34, 34));
-    let WorthQueryApplicationCommitOutcome::ProductStale(stale) = outcome else {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("unrelated adjacency growth changes product currentness only: {outcome:?}");
     };
     assert_eq!(
-        stale.expected_product().selected_commit(),
-        selected.selected_commit()
+        denial.kind(),
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::ProductBasisStale
     );
-    if let Some(observed) = stale.observed_product() {
-        assert_eq!(observed.selected_commit(), current.selected_commit());
-    }
+    assert_eq!(
+        denial.stage(),
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
     assert_eq!(commit_count(), baseline + 1);
     assert_eq!(
         world
             .application
-            .admit_current_product_branch()
+            .product_runtime()
+            .admit_product_branch(world.application.product_runtime().default_branch())
             .unwrap()
             .selected_commit(),
         current.selected_commit()

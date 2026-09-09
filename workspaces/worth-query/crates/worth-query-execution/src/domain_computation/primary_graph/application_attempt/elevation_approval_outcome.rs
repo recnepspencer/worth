@@ -36,18 +36,6 @@ impl WorthQueryApprovedElevation {
         self.approval_commit.publication_source()
     }
 
-    /// Historical Query authority anchored to the exact approval commit.
-    ///
-    /// This is the purpose-affine public projection. Consumers cannot recover
-    /// or substitute the underlying generic commit receipt.
-    pub fn historical_read(
-        &self,
-    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationHistoricalRead {
-        crate::domain_computation::primary_graph::WorthQueryApplicationHistoricalRead::at_application_commit(
-            &self.approval_commit,
-        )
-    }
-
     pub const fn approval_changed_record_count(&self) -> usize {
         self.approval_commit.changed_record_count()
     }

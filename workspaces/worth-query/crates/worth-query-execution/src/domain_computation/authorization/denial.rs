@@ -208,26 +208,12 @@ impl std::fmt::Display for WorthQueryOperationAuthorizationDenial {
 
 impl std::error::Error for WorthQueryOperationAuthorizationDenial {}
 
-pub(in crate::domain_computation) fn exact_basis_snapshot_denial(
-    basis_denial: crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial,
+pub(super) fn product_security_basis_denial(
+    denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
     subject: impl Into<String>,
 ) -> WorthQueryOperationAuthorizationDenial {
-    let kind = match basis_denial {
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        } => WorthQueryOperationAuthorizationDenialKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        },
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
-            WorthQueryOperationAuthorizationDenialKind::RetentionCapacityExhausted
-        }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
-            WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted
-        }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
-            WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted
-        }
-        _ => WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
-    };
-    WorthQueryOperationAuthorizationDenial::new(kind, subject)
+    WorthQueryOperationAuthorizationDenial::new(
+        WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
+        subject,
+    )
 }

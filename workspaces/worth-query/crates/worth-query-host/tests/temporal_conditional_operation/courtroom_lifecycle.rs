@@ -6,10 +6,18 @@ use super::world::CourtroomWorld;
 
 pub fn reinstallation_reconstructs_active_authoritative_work() {
     let mut world = CourtroomWorld::publish("ready");
-    let before = world.application.admit_current_product_branch().unwrap();
+    let before = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let receipt = world.reinstall_conditional_runtime().unwrap();
     let lower = receipt.lower_runtime_reconstitution();
-    let after = world.application.admit_current_product_branch().unwrap();
+    let after = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_eq!(before.branch_identity(), after.branch_identity());
     assert_eq!(before.selected_commit(), after.selected_commit());
     assert_eq!(
@@ -131,7 +139,11 @@ pub fn reinstallation_revokes_captured_granular_batches() {
 pub fn closing_runtime_releases_inventory_and_revokes_handles() {
     let mut world = CourtroomWorld::publish("blocked");
     let _ = observe(&mut world);
-    let before = world.application.admit_current_product_branch().unwrap();
+    let before = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let installed = world.application.inspect_conditional_runtime();
     assert_eq!(installed.installed_binding_count(), 1);
     assert_eq!(installed.managed_clock_count(), 1);
@@ -144,7 +156,11 @@ pub fn closing_runtime_releases_inventory_and_revokes_handles() {
     let empty = world.application.inspect_conditional_runtime();
     assert_conditional_resources_empty(empty);
     assert_eq!(empty.signal_graph_count(), installed.signal_graph_count());
-    let after = world.application.admit_current_product_branch().unwrap();
+    let after = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_eq!(before.branch_identity(), after.branch_identity());
     assert_eq!(before.selected_commit(), after.selected_commit());
     assert_eq!(

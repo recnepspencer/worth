@@ -1,12 +1,6 @@
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_installation::facade::{
-    ApplicationSchema, TypedApplicationIdentityValue, WorthQueryInstalledApplicationSchema,
-    WorthQueryInstalledPrincipalBinding,
-};
+use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectTransport;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
@@ -18,10 +12,9 @@ use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource;
 
 use super::provider::WorthQueryPrimaryGraphProvider;
 use super::{
-    authentication_clock::WorthQueryAuthenticationClock, WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrimaryGraphPublication,
-    WorthQueryPrincipalResolutionDenial, WorthQueryPrincipalResolutionMode,
+    authentication_clock::WorthQueryAuthenticationClock, WorthQueryPrimaryGraphBootstrap,
+    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
+    WorthQueryPrimaryGraphPublication,
 };
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
@@ -44,6 +37,34 @@ pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExter
 ///     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 /// ) {
 ///     let _ = application.installed_packages();
+/// }
+/// ```
+///
+/// A bare application runtime cannot resolve a principal through an implicit
+/// current product.
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+/// use worth_query_installation::facade::ApplicationSchema;
+///
+/// fn bare_runtime_cannot_resolve_principal<Schema: ApplicationSchema>(
+///     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+/// ) {
+///     let _ = application.resolve_authenticated_principal();
+/// }
+/// ```
+///
+/// A bare application runtime cannot admit an ordinary query through an
+/// implicit current product.
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+/// use worth_query_installation::facade::ApplicationSchema;
+///
+/// fn bare_runtime_cannot_admit_query<Schema: ApplicationSchema>(
+///     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+/// ) {
+///     let _ = application.admit_application_query();
 /// }
 /// ```
 pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -71,7 +92,6 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     pub(super) result_buffers:
         super::application_query::resource_lifecycle::WorthQueryApplicationResultBufferRegistry,
-    pub(super) next_preview_session: AtomicU64,
     pub(super) next_external_dispatch_attempt: AtomicU64,
     pub(super) external_effect_transport:
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
@@ -328,38 +348,6 @@ where
         &self,
     ) -> super::provider::WorthQueryApplicationAttemptWorkSnapshot {
         self.primary_provider.application_attempt_work()
-    }
-
-    pub fn resolve_authenticated_principal<Binding, Mapping, Principal, PrincipalIdentity>(
-        &self,
-        installed_binding: &WorthQueryInstalledPrincipalBinding<
-            Schema,
-            Binding,
-            Mapping,
-            Principal,
-            PrincipalIdentity,
-        >,
-        external: WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        scope: &WorthQueryRequestScope,
-        mode: WorthQueryPrincipalResolutionMode,
-    ) -> Result<
-        WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        WorthQueryPrincipalResolutionDenial,
-    >
-    where
-        PrincipalIdentity: TypedApplicationIdentityValue,
-    {
-        self.runtime
-            .resolve_authenticated_principal(installed_binding, external, scope, mode)
-    }
-
-    pub fn validate_authenticated_principal<Principal, PrincipalIdentity>(
-        &self,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        scope: &WorthQueryRequestScope,
-    ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
-        self.runtime
-            .validate_authenticated_principal(principal, scope)
     }
 
     /// Closes ordinary live delivery without closing the authoritative graph.

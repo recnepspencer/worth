@@ -8,7 +8,7 @@ use super::{WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInv
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalReentryDenial;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+    WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
 };
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryCurrentTemporalIntent<
@@ -85,7 +85,7 @@ where
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn resolve_current_intent(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &WorthQuerySelectedProductOperation<'_, Schema>,
         record_identity: &worth_foundational::facade::AspectValue,
         revision: u64,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -101,7 +101,7 @@ where
     {
         let identity_value = IdentityValue::from_foundational_value(record_identity)
             .ok_or_else(|| "temporal intent record identity changed scalar meaning".to_string())?;
-        let entity = runtime
+        let entity = product
             .resolve_entity(
                 self.identity_field,
                 identity_value.clone(),
@@ -111,9 +111,11 @@ where
             .map_err(WorthQueryTemporalReentryDenial::from_entity)?;
         let expected_revision = RevisionValue::from_revision(revision)
             .ok_or_else(|| "temporal intent revision cannot be represented".to_string())?;
-        let current = self.invariant.project_operation::<Operation, _>(|reader| {
-            self.observe_current_intent(reader, identity_value.clone(), &expected_revision)
-        })
+        let current = self
+            .invariant
+            .project_operation_on_product::<Operation, _>(product.product(), |reader| {
+                self.observe_current_intent(reader, identity_value.clone(), &expected_revision)
+            })
         .map_err(WorthQueryTemporalReentryDenial::from_invariant)?;
         Ok(current.output().is_ok().then_some(WorthQueryCurrentTemporalIntent {
             identity_value,

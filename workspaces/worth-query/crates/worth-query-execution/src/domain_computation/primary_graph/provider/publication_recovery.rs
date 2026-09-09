@@ -19,6 +19,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         settlement: &worth_relational::facade::publication::DeferredPublicationSettlement,
         branch: &worth_relational::facade::history::BranchId,
+        product: &super::WorthQueryProductIdempotencyAffinity,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
         worth_relational::facade::history::RelationalCommitReceipt,
@@ -29,120 +30,54 @@ impl WorthQueryPrimaryGraphProvider {
             let repaired = runtime
                 .repair_deferred_publication_settlement(settlement)
                 .map_err(WorthQueryApplicationSettlementRecoveryError::Durability)?;
-            if &repaired.branch_id != branch {
-                return Err(WorthQueryApplicationSettlementRecoveryError::Publication(
-                    "deferred application settlement belongs to another branch",
-                ));
-            }
-            self.graph
-                .ensure_primary_indexes_current_for_branch(runtime, branch)
-                .map_err(settlement_index_currency_denial)?;
-            let branch_identity = runtime.branch_identity(branch).map_err(|_| {
-                WorthQueryApplicationSettlementRecoveryError::Publication(
-                    "application publication branch is unavailable during recovery",
-                )
-            })?;
-            let (_, basis) = runtime.observe_branch(&branch_identity).map_err(|denial| match denial {
-                worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-                    WorthQueryApplicationSettlementRecoveryError::RetentionCapacityExhausted
-                }
-                worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-                    WorthQueryApplicationSettlementRecoveryError::RetentionIdentityExhausted
-                }
-                worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-                    WorthQueryApplicationSettlementRecoveryError::SnapshotIdentityExhausted
-                }
-                _ => WorthQueryApplicationSettlementRecoveryError::Publication(
-                    "application publication basis is unavailable during recovery",
-                ),
-            })?;
-            let current = runtime
-                .history()
-                .branch_head_for_observation(&basis.observation())
-                .map_err(|_| {
-                    WorthQueryApplicationSettlementRecoveryError::Publication(
-                        "application publication basis is not owner-admitted",
-                    )
-                })?
-                .ok_or(WorthQueryApplicationSettlementRecoveryError::Publication(
-                    "application publication branch has no current commit",
-                ))?;
-            if !runtime
-                .history()
-                .ancestor_closure_by_commit_id_order(current.commit_id)
-                .contains(&repaired.commit_id)
+            if &repaired.branch_id != branch
+                || &repaired != settlement.commit()
+                || &repaired != &settlement.performed_result().commit
             {
                 return Err(WorthQueryApplicationSettlementRecoveryError::Publication(
-                    "settled application commit is not in the current branch ancestry",
+                    "deferred application settlement does not match its performed publication",
                 ));
             }
-            self.graph
-                .bind_truth_head_basis_in_runtime(runtime, &basis)
-                .map_err(|denial| match denial {
-                    worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-                        WorthQueryApplicationSettlementRecoveryError::RetentionCapacityExhausted
-                    }
-                    worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-                        WorthQueryApplicationSettlementRecoveryError::RetentionIdentityExhausted
-                    }
-                    worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-                        WorthQueryApplicationSettlementRecoveryError::SnapshotIdentityExhausted
-                    }
-                    _ => WorthQueryApplicationSettlementRecoveryError::Publication(
-                        "application publication head could not bind to Bridge during recovery",
-                    ),
-                })?;
+            self.resume_pending_application_publication(runtime)
+                .map_err(settlement_publication_denial)?;
             Ok(repaired)
         })?;
-        match self.resolve_idempotency_binding(idempotency, branch) {
-            Ok(WorthQueryProviderIdempotencyResolution::Equivalent(_)) => Ok(repaired),
-            Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
+        match self.resolve_completed_application_idempotency(product, idempotency) {
+            Some(WorthQueryProviderIdempotencyResolution::Equivalent(_)) => Ok(repaired),
+            None | Some(WorthQueryProviderIdempotencyResolution::Absent) => {
                 Err(WorthQueryApplicationSettlementRecoveryError::IdempotencyAbsent)
             }
-            Ok(WorthQueryProviderIdempotencyResolution::Drift) => {
+            Some(WorthQueryProviderIdempotencyResolution::Drift) => {
                 Err(WorthQueryApplicationSettlementRecoveryError::IdempotencyDrift)
             }
-            Err(super::WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            }) => Err(WorthQueryApplicationSettlementRecoveryError::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            }),
-            Err(super::WorthQueryProviderIdempotencyResolutionDenial::Unavailable) => {
-                Err(WorthQueryApplicationSettlementRecoveryError::Publication(
-                    "application idempotency evidence is unavailable during settlement recovery",
-                ))
-            }
-            Err(super::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted) => {
-                Err(WorthQueryApplicationSettlementRecoveryError::RetentionCapacityExhausted)
-            }
-            Err(super::WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted) => {
-                Err(WorthQueryApplicationSettlementRecoveryError::RetentionIdentityExhausted)
-            }
-            Err(super::WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted) => {
-                Err(WorthQueryApplicationSettlementRecoveryError::SnapshotIdentityExhausted)
+            Some(WorthQueryProviderIdempotencyResolution::Unpublished) => {
+                Err(WorthQueryApplicationSettlementRecoveryError::IdempotencyAbsent)
             }
         }
     }
 }
 
-fn settlement_index_currency_denial(
-    denial: crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
+fn settlement_publication_denial(
+    failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> WorthQueryApplicationSettlementRecoveryError {
-    match denial {
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
-            crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,
-        ) => WorthQueryApplicationSettlementRecoveryError::RetentionCapacityExhausted,
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
-            crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted,
-        ) => WorthQueryApplicationSettlementRecoveryError::RetentionIdentityExhausted,
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
-            crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted,
-        ) => WorthQueryApplicationSettlementRecoveryError::SnapshotIdentityExhausted,
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(detail) => {
-            WorthQueryApplicationSettlementRecoveryError::Publication(detail)
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    match failure.kind() {
+        Kind::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => WorthQueryApplicationSettlementRecoveryError::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        },
+        Kind::RetentionCapacityExhausted => {
+            WorthQueryApplicationSettlementRecoveryError::RetentionCapacityExhausted
+        }
+        Kind::RetentionIdentityExhausted => {
+            WorthQueryApplicationSettlementRecoveryError::RetentionIdentityExhausted
+        }
+        Kind::SnapshotIdentityExhausted => {
+            WorthQueryApplicationSettlementRecoveryError::SnapshotIdentityExhausted
         }
         _ => WorthQueryApplicationSettlementRecoveryError::Publication(
-            "application publication branch basis is unavailable during recovery",
+            "application publication could not resume from its retained settlement",
         ),
     }
 }

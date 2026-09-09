@@ -12,6 +12,12 @@ mod authorization_world_installation;
 #[path = "fixture/commit_snapshot_closeout.rs"]
 mod commit_snapshot_closeout;
 pub(in crate::domain_computation::primary_graph) use commit_snapshot_closeout::release_test_commit_snapshot;
+#[path = "fixture/product_publication.rs"]
+mod product_publication;
+pub(in crate::domain_computation::primary_graph) use product_publication::{
+    prepare_relational_mutation_on_application, publish_relational_mutation,
+    publish_relational_mutation_on_application,
+};
 #[path = "fixture/capability.rs"]
 pub(in crate::domain_computation) mod capability;
 #[path = "fixture/capability_access_fixture.rs"]
@@ -127,9 +133,8 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
-    installed_authorization_world, installed_authorization_world_with_active_snapshot_limit,
-    installed_authorization_world_with_label, installed_authorization_world_with_resource_profile,
-    installed_blocked_authorization_world,
+    installed_authorization_world, installed_authorization_world_with_label,
+    installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
 };
 pub(super) use world_installation::{
     installed_two_principal_authorization_world, installed_world, installed_world_with_policy_fact,
@@ -162,7 +167,7 @@ use crate::domain_computation::execution_runtime::{
 use crate::domain_computation::primary_graph::WorthQueryApplicationPrincipalKey;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
-    WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphPublication,
+    WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 worth_query_application_schema! {

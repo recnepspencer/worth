@@ -8,7 +8,11 @@ use super::world::CourtroomWorld;
 
 pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() {
     let mut world = CourtroomWorld::publish("ready");
-    let selected = world.application.admit_current_product_branch().unwrap();
+    let selected = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let integration = world
         .application
         .granular_invalidation_installation()
@@ -77,7 +81,11 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         provenance.terminal(),
         primary_graph::WorthQueryConditionalExecutionTerminal::ProductUnpublished
     );
-    let current = world.application.admit_current_product_branch().unwrap();
+    let current = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_eq!(
         current.selected_commit(),
         selected.selected_commit(),
@@ -110,7 +118,11 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     );
     drop(world.clock);
     super::courtroom_lifecycle::assert_conditional_resources_empty(lifetime.live_inventory());
-    let after_close = world.application.admit_current_product_branch().unwrap();
+    let after_close = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_eq!(after_close.selected_commit(), selected.selected_commit());
     assert!(matches!(
         recovery.inspect(),
@@ -120,7 +132,11 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
 
 pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() {
     let mut world = CourtroomWorld::publish("ready");
-    let selected = world.application.admit_current_product_branch().unwrap();
+    let selected = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let integration = world
         .application
         .granular_invalidation_installation()
@@ -134,7 +150,11 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
     assert_eq!(committed.committed_operation_count(), 1);
     assert_eq!(committed.already_committed_operation_count(), 0);
     assert_eq!(world.contacts.snapshot(), (1, 1, 1, 1));
-    let current = world.application.admit_current_product_branch().unwrap();
+    let current = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_ne!(current.selected_commit(), selected.selected_commit());
     assert_eq!(
         integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
@@ -161,7 +181,8 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
     assert_eq!(
         world
             .application
-            .admit_current_product_branch()
+            .product_runtime()
+            .admit_product_branch(world.application.product_runtime().default_branch())
             .unwrap()
             .selected_commit(),
         current.selected_commit()

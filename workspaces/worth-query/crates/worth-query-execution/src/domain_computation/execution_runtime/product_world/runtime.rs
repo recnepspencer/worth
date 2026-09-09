@@ -49,4 +49,11 @@ impl WorthQueryProductRuntime {
     pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
         Arc::clone(&self.root_identity)
     }
+
+    #[cfg(feature = "test-world-operation-control")]
+    pub(crate) fn operation_control(
+        &self,
+    ) -> worth_runtime_world::facade::RuntimeWorldOperationControl {
+        self.owner.operation_control()
+    }
 }

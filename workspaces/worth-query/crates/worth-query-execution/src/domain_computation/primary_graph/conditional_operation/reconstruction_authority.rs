@@ -10,7 +10,7 @@ use worth_query_installation::facade::{
 
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+    WorthQueryPrincipalResolutionMode,
 };
 
 pub(super) struct WorthQueryFreshTemporalOperationAccess<
@@ -291,7 +291,10 @@ where
 
     pub(super) fn resolve_fresh_operation_access(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
     ) -> Result<
         WorthQueryFreshTemporalOperationAccess<Schema, Principal, PrincipalIdentity, Scope>,
         super::application_operation_reentry::WorthQueryTemporalReentryDenial,
@@ -304,7 +307,7 @@ where
             .fresh_admission()
             .map_err(|failure| format!("{:?}: {}", failure.kind(), failure.detail()))?
             .into_parts();
-        let principal = runtime
+        let principal = product
             .resolve_authenticated_principal(
                 &self.principal_binding,
                 external,
@@ -312,7 +315,7 @@ where
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .map_err(super::application_operation_reentry::WorthQueryTemporalReentryDenial::from_principal)?;
-        let scope = runtime
+        let scope = product
             .resolve_entity(
                 self.scope_field,
                 self.scope_value.clone(),

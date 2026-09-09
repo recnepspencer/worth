@@ -63,19 +63,6 @@ impl WorthQueryProductRuntime {
             admit(observation)
         })
     }
-
-    pub(crate) fn admit_product_publication(
-        &self,
-    ) -> Result<
-        crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
-        WorthQueryProductBranchAdmissionDenial,
-    >{
-        self.with_product_observation(&self.default_branch, |observation| {
-            Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding::new(
-                observation, self.owner.publication_port(), self.owner.recovery_port(), self.clock.clone(), self.root_identity(),
-            ))
-        })
-    }
 }
 
 fn map_world_denial(

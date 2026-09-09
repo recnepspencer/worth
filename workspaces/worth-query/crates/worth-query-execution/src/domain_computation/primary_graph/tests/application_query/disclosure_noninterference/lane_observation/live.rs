@@ -26,7 +26,7 @@ pub(super) fn observe(
         admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
     let mut lease = context
         .world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,

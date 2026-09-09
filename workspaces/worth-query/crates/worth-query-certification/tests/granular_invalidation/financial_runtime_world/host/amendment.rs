@@ -88,6 +88,8 @@ impl FinancialCourtroomWorld {
         let external = block_on(authentication.authenticate((), &request)).unwrap();
         let principal = self
             .application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .expect("the selected product branch remains admitted")
             .resolve_authenticated_principal(
                 &schema
                     .principal_binding(FinancialPrincipalBinding::reference())
@@ -99,6 +101,8 @@ impl FinancialCourtroomWorld {
             .unwrap();
         let record = self
             .application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .expect("the selected product branch remains admitted")
             .resolve_entity(
                 MarketIdentityField::reference(),
                 record_identity.to_string(),
@@ -108,6 +112,8 @@ impl FinancialCourtroomWorld {
             .unwrap();
         let admission = self
             .application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .unwrap()
             .authorize_operation(
                 &principal,
                 &record,

@@ -147,9 +147,7 @@ pub(super) fn requested_world_with_input(
     WorthQueryRequestedElevation,
 ) {
     let world = installed_elevated_capability_world(scenario);
-    world
-        .authorization_time
-        .script(std::iter::repeat_n(time(100), 24));
+    world.authorization_time.hold(time(100));
     let request = live_scope();
     let requested = super::request_support::commit_request(&world, &request, input);
     super::request_support::resolve_exact_request_identities(&world, &request);
@@ -164,6 +162,8 @@ pub(super) fn authenticated(
     let external = world.authenticate(subject, Duration::from_secs(60), request);
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -197,7 +197,7 @@ fn approval_access_for_elevation(
             ApproveCapabilityElevationOperation::reference(),
         )
         .unwrap();
-    world.application.admit_capability_access(
+    world.selected_product().admit_capability_access(
         principal,
         &capability,
         ApproveElevationInput {

@@ -67,6 +67,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
     Clock,
 >(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &crate::basis::WorthQueryProductBranchLease,
     bridge: &BridgeSealedRuntimeAssembly,
     clock: &BridgeManagedClockBinding,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -278,6 +279,7 @@ where
             || {
                 reenter_temporal_operation(
                     runtime,
+                    product,
                     operation,
                     access,
                     execution,

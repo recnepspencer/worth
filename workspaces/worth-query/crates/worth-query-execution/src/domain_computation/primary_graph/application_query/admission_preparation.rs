@@ -14,9 +14,7 @@ use super::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
     WorthQueryApplicationQueryControls,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionDenialKind,
-};
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -57,12 +55,7 @@ where
     > {
         validate_admission_request(controls.request_scope(), query.name())?;
         self.validate_installed_query(query)?;
-        self.validate_access_authority(
-            query,
-            access,
-            controls.request_scope(),
-            controls.has_product_basis(),
-        )?;
+        self.validate_access_authority(query, access)?;
         validate_controls(query, &controls)?;
         let parameters =
             admit_application_query_parameters(query, parameters).map_err(|denial| {
@@ -116,8 +109,6 @@ where
             PrincipalIdentity,
             Scope,
         >,
-        request: &WorthQueryRequestScope,
-        selected_product: bool,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
         if self.authentication_is_expired(access.principal().valid_until()) {
             return Err(denial(
@@ -125,27 +116,17 @@ where
                 access.principal().binding(),
             ));
         }
-        if selected_product {
-            if access.principal().runtime_authority() != self.runtime.authority_identity() {
-                return Err(denial(
-                    WorthQueryApplicationQueryAdmissionDenialKind::ForeignPrincipal,
-                    query.name(),
-                ));
-            }
-            if access.principal().binding_identity() != &self.installed_schema.binding_identity() {
-                return Err(denial(
-                    WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
-                    query.name(),
-                ));
-            }
-        } else {
-            self.validate_authenticated_principal(access.principal(), request)
-                .map_err(|denial| {
-                    WorthQueryApplicationQueryAdmissionDenial::new(
-                        map_principal_denial(denial.kind()),
-                        denial.binding(),
-                    )
-                })?;
+        if access.principal().runtime_authority() != self.runtime.authority_identity() {
+            return Err(denial(
+                WorthQueryApplicationQueryAdmissionDenialKind::ForeignPrincipal,
+                query.name(),
+            ));
+        }
+        if access.principal().binding_identity() != &self.installed_schema.binding_identity() {
+            return Err(denial(
+                WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
+                query.name(),
+            ));
         }
         let scope = access.scope();
         let authority = self.runtime.authority_identity();
@@ -193,23 +174,6 @@ pub(super) fn validate_admission_request(
             subject,
         )),
         None => Ok(()),
-    }
-}
-
-fn map_principal_denial(
-    kind: WorthQueryPrincipalResolutionDenialKind,
-) -> WorthQueryApplicationQueryAdmissionDenialKind {
-    match kind {
-        WorthQueryPrincipalResolutionDenialKind::ForeignRuntime => {
-            WorthQueryApplicationQueryAdmissionDenialKind::ForeignPrincipal
-        }
-        WorthQueryPrincipalResolutionDenialKind::Cancelled => {
-            WorthQueryApplicationQueryAdmissionDenialKind::Cancelled
-        }
-        WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded => {
-            WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded
-        }
-        _ => WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
     }
 }
 

@@ -42,7 +42,7 @@ pub(super) fn admitted_mutation_free_program(
         .requirements()
         .is_empty());
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             principal,
             account,
@@ -157,7 +157,7 @@ fn admitted_program_from_options(
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             principal,
             account,

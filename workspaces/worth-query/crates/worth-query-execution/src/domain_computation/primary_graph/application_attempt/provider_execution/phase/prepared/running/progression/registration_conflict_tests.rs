@@ -75,12 +75,13 @@ fn reject_occupied_registration(
         &world.application,
         &admission,
         lease.snapshot(),
-        lease.product_publication(),
+        lease.product(),
     )
     .expect("the real running attempt must recapture its own exact basis");
     let admitted_session = admit_provider_session(
         &mut running,
         &world.application.primary_graph_authority,
+        attempt_basis.retained_product(),
         unbound_run,
     )
     .unwrap_or_else(|_| panic!("the real victim session must reach provider registration"));
@@ -163,6 +164,7 @@ fn while_peer_is_registered(
     let admitted = admit_provider_session(
         &mut running,
         &world.application.primary_graph_authority,
+        attempt_basis.retained_product(),
         mutation_run,
     )
     .unwrap_or_else(|_| panic!("the interleaved peer session must reach registration"));

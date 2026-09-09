@@ -67,6 +67,7 @@ fn authority(
         application_operation_slot: None,
         application_schema_binding: None,
         application_snapshot: None,
+        application_product_observation: None,
     }
 }
 
@@ -238,6 +239,7 @@ pub(crate) fn workflow_authority(
         application_operation_slot: None,
         application_schema_binding: None,
         application_snapshot: None,
+        application_product_observation: None,
     }
 }
 

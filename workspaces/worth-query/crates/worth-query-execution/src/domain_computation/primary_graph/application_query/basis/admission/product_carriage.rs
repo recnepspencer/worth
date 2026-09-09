@@ -3,7 +3,11 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_authoriz
 #[test]
 fn primary_product_selection_composes_one_exact_application_snapshot() {
     let world = installed_authorization_world(true);
-    let lease = world.application.admit_current_product_branch().unwrap();
+    let lease = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
     let expected = lease.relational_basis_descriptor().clone();

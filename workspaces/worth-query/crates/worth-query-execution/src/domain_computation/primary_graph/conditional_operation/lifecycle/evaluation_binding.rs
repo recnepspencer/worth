@@ -191,7 +191,7 @@ where
             &self.definition.binding,
             &self.definition.reconstruction,
             self.definition.execution.identity_field,
-            Some(truth.product()),
+            truth.product(),
         )?;
         let mut intents = reconstruction.intents;
         super::super::temporal_reconstruction::reconcile_temporal_intents(

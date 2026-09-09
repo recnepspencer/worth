@@ -178,6 +178,7 @@ pub(super) fn mint_operation_admission<Schema, Capability, Operation, Input>(
 
 pub(super) fn start_graph_work<Schema, Principal, PrincipalIdentity, Capability, Operation, Input>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
@@ -187,6 +188,7 @@ where
 {
     start_capability_graph_work(
         runtime,
+        product,
         operation,
         principal.principal_entity_id(),
         WorthQueryGraphWorkAccessContextAffinity::installed_capability(

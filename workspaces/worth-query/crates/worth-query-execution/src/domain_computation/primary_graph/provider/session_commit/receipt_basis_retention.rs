@@ -22,13 +22,6 @@ impl WorthQueryRetainedApplicationCommitBasis {
         }
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn for_test(
-        lease: RelationalBranchRetentionLease,
-    ) -> Self {
-        Self::new(lease)
-    }
-
     pub(in crate::domain_computation::primary_graph) fn descriptor(
         &self,
     ) -> &RelationalBranchBasisDescriptor {

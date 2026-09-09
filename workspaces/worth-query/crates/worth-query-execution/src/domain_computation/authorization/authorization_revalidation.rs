@@ -39,8 +39,15 @@ where
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let session = admission.graph_work_session_identity();
-        let branch = admission.graph_work_branch().clone();
         let operation = admission.operation().to_owned();
+        let product = admission
+            .graph_work()
+            .mutation_product()
+            .map(crate::basis::WorthQueryProductBranchLease::retained_clone)
+            .ok_or_else(|| WorthQueryOperationAuthorizationDenial::inconsistent(&operation))?;
+        let security = self
+            .admit_product_security_basis(&product)
+            .map_err(|denial| super::denial::product_security_basis_denial(denial, &operation))?;
         let authorization = admission
             .authorization_mut()
             .ok_or_else(|| WorthQueryOperationAuthorizationDenial::inconsistent(&operation))?;
@@ -52,17 +59,13 @@ where
         }
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = crate::domain_computation::primary_graph::open_current_branch_snapshot(
-                runtime, &branch,
-            )
-            .map_err(|denial| super::exact_basis_snapshot_denial(denial, &operation))?;
+            let snapshot = security.snapshot_handle();
             let current = validate_retained_currentness(
                 authorization,
                 runtime,
-                &snapshot,
+                snapshot,
                 self.authorization.bridge(),
             );
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             current
         })
     }
@@ -172,7 +175,10 @@ where
                 admission.operation(),
             ));
         }
-        self.readmit_commit_basis(basis, admission.graph_work_branch())?;
+        let product = admission.graph_work().mutation_product().ok_or_else(|| {
+            WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
+        })?;
+        self.readmit_commit_basis(basis, product)?;
         Ok(WorthQueryApplicationCommitAuthorization::mint(
             serialization,
             admission,
@@ -182,40 +188,42 @@ where
     fn readmit_commit_basis(
         &self,
         basis: &WorthQueryCommitAuthorizationBasis,
-        branch: &worth_relational::facade::history::BranchId,
+        product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         match basis {
             WorthQueryCommitAuthorizationBasis::Observed {
                 authorization: observed,
                 ..
-            } => self.readmit_observed_commit_basis(observed, branch),
+            } => self.readmit_observed_commit_basis(observed, product),
             WorthQueryCommitAuthorizationBasis::Capability {
                 authorization: capability,
                 ..
-            } => self.readmit_capability_commit_basis(capability, branch),
+            } => self.readmit_capability_commit_basis(capability, product),
         }
     }
 
     fn readmit_observed_commit_basis(
         &self,
         observed: &WorthQueryObservedCommitBasis,
-        branch: &worth_relational::facade::history::BranchId,
+        product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        let security = self
+            .admit_product_security_basis(product)
+            .map_err(|denial| {
+                super::denial::product_security_basis_denial(
+                    denial,
+                    "observed commit authorization",
+                )
+            })?;
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = crate::domain_computation::primary_graph::open_current_branch_snapshot(
-                runtime, branch,
-            )
-            .map_err(|denial| {
-                super::exact_basis_snapshot_denial(denial, "observed commit authorization")
-            })?;
+            let snapshot = security.snapshot_handle();
             let current = validate_observed_currentness(
                 observed,
                 runtime,
-                &snapshot,
+                snapshot,
                 self.authorization.bridge(),
             );
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             current
         })
     }
@@ -223,7 +231,7 @@ where
     fn readmit_capability_commit_basis(
         &self,
         capability: &WorthQueryCapabilityCommitBasis,
-        branch: &worth_relational::facade::history::BranchId,
+        product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let installed = self.installed_capability_plan(capability.request())?;
         if capability.capability_authority_identity()
@@ -232,20 +240,21 @@ where
             return Err(stale_authorization());
         }
         let sample = self.sample_capability_time(installed)?;
+        let security = self
+            .admit_product_security_basis(product)
+            .map_err(|denial| {
+                super::denial::product_security_basis_denial(
+                    denial,
+                    "capability commit authorization",
+                )
+            })?;
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = crate::domain_computation::primary_graph::open_current_branch_snapshot(
-                runtime, branch,
-            )
-            .map_err(|denial| {
-                super::exact_basis_snapshot_denial(denial, "capability commit authorization")
-            })?;
-            let principal_current = capability
-                .principal()
-                .remains_current_in(runtime, &snapshot);
+            let snapshot = security.snapshot_handle();
+            let principal_current = capability.principal().remains_current_in(runtime, snapshot);
             let decision_current = capability.decision().remains_current_in(
                 runtime,
-                &snapshot,
+                snapshot,
                 self.authorization.bridge(),
             );
             let result = if !principal_current {
@@ -257,7 +266,7 @@ where
                     RevalidationObservationAxes {
                         session: capability.decision().session_identity(),
                         relational: runtime,
-                        snapshot: &snapshot,
+                        snapshot,
                         bridge: self.authorization.bridge(),
                         installed,
                         request: capability.request(),
@@ -268,9 +277,8 @@ where
                 .map(drop)
             };
             let result = result.and_then(|()| {
-                self.readmit_capability_commit_support(capability.supporting(), runtime, &snapshot)
+                self.readmit_capability_commit_support(capability.supporting(), runtime, snapshot)
             });
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             result
         })
     }

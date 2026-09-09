@@ -54,7 +54,8 @@ mod tests {
             crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
                 true,
             );
-        let product = world.application.admit_product_publication().unwrap();
+        let selected = world.selected_product();
+        let product = selected.product().publication_binding();
         let graph = world.application.primary_provider.graph.clone();
         let count = || {
             graph.with_runtime(|runtime| runtime.retention().inspect_plan().active_snapshot_count)

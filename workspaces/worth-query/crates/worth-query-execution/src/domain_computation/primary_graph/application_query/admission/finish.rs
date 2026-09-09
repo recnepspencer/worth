@@ -113,7 +113,7 @@ where
             query,
             access,
             pending_governance.as_ref(),
-            basis.identity(),
+            &basis,
             graph,
         )?;
         let authorities = self.admit_application_query_authorities(
@@ -264,7 +264,7 @@ where
             Scope,
         >,
         pending_governance: Option<&WorthQueryPendingApplicationQueryGovernance>,
-        basis_identity: &super::super::WorthQueryApplicationBasisIdentity,
+        basis: &super::super::basis::WorthQueryApplicationQueryBasisCustody,
         graph: &WorthQueryPrimaryGraph,
     ) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryApplicationQueryAdmissionDenial> {
         let capability_identity = pending_governance
@@ -286,7 +286,8 @@ where
             query.authority_identity(),
             access.principal().principal_entity_id(),
             affinity,
-            basis_identity,
+            basis.identity(),
+            basis.retained_product(),
             self.graph_work_provider_identity(),
             graph.query_session_port(),
         )

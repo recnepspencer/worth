@@ -21,7 +21,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
     let capability = context.elevated_access();
     let mut lease = context
         .world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
             AccountSummaryParameters,
@@ -70,7 +70,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
     let capability = context.elevated_access();
     let mut lease = context
         .world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
             AccountSummaryParameters,

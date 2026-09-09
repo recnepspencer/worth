@@ -22,7 +22,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 pub(super) struct WorthQueryAuthorizedCompareContext<'a> {
     provider: &'a crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     idempotency: WorthQueryApplicationIdempotencyBinding,
-    branch: &'a worth_relational::facade::history::BranchId,
+    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     preconditions:
         &'a crate::domain_computation::primary_graph::application_attempt::precondition_binding::WorthQueryBoundMutationPreconditions,
     canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
@@ -74,10 +74,14 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
         Input: Clone + Send + Sync + 'static,
     {
         let admission = authority.admission();
+        let product = provider_session
+            .application_product()
+            .expect("an application provider session carries its selected product")
+            .clone();
         Self {
             provider: authority.provider(),
             idempotency: authority.idempotency(),
-            branch: admission.graph_work().branch().relational(),
+            product,
             preconditions: admission.mutation_preconditions(),
             canonical_work: admission.canonical_work(),
             dispatch_outbox,
@@ -158,7 +162,15 @@ pub(super) fn finish_authorized_compare(
                 WorthQueryApplicationSettlementDeferred::from_provider_session(
                     deferred,
                     context.idempotency,
-                    context.branch.clone(),
+                    context
+                        .product
+                        .observation()
+                        .basis()
+                        .relational_basis()
+                        .identity()
+                        .branch_id()
+                        .clone(),
+                    &context.product,
                 ),
             )
         }
@@ -262,7 +274,7 @@ fn resolve_indeterminate_commit(
     );
     match context
         .provider
-        .resolve_idempotency_binding(context.idempotency, context.branch)
+        .resolve_idempotency_binding_at_product(context.idempotency, &context.product)
     {
         Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
             match resolve_committed_components(&context, receipt) {
@@ -275,116 +287,14 @@ fn resolve_indeterminate_commit(
         Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
             WorthQueryProviderProgressionOutcome::Aborted
         }
-        Ok(WorthQueryProviderIdempotencyResolution::Drift) | Err(_) => {
-            WorthQueryProviderProgressionOutcome::Indeterminate(evidence)
-        }
+        Ok(WorthQueryProviderIdempotencyResolution::Drift)
+        | Ok(WorthQueryProviderIdempotencyResolution::Unpublished)
+        | Err(_) => WorthQueryProviderProgressionOutcome::Indeterminate(evidence),
     }
 }
 
-struct WorthQueryResolvedCommitComponents {
-    projection: WorthQueryCommittedReceiptProjection,
-    causality: Option<
-        crate::domain_computation::application_aftermath::WorthQueryCommittedAftermathCausality,
-    >,
-}
-
-fn committed_component_recovery_evidence(
-    denial: WorthQueryCommittedComponentResolutionDenial,
-) -> WorthQueryApplicationUnresolvedCommitEvidence {
-    match denial {
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            },
-        ) => recovery_evidence::typed_commit_recovery_evidence(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            },
-            "committed aftermath recovery requires snapshot-capacity readmission",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::Unavailable,
-        ) => recovery_evidence::unknown_commit_recovery_evidence(
-            "committed aftermath causality could not be recovered",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted,
-        ) => recovery_evidence::typed_commit_recovery_evidence(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted,
-            "committed aftermath recovery requires retention-capacity readmission",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionIdentityExhausted,
-        ) => recovery_evidence::typed_commit_recovery_evidence(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted,
-            "committed aftermath recovery exhausted retention identity space",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::SnapshotIdentityExhausted,
-        ) => recovery_evidence::typed_commit_recovery_evidence(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted,
-            "committed aftermath recovery exhausted snapshot identity space",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Unavailable(detail) => {
-            recovery_evidence::unknown_commit_recovery_evidence(detail)
-        }
-    }
-}
-
-enum WorthQueryCommittedComponentResolutionDenial {
-    Aftermath(crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial),
-    Unavailable(&'static str),
-}
-
-fn resolve_committed_components(
-    context: &WorthQueryAuthorizedCompareContext<'_>,
-    receipt: crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication,
-) -> Result<WorthQueryResolvedCommitComponents, WorthQueryCommittedComponentResolutionDenial> {
-    let causality = resolve_exact_committed_aftermath(
-        context.provider,
-        context.aftermath_causality.as_ref(),
-        &receipt,
-    )
-    .map_err(WorthQueryCommittedComponentResolutionDenial::Aftermath)?;
-    let projection = WorthQueryCommittedReceiptProjection::resolve(receipt).map_err(|_| {
-        WorthQueryCommittedComponentResolutionDenial::Unavailable(
-            "committed dispatch outbox binding was denied",
-        )
-    })?;
-    if projection
-        .committed_dispatch_outbox()
-        .map(|binding| binding.record())
-        != context.dispatch_outbox.as_ref()
-    {
-        return Err(WorthQueryCommittedComponentResolutionDenial::Unavailable(
-            "committed dispatch outbox evidence does not match the admitted attempt",
-        ));
-    }
-    Ok(WorthQueryResolvedCommitComponents {
-        projection,
-        causality,
-    })
-}
-
-fn seal_committed_outcome(
-    context: WorthQueryAuthorizedCompareContext<'_>,
-    resolved: WorthQueryResolvedCommitComponents,
-) -> WorthQueryProviderProgressionOutcome {
-    let permit = WorthQueryFreshCommitReceiptPermit::mint(context.provider_session);
-    let Some(receipt) = WorthQueryPendingApplicationCommitReceipt::from_projection(
-        permit,
-        resolved.projection,
-        certify_provider_recomparison(context.preconditions),
-        context.canonical_work,
-        context.authority_binding,
-    ) else {
-        return WorthQueryProviderProgressionOutcome::Indeterminate(
-            recovery_evidence::unknown_commit_recovery_evidence(
-                "committed provider evidence belongs to another session",
-            ),
-        );
-    };
-    WorthQueryProviderProgressionOutcome::Committed(
-        receipt.with_aftermath_causality(resolved.causality),
-    )
-}
+mod committed_components;
+use committed_components::{
+    committed_component_recovery_evidence, resolve_committed_components, seal_committed_outcome,
+    WorthQueryCommittedComponentResolutionDenial,
+};

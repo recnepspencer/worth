@@ -65,6 +65,8 @@ fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorl
     let scope = live_scope();
     let approver = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             PrincipalIdentityField::reference(),
             2_u64,
@@ -74,6 +76,8 @@ fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorl
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -87,33 +91,17 @@ fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorl
         .relation(CapabilityConflictingBeneficiary::reference().name())
         .unwrap()
         .kind;
-    let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let mut transaction = {
-            let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-            runtime
-                .begin_branch_transaction(
-                    &transaction_validation_input,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("owner-admitted transaction context")
-        };
-        transaction
-            .push_batch(WorkerIntentBatch::new("add-approver-conflict").push(
-                MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: relation_kind,
-                    client_key: ClientKey::raw("elevation-approver-conflict-drift"),
-                    source: EntityReference::Existing(approver.entity_id()),
-                    target: EntityReference::Existing(account.entity_id()),
-                    fields: AspectFieldPatch::default(),
-                })),
-            ))
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        super::super::super::fixture::release_test_commit_snapshot(runtime, &committed);
-        handle.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    super::super::super::fixture::publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new("add-approver-conflict").push(MutationIntent::Create(
+            CreateIntent::Relation(RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: relation_kind,
+                client_key: ClientKey::raw("elevation-approver-conflict-drift"),
+                source: EntityReference::Existing(approver.entity_id()),
+                target: EntityReference::Existing(account.entity_id()),
+                fields: AspectFieldPatch::default(),
+            }),
+        )),
+    );
 }

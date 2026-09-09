@@ -63,6 +63,8 @@ pub(super) fn assert_authoritative_value<Entity, Aspect, Field, Value, Write, Un
 {
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             field,
             value,

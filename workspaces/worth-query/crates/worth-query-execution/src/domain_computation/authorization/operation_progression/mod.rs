@@ -2,6 +2,7 @@
 
 mod authority_validation;
 
+pub(in crate::domain_computation) use authority_validation::admit_capability_access;
 pub use authority_validation::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use authority_validation::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use authority_validation::WorthQueryOperationAdmissionIdentity;
@@ -76,7 +77,7 @@ where
     authority_validation::transition_capability_operation(bound)
 }
 
-pub(super) fn progress_conventional_operation<
+pub(in crate::domain_computation) fn progress_conventional_operation<
     Schema,
     Principal,
     PrincipalIdentity,
@@ -87,6 +88,7 @@ pub(super) fn progress_conventional_operation<
     runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
         Schema,
     >,
+    product: &crate::basis::WorthQueryProductBranchLease,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         Schema,
         Principal,
@@ -115,7 +117,7 @@ where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
     let validated = authority_validation::validate_conventional_operation(
-        runtime, principal, scope, operation, request,
+        runtime, product, principal, scope, operation, request,
     )?;
     let bound = authority_validation::bind_conventional_preconditions(validated, preconditions)?;
     authority_validation::transition_conventional_operation(bound)

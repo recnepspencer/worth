@@ -18,7 +18,11 @@ fn a_recreated_product_name_cannot_supply_security_to_a_retained_prior_occurrenc
         .installed_schema()
         .application_query(TemporalIntentQuery::reference())
         .unwrap();
-    let source = world.application.admit_current_product_branch().unwrap();
+    let source = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let identity = create_reused_product(&world, &source);
     let held = world
         .application

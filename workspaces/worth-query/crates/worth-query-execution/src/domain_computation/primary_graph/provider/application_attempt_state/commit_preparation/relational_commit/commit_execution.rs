@@ -64,21 +64,42 @@ pub(super) fn commit(
         .graph
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
         .map_err(transaction_commit_stop)?;
-    let outcome =
-        product.publish_relational_candidate(candidate, attempt.affinity().publication_request());
+    let prepared_publication = product
+        .prepare_relational_candidate(candidate, attempt.affinity().publication_request())
+        .map_err(world_no_effect)?;
+    let recovery = product.recovery();
+    let unpublished_reservation = provider
+        .reserve_unpublished_application_idempotency(
+            &product,
+            attempt.idempotency(),
+            prepared_publication.unpublished_recovery_handle(),
+            recovery.clone(),
+        )
+        .map_err(|()| {
+            crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure(
+                "unpublished idempotency retention capacity is exhausted",
+            ))
+        })?;
+    let outcome = prepared_publication.execute();
     let performed = match outcome {
-        RuntimeWorldPublicationOutcome::Performed(performed) => performed,
+        RuntimeWorldPublicationOutcome::Performed(performed) => {
+            unpublished_reservation.release();
+            performed
+        }
         RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            unpublished_reservation.retain(&effects);
             return Err(
                 crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductUnpublished(
                     crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
                         effects,
-                        product.recovery(),
+                        recovery,
+                        provider.unpublished_idempotency_disposition(),
                     ),
                 ),
             );
         }
         RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            unpublished_reservation.release();
             return Err(world_no_effect(no_effect));
         }
     };

@@ -36,36 +36,38 @@ where
         if !authorization.belongs_to_session(session) {
             return Err(inconsistent_authorization());
         }
-        let branch = admission.graph_work_branch();
+        let product = admission
+            .graph_work()
+            .mutation_product()
+            .ok_or_else(inconsistent_authorization)?;
         match authorization.capability_authorization() {
-            Some(capability) => self.validate_retained_capability(capability, branch),
-            None => self.validate_retained_conventional(authorization, branch),
+            Some(capability) => self.validate_retained_capability(capability, product),
+            None => self.validate_retained_conventional(authorization, product),
         }
     }
 
     fn validate_retained_conventional(
         &self,
         authorization: &WorthQueryRetainedAuthorizationDecisionFacts,
-        branch: &worth_relational::facade::history::BranchId,
+        product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
-        graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = crate::domain_computation::primary_graph::open_current_branch_snapshot(
-                runtime, branch,
-            )
+        let security = self
+            .admit_product_security_basis(product)
             .map_err(|denial| {
-                super::super::exact_basis_snapshot_denial(
+                super::super::denial::product_security_basis_denial(
                     denial,
                     "retained conventional authorization",
                 )
             })?;
+        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        graph.integration_handle().with_runtime_mut(|runtime| {
+            let snapshot = security.snapshot_handle();
             let current = validate_retained_currentness(
                 authorization,
                 runtime,
-                &snapshot,
+                snapshot,
                 self.authorization.bridge(),
             );
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             current
         })
     }
@@ -73,7 +75,7 @@ where
     fn validate_retained_capability(
         &self,
         capability: &WorthQueryRetainedCapabilityAuthorization,
-        branch: &worth_relational::facade::history::BranchId,
+        product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let installed = self.installed_capability_plan(capability.request())?;
         if capability.capability_authority_identity()
@@ -82,28 +84,23 @@ where
             return Err(stale_authorization());
         }
         let sample = self.sample_capability_time(installed)?;
-        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
-        graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = crate::domain_computation::primary_graph::open_current_branch_snapshot(
-                runtime, branch,
-            )
+        let security = self
+            .admit_product_security_basis(product)
             .map_err(|denial| {
-                super::super::exact_basis_snapshot_denial(
+                super::super::denial::product_security_basis_denial(
                     denial,
                     "retained capability authorization",
                 )
             })?;
+        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        graph.integration_handle().with_runtime_mut(|runtime| {
+            let snapshot = security.snapshot_handle();
             let primary = self.validate_retained_capability_observation(
-                capability, installed, &sample, runtime, &snapshot,
+                capability, installed, &sample, runtime, snapshot,
             );
             let result = primary.and_then(|()| {
-                self.readmit_retained_capability_support(
-                    capability.supporting(),
-                    runtime,
-                    &snapshot,
-                )
+                self.readmit_retained_capability_support(capability.supporting(), runtime, snapshot)
             });
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             result
         })
     }

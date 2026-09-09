@@ -10,14 +10,21 @@ use super::WorthQueryProductUnpublishedApplication;
 pub struct WorthQueryProductUnpublishedRecovery {
     handle: ProductUnpublishedRecoveryHandle,
     recovery: RuntimeWorldRecoveryPort,
+    disposition:
+        crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
 }
 
 impl WorthQueryProductUnpublishedRecovery {
     pub(super) fn new(
         handle: ProductUnpublishedRecoveryHandle,
         recovery: RuntimeWorldRecoveryPort,
+        disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
     ) -> Self {
-        Self { handle, recovery }
+        Self {
+            handle,
+            recovery,
+            disposition,
+        }
     }
 
     pub fn record_handle(&self) -> &ProductUnpublishedRecoveryHandle {
@@ -28,7 +35,11 @@ impl WorthQueryProductUnpublishedRecovery {
         &self,
     ) -> Result<WorthQueryProductUnpublishedApplication, RuntimeWorldRecoveryDenial> {
         self.recovery.inspect_effects(&self.handle).map(|effects| {
-            WorthQueryProductUnpublishedApplication::new(effects, self.recovery.clone())
+            WorthQueryProductUnpublishedApplication::new(
+                effects,
+                self.recovery.clone(),
+                self.disposition.clone(),
+            )
         })
     }
 
@@ -47,8 +58,11 @@ impl WorthQueryProductUnpublishedRecovery {
         &self,
         minimum_age_ticks: u64,
     ) -> Result<Vec<OwnerRetirementWork>, RuntimeWorldRecoveryDenial> {
-        self.recovery
-            .release_effects(&self.handle, minimum_age_ticks)
+        let work = self
+            .recovery
+            .release_effects(&self.handle, minimum_age_ticks)?;
+        self.disposition.release(&self.handle);
+        Ok(work)
     }
 }
 

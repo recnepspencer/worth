@@ -18,7 +18,6 @@ mod entity_key;
 mod entity_resolution;
 mod entity_resolution_denial;
 mod exact_basis_access;
-pub(in crate::domain_computation) use exact_basis_access::open_current_branch_snapshot;
 mod freshness;
 mod granular_invalidation;
 mod index_currency;
@@ -79,6 +78,7 @@ pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;
 pub(in crate::domain_computation) use provider::WorthQueryAftermathCausalityReadDenial;
+pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
 pub use application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
@@ -121,35 +121,29 @@ pub use application_query::{
     WorthQueryApplicationContinuationPageResult, WorthQueryApplicationDisclosed,
     WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,
     WorthQueryApplicationDisclosureOutcomeIdentity, WorthQueryApplicationDisclosureReceipt,
-    WorthQueryApplicationDisclosureReceiptPosture, WorthQueryApplicationHistoricalBasis,
-    WorthQueryApplicationHistoricalBasisReleaseReceipt, WorthQueryApplicationHistoricalRead,
-    WorthQueryApplicationHistoricalResult, WorthQueryApplicationLiveCauseDenialKind,
+    WorthQueryApplicationDisclosureReceiptPosture, WorthQueryApplicationLiveCauseDenialKind,
     WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveControlDenial,
     WorthQueryApplicationLiveControls, WorthQueryApplicationLiveLease,
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
     WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
     WorthQueryApplicationLiveUpdate, WorthQueryApplicationOmission,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
-    WorthQueryApplicationOneShotResult, WorthQueryApplicationPinnedBasis,
-    WorthQueryApplicationPinnedBasisDenial, WorthQueryApplicationPinnedBasisDenialKind,
-    WorthQueryApplicationPinnedBasisReleaseReceipt, WorthQueryApplicationPreviewBasis,
-    WorthQueryApplicationPreviewBasisReleaseReceipt, WorthQueryApplicationPreviewResult,
-    WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewSessionDenial,
-    WorthQueryApplicationPreviewSessionDenialKind,
-    WorthQueryApplicationPreviewSessionDiscardReceipt, WorthQueryApplicationPreviewSessionIdentity,
-    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
+    WorthQueryApplicationOneShotResult, WorthQueryApplicationProjection,
+    WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
     WorthQueryApplicationProjectionRows, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryAdmissionDenial,
     WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryBasisPosture,
     WorthQueryApplicationQueryConsistency, WorthQueryApplicationQueryContinuation,
-    WorthQueryApplicationQueryControls, WorthQueryApplicationQueryFreshness,
+    WorthQueryApplicationQueryFreshness,
     WorthQueryApplicationQueryOmissionPosture, WorthQueryApplicationQueryResumeControls,
     WorthQueryApplicationQueryWorkEvidence, WorthQueryApplicationResultBufferEvidence,
     WorthQueryApplicationResultBufferObservation, WorthQueryApplicationResultBufferObserver,
-    WorthQueryBoundedLaneDenial, WorthQueryBoundedLaneDenialKind,
     WorthQueryPrimaryGraphApplicationReadinessSnapshot,
 };
+#[cfg(test)]
+pub(crate) use application_query::WorthQueryApplicationHistoricalRead;
+pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDispatchAttemptOrdinal;
 pub use application_runtime::WorthQueryPrimaryGraphApplicationRuntime;

@@ -11,8 +11,7 @@ use super::super::fixture::{
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEntityIdentity, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryControls, WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryAuthenticatedPrincipal, WorthQueryPrincipalResolutionMode,
 };
 
 type Program = WorthQueryApplicationEffectProgram<
@@ -81,7 +80,7 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
         .installed_operation(PatchAccountDraftOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -159,13 +158,12 @@ fn absent_field_decision_facts_stale_after_a_competing_presence_change() {
             .compare_and_commit_application(winner, super::idempotency(73, 73)),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let WorthQueryApplicationCommitOutcome::Stale(stale) = world
-        .application
-        .compare_and_commit_application(loser, super::idempotency(74, 74))
-    else {
-        panic!("a presence change must stale an attempt that observed absence");
-    };
-    assert_eq!(stale.stale_fact_count(), 2);
+    super::assert_product_basis_stale(
+        world
+            .application
+            .compare_and_commit_application(loser, super::idempotency(74, 74)),
+        "a presence change after the losing product was selected",
+    );
     let result = query(&world, &principal, "account-2", &request);
     assert_eq!(result.note(), Some("winner"));
     assert_eq!(result.score(), Some(1));
@@ -185,7 +183,7 @@ fn program(
         .installed_operation(PatchAccountDraftOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             principal,
             account,
@@ -232,6 +230,8 @@ fn query(
 ) -> OptionalAccountFieldResult {
     let scope = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             account.to_owned(),
@@ -246,12 +246,12 @@ fn query(
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(principal, &scope);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
             ApplicationQueryParameterSet::<OptionalAccountFieldQuery>::new(),
-            WorthQueryApplicationQueryControls::current_one_shot(
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
                 NonZeroUsize::new(256).unwrap(),
                 request,

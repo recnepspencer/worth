@@ -92,6 +92,8 @@ fn actor_and_account(world: &AuthorizationWorld) -> (EntityId, EntityId) {
     let scope = live_scope();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -106,6 +108,8 @@ fn actor_and_account(world: &AuthorizationWorld) -> (EntityId, EntityId) {
 fn actor(world: &AuthorizationWorld) -> EntityId {
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             PrincipalIdentityField::reference(),
             1_u64,
@@ -119,6 +123,8 @@ fn actor(world: &AuthorizationWorld) -> EntityId {
 fn resolve_action_record(world: &AuthorizationWorld, record: &str) -> EntityId {
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityActionRecordIdentity::reference(),
             record.to_owned(),
@@ -151,9 +157,9 @@ fn current_relation(
     target: EntityId,
 ) -> RelationId {
     let graph = world.application.runtime.primary_graph().unwrap();
+    let selected = world.selected_product();
     graph.integration_handle().with_runtime_mut(|runtime| {
-        let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_current_main_snapshot(runtime)
-            .expect("primary branch has a current snapshot");
+        let snapshot = selected.application_basis().snapshot_handle();
         let relation = runtime
             .read_truth()
             .visible_relations_of_kind(kind, snapshot.version_id())
@@ -161,35 +167,13 @@ fn current_relation(
             .find(|record| record.source == source && record.target == target)
             .unwrap()
             .relation_id;
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         relation
     })
 }
 
 fn mutate(world: &AuthorizationWorld, build: impl FnOnce(WorkerIntentBatch) -> WorkerIntentBatch) {
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let mut transaction = {
-            let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-            runtime
-                .begin_branch_transaction(
-                    &transaction_validation_input,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("owner-admitted transaction context")
-        };
-        transaction
-            .push_batch(build(WorkerIntentBatch::new(
-                "capability-composition-hostility",
-            )))
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        crate::domain_computation::primary_graph::tests::fixture::release_test_commit_snapshot(
-            runtime, &committed,
-        );
-        handle.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    super::super::fixture::publish_relational_mutation(
+        world,
+        build(WorkerIntentBatch::new("capability-composition-hostility")),
+    );
 }

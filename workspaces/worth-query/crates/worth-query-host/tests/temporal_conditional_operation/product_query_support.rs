@@ -20,6 +20,8 @@ pub(super) fn principal(
     let external = block_on(authentication.authenticate((), request)).unwrap();
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &binding,
             external,
@@ -56,6 +58,34 @@ pub(super) fn fork_relational_product(
         .unwrap();
     let runtime::RuntimeWorldBranchCreationOutcome::Performed(observation) = outcome else {
         panic!("fork must publish an exact sibling product: {outcome:?}")
+    };
+    observation.branch_identity().clone()
+}
+
+pub(super) fn reuse_exact_product(
+    world: &CourtroomWorld,
+    source: &primary_graph::WorthQueryProductBranchLease,
+    name: &str,
+) -> runtime::ProductBranchIdentity {
+    let intent = runtime::ProductBranchCreationIntent::from_source(
+        name,
+        runtime::ProductBranchCreationPlans::new(
+            runtime::RelationalBranchCreationPlan::ReuseExact,
+            runtime::SignalBranchCreationPlan::ReuseExact,
+        ),
+    )
+    .unwrap();
+    let outcome = world
+        .application
+        .product_runtime()
+        .create_product_branch(
+            source,
+            intent,
+            &runtime::RuntimeWorldCancellationSource::new().token(),
+        )
+        .unwrap();
+    let runtime::RuntimeWorldBranchCreationOutcome::Performed(observation) = outcome else {
+        panic!("exact reuse must publish a product sibling: {outcome:?}")
     };
     observation.branch_identity().clone()
 }

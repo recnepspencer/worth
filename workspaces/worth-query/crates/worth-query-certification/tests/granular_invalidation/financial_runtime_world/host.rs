@@ -354,6 +354,8 @@ impl FinancialCourtroomWorld {
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .expect("the selected product branch remains admitted")
             .resolve_entity(
                 MarketIdentityField::reference(),
                 self.record_identity.to_string(),
@@ -368,6 +370,8 @@ impl FinancialCourtroomWorld {
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .expect("the selected product branch remains admitted")
             .resolve_entity(
                 MarketIdentityField::reference(),
                 "curve-usd-rates-10y".to_string(),

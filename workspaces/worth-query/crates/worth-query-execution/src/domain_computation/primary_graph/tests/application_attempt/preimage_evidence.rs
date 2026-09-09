@@ -20,7 +20,11 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
     let unrelated = resolved_account(&world, "unrelated", &request);
-    let selected = world.application.admit_current_product_branch().unwrap();
+    let selected = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let commit_count = || {
         world
             .application
@@ -61,27 +65,26 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let WorthQueryApplicationCommitOutcome::Committed(original) = outcome else {
         panic!("response-loss recovery must return the authoritative commit: {outcome:?}");
     };
-    let after_original = world.application.admit_current_product_branch().unwrap();
+    let after_original = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_ne!(after_original.selected_commit(), selected.selected_commit());
     assert_eq!(commit_count(), baseline + 1);
     let outcome = world
         .application
         .compare_and_commit_application(interleaved, idempotency(83, 84));
-    let WorthQueryApplicationCommitOutcome::ProductStale(stale) = outcome else {
-        panic!("preadmitted independent interleave must reject its old product: {outcome:?}");
-    };
-    assert_eq!(
-        stale.expected_product().selected_commit(),
-        selected.selected_commit()
+    super::assert_product_basis_stale(
+        outcome,
+        "the preadmitted independent interleave bound to the prior product",
     );
-    if let Some(observed) = stale.observed_product() {
-        assert_eq!(observed.selected_commit(), after_original.selected_commit());
-    }
     assert_eq!(commit_count(), baseline + 1);
     assert_eq!(
         world
             .application
-            .admit_current_product_branch()
+            .product_runtime()
+            .admit_product_branch(world.application.product_runtime().default_branch())
             .unwrap()
             .selected_commit(),
         after_original.selected_commit()
@@ -276,7 +279,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .installed_operation(ExactStatusRetentionOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             principal,
             account,

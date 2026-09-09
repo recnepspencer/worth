@@ -10,6 +10,7 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     ExecutionBudgetExceeded,
     ProviderUnsupported,
     ProviderRejected,
+    ProductBasisStale,
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,

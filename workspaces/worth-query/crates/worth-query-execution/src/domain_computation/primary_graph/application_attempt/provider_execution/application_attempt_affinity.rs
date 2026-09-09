@@ -17,6 +17,11 @@ use crate::domain_computation::{
 /// This value is move-only and private to the application-attempt state
 /// machine. The provider session is joined exactly once by [`bind_session`].
 pub(in crate::domain_computation) struct WorthQueryApplicationAttemptBasis {
+    core: WorthQueryApplicationAttemptCore,
+    product: crate::basis::WorthQueryProductBranchLease,
+}
+
+struct WorthQueryApplicationAttemptCore {
     runtime: WorthQueryRuntimeAuthorityIdentity,
     operation_attempt: WorthQueryOperationAdmissionIdentity,
     installed_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
@@ -27,7 +32,6 @@ pub(in crate::domain_computation) struct WorthQueryApplicationAttemptBasis {
     graph_work_session: WorthQueryGraphWorkSessionIdentity,
     graph_work_managed_run: WorthQueryGraphWorkManagedRunIdentity,
     branch: BranchId,
-    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 }
 
@@ -38,7 +42,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationAttemptBasis {
 /// against the already-admitted operation, pinned snapshot, graph-work session,
 /// and Relational branch.
 pub(in crate::domain_computation) struct WorthQueryApplicationAttemptAffinity {
-    basis: WorthQueryApplicationAttemptBasis,
+    basis: WorthQueryApplicationAttemptCore,
     provider_session: WorthQueryProviderSessionTerminalBinding,
 }
 
@@ -54,6 +58,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Worth
     Snapshot,
     GraphWorkSession,
     GraphWorkManagedRun,
+    Product,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) trait WorthQueryApplicationAttemptAffinityView
@@ -113,7 +118,7 @@ impl WorthQueryApplicationAttemptBasis {
         application: &super::super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         snapshot: &SnapshotHandle,
-        product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, ()> {
         if admission.runtime_authority() != application.runtime.authority_identity()
             || snapshot.branch_id() != admission.graph_work_branch()
@@ -135,19 +140,27 @@ impl WorthQueryApplicationAttemptBasis {
             return Err(());
         }
         Ok(Self {
-            runtime: admission.runtime_authority(),
-            operation_attempt: admission.admission_identity(),
-            installed_binding: admission.binding_identity().clone(),
-            installed_operation: admission.retain_installed_operation_fingerprint(),
-            resource_binding: admission.retain_resource_binding_identity(),
-            operation: admission.operation().into(),
-            snapshot: snapshot.clone(),
-            graph_work_session: admission.graph_work_session_identity(),
-            graph_work_managed_run: admission.graph_work_managed_run_identity(),
-            branch: admission.graph_work_branch().clone(),
-            product: product.clone(),
-            request: admission.publication_request().clone(),
+            core: WorthQueryApplicationAttemptCore {
+                runtime: admission.runtime_authority(),
+                operation_attempt: admission.admission_identity(),
+                installed_binding: admission.binding_identity().clone(),
+                installed_operation: admission.retain_installed_operation_fingerprint(),
+                resource_binding: admission.retain_resource_binding_identity(),
+                operation: admission.operation().into(),
+                snapshot: snapshot.clone(),
+                graph_work_session: admission.graph_work_session_identity(),
+                graph_work_managed_run: admission.graph_work_managed_run_identity(),
+                branch: admission.graph_work_branch().clone(),
+                request: admission.publication_request().clone(),
+            },
+            product: product.retained_clone(),
         })
+    }
+
+    pub(in crate::domain_computation) fn retained_product(
+        &self,
+    ) -> crate::basis::WorthQueryProductBranchLease {
+        self.product.retained_clone()
     }
 
     pub(in crate::domain_computation) fn bind_live_session(
@@ -155,11 +168,15 @@ impl WorthQueryApplicationAttemptBasis {
         provider_session: &WorthQueryProviderSessionAffinity<'_>,
     ) -> Result<WorthQueryApplicationAttemptAffinity, ()> {
         let provider_session = provider_session.terminal_binding();
-        if !self.affinity_mismatches(&provider_session).is_empty() {
+        if !self.affinity_mismatches(&provider_session).is_empty()
+            || provider_session
+                .application_product()
+                .is_none_or(|product| product.observation() != self.product.observation())
+        {
             return Err(());
         }
         Ok(WorthQueryApplicationAttemptAffinity {
-            basis: self,
+            basis: self.core,
             provider_session,
         })
     }
@@ -168,7 +185,14 @@ impl WorthQueryApplicationAttemptBasis {
         &self,
         provider_session: &WorthQueryProviderSessionTerminalBinding,
     ) -> std::collections::BTreeSet<WorthQueryApplicationAttemptAffinityMismatch> {
-        self.affinity_mismatches_view(provider_session)
+        let mut mismatches = self.affinity_mismatches_view(provider_session);
+        if provider_session
+            .application_product()
+            .is_none_or(|product| product.observation() != self.product.observation())
+        {
+            mismatches.insert(WorthQueryApplicationAttemptAffinityMismatch::Product);
+        }
+        mismatches
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn affinity_mismatches_view(
@@ -177,34 +201,34 @@ impl WorthQueryApplicationAttemptBasis {
     ) -> std::collections::BTreeSet<WorthQueryApplicationAttemptAffinityMismatch> {
         use WorthQueryApplicationAttemptAffinityMismatch as M;
         let checks = [
-            (plan.runtime_authority() != self.runtime, M::Runtime),
+            (plan.runtime_authority() != self.core.runtime, M::Runtime),
             (
-                plan.installed_operation() != self.installed_operation.as_ref(),
+                plan.installed_operation() != self.core.installed_operation.as_ref(),
                 M::InstalledOperation,
             ),
             (
-                plan.resource_binding() != self.resource_binding.as_ref(),
+                plan.resource_binding() != self.core.resource_binding.as_ref(),
                 M::ResourceBinding,
             ),
             (
-                plan.operation_attempt() != Some(self.operation_attempt),
+                plan.operation_attempt() != Some(self.core.operation_attempt),
                 M::OperationAttempt,
             ),
             (
-                plan.operation_slot() != Some(self.operation.as_ref()),
+                plan.operation_slot() != Some(self.core.operation.as_ref()),
                 M::OperationSlot,
             ),
             (
-                plan.schema_binding() != Some(&self.installed_binding),
+                plan.schema_binding() != Some(&self.core.installed_binding),
                 M::SchemaBinding,
             ),
-            (plan.snapshot() != Some(&self.snapshot), M::Snapshot),
+            (plan.snapshot() != Some(&self.core.snapshot), M::Snapshot),
             (
-                plan.graph_work_session() != Some(self.graph_work_session.as_u64()),
+                plan.graph_work_session() != Some(self.core.graph_work_session.as_u64()),
                 M::GraphWorkSession,
             ),
             (
-                plan.graph_work_managed_run() != Some(self.graph_work_managed_run.as_u64()),
+                plan.graph_work_managed_run() != Some(self.core.graph_work_managed_run.as_u64()),
                 M::GraphWorkManagedRun,
             ),
         ];
@@ -222,10 +246,12 @@ impl WorthQueryApplicationAttemptAffinity {
         &self.basis.request
     }
     pub(in crate::domain_computation::primary_graph) fn product_publication(&self) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
-        &self.basis.product
+        self.provider_session
+            .application_product()
+            .expect("application attempt affinity retains its selected product")
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn lookup_identity(
+    pub(in crate::domain_computation::primary_graph) fn lookup_identity(
         &self,
     ) -> WorthQueryProviderSessionAffinityIdentity {
         self.provider_session.affinity_identity()

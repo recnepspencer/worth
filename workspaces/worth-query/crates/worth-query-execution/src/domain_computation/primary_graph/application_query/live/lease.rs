@@ -62,6 +62,7 @@ pub struct WorthQueryApplicationLiveLease<
     scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     parameters: ApplicationQueryParameterSet<Query>,
     controls: WorthQueryApplicationLiveControls,
+    product: crate::basis::WorthQueryProductBranchLease,
     governance: super::super::disclosure::WorthQueryApplicationQueryGovernance,
     scope_identity: AspectValue,
     basis: Option<WorthQueryManagedLowerExecutionBasis>,
@@ -194,7 +195,16 @@ where
         target_identity: AspectValue,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         let access = WorthQueryApplicationQueryAccessContext::new(self.principal, &self.scope);
-        let controls = WorthQueryApplicationQueryControls::current_live(
+        let application_basis = match self
+            .runtime
+            .retain_product_application_basis(self.product.observation())
+        {
+            Ok(basis) => basis,
+            Err(_) => return WorthQueryApplicationLiveOutcome::Unavailable,
+        };
+        let controls = WorthQueryApplicationQueryControls::product_live(
+            self.product.retained_clone(),
+            application_basis,
             self.controls.maximum_materialized_record_count(),
             self.controls.maximum_work_per_delivery(),
             self.controls.request(),

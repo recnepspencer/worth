@@ -12,7 +12,7 @@ fn admitted_external_identity_resolves_through_certified_index_and_freshness() {
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
 
     let principal = world
-        .runtime
+        .selected_product()
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -27,7 +27,7 @@ fn admitted_external_identity_resolves_through_certified_index_and_freshness() {
     assert_eq!(principal.attributes()[0].value(), "Test User");
     assert_eq!(principal.examined_candidate_count(), 1);
     world
-        .runtime
+        .selected_product()
         .validate_authenticated_principal(&principal, &scope)
         .unwrap();
     let debug = format!("{principal:?}");

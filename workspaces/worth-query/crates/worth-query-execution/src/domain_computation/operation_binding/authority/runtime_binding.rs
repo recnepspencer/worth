@@ -139,6 +139,7 @@ impl<L: BasisOperationLane> ValidatedOperationBinding<'_, L> {
             application_operation_slot: None,
             application_schema_binding: None,
             application_snapshot: None,
+            application_product_observation: None,
         }
     }
 }

@@ -23,7 +23,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn admit_application_query<
+    pub(in crate::domain_computation::primary_graph) fn admit_application_query<
         'a,
         Query,
         Parameters,
@@ -68,7 +68,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn admit_governed_application_query<
+    pub(in crate::domain_computation::primary_graph) fn admit_governed_application_query<
         'a,
         Query,
         Parameters,

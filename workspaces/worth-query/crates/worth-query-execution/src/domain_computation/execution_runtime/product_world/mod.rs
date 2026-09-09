@@ -29,6 +29,7 @@ pub use relational_publication::{
     WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
     WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
 };
+pub(crate) use request_control::WorthQueryPreparedProductPublication;
 pub use runtime::WorthQueryProductRuntime;
 #[doc(hidden)]
 pub use shared_root::WorthQueryProductSharedRoot;

@@ -149,7 +149,7 @@ fn map_authorized_read_denial(
             subject.to_string(),
         ),
         WorthQueryAuthorizedApplicationReadDenial::StaleScope
-        | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope(_) => (
+        | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => (
             WorthQueryApplicationOneShotDenialKind::StaleScope,
             subject.to_string(),
         ),

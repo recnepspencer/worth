@@ -26,6 +26,8 @@ pub(super) fn set_status(
 ) {
     let elevation = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityElevationIdentity::reference(),
             elevation_identity.to_owned(),
@@ -40,39 +42,19 @@ pub(super) fn set_status(
         .field_locator(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
-    let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let fields = AspectFieldPatch::from(BTreeMap::from([(
-            locator,
-            status.into_foundational_value(),
-        )]));
-        let mut transaction = {
-            let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-            runtime
-                .begin_branch_transaction(
-                    &transaction_validation_input,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("owner-admitted transaction context")
-        };
-        transaction
-            .push_batch(WorkerIntentBatch::new("set-elevation-status").push(
-                MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                    UpdateEntityFieldsIntent {
-                        entity_id: elevation.entity_id(),
-                        fields,
-                    },
-                )),
-            ))
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        crate::domain_computation::primary_graph::tests::fixture::release_test_commit_snapshot(
-            runtime, &committed,
-        );
-        handle.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    let fields = AspectFieldPatch::from(BTreeMap::from([(
+        locator,
+        status.into_foundational_value(),
+    )]));
+    super::super::super::fixture::publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new("set-elevation-status").push(MutationIntent::Entity(
+            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                entity_id: elevation.entity_id(),
+                fields,
+            }),
+        )),
+    );
 }
 
 pub(super) fn add_self_approver(
@@ -82,6 +64,8 @@ pub(super) fn add_self_approver(
 ) {
     let elevation = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityElevationIdentity::reference(),
             elevation_identity.to_owned(),
@@ -95,39 +79,19 @@ pub(super) fn add_self_approver(
         .relation(CapabilityElevationApprover::reference().name())
         .unwrap()
         .kind;
-    let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let mut transaction = {
-            let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-            runtime
-                .begin_branch_transaction(
-                    &transaction_validation_input,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("owner-admitted transaction context")
-        };
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("add-self-approver").push(MutationIntent::Create(
-                    CreateIntent::Relation(RelationSpec {
-                        partition_id: PartitionId::main(),
-                        kind_id: relation_kind,
-                        client_key: ClientKey::raw("elevation-self-approver"),
-                        source: EntityReference::Existing(requester),
-                        target: EntityReference::Existing(elevation.entity_id()),
-                        fields: AspectFieldPatch::default(),
-                    }),
-                )),
-            )
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        crate::domain_computation::primary_graph::tests::fixture::release_test_commit_snapshot(
-            runtime, &committed,
-        );
-        handle.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    super::super::super::fixture::publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new("add-self-approver").push(MutationIntent::Create(
+            CreateIntent::Relation(RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: relation_kind,
+                client_key: ClientKey::raw("elevation-self-approver"),
+                source: EntityReference::Existing(requester),
+                target: EntityReference::Existing(elevation.entity_id()),
+                fields: AspectFieldPatch::default(),
+            }),
+        )),
+    );
 }
 
 pub(super) fn replace_elevation_resource(
@@ -137,6 +101,8 @@ pub(super) fn replace_elevation_resource(
 ) {
     let elevation = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityElevationIdentity::reference(),
             elevation_identity.to_owned(),
@@ -147,6 +113,8 @@ pub(super) fn replace_elevation_resource(
     let replacement = replacement_account.map(|identity| {
         world
             .application
+            .select_product_branch(world.application.product_runtime().default_branch())
+            .expect("the selected product branch remains admitted")
             .resolve_entity(
                 AccountIdentity::reference(),
                 identity.to_owned(),
@@ -163,9 +131,9 @@ pub(super) fn replace_elevation_resource(
         .unwrap()
         .kind;
     let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_current_main_snapshot(runtime)
-            .expect("primary branch has a current snapshot");
+    let selected = world.selected_product();
+    let relation = handle.with_runtime_mut(|runtime| {
+        let snapshot = selected.application_basis().snapshot_handle();
         let relation = runtime
             .read_truth()
             .visible_relations_of_kind(relation_kind, snapshot.version_id())
@@ -173,42 +141,26 @@ pub(super) fn replace_elevation_resource(
             .find(|record| record.source == elevation.entity_id())
             .expect("the elevation has one current direct resource")
             .relation_id;
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        let mut batch = WorkerIntentBatch::new("replace-elevation-resource").push(
-            MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
-                relation_id: relation,
-            })),
-        );
-        if let Some(account) = replacement {
-            batch = batch.push(MutationIntent::Create(CreateIntent::Relation(
-                RelationSpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: relation_kind,
-                    client_key: ClientKey::raw("replacement-elevation-resource"),
-                    source: EntityReference::Existing(elevation.entity_id()),
-                    target: EntityReference::Existing(account),
-                    fields: AspectFieldPatch::default(),
-                },
-            )));
-        }
-        let mut transaction = {
-    let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-    runtime
-        .begin_branch_transaction(
-            &transaction_validation_input,
-            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-        )
-        .expect("owner-admitted transaction context")
-};
-        transaction.push_batch(batch).expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        crate::domain_computation::primary_graph::tests::fixture::release_test_commit_snapshot(
-            runtime, &committed,
-        );
-        handle.ensure_primary_indexes_current(runtime).unwrap();
+        relation
     });
+    let mut batch = WorkerIntentBatch::new("replace-elevation-resource").push(
+        MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
+            relation_id: relation,
+        })),
+    );
+    if let Some(account) = replacement {
+        batch = batch.push(MutationIntent::Create(CreateIntent::Relation(
+            RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: relation_kind,
+                client_key: ClientKey::raw("replacement-elevation-resource"),
+                source: EntityReference::Existing(elevation.entity_id()),
+                target: EntityReference::Existing(account),
+                fields: AspectFieldPatch::default(),
+            },
+        )));
+    }
+    super::super::super::fixture::publish_relational_mutation(world, batch);
 }
 
 pub(super) fn add_elevation_resource(
@@ -218,6 +170,8 @@ pub(super) fn add_elevation_resource(
 ) {
     let elevation = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityElevationIdentity::reference(),
             elevation_identity.to_owned(),
@@ -227,6 +181,8 @@ pub(super) fn add_elevation_resource(
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             account_identity.to_owned(),
@@ -240,35 +196,17 @@ pub(super) fn add_elevation_resource(
         .relation(CapabilityElevationResource::reference().name())
         .unwrap()
         .kind;
-    let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let mut transaction = {
-            let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-            runtime
-                .begin_branch_transaction(
-                    &transaction_validation_input,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("owner-admitted transaction context")
-        };
-        transaction
-            .push_batch(WorkerIntentBatch::new("add-elevation-resource").push(
-                MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: relation_kind,
-                    client_key: ClientKey::raw("additional-elevation-resource"),
-                    source: EntityReference::Existing(elevation.entity_id()),
-                    target: EntityReference::Existing(account.entity_id()),
-                    fields: AspectFieldPatch::default(),
-                })),
-            ))
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        crate::domain_computation::primary_graph::tests::fixture::release_test_commit_snapshot(
-            runtime, &committed,
-        );
-        handle.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    super::super::super::fixture::publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new("add-elevation-resource").push(MutationIntent::Create(
+            CreateIntent::Relation(RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: relation_kind,
+                client_key: ClientKey::raw("additional-elevation-resource"),
+                source: EntityReference::Existing(elevation.entity_id()),
+                target: EntityReference::Existing(account.entity_id()),
+                fields: AspectFieldPatch::default(),
+            }),
+        )),
+    );
 }

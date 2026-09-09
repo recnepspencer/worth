@@ -29,10 +29,12 @@ pub(super) struct WorthQueryProviderSessionRegistrationFailure {
 pub(super) fn admit_provider_session<'run>(
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    product: crate::basis::WorthQueryProductBranchLease,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
 ) -> Result<WorthQueryAdmittedProviderSession<'run>, WorthQueryProviderSessionAdmissionFailure> {
     let staged = match running
         .admit_provider_execution_plan(graph)
+        .and_then(|plan| plan.bind_application_product(product))
         .and_then(|plan| plan.readmit())
         .and_then(|session| session.prepare())
         .map(|prepared| prepared.bind_reads_and_effects())

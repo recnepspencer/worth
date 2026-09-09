@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use super::{
     WorthQueryGraphProviderAnchor, WorthQueryProviderExecutionPlanContract,
-    WorthQueryProviderRunBorrow, WorthQueryProviderSessionLease, WorthQueryProviderSessionToken,
-    WorthQueryProviderSessionView, WorthQuerySessionBinding,
+    WorthQueryProviderProductAffinity, WorthQueryProviderRunBorrow, WorthQueryProviderSessionLease,
+    WorthQueryProviderSessionToken, WorthQueryProviderSessionView, WorthQuerySessionBinding,
 };
 
 /// The live, inseparable authority for one admitted provider session.
@@ -15,6 +15,7 @@ use super::{
 pub(crate) struct WorthQueryProviderSessionAffinity<'run> {
     _run: WorthQueryProviderRunBorrow<'run>,
     contract: WorthQueryProviderExecutionPlanContract,
+    product: WorthQueryProviderProductAffinity,
     session: WorthQueryProviderSessionLease,
     binding: WorthQuerySessionBinding,
 }
@@ -40,6 +41,7 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
     pub(super) fn mint(
         run: WorthQueryProviderRunBorrow<'run>,
         contract: WorthQueryProviderExecutionPlanContract,
+        product: WorthQueryProviderProductAffinity,
         provider: Arc<WorthQueryGraphProviderAnchor>,
         token: WorthQueryProviderSessionToken,
     ) -> Self {
@@ -47,6 +49,7 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
         Self {
             _run: run,
             contract,
+            product,
             session: WorthQueryProviderSessionLease::new(provider, token),
             binding,
         }
@@ -66,6 +69,10 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
 
     pub(super) fn binding(&self) -> &WorthQuerySessionBinding {
         &self.binding
+    }
+
+    pub(super) fn terminal_product(&self) -> super::WorthQueryProviderTerminalProductAffinity {
+        self.product.terminal()
     }
 
     pub(super) fn provider(&self) -> &WorthQueryGraphProviderAnchor {

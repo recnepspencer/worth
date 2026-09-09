@@ -17,7 +17,7 @@ fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -52,7 +52,7 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -88,7 +88,7 @@ fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_s
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -126,7 +126,7 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
         .unwrap();
 
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -136,7 +136,7 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
         )
         .unwrap();
     let other_admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &other_account,
@@ -161,7 +161,7 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     );
 
     let first_equivalent = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -171,7 +171,7 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
         )
         .unwrap();
     let second_equivalent = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -213,7 +213,7 @@ fn projected_distinct_facts_cannot_exceed_the_installed_budget() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -267,7 +267,7 @@ fn fact_budget_denial_precedes_freshness_provider_work() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(&principal, &other, &operation, Default::default(), &request)
         .unwrap();
     let (_, projection, _) = world
@@ -321,7 +321,7 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
         .installed_operation(MultiTouchOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,

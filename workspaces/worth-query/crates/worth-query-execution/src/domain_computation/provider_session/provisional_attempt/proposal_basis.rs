@@ -11,7 +11,7 @@ pub struct WorthQueryProvisionalProposalBasis {
     search_occurrence: Arc<str>,
     candidate_identity: Arc<str>,
     transformation_evidence: Arc<str>,
-    semantic_basis_identity: Arc<str>,
+    terminal_binding: super::super::WorthQueryProviderSessionTerminalBinding,
     target_generation: u64,
     installed_policy_identity: Arc<str>,
     correspondence_identity: Arc<str>,
@@ -24,7 +24,6 @@ pub struct WorthQueryProvisionalProposalBasisParts {
     pub search_occurrence: String,
     pub candidate_identity: String,
     pub transformation_evidence: String,
-    pub semantic_basis_identity: String,
     pub target_generation: u64,
     pub installed_policy_identity: String,
     pub correspondence_identity: String,
@@ -32,8 +31,9 @@ pub struct WorthQueryProvisionalProposalBasisParts {
 }
 
 impl WorthQueryProvisionalProposalBasis {
-    pub(crate) fn new(
+    pub(super) fn new(
         identity: impl Into<Arc<str>>,
+        terminal_binding: super::super::WorthQueryProviderSessionTerminalBinding,
         parts: WorthQueryProvisionalProposalBasisParts,
     ) -> Result<Self, super::WorthQueryProvisionalFailure> {
         let text = [
@@ -41,7 +41,6 @@ impl WorthQueryProvisionalProposalBasis {
             &parts.search_occurrence,
             &parts.candidate_identity,
             &parts.transformation_evidence,
-            &parts.semantic_basis_identity,
             &parts.installed_policy_identity,
             &parts.correspondence_identity,
             &parts.identity_consequence_identity,
@@ -60,7 +59,7 @@ impl WorthQueryProvisionalProposalBasis {
             search_occurrence: parts.search_occurrence.into(),
             candidate_identity: parts.candidate_identity.into(),
             transformation_evidence: parts.transformation_evidence.into(),
-            semantic_basis_identity: parts.semantic_basis_identity.into(),
+            terminal_binding,
             target_generation: parts.target_generation,
             installed_policy_identity: parts.installed_policy_identity.into(),
             correspondence_identity: parts.correspondence_identity.into(),
@@ -72,15 +71,18 @@ impl WorthQueryProvisionalProposalBasis {
         &self.identity
     }
 
-    pub fn semantic_basis_identity(&self) -> &str {
-        &self.semantic_basis_identity
+    pub(super) fn belongs_to(
+        &self,
+        terminal: &super::super::WorthQueryProviderSessionTerminalBinding,
+    ) -> bool {
+        self.terminal_binding.same_session(terminal)
     }
 
     pub fn target_generation(&self) -> u64 {
         self.target_generation
     }
 
-    pub fn dimensions(&self) -> [&str; 8] {
+    pub fn dimensions(&self) -> [&str; 7] {
         [
             &self.source_occurrence,
             &self.search_occurrence,
@@ -89,7 +91,6 @@ impl WorthQueryProvisionalProposalBasis {
             &self.installed_policy_identity,
             &self.correspondence_identity,
             &self.identity_consequence_identity,
-            &self.semantic_basis_identity,
         ]
     }
 }
@@ -100,20 +101,20 @@ impl WorthQuerySessionEffectAuthority<'_> {
         read_set: &WorthQueryFreshDecisionReadSet,
         parts: WorthQueryProvisionalProposalBasisParts,
     ) -> Result<WorthQueryProvisionalProposalBasis, super::WorthQueryProvisionalFailure> {
-        if !read_set.belongs_to(self.binding().canonical_identity())
-            || parts.semantic_basis_identity != self.plan().basis_identity()
-        {
+        if !read_set.belongs_to(self.binding().canonical_identity()) {
             return Err(super::WorthQueryProvisionalFailure::new(
                 super::WorthQueryProvisionalDenialKind::ProposalBasisMismatch,
                 "proposal does not belong to the exact session and semantic basis",
             ));
         }
-        let proposal =
-            WorthQueryProvisionalProposalBasis::new(read_set.read_set_identity(), parts)?;
+        let proposal = WorthQueryProvisionalProposalBasis::new(
+            read_set.read_set_identity(),
+            self.terminal_binding().clone(),
+            parts,
+        )?;
         if proposal
             .dimensions()
             .into_iter()
-            .take(7)
             .any(|identity| !read_set.contains_locator(identity))
         {
             return Err(super::WorthQueryProvisionalFailure::new(

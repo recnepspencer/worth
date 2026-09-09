@@ -26,6 +26,8 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -35,6 +37,8 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -49,7 +53,7 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
@@ -81,6 +85,8 @@ fn declared_root_paths_union_and_deduplicate_before_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -90,6 +96,8 @@ fn declared_root_paths_union_and_deduplicate_before_projection() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -104,7 +112,7 @@ fn declared_root_paths_union_and_deduplicate_before_projection() {
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,

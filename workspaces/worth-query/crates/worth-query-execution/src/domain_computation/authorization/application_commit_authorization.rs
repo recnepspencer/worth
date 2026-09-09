@@ -47,9 +47,15 @@ impl<'serialization, 'admission, Schema, Operation, Input, Scope>
         self,
         subject: Subject,
         transition: impl FnOnce(Subject) -> Outcome,
-    ) -> Result<Outcome, Subject> {
-        if self.admission.validate_current_authority().is_err() {
-            return Err(subject);
+    ) -> Result<
+        Outcome,
+        (
+            Subject,
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+        ),
+    > {
+        if let Err(denial) = self.admission.validate_current_authority() {
+            return Err((subject, denial));
         }
         Ok(transition(subject))
     }

@@ -2,47 +2,15 @@ use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
 };
 
-pub(super) fn map_exact_basis_failure(
-    denial: crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial,
-) -> WorthQueryInvariantExecutionFailure {
-    match denial {
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
-            retention_capacity_failure()
-        }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => exhausted_failure(
-            WorthQueryInvariantExecutionDenialKind::RetentionIdentityExhausted,
-            "Relational invariant execution exhausted retention identity space",
-        ),
-        _ => owner_failure(),
-    }
-}
-
-pub(super) fn map_branch_basis_failure(
-    denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
-) -> WorthQueryInvariantExecutionFailure {
-    match denial {
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-            retention_capacity_failure()
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => exhausted_failure(
-            WorthQueryInvariantExecutionDenialKind::RetentionIdentityExhausted,
-            "Relational invariant execution exhausted retention identity space",
-        ),
-        worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-            exhausted_failure(
-                WorthQueryInvariantExecutionDenialKind::SnapshotIdentityExhausted,
-                "Relational invariant execution exhausted snapshot identity space",
-            )
-        }
-        _ => owner_failure(),
-    }
-}
-
 pub(super) fn map_transaction_admission_failure(
     denial: worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,
 ) -> WorthQueryInvariantExecutionFailure {
     use worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial as Denial;
     match denial {
+        Denial::StaleBasis => WorthQueryInvariantExecutionFailure::new(
+            WorthQueryInvariantExecutionDenialKind::ProductBasisStale,
+            "the exact product basis became stale before invariant candidate admission",
+        ),
         Denial::RetentionCapacityExhausted => retention_capacity_failure(),
         Denial::RetentionIdentityExhausted => exhausted_failure(
             WorthQueryInvariantExecutionDenialKind::RetentionIdentityExhausted,

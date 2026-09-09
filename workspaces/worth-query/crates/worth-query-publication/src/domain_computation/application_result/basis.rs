@@ -15,10 +15,7 @@ pub struct WorthQueryPublishedApplicationBasis {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPublishedApplicationBasisPosture {
-    Current,
-    Pinned,
-    Historical,
-    Preview,
+    SelectedProduct,
 }
 
 impl WorthQueryPublishedApplicationBasis {
@@ -30,17 +27,8 @@ impl WorthQueryPublishedApplicationBasis {
             snapshot: identity.snapshot_id().0,
             version: receipt.basis_version().as_u64(),
             posture: match receipt.basis_posture() {
-                WorthQueryApplicationQueryBasisPosture::Current => {
-                    WorthQueryPublishedApplicationBasisPosture::Current
-                }
-                WorthQueryApplicationQueryBasisPosture::Pinned => {
-                    WorthQueryPublishedApplicationBasisPosture::Pinned
-                }
-                WorthQueryApplicationQueryBasisPosture::Historical => {
-                    WorthQueryPublishedApplicationBasisPosture::Historical
-                }
-                WorthQueryApplicationQueryBasisPosture::Preview => {
-                    WorthQueryPublishedApplicationBasisPosture::Preview
+                WorthQueryApplicationQueryBasisPosture::SelectedProduct => {
+                    WorthQueryPublishedApplicationBasisPosture::SelectedProduct
                 }
             },
         }

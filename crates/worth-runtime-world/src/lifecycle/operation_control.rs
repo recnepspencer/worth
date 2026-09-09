@@ -4,7 +4,11 @@ use std::time::Duration;
 
 #[derive(Clone, Default)]
 pub struct RuntimeWorldOperationControl {
-    pending: Arc<Mutex<Option<Arc<ProductComparePause>>>>,
+    pending: Arc<Mutex<Option<ProductCompareControl>>>,
+}
+enum ProductCompareControl {
+    Pause(Arc<ProductComparePause>),
+    Panic,
 }
 #[derive(Default)]
 struct ProductComparePause {
@@ -21,17 +25,32 @@ impl RuntimeWorldOperationControl {
         let latch = Arc::new(ProductComparePause::default());
         let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
         assert!(pending.is_none(), "one product compare pause may be armed");
-        *pending = Some(Arc::clone(&latch));
+        *pending = Some(ProductCompareControl::Pause(Arc::clone(&latch)));
         RuntimeWorldProductComparePause { latch }
     }
+
+    /// Inject one unwind after owner execution and before product movement.
+    /// Available only in the explicit operation-control test build.
+    pub fn panic_before_product_compare_once(&self) {
+        let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+        assert!(
+            pending.is_none(),
+            "one product compare control may be armed"
+        );
+        *pending = Some(ProductCompareControl::Panic);
+    }
+
     pub(crate) fn before_product_compare(&self) {
-        let latch = self
+        let control = self
             .pending
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .take();
-        let Some(latch) = latch else {
+        let Some(control) = control else {
             return;
+        };
+        let ProductCompareControl::Pause(latch) = control else {
+            panic!("injected unwind before product comparison")
         };
         let mut state = latch.state.lock().unwrap_or_else(|e| e.into_inner());
         state.0 = true;

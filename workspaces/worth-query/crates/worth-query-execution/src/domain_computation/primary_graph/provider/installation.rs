@@ -22,6 +22,11 @@ impl WorthQueryPrimaryGraphProvider {
             completed_commit_evidence: std::sync::Mutex::new(
                 super::session_commit::WorthQueryCompletedCommitEvidenceStore::default(),
             ),
+            unpublished_idempotency: std::sync::Arc::new(std::sync::Mutex::new(
+                super::unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore::new(
+                    super::resource_support::UNPUBLISHED_IDEMPOTENCY_CAPACITY,
+                ),
+            )),
             receipt_basis_retention: std::sync::Mutex::new(Default::default()),
             pending_application_publication: std::sync::Mutex::new(None),
             conditional_commit_journal: std::sync::Mutex::new(Default::default()),

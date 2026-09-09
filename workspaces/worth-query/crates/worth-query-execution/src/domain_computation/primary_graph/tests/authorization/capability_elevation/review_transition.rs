@@ -2,7 +2,8 @@ use super::super::super::application_attempt::idempotency;
 use super::super::super::fixture::{CapabilityReviewStatus, CompleteElevationReviewInput};
 use super::super::capability_progression::time;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenialKind, WorthQueryMandatoryReviewOutcome,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
+    WorthQueryApplicationCommitDenialStage, WorthQueryMandatoryReviewOutcome,
     WorthQueryOperationAuthorizationDenialKind,
 };
 
@@ -55,6 +56,22 @@ fn requester_and_approver_are_denied_by_installed_review_actor_composition() {
 
 #[test]
 fn concurrent_review_completion_stales_and_returned_obligation_cannot_be_reused() {
+    let (world, request, mandatory) = denied_concurrent_review();
+    let reads = super::terminal_lifecycle_support::review_reads(&world, &request, mandatory);
+    let Err(denial) = reads.materialize_mandatory_review_program() else {
+        panic!("completed review state must not mint another review program");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationAttemptDenialKind::MandatoryReviewProgramMismatch
+    );
+}
+
+fn denied_concurrent_review() -> (
+    super::approval_transition::World,
+    worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    crate::domain_computation::primary_graph::WorthQueryMandatoryReview,
+) {
     let (world, request, approved) = super::approval_transition::exact_approved_world();
     world
         .authorization_time
@@ -65,21 +82,21 @@ fn concurrent_review_completion_stales_and_returned_obligation_cannot_be_reused(
         super::terminal_lifecycle_support::materialize_review(&world, &request, mandatory);
     super::mutation::complete_review_out_of_band(&world, reviewer.principal_entity_id());
 
-    let WorthQueryMandatoryReviewOutcome::Stale(stale, mandatory) = world
+    let outcome = world
         .application
-        .compare_and_commit_mandatory_review(program, idempotency(177, 177))
-    else {
-        panic!("concurrent review state must stale the exact retained review facts");
-    };
-    assert_eq!(stale.stale_fact_count(), 2);
-    let reads = super::terminal_lifecycle_support::review_reads(&world, &request, mandatory);
-    let Err(denial) = reads.materialize_mandatory_review_program() else {
-        panic!("completed review state must not mint another review program");
+        .compare_and_commit_mandatory_review(program, idempotency(177, 177));
+    let WorthQueryMandatoryReviewOutcome::Denied(denial, mandatory) = outcome else {
+        panic!("the review bound to the prior product must deny before effects: {outcome:?}");
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryApplicationAttemptDenialKind::MandatoryReviewProgramMismatch
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
     );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
+    (world, request, mandatory)
 }
 
 #[test]

@@ -124,7 +124,7 @@ pub(super) fn reconstruct_temporal_intents<
         EqualityPredicate,
         IdentityUnit,
     >,
-    product: Option<&crate::basis::WorthQueryProductBranchLease>,
+    product: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<
     WorthQueryTemporalReconstruction<Clock, Input>,
     WorthQueryConditionalRuntimeInstallationDenial,
@@ -156,7 +156,10 @@ where
 {
     let admission = isolate_principal_source(access)?;
     let (external, request) = admission.into_parts();
-    let principal = runtime
+    let selected = runtime
+        .on_product(product.retained_clone())
+        .map_err(product_denial)?;
+    let principal = selected
         .resolve_authenticated_principal(
             &access.principal_binding,
             external,
@@ -164,52 +167,29 @@ where
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .map_err(denial::principal)?;
-    let scope = match product {
-        Some(product) => runtime
-            .on_product(product.retained_clone())
-            .map_err(product_denial)?
-            .resolve_entity(
-                access.scope_field,
-                access.scope_value.clone(),
-                &request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(denial::entity)?,
-        None => runtime
-            .resolve_entity(
-                access.scope_field,
-                access.scope_value.clone(),
-                &request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(denial::entity)?,
-    };
+    let scope = selected
+        .resolve_entity(
+            access.scope_field,
+            access.scope_value.clone(),
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .map_err(denial::entity)?;
     let query_access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let bounds = binding.bounds();
     let maximum_results = NonZeroUsize::new(bounds.maximum_reconstruction_rows())
         .expect("installed temporal bounds are non-zero");
     let maximum_work = NonZeroUsize::new(bounds.maximum_query_work())
         .expect("installed temporal bounds are non-zero");
-    let controls = match product {
-        Some(product) => {
-            let (_, product, application_basis) = runtime
-                .on_product(product.retained_clone())
-                .map_err(product_denial)?
-                .into_parts();
-            WorthQueryApplicationQueryControls::product_one_shot(
-                product,
-                application_basis,
-                maximum_results,
-                maximum_work,
-                &request,
-            )
-        }
-        None => WorthQueryApplicationQueryControls::current_one_shot(
-            maximum_results,
-            maximum_work,
-            &request,
-        ),
-    };
+    let source_product = selected.product().retained_clone();
+    let (_, product, application_basis) = selected.into_parts();
+    let controls = WorthQueryApplicationQueryControls::product_one_shot(
+        product,
+        application_basis,
+        maximum_results,
+        maximum_work,
+        &request,
+    );
     let plan = access
         .query_authorization
         .admit(
@@ -232,17 +212,32 @@ where
     };
     let candidates =
         super::temporal_intent_projection::project_unique_candidates(binding, result.into_rows())?;
-    let intents = bind_source_records(runtime, candidates, identity_field, &request, product)?;
+    let intents = bind_source_records(
+        runtime,
+        candidates,
+        identity_field,
+        &request,
+        &source_product,
+    )?;
     Ok(WorthQueryTemporalReconstruction { intents, work })
 }
 
-fn product_denial(
+pub(super) fn product_denial(
     denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
-    reconstruction_denial(
-        WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
-        format!("selected product admission failed: {denial:?}"),
-    )
+    use crate::basis::WorthQueryProductBranchAdmissionDenial as Kind;
+    match denial {
+        Kind::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
+        Kind::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
+        Kind::RetentionIdentityExhausted => retention_identity_reconstruction_denial(),
+        Kind::SnapshotIdentityExhausted => snapshot_identity_reconstruction_denial(),
+        denial => reconstruction_denial(
+            WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
+            format!("selected product admission failed: {denial:?}"),
+        ),
+    }
 }
 
 fn isolate_principal_source<

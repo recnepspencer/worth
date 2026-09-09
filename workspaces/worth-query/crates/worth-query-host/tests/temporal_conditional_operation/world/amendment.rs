@@ -16,7 +16,9 @@ impl CourtroomWorld {
 
     pub fn amend_gate_only(&mut self, gate: &str) {
         self.amendment_ordinal += 1;
+        let branch = self.application.product_runtime().default_branch().clone();
         self.commit_amendment(
+            &branch,
             1,
             5,
             "active",
@@ -29,6 +31,8 @@ impl CourtroomWorld {
 
     pub fn intent_record_identity(&self) -> primary_graph::RelationalBridgeRecordIdentityParts {
         self.application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .expect("the selected product branch remains admitted")
             .resolve_entity(
                 IntentIdentityField::reference(),
                 "intent-1".to_string(),
@@ -48,7 +52,9 @@ impl CourtroomWorld {
         gate: &str,
     ) {
         self.amendment_ordinal += 1;
+        let branch = self.application.product_runtime().default_branch().clone();
         self.commit_amendment(
+            &branch,
             revision,
             due,
             lifecycle,
@@ -60,11 +66,56 @@ impl CourtroomWorld {
     }
 
     pub fn change_input_after_query_admission(&self, input: &str) {
-        self.commit_amendment(2, 11, "active", input, "ready", AmendmentWidth::Full, 0xED);
+        let branch = self.application.product_runtime().default_branch().clone();
+        self.commit_amendment(
+            &branch,
+            2,
+            11,
+            "active",
+            input,
+            "ready",
+            AmendmentWidth::Full,
+            0xED,
+        );
+    }
+
+    pub fn change_input_on_product(
+        &self,
+        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        input: &str,
+    ) -> primary_graph::WorthQueryApplicationCommitReceipt {
+        self.commit_amendment(
+            product,
+            2,
+            11,
+            "active",
+            input,
+            "ready",
+            AmendmentWidth::Full,
+            0xEC,
+        )
+    }
+
+    pub fn retry_input_change_on_product(
+        &self,
+        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        input: &str,
+    ) -> primary_graph::WorthQueryApplicationCommitOutcome {
+        self.compare_amendment(
+            product,
+            2,
+            11,
+            "active",
+            input,
+            "ready",
+            AmendmentWidth::Full,
+            0xEC,
+        )
     }
 
     fn commit_amendment(
         &self,
+        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
         revision: u64,
         due: u64,
         lifecycle: &str,
@@ -72,7 +123,34 @@ impl CourtroomWorld {
         gate: &str,
         width: AmendmentWidth,
         amendment_ordinal: u8,
-    ) {
+    ) -> primary_graph::WorthQueryApplicationCommitReceipt {
+        let outcome = self.compare_amendment(
+            product,
+            revision,
+            due,
+            lifecycle,
+            input,
+            gate,
+            width,
+            amendment_ordinal,
+        );
+        let primary_graph::WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
+            panic!("unexpected amendment outcome: {outcome:?}")
+        };
+        receipt
+    }
+
+    fn compare_amendment(
+        &self,
+        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        revision: u64,
+        due: u64,
+        lifecycle: &str,
+        input: &str,
+        gate: &str,
+        width: AmendmentWidth,
+        amendment_ordinal: u8,
+    ) -> primary_graph::WorthQueryApplicationCommitOutcome {
         let schema = self.application.installed_schema();
         let principal_binding = schema
             .principal_binding(TemporalPrincipalBinding::reference())
@@ -80,8 +158,8 @@ impl CourtroomWorld {
         let authentication = admit_identity_adapter(schema);
         let request = request_scope();
         let external = block_on(authentication.authenticate((), &request)).unwrap();
-        let principal = self
-            .application
+        let selected = self.application.select_product_branch(product).unwrap();
+        let principal = selected
             .resolve_authenticated_principal(
                 &principal_binding,
                 external,
@@ -89,8 +167,7 @@ impl CourtroomWorld {
                 primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .unwrap();
-        let intent = self
-            .application
+        let intent = selected
             .resolve_entity(
                 IntentIdentityField::reference(),
                 "intent-1".to_string(),
@@ -101,8 +178,7 @@ impl CourtroomWorld {
         let operation = schema
             .installed_operation(AmendTemporal::reference())
             .unwrap();
-        let admission = self
-            .application
+        let admission = selected
             .authorize_operation(
                 &principal,
                 &intent,
@@ -166,15 +242,7 @@ impl CourtroomWorld {
             [0x91 ^ amendment_ordinal; 32],
             [0xA0 ^ amendment_ordinal; 32],
         );
-        let outcome = self
-            .application
-            .compare_and_commit_application(effects.finish().unwrap(), idempotency);
-        assert!(
-            matches!(
-                outcome,
-                primary_graph::WorthQueryApplicationCommitOutcome::Committed(_)
-            ),
-            "unexpected amendment outcome: {outcome:?}"
-        );
+        self.application
+            .compare_and_commit_application(effects.finish().unwrap(), idempotency)
     }
 }

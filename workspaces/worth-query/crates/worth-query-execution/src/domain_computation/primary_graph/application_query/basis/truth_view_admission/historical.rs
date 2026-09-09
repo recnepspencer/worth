@@ -1,10 +1,8 @@
 use std::marker::PhantomData;
 
-use super::super::{
-    historical_authority::{
-        WorthQueryApplicationHistoricalReadSource, WorthQueryApplicationHistoricalRetention,
-    },
+use super::super::historical_authority::{
     WorthQueryApplicationHistoricalBasis, WorthQueryApplicationHistoricalRead,
+    WorthQueryApplicationHistoricalReadSource, WorthQueryApplicationHistoricalRetention,
 };
 use super::validation::{denial, validate_truth_view_request};
 use crate::domain_computation::primary_graph::{
@@ -20,7 +18,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn admit_application_historical_basis(
+    pub(crate) fn admit_application_historical_basis(
         &self,
         read: WorthQueryApplicationHistoricalRead,
         request: &WorthQueryRequestScope,
@@ -33,14 +31,6 @@ where
         let lease = super::super::admission::register_basis(self, basis)?;
         validate_truth_view_request(request)?;
         Ok(WorthQueryApplicationHistoricalBasis {
-            runtime_authority: self.runtime.authority_identity(),
-            schema_binding: self.installed_schema.binding_identity(),
-            graph_authority_identity: self
-                .primary_graph_authority
-                .authority_identity()
-                .to_string(),
-            provider_identity: self.primary_graph_authority.provider_identity().to_string(),
-            expires_at: request.deadline(),
             lease,
             _schema: PhantomData,
         })
@@ -74,8 +64,6 @@ where
                     WorthQueryApplicationHistoricalRetention::OwnerLifecycle => self
                         .primary_provider
                         .retained_application_commit_basis(&commit),
-                    #[cfg(test)]
-                    WorthQueryApplicationHistoricalRetention::Test(retention) => Some(retention),
                 }
                 .ok_or_else(|| {
                     denial(

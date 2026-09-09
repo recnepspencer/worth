@@ -141,9 +141,9 @@ fn typed_policy_facts_publish_atomically_with_principal_identity() {
         true,
     );
 
-    assert_eq!(world.publication.principal_binding_count(), 1);
-    assert_eq!(world.publication.policy_entity_count(), 1);
-    assert_eq!(world.publication.policy_relation_count(), 1);
+    assert_eq!(world.application.publication().principal_binding_count(), 1);
+    assert_eq!(world.application.publication().policy_entity_count(), 1);
+    assert_eq!(world.application.publication().policy_relation_count(), 1);
 }
 
 #[test]

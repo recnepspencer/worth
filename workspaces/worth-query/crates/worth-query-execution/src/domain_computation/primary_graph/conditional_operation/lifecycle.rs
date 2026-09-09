@@ -194,7 +194,7 @@ where
         prepared.authoritative_commit_cursor = runtime.primary_provider.conditional_commit_sequence();
         let reconstruction = super::temporal_reconstruction::reconstruct_temporal_intents(
             runtime, &self.definition.binding, &self.definition.reconstruction, self.definition.execution.identity_field,
-            Some(product),
+            product,
         )?;
         prepared.reconstructed_intent_count = reconstruction.intents.len();
         prepared.commit_watch = commit_watch::WorthQueryConditionalCommitWatchSet::successor(
@@ -335,6 +335,7 @@ where
                 .application_operation();
             let counts = super::application_operation_reentry::reenter_retained_wakes(
                 runtime,
+                truth.product(),
                 bridge,
                 managed_clock,
                 operation,

@@ -36,7 +36,7 @@ type Reads = WorthQueryCompleteApplicationReadSet<
 
 #[test]
 fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt() {
-    let world = request_world(8);
+    let world = request_world();
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let program = request_reads(&world, &principal, &request, honest_input())
@@ -76,7 +76,7 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
 
 #[test]
 fn ordinary_operation_progression_cannot_authorize_a_lifecycle_request() {
-    let world = request_world(3);
+    let world = request_world();
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let access = request_access(&world, &principal, &request, honest_input()).unwrap();
@@ -96,7 +96,7 @@ fn ordinary_operation_progression_cannot_authorize_a_lifecycle_request() {
 
 #[test]
 fn ordinary_compare_and_commit_cannot_publish_a_lifecycle_program() {
-    let world = request_world(3);
+    let world = request_world();
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let ordinary = request_reads(&world, &principal, &request, honest_input())
@@ -118,7 +118,7 @@ fn ordinary_compare_and_commit_cannot_publish_a_lifecycle_program() {
 
 #[test]
 fn equivalent_request_retry_recovers_the_same_authoritative_commit() {
-    let world = request_world(12);
+    let world = request_world();
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let first = request_reads(&world, &principal, &request, honest_input())
@@ -167,7 +167,7 @@ fn request_upper_bound_cannot_widen_scope_or_swap_purpose() {
             WorthQueryOperationAuthorizationDenialKind::ElevationRequestRejected,
         ),
     ] {
-        let world = request_world(2);
+        let world = request_world();
         let request = live_scope();
         let principal = authenticated_principal(&world, &request);
         let access = request_access(&world, &principal, &request, input).unwrap();
@@ -218,7 +218,7 @@ fn proposed_grant_must_independently_authorize_the_governed_upper_bound() {
 #[test]
 fn zero_or_overlong_duration_and_invalid_storage_key_fail_before_commit() {
     for duration in [Duration::ZERO, Duration::from_secs(1_201)] {
-        let world = request_world(2);
+        let world = request_world();
         let request = live_scope();
         let principal = authenticated_principal(&world, &request);
         let access = request_access(
@@ -242,7 +242,7 @@ fn zero_or_overlong_duration_and_invalid_storage_key_fail_before_commit() {
         );
     }
 
-    let world = request_world(3);
+    let world = request_world();
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let access = request_access(
@@ -318,7 +318,7 @@ fn request_access(
         )
         .unwrap();
     world
-        .application
+        .selected_product()
         .admit_capability_access(principal, &capability, input, request)
 }
 
@@ -336,11 +336,9 @@ fn request_operation(
         .unwrap()
 }
 
-fn request_world(samples: usize) -> World {
+fn request_world() -> World {
     let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
-    world
-        .authorization_time
-        .script(std::iter::repeat_n(time(100), samples));
+    world.authorization_time.hold(time(100));
     world
 }
 
@@ -368,6 +366,8 @@ pub(super) fn resolve_created_identities(
 ) {
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityElevationIdentity::reference(),
             "elevation-2".to_owned(),
@@ -377,6 +377,8 @@ pub(super) fn resolve_created_identities(
         .expect("committed request must create the exact elevation identity");
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),

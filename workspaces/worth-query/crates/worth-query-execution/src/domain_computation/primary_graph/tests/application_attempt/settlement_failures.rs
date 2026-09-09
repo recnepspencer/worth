@@ -17,7 +17,11 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
-    let selected = world.application.admit_current_product_branch().unwrap();
+    let selected = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let commits = || {
         world
             .application
@@ -48,6 +52,14 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
         selected.selected_commit()
     );
     assert_eq!(commits(), baseline + 1);
+    assert_eq!(
+        world
+            .application
+            .primary_provider
+            .unpublished_idempotency_count(),
+        1,
+        "the unpublished owner result consumes one bounded tombstone",
+    );
     let recovery = partial.into_recovery();
     let foreign = installed_authorization_world(true);
     assert!(matches!(
@@ -79,7 +91,11 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
     assert_eq!(settled.owner_effect_count(), 1);
     assert!(settled.live_obligation_count() > 0);
     drop(settled);
-    let current = world.application.admit_current_product_branch().unwrap();
+    let current = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_eq!(
         current.selected_commit(),
         selected.selected_commit(),
@@ -99,6 +115,14 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
         recovery.inspect(),
         Err(RuntimeWorldRecoveryDenial::MissingRecord)
     ));
+    assert_eq!(
+        world
+            .application
+            .primary_provider
+            .unpublished_idempotency_count(),
+        0,
+        "terminal World cleanup releases the exact tombstone capacity",
+    );
 }
 
 #[test]
@@ -107,7 +131,11 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
-    let selected = world.application.admit_current_product_branch().unwrap();
+    let selected = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     let commits = || {
         world
             .application
@@ -169,14 +197,26 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
             .application
             .compare_and_commit_application(retry_after, idempotency(96, 96)),
     );
-    let current = world.application.admit_current_product_branch().unwrap();
+    let current = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
     assert_eq!(current.selected_commit(), selected.selected_commit());
     assert_eq!(commits(), baseline + 1);
     let work = recovery.release_obligations(0).unwrap();
     assert!(work.is_empty());
+    assert_eq!(
+        world
+            .application
+            .primary_provider
+            .unpublished_idempotency_count(),
+        0,
+        "rediscovered cleanup releases the same bounded tombstone",
+    );
 }
 
-fn assert_idempotency_refuses_unpublished(outcome: WorthQueryApplicationCommitOutcome) {
+pub(super) fn assert_idempotency_refuses_unpublished(outcome: WorthQueryApplicationCommitOutcome) {
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("owner-local idempotency row without original product publication must remain ineligible: {outcome:?}");
     };

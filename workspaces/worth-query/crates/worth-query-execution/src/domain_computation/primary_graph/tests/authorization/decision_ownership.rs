@@ -16,6 +16,8 @@ fn matching_prohibited_path_denies_only_through_bridge_decision_authority() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -25,6 +27,8 @@ fn matching_prohibited_path_denies_only_through_bridge_decision_authority() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_owned(),
@@ -38,7 +42,7 @@ fn matching_prohibited_path_denies_only_through_bridge_decision_authority() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
 
-    let outcome = world.application.authorize_operation(
+    let outcome = world.selected_product().authorize_operation(
         &principal,
         &account,
         &operation,

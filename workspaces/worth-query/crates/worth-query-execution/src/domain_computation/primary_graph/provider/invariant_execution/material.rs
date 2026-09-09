@@ -9,6 +9,8 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) semantic: ApplicationInvariantSemanticMaterial,
     pub(super) batch: worth_relational::facade::transactions::WorkerIntentBatch,
     pub(super) branch: worth_relational::facade::history::BranchId,
+    pub(super) product:
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     pub(super) decision_facts: usize,
     pub(super) aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
@@ -34,6 +36,7 @@ impl ApplicationInvariantCandidateMaterial {
             semantic: ApplicationInvariantSemanticMaterial::from_staged(staged)?,
             batch: staged.batch().clone(),
             branch: staged.branch().clone(),
+            product: staged.product_publication().clone(),
             decision_facts: staged.decision_fact_count(),
             aftermath_causality: staged.aftermath_causality().cloned(),
             application_graph_reads: staged

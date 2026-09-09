@@ -41,6 +41,19 @@ pub(in crate::domain_computation) struct AuthorizationWorld {
         std::sync::Arc<crate::domain_computation::primary_graph::tests::fault_controller::PrimaryGraphFaultController>,
 }
 
+impl AuthorizationWorld {
+    pub(in crate::domain_computation) fn selected_product(
+        &self,
+    ) -> crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+        '_,
+        IdentityExecutionSchema,
+    > {
+        self.application
+            .select_product_branch(self.application.product_runtime().default_branch())
+            .expect("the fixture product branch remains admitted")
+    }
+}
+
 struct PreparedAuthorizationWorld {
     runtime: WorthQueryExecutionRuntime,
     authority: WorthQueryExecutionInstallationAuthority,
@@ -51,15 +64,6 @@ struct PreparedAuthorizationWorld {
 
 pub(super) fn install_authorization_world(spec: AuthorizationWorldSpec<'_>) -> AuthorizationWorld {
     let mut prepared = prepare_authorization_world(spec.resources, None);
-    populate_authorization_world(&mut prepared, &spec);
-    publish_authorization_world(prepared)
-}
-
-pub(super) fn install_authorization_world_with_relational_runtime(
-    spec: AuthorizationWorldSpec<'_>,
-    relational: worth_relational::facade::runtime::RelationalRuntime,
-) -> AuthorizationWorld {
-    let mut prepared = prepare_authorization_world(spec.resources, Some(relational));
     populate_authorization_world(&mut prepared, &spec);
     publish_authorization_world(prepared)
 }

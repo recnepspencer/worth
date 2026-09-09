@@ -152,6 +152,8 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
         cancellation.token(),
     );
     let account = application
+        .select_product_branch(application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountNumber::reference(),
             "account-001".to_string(),

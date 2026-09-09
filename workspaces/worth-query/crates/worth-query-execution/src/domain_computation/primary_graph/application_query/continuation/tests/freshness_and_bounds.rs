@@ -26,11 +26,13 @@ fn authentication_expiry_denies_resume_without_a_basis() {
 }
 
 #[test]
-fn stale_principal_denies_statically_and_stale_scope_releases_its_session_basis() {
+fn stale_principal_and_scope_deny_and_release_readmission_bases() {
     let principal_context = ContinuationTestContext::new(Duration::from_secs(60));
     let principal_continuation = principal_context.issue();
     let principal_acquisitions = principal_context.basis_acquisitions();
     principal_context.stale_principal_mapping();
+    let after_principal_publication = principal_context.basis_acquisitions();
+    assert_eq!(after_principal_publication, principal_acquisitions + 1);
     let principal_request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
     let principal = principal_context.readmit_denial(
         principal_continuation,
@@ -45,7 +47,8 @@ fn stale_principal_denies_statically_and_stale_scope_releases_its_session_basis(
     );
     assert_eq!(
         principal_context.basis_acquisitions(),
-        principal_acquisitions
+        after_principal_publication + 2,
+        "readmission acquires one exact data lease and one fresh security lease, then releases both",
     );
     principal_context.assert_resource_baseline();
 
@@ -53,6 +56,8 @@ fn stale_principal_denies_statically_and_stale_scope_releases_its_session_basis(
     let scope_continuation = scope_context.issue();
     let scope_acquisitions = scope_context.basis_acquisitions();
     scope_context.stale_scope_identity();
+    let after_scope_publication = scope_context.basis_acquisitions();
+    assert_eq!(after_scope_publication, scope_acquisitions + 1);
     let scope_request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
     let scope =
         scope_context.readmit_denial(scope_continuation, "account-1", &scope_request, 1, 10_000);
@@ -60,7 +65,11 @@ fn stale_principal_denies_statically_and_stale_scope_releases_its_session_basis(
         scope,
         WorthQueryApplicationQueryAdmissionDenialKind::StaleScope
     );
-    assert_eq!(scope_context.basis_acquisitions(), scope_acquisitions + 1);
+    assert_eq!(
+        scope_context.basis_acquisitions(),
+        after_scope_publication + 2,
+        "readmission acquires one exact data lease and one fresh security lease, then releases both",
+    );
     scope_context.assert_resource_baseline();
 }
 
@@ -117,7 +126,7 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
     let context = ContinuationTestContext::new(Duration::from_secs(60));
     let mut continuation = context.issue();
     let foreign = ContinuationTestContext::new(Duration::from_secs(60));
-    continuation.basis_descriptor = foreign.issue().basis_descriptor;
+    continuation.product = foreign.issue().product;
     let acquisitions = context.basis_acquisitions();
     let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
 

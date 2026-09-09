@@ -24,6 +24,7 @@ where
         self.primary_provider.recover_application_settlement(
             deferred.settlement(),
             deferred.branch(),
+            deferred.product_affinity(),
             deferred.idempotency_binding(),
         )
     }

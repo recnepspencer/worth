@@ -33,7 +33,7 @@ use super::{
 struct WorthQueryApplicationAttemptLookupKey(WorthQueryProviderSessionAffinityIdentity);
 
 impl WorthQueryApplicationAttemptLookupKey {
-    const fn from_affinity(
+    fn from_affinity(
         affinity: &super::super::application_attempt::WorthQueryApplicationAttemptAffinity,
     ) -> Self {
         Self(affinity.lookup_identity())
@@ -86,7 +86,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .is_some_and(|attempt| attempt.facts().contains_key(locator))
     }
 
-    pub(super) fn observed_fact_and_branch(
+    pub(super) fn observed_fact_and_product(
         &self,
         session: WorthQueryProviderSessionView<'_>,
         locator: &str,
@@ -94,7 +94,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         let attempt = self.attempt(session)?;
         Some(WorthQueryObservedApplicationFactBasis::new(
             attempt.facts().get(locator)?.clone(),
-            attempt.affinity().branch().clone(),
+            attempt.affinity().product_publication().clone(),
         ))
     }
 
@@ -112,7 +112,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         }
         Some(WorthQueryApplicationIdempotencyBasis::new(
             attempt.idempotency(),
-            attempt.affinity().branch().clone(),
+            attempt.affinity().product_publication().clone(),
         ))
     }
 
@@ -299,6 +299,13 @@ impl WorthQueryStagedApplicationAttempt<'_> {
 
     pub(super) fn branch(&self) -> &worth_relational::facade::history::BranchId {
         self.attempt.affinity().branch()
+    }
+
+    pub(super) fn product_publication(
+        &self,
+    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding
+    {
+        self.attempt.affinity().product_publication()
     }
 
     pub(super) fn decision_fact_count(&self) -> usize {
