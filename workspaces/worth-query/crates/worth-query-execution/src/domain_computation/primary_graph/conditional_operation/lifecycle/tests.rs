@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use super::*;
 use crate::domain_computation::primary_graph::conditional_operation::installation::WorthQueryConditionalRuntimeInstallationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::{
     WorthQueryNamedClockFailure, WorthQueryNamedClockFailureKind,
 };
+use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
 struct TestSchema;
 
@@ -27,10 +30,16 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         Arc::clone(&self.lease)
     }
 
-    fn lowering_anchor(
+    fn operation_anchor(
         &self,
     ) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
         panic!("test operation has no Bridge lowering")
+    }
+
+    fn selected_lowering(
+        &self,
+    ) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
+        panic!("test operation has no selected Bridge lowering")
     }
 
     fn select_product_binding(
@@ -136,12 +145,12 @@ fn registry_requires_the_exact_private_installation_lease() {
     assert!(registry
         .admit_clock("clock-binding", &installed_lease)
         .is_some());
-    assert!(!registry
+    assert!(registry
         .admit_clock("clock-binding", &foreign_lease)
-        .is_some());
-    assert!(!registry
+        .is_none());
+    assert!(registry
         .admit_clock("another-binding", &installed_lease)
-        .is_some());
+        .is_none());
 }
 
 #[test]

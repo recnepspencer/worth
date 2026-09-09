@@ -65,13 +65,13 @@ where
     Source: WorthQueryNamedClockSource<Clock>,
     Projector: WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>,
 {
+    let bounds = binding.bounds();
     let lowering = bridge.readmit_lowering(predecessor).map_err(|denial| {
         WorthQueryConditionalRuntimeInstallationDenial::new(
             WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
             format!("{:?}: {}", denial.kind(), denial.detail()),
         )
     })?;
-    let bounds = binding.bounds();
     let clock = binding.clocked_node();
     let signal_basis = bridge
         .admit_exact_conditional_signal_basis(&lowering, product.signal_basis())
@@ -97,6 +97,7 @@ where
             )
         })?;
     Ok(WorthQueryPreparedConditionalRuntimeBinding {
+        pending_direct_delivery: super::direct_delivery::empty(),
         lowering,
         managed_clock,
         affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity::new(

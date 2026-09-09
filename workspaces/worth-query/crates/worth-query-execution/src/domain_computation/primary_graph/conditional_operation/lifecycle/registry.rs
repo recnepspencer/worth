@@ -62,6 +62,9 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
                 total.wakes = total.wakes.saturating_add(counts.wakes);
                 total.intents = total.intents.saturating_add(counts.intents);
                 total.attempts = total.attempts.saturating_add(counts.attempts);
+                total.direct_deliveries = total
+                    .direct_deliveries
+                    .saturating_add(counts.direct_deliveries);
                 total
             },
         )

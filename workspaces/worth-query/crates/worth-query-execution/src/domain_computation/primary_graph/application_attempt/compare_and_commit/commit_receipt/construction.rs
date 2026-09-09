@@ -91,6 +91,7 @@ impl WorthQueryApplicationCommitReceipt {
             outcome_identity: provider.application_outcome_identity(),
             provider_runtime_instance_id: provider.runtime_instance_id(),
             commit: provider.commit_reference().clone(),
+            committed_product_publication: provider.committed_product_publication().clone(),
             basis_descriptor: provider.basis_descriptor().clone(),
             changed_record_count: provider.changed_record_count(),
             emitted_effect_count: provider.emitted_effect_count(),

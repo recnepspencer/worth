@@ -3,6 +3,7 @@
 mod commit_deferred;
 mod commit_outcome;
 mod commit_receipt;
+mod committed_publication;
 
 pub use commit_deferred::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
@@ -21,3 +22,4 @@ pub use commit_receipt::{
 pub(in crate::domain_computation::primary_graph) use commit_receipt::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
 };
+pub use committed_publication::WorthQueryCommittedProductPublication;

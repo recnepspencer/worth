@@ -41,6 +41,11 @@ impl ProductBranchIncarnation {
     pub const fn owner_identity(self) -> RuntimeWorldOwnerIdentity {
         self.owner
     }
+
+    /// Descriptive lifecycle ordinal; this value cannot create a branch.
+    pub const fn ordinal(self) -> u64 {
+        self.ordinal
+    }
 }
 
 /// Generation of one mutable product reference cell. It advances only after

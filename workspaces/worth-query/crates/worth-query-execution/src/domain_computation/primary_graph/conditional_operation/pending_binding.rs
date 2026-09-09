@@ -273,7 +273,6 @@ where
                 reconstruction: self.reconstruction,
                 execution: self.execution,
             }),
-            lowering_anchor: Arc::clone(&lowering),
             bootstrap_lowering: lowering,
             active_affinity: None,
             managed_clock: None,
@@ -287,6 +286,7 @@ where
             bootstrap_commit_catch_up_pending: true,
             commit_watch: Default::default(),
             operation_totals: Default::default(),
+            pending_direct_delivery: None,
             inactive_bindings: Default::default(),
             next_evaluation_binding_ordinal: 1,
         }))

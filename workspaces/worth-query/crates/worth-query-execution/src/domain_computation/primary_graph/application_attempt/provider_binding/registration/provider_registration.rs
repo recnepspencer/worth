@@ -23,6 +23,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     >,
     dispatch_outbox:
         Option<crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>,
+    conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
@@ -108,6 +110,13 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.aftermath_causality.as_ref()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn take_conditional_definition(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>
+    {
+        self.conditional_definition.take()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn publish_causality(
         self,
         provider: &WorthQueryPrimaryGraphProvider,
@@ -185,6 +194,7 @@ impl WorthQueryPrimaryGraphProvider {
             external_effect,
             preimage_demand,
             aftermath_causality,
+            conditional_definition,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
@@ -223,6 +233,7 @@ impl WorthQueryPrimaryGraphProvider {
                 preimage_demand: preimage_demand.cloned(),
                 aftermath_causality,
                 dispatch_outbox,
+                conditional_definition,
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

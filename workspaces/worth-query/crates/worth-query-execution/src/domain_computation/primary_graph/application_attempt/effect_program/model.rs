@@ -289,6 +289,8 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) emission_retained_bytes_ceiling:
         u64,
+    pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
 }
 
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
@@ -305,4 +307,6 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) keys: BTreeSet<(KindId, String)>,
     pub(super) emission_retained_bytes: u64,
     pub(super) emission_retained_bytes_ceiling: u64,
+    pub(super) conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
 }

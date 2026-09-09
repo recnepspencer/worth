@@ -22,7 +22,7 @@ impl WorthQueryPrimaryGraphProvider {
     }
 
     #[cfg(test)]
-    pub(crate) fn committed_application_emissions(
+    pub(in crate::domain_computation::primary_graph) fn committed_application_emissions(
         &self,
         commit_id: CommitId,
     ) -> Vec<WorthQueryApplicationEmission> {

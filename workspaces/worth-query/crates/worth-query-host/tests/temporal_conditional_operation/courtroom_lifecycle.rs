@@ -219,5 +219,6 @@ pub(super) fn assert_conditional_resources_empty(
     assert_eq!(empty.scheduler_task_count(), 0);
     assert_eq!(empty.scheduler_queue_count(), 0);
     assert_eq!(empty.retained_attempt_count(), 0);
+    assert_eq!(empty.retained_direct_delivery_count(), 0);
     assert_eq!(empty.lease_count(), 0);
 }

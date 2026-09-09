@@ -4,7 +4,7 @@ use worth_query_host::facade::{
     declaration::application_query::ApplicationQueryParameterSet, primary_graph, runtime,
 };
 
-use super::super::adapters::ReplacementPredicate;
+use super::super::adapters::{CompletingExternalTransport, ReplacementPredicate};
 use super::super::courtroom_lifecycle::assert_conditional_resources_empty;
 use super::super::courtroom_support::outcome_kind;
 use super::super::product_query_support::{
@@ -14,6 +14,11 @@ use super::super::schema::*;
 use super::super::world::{self, CourtroomWorld};
 pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     let mut world = CourtroomWorld::publish("blocked");
+    let transport = Arc::new(CompletingExternalTransport::default());
+    world
+        .application
+        .install_external_effect_transport(transport.clone())
+        .unwrap();
     let probe = world.application.conditional_runtime_lifecycle_probe();
     assert_eq!(
         world
@@ -29,7 +34,6 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         .installed_schema()
         .application_query(TemporalIntentQuery::reference())
         .unwrap();
-
     let source = world
         .application
         .product_runtime()
@@ -131,54 +135,74 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         2
     );
 
+    let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
+    let mut publication = world.change_input_and_conditional_definition_on_product(
+        &source_branch,
+        "changed-on-a",
+        Arc::new(replacement),
+    );
+    assert_eq!(
+        publication
+            .committed_product_publication()
+            .relational_posture(),
+        runtime::CompositeComponentChangePosture::Published
+    );
+    assert_eq!(
+        publication.committed_product_publication().signal_posture(),
+        runtime::CompositeComponentChangePosture::Published
+    );
+    assert_eq!(
+        publication
+            .committed_product_publication()
+            .conditional_definition_generation(),
+        Some(2)
+    );
+    assert!(publication.dispatch_outbox().is_some());
+    assert_eq!(
+        publication.external_dispatch().unwrap().posture().kind(),
+        primary_graph::WorthQueryExternalDispatchPostureKind::Completed
+    );
+    assert_eq!(transport.contact_count(), 1);
+    let performed = publication
+        .take_performed_relational_product_change()
+        .expect("the combined publication retains its unique Relational delivery");
     let selected_source = world
         .application
         .select_product_branch(&source_branch)
         .unwrap();
-    let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
-    let publication = selected_source
-        .publish_conditional_definition(
-            &world.clock,
-            Arc::new(replacement),
-            &runtime::RuntimeWorldCancellationSource::new().token(),
-        )
-        .unwrap();
-    drop(selected_source);
-    let primary_graph::WorthQueryConditionalDefinitionPublicationOutcome::Performed(publication) =
-        publication
-    else {
-        panic!("the D1 conditional definition publication must perform")
-    };
-    assert_eq!(publication.product_branch_identity(), &source_branch);
-    assert_eq!(publication.definition_generation(), 2);
-    drop(publication);
-
-    let d1_initial = world
-        .application
-        .select_product_branch(&source_branch)
-        .unwrap()
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe();
-    let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(d1_suppressed) =
-        d1_initial
-    else {
-        panic!(
-            "the published D1 definition must become observable: {}",
-            outcome_kind(&d1_initial)
-        )
-    };
-    assert_eq!(d1_suppressed.retained_suppressed_wake_count(), 1);
-    drop(d1_suppressed);
+    let failed = selected_source
+        .deliver_relational_change_to_conditional(&world.clock, usize::MAX, performed)
+        .expect_err("an undeclared dependency ordinal must fail before retention");
+    assert_eq!(
+        failed.kind(),
+        runtime::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind::Bridge
+    );
     assert_eq!(
         world
             .application
             .inspect_conditional_runtime()
-            .managed_clock_count(),
-        3
+            .retained_direct_delivery_count(),
+        0
     );
-
-    world.change_input_after_query_admission("changed-on-a");
+    let delivery = selected_source
+        .deliver_relational_change_to_conditional(&world.clock, 0, failed.into_change())
+        .expect("the performed patch belongs to the selected product");
+    let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
+        delivery
+    else {
+        panic!("unexpected public delivery posture: {delivery:?}")
+    };
+    assert_eq!(delivery.source_envelopes_loaded(), 1);
+    assert_eq!(delivery.signal_seeds_emitted(), 1);
+    drop(delivery);
+    drop(selected_source);
+    assert_eq!(
+        world
+            .application
+            .inspect_conditional_runtime()
+            .retained_direct_delivery_count(),
+        1
+    );
     world.clock_control.push(3, 11);
     let published = world
         .application
@@ -236,8 +260,15 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         world
             .application
             .inspect_conditional_runtime()
+            .retained_direct_delivery_count(),
+        0
+    );
+    assert_eq!(
+        world
+            .application
+            .inspect_conditional_runtime()
             .managed_clock_count(),
-        4
+        3
     );
 
     let sibling_outcome = world
@@ -262,13 +293,13 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
             .application
             .inspect_conditional_runtime()
             .managed_clock_count(),
-        4
+        3
     );
 
     for (label, branch, expected_suppressed, expected_clocks) in [
-        ("B", sibling.clone(), 1, 4),
-        ("new A occurrence", source_branch.clone(), 0, 5),
-        ("B-return", sibling.clone(), 1, 5),
+        ("B", sibling.clone(), 1, 3),
+        ("new A occurrence", source_branch.clone(), 0, 4),
+        ("B-return", sibling.clone(), 1, 4),
     ] {
         let outcome = world
             .application

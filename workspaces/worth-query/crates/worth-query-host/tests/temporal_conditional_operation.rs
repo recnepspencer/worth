@@ -170,6 +170,16 @@ fn public_product_journey_publishes_delivers_executes_and_cleans_up() {
 }
 
 #[test]
+fn independent_products_advance_and_retain_exact_conditional_definitions() {
+    public_product_journey::independent_products_advance_and_retain_exact_definitions();
+}
+
+#[test]
+fn application_commits_relational_and_signal_in_one_world_publication() {
+    public_product_journey::application_commits_relational_and_signal_in_one_world_publication();
+}
+
+#[test]
 fn selected_sibling_mutation_carries_one_world_occurrence() {
     public_product_journey::selected_sibling_mutation_carries_one_world_occurrence();
 }

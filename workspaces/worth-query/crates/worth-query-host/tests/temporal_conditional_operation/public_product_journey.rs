@@ -83,7 +83,6 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
         panic!("the sibling conditional definition must publish")
     };
     drop(definition);
-    drop(selected_sibling);
 
     let mut publication = world.change_input_on_product(&sibling, "changed-on-sibling");
     assert_eq!(
@@ -99,7 +98,31 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
         change.product_commit(),
         sibling_after.product().selected_commit()
     );
+    let delivery = sibling_after
+        .deliver_relational_change_to_conditional(&world.clock, 0, change)
+        .expect("the performed sibling patch belongs to this selected product");
+    let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
+        delivery
+    else {
+        panic!("unexpected sibling delivery outcome: {delivery:?}")
+    };
+    assert_eq!(delivery.source_envelopes_loaded(), 1);
+    assert_eq!(delivery.signal_seeds_emitted(), 1);
+    drop(delivery);
     drop(sibling_after);
+
+    let predecessor_interlude = selected_sibling
+        .conditional_clock(&world.clock)
+        .unwrap()
+        .observe();
+    let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(
+        predecessor_interlude,
+    ) = predecessor_interlude
+    else {
+        panic!("the retained predecessor product must remain independently observable")
+    };
+    assert_eq!(predecessor_interlude.committed_operation_count(), 0);
+    drop(predecessor_interlude);
 
     world.clock_control.push(3, 11);
     let execution = world
@@ -184,10 +207,16 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     );
 }
 
+#[path = "public_product_journey/combined_publication.rs"]
+mod combined_publication;
 #[path = "public_product_journey/conditional_execution.rs"]
 mod conditional_execution;
+#[path = "public_product_journey/definition_lineage.rs"]
+mod definition_lineage;
 #[path = "public_product_journey/idempotency_affinity.rs"]
 mod idempotency_affinity;
+pub(super) use combined_publication::application_commits_relational_and_signal_in_one_world_publication;
 pub(super) use conditional_execution::publishes_delivers_executes_and_cleans_up;
+pub(super) use definition_lineage::independent_products_advance_and_retain_exact_definitions;
 pub(super) use idempotency_affinity::shared_component_sibling_cannot_claim_another_product_commit;
 pub(super) use idempotency_affinity::shared_component_sibling_revalidates_its_own_security;

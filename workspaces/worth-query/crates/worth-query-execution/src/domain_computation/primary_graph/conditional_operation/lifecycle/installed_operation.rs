@@ -26,7 +26,16 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
 
     fn clock_lease(&self) -> Arc<ConditionalClockLease>;
 
-    fn lowering_anchor(&self) -> Arc<BridgeInstalledConditionalLowering>;
+    fn operation_anchor(&self) -> Arc<BridgeInstalledConditionalLowering>;
+
+    fn selected_lowering(&self) -> Arc<BridgeInstalledConditionalLowering>;
+
+    fn retain_direct_delivery(
+        &mut self,
+        _receipt: &worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
+    ) {
+        unreachable!("conditional operation did not admit direct delivery retention")
+    }
 
     fn select_product_binding(
         &mut self,
@@ -100,6 +109,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalRet
     pub(in crate::domain_computation::primary_graph::conditional_operation) wakes: usize,
     pub(in crate::domain_computation::primary_graph::conditional_operation) intents: usize,
     pub(in crate::domain_computation::primary_graph::conditional_operation) attempts: usize,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) direct_deliveries:
+        usize,
 }
 
 impl WorthQueryConditionalRetainedResourceCounts {
@@ -107,11 +118,13 @@ impl WorthQueryConditionalRetainedResourceCounts {
         self.wakes += other.wakes;
         self.intents += other.intents;
         self.attempts += other.attempts;
+        self.direct_deliveries += other.direct_deliveries;
     }
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPreparedConditionalRuntimeBinding
 {
+    pub(super) pending_direct_delivery: super::direct_delivery::WorthQueryPendingDirectDelivery,
     pub(super) lowering: Arc<BridgeInstalledConditionalLowering>,
     pub(super) managed_clock: BridgeManagedClockBinding,
     pub(super) affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity,
@@ -137,8 +150,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
         Arc<BridgeInstalledConditionalLowering>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) active_affinity:
         Option<super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) lowering_anchor:
-        Arc<BridgeInstalledConditionalLowering>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) managed_clock:
         Option<BridgeManagedClockBinding>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) runtime_binding_identity:
@@ -161,6 +172,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
         super::commit_watch::WorthQueryConditionalCommitWatchSet,
     pub(in crate::domain_computation::primary_graph::conditional_operation) operation_totals:
         super::operation_totals::WorthQueryTemporalOperationTotals,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) pending_direct_delivery:
+        super::direct_delivery::WorthQueryPendingDirectDelivery,
     pub(in crate::domain_computation::primary_graph::conditional_operation) inactive_bindings:
         BTreeMap<
             crate::basis::WorthQueryProductBranchReadIdentity,

@@ -16,8 +16,7 @@ use super::WorthQueryProductPublicationBinding;
 pub(crate) struct WorthQueryPreparedProductPublication {
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
     prepared: PreparedCompositePublicationWithoutSignal,
-    cancellation: RuntimeWorldCancellationToken,
-    request_cancellation: Pin<Box<dyn Future<Output = ()> + Send>>,
+    control: WorthQueryProductPublicationRequestControl,
 }
 
 impl WorthQueryPreparedProductPublication {
@@ -31,10 +30,25 @@ impl WorthQueryPreparedProductPublication {
         let Self {
             publication,
             prepared,
-            cancellation,
-            request_cancellation: _request_cancellation,
+            control,
         } = self;
-        publication.execute_without_signal(prepared, &cancellation)
+        publication.execute_without_signal(prepared, control.cancellation())
+    }
+}
+
+pub(crate) struct WorthQueryProductPublicationRequestControl {
+    cancellation: RuntimeWorldCancellationToken,
+    deadline: worth_runtime_world::facade::RuntimeWorldInstant,
+    _request_cancellation: Pin<Box<dyn Future<Output = ()> + Send>>,
+}
+
+impl WorthQueryProductPublicationRequestControl {
+    pub(crate) fn cancellation(&self) -> &RuntimeWorldCancellationToken {
+        &self.cancellation
+    }
+
+    pub(crate) const fn deadline(&self) -> worth_runtime_world::facade::RuntimeWorldInstant {
+        self.deadline
     }
 }
 
@@ -50,11 +64,10 @@ impl Wake for PublicationCancellation {
 }
 
 impl WorthQueryProductPublicationBinding {
-    pub(crate) fn prepare_relational_candidate(
+    pub(crate) fn request_control(
         &self,
-        candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
-    ) -> Result<WorthQueryPreparedProductPublication, NoEffectCompositePublication> {
+    ) -> WorthQueryProductPublicationRequestControl {
         let cancellation = Arc::new(PublicationCancellation(
             RuntimeWorldCancellationSource::new(),
         ));
@@ -69,22 +82,33 @@ impl WorthQueryProductPublicationBinding {
         {
             cancellation.0.cancel();
         }
+        WorthQueryProductPublicationRequestControl {
+            cancellation: cancellation.0.token(),
+            deadline: self.deadline(request.deadline()),
+            _request_cancellation: request_cancellation,
+        }
+    }
+
+    pub(crate) fn prepare_relational_candidate(
+        &self,
+        candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryPreparedProductPublication, NoEffectCompositePublication> {
+        let control = self.request_control(request);
         let intent = CompositePublicationIntent::without_signal(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .with_prepared_relational_candidate(candidate);
-        let cancellation = cancellation.0.token();
         let prepared = self.publication().prepare_without_signal(
             self.observation().clone(),
             intent,
-            &cancellation,
-            Some(self.deadline(request.deadline())),
+            control.cancellation(),
+            Some(control.deadline()),
         )?;
         Ok(WorthQueryPreparedProductPublication {
             publication: self.publication().clone(),
             prepared,
-            cancellation,
-            request_cancellation,
+            control,
         })
     }
 }

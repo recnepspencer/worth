@@ -49,6 +49,10 @@ impl WorthQueryPerformedRelationalProductChangeDeliveryOutcome {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorthQueryPerformedRelationalProductChangeDeliveryDenialKind {
     ForeignProductRoot,
+    ForeignProductOccurrence,
+    ForeignConditionalOperation,
+    ProductAdmission,
+    ConditionalProductAdmission,
     Bridge,
 }
 

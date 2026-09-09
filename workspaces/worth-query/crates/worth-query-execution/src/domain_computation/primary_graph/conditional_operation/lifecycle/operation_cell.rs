@@ -60,13 +60,13 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         Arc::ptr_eq(&self.lease, lease)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn lowering_anchor(
+    pub(in crate::domain_computation::primary_graph) fn operation_anchor(
         &self,
     ) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
-        self.lock_operation().lowering_anchor()
+        self.lock_operation().operation_anchor()
     }
 
-    pub(super) fn lock_operation(
+    pub(in crate::domain_computation::primary_graph) fn lock_operation(
         &self,
     ) -> MutexGuard<'_, Box<dyn WorthQueryInstalledConditionalOperation<Schema>>> {
         self.operation
@@ -74,7 +74,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
-    pub(super) fn publish_routes(
+    pub(in crate::domain_computation::primary_graph) fn publish_routes(
         &self,
         operation: &dyn WorthQueryInstalledConditionalOperation<Schema>,
     ) -> bool {

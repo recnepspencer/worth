@@ -151,6 +151,29 @@ impl CourtroomWorld {
         width: AmendmentWidth,
         amendment_ordinal: u8,
     ) -> primary_graph::WorthQueryApplicationCommitOutcome {
+        self.compare_amendment_program(
+            product,
+            revision,
+            due,
+            lifecycle,
+            input,
+            gate,
+            width,
+            amendment_ordinal,
+        )
+    }
+
+    fn compare_amendment_program(
+        &self,
+        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        revision: u64,
+        due: u64,
+        lifecycle: &str,
+        input: &str,
+        gate: &str,
+        width: AmendmentWidth,
+        amendment_ordinal: u8,
+    ) -> primary_graph::WorthQueryApplicationCommitOutcome {
         let schema = self.application.installed_schema();
         let principal_binding = schema
             .principal_binding(TemporalPrincipalBinding::reference())

@@ -29,12 +29,15 @@ pub mod runtime {
     };
     pub use worth_relational::facade::history::BranchId;
     pub use worth_runtime_world::facade::{
+        CompositeComponentChangePosture, CompositeSignalPublicationIdentity,
         ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchIdentity,
         ProductBranchRetirementReport, RelationalBranchCreationPlan,
         RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource,
         RuntimeWorldCancellationToken, SignalBranchCreationPlan,
     };
-    pub use worth_signal::facade::branch::ValidatedSignalBranchName;
+    pub use worth_signal::facade::branch::{
+        validate_signal_branch_name, ValidatedSignalBranchName,
+    };
 }
 
 pub mod provider_session {
@@ -65,7 +68,8 @@ pub mod primary_graph {
         WorthQueryRecoverySafeRetryAdmission,
     };
     pub use crate::domain_computation::primary_graph::{
-        WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
+        WorthQueryAdmittedApplicationCapabilityAccess,
+        WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedApplicationOperation,
         WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
         WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationAttemptDenial,
         WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationAuthorizationExplanationCause,
@@ -78,16 +82,17 @@ pub mod primary_graph {
         WorthQueryApplicationCommitPublicationExternalEffect,
         WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
         WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommitTerminalEvidence,
-        WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationContinuationDenial,
-        WorthQueryApplicationContinuationDenialKind, WorthQueryApplicationContinuationPageResult,
-        WorthQueryApplicationDisclosed, WorthQueryApplicationDisclosureDecisionFact,
-        WorthQueryApplicationDisclosureOutcome, WorthQueryApplicationDisclosureOutcomeIdentity,
-        WorthQueryApplicationDisclosureReceipt, WorthQueryApplicationDisclosureReceiptPosture,
-        WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-        WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationEntityIdentity,
-        WorthQueryApplicationEntityKey, WorthQueryApplicationEntityKeyDenial,
-        WorthQueryApplicationEntitySeed, WorthQueryApplicationIdempotencyBinding,
-        WorthQueryApplicationIdempotencyResolution,
+        WorthQueryApplicationCommitTerminalKind,
+        WorthQueryApplicationConditionalDefinitionAdmissionDenial,
+        WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
+        WorthQueryApplicationContinuationPageResult, WorthQueryApplicationDisclosed,
+        WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,
+        WorthQueryApplicationDisclosureOutcomeIdentity, WorthQueryApplicationDisclosureReceipt,
+        WorthQueryApplicationDisclosureReceiptPosture, WorthQueryApplicationEffectEntity,
+        WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
+        WorthQueryApplicationEntityIdentity, WorthQueryApplicationEntityKey,
+        WorthQueryApplicationEntityKeyDenial, WorthQueryApplicationEntitySeed,
+        WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
         WorthQueryApplicationIdempotencyResolutionDenial,
         WorthQueryApplicationIdempotencyResolutionDenialKind,
         WorthQueryApplicationInvariantProjectionAuthority,

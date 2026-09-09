@@ -17,14 +17,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalTru
     snapshot_projection: worth_runtime_bridge::facade::BridgeIdentityEvidence,
 }
 
-pub(super) enum WorthQueryConditionalTruthBasisDenial {
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    SnapshotIdentityExhausted,
-    RuntimeRejected(&'static str),
-}
-
 impl WorthQueryConditionalTruthBasis {
     pub(super) fn from_selected<Schema>(
         selected: crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
@@ -45,6 +37,18 @@ impl WorthQueryConditionalTruthBasis {
             _branch: branch,
             snapshot,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_selected<Schema>(
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
+    ) -> Result<Self, crate::basis::WorthQueryProductBranchAdmissionDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        Ok(Self::from_selected(selected.retain_selection()?))
     }
 
     pub(super) fn snapshot(&self) -> &TruthSnapshotIdentity {

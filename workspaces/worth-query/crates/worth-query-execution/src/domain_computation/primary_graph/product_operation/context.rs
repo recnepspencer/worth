@@ -74,3 +74,11 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         (self.application, self.product, self.application_basis)
     }
 }
+
+impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    pub(in crate::domain_computation::primary_graph) fn retain_selection(
+        &self,
+    ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
+        self.application.on_product(self.product.retained_clone())
+    }
+}

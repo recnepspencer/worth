@@ -1,17 +1,11 @@
 //! Redo admission unit evidence for Relational-owned lineage (Gate 8.5).
 
-use worth_foundational::facade::CanonicalDigestId;
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::{
     history::{BranchId, CommitId, RelationalCommitReceipt},
     identity::VersionId,
 };
 
-use super::aftermath_schema_fixture as fixture;
-use super::recovery_handle::{
-    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
-    WorthQueryRecoveryHandleBindingAxisProbe,
-};
+use super::recovery_handle::{WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBindingAxisProbe};
 use super::recovery_progression::WorthQueryRecoveryEffectAuthority;
 use super::redo_admission::{
     admit_redo_against_relational, map_recovery_denial, WorthQueryPriorRedoObservation,
@@ -21,7 +15,6 @@ use super::redo_intent::{
     WorthQueryProvedUndo, WorthQueryProvedUndoAxisProbe, WorthQueryRedoIntent,
 };
 use super::redo_recovery::WorthQueryRedoRecovery;
-use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 fn relational_commit(id: u64) -> RelationalCommitReceipt {
@@ -34,45 +27,18 @@ fn relational_commit(id: u64) -> RelationalCommitReceipt {
 }
 
 fn probe_handle(governed_input_identity: Option<[u8; 32]>) -> WorthQueryRecoveryHandle {
-    let schema = ApplicationSchemaBindingIdentity::from_installed_parts(
-        7,
-        3,
-        CanonicalDigestId::new([0x11; 32]),
-        CanonicalDigestId::new([0x22; 32]),
-    );
-    let principal_scope = WorthQueryOperationScopeBinding::axis_probe_scope(
-        42,
-        schema,
-        "transfer-authority",
-        1,
-        10,
-        1,
-        2,
-        20,
-        1,
-    );
-    let binding =
-        WorthQueryRecoveryHandleBinding::axis_probe(WorthQueryRecoveryHandleBindingAxisProbe {
-            runtime_instance_id: 7,
-            schema_identity: [0x33; 32],
-            branch: BranchId("main".to_owned()),
-            application_binding_generation: 3,
-            installed_operation: [0x44; 32],
-            attempt_commit_id: 10,
-            mutation_work: None,
-            retained_preimage: None,
-            retained_governed_input_identity: governed_input_identity,
-            principal_scope,
-            idempotency: WorthQueryApplicationIdempotencyBinding::new([0x55; 32], [0x56; 32]),
-            provider_posture: None,
-            dispatch_outbox: None,
-            dispatch_outbox_record_ref: None,
-            installed_aftermath: fixture::transfer(),
-            // Far future on purpose. Recovery authority now re-checks this
-            // deadline on every use, so a probe carrying a 1970 timestamp would
-            // deny on expiry before reaching the axis this fixture is about.
-            expires_at_unix_ms: Some(u64::MAX),
-        });
+    let binding = WorthQueryRecoveryHandleBindingAxisProbe::real()
+        .runtime_instance_id(7)
+        .branch(BranchId("main".to_owned()))
+        .installed_operation([0x44; 32])
+        .attempt_commit_id(10)
+        .retained_governed_input_identity(governed_input_identity)
+        .idempotency(WorthQueryApplicationIdempotencyBinding::new(
+            [0x55; 32], [0x56; 32],
+        ))
+        .installed_aftermath(super::aftermath_schema_fixture::transfer())
+        .expires_at_unix_ms(Some(u64::MAX))
+        .finish();
     WorthQueryRecoveryHandle::axis_probe(binding)
 }
 
@@ -91,11 +57,14 @@ fn proved_and_intent(
 }
 
 fn bound_scope_digest() -> [u8; 32] {
+    let binding = WorthQueryRecoveryHandleBindingAxisProbe::real().finish();
+    let scope = binding.principal_scope();
+    let principal = scope.principal();
     let mut bytes = [0u8; 32];
-    bytes[0..4].copy_from_slice(&1u32.to_le_bytes());
-    bytes[4..12].copy_from_slice(&10u64.to_le_bytes());
-    bytes[12..16].copy_from_slice(&1u32.to_le_bytes());
-    bytes[16..24].copy_from_slice(&42u64.to_le_bytes());
+    bytes[0..4].copy_from_slice(&principal.partition_id().to_le_bytes());
+    bytes[4..12].copy_from_slice(&principal.local_slot().to_le_bytes());
+    bytes[12..16].copy_from_slice(&principal.generation().to_le_bytes());
+    bytes[16..24].copy_from_slice(&scope.runtime_authority().to_le_bytes());
     bytes
 }
 

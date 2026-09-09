@@ -1,5 +1,6 @@
 pub(crate) mod activation;
 mod admission;
+mod application_publication;
 mod bootstrap;
 mod creation;
 mod installation;
@@ -20,7 +21,9 @@ pub use creation::WorthQueryProductBranchCreationDenial;
 pub(crate) use installation::{installed_budgets, WorthQueryProductWorldClock};
 pub use installation_denial::WorthQueryProductRuntimeInstallationDenial;
 pub(crate) use publication_binding::WorthQueryProductPublicationBinding;
-pub(crate) use receipt::WorthQueryProductPublicationReceipt;
+pub(crate) use receipt::{
+    WorthQueryProductPublicationReceipt, WorthQueryReservedProductPublicationReceipt,
+};
 #[cfg(test)]
 pub(in crate::domain_computation) use relational_publication::preserve_delivery_authority;
 pub use relational_publication::{
@@ -29,7 +32,8 @@ pub use relational_publication::{
     WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
     WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
 };
-pub(crate) use request_control::WorthQueryPreparedProductPublication;
+#[cfg(test)]
+pub(in crate::domain_computation) use request_control::WorthQueryPreparedProductPublication;
 pub use runtime::WorthQueryProductRuntime;
 #[doc(hidden)]
 pub use shared_root::WorthQueryProductSharedRoot;

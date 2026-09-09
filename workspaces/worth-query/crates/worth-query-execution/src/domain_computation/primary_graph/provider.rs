@@ -38,8 +38,6 @@ pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplica
 pub(crate) use application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
 pub(in crate::domain_computation) use application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
 #[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use committed_dispatch_outbox::commit_and_observe_fixture;
-#[cfg(test)]
 pub(in crate::domain_computation) use committed_dispatch_outbox::{
     commit_distinct_records_and_admit_fixture, commit_observe_and_admit_fixture,
     commit_observe_and_admit_twice_fixture,
@@ -297,6 +295,7 @@ impl WorthQueryPrimaryGraphProvider {
             .observe_session(session)
     }
 
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_application_commit_basis(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,

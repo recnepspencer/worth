@@ -88,6 +88,11 @@ impl PreparedCompositePublicationWithSignal {
         self.attempt.expected_head()
     }
 
+    /// The non-authorizing recovery identity reserved with this attempt.
+    pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.attempt.unpublished_recovery_handle()
+    }
+
     /// Read-only view of the sealed reservation. Reading a plan cannot move
     /// the attempt into the other stage or execute it.
     #[cfg(test)]

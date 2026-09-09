@@ -20,18 +20,33 @@ impl BridgeOwnedSignalRuntime {
         basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     ) -> Result<BridgeConditionalSignalBasisBinding, BridgeConditionalDenial> {
         self.require_live_installed_lowering(anchor)?;
-        let lowering = self
-            .conditional_lowerings
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .exact_basis(basis, anchor.signal_node())
-            .cloned()
-            .ok_or_else(|| {
-                BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::StaleLowering,
-                    "selected Signal basis has no installed definition for this operation",
-                )
-            })?;
+        let lookup = super::lowering_registry::BridgeConditionalLoweringRegistry::prepare_exact_basis_resolution(
+            &self.conditional_lowerings,
+            anchor,
+            basis,
+        )?;
+        let lowering = match lookup {
+            super::lowering_registry::BridgeExactConditionalBasisLookup::Indexed(lowering) => {
+                lowering
+            }
+            super::lowering_registry::BridgeExactConditionalBasisLookup::Unindexed(prepared) => {
+                let mut resolved = None;
+                for candidate in prepared.candidates() {
+                    if let Ok(binding) = self.admit_conditional_signal_basis(candidate, basis) {
+                        resolved = Some((Arc::clone(candidate), binding));
+                        break;
+                    }
+                }
+                let Some((lowering, binding)) = resolved else {
+                    return Err(BridgeConditionalDenial::new(
+                        BridgeConditionalDenialKind::StaleLowering,
+                        "selected Signal basis has no installed definition for this operation",
+                    ));
+                };
+                prepared.publish(&lowering);
+                return Ok(binding);
+            }
+        };
         if lowering.contract().identity() != anchor.contract().identity()
             || lowering.location() != anchor.location()
         {

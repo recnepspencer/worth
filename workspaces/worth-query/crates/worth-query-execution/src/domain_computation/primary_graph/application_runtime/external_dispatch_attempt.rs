@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxO
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryExternalDispatchAdmissionDenial {
     ForeignRelationalRuntime,
+    ForeignProductWorld,
     AttemptIdentityExhausted,
 }
 
@@ -45,6 +46,14 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .runtime_instance_id();
         if committed.relational_runtime_instance_id() != relational_runtime {
             return Err(WorthQueryExternalDispatchAdmissionDenial::ForeignRelationalRuntime);
+        }
+        if committed
+            .committed_product_publication()
+            .product_branch()
+            .owner_identity()
+            != self.product_runtime.owner.owner_identity()
+        {
+            return Err(WorthQueryExternalDispatchAdmissionDenial::ForeignProductWorld);
         }
         let ordinal = WorthQueryExternalDispatchAttemptOrdinal::mint(
             self.next_external_dispatch_attempt

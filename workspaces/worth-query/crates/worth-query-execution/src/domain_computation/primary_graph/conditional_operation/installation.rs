@@ -282,6 +282,7 @@ where
         ));
         Ok(WorthQueryConditionalClockHandle {
             binding_identity: support_identity,
+            binding_identity_digest: *identity.digest().bytes(),
             node_authority,
             binding_canonical_work,
             lease,

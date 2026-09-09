@@ -1,199 +1,91 @@
-//! Real commit-to-owner-observation support for C4 tests.
+//! Real World commit-to-dispatch support for causal tests.
 
-use worth_relational::facade::mvcc::BranchBoundRelationalTransaction;
-use worth_relational::facade::transactions::{
-    CreateIntent, CreatedEntityRef, MutationIntent, RecordRef, WorkerIntentBatch,
-};
+use worth_relational::facade::transactions::RecordRef;
 
-use super::super::{WorthQueryCommittedDispatchOutboxObservation, WorthQueryPrimaryGraphProvider};
-use super::owner_test_support::{release_commit_snapshot, retain_commit_basis};
-use crate::domain_computation::application_aftermath::{
-    bind_dispatch_outbox_create_intent, WorthQueryDispatchOutboxRecord,
-};
+use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 use crate::domain_computation::primary_graph::{
-    primary_relational_branch_id, tests::fixture::installed_authorization_world,
-    WorthQueryAdmittedExternalDispatchAttempt, WorthQueryCommittedDispatchOutboxBinding,
+    recoverable_application_world, two_recoverable_application_commits,
 };
 
 pub(in crate::domain_computation) fn commit_observe_and_admit_fixture(
-    record: &WorthQueryDispatchOutboxRecord,
+    seed: u8,
 ) -> (
     WorthQueryAdmittedExternalDispatchAttempt,
     worth_relational::facade::history::RelationalCommitReceipt,
-    worth_relational::facade::transactions::RecordRef,
+    RecordRef,
     u64,
 ) {
-    let world = installed_authorization_world(true);
-    let observation = commit_and_observe_fixture(&world.application.primary_provider, record);
+    let (world, receipt) = recoverable_application_world(seed, &format!("dispatch-fixture-{seed}"));
+    let observation = world
+        .application
+        .observe_committed_dispatch_outbox(&receipt)
+        .expect("the exact World commit remains owner-readable")
+        .expect("the real operation co-committed an outbox");
     let commit = observation.commit_reference().clone();
     let record_ref = observation.record_ref().clone();
     let relational_runtime_instance_id = observation.relational_runtime_instance_id();
     let admitted = world
         .application
         .admit_external_dispatch_attempt(observation)
-        .expect("application runtime admits its owner observation");
+        .expect("the owning runtime admits its World-bound observation");
     (admitted, commit, record_ref, relational_runtime_instance_id)
 }
 
 pub(in crate::domain_computation) fn commit_observe_and_admit_twice_fixture(
-    record: &WorthQueryDispatchOutboxRecord,
+    seed: u8,
 ) -> (
     WorthQueryAdmittedExternalDispatchAttempt,
     WorthQueryAdmittedExternalDispatchAttempt,
 ) {
-    let world = installed_authorization_world(true);
-    let observation = commit_and_observe_fixture(&world.application.primary_provider, record);
+    let (world, receipt) = recoverable_application_world(seed, &format!("dispatch-twice-{seed}"));
     let first = world
         .application
-        .admit_external_dispatch_attempt(observation.clone())
-        .expect("first physical attempt is admitted");
+        .observe_committed_dispatch_outbox(&receipt)
+        .expect("first exact owner read succeeds")
+        .expect("the real operation co-committed an outbox");
     let second = world
         .application
-        .admit_external_dispatch_attempt(observation)
-        .expect("second physical attempt is admitted");
-    (first, second)
+        .observe_committed_dispatch_outbox(&receipt)
+        .expect("second exact owner read succeeds")
+        .expect("the real operation co-committed an outbox");
+    (
+        world
+            .application
+            .admit_external_dispatch_attempt(first)
+            .expect("first physical attempt is admitted"),
+        world
+            .application
+            .admit_external_dispatch_attempt(second)
+            .expect("second physical attempt is admitted"),
+    )
 }
 
-pub(in crate::domain_computation) fn commit_distinct_records_and_admit_fixture(
-    record: &WorthQueryDispatchOutboxRecord,
-) -> (
+pub(in crate::domain_computation) fn commit_distinct_records_and_admit_fixture() -> (
     WorthQueryAdmittedExternalDispatchAttempt,
     WorthQueryAdmittedExternalDispatchAttempt,
     RecordRef,
     RecordRef,
 ) {
-    let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
-    let branch = primary_relational_branch_id();
-    let (first_binding, second_binding, commit, runtime_id) =
-        provider.graph.with_runtime_mut(|runtime| {
-            let (first_intent, first_pending) = bind_dispatch_outbox_create_intent(
-                Some(provider.graph.layout.provider_dispatch_outbox()),
-                Some(record),
-            )
-            .expect("first outbox binds");
-            let MutationIntent::Create(CreateIntent::Entity(mut second_spec)) =
-                first_intent.clone()
-            else {
-                panic!("outbox intent creates an entity")
-            };
-            second_spec.client_key =
-                worth_relational::facade::symbols::ClientKey::raw("same-record-second-identity");
-            let second_created = CreatedEntityRef {
-                partition_id: second_spec.partition_id,
-                kind_id: second_spec.kind_id,
-                client_key: second_spec.client_key.clone(),
-            };
-            let mut transaction: BranchBoundRelationalTransaction = {
-    let transaction_validation_input = runtime
-                    .admit_branch_basis(&runtime.main_branch_identity())
-                    .expect("main branch binding");
-    runtime
-        .begin_branch_transaction(
-            &transaction_validation_input,
-            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-        )
-        .expect("owner-admitted transaction context")
-};
-            transaction.push_batch(
-                WorkerIntentBatch::new("same-value-distinct-record-causal-twin")
-                    .push(first_intent)
-                    .push(MutationIntent::Create(CreateIntent::Entity(second_spec))),
-            ).expect("test staging stays within configured resource budgets");
-            let committed = transaction.commit(runtime).expect("both outboxes commit");
-            let first_binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
-                provider.graph.layout.provider_dispatch_outbox(),
-                Some(first_pending.record()),
-                &committed,
-            )
-            .unwrap()
-            .unwrap();
-            let second_ref = RecordRef::Entity(
-                committed
-                    .created_entity(&second_created)
-                    .expect("second create reference resolves independently"),
-            );
-            let second_binding =
-                WorthQueryCommittedDispatchOutboxBinding::fixture(record.clone(), second_ref);
-            let commit = committed.outcome().commit.clone();
-            retain_commit_basis(provider, runtime, &committed);
-            release_commit_snapshot(runtime, &committed);
-            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &branch)
-                .unwrap();
-            let runtime_id = snapshot.runtime_instance_id();
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            (
-                first_binding,
-                second_binding,
-                commit,
-                runtime_id,
-            )
-        });
-    let first_ref = first_binding.record_ref().clone();
-    let second_ref = second_binding.record_ref().clone();
-    let first = provider
-        .observe_expected(&first_binding, &commit, runtime_id)
-        .expect("first exact owner observation");
-    let second = provider
-        .observe_expected(&second_binding, &commit, runtime_id)
-        .expect("second exact owner observation");
+    let (world, first_receipt, second_receipt) = two_recoverable_application_commits(231, 232);
+    let first = world
+        .application
+        .observe_committed_dispatch_outbox(&first_receipt)
+        .expect("the retained first commit remains owner-readable")
+        .expect("the first operation co-committed an outbox");
+    let second = world
+        .application
+        .observe_committed_dispatch_outbox(&second_receipt)
+        .expect("the second commit remains owner-readable")
+        .expect("the second operation co-committed an outbox");
+    let first_ref = first.record_ref().clone();
+    let second_ref = second.record_ref().clone();
     let first = world
         .application
         .admit_external_dispatch_attempt(first)
-        .expect("first record dispatch admitted");
+        .expect("the first World publication admits dispatch");
     let second = world
         .application
         .admit_external_dispatch_attempt(second)
-        .expect("second record dispatch admitted");
+        .expect("the second World publication admits dispatch");
     (first, second, first_ref, second_ref)
-}
-
-pub(in crate::domain_computation::primary_graph) fn commit_and_observe_fixture(
-    provider: &WorthQueryPrimaryGraphProvider,
-    record: &WorthQueryDispatchOutboxRecord,
-) -> WorthQueryCommittedDispatchOutboxObservation {
-    let branch = primary_relational_branch_id();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(|runtime| {
-        let (intent, pending) = bind_dispatch_outbox_create_intent(
-            Some(provider.graph.layout.provider_dispatch_outbox()),
-            Some(record),
-        )
-        .expect("declared fixture outbox binds a create intent");
-        let mut transaction: BranchBoundRelationalTransaction = {
-    let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-    runtime
-        .begin_branch_transaction(
-            &transaction_validation_input,
-            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-        )
-        .expect("owner-admitted transaction context")
-};
-        transaction.push_batch(WorkerIntentBatch::new("committed-outbox-real-test").push(intent)).expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).expect("fixture outbox commits");
-        let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
-            provider.graph.layout.provider_dispatch_outbox(),
-            Some(pending.record()),
-            &committed,
-        )
-        .unwrap_or_else(|denial| {
-            panic!(
-                "owner mapping resolves: {denial}; requested={:?}",
-                pending.created_entity()
-            )
-        })
-        .expect("declared outbox has a binding");
-        let commit = committed.outcome().commit.clone();
-        retain_commit_basis(provider, runtime, &committed);
-        release_commit_snapshot(runtime, &committed);
-        let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &branch)
-            .expect("fixture branch has a snapshot");
-        let runtime_id = snapshot.runtime_instance_id();
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        (binding, commit, runtime_id)
-    });
-    provider
-        .observe_expected(&binding, &commit, runtime_id)
-        .expect("real committed outbox is owner-observable")
 }

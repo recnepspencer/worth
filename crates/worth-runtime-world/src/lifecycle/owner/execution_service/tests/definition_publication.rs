@@ -49,8 +49,12 @@ fn performed_definition_successor_isolated_from_sibling_product_and_pinned_gener
     };
     let sibling_binding = fixture
         .bridge
-        .admit_conditional_signal_basis(&fixture.lowering, sibling.basis().signal_basis())
-        .expect("the sibling product admits its exact D0 definition");
+        .admit_exact_conditional_signal_basis(&fixture.lowering, sibling.basis().signal_basis())
+        .expect("the sibling product resolves and indexes its inherited exact D0 definition");
+    fixture
+        .bridge
+        .admit_exact_conditional_signal_basis(&fixture.lowering, sibling.basis().signal_basis())
+        .expect("the indexed sibling D0 definition remains exactly readmissible");
     let pinned = fixture
         .bridge
         .admit_conditional_evaluation(

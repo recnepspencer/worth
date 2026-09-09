@@ -10,7 +10,7 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 - Deferred next homes:
 
 - Public surface: facade-only
-- Facade exports: `WorthQueryGraphObligationAdoptionDenial, WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof, WorthQueryGraphObligationAdoptionRow, admission, convergence_epoch, declaration, domain, inspect_installed_graph_obligations, installed, primary_graph, provisional_aftermath, publication, runtime, worth_query_application_query, worth_query_application_schema, worth_query_aspect, worth_query_conditional_node, worth_query_entity, worth_query_field, worth_query_operation, worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding, worth_query_relation`
+- Facade exports: `WorthQueryGraphObligationAdoptionDenial, WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof, WorthQueryGraphObligationAdoptionRow, admission, convergence_epoch, declaration, domain, inspect_installed_graph_obligations, installed, primary_graph, provisional_aftermath, publication, runtime, worth_query_application_query, worth_query_application_schema, worth_query_aspect, worth_query_conditional_node, worth_query_effect, worth_query_entity, worth_query_field, worth_query_operation, worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding, worth_query_relation`
 - Owned internal modules: `none`
 - Allowed in-tree dependency bands: `none`
 

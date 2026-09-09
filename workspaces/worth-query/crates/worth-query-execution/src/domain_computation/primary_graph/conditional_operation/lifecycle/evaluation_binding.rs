@@ -23,6 +23,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
     pub(super) affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity,
     pub(super) managed_clock: BridgeManagedClockBinding,
     pub(super) retained_wakes: Vec<WorthQueryRetainedConditionalWake>,
+    pub(super) pending_direct_delivery: super::direct_delivery::WorthQueryPendingDirectDelivery,
     pub(super) reconstructed_intents:
         BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
     pub(super) reconstruction_work: WorthQueryTemporalReconstructionWork,
@@ -108,15 +109,6 @@ where
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
-        let exact = bridge
-            .admit_exact_conditional_signal_basis(&self.lowering_anchor, truth.signal_basis())
-            .map_err(|denial| {
-                super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
-                    format!("{:?}: {}", denial.kind(), denial.detail()),
-                )
-            })?;
-        let lowering = exact.installed_lowering();
         let selected_identity = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
             truth.product().observation(),
         );
@@ -124,7 +116,6 @@ where
             .active_affinity
             .as_ref()
             .is_some_and(|active| active.identity() == &selected_identity)
-            && Arc::ptr_eq(self.active_lowering(), &lowering)
         {
             return Ok(());
         }
@@ -132,18 +123,35 @@ where
             .active_affinity
             .as_ref()
             .map(|active| active.identity().clone());
+        if let Some(mut selected) = self.inactive_bindings.remove(&selected_identity) {
+            if let Some(active_identity) = active_identity {
+                self.swap_evaluation_binding(&mut selected);
+                self.inactive_bindings.insert(active_identity, selected);
+            } else {
+                self.activate_first_evaluation_binding(selected);
+            }
+            return Ok(());
+        }
+
+        let lowering_anchor = Arc::clone(&self.bootstrap_lowering);
+        let exact = bridge
+            .admit_exact_conditional_signal_basis(&lowering_anchor, truth.signal_basis())
+            .map_err(|denial| {
+                super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
+                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+                    format!("{:?}: {}", denial.kind(), denial.detail()),
+                )
+            })?;
+        let lowering = exact.installed_lowering();
         let predecessor = self.predecessor_binding_state(&selected_identity);
-        let mut selected = match self.inactive_bindings.remove(&selected_identity) {
-            Some(binding) => binding,
-            None => self.create_evaluation_binding(
-                bridge,
-                runtime,
-                truth,
-                exact,
-                &lowering,
-                predecessor.as_ref(),
-            )?,
-        };
+        let mut selected = self.create_evaluation_binding(
+            bridge,
+            runtime,
+            truth,
+            exact,
+            &lowering,
+            predecessor.as_ref(),
+        )?;
         if let Some(active_identity) = active_identity {
             self.swap_evaluation_binding(&mut selected);
             self.inactive_bindings.insert(active_identity, selected);
@@ -228,6 +236,7 @@ where
             ),
             managed_clock,
             retained_wakes: Vec::new(),
+            pending_direct_delivery: super::direct_delivery::empty(),
             reconstructed_intents: intents,
             reconstruction_work: reconstruction.work,
             authoritative_commit_cursor: predecessor
@@ -297,6 +306,10 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         );
         std::mem::swap(&mut self.retained_wakes, &mut binding.retained_wakes);
         std::mem::swap(
+            &mut self.pending_direct_delivery,
+            &mut binding.pending_direct_delivery,
+        );
+        std::mem::swap(
             &mut self.reconstructed_intents,
             &mut binding.reconstructed_intents,
         );
@@ -319,6 +332,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
             affinity,
             managed_clock,
             retained_wakes,
+            pending_direct_delivery,
             reconstructed_intents,
             reconstruction_work,
             authoritative_commit_cursor,
@@ -327,6 +341,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         self.active_affinity = Some(affinity);
         self.managed_clock = Some(managed_clock);
         self.retained_wakes = retained_wakes;
+        self.pending_direct_delivery = pending_direct_delivery;
         self.reconstructed_intents = reconstructed_intents;
         self.reconstruction_work = reconstruction_work;
         self.authoritative_commit_cursor = authoritative_commit_cursor;

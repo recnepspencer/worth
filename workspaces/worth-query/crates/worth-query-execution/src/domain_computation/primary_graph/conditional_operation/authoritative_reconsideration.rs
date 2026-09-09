@@ -76,10 +76,17 @@ pub(super) fn deliver_authoritative_commits(
     query_binding_identity: &str,
     query_capability_identity: u64,
     truth: &WorthQueryConditionalTruthBasis,
+    preperformed_deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
 ) -> Result<WorthQueryDeliveredAuthoritativeCommits, String> {
     let mut granular_invalidations = Vec::new();
     for (sequence, commit) in &commits.commits {
-        let delivered = deliver_commit_dependencies(bridge, signal_basis, *commit, truth)?;
+        let delivered = deliver_commit_dependencies(
+            bridge,
+            signal_basis,
+            *commit,
+            truth,
+            preperformed_deliveries,
+        )?;
         for wake in wakes.iter_mut().filter(|wake| {
             delivered
                 .changed_records
@@ -148,6 +155,36 @@ pub(super) fn promote_performed_signal_deliveries(
         .collect()
 }
 
+#[allow(clippy::too_many_arguments)]
+pub(super) fn reconsider_retained_wakes_for_deliveries(
+    bridge: &BridgeSealedRuntimeAssembly,
+    deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
+    wakes: &mut [WorthQueryRetainedConditionalWake],
+    signal_basis: &BridgeConditionalSignalBasisBinding,
+    query_binding_identity: &str,
+    query_capability_identity: u64,
+    truth: &WorthQueryConditionalTruthBasis,
+) {
+    for delivery in deliveries {
+        let receipt = delivery.correspondence_receipt();
+        for wake in wakes.iter_mut().filter(|wake| {
+            receipt.change_set().changes().iter().any(|change| {
+                change.relational_record_identity() == Some(wake.due.source_record_identity())
+            })
+        }) {
+            reconsider_retained_wake(
+                bridge,
+                wake,
+                signal_basis,
+                query_binding_identity,
+                query_capability_identity,
+                truth,
+                receipt,
+            );
+        }
+    }
+}
+
 fn retained_decision_evidence_mut(
     decision: &mut super::signal_decision_reentry::WorthQueryRetainedConditionalDecision,
 ) -> Option<&mut worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence> {
@@ -180,17 +217,26 @@ fn deliver_commit_dependencies(
     signal_basis: &BridgeConditionalSignalBasisBinding,
     commit: worth_relational::facade::history::CommitId,
     truth: &WorthQueryConditionalTruthBasis,
+    preperformed_deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
 ) -> Result<WorthQueryDeliveredCommitDependencies, String> {
     let mut changed_records = BTreeSet::new();
     let mut granular_invalidations = Vec::new();
     let lowering = signal_basis.installed_lowering_ref();
+    let commit_identity = TruthCommitIdentity::from_relational_commit_id(commit.0);
     for dependency_ordinal in 0..lowering.contract().dependency_count() {
+        if preperformed_deliveries.iter().any(|delivery| {
+            let change = delivery.correspondence_receipt().change_set();
+            change.commit_identity() == &commit_identity
+                && change.dependency().dependency_ordinal() == dependency_ordinal
+        }) {
+            continue;
+        }
         let outcome = bridge
             .deliver_authoritative_change(
                 signal_basis,
                 dependency_ordinal,
                 RelationalCommittedPatchRequest::at_snapshot(
-                    TruthCommitIdentity::from_relational_commit_id(commit.0),
+                    commit_identity.clone(),
                     truth.snapshot().clone(),
                 ),
             )

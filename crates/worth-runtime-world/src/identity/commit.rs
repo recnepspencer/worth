@@ -15,4 +15,9 @@ impl CompositeCommitIdentity {
     pub const fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.owner
     }
+
+    /// Descriptive occurrence ordinal; this value cannot issue a commit.
+    pub const fn ordinal(&self) -> u64 {
+        self.ordinal
+    }
 }

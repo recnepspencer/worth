@@ -15,6 +15,8 @@ use super::schema::*;
 
 #[path = "world/amendment.rs"]
 mod amendment;
+#[path = "world/combined_amendment.rs"]
+mod combined_amendment;
 #[path = "world/security.rs"]
 mod security;
 

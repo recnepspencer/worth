@@ -19,6 +19,9 @@ pub use clock::{ClockController, ClockSource, CourtroomClock};
 #[path = "adapters/predicate.rs"]
 mod predicate;
 pub use predicate::{Predicate, ReplacementPredicate};
+#[path = "adapters/transport.rs"]
+mod transport;
+pub use transport::CompletingExternalTransport;
 
 #[derive(Clone)]
 pub struct PanicController {

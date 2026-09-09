@@ -32,6 +32,7 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) outcome_identity: Option<super::super::WorthQueryApplicationCommitOutcomeIdentity>,
     pub(super) provider_runtime_instance_id: u64,
     pub(super) commit: RelationalCommitReceipt,
+    pub(super) committed_product_publication: super::WorthQueryCommittedProductPublication,
     pub(super) basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     pub(super) changed_record_count: usize,
     pub(super) emitted_effect_count: usize,
@@ -69,6 +70,7 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             outcome_identity: self.outcome_identity,
             provider_runtime_instance_id: self.provider_runtime_instance_id,
             commit: self.commit.clone(),
+            committed_product_publication: self.committed_product_publication.clone(),
             basis_descriptor: self.basis_descriptor.clone(),
             changed_record_count: self.changed_record_count,
             emitted_effect_count: self.emitted_effect_count,
@@ -105,6 +107,12 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn commit_reference(&self) -> &RelationalCommitReceipt {
         &self.commit
+    }
+
+    pub const fn committed_product_publication(
+        &self,
+    ) -> &super::WorthQueryCommittedProductPublication {
+        &self.committed_product_publication
     }
 
     pub const fn basis_descriptor(
@@ -258,5 +266,15 @@ impl WorthQueryApplicationCommitReceipt {
         self.provider_runtime_instance_id == other.provider_runtime_instance_id
             && self.terminal.branch() == other.terminal.branch()
             && self.commit == other.commit
+            && self.committed_product_publication == other.committed_product_publication
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn with_provider_runtime_instance_id_for_test(
+        mut self,
+        runtime: u64,
+    ) -> Self {
+        self.provider_runtime_instance_id = runtime;
+        self
     }
 }

@@ -8,6 +8,11 @@ impl RuntimeWorldOwnerIdentity {
     const fn from_ordinal(ordinal: u64) -> Self {
         Self(ordinal)
     }
+
+    /// Descriptive owner ordinal for stable identity derivation.
+    pub const fn get(self) -> u64 {
+        self.0
+    }
 }
 
 /// The identity family whose checked sequence reached its terminal value.

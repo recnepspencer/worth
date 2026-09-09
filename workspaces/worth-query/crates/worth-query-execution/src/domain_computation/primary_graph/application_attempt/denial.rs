@@ -18,6 +18,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DuplicateEffectKey,
     RetainedEffectBytesExceeded,
     ExternalEffectPayloadProjectionRejected,
+    ForeignConditionalDefinitionChange,
+    DuplicateConditionalDefinitionChange,
     IncompleteEffectBasis,
     DelegationActivationRequired,
     DelegationActivationProgramMismatch,

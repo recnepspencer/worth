@@ -105,6 +105,8 @@ struct WorthQueryProviderAttemptPreparation {
     emission_retained_bytes: u64,
     emission_retained_bytes_ceiling: u64,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
+    conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
@@ -139,10 +141,12 @@ where
         effects,
         emission_retained_bytes,
         emission_retained_bytes_ceiling,
+        conditional_definition,
     } = program;
     let mut admission = read_set.admission;
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
-    let idempotency = bind_commit_idempotency(&admission, idempotency);
+    let idempotency =
+        bind_commit_idempotency(&admission, conditional_definition.as_ref(), idempotency);
     if let Err(outcome) = validate_operation_currentness(&admission) {
         return terminal(outcome);
     }
@@ -169,6 +173,7 @@ where
                 emission_retained_bytes,
                 emission_retained_bytes_ceiling,
                 preimage_demand,
+                conditional_definition,
             },
             idempotency,
             aftermath_causality,
@@ -215,6 +220,7 @@ fn prepare_application_provider_attempt(
         preparation.emission_retained_bytes,
         preparation.emission_retained_bytes_ceiling,
         preparation.preimage_demand,
+        preparation.conditional_definition,
     )
     .map_err(|_| ())
 }
@@ -252,6 +258,9 @@ fn take_commit_authorization<Schema, Operation, Input, Scope>(
 
 fn bind_commit_idempotency<Schema, Operation, Input, Scope>(
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    conditional_definition: Option<
+        &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
+    >,
     idempotency: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryApplicationIdempotencyBinding {
     idempotency
@@ -260,6 +269,11 @@ fn bind_commit_idempotency<Schema, Operation, Input, Scope>(
         .bind_preconditions(admission.mutation_preconditions().identity())
         .bind_governed_input(admission.governed_input_identity())
         .bind_governed_proposal(admission.governed_proposal_identity())
+        .bind_conditional_definition(
+            conditional_definition.map(
+                crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition::identity,
+            ),
+        )
 }
 
 mod retained_idempotency;

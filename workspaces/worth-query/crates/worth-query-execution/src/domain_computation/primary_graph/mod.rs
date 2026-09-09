@@ -32,6 +32,8 @@ mod principal_key;
 pub(crate) mod product_activation;
 mod product_operation;
 pub use product_operation::{
+    WorthQueryAdmittedApplicationConditionalDefinition,
+    WorthQueryApplicationConditionalDefinitionAdmissionDenial,
     WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome,
     WorthQueryPerformedConditionalDefinitionPublication, WorthQueryProductQueryControls,
@@ -96,6 +98,7 @@ pub use application_attempt::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationReadAttempt,
     WorthQueryApplicationStaleAttempt, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCommittedProductPublication,
     WorthQueryApprovedElevation, WorthQueryCapabilityRevocationProgram,
     WorthQueryCompleteApplicationReadSet, WorthQueryDelegationActivationProgram,
     WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
@@ -228,7 +231,10 @@ pub use principal_key::{
     WorthQueryApplicationPrincipalKey, WorthQueryApplicationPrincipalKeyDenial,
 };
 #[cfg(test)]
-use provider::commit_and_observe_fixture;
+pub(in crate::domain_computation) use tests::recoverable_commit_support::{
+    committed_recoverable_application, recoverable_application_world,
+    two_recoverable_application_commits,
+};
 pub(in crate::domain_computation) use provider::WorthQueryApplicationCommitSerialization;
 pub(in crate::domain_computation) use provider::WorthQueryCommittedDispatchOutboxBinding;
 #[cfg(test)]

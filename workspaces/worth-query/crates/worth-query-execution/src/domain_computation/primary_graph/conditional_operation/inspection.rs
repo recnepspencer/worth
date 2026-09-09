@@ -12,6 +12,7 @@ pub struct WorthQueryConditionalRuntimeInspection {
     provider_count: usize,
     lease_count: usize,
     retained_attempt_count: usize,
+    retained_direct_delivery_count: usize,
     scheduler_task_count: usize,
     scheduler_queue_count: usize,
     signal_graph_count: usize,
@@ -27,6 +28,7 @@ impl WorthQueryConditionalRuntimeInspection {
         provider_count: usize,
         lease_count: usize,
         retained_attempt_count: usize,
+        retained_direct_delivery_count: usize,
         signal_graph_count: usize,
         installation_canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
     ) -> Self {
@@ -38,6 +40,7 @@ impl WorthQueryConditionalRuntimeInspection {
             provider_count,
             lease_count,
             retained_attempt_count,
+            retained_direct_delivery_count,
             scheduler_task_count: 0,
             scheduler_queue_count: 0,
             signal_graph_count,
@@ -73,6 +76,10 @@ impl WorthQueryConditionalRuntimeInspection {
         self.retained_attempt_count
     }
 
+    pub const fn retained_direct_delivery_count(self) -> usize {
+        self.retained_direct_delivery_count
+    }
+
     pub const fn scheduler_task_count(self) -> usize {
         self.scheduler_task_count
     }
@@ -99,6 +106,7 @@ impl WorthQueryConditionalRuntimeInspection {
             && self.provider_count == 0
             && self.lease_count == 0
             && self.retained_attempt_count == 0
+            && self.retained_direct_delivery_count == 0
             && self.scheduler_task_count == 0
             && self.scheduler_queue_count == 0
             && self.signal_graph_count == 0
@@ -125,6 +133,7 @@ where
             bridge.live_provider_count(),
             registry.len(),
             retained.attempts,
+            retained.direct_deliveries,
             bridge.live_signal_graph_count(),
             registry.installation_canonical_work(),
         )

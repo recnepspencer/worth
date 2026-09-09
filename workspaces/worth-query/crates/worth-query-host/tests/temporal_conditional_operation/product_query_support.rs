@@ -62,6 +62,41 @@ pub(super) fn fork_relational_product(
     observation.branch_identity().clone()
 }
 
+pub(super) fn fork_independent_product(
+    world: &CourtroomWorld,
+    source: &primary_graph::WorthQueryProductBranchLease,
+    name: &str,
+    relational_name: &str,
+    signal_name: &str,
+) -> runtime::ProductBranchIdentity {
+    let intent = runtime::ProductBranchCreationIntent::from_source(
+        name,
+        runtime::ProductBranchCreationPlans::new(
+            runtime::RelationalBranchCreationPlan::ForkExact {
+                target: runtime::BranchId(relational_name.to_owned()),
+            },
+            runtime::SignalBranchCreationPlan::ForkExact {
+                target: runtime::validate_signal_branch_name(signal_name)
+                    .expect("the independent Signal branch name validates"),
+            },
+        ),
+    )
+    .unwrap();
+    let outcome = world
+        .application
+        .product_runtime()
+        .create_product_branch(
+            source,
+            intent,
+            &runtime::RuntimeWorldCancellationSource::new().token(),
+        )
+        .unwrap();
+    let runtime::RuntimeWorldBranchCreationOutcome::Performed(observation) = outcome else {
+        panic!("independent fork must publish both product components: {outcome:?}")
+    };
+    observation.branch_identity().clone()
+}
+
 pub(super) fn reuse_exact_product(
     world: &CourtroomWorld,
     source: &primary_graph::WorthQueryProductBranchLease,

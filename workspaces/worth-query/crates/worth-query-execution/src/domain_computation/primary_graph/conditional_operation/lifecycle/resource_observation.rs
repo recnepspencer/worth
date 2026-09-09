@@ -15,11 +15,13 @@ pub(super) fn retained_resource_counts<Binding, Reconstruction, Execution, Clock
         &operation.retained_wakes,
         operation.reconstructed_intents.len(),
     );
+    counts.direct_deliveries += usize::from(operation.pending_direct_delivery.is_some());
     for binding in operation.inactive_bindings.values() {
         counts.add(super::super::lifecycle_inventory::retained_resource_counts(
             &binding.retained_wakes,
             binding.reconstructed_intents.len(),
         ));
+        counts.direct_deliveries += usize::from(binding.pending_direct_delivery.is_some());
     }
     counts
 }

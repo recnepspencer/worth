@@ -22,6 +22,8 @@ pub(super) struct AuthoritativeClockWork<'a, Schema> {
     pub(super) watched_records: Vec<worth_relational::facade::transactions::RecordRef>,
     pub(super) include_whole_graph: bool,
     pub(super) bootstrap_identity: Option<&'a str>,
+    pub(super) preperformed_deliveries:
+        &'a [worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
     pub(super) retained_wakes: &'a mut [WorthQueryRetainedConditionalWake],
     pub(super) runtime_binding_identity: &'a str,
     pub(super) runtime_capability_identity: u64,
@@ -60,6 +62,7 @@ pub(super) fn reconsider_authoritative_clock_work<Schema>(
         work.runtime_binding_identity,
         work.runtime_capability_identity,
         work.truth,
+        work.preperformed_deliveries,
     )
     .map_err(runtime_rejection)?;
     Ok(AuthoritativeClockProgress {

@@ -1,6 +1,7 @@
 //! The single authoritative Relational commit transition.
 
 mod precommit_snapshot;
+mod product_publication;
 mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::WorthQueryPrimaryGraphCommittedApplication;
 
@@ -37,9 +38,8 @@ pub(super) fn commit(
     WorthQueryCommittedApplicationSession,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
-    use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
     let WorthQueryPreparedApplicationCommit {
-        attempt,
+        mut attempt,
         candidate,
         work,
         branch,
@@ -64,47 +64,16 @@ pub(super) fn commit(
         .graph
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
         .map_err(transaction_commit_stop)?;
-    let prepared_publication = product
-        .prepare_relational_candidate(candidate, attempt.affinity().publication_request())
-        .map_err(world_no_effect)?;
-    let recovery = product.recovery();
-    let unpublished_reservation = provider
-        .reserve_unpublished_application_idempotency(
-            &product,
-            attempt.idempotency(),
-            prepared_publication.unpublished_recovery_handle(),
-            recovery.clone(),
-        )
-        .map_err(|()| {
-            crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure(
-                "unpublished idempotency retention capacity is exhausted",
-            ))
-        })?;
-    let outcome = prepared_publication.execute();
-    let performed = match outcome {
-        RuntimeWorldPublicationOutcome::Performed(performed) => {
-            unpublished_reservation.release();
-            performed
-        }
-        RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
-            unpublished_reservation.retain(&effects);
-            return Err(
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductUnpublished(
-                    crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
-                        effects,
-                        recovery,
-                        provider.unpublished_idempotency_disposition(),
-                    ),
-                ),
-            );
-        }
-        RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
-            unpublished_reservation.release();
-            return Err(world_no_effect(no_effect));
-        }
-    };
-    let next_basis = performed.commit().basis().relational_basis().clone();
+    let performed = product_publication::publish(provider, &mut attempt, candidate)?;
+    let performed = performed.publication;
+    let next_basis = performed
+        .publication()
+        .commit()
+        .basis()
+        .relational_basis()
+        .clone();
     let committed = performed
+        .publication()
         .component_results()
         .relational_commit_result()
         .expect("World performed a prepared Relational application candidate")
@@ -118,10 +87,7 @@ pub(super) fn commit(
         before: before.into_publication(),
         next_basis,
         committed,
-        product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt::new(
-            performed.consume(),
-            product.root_identity(),
-        ),
+        product_publication: performed,
     })
 }
 
