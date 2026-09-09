@@ -1,4 +1,5 @@
-use super::{delta_cost, prepare_delta_plan, validate_replay_baseline};
+use super::prepare_delta_plan;
+use crate::native::presentation::retained_raster::replay_cost;
 use crate::native::presentation::{
     raster::UiNativeRasterBasis,
     retained_draw_list::tests::{command, DrawListWorld},
@@ -22,7 +23,7 @@ fn cost_distinguishes_carried_normalized_selected_and_rasterized_damage() {
         replayed_commands: 5,
         ..Default::default()
     };
-    let cost = delta_cost([10, 10], counters, 4, 10, 20, 3, 11).unwrap();
+    let cost = replay_cost([10, 10], counters, 4, 10, 20, 3, 11).unwrap();
     assert_eq!(cost.delta_rows_carried(), 23);
     assert_eq!(cost.logical_damage_regions(), 2);
     assert_eq!(cost.damage_region_command_checks(), 5);
@@ -74,6 +75,9 @@ fn offscreen_delta_advances_retained_truth_without_physical_work() {
     });
 
     let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    retained
+        .initialize_physical_coverage(UiNativeRasterBasis::new([100, 100], 1.0), &atlas)
+        .unwrap();
     let (plan, _committed_undo, _effects) = prepare_delta_plan(
         UiNativeRasterBasis::new([100, 100], 1.0),
         &delta,
@@ -121,15 +125,8 @@ fn offscreen_delta_advances_retained_truth_without_physical_work() {
 }
 
 #[test]
-fn opaque_replay_baseline_is_rejected_before_raster_work() {
-    validate_replay_baseline([0, 0, 0, 0]).unwrap();
-    assert!(validate_replay_baseline([0, 0, 0, 1]).is_err());
-    assert!(validate_replay_baseline([47, 129, 247, 255]).is_err());
-}
-
-#[test]
 fn physical_delta_cost_exposes_the_full_surface_amplification_boundary() {
-    let cost = delta_cost(
+    let cost = replay_cost(
         [160, 96],
         UiNativeRetainedMutationCounters::default(),
         2,
@@ -146,4 +143,81 @@ fn physical_delta_cost_exposes_the_full_surface_amplification_boundary() {
     assert_eq!(cost.surface_acquisitions(), 1);
     assert_eq!(cost.queue_submissions(), 1);
     assert_eq!(cost.presents(), 1);
+}
+
+#[test]
+fn fractional_damage_replays_unchanged_solids_sharing_only_physical_edge_pixels() {
+    use crate::native::presentation::UiNativeRasterOperation;
+    use worth_ui_host_contract::{
+        UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+        UiMountedPaintOrderIdentity,
+    };
+
+    let world = DrawListWorld::new();
+    let predecessor = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let color = UiMountedRgba8::new(31, 67, 109, 128);
+    let rect = world.rect(predecessor, world.first, 10.3, color);
+    let initial = world.initial(predecessor, [rect]);
+    let mut retained = UiNativeRetainedDrawList::initial(&initial, &[]).unwrap();
+    let basis = UiNativeRasterBasis::new([100, 100], 1.25);
+    let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    retained
+        .initialize_physical_coverage(basis, &atlas)
+        .unwrap();
+    let damage = [10.0, 42.35].map(|x| {
+        UiMountedLogicalDamage::from_runtime_mounting(
+            UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+                x,
+                y: 1.0,
+                width: 0.01,
+                height: 1.0,
+                coordinate_space: UiMountedCoordinateSpace::HostSurface,
+            })
+            .unwrap(),
+        )
+    });
+    // Neither logical region intersects the rectangle. Both clear a physical
+    // edge pixel of it after 125% DPI snapping, so both need its paint replayed.
+    assert!(damage[0].bounds().x() + damage[0].bounds().width() < rect.bounds().x());
+    assert!(damage[1].bounds().x() > rect.bounds().x() + rect.bounds().width());
+    let delta = UiMountedPresentationDelta::from_inert_mechanics(UiMountedPresentationDeltaInput {
+        predecessor,
+        successor: UiMountedFrameIdentity::mint_unbound().unwrap(),
+        surface: world.surface,
+        binding: world.binding,
+        content: world.content,
+        baseline: world.requirement.baseline(),
+        changes: Vec::new(),
+        nodes: Vec::new(),
+        order: Vec::new(),
+        order_integrity: UiMountedPaintOrderIntegrity::for_order(&[
+            UiMountedPaintOrderIdentity::for_command(command(rect).identity()),
+        ]),
+        damage: damage.to_vec(),
+        auxiliary: None,
+        production_cost: Default::default(),
+    });
+    let (plan, _, _) = prepare_delta_plan(basis, &delta, &[], &atlas, &mut retained)
+        .unwrap_or_else(|_| panic!("physical edge damage must plan"));
+    let operations = plan
+        .operations
+        .iter()
+        .map(|operation| match operation {
+            UiNativeRasterOperation::Clear(rect) => (rect.physical_bounds(), [0; 4]),
+            UiNativeRasterOperation::FilledRect { rect, source_rgba8 } => {
+                (rect.physical_bounds(), *source_rgba8)
+            }
+            UiNativeRasterOperation::Glyph(_) => panic!("solid-only world"),
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        operations,
+        vec![
+            ([12.0, 1.0, 1.0, 2.0], [0; 4]),
+            ([12.0, 1.0, 1.0, 2.0], color.channels()),
+            ([52.0, 1.0, 1.0, 2.0], [0; 4]),
+            ([52.0, 1.0, 1.0, 2.0], color.channels()),
+        ]
+    );
+    assert_eq!(plan.cost.replayed_commands(), 2);
 }

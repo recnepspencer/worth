@@ -374,4 +374,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 #[path = "presentation/text_raster_work.rs"]
 mod text_raster_work;
 
-pub use text_raster_work::{UiMountedTextRasterCallback, UiMountedTextRasterWork};
+pub use text_raster_work::{
+    UiMountedTextDemandValidationCost, UiMountedTextDemandValidationDenial,
+    UiMountedTextRasterCallback, UiMountedTextRasterWork,
+};

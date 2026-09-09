@@ -17,6 +17,10 @@ pub(crate) use component_presence::UiNativeComponentPresenceProgress;
 mod launch;
 #[path = "native_application_shell/motion_sampling.rs"]
 mod motion_sampling;
+#[path = "native_application_shell/observation_clock.rs"]
+mod observation_clock;
+#[path = "native_application_shell/occurrence_geometry.rs"]
+mod occurrence_geometry;
 #[path = "native_application_shell/presentation_attribution.rs"]
 mod presentation_attribution;
 #[path = "native_application_shell/presentation_recovery.rs"]
@@ -34,6 +38,9 @@ pub use service_inspection::WorthUiNativeReducedMotionPosture;
 mod shutdown;
 #[path = "native_application_shell/viewport_measurement.rs"]
 mod viewport_measurement;
+pub use occurrence_geometry::{
+    UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput,
+};
 pub use shutdown::{WorthUiNativeApplicationCleanup, WorthUiNativeApplicationShutdownReceipt};
 
 /// High-level native lifecycle for one downstream application composition root.
@@ -59,6 +66,7 @@ pub struct WorthUiNativeApplicationShell {
 }
 
 struct NativeMountedRow {
+    authored_semantic_identity: Box<str>,
     graph_node: crate::graph::UiGraphNodeIdentity,
     mounted: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
     latest_mounted: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -72,6 +80,7 @@ pub enum WorthUiNativeApplicationShellLaunchDenial {
     HostSurfaceRegistration,
     MountedInstanceCreation,
     ViewportAllocation(Box<super::WorthUiMountedAllocationEstablishmentDenial>),
+    OccurrenceGeometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
     ApplicationCleanup(Box<WorthUiNativeApplicationCleanup>),
 }
 

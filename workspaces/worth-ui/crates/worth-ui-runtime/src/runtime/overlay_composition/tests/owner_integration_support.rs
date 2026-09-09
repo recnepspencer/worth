@@ -83,28 +83,28 @@ impl OwnerIntegrationWorld {
     }
 
     pub(crate) fn sources(&self) -> UiOverlayOwnerSources<'_> {
-        UiOverlayOwnerSources {
-            generation: &self.generation,
-            portal: &self.portal_owner,
-            extent: &self.extent,
-            presentation: &self.presentation,
-            bindings: &self.bindings,
-            motion: &self.motion,
-        }
+        UiOverlayOwnerSources::new(
+            &self.generation,
+            Some(&self.portal_owner),
+            &self.extent,
+            &self.presentation,
+            &self.bindings,
+            Some(&self.motion),
+        )
     }
 
     pub(crate) fn sources_with_extent<'a>(
         &'a self,
         extent: &'a UiMountedOverlayExtentOwner,
     ) -> UiOverlayOwnerSources<'a> {
-        UiOverlayOwnerSources {
-            generation: &self.generation,
-            portal: &self.portal_owner,
+        UiOverlayOwnerSources::new(
+            &self.generation,
+            Some(&self.portal_owner),
             extent,
-            presentation: &self.presentation,
-            bindings: &self.bindings,
-            motion: &self.motion,
-        }
+            &self.presentation,
+            &self.bindings,
+            Some(&self.motion),
+        )
     }
 
     pub(crate) fn take_backdrop(&mut self) -> worth_ui_dsl::UiBackdropDeclaration {
@@ -210,8 +210,18 @@ pub(crate) fn commit_non_idempotent_open(
 }
 
 pub(crate) fn close_topmost(owner: &mut UiPortalRuntimeState, lineage: u64) -> UiPortalIdentity {
+    let semantic_surface = owner
+        .stack_snapshot()
+        .rows()
+        .last()
+        .expect("close_topmost requires one live Portal")
+        .surface();
     let dismissal = owner
-        .prepare_dismissal(UiPortalDismissalTrigger::Escape, None, idempotency(lineage))
+        .prepare_dismissal(
+            UiPortalDismissalTrigger::Escape { semantic_surface },
+            None,
+            idempotency(lineage),
+        )
         .unwrap();
     let transition = match dismissal {
         UiPortalDismissalPreparation::Prepared(prepared) => prepared.into_transition(),

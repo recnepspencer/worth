@@ -207,8 +207,8 @@ fn mounted_fixture(
     host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
     host.push_native_display_presented();
     if six_axis {
-        host.push_native_display_presented();
-        host.push_native_display_presented();
+        host.push_native_display_settled_without_effects();
+        host.push_native_display_settled_without_effects();
     } else {
         host.push_native_display_settled_without_effects();
         host.push_native_display_settled_without_effects();
@@ -304,6 +304,10 @@ fn mounted_fixture(
         .receipts()
         .iter()
         .any(|receipt| receipt.identity().graph_node_identity() == graph_node));
+    crate::facade::entry::mounted_occurrence_geometry_test_support::refresh_nonoverlapping_surface_geometry(
+        &mut session,
+        surface,
+    );
     refresh_appearance_owner_snapshot(&mut session, role, "appearance-receipt-mounted");
     assert!(session
         .presentation

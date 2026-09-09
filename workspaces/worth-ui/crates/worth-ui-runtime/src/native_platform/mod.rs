@@ -2,6 +2,10 @@
 
 mod application;
 mod application_driver;
+#[cfg(test)]
+pub(crate) use application_driver::pointer_refresh_tests::{
+    exercise_custom_pointer_expiry, exercise_pointer_expiry, PointerExpiryPresentation,
+};
 mod application_runtime;
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use application_driver::shutdown_observation::map_shutdown_attempts;

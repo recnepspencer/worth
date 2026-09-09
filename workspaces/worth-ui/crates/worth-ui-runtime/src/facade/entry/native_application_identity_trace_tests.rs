@@ -6,8 +6,9 @@ use crate::runtime::tests::active_application_session_test_support::{
 use super::native_application_identity_trace_test_support::{
     assert_indexed_trace_cost, assert_same_authored_affinity, assert_trace_authored_affinity,
     assert_trace_runtime_identity, authored_presented_identity, completed, frame_receipt,
-    mounted_instance, mounted_source_oracle, only_presented_identity, presented_graph_node,
-    remount_presented_instance, replace_application_with_provenance, retained_trace,
+    install_bound_surface_geometry, mounted_instance, mounted_source_oracle,
+    only_presented_identity, presented_graph_node, remount_presented_instance,
+    replace_application_with_provenance, retained_trace,
 };
 use super::native_identity_trace_host::NativeIdentityTraceHost;
 use crate::mounting::UiMountedFrameOutcome;
@@ -19,6 +20,7 @@ fn retained_declaration_keeps_its_authored_trace_across_application_replacement(
     let mut shell = app
         .launch_native_surface()
         .expect("source-backed application should launch through the native lifecycle");
+    install_bound_surface_geometry(&mut shell);
     let predecessor_oracle = mounted_source_oracle(&declaration_artifacts, shell.session.graph());
     let predecessor = frame_receipt(completed(shell.present_frame(100, 1)));
     let predecessor_identity = authored_presented_identity(
@@ -78,6 +80,7 @@ fn remount_mints_new_runtime_identity_without_losing_authored_affinity() {
     let mut shell = app
         .launch_native_surface()
         .expect("source-backed application should launch through the native lifecycle");
+    install_bound_surface_geometry(&mut shell);
     let authored_oracle = mounted_source_oracle(&declaration_artifacts, shell.session.graph());
     let predecessor = frame_receipt(completed(shell.present_frame(100, 1)));
     let predecessor_identity = authored_presented_identity(
@@ -130,6 +133,7 @@ fn replacement_with_a_different_declaration_identity_retires_the_old_mount() {
     let mut shell = app
         .launch_native_surface()
         .expect("source-backed application should launch through the native lifecycle");
+    install_bound_surface_geometry(&mut shell);
     let predecessor = frame_receipt(completed(shell.present_frame(100, 1)));
     assert!(!shell.session.mounted.view().mounted_instances().is_empty());
 
@@ -156,6 +160,7 @@ fn new_surface_receives_owner_issued_reconstruction_and_next_state_becomes_curre
     let mut shell = app
         .launch_native_surface()
         .expect("source-backed application should launch");
+    install_bound_surface_geometry(&mut shell);
     frame_receipt(completed(shell.present_frame(100, 1)));
     let graph_node = shell
         .session
@@ -189,6 +194,8 @@ fn new_surface_receives_owner_issued_reconstruction_and_next_state_becomes_curre
         .session
         .mount_instance(handle, surface)
         .expect("second surface should carry mounted content");
+    crate::facade::entry::mounted_occurrence_geometry_test_support::
+        refresh_nonoverlapping_surface_geometry(&mut shell.session, surface);
     let calls_before_reconstruction = host.presentation_calls();
     let successor = frame_receipt(completed(shell.present_frame(200, 2)));
     assert_eq!(host.presentation_calls(), calls_before_reconstruction + 2);
@@ -206,12 +213,13 @@ fn new_surface_receives_owner_issued_reconstruction_and_next_state_becomes_curre
 }
 
 #[test]
-fn second_frame_prepared_from_one_predecessor_is_stale_before_host_effects() {
+fn second_frame_prepared_from_one_predecessor_is_denied_before_host_effects() {
     let host = NativeIdentityTraceHost::default();
     let app = source_backed_component_app_with_host(host.clone());
     let mut shell = app
         .launch_native_surface()
         .expect("source-backed application should launch");
+    install_bound_surface_geometry(&mut shell);
     let predecessor = frame_receipt(completed(shell.present_frame(100, 1)));
     let identity = first_presented_identity(&shell, &predecessor);
     remount_without_presentation(&mut shell, identity);
@@ -244,13 +252,15 @@ fn second_frame_prepared_from_one_predecessor_is_stale_before_host_effects() {
         3,
     );
     let rejection = match stale {
-        UiMountedFrameOutcome::RejectedBeforeEffects(rejection) => rejection,
-        _ => panic!("second candidate must be stale before presentation"),
+        UiMountedFrameOutcome::AdmissionDenied(rejection) => rejection,
+        _ => panic!("second candidate must be stale before presentation admission"),
     };
-    assert!(rejection.rejections().iter().all(|rejection| {
-        rejection.denial()
-            == worth_ui_host_contract::UiHostSurfacePresentationDenial::StalePredecessor
-    }));
+    assert_eq!(
+        rejection.denial(),
+        crate::mounting::UiMountedPresentationAdmissionDenial::CandidatePreparation(
+            worth_ui_host_contract::UiHostSurfacePresentationDenial::StalePredecessor,
+        )
+    );
     assert_eq!(host.presentation_calls(), calls_after_successor);
     assert_eq!(
         shell
@@ -299,4 +309,6 @@ fn remount_without_presentation(
         .session
         .mount_instance(handle, surface)
         .expect("graph node should remount");
+    crate::facade::entry::mounted_occurrence_geometry_test_support::
+        refresh_nonoverlapping_surface_geometry(&mut shell.session, surface);
 }

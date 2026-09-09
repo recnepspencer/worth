@@ -181,9 +181,13 @@ impl UiMountedFilledRectMechanic {
     pub fn presented_within_portal(
         self,
         portal: super::UiMountedPortalOverlayMechanic,
-    ) -> Result<Self, UiMountedFilledRectCompletionDenial> {
-        let bounds = portal_relative_box(self.bounds, portal.bounds())
-            .ok_or(UiMountedFilledRectCompletionDenial::NonAreaGeometry)?;
+    ) -> Result<Option<Self>, UiMountedFilledRectCompletionDenial> {
+        let Some(geometry) =
+            super::portal_child_geometry::project(self.bounds, self.clip_bounds, portal)
+                .map_err(|_| UiMountedFilledRectCompletionDenial::NonAreaGeometry)?
+        else {
+            return Ok(None);
+        };
         Self::complete_from_runtime_mounting(UiMountedFilledRectCompletionInput {
             frame: self.frame,
             surface: self.surface,
@@ -191,13 +195,14 @@ impl UiMountedFilledRectMechanic {
             mounted_instance: self.mounted_instance,
             node_receipt: self.node_receipt,
             allocation_basis: self.allocation_basis,
-            bounds,
+            bounds: geometry.bounds,
             color: self.color,
             layer_semantic_order: portal
                 .layer_semantic_order()
                 .saturating_add(1 + self.layer_semantic_order.min(1_024)),
-            clip_bounds: portal.bounds(),
+            clip_bounds: geometry.clip,
         })
+        .map(Some)
     }
 
     #[doc(hidden)]
@@ -212,20 +217,22 @@ impl UiMountedFilledRectMechanic {
             && self.layer_semantic_order == other.layer_semantic_order
             && self.clip_bounds == other.clip_bounds
     }
-}
 
-fn portal_relative_box(
-    relative: super::UiMountedCanonicalBox,
-    portal: super::UiMountedCanonicalBox,
-) -> Option<super::UiMountedCanonicalBox> {
-    super::UiMountedCanonicalBox::canonicalize(super::UiMountedCanonicalBoxInput {
-        x: portal.x() + relative.x(),
-        y: portal.y() + relative.y(),
-        width: relative.width(),
-        height: relative.height(),
-        coordinate_space: portal.coordinate_space(),
-    })
-    .ok()
+    /// Reconciliation may move one unchanged command onto the admitted replacement binding.
+    #[doc(hidden)]
+    pub fn same_retained_paint_meaning_after_binding_replacement(
+        self,
+        other: Self,
+        affected: UiSurfaceBindingGeneration,
+        replacement: UiSurfaceBindingGeneration,
+    ) -> bool {
+        if self.binding != affected || other.binding != replacement {
+            return false;
+        }
+        let mut rebound = self;
+        rebound.binding = replacement;
+        rebound.same_retained_paint_meaning(other)
+    }
 }
 
 impl UiMountedFilledRectTable {

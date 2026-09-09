@@ -12,6 +12,9 @@ mod demand_admission;
 mod entry;
 #[cfg(test)]
 mod eviction;
+mod image_observation;
+#[cfg(test)]
+mod image_observation_tests;
 mod in_flight;
 mod key;
 mod ownership;
@@ -63,6 +66,7 @@ pub use capacity::UiNativeTextAtlasQualifiedCapacity;
 pub use census::UiNativeTextAtlasCensus;
 pub(crate) use census::{UiNativeTextAtlasPhysicalPosture, UiNativeTextAtlasResourceClass};
 pub(crate) use demand::UiNativeTextAtlasDemand;
+pub(crate) use image_observation::UiNativeTextAtlasImageObservation;
 pub(crate) use in_flight::UiNativeTextAtlasInFlight;
 pub(crate) use key::canonical_raster_key_bytes;
 pub use key::UiAtlasEntryIdentity;

@@ -328,6 +328,7 @@ impl UiAppearanceResolver {
         Ok(UiBackdropAppearanceProjection::seal(
             instance,
             declaration,
+            role,
             vector.clone(),
             theme,
             overlay.clone(),

@@ -41,7 +41,7 @@ fn active_session_close_seals_all_six_owner_exports_on_one_basis() {
 
     let capability_snapshot = appearance_axis_close_test_support::six_axis_builder(&role)
         .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
+        .map(crate::runtime::tests::appearance_theme_test_support::activate)
         .expect("six-axis appearance capability snapshot should prepare");
     let launch_candidate = appearance_axis_close_test_support::candidate_submission(
         "appearance-six-axis-close",
@@ -60,10 +60,7 @@ fn active_session_close_seals_all_six_owner_exports_on_one_basis() {
         prepared.service_policy_plan().selection(),
         Some(crate::declaration::UiSelectionPolicy::single())
     );
-    let mut session =
-        crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host(
-            prepared,
-        )
+    let mut session = crate::runtime::tests::appearance_theme_test_support::activate(prepared)
         .launch()
         .expect("six-axis appearance source application should launch");
     let candidate = appearance_axis_close_test_support::candidate_submission(

@@ -9,6 +9,17 @@ use super::{
 };
 
 impl UiPreparedMountedFrame {
+    pub(crate) fn set_application_text_publication(
+        &mut self,
+        publication: crate::runtime::presentation_state::UiApplicationTextPublication,
+        mounted: &super::super::WorthUiMountedSessionState,
+    ) {
+        let publication = publication.retain_complete_graphs(|graph| {
+            mounted.text_publication_covers_all_mounts(graph, self.manifest.surfaces())
+        });
+        self.candidate.owner.application_text_publication = Some(std::rc::Rc::new(publication));
+    }
+
     pub(crate) fn admit(
         admission: UiPreparedMountedFrameAdmission,
     ) -> Result<Self, UiMountedFramePreparationDenial> {
@@ -107,13 +118,33 @@ impl UiPreparedMountedFrame {
         self.candidate.appearance_attempt_inputs(batch)
     }
 
+    pub(crate) fn stage_appearance_input_refresh(
+        &mut self,
+        node: &super::super::projection::UiMountedAppearanceNodeInputContext,
+    ) -> bool {
+        self.candidate.stage_appearance_input_refresh(node)
+    }
+
+    pub(crate) fn projection_input(
+        &self,
+        slot: worth_ui_query_binding::UiProjectionInputSlot,
+    ) -> Option<&worth_ui_query_binding::UiProjectionInputFactReference> {
+        self.semantic_projection().projection_input(slot)
+    }
+
     pub(crate) fn begin_appearance_lifecycle(
         &mut self,
         session: crate::facade::WorthUiActiveApplicationSessionIdentity,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    ) {
+        graph: crate::graph::UiGraphAuthority<'_>,
+    ) -> Result<(), super::super::projection::UiMountedProjectionDenial> {
+        self.validate_appearance_owner(session, generation)?;
+        if !self.generation.matches_graph(graph) {
+            return Err(super::super::projection::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch);
+        }
         self.candidate
-            .begin_appearance_lifecycle(session, generation);
+            .begin_appearance_lifecycle(session, generation, graph);
+        Ok(())
     }
 
     pub(crate) fn validate_appearance_owner(
@@ -142,6 +173,22 @@ impl UiPreparedMountedFrame {
         self.candidate.appearance_selection_cost_report()
     }
 
+    pub(crate) fn appearance_motion_targets(
+        &self,
+        overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
+    ) -> Vec<(
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+    )> {
+        self.candidate
+            .appearance_motion_targets(self.manifest.surfaces(), overlays)
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn record_accepted_motion_commands_visited(&mut self, count: usize) {
+        self.cost.record_appearance_motion_commands_visited(count);
+    }
+
     #[cfg(test)]
     pub(crate) fn projection_rc_for_test(
         &self,
@@ -151,7 +198,10 @@ impl UiPreparedMountedFrame {
 
     pub(crate) fn appearance_node_inputs_for_reconstruction(
         &self,
-    ) -> Vec<super::super::projection::UiMountedAppearanceNodeInputContext> {
+    ) -> Result<
+        Vec<super::super::projection::UiMountedAppearanceNodeInputContext>,
+        super::super::projection::UiMountedProjectionDenial,
+    > {
         self.candidate
             .frame()
             .appearance_node_inputs_for_reconstruction()
@@ -162,6 +212,10 @@ impl UiPreparedMountedFrame {
         batch: crate::runtime::appearance::UiAppearanceInvalidationBatch,
     ) {
         self.candidate.set_appearance_invalidation_batch(batch);
+    }
+
+    pub(crate) fn clear_appearance_invalidation_batch(&mut self) {
+        self.candidate.clear_appearance_invalidation_batch();
     }
 
     pub(crate) fn appearance_invalidation_batch(
@@ -193,10 +247,59 @@ impl UiPreparedMountedFrame {
     pub(crate) fn lower_appearance(
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
     ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
         let invalidation = self.appearance_invalidation_batch();
-        let records = self.candidate.lower_appearance(presentation);
+        let records =
+            self.candidate
+                .lower_appearance(presentation, self.manifest.surfaces(), profile);
         crate::runtime::appearance::UiAppearanceInspectionAttemptBatch::new(invalidation, records)
+    }
+
+    pub(crate) fn lower_appearance_with_motion(
+        &mut self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
+        motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
+    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
+        let invalidation = self.appearance_invalidation_batch();
+        let records = self.candidate.lower_appearance_with_motion(
+            presentation,
+            self.manifest.surfaces(),
+            profile,
+            motion,
+        );
+        crate::runtime::appearance::UiAppearanceInspectionAttemptBatch::new(invalidation, records)
+    }
+
+    pub(crate) fn lower_appearance_with_motion_and_overlays(
+        &mut self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
+        motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
+        overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
+    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
+        let invalidation = self.appearance_invalidation_batch();
+        let records = self.candidate.lower_appearance_with_motion_and_overlays(
+            presentation,
+            self.manifest.surfaces(),
+            profile,
+            motion,
+            overlays,
+        );
+        crate::runtime::appearance::UiAppearanceInspectionAttemptBatch::new(invalidation, records)
+    }
+
+    pub(crate) fn deny_appearance_output(
+        &mut self,
+    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
+        let invalidation = self.appearance_invalidation_batch();
+        let records = self.candidate.deny_appearance_output();
+        crate::runtime::appearance::UiAppearanceInspectionAttemptBatch::new(invalidation, records)
+    }
+
+    pub(crate) fn appearance_output_available(&self) -> bool {
+        self.candidate.owner.unpublished_appearance().is_ok()
     }
 
     pub fn receipt(&self) -> UiMountedFrameReceipt {

@@ -16,6 +16,7 @@ fn native_reduced_motion_admission_snaps_real_portal_entrance_and_stops_sampling
     let mut shell = application
         .launch_native_surface()
         .expect("the production native composition root launches");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell
             .present_frame(10, 1)
@@ -84,7 +85,7 @@ fn native_reduced_motion_admission_snaps_real_portal_entrance_and_stops_sampling
     let snapped = shell.inspect_motion_presentation_for_certification();
     assert_eq!(snapped.active_tracks(), 0);
     assert_eq!(snapped.last_tick(), Some(1));
-    assert_eq!(snapped.opacity(), Some(1.0));
+    assert_eq!(snapped.opacity_units(), Some(u16::MAX));
     assert!(snapped.hit_test_visible().unwrap_or(false));
 }
 

@@ -15,6 +15,7 @@ impl<Client: UiNativeEventLoopClient>
     for UiNativeEventLoopApplication<Client>
 {
     fn new_events(&mut self, event_loop: &ActiveEventLoop, _cause: winit::event::StartCause) {
+        self.restore_wait_before_observation_deadline(event_loop);
         self.advance_physical_signal_clock(event_loop);
         self.progress_due_presentation_retry(event_loop);
     }
@@ -74,12 +75,12 @@ impl<Client: UiNativeEventLoopClient>
             event_loop.set_control_flow(ControlFlow::Poll);
         }
         self.schedule_physical_signal_deadline(event_loop);
-        if !self.first_frame_presented {
-            return;
+        if self.first_frame_presented {
+            self.signal_native_observation_readiness(event_loop);
+            self.idle_wait_turns += 1;
+            self.first_frame_presented = false;
         }
-        self.signal_native_observation_readiness(event_loop);
-        self.idle_wait_turns += 1;
-        self.first_frame_presented = false;
+        self.close_observation_time_and_schedule(event_loop);
     }
 }
 

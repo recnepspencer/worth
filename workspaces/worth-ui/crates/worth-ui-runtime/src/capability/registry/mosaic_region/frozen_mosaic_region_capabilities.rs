@@ -98,6 +98,13 @@ impl FrozenMosaicRegionCapabilities {
     }
 }
 
+impl MosaicRegionKindDescriptor {
+    /// The complete region-kind basis shared with the frozen capability catalog.
+    pub(crate) fn digest_basis(&self) -> u64 {
+        fold_mosaic_region_descriptor(0xd46a_193f_70c5_8ab1, self)
+    }
+}
+
 fn fold_seam_paint_contract(accumulator: u64, contract: &super::MosaicSeamPaintContract) -> u64 {
     let with_regions = contract.regions().iter().fold(
         fold_bytes(accumulator, b"seam_regions"),

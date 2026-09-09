@@ -17,6 +17,9 @@ fn native_projection_rebind_returns_the_exact_fact_to_its_query_owner() {
     )
     .launch_native_surface()
     .expect("source-backed application should launch through the native lifecycle");
+    super::native_application_identity_trace_test_support::install_bound_surface_geometry(
+        &mut shell,
+    );
 
     let (pending, pending_completion) = initial.into_parts();
     let pending_receipt = published(

@@ -22,6 +22,7 @@ pub struct ComponentDescriptor {
     allocation_contracts:
         super::component_allocation_contract_state::ComponentAllocationContractState,
     static_paint_contract: Option<super::ComponentStaticPaintContract>,
+    surface_paint_order: Option<u32>,
     semantic_text_contract: Option<super::ComponentSemanticTextContract>,
     hit_test_contract: Option<super::ComponentHitTestContract>,
     portal_child_contract: Option<super::ComponentPortalChildContract>,
@@ -60,6 +61,7 @@ impl ComponentDescriptor {
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
             static_paint_contract: None,
+            surface_paint_order: None,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
@@ -88,6 +90,7 @@ impl ComponentDescriptor {
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
             static_paint_contract: None,
+            surface_paint_order: None,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
@@ -116,6 +119,7 @@ impl ComponentDescriptor {
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
             static_paint_contract: None,
+            surface_paint_order: None,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
@@ -197,6 +201,17 @@ impl ComponentDescriptor {
         self.allocation_contracts = self.allocation_contracts.record(allocation);
         self.static_paint_contract = Some(contract);
         self
+    }
+
+    /// Declares back-to-front order for this component's appearance surface and outline.
+    /// This is independent of bootstrap static paint and does not order interaction.
+    pub fn with_surface_paint_order(mut self, rank: u32) -> Self {
+        self.surface_paint_order = Some(rank);
+        self
+    }
+
+    pub const fn surface_paint_order(&self) -> Option<u32> {
+        self.surface_paint_order
     }
 
     pub fn with_semantic_text(mut self, contract: super::ComponentSemanticTextContract) -> Self {

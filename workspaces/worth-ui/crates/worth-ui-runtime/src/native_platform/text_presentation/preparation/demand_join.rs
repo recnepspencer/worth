@@ -1,6 +1,4 @@
-use worth_ui_host_contract::{
-    UiGlyphRunView, UiGlyphRunViewInput, UiMountedLogicalDamage, UiMountedSemanticTextMechanic,
-};
+use worth_ui_host_contract::{UiGlyphRunView, UiGlyphRunViewInput, UiMountedSemanticTextMechanic};
 use worth_ui_text::{
     derive_glyph_raster_demand, UiGlyphRasterDemandBatch, UiGlyphRasterDemandDenial,
     UiGlyphRasterDemandRequest, UiGlyphRasterLane, UiGlyphRasterPlacement, UiGlyphRasterScale,
@@ -20,7 +18,7 @@ pub(super) struct PreparedDemand {
 pub(super) struct MountedTextDemandJoin<'damage, 'work, Resolve> {
     pub(super) dpi: UiMountedEventTimeDpiAuthority,
     pub(super) lane: UiGlyphRasterLane,
-    pub(super) damage: &'damage [UiMountedLogicalDamage],
+    pub(super) selection: worth_ui_text::UiGlyphRasterDemandSelection<'damage>,
     pub(super) resolve: Resolve,
     pub(super) _layout: std::marker::PhantomData<&'work ()>,
 }
@@ -141,7 +139,7 @@ where
             layout,
             UiGlyphRasterDemandRequest {
                 paint_spans: mechanic.foregrounds(),
-                logical_damage: self.damage,
+                selection: self.selection,
                 scale,
                 placement: UiGlyphRasterPlacement::from_mounted_logical(
                     mechanic.origin_x(),

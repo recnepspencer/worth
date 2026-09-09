@@ -68,8 +68,64 @@ fn suspended_projection_catalog_reconciles_without_losing_stable_selection() {
         1
     );
     assert_eq!(
-        state.selected(owner).unwrap(),
-        &[keys[1]].into_iter().collect()
+        state
+            .selected(owner)
+            .unwrap()
+            .iter()
+            .copied()
+            .collect::<Vec<_>>(),
+        vec![keys[1]]
     );
     assert!(state.catalog_is_current(owner, incarnation(), 19));
+}
+
+#[test]
+fn suspension_reserves_one_revision_before_mutating_any_owner() {
+    let family = crate::runtime::UiApplicationItemKeyFamily::from_projection_input(
+        worth_ui_query_binding::UiProjectionInputSlot::for_certification(5),
+    );
+    let surface = worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let mut state = UiSelectionRuntimeState::new_session_restore_candidate();
+    let owners = [71, 72].map(|node| {
+        UiSelectionOwnerIdentity::new(
+            surface,
+            crate::graph::UiGraphNodeIdentity::new(node),
+            family,
+        )
+    });
+    for owner in owners {
+        state
+            .synchronize(
+                UiSelectionRegistration::new(
+                    owner,
+                    incarnation(),
+                    UiSelectionPolicy::Single,
+                    vec![],
+                    UiSelectionCatalogPosture::Complete,
+                )
+                .unwrap()
+                .with_catalog_revision(19),
+            )
+            .unwrap();
+    }
+    state.revision = u64::MAX;
+    let predecessor = state.appearance_owner_snapshot();
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        state.suspend_projection_catalogs();
+    }))
+    .is_err());
+    assert_eq!(state.appearance_owner_snapshot(), predecessor);
+    for owner in owners {
+        assert!(state.catalog_is_current(owner, incarnation(), 19));
+    }
+
+    state.revision = u64::MAX - 1;
+    assert_eq!(state.suspend_projection_catalogs(), 2);
+    assert_eq!(state.revision, u64::MAX);
+    let suspended = state.appearance_owner_snapshot();
+    assert_eq!(state.suspend_projection_catalogs(), 0);
+    assert_eq!(state.appearance_owner_snapshot(), suspended);
+    for owner in owners {
+        assert!(!state.catalog_is_current(owner, incarnation(), 19));
+    }
 }

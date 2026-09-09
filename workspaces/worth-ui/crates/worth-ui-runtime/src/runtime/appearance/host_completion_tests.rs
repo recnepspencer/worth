@@ -3,16 +3,16 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
     use worth_ui_host_contract::{
         UiAppearanceAllocationBounds, UiAppearanceBackdropExtent, UiAppearanceClip,
         UiAppearanceLogicalLength, UiAppearanceNormalizedLogicalRadii, UiAppearanceOutlineGeometry,
-        UiHostPointerIdentity, UiMountedAppearanceColor, UiMountedAppearanceOpacity,
-        UiMountedBackdropAppearanceAttribution, UiMountedBackdropCompletionInput,
-        UiMountedBackdropIdentity, UiMountedBackdropMechanic, UiMountedBackdropScope,
-        UiMountedFrameIdentity, UiMountedInstanceIdentity, UiMountedLayerProjection,
-        UiMountedLayerReference, UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
+        UiHostPointerIdentity, UiMountedAppearanceColor, UiMountedBackdropAppearanceAttribution,
+        UiMountedBackdropCompletionInput, UiMountedBackdropIdentity, UiMountedBackdropMechanic,
+        UiMountedBackdropScope, UiMountedFrameIdentity, UiMountedInstanceIdentity,
+        UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
         UiMountedOutlineAppearanceCompletionInput, UiMountedOutlineAppearanceMechanic,
         UiMountedOverlayOrderMechanic, UiMountedPointerAffordanceMechanic,
         UiMountedPortalSurfaceAppearanceMechanic, UiMountedPresentationAttemptIdentity,
-        UiMountedSurfaceAppearanceCompletionInput, UiMountedSurfaceAppearanceMechanic,
-        UiMountedSurfacePaint, UiMountedTextForegroundAppearanceCompletionInput,
+        UiMountedPresentationOpacity, UiMountedSurfaceAppearanceCompletionInput,
+        UiMountedSurfaceAppearanceMechanic, UiMountedSurfacePaint,
+        UiMountedTextForegroundAppearanceCompletionInput,
         UiMountedTextForegroundAppearanceMechanic, UiMountedTextPaintSpanIdentity,
         UiOverlayParticipantIdentity, UiOverlayPlacementReceipt, UiPointerAffordanceFamily,
         UiSemanticSurfaceIdentity,
@@ -37,10 +37,12 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
             node_receipt: node_issuer.receipt_for(portal),
             bounds: allocation,
             clip,
-            layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+            surface_paint_order: 0,
             radii,
+            border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
+            border_omissions: Box::new([]),
             paint: UiMountedSurfacePaint::Fill(color),
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection,
         },
     )
@@ -52,6 +54,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
     .unwrap();
     let _outline = UiMountedOutlineAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedOutlineAppearanceCompletionInput {
+            surface_paint_order: 0,
             issuer: node_issuer,
             node_receipt: node_issuer.receipt_for(portal),
             clip,
@@ -64,7 +67,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
             )
             .unwrap(),
             color,
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection,
         },
     )
@@ -73,9 +76,14 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
         UiMountedTextForegroundAppearanceCompletionInput {
             issuer: node_issuer,
             node_receipt: node_issuer.receipt_for(portal),
+            command: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text_from_correspondence(
+                portal,
+                0,
+                None,
+            ),
             paint_span: UiMountedTextPaintSpanIdentity::from_runtime_mounting([7; 32]),
             foreground: color,
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection,
         },
     )
@@ -98,7 +106,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
             extent: backdrop_extent,
             clip,
             background: color,
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             attribution: backdrop_attribution,
         },
     )

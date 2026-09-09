@@ -123,6 +123,7 @@ fn unavailable_layer_truth_and_stale_binding_deny_without_moving_predecessor() {
         .unwrap()
         .binding_generation();
     let predecessor = session.advance_mounted_identity_frame().unwrap();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let candidate = session
         .execute_framework_turn(|_| {})
         .expect("no mounted presentation lease is active")

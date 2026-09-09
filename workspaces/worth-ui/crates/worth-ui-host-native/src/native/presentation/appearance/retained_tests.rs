@@ -4,41 +4,13 @@ use super::command::{
 use super::damage::UiNativeAppearanceDamageRect;
 use super::geometry::UiNativeAppearanceScale;
 use super::mounted_mechanic_fixtures::{
-    allocation, backdrop_for_surface, filled_surface, pointer, text_foreground,
-    FilledSurfaceFixtureInput,
+    allocation, backdrop_for_surface, filled_surface, FilledSurfaceFixtureInput,
 };
 use super::retained::{UiNativeAppearanceRetained, UiNativeAppearanceRetainedDenial};
 use worth_ui_host_contract::{
     UiMountedAppearanceColor, UiMountedOverlayOrderMechanic, UiMountedPresentationAttemptIdentity,
-    UiOverlayParticipantIdentity, UiPointerAffordanceFamily, UiSemanticSurfaceIdentity,
+    UiOverlayParticipantIdentity, UiSemanticSurfaceIdentity,
 };
-
-#[test]
-fn cursor_and_text_rows_are_retained_as_distinct_non_surface_families() {
-    let scale = UiNativeAppearanceScale::qualified(1_000).unwrap();
-    let mut retained = UiNativeAppearanceRetained::new(scale);
-    let text_key = retained
-        .insert(
-            UiNativeAppearanceCommand::TextForeground(text_foreground(7)),
-            None,
-        )
-        .unwrap();
-    let pointer_key = retained
-        .insert(
-            UiNativeAppearanceCommand::PointerAffordance(pointer(
-                UiPointerAffordanceFamily::Activation,
-            )),
-            Some(text_key),
-        )
-        .unwrap();
-    assert_eq!(retained.ordered_keys().as_ref(), &[text_key, pointer_key]);
-    assert!(retained
-        .command(pointer_key)
-        .unwrap()
-        .damage_rect(scale)
-        .unwrap()
-        .is_none());
-}
 
 #[test]
 fn retained_replace_remove_and_order_edit_preserve_exact_damage_events() {
@@ -88,6 +60,66 @@ fn retained_replay_and_order_edits_reject_unusable_keys_and_empty_damage() {
             bottom: 2,
         }),
         Err(UiNativeAppearanceRetainedDenial::EmptyDamage)
+    );
+}
+
+#[test]
+fn retained_move_keeps_old_and_new_coverage_without_damaging_the_gap() {
+    use super::mounted_mechanic_fixtures::{mounted_backdrop, MountedBackdropFixtureInput};
+    use worth_ui_host_contract::{
+        UiAppearanceBackdropExtent, UiAppearanceClip, UiMountedPresentationOpacity,
+    };
+    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let command = |x| {
+        UiNativeAppearanceCommand::Backdrop(mounted_backdrop(MountedBackdropFixtureInput {
+            semantic_surface: surface,
+            ordinal: 0,
+            extent: UiAppearanceBackdropExtent::new(x, 0, 10_000, 10_000).unwrap(),
+            clip: UiAppearanceClip::new(x, 0, 10_000, 10_000).unwrap(),
+            background: UiMountedAppearanceColor::from_straight_srgba([20, 40, 80, 255]),
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
+        }))
+    };
+    let mut retained =
+        UiNativeAppearanceRetained::new(UiNativeAppearanceScale::qualified(1_000).unwrap());
+    let key = retained.insert(command(0), None).unwrap();
+    retained.take_damage();
+    assert_eq!(retained.replace(command(30_000)).unwrap(), key);
+    assert_eq!(
+        retained.take_damage().as_ref(),
+        &[
+            UiNativeAppearanceDamageRect {
+                left: 0,
+                top: 0,
+                right: 10,
+                bottom: 10
+            },
+            UiNativeAppearanceDamageRect {
+                left: 30,
+                top: 0,
+                right: 40,
+                bottom: 10
+            },
+        ]
+    );
+    assert!(retained
+        .replay_for_damage(UiNativeAppearanceDamageRect {
+            left: 15,
+            top: 0,
+            right: 25,
+            bottom: 10,
+        })
+        .unwrap()
+        .is_empty());
+    retained.remove(key).unwrap();
+    assert_eq!(
+        retained.take_damage().as_ref(),
+        &[UiNativeAppearanceDamageRect {
+            left: 30,
+            top: 0,
+            right: 40,
+            bottom: 10
+        },]
     );
 }
 

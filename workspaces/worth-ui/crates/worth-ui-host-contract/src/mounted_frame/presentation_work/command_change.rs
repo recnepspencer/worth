@@ -53,6 +53,18 @@ impl UiMountedPaintCommandChange {
 
 impl UiMountedPaintCommandIdentity {
     #[doc(hidden)]
+    pub fn filled_rect_from_correspondence(
+        mounted_instance: crate::UiMountedInstanceIdentity,
+    ) -> Self {
+        Self {
+            mounted_instance,
+            family: UiMountedPaintCommandFamily::FilledRect,
+            semantic_slot: 0,
+            collection_row: None,
+        }
+    }
+
+    #[doc(hidden)]
     pub fn semantic_text_from_correspondence(
         mounted_instance: crate::UiMountedInstanceIdentity,
         semantic_slot: u16,
@@ -68,12 +80,7 @@ impl UiMountedPaintCommandIdentity {
 
     #[doc(hidden)]
     pub fn filled_rect(mechanic: &crate::UiMountedFilledRectMechanic) -> Self {
-        Self {
-            mounted_instance: mechanic.mounted_instance(),
-            family: UiMountedPaintCommandFamily::FilledRect,
-            semantic_slot: 0,
-            collection_row: None,
-        }
+        Self::filled_rect_from_correspondence(mechanic.mounted_instance())
     }
 
     #[doc(hidden)]

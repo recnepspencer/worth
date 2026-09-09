@@ -120,6 +120,7 @@ fn resolves_region_extent_and_optional_motion_without_host_work() {
         box_at(0.0, 0.0, 800.0, 600.0),
         [UiOverlayRegionExtent::new(
             region,
+            runtime_portal.owner().mounted_instance_identity(),
             box_at(10.0, 20.0, 300.0, 200.0),
         )],
     );

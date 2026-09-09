@@ -36,6 +36,7 @@ pub struct UiMountCostReport {
     replaced_batch_bytes: u64,
     surface_instance_pairs: u64,
     changed_binding_generations: u64,
+    appearance_motion_commands_visited: u64,
     named: UiMountNamedCounters,
     adapter: UiHostPresentationCostReport,
 }
@@ -60,6 +61,7 @@ impl UiMountStageCounters {
                 replaced_batch_bytes: 0,
                 surface_instance_pairs: 0,
                 changed_binding_generations: 0,
+                appearance_motion_commands_visited: 0,
                 named: UiMountNamedCounters::default(),
                 adapter: UiHostPresentationCostReport::default(),
             },
@@ -179,6 +181,15 @@ impl UiMountCostReport {
 
     pub const fn changed_binding_generations(self) -> u64 {
         self.changed_binding_generations
+    }
+
+    pub const fn appearance_motion_commands_visited(self) -> u64 {
+        self.appearance_motion_commands_visited
+    }
+
+    pub(crate) fn record_appearance_motion_commands_visited(&mut self, count: usize) {
+        self.appearance_motion_commands_visited =
+            u64::try_from(count).expect("mounted command count fits the u64 cost surface");
     }
 
     pub const fn adapter(self) -> UiHostPresentationCostReport {

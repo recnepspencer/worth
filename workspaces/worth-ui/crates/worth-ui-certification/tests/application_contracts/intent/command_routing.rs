@@ -49,6 +49,7 @@ fn validated_host_shortcut_reaches_the_existing_managed_intent_lifecycle() {
     let mut shell = application
         .launch_native_surface()
         .expect("the native command world launches through the production composition root");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     let frame = shell
         .present_frame(10, 1)
         .unwrap_or_else(|_| panic!("native frame executes"));
@@ -216,6 +217,7 @@ fn launch_native_command_shell(
     let mut shell = application
         .launch_native_surface()
         .expect("native command policy fixture launches");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell
             .present_frame(10, 1)

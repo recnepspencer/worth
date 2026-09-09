@@ -24,25 +24,31 @@ fn finish(
     lookup: super::cell_lookup::UiAppearanceCellLookup,
     theme: &super::super::super::theme::UiThemeResolutionView,
 ) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionFailure> {
-    let slot = lookup.result.slot().ok_or_else(|| {
-        super::UiAppearanceResolutionFailure::without_theme_work(
-            super::UiAppearanceResolutionDenial::MissingDecisionCell(aspect),
-        )
-    })?;
-    let resolved = theme
-        .resolve(slot, lookup.result.value_kind())
-        .map_err(|failure| {
-            super::UiAppearanceResolutionFailure::with_theme_work(
-                super::UiAppearanceResolutionDenial::ThemeResolution(failure.denial()),
-                failure.work().theme_slots_compared(),
+    let (value, provenance, theme_slots_compared) = match lookup.result.value() {
+        worth_ui_dsl::UiAppearanceDecisionValue::ThemeSlot(slot) => {
+            let resolved = theme
+                .resolve(slot, lookup.result.value_kind())
+                .map_err(|failure| {
+                    super::UiAppearanceResolutionFailure::with_theme_work(
+                        super::UiAppearanceResolutionDenial::ThemeResolution(failure.denial()),
+                        failure.work().theme_slots_compared(),
+                    )
+                })?;
+            (
+                resolved.value(),
+                super::provenance::from_theme(&resolved, theme),
+                resolved.work().theme_slots_compared(),
             )
-        })?;
+        }
+        worth_ui_dsl::UiAppearanceDecisionValue::Literal(value) => {
+            (*value, super::super::UiAppearanceProvenance::Literal, 0)
+        }
+    };
     let support = super::support::for_aspect(aspect, theme);
-    let provenance = super::provenance::from_theme(&resolved, theme);
     let digest = super::provenance::semantic_digest(
         aspect,
         lookup.classes.as_ref(),
-        resolved.value(),
+        value,
         &provenance,
         support,
     );
@@ -50,11 +56,11 @@ fn finish(
         aspect,
         lookup.classes,
         lookup.cell_ordinal,
-        resolved.value(),
+        value,
         provenance,
         support,
         digest,
         lookup.visited,
-        resolved.work().theme_slots_compared(),
+        theme_slots_compared,
     ))
 }

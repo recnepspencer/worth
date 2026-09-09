@@ -8,7 +8,7 @@
 
 use worth_ui_host_contract::{
     UiGlyphRasterDemandBatchView, UiGlyphRasterDemandBatchViewInput, UiGlyphRasterDemandIdentity,
-    UiGlyphRasterDemandRecord, UiGlyphRasterLane, UiMountedLogicalDamage,
+    UiGlyphRasterDemandRecord, UiGlyphRasterDemandScope, UiGlyphRasterLane, UiMountedLogicalDamage,
     UiMountedTextForegroundSpan, UiQualifiedTextLayoutIdentity, UiTextScaleGeneration,
 };
 
@@ -32,6 +32,7 @@ struct DemandBatchAdmission {
     scale: UiGlyphRasterScale,
     placement: UiGlyphRasterPlacement,
     lane: UiGlyphRasterLane,
+    scope: UiGlyphRasterDemandScope,
     records: Vec<UiGlyphRasterDemandRecord>,
     provenance: Vec<UiGlyphRasterDemandProvenance>,
     lane_cost: UiGlyphRasterLaneCost,
@@ -43,10 +44,26 @@ pub struct UiGlyphRasterScale {
     text_scale: UiTextScaleGeneration,
 }
 
+/// Select complete layout coverage or only glyphs intersecting mounted damage.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum UiGlyphRasterDemandSelection<'a> {
+    CompleteLayout,
+    LogicalDamage(&'a [UiMountedLogicalDamage]),
+}
+
+impl UiGlyphRasterDemandSelection<'_> {
+    pub const fn scope(self) -> UiGlyphRasterDemandScope {
+        match self {
+            Self::CompleteLayout => UiGlyphRasterDemandScope::CompleteLayout,
+            Self::LogicalDamage(_) => UiGlyphRasterDemandScope::DamageFiltered,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct UiGlyphRasterDemandRequest<'a> {
     pub paint_spans: &'a [UiMountedTextForegroundSpan],
-    pub logical_damage: &'a [UiMountedLogicalDamage],
+    pub selection: UiGlyphRasterDemandSelection<'a>,
     pub scale: UiGlyphRasterScale,
     pub placement: UiGlyphRasterPlacement,
     pub lane: UiGlyphRasterLane,
@@ -82,6 +99,7 @@ pub struct UiGlyphRasterDemandBatch {
     scale: UiGlyphRasterScale,
     placement: UiGlyphRasterPlacement,
     lane: UiGlyphRasterLane,
+    scope: UiGlyphRasterDemandScope,
     records: Box<[UiGlyphRasterDemandRecord]>,
     provenance: Box<[UiGlyphRasterDemandProvenance]>,
     cost: super::UiGlyphRasterCost,
@@ -116,10 +134,11 @@ impl UiGlyphRasterDemandBatch {
         scale: UiGlyphRasterScale,
         placement: UiGlyphRasterPlacement,
         lane: UiGlyphRasterLane,
+        scope: UiGlyphRasterDemandScope,
         records: impl IntoIterator<Item = UiGlyphRasterDemandRecord>,
     ) -> Result<Self, UiGlyphRasterDemandDenial> {
         let records: Vec<_> = records.into_iter().collect();
-        let expected = demand_identity(layout, scale, placement, lane, &records);
+        let expected = demand_identity(layout, scale, placement, lane, scope, &records);
         if identity != expected {
             return Err(UiGlyphRasterDemandDenial::DemandIdentityMismatch);
         }
@@ -129,6 +148,7 @@ impl UiGlyphRasterDemandBatch {
             scale,
             placement,
             lane,
+            scope,
             records,
             provenance: Vec::new(),
             lane_cost: Default::default(),
@@ -142,6 +162,7 @@ impl UiGlyphRasterDemandBatch {
             scale,
             placement,
             lane,
+            scope,
             records,
             provenance,
             lane_cost,
@@ -171,6 +192,7 @@ impl UiGlyphRasterDemandBatch {
             scale,
             placement,
             lane,
+            scope,
             records: records.into_boxed_slice(),
             provenance: provenance.into_boxed_slice(),
             cost,
@@ -215,6 +237,10 @@ impl UiGlyphRasterDemandBatch {
         self.lane
     }
 
+    pub const fn scope(&self) -> UiGlyphRasterDemandScope {
+        self.scope
+    }
+
     pub fn records(&self) -> &[UiGlyphRasterDemandRecord] {
         &self.records
     }
@@ -234,6 +260,7 @@ impl UiGlyphRasterDemandBatch {
             dpi_milli: self.scale.dpi_milli,
             text_scale: self.scale.text_scale,
             lane: self.lane,
+            scope: self.scope,
             records: &self.records,
         })
         .expect("admitted demand preserves a nonzero DPI")

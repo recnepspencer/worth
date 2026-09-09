@@ -93,6 +93,12 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
         "the proof requires a nonzero predecessor offset beyond the clip-relative target: expected={expected_reveal_offset}, geometry={:?}",
         scrolled.owner_geometry(),
     );
+    let target_receipt = activation.target().node_receipt();
+    world
+        .interaction
+        .session
+        .bind_selection_item(target_receipt, target_receipt, option.clone())
+        .expect("the declared single-item owner binds its current option");
     let selection = world
         .interaction
         .session

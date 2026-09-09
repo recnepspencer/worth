@@ -2,12 +2,12 @@ pub(crate) fn from_theme(
     resolved: &super::super::super::theme::UiResolvedThemeSlot,
     theme: &super::super::super::theme::UiThemeResolutionView,
 ) -> super::super::UiAppearanceProvenance {
-    super::super::UiAppearanceProvenance::new(
-        resolved.requested().clone(),
-        resolved.terminal().clone(),
-        format!("theme-definition:{}", theme.definition_identity()),
-        resolved.aliases_compared(),
-    )
+    super::super::UiAppearanceProvenance::ThemeSlot {
+        selected_slot: resolved.requested().clone(),
+        terminal_slot: resolved.terminal().clone(),
+        source: format!("theme-definition:{}", theme.definition_identity()).into(),
+        aliases_compared: resolved.aliases_compared(),
+    }
 }
 
 pub(crate) fn semantic_digest(
@@ -23,16 +23,28 @@ pub(crate) fn semantic_digest(
         digest = fold(digest, *class as u64 + 1);
     }
     digest = fold_value(digest, value);
-    for byte in provenance.selected_slot().as_str().as_bytes() {
-        digest = fold(digest, u64::from(*byte));
+    match provenance {
+        super::super::UiAppearanceProvenance::ThemeSlot {
+            selected_slot,
+            terminal_slot,
+            source,
+            aliases_compared,
+        } => {
+            digest = fold(digest, 1);
+            for part in [
+                selected_slot.as_str(),
+                terminal_slot.as_str(),
+                source.as_ref(),
+            ] {
+                digest = fold(digest, part.len() as u64);
+                for byte in part.as_bytes() {
+                    digest = fold(digest, u64::from(*byte));
+                }
+            }
+            digest = fold(digest, u64::from(*aliases_compared));
+        }
+        super::super::UiAppearanceProvenance::Literal => digest = fold(digest, 2),
     }
-    for byte in provenance.terminal_slot().as_str().as_bytes() {
-        digest = fold(digest, u64::from(*byte));
-    }
-    for byte in provenance.source().as_bytes() {
-        digest = fold(digest, u64::from(*byte));
-    }
-    digest = fold(digest, provenance.aliases_compared().into());
     digest = fold(
         digest,
         match support {
@@ -71,5 +83,36 @@ fn fold_value(mut digest: u64, value: worth_ui_dsl::UiThemeValue) -> u64 {
             digest = fold_value(digest, UiThemeValue::SolidStroke(outline.stroke()));
             fold(digest, outline.offset().subpixels() as u64)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::super::{UiAppearanceProvenance, UiAppearanceSupportPosture};
+    use super::semantic_digest;
+
+    #[test]
+    fn equal_literal_and_theme_values_keep_distinct_provenance() {
+        let value = worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
+            16, 32, 48, 255,
+        ]));
+        let literal = UiAppearanceProvenance::Literal;
+        let slot = UiAppearanceProvenance::ThemeSlot {
+            selected_slot: worth_ui_dsl::UiThemeSlotIdentity::new("surface.background").unwrap(),
+            terminal_slot: worth_ui_dsl::UiThemeSlotIdentity::new("surface.background").unwrap(),
+            source: "theme-definition:test".into(),
+            aliases_compared: 0,
+        };
+        let digest = |provenance| {
+            semantic_digest(
+                worth_ui_dsl::UiAppearanceAspect::Background,
+                &[],
+                value,
+                provenance,
+                UiAppearanceSupportPosture::Supported,
+            )
+        };
+        assert_ne!(digest(&literal), digest(&slot));
+        assert_eq!(digest(&literal), digest(&literal.clone()));
     }
 }

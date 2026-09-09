@@ -123,6 +123,7 @@ fn prepare(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
     request: UiMountedFrameRequest,
 ) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     session
         .execute_framework_turn(|_| {})
         .unwrap()
@@ -140,7 +141,28 @@ fn publish(
     match session.present_prepared_mounted_frame(prepared, UiPresentationDeadline::at_tick(tick), 0)
     {
         UiMountedFrameOutcome::Published(publication) => publication,
-        _ => panic!("reconstruction journey did not publish"),
+        UiMountedFrameOutcome::Unchanged(_) => panic!("reconstruction journey was unchanged"),
+        UiMountedFrameOutcome::Reconciled(_) => panic!("reconstruction journey reconciled"),
+        UiMountedFrameOutcome::RejectedBeforeEffects(rejected) => {
+            panic!(
+                "reconstruction journey was rejected before effects: {:?}",
+                (tick, rejected.rejections())
+            )
+        }
+        UiMountedFrameOutcome::InFlight(_) => panic!("reconstruction journey remained in flight"),
+        UiMountedFrameOutcome::PresentationIndeterminate(_) => {
+            panic!("reconstruction journey became indeterminate")
+        }
+        UiMountedFrameOutcome::Superseded(_) => panic!("reconstruction journey was superseded"),
+        UiMountedFrameOutcome::RetentionDenied(_) => {
+            panic!("reconstruction journey was denied by retention")
+        }
+        UiMountedFrameOutcome::AdmissionDenied(_) => {
+            panic!("reconstruction journey was denied at admission")
+        }
+        UiMountedFrameOutcome::CompletionDenied(_) => {
+            panic!("reconstruction journey was denied at completion")
+        }
     }
 }
 

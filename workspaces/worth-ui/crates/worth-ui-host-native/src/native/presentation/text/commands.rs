@@ -4,15 +4,20 @@
 //! together. Native code never reconstructs placement from a raster key or an
 //! original byte range.
 
-use worth_ui_host_contract::{UiGlyphRasterSource, UiGlyphRunView};
+use worth_ui_host_contract::{UiGlyphRasterExtent, UiGlyphRasterSource, UiGlyphRunView};
 
 use crate::native::text_atlas::{
     UiNativeGpuAtlasKind, UiNativeTextAtlas, UiNativeTextAtlasEntryView,
 };
 
+#[cfg(test)]
+#[path = "command_geometry_tests.rs"]
+mod command_geometry_tests;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiNativeGlyphCommand {
     pub(crate) run: UiGlyphRunView,
+    pub(crate) foreground: worth_ui_host_contract::UiMountedRgba8,
     pub(crate) atlas_kind: UiNativeGpuAtlasKind,
     pub(crate) atlas_page: u32,
     pub(crate) target: [f32; 4],
@@ -64,21 +69,16 @@ fn command_for_run(
     entry: UiNativeTextAtlasEntryView,
     target_extent: [u32; 2],
 ) -> Result<Option<UiNativeGlyphCommand>, UiNativeGlyphCommandDenial> {
-    let dpi = i128::from(run.raster_key().dpi_milli());
-    let origin_x = scaled_over_64(run.origin_x_millipoints(), dpi)?;
-    let origin_y = scaled_over_64(run.origin_y_millipoints(), dpi)?;
-    let left = origin_x
-        .checked_add(i128::from(entry.bearing.x_over_64()))
+    let extent = UiGlyphRasterExtent::new(entry.extent[0], entry.extent[1])
         .ok_or(UiNativeGlyphCommandDenial::GeometryOverflow)?;
-    let top = origin_y
-        .checked_sub(i128::from(entry.bearing.y_over_64()))
+    let raw = entry
+        .bearing
+        .positioned_bounds(
+            extent,
+            [run.origin_x_millipoints(), run.origin_y_millipoints()],
+            run.raster_key().dpi_milli(),
+        )
         .ok_or(UiNativeGlyphCommandDenial::GeometryOverflow)?;
-    let raw = [
-        over_64_to_f32(left)?,
-        over_64_to_f32(top)?,
-        entry.extent[0] as f32,
-        entry.extent[1] as f32,
-    ];
     let clip = physical_clip(run, target_extent)?;
     let Some(target) = intersect(raw, clip) else {
         return Ok(None);
@@ -98,28 +98,13 @@ fn command_for_run(
     ];
     Ok(Some(UiNativeGlyphCommand {
         run,
+        foreground: run.foreground(),
         atlas_kind: entry.kind,
         atlas_page: entry.page,
         target,
         texture_uv,
         opacity: 1.0,
     }))
-}
-
-fn scaled_over_64(value: i64, dpi: i128) -> Result<i128, UiNativeGlyphCommandDenial> {
-    i128::from(value)
-        .checked_mul(dpi)
-        .and_then(|value| value.checked_mul(64))
-        .map(|value| value.div_euclid(1_000_000))
-        .ok_or(UiNativeGlyphCommandDenial::GeometryOverflow)
-}
-
-fn over_64_to_f32(value: i128) -> Result<f32, UiNativeGlyphCommandDenial> {
-    let value = value as f64 / 64.0;
-    if !value.is_finite() || value.abs() > f64::from(f32::MAX) {
-        return Err(UiNativeGlyphCommandDenial::GeometryOverflow);
-    }
-    Ok(value as f32)
 }
 
 fn physical_clip(
@@ -200,7 +185,7 @@ pub(crate) fn glyph_vertices(
     let [u, v, uv_width, uv_height] = command.texture_uv;
     let far_u = u + uv_width;
     let far_v = v + uv_height;
-    let foreground = command.run.foreground().channels();
+    let foreground = command.foreground.channels();
     let color = [
         linear_channel(foreground[0]),
         linear_channel(foreground[1]),

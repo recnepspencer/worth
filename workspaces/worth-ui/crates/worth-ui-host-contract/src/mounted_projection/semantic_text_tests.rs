@@ -17,6 +17,9 @@ use crate::{
     WorthUiHostCapabilityObservationGeneration,
 };
 
+#[path = "semantic_text/frame_affinity_tests.rs"]
+mod frame_affinity_tests;
+
 #[test]
 fn completion_preserves_runtime_owned_semantic_text_meaning() {
     let input = fixture();
@@ -122,6 +125,45 @@ fn digest_changes_with_content_context_and_placement() {
 }
 
 #[test]
+fn retained_text_equivalence_excludes_lineage_but_rejects_changed_paint_inputs() {
+    let baseline = fixture();
+    let row = complete(baseline.clone());
+    let advanced = with(&baseline, |input| {
+        input.content_generation = UiMountedContentGeneration::mint_unbound().unwrap();
+        input.frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+        input.node_receipt = UiMountedNodeReceiptIssuer::mint_for(input.frame)
+            .unwrap()
+            .receipt_for(input.mounted_instance);
+    });
+    assert!(row.same_retained_paint_meaning(&complete(advanced)));
+
+    let variants = [
+        with(&baseline, |input| input.origin_y = 41.0),
+        with(&baseline, |input| {
+            input.bounds = canonical_box(31.0, 32.0, 160.0, 96.0)
+        }),
+        with(&baseline, |input| {
+            input.layout = inert_layout_with_identity("ONLINE", 8)
+        }),
+        with(&baseline, |input| input.layer_semantic_order = 8),
+        with(&baseline, |input| {
+            input.capability_generation = WorthUiHostCapabilityObservationGeneration::new(8)
+        }),
+        with(&baseline, |input| input.capability_profile_digest = 10),
+        with(&baseline, |input| {
+            input.foregrounds = Arc::from([UiMountedTextForegroundSpan::from_runtime_mounting(
+                crate::UiTextOriginalRange::from_text_mechanics(0, 6).unwrap(),
+                UiMountedRgba8::new(254, 255, 255, 255),
+                UiMountedTextPaintSpanIdentity::from_runtime_mounting([7; 32]),
+            )])
+        }),
+    ];
+    for variant in variants {
+        assert!(!row.same_retained_paint_meaning(&complete(variant)));
+    }
+}
+
+#[test]
 fn collection_slot_and_row_correlation_are_atomic() {
     let mut missing_identity = fixture();
     missing_identity.slot = UiSemanticTextSlot::CollectionValue {
@@ -193,7 +235,7 @@ fn row_and_table_byte_caps_are_enforced() {
     );
 }
 
-fn fixture() -> UiMountedSemanticTextCompletionInput<'static> {
+pub(in crate::mounted_projection) fn fixture() -> UiMountedSemanticTextCompletionInput<'static> {
     let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let mounted_instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
     let bounds = canonical_box(32.0, 32.0, 160.0, 96.0);
@@ -257,6 +299,10 @@ fn foreground_spans_must_match_the_canonical_layout_itemization() {
 }
 
 fn inert_layout(source: &str) -> UiQualifiedTextLayoutView<'static> {
+    inert_layout_with_identity(source, 7)
+}
+
+fn inert_layout_with_identity(source: &str, identity: u8) -> UiQualifiedTextLayoutView<'static> {
     let source: &'static str = Box::leak(source.to_owned().into_boxed_str());
     let styles: &'static [UiQualifiedTextStyleRecord] = if source.is_empty() {
         &[]
@@ -279,7 +325,7 @@ fn inert_layout(source: &str) -> UiQualifiedTextLayoutView<'static> {
     };
     UiQualifiedTextLayoutView::from_text_mechanics(UiQualifiedTextLayoutViewInput {
         request_identity: crate::UiQualifiedTextLayoutRequestIdentity::from_text_mechanics([6; 32]),
-        identity: UiQualifiedTextLayoutIdentity::from_text_mechanics([7; 32]),
+        identity: UiQualifiedTextLayoutIdentity::from_text_mechanics([identity; 32]),
         source,
         graphemes: &[],
         word_boundaries: &[],

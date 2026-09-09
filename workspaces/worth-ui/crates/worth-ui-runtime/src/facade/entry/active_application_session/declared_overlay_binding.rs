@@ -53,6 +53,16 @@ impl WorthUiActiveApplicationSession {
         )
     }
 
+    pub(crate) fn authored_portal_policy(
+        &self,
+        declaration: worth_ui_dsl::UiPortalDeclarationId,
+    ) -> Option<crate::declaration::UiPortalPolicy> {
+        self.application
+            .authored_overlay_material()
+            .portal_anchor_binding(declaration)
+            .map(|binding| binding.policy())
+    }
+
     pub(crate) fn commit_authored_overlay_binding(
         &mut self,
         commit: crate::runtime::portal::UiPortalOverlayBindingCommit,

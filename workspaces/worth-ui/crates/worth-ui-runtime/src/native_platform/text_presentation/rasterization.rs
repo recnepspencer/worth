@@ -50,6 +50,8 @@ impl UiNativeTextRasterWorkReport {
 }
 
 struct UiNativeTextRasterSource<'layout> {
+    command: worth_ui_host_contract::UiMountedPaintCommandIdentity,
+    glyph_runs: &'layout [worth_ui_host_contract::UiGlyphRunView],
     layout: &'layout worth_ui_text::UiQualifiedTextLayout,
     demand: &'layout worth_ui_text::UiGlyphRasterDemandBatch,
 }
@@ -68,20 +70,70 @@ impl<'layout, 'cache> UiNativeTextMissRasterizer<'layout, 'cache> {
         ) -> Option<&'layout worth_ui_text::UiQualifiedTextLayout>,
         cache: &'cache mut worth_ui_text::UiGlyphRasterCache,
     ) -> Option<Self> {
+        if prepared.demand_batches().len() != prepared.pin_commands().len() {
+            return None;
+        }
+        let mut remaining_runs = prepared.glyph_runs();
         let sources = prepared
             .demand_batches()
             .iter()
-            .map(|demand| {
+            .zip(prepared.pin_commands())
+            .map(|(demand, &command)| {
+                let count = demand.records().len();
+                let glyph_runs = remaining_runs.get(..count)?;
+                remaining_runs = remaining_runs.get(count..)?;
+                if glyph_runs.iter().any(|run| run.mechanic() != command) {
+                    return None;
+                }
                 Some(UiNativeTextRasterSource {
+                    command,
+                    glyph_runs,
                     layout: resolve(demand.layout_identity())?,
                     demand,
                 })
             })
             .collect::<Option<Vec<_>>>()?;
+        if !remaining_runs.is_empty() {
+            return None;
+        }
         Some(Self {
             sources: sources.into_boxed_slice(),
             report: UiNativeTextRasterWorkReport::default(),
             cache,
+        })
+    }
+
+    pub(crate) fn validate_complete_demand(
+        &self,
+        command: worth_ui_host_contract::UiMountedPaintCommandIdentity,
+        demand: worth_ui_host_contract::UiGlyphRasterDemandBatchView<'_>,
+        glyph_runs: &[worth_ui_host_contract::UiGlyphRunView],
+    ) -> Result<
+        worth_ui_host_contract::UiMountedTextDemandValidationCost,
+        worth_ui_host_contract::UiMountedTextDemandValidationDenial,
+    > {
+        use worth_ui_host_contract::{
+            UiGlyphRasterDemandScope, UiMountedTextDemandValidationDenial as Denial,
+        };
+        let (index, source) = self
+            .sources
+            .iter()
+            .enumerate()
+            .find(|(_, source)| source.command == command)
+            .ok_or(Denial::MissingCommand)?;
+        if source.demand.scope() != UiGlyphRasterDemandScope::CompleteLayout {
+            return Err(Denial::IncompleteDemand);
+        }
+        if source.demand.as_view() != demand {
+            return Err(Denial::DemandMismatch);
+        }
+        if source.glyph_runs != glyph_runs {
+            return Err(Denial::GlyphRunMismatch);
+        }
+        Ok(worth_ui_host_contract::UiMountedTextDemandValidationCost {
+            demand_sources_checked: index + 1,
+            demand_records_checked: source.demand.records().len(),
+            glyph_runs_checked: source.glyph_runs.len(),
         })
     }
 

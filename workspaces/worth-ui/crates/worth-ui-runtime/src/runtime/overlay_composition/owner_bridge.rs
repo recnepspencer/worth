@@ -12,16 +12,57 @@ use crate::runtime::allocation_receipt::UiMountedOverlayExtentOwner;
 use crate::runtime::motion::UiMotionRuntimeState;
 use crate::runtime::portal::{
     UiPortalOverlayBindingDenial, UiPortalOverlayBindingOwner, UiPortalRuntimeState,
+    UiPortalStackSnapshot,
 };
 use crate::runtime::presentation_state::UiApplicationPresentationOwnerExport;
 
 pub(crate) struct UiOverlayOwnerSources<'a> {
     pub(super) generation: &'a WorthUiPreparedApplicationGenerationIdentity,
-    pub(super) portal: &'a UiPortalRuntimeState,
+    pub(super) portal: UiPortalStackSnapshot,
     pub(super) extent: &'a UiMountedOverlayExtentOwner,
     pub(super) presentation: &'a UiApplicationPresentationOwnerExport,
     pub(super) bindings: &'a UiPortalOverlayBindingOwner,
-    pub(super) motion: &'a UiMotionRuntimeState,
+    pub(super) motion: Option<crate::runtime::motion::UiMotionOverlayOwnerExport>,
+}
+
+impl<'a> UiOverlayOwnerSources<'a> {
+    pub(crate) fn new(
+        generation: &'a WorthUiPreparedApplicationGenerationIdentity,
+        portal: Option<&'a UiPortalRuntimeState>,
+        extent: &'a UiMountedOverlayExtentOwner,
+        presentation: &'a UiApplicationPresentationOwnerExport,
+        bindings: &'a UiPortalOverlayBindingOwner,
+        motion: Option<&'a UiMotionRuntimeState>,
+    ) -> Self {
+        Self {
+            generation,
+            portal: portal
+                .map(UiPortalRuntimeState::stack_snapshot)
+                .unwrap_or_else(UiPortalStackSnapshot::empty),
+            extent,
+            presentation,
+            bindings,
+            motion: motion.map(UiMotionRuntimeState::overlay_owner_export),
+        }
+    }
+
+    pub(crate) const fn from_exports(
+        generation: &'a WorthUiPreparedApplicationGenerationIdentity,
+        portal: UiPortalStackSnapshot,
+        extent: &'a UiMountedOverlayExtentOwner,
+        presentation: &'a UiApplicationPresentationOwnerExport,
+        bindings: &'a UiPortalOverlayBindingOwner,
+        motion: Option<crate::runtime::motion::UiMotionOverlayOwnerExport>,
+    ) -> Self {
+        Self {
+            generation,
+            portal,
+            extent,
+            presentation,
+            bindings,
+            motion,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -95,20 +136,17 @@ impl UiOverlayCompositionOwnerBridge {
 fn assemble_owner_exports(
     sources: UiOverlayOwnerSources<'_>,
 ) -> Result<UiOverlayOwnerExportVector, UiOverlayOwnerBridgeDenial> {
-    let portal_snapshot = sources.portal.stack_snapshot();
     let bindings = sources
         .bindings
-        .export(&portal_snapshot)
+        .export(&sources.portal)
         .map_err(UiOverlayOwnerBridgeDenial::PortalBindings)?;
-    let motion = sources.motion.overlay_owner_export();
-    let motion = (!motion.rows().is_empty()).then_some(motion);
     UiOverlayOwnerExportVector::from_authoritative(
         sources.generation.clone(),
-        UiOverlayPortalOwnerExport::from_snapshot(portal_snapshot),
+        UiOverlayPortalOwnerExport::from_snapshot(sources.portal),
         sources.extent.export(),
         sources.presentation,
         &bindings,
-        motion.as_ref(),
+        sources.motion.as_ref(),
     )
     .map_err(UiOverlayOwnerBridgeDenial::OwnerExports)
 }

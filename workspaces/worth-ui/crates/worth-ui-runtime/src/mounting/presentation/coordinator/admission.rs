@@ -137,12 +137,26 @@ impl UiMountedPresentationCoordinator {
                 ));
             }
         };
+        let candidates = match super::UiPreparedFrameCandidates::prepare(
+            frame.frame(),
+            &self.presentation_states,
+            &self.reconstruction_bindings,
+        ) {
+            Ok(candidates) => candidates,
+            Err(denial) => {
+                return Err(rejected(
+                    frame,
+                    UiMountedPresentationAdmissionDenial::CandidatePreparation(denial),
+                ))
+            }
+        };
         self.active.borrow_mut().insert(attempt);
         Ok(UiMountedPresentationAdmission::new(
             frame,
             attempt,
             deadline,
             Rc::clone(&self.active),
+            candidates,
         ))
     }
 

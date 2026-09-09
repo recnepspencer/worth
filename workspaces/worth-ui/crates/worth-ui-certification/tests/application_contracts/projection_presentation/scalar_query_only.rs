@@ -95,6 +95,7 @@ fn real_query_scalar_publishes_same_generation_semantic_text_to_headless_host() 
         plan.basis().candidate_generation() == &active_generation,
         "Query-only planning must retain the post-allocation application generation"
     );
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(313))
         .expect("same-generation content rebind prepares");

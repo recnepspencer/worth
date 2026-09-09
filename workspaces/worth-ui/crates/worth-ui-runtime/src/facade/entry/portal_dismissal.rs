@@ -98,24 +98,25 @@ impl WorthUiActiveApplicationSession {
         if !self.portal.is_installed() {
             return UiPortalDismissalPublicationOutcome::IgnoredNoMatchingPortal;
         }
-        let trigger = match dismissal_trigger(interaction) {
+        let semantic_surface = match self
+            .mounted
+            .current_semantic_surface_for_presentation(interaction.presentation())
+        {
+            Ok(surface) => surface,
+            Err(_) => {
+                return UiPortalDismissalPublicationOutcome::Stopped(
+                    UiPortalDismissalPublicationStop::Transition,
+                );
+            }
+        };
+        let trigger = match dismissal_trigger(interaction, semantic_surface) {
             Some(trigger) => trigger,
             None => {
                 return UiPortalDismissalPublicationOutcome::Stopped(
                     UiPortalDismissalPublicationStop::Transition,
-                )
+                );
             }
         };
-        if crate::runtime::interaction::targeting::require_current_presentation(
-            &self.mounted,
-            interaction.presentation(),
-        )
-        .is_err()
-        {
-            return UiPortalDismissalPublicationOutcome::Stopped(
-                UiPortalDismissalPublicationStop::Transition,
-            );
-        }
         let sampled_bounds = if matches!(
             trigger,
             crate::runtime::portal::UiPortalDismissalTrigger::OutsidePress { .. }
@@ -134,7 +135,7 @@ impl WorthUiActiveApplicationSession {
                     Err(_) => {
                         return UiPortalDismissalPublicationOutcome::Stopped(
                             UiPortalDismissalPublicationStop::Transition,
-                        )
+                        );
                     }
                 },
                 None => None,
@@ -202,7 +203,7 @@ impl WorthUiActiveApplicationSession {
             None => {
                 return UiPortalDismissalPublicationOutcome::Stopped(
                     UiPortalDismissalPublicationStop::IdentityExhausted,
-                )
+                );
             }
         };
         let idempotency =
@@ -224,7 +225,7 @@ impl WorthUiActiveApplicationSession {
                     crate::runtime::portal::UiPortalDismissalIgnoreReason::InsideTopmostPortal => {
                         UiPortalDismissalPublicationOutcome::IgnoredInsideTopmostPortal
                     }
-                }
+                };
             }
             Ok(crate::runtime::portal::UiPortalDismissalPreparation::Prepared(dismissal)) => {
                 dismissal
@@ -232,7 +233,7 @@ impl WorthUiActiveApplicationSession {
             Err(_) => {
                 return UiPortalDismissalPublicationOutcome::Stopped(
                     UiPortalDismissalPublicationStop::Transition,
-                )
+                );
             }
         };
         if expected_presentation.is_some_and(|expected| dismissal.presentation() != expected) {
@@ -253,7 +254,7 @@ impl WorthUiActiveApplicationSession {
             Err(_) => {
                 return UiPortalDismissalPublicationOutcome::Stopped(
                     UiPortalDismissalPublicationStop::Proposal,
-                )
+                );
             }
         };
         let preparation = match self.application.begin_portal_dismissal_service_proposal(
@@ -269,7 +270,7 @@ impl WorthUiActiveApplicationSession {
             Err(_) => {
                 return UiPortalDismissalPublicationOutcome::Stopped(
                     UiPortalDismissalPublicationStop::Proposal,
-                )
+                );
             }
         };
         let frame = match self.prepare_intent_consequence_frame(
@@ -308,11 +309,13 @@ impl WorthUiActiveApplicationSession {
             Err(_) => {
                 return UiPortalDismissalPublicationOutcome::Stopped(
                     UiPortalDismissalPublicationStop::Proposal,
-                )
+                );
             }
         };
-        let outcome = self.present_prepared_mounted_frame_internal(
+        let outcome = self.present_prepared_portal_frame_internal(
             frame,
+            &proposal,
+            true,
             worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
             now_tick,
         );
@@ -328,10 +331,11 @@ impl WorthUiActiveApplicationSession {
 
 fn dismissal_trigger(
     interaction: crate::facade::interaction::UiDismissInteraction,
+    semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
 ) -> Option<crate::runtime::portal::UiPortalDismissalTrigger> {
     match interaction.cause() {
         crate::facade::interaction::UiDismissInteractionCause::Escape => {
-            Some(crate::runtime::portal::UiPortalDismissalTrigger::Escape)
+            Some(crate::runtime::portal::UiPortalDismissalTrigger::Escape { semantic_surface })
         }
         crate::facade::interaction::UiDismissInteractionCause::OutsidePress(position) => {
             let basis = position.basis();
@@ -349,6 +353,7 @@ fn dismissal_trigger(
             ];
             Some(
                 crate::runtime::portal::UiPortalDismissalTrigger::OutsidePress {
+                    semantic_surface,
                     viewport_point_bits: point.map(f32::to_bits),
                 },
             )

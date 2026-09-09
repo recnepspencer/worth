@@ -338,7 +338,10 @@ pub(in crate::application) fn register_structure(
             viewport_rect(fixed_end(48, 232), fixed_start(476, 48)),
             6,
         ))
-        .register_component(component(PlatformPulseProductComponent::StatusBand))
+        .register_component(
+            component(PlatformPulseProductComponent::StatusBand)
+                .with_allocation_measurement_contract(layout.status_band_allocation()),
+        )
         .register_component(text(
             PlatformPulseProductComponent::StatusText,
             PlatformPulseTextRole::Meta,

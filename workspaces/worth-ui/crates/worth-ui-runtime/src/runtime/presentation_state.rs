@@ -52,8 +52,12 @@ struct UiApplicationSemanticTextRow {
 
 pub(crate) struct UiApplicationPresentationProjection {
     content: crate::mounting::UiMountedSemanticContentInput,
-    revisions: Box<[(Box<str>, u64)]>,
+    revisions: Box<[(Box<str>, crate::graph::UiGraphNodeIdentity, u64)]>,
     theme_values: crate::mounting::UiMountedThemeValueSource,
+}
+
+pub(crate) struct UiApplicationTextPublication {
+    revisions: Box<[(Box<str>, crate::graph::UiGraphNodeIdentity, u64)]>,
 }
 
 impl UiApplicationPresentationState {
@@ -245,7 +249,7 @@ impl UiApplicationPresentationState {
                     ),
                 )
                 .map_err(|_| projection::unknown_graph_node())?;
-            revisions.push((identity.clone(), row.presentation_revision));
+            revisions.push((identity.clone(), graph_node, row.presentation_revision));
         }
         Ok(UiApplicationPresentationProjection {
             content,
@@ -338,10 +342,15 @@ impl UiApplicationPresentationState {
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn commit(&mut self, projection: &UiApplicationPresentationProjection) {
-        for (identity, revision) in &projection.revisions {
+        self.settle_published_text(&projection.text_publication());
+    }
+
+    pub(crate) fn settle_published_text(&mut self, publication: &UiApplicationTextPublication) {
+        for (identity, graph_node, revision) in &publication.revisions {
             if let Some(row) = self.rows.get_mut(identity.as_ref()) {
-                if row.presentation_revision == *revision {
+                if row.graph_node == Some(*graph_node) && row.presentation_revision == *revision {
                     row.projected_presentation_revision = Some(*revision);
                 }
             }

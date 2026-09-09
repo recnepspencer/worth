@@ -2,9 +2,10 @@
 pub struct UiMountedOutlineAppearanceMechanic {
     node_receipt: crate::UiMountedNodeReceiptIdentity,
     clip: super::UiAppearanceClip,
+    surface_paint_order: u32,
     geometry: super::UiAppearanceOutlineGeometry,
     color: super::UiMountedAppearanceColor,
-    opacity: super::UiMountedAppearanceOpacity,
+    opacity: crate::UiMountedPresentationOpacity,
     projection: super::UiMountedNodeAppearanceAttribution,
 }
 
@@ -13,9 +14,10 @@ pub struct UiMountedOutlineAppearanceCompletionInput {
     pub issuer: crate::UiMountedNodeReceiptIssuer,
     pub node_receipt: crate::UiMountedNodeReceiptIdentity,
     pub clip: super::UiAppearanceClip,
+    pub surface_paint_order: u32,
     pub geometry: super::UiAppearanceOutlineGeometry,
     pub color: super::UiMountedAppearanceColor,
-    pub opacity: super::UiMountedAppearanceOpacity,
+    pub opacity: crate::UiMountedPresentationOpacity,
     pub projection: super::UiMountedNodeAppearanceAttribution,
 }
 
@@ -39,6 +41,7 @@ impl UiMountedOutlineAppearanceMechanic {
         Ok(Self {
             node_receipt: input.node_receipt,
             clip: input.clip,
+            surface_paint_order: input.surface_paint_order,
             geometry: input.geometry,
             color: input.color,
             opacity: input.opacity,
@@ -50,6 +53,9 @@ impl UiMountedOutlineAppearanceMechanic {
     }
     pub const fn clip(&self) -> super::UiAppearanceClip {
         self.clip
+    }
+    pub const fn surface_paint_order(&self) -> u32 {
+        self.surface_paint_order
     }
     pub const fn allocation(&self) -> super::UiAppearanceAllocationBounds {
         self.geometry.allocation()
@@ -72,7 +78,7 @@ impl UiMountedOutlineAppearanceMechanic {
     pub const fn radii(&self) -> super::UiAppearanceNormalizedLogicalRadii {
         self.geometry.radii()
     }
-    pub const fn opacity(&self) -> super::UiMountedAppearanceOpacity {
+    pub const fn opacity(&self) -> crate::UiMountedPresentationOpacity {
         self.opacity
     }
     pub const fn projection(&self) -> super::UiMountedNodeAppearanceAttribution {
@@ -107,13 +113,14 @@ mod tests {
         .unwrap();
         let mechanic = UiMountedOutlineAppearanceMechanic::complete_from_runtime_mounting(
             UiMountedOutlineAppearanceCompletionInput {
+                surface_paint_order: 0,
                 issuer,
                 node_receipt: issuer
                     .receipt_for(crate::UiMountedInstanceIdentity::mint_unbound().unwrap()),
                 clip: super::super::UiAppearanceClip::new(0, 0, 100, 100).unwrap(),
                 geometry,
                 color: super::super::UiMountedAppearanceColor::from_straight_srgba([1, 2, 3, 4]),
-                opacity: super::super::UiMountedAppearanceOpacity::ONE,
+                opacity: crate::UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
                 projection:
                     super::super::UiMountedNodeAppearanceAttribution::from_runtime_mounting(
                         issuer, 1, 1,

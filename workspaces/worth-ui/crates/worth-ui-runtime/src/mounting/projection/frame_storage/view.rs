@@ -40,6 +40,12 @@ pub(super) struct UiMountedPlanIndexPaintSelector {
 }
 
 impl UiMountedProjectionFrame {
+    pub(in crate::mounting) const fn hit_index_maintenance_work(
+        &self,
+    ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
+        self.hit_index_work
+    }
+
     pub fn view_for(
         &self,
         binding: UiSurfaceBindingGeneration,
@@ -86,7 +92,7 @@ impl UiMountedProjectionFrame {
                 super::portal_child_view::UiMountedPortalChildPresentation::Presented(portal) => {
                     (
                         Some(portal_relative_allocation(
-                            node.receipt.allocation(),
+                            node.presentation_allocation(),
                             portal,
                         )?),
                         Some(

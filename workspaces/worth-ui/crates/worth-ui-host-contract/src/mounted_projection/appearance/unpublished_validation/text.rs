@@ -24,6 +24,7 @@ pub(super) fn validate(
         };
     }
     let successor_receipt = successor_receipt.expect("checked above");
+    let mut candidate_commands = HashSet::new();
     let mut candidate_spans = HashSet::new();
     for candidate in &fragment.text_candidates {
         if candidate.frame() != frame {
@@ -53,21 +54,29 @@ pub(super) fn validate(
         if candidate.node_receipt() != successor_receipt {
             return Err(UiUnpublishedAppearanceFrameProjectionDenial::TextCandidateReceiptMismatch);
         }
+        let command = crate::UiMountedPaintCommandIdentity::semantic_text(candidate);
+        if !candidate_commands.insert(command) {
+            return Err(
+                UiUnpublishedAppearanceFrameProjectionDenial::DuplicateTextCandidate(command),
+            );
+        }
+        let mut command_spans = HashSet::new();
         for foreground in candidate.foregrounds() {
-            let key = (candidate.node_receipt(), foreground.identity());
-            if !candidate_spans.insert(key) {
+            if !command_spans.insert(foreground.identity()) {
                 return Err(
-                    UiUnpublishedAppearanceFrameProjectionDenial::ConflictingTextCandidate {
-                        receipt: key.0,
-                        span: key.1,
+                    UiUnpublishedAppearanceFrameProjectionDenial::DuplicateTextCandidateSpan {
+                        command,
+                        span: foreground.identity(),
                     },
                 );
             }
+            candidate_spans.insert((command, candidate.node_receipt(), foreground.identity()));
         }
     }
     for mechanic in fragment.work.successor().mechanics() {
         if let UiMountedAppearanceMechanic::TextForeground(text) = mechanic {
-            if !candidate_spans.contains(&(text.node_receipt(), text.paint_span())) {
+            if !candidate_spans.contains(&(text.command(), text.node_receipt(), text.paint_span()))
+            {
                 return Err(
                     UiUnpublishedAppearanceFrameProjectionDenial::TextCandidateSpanMismatch,
                 );

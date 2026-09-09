@@ -5,6 +5,10 @@ pub(crate) struct UiAppearanceAttemptContext {
     issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
     plan_digest: u64,
     allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+    appearance_clip: crate::mounting::UiMountedAppearanceClip,
+    surface_paint_order: Option<u32>,
+    geometry_input: Option<crate::mounting::UiMountedAppearanceGeometryInput>,
+    text_foreground_spans: Box<[crate::mounting::UiMountedAppearanceTextSpanInput]>,
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     role: Option<worth_ui_dsl::UiAppearanceRoleDeclaration>,
     theme_identity: Option<Box<str>>,
@@ -20,12 +24,25 @@ pub(crate) struct UiAppearanceAttemptContext {
 }
 
 impl UiAppearanceAttemptContext {
+    #[cfg(test)]
+    pub(crate) fn with_clip_for_test(
+        mut self,
+        clip: crate::mounting::UiMountedAppearanceClip,
+    ) -> Self {
+        self.appearance_clip = clip;
+        self
+    }
+
     pub(crate) fn new(
         target: super::super::state::UiAppearanceTarget,
         frame: worth_ui_host_contract::UiMountedFrameIdentity,
         issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
         plan_digest: u64,
         allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+        appearance_clip: crate::mounting::UiMountedAppearanceClip,
+        surface_paint_order: Option<u32>,
+        geometry_input: Option<crate::mounting::UiMountedAppearanceGeometryInput>,
+        text_foreground_spans: Box<[crate::mounting::UiMountedAppearanceTextSpanInput]>,
         generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
         consumers_selected: u32,
         owner_evidence: u64,
@@ -36,6 +53,10 @@ impl UiAppearanceAttemptContext {
             issuer,
             plan_digest,
             allocation,
+            appearance_clip,
+            surface_paint_order,
+            geometry_input,
+            text_foreground_spans,
             generation,
             role: None,
             theme_identity: None,
@@ -135,27 +156,36 @@ impl UiAppearanceAttemptContext {
         &self,
         projection: &super::UiAppearanceProjection,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        outline_fringe: Result<
+            worth_ui_host_contract::UiAppearanceLogicalLength,
+            crate::mounting::UiMountedAppearanceLoweringDenial,
+        >,
     ) -> Result<
         crate::mounting::UiMountedAppearanceLoweringInput,
         crate::mounting::UiMountedAppearanceLoweringDenial,
     > {
         let input = crate::mounting::UiMountedAppearanceNodeInput::from_resolved_projection(
-            self.issuer,
-            self.semantic_surface(),
-            self.node_receipt(),
-            self.graph_node(),
-            self.plan_digest,
-            self.allocation,
-            projection,
+            crate::mounting::UiResolvedAppearanceNodeSource {
+                issuer: self.issuer,
+                semantic_surface: self.semantic_surface(),
+                node_receipt: self.node_receipt(),
+                graph_node: self.graph_node(),
+                plan_digest: self.plan_digest,
+                allocation: self.allocation,
+                clip: self.appearance_clip,
+                surface_paint_order: self.surface_paint_order,
+                geometry_input: self.geometry_input.clone(),
+                text_foreground_spans: &self.text_foreground_spans,
+                projection,
+                outline_fringe,
+            },
         )?;
-        Ok(
-            crate::mounting::UiMountedAppearanceLoweringInput::for_single_node(
-                self.frame,
-                self.semantic_surface(),
-                presentation,
-                input,
-            ),
-        )
+        Ok(crate::mounting::UiMountedAppearanceLoweringInput::for_node(
+            self.frame,
+            self.semantic_surface(),
+            presentation,
+            input,
+        ))
     }
 
     pub(crate) const fn generation(

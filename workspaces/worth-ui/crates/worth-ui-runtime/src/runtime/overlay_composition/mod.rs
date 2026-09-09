@@ -47,7 +47,7 @@ pub(super) use owner_input::{UiOverlayOwnerExportDenial, UiOverlayOwnerExportVec
     unused_imports,
     reason = "Gate 1 retains the typed overlay owner lifecycle seam for later publication"
 )]
-pub(super) use owner_lifecycle::{
+pub(crate) use owner_lifecycle::{
     UiOverlayCompositionOwnerLifecycle, UiOverlayOwnerBridgeDenial, UiOverlayOwnerSources,
 };
 #[allow(

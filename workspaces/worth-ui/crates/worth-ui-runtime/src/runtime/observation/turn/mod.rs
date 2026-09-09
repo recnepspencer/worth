@@ -1,5 +1,9 @@
 mod admitted;
 mod appearance_close;
+mod pointer_affordance_close;
+pub(crate) use pointer_affordance_close::{
+    UiPointerAffordanceObservationCloseInput, UiPointerAffordanceObservationOwners,
+};
 mod identity;
 mod lifecycle;
 mod outcome;

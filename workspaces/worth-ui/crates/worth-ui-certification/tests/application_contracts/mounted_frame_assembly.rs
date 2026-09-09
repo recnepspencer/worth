@@ -139,6 +139,7 @@ fn prepare(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
     request: UiMountedFrameRequest,
 ) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     session
         .execute_framework_turn(|_| {})
         .expect("no mounted presentation lease is active")

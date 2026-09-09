@@ -71,6 +71,7 @@ fn adapter_scoped_transaction_rejects_callback_and_releases_reservation() {
             dpi_milli: 1_000,
             text_scale: UiTextScaleGeneration::new(1).unwrap(),
             lane: UiGlyphRasterLane::Ordinary,
+            scope: worth_ui_host_contract::UiGlyphRasterDemandScope::DamageFiltered,
             records: &records,
         })
         .unwrap();
@@ -199,6 +200,7 @@ fn adapter_rasterizes_only_native_admitted_misses() {
             dpi_milli: 1_000,
             text_scale: UiTextScaleGeneration::new(1).unwrap(),
             lane: UiGlyphRasterLane::Ordinary,
+            scope: worth_ui_host_contract::UiGlyphRasterDemandScope::DamageFiltered,
             records: &records,
         })
         .unwrap();
@@ -276,6 +278,7 @@ fn demand_for(key: UiGlyphRasterKey, identity_seed: u8) -> UiGlyphRasterDemandBa
         dpi_milli: 1_000,
         text_scale: UiTextScaleGeneration::new(1).unwrap(),
         lane: UiGlyphRasterLane::Ordinary,
+        scope: worth_ui_host_contract::UiGlyphRasterDemandScope::DamageFiltered,
         records,
     })
     .unwrap()

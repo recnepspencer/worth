@@ -45,6 +45,7 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
     let mut shell = application
         .launch_native_surface()
         .expect("the native portal and Query application launches");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     let (initial_observation, initial_completion) = initial.into_parts();
     host.push_native_display_presented();
     let initial_receipt = match shell

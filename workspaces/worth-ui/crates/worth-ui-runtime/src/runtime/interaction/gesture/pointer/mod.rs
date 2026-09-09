@@ -1,4 +1,5 @@
 mod accessors;
+mod appearance;
 mod model;
 mod presentation;
 mod transition;
@@ -24,6 +25,10 @@ pub use model::{
 };
 
 impl UiPointerGestureRuntimeState {
+    pub(crate) fn has_appearance_records(&self) -> bool {
+        self.appearance_enabled && !self.active.is_empty()
+    }
+
     pub(crate) fn new(appearance_enabled: bool) -> Self {
         Self {
             active: BTreeMap::new(),

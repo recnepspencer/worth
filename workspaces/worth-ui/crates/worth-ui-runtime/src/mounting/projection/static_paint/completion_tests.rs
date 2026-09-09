@@ -125,6 +125,16 @@ impl CompletionFixture {
             vec![UiMountedProjectionNodeRecord {
                 receipt,
                 plan_index: Some(0),
+        occurrence_allocation: allocation,
+        appearance_geometry:
+                    crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
+                        allocation,
+                        crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
+                    ),
+        surface_paint_order: Some(0),
+        has_appearance_attachment: false,
+                appearance_clip:
+                    crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
                 static_paint: Some(UiMountedStaticPaintSeed::for_test(UiMountedRgba8::new(
                     47, 129, 247, 255,
                 ))),

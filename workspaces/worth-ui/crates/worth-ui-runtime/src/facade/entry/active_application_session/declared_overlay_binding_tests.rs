@@ -1,10 +1,28 @@
+#[path = "declared_overlay_binding_tests/allocation_succession.rs"]
+mod allocation_succession;
+#[path = "declared_overlay_binding_tests/appearance_publication.rs"]
+mod appearance_publication;
+#[path = "declared_overlay_binding_tests/appearance_publication_lifecycle.rs"]
+mod appearance_publication_lifecycle;
+#[path = "declared_overlay_binding_tests/appearance_publication_support.rs"]
+mod appearance_publication_support;
+#[path = "declared_overlay_binding_tests/appearance_region_clip.rs"]
+mod appearance_region_clip;
+#[path = "declared_overlay_binding_tests/appearance_region_extent.rs"]
+mod appearance_region_extent;
+#[path = "declared_overlay_binding_tests/appearance_structural_portal.rs"]
+mod appearance_structural_portal;
+#[path = "declared_overlay_binding_tests/appearance_surface_scope.rs"]
+mod appearance_surface_scope;
+#[path = "declared_overlay_binding_tests/integrated_appearance_world.rs"]
+mod integrated_appearance_world;
 #[path = "declared_overlay_binding_test_support.rs"]
 mod test_support;
 
 use test_support::{authored_overlay_session, portal_target, presentation};
 
 #[test]
-fn prepared_authored_surface_opens_and_exports_the_issued_portal_binding() {
+fn prepared_authored_surface_binding_survives_allocation_and_exports_current_portal() {
     let mut session = authored_overlay_session();
     let material = session.application.authored_overlay_material();
     let surface_declaration = material
@@ -120,7 +138,7 @@ fn prepared_authored_surface_opens_and_exports_the_issued_portal_binding() {
         .commit_published(idempotent_transition)
         .expect("idempotent Portal transition should commit");
     session
-        .commit_authored_overlay_binding(idempotent_commit)
+        .commit_authored_overlay_binding(idempotent_commit.clone())
         .expect("idempotent Portal binding should remain current");
     assert_eq!(
         session
@@ -130,6 +148,7 @@ fn prepared_authored_surface_opens_and_exports_the_issued_portal_binding() {
             .declaration(),
         portal_declaration
     );
+    allocation_succession::assert_preserved(&mut session, idempotent_commit);
     let _ = session.shutdown();
 }
 

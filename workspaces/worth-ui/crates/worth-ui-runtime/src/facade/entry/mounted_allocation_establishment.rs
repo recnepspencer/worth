@@ -133,6 +133,12 @@ impl WorthUiActiveApplicationSession {
             .application
             .prepare_graph_successor(graph_commit)
             .map_err(|_| WorthUiMountedAllocationEstablishmentDenial::StaleGraphSuccessor)?;
+        let overlay_succession = self
+            .authored_overlay_bindings
+            .prepare_graph_succession(&graph_successor)
+            .map_err(|_| {
+                WorthUiMountedAllocationEstablishmentDenial::StaleOverlayBindingGeneration
+            })?;
         let appearance_succession = self
             .prepare_appearance_generation_succession(&graph_successor.generation_succession())
             .map_err(|denial| match denial {
@@ -168,6 +174,8 @@ impl WorthUiActiveApplicationSession {
             .activate_initial_mounted_allocation_catalog(graph_successor, admitted, boundary)
             .map_err(map_initial_activation_denial)?;
         self.commit_appearance_generation_succession(appearance_succession);
+        self.authored_overlay_bindings
+            .commit_graph_succession(overlay_succession);
         Ok(WorthUiMountedAllocationEstablishmentReceipt { committed })
     }
 

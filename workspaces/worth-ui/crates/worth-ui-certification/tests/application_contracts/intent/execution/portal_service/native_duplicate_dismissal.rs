@@ -62,10 +62,29 @@ pub(crate) fn run_native_runtime_service_scenario() -> NativeRuntimeServiceEvide
     let mut shell = application
         .launch_native_surface()
         .expect("the production native composition root launches");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     match shell
         .present_frame(10, 1)
-        .unwrap_or_else(|_| panic!("the initial native frame executes"))
-    {
+        .unwrap_or_else(|denial| match denial {
+            worth_ui::facade::app::WorthUiMountedFrameExecutionStop::PublicationLease(reason) => {
+                panic!("the initial native frame lease failed: {reason:?}")
+            }
+            worth_ui::facade::app::WorthUiMountedFrameExecutionStop::HostMeasurement(reason) => {
+                panic!("the initial native frame measurement failed: {reason:?}")
+            }
+            worth_ui::facade::app::WorthUiMountedFrameExecutionStop::HostMeasurementTransition(
+                reason,
+            ) => panic!("the initial native frame measurement transition failed: {reason:?}"),
+            worth_ui::facade::app::WorthUiMountedFrameExecutionStop::OccurrenceGeometry(reason) => {
+                panic!("the initial native frame geometry failed: {reason:?}")
+            }
+            worth_ui::facade::app::WorthUiMountedFrameExecutionStop::Preparation(reason) => {
+                panic!("the initial native frame preparation failed: {reason:?}")
+            }
+            worth_ui::facade::app::WorthUiMountedFrameExecutionStop::FrameworkTransition(_) => {
+                panic!("the initial native frame transition failed")
+            }
+        }) {
         UiMountedFrameOutcome::Published(_) => {}
         _ => panic!("the initial native frame publishes"),
     }

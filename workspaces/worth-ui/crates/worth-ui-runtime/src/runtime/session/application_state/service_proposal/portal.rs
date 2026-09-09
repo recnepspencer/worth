@@ -55,6 +55,7 @@ impl WorthUiApplicationSessionState {
         transition: crate::runtime::portal::UiPreparedPortalServiceTransition,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         application: crate::runtime::intent::WorthUiActiveApplicationGenerationIdentity,
+        overlay_binding_stage: Option<crate::runtime::portal::UiPortalOverlayBindingStage>,
         motion_state: &mut crate::runtime::motion::UiMotionRuntimeState,
         motion_request: Option<crate::runtime::motion::UiMotionTransitionRequest>,
     ) -> Result<UiPortalProposalPreparation, UiPortalProposalPreparationDenial> {
@@ -65,7 +66,7 @@ impl WorthUiApplicationSessionState {
         self.begin_portal_service_proposal_from_request(
             request,
             transition,
-            None,
+            overlay_binding_stage,
             None,
             motion_state,
             motion_request,

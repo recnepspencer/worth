@@ -16,6 +16,7 @@ pub(super) struct UiGraphAppearanceConsumerContract {
     has_consumers: bool,
     axis_demand: crate::runtime::appearance::UiAppearanceStateAxisDemand,
     attachments: Box<[UiGraphAppearanceAttachment]>,
+    attached_nodes: Box<[crate::graph::UiGraphNodeIdentity]>,
     roles: Box<[worth_ui_dsl::UiAppearanceRoleDeclaration]>,
     state_consumers: [Box<[UiAppearanceStateConsumer]>; 6],
     state_consumer_nodes:
@@ -99,6 +100,12 @@ impl UiGraphAppearanceConsumerContract {
             }
         }
         attachments.sort_by(compare_attachments);
+        let mut attached_nodes = attachments
+            .iter()
+            .map(|attachment| attachment.graph_node)
+            .collect::<Vec<_>>();
+        attached_nodes.sort_unstable();
+        attached_nodes.dedup();
         roles.sort_by(|left, right| left.role().cmp(right.role()));
         let state_consumers = state_consumers.map(|mut consumers| {
             consumers.sort_by(|left, right| {
@@ -114,6 +121,7 @@ impl UiGraphAppearanceConsumerContract {
             has_consumers,
             axis_demand,
             attachments: attachments.into_boxed_slice(),
+            attached_nodes: attached_nodes.into_boxed_slice(),
             roles: roles.into_boxed_slice(),
             state_consumers,
             state_consumer_nodes: state_consumer_nodes
@@ -161,14 +169,11 @@ impl UiGraphAppearanceConsumerContract {
     }
 
     pub(super) fn attached_consumer_nodes(&self) -> Box<[crate::graph::UiGraphNodeIdentity]> {
-        let mut nodes = self
-            .attachments
-            .iter()
-            .map(|attachment| attachment.graph_node)
-            .collect::<Vec<_>>();
-        nodes.sort_unstable();
-        nodes.dedup();
-        nodes.into_boxed_slice()
+        self.attached_nodes.clone()
+    }
+
+    pub(super) fn has_attached_node(&self, node: crate::graph::UiGraphNodeIdentity) -> bool {
+        self.attached_nodes.binary_search(&node).is_ok()
     }
 
     pub(super) fn required_role_identities(&self) -> Box<[worth_ui_dsl::UiAppearanceRoleIdentity]> {

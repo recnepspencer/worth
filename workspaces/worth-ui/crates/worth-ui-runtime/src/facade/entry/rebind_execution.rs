@@ -151,7 +151,7 @@ impl WorthUiActiveApplicationSession {
                 )
             })?;
         let frame_request = self.current_portal_rebind_frame_request();
-        let frame = {
+        let mut frame = {
             let completion = self.execute_framework_turn(|_| {}).map_err(|_| {
                 crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
             })?;
@@ -171,7 +171,7 @@ impl WorthUiActiveApplicationSession {
                     )
                 })?
         };
-        self.presentation.commit(&presentation);
+        frame.set_application_text_publication(presentation.text_publication(), &self.mounted);
         let content =
             Box::new(crate::facade::entry::WorthUiPreparedMountedContentRebind::new(self, frame));
         Ok(crate::runtime::rebind::UiPreparedRebind::content(

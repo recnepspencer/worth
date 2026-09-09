@@ -2,7 +2,7 @@ use worth_ui_host_contract::{
     UiMountedBackdropMechanic, UiMountedNodeReceiptIdentity, UiMountedOutlineAppearanceMechanic,
     UiMountedOverlayOrderMechanic, UiMountedPointerAffordanceMechanic,
     UiMountedPortalSurfaceAppearanceMechanic, UiMountedSurfaceAppearanceMechanic,
-    UiMountedTextForegroundAppearanceMechanic, UiPointerAffordanceFamily,
+    UiPointerAffordanceFamily,
 };
 
 use super::backdrop_pipeline::UiNativeBackdropPipeline;
@@ -40,7 +40,11 @@ pub(crate) enum UiNativeAppearanceCommandIdentity {
     Surface(UiMountedNodeReceiptIdentity),
     PortalSurface(worth_ui_host_contract::UiMountedInstanceIdentity),
     Outline(UiMountedNodeReceiptIdentity),
-    TextForeground([u8; 32]),
+    TextForeground {
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+        command: (u16, Option<[u8; 32]>),
+        span_digest: [u8; 32],
+    },
     Backdrop {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         identity: worth_ui_host_contract::UiMountedBackdropIdentity,
@@ -57,12 +61,12 @@ pub(crate) enum UiNativeAppearanceCommandIdentity {
     },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) enum UiNativeAppearanceCommand {
     Surface(UiMountedSurfaceAppearanceMechanic),
     PortalSurface(UiMountedPortalSurfaceAppearanceMechanic),
     Outline(UiMountedOutlineAppearanceMechanic),
-    TextForeground(UiMountedTextForegroundAppearanceMechanic),
+    TextForeground(super::text_foreground::UiNativeFinalizedTextForeground),
     Backdrop(UiMountedBackdropMechanic),
     OverlayOrder(UiMountedOverlayOrderMechanic),
     PointerAffordance(UiMountedPointerAffordanceMechanic),
@@ -92,9 +96,15 @@ impl UiNativeAppearanceCommand {
             Self::Outline(mechanic) => {
                 UiNativeAppearanceCommandIdentity::Outline(mechanic.node_receipt())
             }
-            Self::TextForeground(mechanic) => {
-                UiNativeAppearanceCommandIdentity::TextForeground(mechanic.paint_span().digest())
-            }
+            Self::TextForeground(mechanic) => UiNativeAppearanceCommandIdentity::TextForeground {
+                target: mechanic.mechanic().node_receipt().mounted_instance(),
+                command: mechanic
+                    .mechanic()
+                    .command()
+                    .semantic_text_identity_parts()
+                    .expect("text foreground admits one semantic text command"),
+                span_digest: mechanic.mechanic().paint_span().digest(),
+            },
             Self::Backdrop(mechanic) => UiNativeAppearanceCommandIdentity::Backdrop {
                 surface: mechanic.semantic_surface(),
                 identity: mechanic.identity().clone(),
@@ -131,9 +141,15 @@ impl UiNativeAppearanceCommand {
             Self::Backdrop(mechanic) => Ok(Some(
                 UiNativeBackdropPipeline::prepare(mechanic, scale)?.damage_rect(),
             )),
-            Self::TextForeground(_) | Self::OverlayOrder(_) | Self::PointerAffordance(_) => {
-                Ok(None)
-            }
+            Self::TextForeground(text) => text.damage_bounds(scale),
+            Self::OverlayOrder(_) | Self::PointerAffordance(_) => Ok(None),
+        }
+    }
+
+    pub(crate) fn text_coverage(&self) -> Option<&[UiNativeAppearanceDamageRect]> {
+        match self {
+            Self::TextForeground(text) => Some(text.coverage()),
+            _ => None,
         }
     }
 

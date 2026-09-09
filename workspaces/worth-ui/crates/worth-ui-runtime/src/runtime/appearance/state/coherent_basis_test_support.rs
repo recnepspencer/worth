@@ -28,7 +28,7 @@ impl super::UiAppearanceCoherentBasis {
             consumer,
             mounted_instance,
             incarnation,
-            owner_node_receipt: node_receipt,
+            owner_node_receipt: Some(node_receipt),
             node_receipt,
             surface,
             theme: crate::runtime::appearance::UiActiveThemeBinding::for_test(
@@ -45,7 +45,8 @@ impl super::UiAppearanceCoherentBasis {
 
 pub(crate) fn validate_presentation_for_test(
     mounted: &crate::mounting::WorthUiMountedSessionState,
+    surface: UiSemanticSurfaceIdentity,
     presentation: Option<UiHostObservationPresentationBasis>,
 ) -> Result<(), super::UiAppearanceCoherentBasisDenial> {
-    super::validate_presentation(mounted, presentation)
+    super::validate_presentation(mounted, surface, presentation)
 }

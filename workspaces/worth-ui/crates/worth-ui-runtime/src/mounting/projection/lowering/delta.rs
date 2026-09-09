@@ -27,7 +27,6 @@ struct UiMountedDeltaApplication {
     index_entries: usize,
     changed_projected: usize,
     changed_projected_outside_changed_surfaces: usize,
-    membership_changed: bool,
 }
 
 pub(super) fn build(
@@ -131,7 +130,6 @@ impl UiMountedDeltaApplication {
             index_entries: scope.initial_index_entries,
             changed_projected: 0,
             changed_projected_outside_changed_surfaces: 0,
-            membership_changed: false,
         }
     }
 
@@ -140,7 +138,6 @@ impl UiMountedDeltaApplication {
         scope: &UiMountedDeltaScope,
     ) -> Result<(), UiMountedProjectionDenial> {
         for instance in &scope.retired {
-            self.membership_changed |= self.semantic.contains(*instance);
             self.index_entries =
                 add_mutation_work(self.index_entries, self.semantic.remove_node(*instance))?;
         }
@@ -153,21 +150,17 @@ impl UiMountedDeltaApplication {
         scope: &UiMountedDeltaScope,
     ) -> Result<(), UiMountedProjectionDenial> {
         for instance in &scope.changed {
-            let previously_projected = self.semantic.contains(*instance);
             match input.state.projection_instance(*instance).filter(|view| {
                 input
                     .requested_surfaces
                     .contains(&view.basis().semantic_surface_identity())
             }) {
-                Some(view) => {
-                    self.replace_changed_node(input, scope, &view, previously_projected)?
-                }
+                Some(view) => self.replace_changed_node(input, scope, &view)?,
                 None => {
                     self.index_entries = add_mutation_work(
                         self.index_entries,
                         self.semantic.remove_node(*instance),
                     )?;
-                    self.membership_changed |= previously_projected;
                 }
             }
         }
@@ -179,21 +172,21 @@ impl UiMountedDeltaApplication {
         input: &UiMountedDeltaProjectionInput<'_, '_, '_>,
         scope: &UiMountedDeltaScope,
         view: &super::super::super::UiMountedInstanceIdentityView,
-        previously_projected: bool,
     ) -> Result<(), UiMountedProjectionDenial> {
         let belongs_to_changed_surface = scope
             .changed_surfaces
             .contains(&view.basis().semantic_surface_identity());
-        let node = input.lowering.lower(view)?.materialize();
+        let draft = input.lowering.lower(view)?;
         self.index_entries = self
             .index_entries
             .checked_add(2)
+            .and_then(|count| count.checked_add(draft.clip_ancestry_entries))
             .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
+        let node = draft.materialize();
         self.index_entries =
             add_mutation_work(self.index_entries, self.semantic.insert_node(node))?;
         self.changed_projected += 1;
         self.changed_projected_outside_changed_surfaces += usize::from(!belongs_to_changed_surface);
-        self.membership_changed |= !previously_projected;
         Ok(())
     }
 
@@ -232,6 +225,8 @@ impl UiMountedDeltaApplication {
             .state
             .projection_surface(surface)
             .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
+        self.semantic
+            .rebind_surface_allocations(surface, binding.binding_generation());
         self.index_entries = add_mutation_work(
             self.index_entries,
             self.semantic.replace_surface(UiMountedProjectionSurface {
@@ -247,7 +242,7 @@ impl UiMountedDeltaApplication {
         &mut self,
         input: &UiMountedDeltaProjectionInput<'_, '_, '_>,
     ) -> usize {
-        if !input.changes.order_changed() && !self.membership_changed {
+        if !input.changes.order_changed() {
             return 0;
         }
         if let Some(order) = input

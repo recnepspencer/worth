@@ -103,8 +103,14 @@ fn fold_component_descriptor(accumulator: u64, descriptor: &ComponentDescriptor)
             .static_paint_contract()
             .map(|contract| contract.digest_basis()),
     );
+    let with_surface_order = fold_optional_str(
+        fold_bytes(with_static_paint, b"surface_paint_order"),
+        descriptor
+            .surface_paint_order()
+            .map(|rank| rank.to_string()),
+    );
     let with_semantic_text = fold_optional_str(
-        with_static_paint,
+        with_surface_order,
         descriptor
             .semantic_text_contract()
             .map(|contract| contract.digest_basis()),
@@ -239,6 +245,26 @@ mod tests {
         let back = freeze_component(component_with_order(1));
 
         assert_ne!(front.digest_basis(), back.digest_basis());
+    }
+
+    #[test]
+    fn surface_paint_order_distinguishes_absence_zero_and_full_width_ranks() {
+        let variants = [None, Some(0), Some(65_536), Some(u32::MAX)].map(|order| {
+            let descriptor = component_descriptor("workspace.component.surface");
+            let descriptor = match order {
+                Some(rank) => descriptor.with_surface_paint_order(rank),
+                None => descriptor,
+            };
+            let frozen = freeze_component(descriptor);
+            assert_eq!(frozen.descriptors()[0].surface_paint_order(), order);
+            assert!(frozen.descriptors()[0].static_paint_contract().is_none());
+            frozen
+        });
+        for (index, left) in variants.iter().enumerate() {
+            for right in &variants[index + 1..] {
+                assert_ne!(left.digest_basis(), right.digest_basis());
+            }
+        }
     }
 
     fn freeze_component(descriptor: ComponentDescriptor) -> FrozenComponentCapabilities {

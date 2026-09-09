@@ -1,7 +1,8 @@
 use worth_ui_host_contract::{
     UiMountedFrameIdentity, UiMountedLogicalDamage, UiMountedPaintCommandChange,
-    UiMountedPresentationDelta, UiMountedPresentationDeltaInput,
-    UiMountedPresentationReconstruction, UiMountedPresentationReconstructionInput, UiMountedRgba8,
+    UiMountedPresentationDelta, UiMountedPresentationDeltaInput, UiMountedPresentationOpacity,
+    UiMountedPresentationReconstruction, UiMountedPresentationReconstructionInput,
+    UiMountedPresentationSampleChange, UiMountedRgba8,
 };
 
 use super::{command, DrawListWorld};
@@ -37,6 +38,7 @@ fn cold_reconstruction_rebuilds_every_index_then_next_delta_remains_local() {
             baseline: world.requirement.baseline(),
             projection: complete.projection().clone(),
             commands: complete.commands().to_vec(),
+            sample_overrides: Vec::new(),
             order: complete.order().to_vec(),
             order_integrity: complete.order_integrity(),
             damage: complete.damage().to_vec(),
@@ -89,4 +91,58 @@ fn cold_reconstruction_rebuilds_every_index_then_next_delta_remains_local() {
         retained.command(replacement_command.identity()),
         Some(&replacement_command)
     );
+}
+
+#[test]
+fn cold_reconstruction_installs_and_rasterizes_accepted_motion_override() {
+    let world = DrawListWorld::new();
+    let predecessor = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let rect = world.rect(
+        frame,
+        world.first,
+        10.0,
+        UiMountedRgba8::new(30, 60, 90, 255),
+    );
+    let complete = world.initial(frame, [rect]);
+    let identity = command(rect).identity();
+    let override_change = UiMountedPresentationSampleChange::from_runtime_sampling(
+        identity,
+        None,
+        UiMountedPresentationOpacity::from_runtime_composition(32_768),
+    );
+    let reconstruction = UiMountedPresentationReconstruction::from_inert_mechanics(
+        UiMountedPresentationReconstructionInput {
+            predecessor,
+            successor: frame,
+            surface: world.surface,
+            binding: world.binding,
+            content: world.content,
+            baseline: world.requirement.baseline(),
+            projection: complete.projection().clone(),
+            commands: complete.commands().to_vec(),
+            sample_overrides: vec![override_change],
+            order: complete.order().to_vec(),
+            order_integrity: complete.order_integrity(),
+            damage: complete.damage().to_vec(),
+            production_cost: Default::default(),
+        },
+    );
+    let mut retained = UiNativeRetainedDrawList::reconstruction(&reconstruction, &[])
+        .unwrap_or_else(|_| panic!("accepted reconstruction sample remains valid"));
+    assert_eq!(retained.sample_override(identity), Some(override_change));
+    let basis = crate::native::presentation::raster::UiNativeRasterBasis::new([100, 100], 1.0);
+    let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    retained
+        .initialize_physical_coverage(basis, &atlas)
+        .unwrap();
+    let plan = crate::native::presentation::reconstruction::build_plan(basis, &atlas, &retained)
+        .unwrap_or_else(|_| panic!("accepted reconstruction sample rasterizes"));
+    assert!(plan.operations.iter().any(|operation| matches!(
+        operation,
+        crate::native::presentation::UiNativeRasterOperation::FilledRect {
+            source_rgba8: [30, 60, 90, 128],
+            ..
+        }
+    )));
 }

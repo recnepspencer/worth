@@ -5,6 +5,7 @@ mod headless_observation;
 mod hit_test;
 mod identity_overlay;
 mod participation;
+mod portal_child_geometry;
 #[cfg(test)]
 mod portal_child_presentation_tests;
 mod portal_overlay;
@@ -21,7 +22,8 @@ pub use appearance::{
     UiAppearanceClip, UiAppearanceDamageAttribution, UiAppearanceDamageRegion,
     UiAppearanceEmptyRegion, UiAppearanceGeometryOverflow, UiAppearanceLogicalLength,
     UiAppearanceNegativeLength, UiAppearanceNormalizedLogicalRadii, UiAppearanceOutlineGeometry,
-    UiAppearanceOutlineGeometryDenial, UiAppearanceVisualBounds,
+    UiAppearanceOutlineGeometryDenial, UiAppearanceTextDamageRequirement,
+    UiAppearanceTextDamageTransition, UiAppearanceVisualBounds,
     UiHostAppearanceGeometryQualification, UiHostAppearanceGeometryQualificationBasis,
     UiHostAppearanceGeometryQualificationDenial, UiHostAppearanceMechanicFamily,
     UiHostAppearanceProfileContract, UiHostAppearanceProfileDenial, UiHostAppearanceProfilePosture,
@@ -38,7 +40,8 @@ pub use appearance::{
     UiMountedOverlayOrderMechanicDenial, UiMountedPointerAffordanceMechanic,
     UiMountedPortalSurfaceAppearanceCompletionDenial, UiMountedPortalSurfaceAppearanceMechanic,
     UiMountedSurfaceAppearanceCompletionDenial, UiMountedSurfaceAppearanceCompletionInput,
-    UiMountedSurfaceAppearanceMechanic, UiMountedSurfacePaint,
+    UiMountedSurfaceAppearanceMechanic, UiMountedSurfaceBorderEdges,
+    UiMountedSurfaceBorderOmission, UiMountedSurfaceBorderSide, UiMountedSurfacePaint,
     UiMountedTextForegroundAppearanceCompletionDenial,
     UiMountedTextForegroundAppearanceCompletionInput, UiMountedTextForegroundAppearanceMechanic,
     UiOverlayParticipantIdentity, UiOverlayPlacementReceipt, UiPointerAffordanceFamily,

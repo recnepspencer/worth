@@ -1,35 +1,65 @@
 // Gate 1 deliberately keeps this authority unpublished until a later cutover.
 
 mod backdrop;
+mod clip;
 mod counters;
 mod damage;
 mod delta;
 mod fact;
+mod geometry;
+mod geometry_input;
+pub(crate) use geometry_input::UiMountedAppearanceGeometryInput;
+mod geometry_scope;
 mod input;
 mod lowering;
 mod mechanic_equivalence;
-mod opacity_composition;
 mod outline;
+mod overlay_input;
 mod overlay_order;
-mod pointer_affordance;
+mod portal_geometry;
 mod reconstruction;
+mod resolved_node_source;
+mod style;
 mod surface;
 mod text_foreground;
+mod text_geometry;
+pub(crate) use text_geometry::{UiMountedAppearanceTextGeometry, UiMountedAppearanceTextSpanInput};
 
+pub(crate) use clip::{
+    derive_unbound_ancestry, UiMountedAppearanceClip, UiMountedAppearanceClipDenial,
+};
 pub(crate) use delta::UiMountedAppearanceDeltaSummary;
 pub(crate) use fact::{
     UiMountedAppearanceFacts, UiMountedAppearanceLoweringInput, UiMountedAppearanceNodeInput,
+    UiMountedAppearanceSurfaceOverlayInput,
 };
+pub(crate) use geometry::UiMountedAppearanceGeometryDenial;
+pub(crate) use geometry_scope::UiMountedAppearanceGeometryScope;
+pub(in crate::mounting::projection) use portal_geometry::{
+    portal_ancestor_clip, portal_presented_allocation,
+};
+pub(crate) use resolved_node_source::UiResolvedAppearanceNodeSource;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UiMountedAppearanceLoweringDenial {
+    NodeSessionMismatch,
+    HostGeometryProfileUnavailable,
+    HostGeometrySurfaceUnavailable,
+    HostGeometryScale(worth_ui_host_contract::UiHostAppearanceScaleDenial),
     NodeAllocationUnavailable,
+    BorderWidthInvalid,
+    RadiusInvalid,
+    OutlineWidthInvalid,
+    OutlineOffsetInvalid,
+    OutlineGeometry(worth_ui_host_contract::UiAppearanceOutlineGeometryDenial),
+    SurfacePaintOrderUnavailable,
+    AncestorClip(UiMountedAppearanceClipDenial),
+    Geometry(UiMountedAppearanceGeometryDenial),
     NodeProjectionUnavailable,
     NodeReceiptFrameMismatch,
     NodeProjectionIssuerMismatch,
     NodeSurfaceMismatch,
     PortalSurfaceMissing,
-    PointerTargetMismatch,
-    PointerSurfaceMismatch,
+    PortalTargetMismatch,
     OutlineAllocationMismatch,
     BackdropPlacementMismatch,
     OverlayRevisionMissing,
@@ -42,20 +72,20 @@ pub(crate) enum UiMountedAppearanceLoweringDenial {
     OverlayOrder(worth_ui_host_contract::UiMountedOverlayOrderMechanicDenial),
     Frame(worth_ui_host_contract::UiMountedAppearanceFrameDenial),
     WorkConstruction,
+    AmbiguousMotionOpacity,
 }
 
 impl UiMountedAppearanceLoweringInput {
-    pub(crate) fn for_single_node(
+    pub(crate) fn empty(
         frame: worth_ui_host_contract::UiMountedFrameIdentity,
         semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-        node: UiMountedAppearanceNodeInput,
     ) -> Self {
         Self {
             frame,
             semantic_surface,
             presentation,
-            nodes: vec![node],
+            nodes: Vec::new(),
             backdrops: Vec::new(),
             overlay: fact::UiMountedAppearanceOverlayInput {
                 semantic_surface,
@@ -63,6 +93,45 @@ impl UiMountedAppearanceLoweringInput {
                 portal_revision: 0,
                 backdrop_revision: 0,
                 bottom_to_top: Box::new([]),
+            },
+        }
+    }
+
+    pub(crate) fn for_node(
+        frame: worth_ui_host_contract::UiMountedFrameIdentity,
+        semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        node: Option<UiMountedAppearanceNodeInput>,
+    ) -> Self {
+        let mut input = Self::empty(frame, semantic_surface, presentation);
+        input.nodes.extend(node);
+        input
+    }
+
+    pub(in crate::mounting::projection) fn into_nodes(self) -> Vec<UiMountedAppearanceNodeInput> {
+        self.nodes
+    }
+}
+
+impl UiMountedAppearanceSurfaceOverlayInput {
+    pub(in crate::mounting::projection) fn lowering_input(
+        &self,
+        frame: worth_ui_host_contract::UiMountedFrameIdentity,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        nodes: Vec<UiMountedAppearanceNodeInput>,
+    ) -> UiMountedAppearanceLoweringInput {
+        UiMountedAppearanceLoweringInput {
+            frame,
+            semantic_surface: self.semantic_surface,
+            presentation,
+            nodes,
+            backdrops: self.backdrops.to_vec(),
+            overlay: fact::UiMountedAppearanceOverlayInput {
+                semantic_surface: self.semantic_surface,
+                presentation,
+                portal_revision: self.portal_revision,
+                backdrop_revision: self.backdrop_revision,
+                bottom_to_top: self.bottom_to_top.clone(),
             },
         }
     }
@@ -76,6 +145,47 @@ pub(crate) struct UiMountedAppearanceSidecar {
 }
 
 impl UiMountedAppearanceSidecar {
+    pub(in crate::mounting::projection) fn matches_geometry_input(
+        &self,
+        input: &UiMountedAppearanceGeometryInput,
+    ) -> bool {
+        self.current
+            .as_ref()
+            .is_some_and(|facts| facts.matches_geometry_input(input))
+    }
+
+    pub(crate) fn removal_work(
+        &self,
+        frame: worth_ui_host_contract::UiMountedFrameIdentity,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    ) -> Result<worth_ui_host_contract::UiMountedAppearanceWork, UiMountedAppearanceLoweringDenial>
+    {
+        let current = self
+            .current
+            .as_ref()
+            .ok_or(UiMountedAppearanceLoweringDenial::WorkConstruction)?;
+        let empty = lowering::lower(UiMountedAppearanceLoweringInput::empty(
+            frame,
+            current.frame().semantic_surface(),
+            presentation,
+        ))?;
+        delta::work(Some(current), &empty).map(|delta| delta.work)
+    }
+
+    pub(crate) fn current_node_receipt(
+        &self,
+    ) -> Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity> {
+        self.current
+            .as_ref()?
+            .records()
+            .iter()
+            .find_map(|fact| fact.node_receipt())
+    }
+
+    pub(crate) const fn has_current(&self) -> bool {
+        self.current.is_some()
+    }
+
     pub(crate) fn mount(
         &mut self,
         input: UiMountedAppearanceLoweringInput,

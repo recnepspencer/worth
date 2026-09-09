@@ -17,6 +17,7 @@ pub enum UiUnpublishedAppearanceFragmentIdentity {
     SurfaceOverlay(crate::UiSemanticSurfaceIdentity),
     SurfacePointer {
         surface: crate::UiSemanticSurfaceIdentity,
+        /// The sole arriving pointer, or the departing pointer for removal-only work.
         pointer: crate::UiHostPointerIdentity,
     },
 }
@@ -71,8 +72,9 @@ pub enum UiUnpublishedAppearanceFrameProjectionDenial {
     CandidateCapabilityGenerationMismatch,
     CandidateCapabilityProfileDigestMismatch,
     PresentationReceiptAffinityMismatch,
-    ConflictingTextCandidate {
-        receipt: crate::UiMountedNodeReceiptIdentity,
+    DuplicateTextCandidate(crate::UiMountedPaintCommandIdentity),
+    DuplicateTextCandidateSpan {
+        command: crate::UiMountedPaintCommandIdentity,
         span: crate::UiMountedTextPaintSpanIdentity,
     },
 }

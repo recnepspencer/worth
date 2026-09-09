@@ -228,6 +228,17 @@ impl UiMountedSemanticTextSeed {
         &self.formatting
     }
 
+    pub(in crate::mounting::projection) fn appearance_foreground_spans(
+        &self,
+    ) -> Box<[worth_ui_host_contract::UiMountedTextPaintSpanIdentity]> {
+        match &self.content {
+            UiMountedSemanticTextSeedContent::Scalar(Some(source)) if !source.is_empty() => {
+                self.formatting.appearance_foreground_spans()
+            }
+            _ => Box::new([]),
+        }
+    }
+
     #[cfg(test)]
     pub(in crate::mounting::projection) fn scalar_for_test() -> Self {
         Self {

@@ -14,25 +14,28 @@ use worth_ui_host_contract::{
 use super::rect_node::rect_node;
 use super::text_node::text_node;
 
-pub(super) struct MountedPresentationWorld {
+pub(in crate::mounting::presentation) struct MountedPresentationWorld {
     surface: UiSemanticSurfaceIdentity,
     binding: UiSurfaceBindingGeneration,
     content: UiMountedContentGeneration,
-    pub(super) first_instance: UiMountedInstanceIdentity,
-    pub(super) second_instance: UiMountedInstanceIdentity,
-    pub(super) requirement: UiMountedSurfaceBindingRequirement,
+    pub(in crate::mounting::presentation) first_instance: UiMountedInstanceIdentity,
+    pub(in crate::mounting::presentation) second_instance: UiMountedInstanceIdentity,
+    pub(in crate::mounting::presentation) requirement: UiMountedSurfaceBindingRequirement,
 }
 
 #[derive(Clone, Copy)]
-pub(super) struct RectSpec {
+pub(in crate::mounting::presentation) struct RectSpec {
     instance: UiMountedInstanceIdentity,
-    pub(super) x: f32,
-    pub(super) color: UiMountedRgba8,
-    pub(super) clip_x: f32,
+    pub(in crate::mounting::presentation) x: f32,
+    pub(in crate::mounting::presentation) color: UiMountedRgba8,
+    pub(in crate::mounting::presentation) clip_x: f32,
     clip_width: f32,
 }
 
-pub(super) fn rect_spec(instance: UiMountedInstanceIdentity, x: f32) -> RectSpec {
+pub(in crate::mounting::presentation) fn rect_spec(
+    instance: UiMountedInstanceIdentity,
+    x: f32,
+) -> RectSpec {
     RectSpec {
         instance,
         x,
@@ -42,7 +45,7 @@ pub(super) fn rect_spec(instance: UiMountedInstanceIdentity, x: f32) -> RectSpec
     }
 }
 
-pub(super) fn rect_spec_with_clip(
+pub(in crate::mounting::presentation) fn rect_spec_with_clip(
     instance: UiMountedInstanceIdentity,
     x: f32,
     clip_x: f32,
@@ -58,7 +61,7 @@ pub(super) fn rect_spec_with_clip(
 }
 
 impl MountedPresentationWorld {
-    pub(super) fn new() -> Self {
+    pub(in crate::mounting::presentation) fn new() -> Self {
         let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
         let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
         let generation = WorthUiHostCapabilityObservationGeneration::new(7);
@@ -80,7 +83,7 @@ impl MountedPresentationWorld {
         }
     }
 
-    pub(super) fn projection(
+    pub(in crate::mounting::presentation) fn projection(
         &self,
         frame: UiMountedFrameIdentity,
         specs: impl IntoIterator<Item = RectSpec>,
@@ -117,7 +120,7 @@ impl MountedPresentationWorld {
         })
     }
 
-    pub(super) fn mixed_projection(
+    pub(in crate::mounting::presentation) fn mixed_projection(
         &self,
         frame: UiMountedFrameIdentity,
         instances: &[UiMountedInstanceIdentity],
@@ -183,7 +186,7 @@ impl MountedPresentationWorld {
         })
     }
 
-    pub(super) fn text_projection(
+    pub(in crate::mounting::presentation) fn text_projection(
         &self,
         frame: UiMountedFrameIdentity,
         instances: &[UiMountedInstanceIdentity],

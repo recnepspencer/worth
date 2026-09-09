@@ -6,6 +6,7 @@ pub use worth_ui_runtime::facade::entry::{
     UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementShutdownReport,
     UiFocusPlacementReconciliationExecutionDenial, UiIntentWiringSatisfied,
     UiMountedHostMeasurementTransitionDenial, UiMountedHostMeasurementUnexpectedTransition,
+    UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput,
     UiPortalDismissalPublicationReceipt, UiSemanticFocusParticipantObservation,
     UiSemanticFocusPhysicalPlacementOutcome, UiSemanticFocusPublicationCause,
     UiSemanticFocusPublicationOutcome, UiSemanticFocusPublicationReceipt,
@@ -19,10 +20,14 @@ pub use worth_ui_runtime::facade::mounted::{
     UiMountedFramePublicationReceipt, UiMountedFrameRequest, UiMountedFrameRetentionBudget,
     UiMountedFrameRetentionBudgetInput, UiMountedFrameRetentionRejection,
     UiMountedIndeterminateFrame, UiMountedInspectedFrame, UiMountedInspectionOmission,
-    UiMountedInspectionReceipt, UiMountedInspectionRequest,
-    UiMountedPresentationAdmissionRejection, UiMountedPresentationCompletionDenial,
-    UiMountedPresentationInFlight, UiMountedRejectedFrame, UiMountedSupersededFrame,
-    UiMountedVisualTargetDenial, UiPresentationDeadline,
+    UiMountedInspectionReceipt, UiMountedInspectionRequest, UiMountedInstanceIdentity,
+    UiMountedLayoutRevision, UiMountedOccurrenceGeometry, UiMountedPresentationAdmissionRejection,
+    UiMountedPresentationCompletionDenial, UiMountedPresentationInFlight, UiMountedRejectedFrame,
+    UiMountedSupersededFrame, UiMountedSurfaceGeometryBatch, UiMountedVisualTargetDenial,
+    UiPresentationDeadline,
+};
+pub use worth_ui_runtime::facade::mounted::{
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
 };
 pub use worth_ui_runtime::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 pub use worth_ui_runtime::facade::text::{

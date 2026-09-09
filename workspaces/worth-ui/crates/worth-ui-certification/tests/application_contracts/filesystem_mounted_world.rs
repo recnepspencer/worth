@@ -263,6 +263,7 @@ pub(super) fn prepare_frame(
     worth_ui_runtime::facade::mounted::UiPreparedMountedFrame,
     UiMountedFramePreparationDenial,
 > {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     session
         .execute_framework_turn(|_| {})
         .expect("no presentation lease is active")

@@ -58,6 +58,18 @@ impl WorthUiSealedOverlayDeclarationBindings {
     ) -> Option<crate::UiMosaicRegionDeclarationIdentity> {
         self.regions.get(&region_key(surface, region)).copied()
     }
+
+    pub fn region_on_surface(
+        &self,
+        surface: crate::UiSemanticSurfaceDeclarationIdentity,
+        region: &str,
+    ) -> Option<crate::UiMosaicRegionDeclarationIdentity> {
+        let surface_name = self
+            .surfaces
+            .iter()
+            .find_map(|(name, identity)| (*identity == surface).then_some(name.as_str()))?;
+        self.region_named(surface_name, region)
+    }
 }
 
 pub(super) fn allocate<T>(

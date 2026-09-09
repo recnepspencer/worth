@@ -10,15 +10,6 @@ impl WorthUiPresentationRequestBasis {
         if input.dpi_milli == 0 {
             return Err(WorthUiPresentationRequestBasisDenial::ZeroDpi);
         }
-        if !input.complete
-            && input.mechanics.is_empty()
-            && input.pin_additions.is_empty()
-            && input.pin_releases.is_empty()
-            && input.binding_pins.is_empty()
-            && input.removed_mechanics.is_empty()
-        {
-            return Err(WorthUiPresentationRequestBasisDenial::EmptyPresentationChange);
-        }
         let mut mechanics = input
             .mechanics
             .into_vec()

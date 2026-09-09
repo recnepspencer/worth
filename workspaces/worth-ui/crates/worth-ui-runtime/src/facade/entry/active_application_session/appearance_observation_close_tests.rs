@@ -127,11 +127,15 @@ fn validation_fact_receipt_succession_is_current_and_unmount_removes_the_row() {
         identity
     );
     assert_eq!(
-        second.class_for(graph_node, instance, first_receipt),
+        second.class_for(graph_node, instance, Some(first_receipt)),
         Some(crate::runtime::intent::UiValidationAppearanceClass::Stale)
     );
     assert_eq!(
-        second.class_for(graph_node, instance, second_receipt),
+        second.class_for(graph_node, instance, None),
+        Some(crate::runtime::intent::UiValidationAppearanceClass::Stale)
+    );
+    assert_eq!(
+        second.class_for(graph_node, instance, Some(second_receipt)),
         Some(crate::runtime::intent::UiValidationAppearanceClass::Advisory)
     );
     let stale_target = crate::runtime::intent::UiAdmittedValidationAppearanceTarget::admit(
@@ -169,7 +173,7 @@ fn validation_fact_receipt_succession_is_current_and_unmount_removes_the_row() {
     assert_eq!(retired.fact_count(), 0);
     assert_eq!(retired.owner_revision(), second.owner_revision() + 1);
     assert_eq!(
-        retired.class_for(graph_node, instance, second_receipt),
+        retired.class_for(graph_node, instance, Some(second_receipt)),
         None
     );
     let _ = session.shutdown();

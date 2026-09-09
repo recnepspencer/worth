@@ -237,6 +237,8 @@ impl UiMountedTextForegroundReuseReceipt {
             return false;
         };
         self.demand.layout_identity() == mechanic.qualified_layout_identity()
+            && self.demand.scope()
+                == worth_ui_host_contract::UiGlyphRasterDemandScope::CompleteLayout
             && self.demand.scale().text_scale_generation() == mechanic.qualified_layout_scale()
             && self.demand.placement() == placement
             && self.demand.lane() == worth_ui_host_contract::UiGlyphRasterLane::Ordinary

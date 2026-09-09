@@ -1,4 +1,4 @@
-use winit::event_loop::{ActiveEventLoop, ControlFlow};
+use winit::event_loop::ActiveEventLoop;
 
 impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication<Client> {
     pub(super) fn finalize_presentation_retry_round(
@@ -27,9 +27,9 @@ impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication
                     deadline,
                 ));
             }
-            Some(crate::native::UiNativePresentationRetryWake::Visibility) => {
-                event_loop.set_control_flow(ControlFlow::Wait);
-            }
+            // Visibility has no timed wake of its own. Preserve independent
+            // application, physical-signal, and confirmation scheduling.
+            Some(crate::native::UiNativePresentationRetryWake::Visibility) => {}
             None => {}
         }
     }

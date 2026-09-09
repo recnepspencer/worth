@@ -23,7 +23,7 @@ pub(super) fn prepare_intent_consequence_observation(
                         denial,
                     ),
                 batch: Box::new(batch),
-            })
+            });
         }
     };
     let admission = match turn.admit_intent_consequence_batch(batch) {

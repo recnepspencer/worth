@@ -11,6 +11,7 @@ pub enum UiMountedAppearanceMechanicIdentity {
     Outline(crate::UiMountedInstanceIdentity),
     TextForeground {
         target: crate::UiMountedInstanceIdentity,
+        command: crate::UiMountedPaintCommandIdentity,
         span: crate::UiMountedTextPaintSpanIdentity,
     },
     Pointer {
@@ -46,6 +47,7 @@ impl UiMountedAppearanceMechanic {
             ),
             Self::TextForeground(mechanic) => UiMountedAppearanceMechanicIdentity::TextForeground {
                 target: mechanic.node_receipt().mounted_instance(),
+                command: mechanic.command(),
                 span: mechanic.paint_span(),
             },
             Self::Pointer(mechanic) => UiMountedAppearanceMechanicIdentity::Pointer {

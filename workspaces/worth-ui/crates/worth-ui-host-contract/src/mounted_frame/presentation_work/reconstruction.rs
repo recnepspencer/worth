@@ -10,6 +10,7 @@ pub struct UiMountedPresentationReconstruction {
     pub(super) projection: crate::UiMountedProjectionView,
     pub(super) auxiliary: UiMountedPresentationAuxiliaryState,
     pub(super) commands: Box<[UiMountedPaintCommand]>,
+    pub(super) sample_overrides: Box<[super::UiMountedPresentationSampleChange]>,
     pub(super) order: Box<[UiMountedPaintOrderIdentity]>,
     pub(super) order_integrity: UiMountedPaintOrderIntegrity,
     pub(super) damage: Box<[UiMountedLogicalDamage]>,
@@ -26,6 +27,7 @@ pub struct UiMountedPresentationReconstructionInput {
     pub baseline: crate::UiHostSurfaceBaselineIdentity,
     pub projection: crate::UiMountedProjectionView,
     pub commands: Vec<UiMountedPaintCommand>,
+    pub sample_overrides: Vec<super::UiMountedPresentationSampleChange>,
     pub order: Vec<UiMountedPaintOrderIdentity>,
     pub order_integrity: UiMountedPaintOrderIntegrity,
     pub damage: Vec<UiMountedLogicalDamage>,
@@ -54,6 +56,7 @@ impl UiMountedPresentationReconstruction {
             projection: input.projection,
             auxiliary,
             commands: input.commands.into_boxed_slice(),
+            sample_overrides: input.sample_overrides.into_boxed_slice(),
             order: input.order.into_boxed_slice(),
             order_integrity: input.order_integrity,
             damage: input.damage.into_boxed_slice(),
@@ -75,6 +78,10 @@ impl UiMountedPresentationReconstruction {
 
     pub fn commands(&self) -> &[UiMountedPaintCommand] {
         &self.commands
+    }
+
+    pub fn sample_overrides(&self) -> &[super::UiMountedPresentationSampleChange] {
+        &self.sample_overrides
     }
 
     pub fn order(&self) -> &[UiMountedPaintOrderIdentity] {

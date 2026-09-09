@@ -64,6 +64,7 @@ fn in_process_real_filesystem_pulse_completes_expected_headless_rectangle() {
     }
 
     let request = UiMountedFrameRequest::all_bound_surfaces();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let prepared = session
         .execute_framework_turn(|_| {})
         .expect("no presentation lease is active")

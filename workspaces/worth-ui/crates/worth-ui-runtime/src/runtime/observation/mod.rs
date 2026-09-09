@@ -54,5 +54,6 @@ pub use turn::{
 };
 pub(crate) use turn::{
     UiAppearanceObservationCloseInput, UiObservationTurnCloseAuthority,
+    UiPointerAffordanceObservationCloseInput, UiPointerAffordanceObservationOwners,
     UiPreparedObservationProgressCommit,
 };

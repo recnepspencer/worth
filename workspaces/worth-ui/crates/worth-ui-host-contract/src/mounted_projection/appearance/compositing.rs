@@ -1,4 +1,5 @@
-use super::{UiMountedAppearanceColor, UiMountedAppearanceOpacity};
+use super::UiMountedAppearanceColor;
+use crate::UiMountedPresentationOpacity;
 
 const FIXED_ONE: u64 = 1_u64 << 32;
 pub const SRGB_LINEAR_THRESHOLD_NUMERATOR: u32 = 40_450;
@@ -13,7 +14,7 @@ pub const SRGB_LINEAR_SCALE_NUMERATOR: u32 = 1_292;
 pub const SRGB_LINEAR_SCALE_DENOMINATOR: u32 = 100;
 
 pub fn compose_source_over(
-    bottom_to_top: impl IntoIterator<Item = (UiMountedAppearanceColor, UiMountedAppearanceOpacity)>,
+    bottom_to_top: impl IntoIterator<Item = (UiMountedAppearanceColor, UiMountedPresentationOpacity)>,
 ) -> UiMountedAppearanceColor {
     let mut destination = [0_u16; 4];
     for (color, opacity) in bottom_to_top {
@@ -170,11 +171,18 @@ mod tests {
     fn transparent_and_opaque_source_over_are_exact() {
         let red = UiMountedAppearanceColor::from_straight_srgba([255, 0, 0, 255]);
         assert_eq!(
-            compose_source_over([(red, UiMountedAppearanceOpacity::ZERO)]).straight_srgba(),
+            compose_source_over([(
+                red,
+                UiMountedPresentationOpacity::from_runtime_composition(0)
+            )])
+            .straight_srgba(),
             [0, 0, 0, 0]
         );
         assert_eq!(
-            compose_source_over([(red, UiMountedAppearanceOpacity::ONE)]),
+            compose_source_over([(
+                red,
+                UiMountedPresentationOpacity::from_runtime_composition(u16::MAX)
+            )]),
             red
         );
     }
@@ -182,7 +190,12 @@ mod tests {
     #[test]
     fn repeated_black_layers_match_independent_alpha_oracle() {
         let black = UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 128]);
-        let output = compose_source_over([(black, UiMountedAppearanceOpacity::ONE); 2]);
+        let output = compose_source_over(
+            [(
+                black,
+                UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
+            ); 2],
+        );
         assert_eq!(output.straight_srgba(), [0, 0, 0, 192]);
     }
 
@@ -191,8 +204,14 @@ mod tests {
         let red = UiMountedAppearanceColor::from_straight_srgba([255, 0, 0, 128]);
         let green = UiMountedAppearanceColor::from_straight_srgba([0, 255, 0, 128]);
         let output = compose_source_over([
-            (red, UiMountedAppearanceOpacity::ONE),
-            (green, UiMountedAppearanceOpacity::ONE),
+            (
+                red,
+                UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
+            ),
+            (
+                green,
+                UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
+            ),
         ]);
         assert_eq!(output.straight_srgba(), [156, 213, 0, 192]);
     }
@@ -207,7 +226,10 @@ mod tests {
             let gray =
                 UiMountedAppearanceColor::from_straight_srgba([channel, channel, channel, 255]);
             assert_eq!(
-                compose_source_over([(gray, UiMountedAppearanceOpacity::ONE)]),
+                compose_source_over([(
+                    gray,
+                    UiMountedPresentationOpacity::from_runtime_composition(u16::MAX)
+                )]),
                 gray,
                 "opaque channel {channel}",
             );
@@ -220,8 +242,14 @@ mod tests {
         let black = UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 255]);
         let white = UiMountedAppearanceColor::from_straight_srgba([255, 255, 255, 255]);
         let actual = compose_source_over([
-            (black, UiMountedAppearanceOpacity::ONE),
-            (white, UiMountedAppearanceOpacity::from_units(10)),
+            (
+                black,
+                UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
+            ),
+            (
+                white,
+                UiMountedPresentationOpacity::from_runtime_composition(10),
+            ),
         ])
         .straight_srgba();
 
@@ -260,16 +288,28 @@ mod tests {
         let amber = UiMountedAppearanceColor::from_straight_srgba([240, 130, 10, 119]);
         assert_eq!(
             compose_source_over([
-                (blue, UiMountedAppearanceOpacity::from_units(51_337)),
-                (amber, UiMountedAppearanceOpacity::from_units(42_001)),
+                (
+                    blue,
+                    UiMountedPresentationOpacity::from_runtime_composition(51_337)
+                ),
+                (
+                    amber,
+                    UiMountedPresentationOpacity::from_runtime_composition(42_001)
+                ),
             ])
             .straight_srgba(),
             [168, 94, 169, 171],
         );
         assert_eq!(
             compose_source_over([
-                (amber, UiMountedAppearanceOpacity::from_units(42_001)),
-                (blue, UiMountedAppearanceOpacity::from_units(51_337)),
+                (
+                    amber,
+                    UiMountedPresentationOpacity::from_runtime_composition(42_001)
+                ),
+                (
+                    blue,
+                    UiMountedPresentationOpacity::from_runtime_composition(51_337)
+                ),
             ])
             .straight_srgba(),
             [120, 71, 198, 171],

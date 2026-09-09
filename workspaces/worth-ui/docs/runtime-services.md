@@ -70,6 +70,58 @@ where the next layout intends to be. Presentation-sampled geometry answers
 where pixels and hit targets are now. Host coordinates and physical pixels are
 separate again. Do not substitute one because its rectangle has equal numbers.
 
+Motion opacity is quantized by the presentation sampler into `u16` units, with
+65,535 representing one and ties rounded to even. Sample receipts, retained
+track state, retarget starts, and certification observations preserve those
+exact units. Presentation accepts the canonical result without a second float
+conversion. This raw Motion factor remains distinct from semantic appearance
+opacity; an appearance-composed value must never become a retarget predecessor.
+
+For independently mounted collection items, call
+`bind_selection_item(owner_receipt, item_receipt, current_option)` before
+SelectionCommit or Selection-driven appearance. Both receipts must be current
+and on the same semantic surface. The owner must declare the corresponding
+collection content or exact SelectionCommit projection payload. The option
+carries the original application item key. A second mounted incarnation of
+the same Selection owner cannot replace an existing owner's bindings.
+
+Binding establishes provenance, not selection. Selection remains the sole owner
+of selected keys, anchor, and cursor. Appearance and interaction consume the
+same binding. Reorder refreshes surviving exact row/key bindings; retirement,
+removal, suspension, and graph replacement revoke obsolete bindings. Changing
+an item's key requires retiring its mounted identity. Rows drawn inside one
+collection node are not independently mounted items.
+
+Initial allocation advances the prepared graph generation. Portal admits that
+succession before allocation work and commits it after successful activation,
+preserving declared surface bindings, live Portal rows, and stack order. A
+failed preparation leaves those bindings on their predecessor generation.
+
+The staged appearance mounting path distinguishes that generation change from
+unmounting. Expired semantic projections leave physical-only predecessors for
+still-mounted instances, preserving their exact session, incarnation, receipts,
+and capacity. Fresh resolution may replace those physical facts but cannot use
+the expired projection as semantic authority. Graph replacement carries these
+predecessors independently of current projection authority. Candidate mounting
+checks attachment membership against its exact graph generation: removing a role
+retires its mechanics in that replacement even when the node survives. Explicit
+unmount produces removal work and damage from the old visual bounds, including
+when the successor frame has no nodes. Completed surface deregistration discards
+that surface's physical facts while preserving other surfaces. Aggregate admission
+accepts replacements and removals together; a denied candidate preserves both for
+retry. Reconstruction after generation expiry requires a real current-owner
+observation close. That close queues the existing canonical initial selection;
+reconciliation consumes its resolver results once while rebuilding the remaining
+current projections. Reconstruction without refreshed semantic provenance denies
+and preserves the physical predecessors. This remains unpublished until the
+appearance protocol cutover.
+
+Physical outline lowering uses the admitted host appearance profile and each
+prepared surface binding's device scale to select the qualified anti-alias
+fringe. The same qualification applies during reconstruction. Missing profiles
+or unqualified scales deny outline output; they never become a zero-fringe
+approximation. Outline damage includes the full expanded visual bounds.
+
 ## How It Executes
 
 An explicit user operation follows the ordinary intent path:
@@ -101,7 +153,12 @@ or indeterminate and reconciliation required
 ```
 
 Silence and timeout are never success. Reconciliation consumes current host
-truth and does not replay the semantic request.
+truth and does not replay the semantic request. Focus navigation and placement
+use mounting's current physical presentation epoch, including accepted Motion
+samples. Historical frame-publication receipts remain structural evidence.
+Observation admission validates host surface, binding, and epoch together before
+updating owners. Tab and container navigation preserve the admitted semantic
+surface; an input from another surface cannot navigate the current container.
 
 ## Small Example
 

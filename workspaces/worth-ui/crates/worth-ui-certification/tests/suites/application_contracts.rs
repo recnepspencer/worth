@@ -60,6 +60,8 @@ mod mounted_application_lifecycle;
 mod mounted_cost_evidence;
 #[path = "../application_contracts/mounted_frame_assembly.rs"]
 mod mounted_frame_assembly;
+#[path = "../application_contracts/mounted_geometry_fixture.rs"]
+mod mounted_geometry_fixture;
 #[path = "../application_contracts/mounted_headless_recorder.rs"]
 mod mounted_headless_recorder;
 #[path = "../application_contracts/mounted_host_protocol/mod.rs"]

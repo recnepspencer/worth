@@ -61,6 +61,8 @@ struct ScriptedPresentationState {
         HashSet<worth_ui_host_contract::UiMountedPaintCommandIdentity>,
     requested_portal_overlay_counts: Vec<usize>,
     reconstruction_portal_overlay_counts: Vec<usize>,
+    reconstruction_sample_overrides:
+        Vec<Box<[worth_ui_host_contract::UiMountedPresentationSampleChange]>>,
     input_recipient: Option<worth_ui_host_contract::UiHostInputRecipientBindingReceipt>,
     viewport_extent: [f32; 2],
     viewport_measurement_calls: usize,
@@ -102,6 +104,7 @@ impl Default for ScriptedPresentationState {
             requested_portal_overlay_commands: HashSet::new(),
             requested_portal_overlay_counts: Vec::new(),
             reconstruction_portal_overlay_counts: Vec::new(),
+            reconstruction_sample_overrides: Vec::new(),
             input_recipient: None,
             viewport_extent: [800.0, 600.0],
             viewport_measurement_calls: 0,
@@ -243,6 +246,10 @@ impl ScriptedPresentationHost {
         self.state.lock().unwrap().presentation_calls
     }
 
+    pub fn pending_presentation_count(&self) -> usize {
+        self.state.lock().unwrap().presentations.len()
+    }
+
     pub fn last_filled_rect_colors(&self) -> Vec<worth_ui_host_contract::UiMountedRgba8> {
         self.state.lock().unwrap().last_filled_rect_colors.clone()
     }
@@ -270,6 +277,16 @@ impl ScriptedPresentationHost {
             .lock()
             .unwrap()
             .reconstruction_portal_overlay_counts
+            .clone()
+    }
+
+    pub fn reconstruction_sample_overrides(
+        &self,
+    ) -> Vec<Box<[worth_ui_host_contract::UiMountedPresentationSampleChange]>> {
+        self.state
+            .lock()
+            .unwrap()
+            .reconstruction_sample_overrides
             .clone()
     }
 

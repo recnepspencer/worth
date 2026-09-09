@@ -2,8 +2,6 @@ use super::{UiMountedLogicalDamage, UiMountedPaintCommandIdentity, UiMountedPres
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiMountedPresentationSampleConstructionDenial {
-    NonFiniteOpacity,
-    OpacityOutOfRange,
     CoordinateSpaceMismatch,
     EmptyTransformSource,
     EmptyChanges,
@@ -48,16 +46,12 @@ pub struct UiMountedPresentationSampleInput {
 
 impl UiMountedPresentationOpacity {
     #[doc(hidden)]
-    pub fn from_runtime_sampling(
-        opacity: f32,
-    ) -> Result<Self, UiMountedPresentationSampleConstructionDenial> {
-        if !opacity.is_finite() {
-            return Err(UiMountedPresentationSampleConstructionDenial::NonFiniteOpacity);
-        }
-        if !(0.0..=1.0).contains(&opacity) {
-            return Err(UiMountedPresentationSampleConstructionDenial::OpacityOutOfRange);
-        }
-        Ok(Self((opacity * f32::from(u16::MAX)).round() as u16))
+    pub const fn from_runtime_composition(units: u16) -> Self {
+        Self(units)
+    }
+
+    pub const fn units(self) -> u16 {
+        self.0
     }
 
     pub fn factor(self) -> f32 {

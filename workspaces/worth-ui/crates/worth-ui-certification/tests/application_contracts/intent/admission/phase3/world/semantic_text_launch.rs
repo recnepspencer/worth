@@ -24,6 +24,7 @@ impl AdmissionWorld {
         let mounted =
             super::mount_complete_pages(&mut session, &nodes, target_count, routed_component_index);
         super::establish_allocation(&mut session, 3);
+        crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
         let prepared = session
             .prepare_application_presentation_frame(
                 worth_ui_runtime::facade::mounted::UiMountedFrameRequest::all_bound_surfaces(),

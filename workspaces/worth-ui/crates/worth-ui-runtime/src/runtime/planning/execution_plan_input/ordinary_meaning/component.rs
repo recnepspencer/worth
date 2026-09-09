@@ -38,6 +38,10 @@ impl WorthUiComponentPlanMeaning {
         Some(self.static_paint_contract()?.order())
     }
 
+    pub(crate) fn surface_paint_order(&self) -> Option<u32> {
+        self.descriptor.surface_paint_order()
+    }
+
     pub(crate) fn semantic_text_layer_order(&self) -> Option<u32> {
         Some(
             self.descriptor
@@ -78,6 +82,10 @@ impl WorthUiComponentPlanMeaning {
         let digest = self
             .static_paint_order()
             .map_or(digest, |order| fold(digest, u64::from(order.rank())));
+        let digest = match self.surface_paint_order() {
+            Some(rank) => fold(fold(digest, 0x7375_7266_6f72_6401), u64::from(rank)),
+            None => fold(digest, 0x7375_7266_6f72_6400),
+        };
         let digest = self
             .semantic_text_layer_order()
             .map_or(digest, |order| fold(digest, u64::from(order)));
@@ -179,6 +187,33 @@ mod tests {
             ComponentFocusSupport::focusable()
         );
         assert_ne!(plain.semantic_digest(), focusable.semantic_digest());
+    }
+
+    #[test]
+    fn surface_paint_order_is_executable_meaning_without_static_paint_inference() {
+        let legacy = WorthUiComponentPlanMeaning::with_static_paint_order_for_test(7)
+            .descriptor()
+            .clone();
+        assert_eq!(meaning(legacy.clone()).surface_paint_order(), None);
+        let variants = [None, Some(0), Some(65_536), Some(u32::MAX)].map(|rank| {
+            let descriptor = rank.map_or_else(
+                || legacy.clone(),
+                |rank| legacy.clone().with_surface_paint_order(rank),
+            );
+            let meaning = meaning(descriptor);
+            assert_eq!(meaning.surface_paint_order(), rank);
+            assert_eq!(meaning.static_paint_order().unwrap().rank(), 7);
+            meaning
+        });
+        for (index, left) in variants.iter().enumerate() {
+            for right in &variants[index + 1..] {
+                assert_ne!(left.semantic_digest(), right.semantic_digest());
+            }
+        }
+        assert_eq!(
+            meaning(component().with_surface_paint_order(23)).surface_paint_order(),
+            Some(23),
+        );
     }
 
     fn component() -> ComponentDescriptor {

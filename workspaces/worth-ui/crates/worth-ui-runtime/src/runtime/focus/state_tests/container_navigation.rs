@@ -14,9 +14,22 @@ fn active_descendant_moves_without_moving_semantic_focus_and_clears_on_composite
         .commit(state.plan(first_request(scope)).unwrap())
         .unwrap();
 
+    let before = state.inspect_for_certification();
+    assert!(state
+        .navigate_container(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
+            crate::runtime::focus::UiFocusContainerNavigationKey::Right,
+        )
+        .unwrap()
+        .is_none());
+    assert_eq!(state.inspect_for_certification(), before);
+
     assert!(matches!(
         state
-            .navigate_container(crate::runtime::focus::UiFocusContainerNavigationKey::Right)
+            .navigate_container(
+                scope.semantic_surface(),
+                crate::runtime::focus::UiFocusContainerNavigationKey::Right
+            )
             .unwrap(),
         Some(crate::runtime::focus::UiFocusContainerNavigationReceipt::ActiveDescendant)
     ));
@@ -60,8 +73,21 @@ fn roving_policy_moves_semantic_focus_and_tab_leaves_the_container_as_one_stop()
         .commit(state.plan(first_request(scope)).unwrap())
         .unwrap();
 
+    let before = state.inspect_for_certification();
+    assert!(state
+        .navigate_container(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
+            crate::runtime::focus::UiFocusContainerNavigationKey::Down,
+        )
+        .unwrap()
+        .is_none());
+    assert_eq!(state.inspect_for_certification(), before);
+
     let first = state
-        .navigate_container(crate::runtime::focus::UiFocusContainerNavigationKey::Down)
+        .navigate_container(
+            scope.semantic_surface(),
+            crate::runtime::focus::UiFocusContainerNavigationKey::Down,
+        )
         .unwrap();
     let Some(crate::runtime::focus::UiFocusContainerNavigationReceipt::Roving(first)) = first
     else {
@@ -70,7 +96,10 @@ fn roving_policy_moves_semantic_focus_and_tab_leaves_the_container_as_one_stop()
     assert_eq!(first.current().unwrap().participant(), children[0].0);
     assert_eq!(first.cause(), UiFocusCause::RovingMovement);
     assert!(state
-        .navigate_container(crate::runtime::focus::UiFocusContainerNavigationKey::Right)
+        .navigate_container(
+            scope.semantic_surface(),
+            crate::runtime::focus::UiFocusContainerNavigationKey::Right
+        )
         .unwrap()
         .is_none());
 

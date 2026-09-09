@@ -16,6 +16,7 @@ mod frame_execution_diagnostic;
 mod frame_presentation;
 mod input;
 mod intent;
+mod layout;
 mod lifecycle;
 mod product_copy;
 mod product_story;

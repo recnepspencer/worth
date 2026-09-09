@@ -31,7 +31,21 @@ fn pointer_removal_accepts_predecessor_only_attribution() {
         [identity.clone()],
         [],
         [UiMountedAppearanceMechanicChange::Remove(identity)],
-        [UiAppearanceDamageRegion::new(0, 0, 2, 2).unwrap()],
+        [],
+    );
+    assert_eq!(
+        UiUnpublishedAppearanceFragment::from_runtime_mounting(
+            UiUnpublishedAppearanceFragmentIdentity::SurfacePointer {
+                surface: context.surface,
+                pointer: UiHostPointerIdentity::new(18),
+            },
+            work.clone(),
+            [],
+            context.requirement,
+            surface_affinity(&context),
+        ),
+        Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch),
+        "removal-only work must identify the departing pointer",
     );
     let fragment = UiUnpublishedAppearanceFragment::from_runtime_mounting(
         UiUnpublishedAppearanceFragmentIdentity::SurfacePointer {
@@ -73,7 +87,7 @@ fn pointer_retarget_uses_remove_and_insert_with_one_current_pointer() {
             UiMountedAppearanceMechanicChange::Remove(old_identity),
             UiMountedAppearanceMechanicChange::Insert(new_mechanic),
         ],
-        [UiAppearanceDamageRegion::new(0, 0, 2, 2).unwrap()],
+        [],
     );
     let fragment = UiUnpublishedAppearanceFragment::from_runtime_mounting(
         UiUnpublishedAppearanceFragmentIdentity::SurfacePointer {
@@ -89,6 +103,189 @@ fn pointer_retarget_uses_remove_and_insert_with_one_current_pointer() {
 
     assert_eq!(fragment.work().successor().mechanics().len(), 1);
     assert_eq!(fragment.work().changes().len(), 2);
+}
+
+#[test]
+fn pointer_primary_handoff_keeps_one_surface_fragment() {
+    let context = super::super::context();
+    let old = pointer(
+        &context,
+        UiHostPointerIdentity::new(101),
+        UiMountedInstanceIdentity::mint_unbound().unwrap(),
+    );
+    let new = pointer(&context, UiHostPointerIdentity::new(102), old.target());
+    let fragment = handoff(
+        &context,
+        &[UiMountedAppearanceMechanic::Pointer(old).identity()],
+        new,
+        new.pointer(),
+    )
+    .expect("a surface can atomically replace its primary pointer");
+    assert_eq!(fragment.work().changes().len(), 2);
+    assert_eq!(
+        fragment.work().successor().mechanics(),
+        &[UiMountedAppearanceMechanic::Pointer(new)],
+    );
+    assert!(fragment.work().damage().is_empty());
+    let frame = UiUnpublishedAppearanceFrameProjection::from_runtime_mounting(
+        context.frame,
+        context.attempt,
+        [fragment],
+    )
+    .unwrap();
+    assert_eq!(frame.fragments().len(), 1);
+}
+
+#[test]
+fn pointer_primary_handoff_rejects_foreign_or_ambiguous_predecessors() {
+    let context = super::super::context();
+    let old = pointer(
+        &context,
+        UiHostPointerIdentity::new(103),
+        UiMountedInstanceIdentity::mint_unbound().unwrap(),
+    );
+    let new = pointer(&context, UiHostPointerIdentity::new(104), old.target());
+    let old_identity = UiMountedAppearanceMechanic::Pointer(old).identity();
+    let foreign = UiMountedPointerAffordanceMechanic::complete_from_runtime_mounting(
+        old.pointer(),
+        UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
+        old.target(),
+        old.family(),
+    );
+    let second = pointer(&context, UiHostPointerIdentity::new(105), old.target());
+    for predecessors in [
+        vec![UiMountedAppearanceMechanic::Pointer(foreign).identity()],
+        vec![UiMountedAppearanceMechanicIdentity::Surface(old.target())],
+        vec![
+            old_identity.clone(),
+            UiMountedAppearanceMechanic::Pointer(second).identity(),
+        ],
+        vec![
+            old_identity.clone(),
+            UiMountedAppearanceMechanicIdentity::Surface(old.target()),
+        ],
+    ] {
+        assert!(handoff(&context, &predecessors, new, new.pointer()).is_err());
+    }
+    assert_eq!(
+        handoff(&context, &[old_identity], new, old.pointer()),
+        Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch),
+        "a fragment with a successor must identify the arriving pointer",
+    );
+}
+
+#[test]
+fn pointer_fragment_rejects_empty_predecessor_and_successor() {
+    let context = super::super::context();
+    let work = work_with_manifest(
+        &context,
+        UiMountedAppearanceWorkPosture::Unchanged,
+        [],
+        [],
+        [],
+        [],
+    );
+    assert_eq!(
+        UiUnpublishedAppearanceFragment::from_runtime_mounting(
+            UiUnpublishedAppearanceFragmentIdentity::SurfacePointer {
+                surface: context.surface,
+                pointer: UiHostPointerIdentity::new(106),
+            },
+            work,
+            [],
+            context.requirement,
+            surface_affinity(&context),
+        ),
+        Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch),
+    );
+}
+
+#[test]
+fn pointer_handoff_cannot_carry_overlay_order_changes() {
+    let context = super::super::context();
+    let old = pointer(
+        &context,
+        UiHostPointerIdentity::new(107),
+        UiMountedInstanceIdentity::mint_unbound().unwrap(),
+    );
+    let new = pointer(&context, UiHostPointerIdentity::new(108), old.target());
+    let old_identity = UiMountedAppearanceMechanic::Pointer(old).identity();
+    let valid = handoff(&context, &[old_identity.clone()], new, new.pointer()).unwrap();
+    for order_in_predecessor in [true, false] {
+        let participant = UiOverlayParticipantIdentity::Portal(old.target());
+        let manifest = UiMountedAppearancePredecessorManifest::from_runtime_mounting(
+            [old_identity.clone()],
+            order_in_predecessor.then_some(participant.clone()),
+        )
+        .unwrap();
+        let order = UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
+            context.surface,
+            context.attempt,
+            1,
+            1,
+            (!order_in_predecessor).then_some(participant),
+        )
+        .unwrap();
+        let successor = UiMountedAppearanceFrame::from_runtime_mounting(
+            context.frame,
+            context.surface,
+            valid.work().successor().mechanics().iter().cloned(),
+            order,
+        )
+        .unwrap();
+        let work = UiMountedAppearanceWork::from_runtime_mounting(
+            UiMountedAppearanceWorkPosture::Delta,
+            Some(context.predecessor),
+            Some(manifest),
+            successor,
+            valid.work().changes().iter().cloned(),
+            [],
+            true,
+        )
+        .unwrap();
+        assert_eq!(
+            UiUnpublishedAppearanceFragment::from_runtime_mounting(
+                valid.identity(),
+                work,
+                [],
+                context.requirement,
+                surface_affinity(&context),
+            ),
+            Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch)
+        );
+    }
+}
+
+fn handoff(
+    context: &Context,
+    predecessors: &[UiMountedAppearanceMechanicIdentity],
+    successor: UiMountedPointerAffordanceMechanic,
+    fragment_pointer: UiHostPointerIdentity,
+) -> Result<UiUnpublishedAppearanceFragment, UiUnpublishedAppearanceFrameProjectionDenial> {
+    let successor = UiMountedAppearanceMechanic::Pointer(successor);
+    let changes = predecessors
+        .iter()
+        .cloned()
+        .map(UiMountedAppearanceMechanicChange::Remove)
+        .chain([UiMountedAppearanceMechanicChange::Insert(successor.clone())]);
+    let work = work_with_manifest(
+        context,
+        UiMountedAppearanceWorkPosture::Delta,
+        predecessors.iter().cloned(),
+        [successor],
+        changes,
+        [],
+    );
+    UiUnpublishedAppearanceFragment::from_runtime_mounting(
+        UiUnpublishedAppearanceFragmentIdentity::SurfacePointer {
+            surface: context.surface,
+            pointer: fragment_pointer,
+        },
+        work,
+        [],
+        context.requirement,
+        surface_affinity(context),
+    )
 }
 
 #[test]

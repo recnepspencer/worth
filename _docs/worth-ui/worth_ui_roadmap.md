@@ -2258,9 +2258,14 @@ is created.
 
 Detailed spec: [milestone-3.16.md](./milestone-3.16.md)
 
-Status: In progress. Gates 0 and 1 are complete. Gate 1's approved integration
-SHA is `e1d61bce2aeaa059777028f861e797f09c0ea785`. Gate 2 is next and in
-progress, but is not complete.
+Status: In progress, Gate 4. Gates 0 and 1 are complete. Gate 4's five sections
+remain open: [mounted geometry](./milestone-3.16.md#gate-4a--mounted-geometry),
+[text foreground](./milestone-3.16.md#gate-4b--text-foreground),
+[Motion composition](./milestone-3.16.md#gate-4c--motion-composition),
+[backdrop and Portal](./milestone-3.16.md#gate-4d--backdrop-and-portal), and
+[integrated closure](./milestone-3.16.md#gate-4e--integrated-closure).
+The spec owns their plans and acceptance. Emission remains disabled until Gate 5's
+atomic cutover; Gate 6 owns live/native/design milestone closure.
 
 The governing design freezes explicit role attachment,
 surface-bound theme capability, coherent owner-issued state vectors, finite

@@ -19,7 +19,7 @@ struct OriginalOrderEntry<Identity> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum UiNativeRetainedOrderDenial {
+pub(in crate::native) enum UiNativeRetainedOrderDenial {
     DuplicateIdentity,
     MissingIdentity,
     MissingPredecessor,

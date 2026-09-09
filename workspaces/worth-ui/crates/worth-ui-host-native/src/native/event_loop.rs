@@ -20,7 +20,9 @@ mod failure;
 mod finish;
 mod finish_capture;
 mod finish_cleanup;
+mod observation_clock;
 mod physical_clock;
+pub use physical_clock::UiNativeObservationClock;
 mod physical_progression;
 mod pointer_position;
 mod presentation_correlation;
@@ -65,8 +67,9 @@ pub use contract::{
     UiNativeEventLoopClientClose, UiNativeEventLoopClientFailure, UiNativeEventLoopDirective,
     UiNativeEventLoopRunDenial, UiNativeEventLoopRunReport,
     UiNativeEventLoopShutdownOverlapObservation, UiNativeEventLoopStopReport,
-    UiNativeInputReachability, UiNativeObservationReadinessGrant, UiNativePhysicalProgressClass,
-    UiNativePhysicalProgressGrant, UiNativeReadinessGrant, UiNativeReducedMotionPosture,
+    UiNativeInputReachability, UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
+    UiNativePhysicalProgressClass, UiNativePhysicalProgressGrant, UiNativeReadinessGrant,
+    UiNativeReducedMotionPosture,
 };
 use physical_clock::UiNativePhysicalEventClock;
 pub use presentation_correlation::UiNativePhysicalPresentationCorrelation;
@@ -99,6 +102,7 @@ struct UiNativeEventLoopApplication<Client> {
     loop_resources: Vec<super::UiNativeResourceOwner>,
     port_crossings: u8,
     physical_clock: UiNativePhysicalEventClock,
+    observation_wait: observation_clock::UiNativeObservationWait,
     pointer_input: Option<Box<pointer_position::UiNativePointerInputPort>>,
     pending_input_reachability: contract::UiNativeInputReachability,
     thread_posture: UiNativeEventLoopThreadPosture,

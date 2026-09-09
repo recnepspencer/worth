@@ -7,7 +7,8 @@ pub(crate) use application_state::{
 };
 
 pub(crate) use application_state::{
-    WorthUiApplicationSessionState, WorthUiRuntimePublicationBasis,
+    UiMountedRegionDeclarationBinding, WorthUiApplicationSessionState,
+    WorthUiRuntimePublicationBasis,
 };
 pub use intent_resource_census::UiIntentResourceCensus;
 pub(crate) use intent_resource_census::UiIntentResourceCensusInput;

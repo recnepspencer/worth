@@ -1,4 +1,5 @@
-use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
+use crate::runtime::persistent_index::{UiPersistentOrdMap, UiPersistentOrdSet};
+use std::collections::BTreeSet;
 
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 use worth_ui_dsl::UiPortalDeclarationId;
@@ -53,13 +54,27 @@ pub(crate) enum UiPortalOverlayBindingDenial {
     ForeignSurface,
 }
 
+#[derive(Clone)]
 pub(crate) struct UiPortalOverlayBindingOwner {
     generation: WorthUiPreparedApplicationGenerationIdentity,
     runtime_surface: UiSemanticSurfaceIdentity,
-    portal_declarations: BTreeMap<UiPortalIdentity, UiPortalDeclarationId>,
+    portal_declarations: UiPersistentOrdMap<UiPortalIdentity, UiPortalDeclarationId>,
+    declaration_portals:
+        UiPersistentOrdMap<UiPortalDeclarationId, UiPersistentOrdSet<UiPortalIdentity>>,
 }
 
 impl UiPortalOverlayBindingOwner {
+    pub(super) fn commit_graph_generation_succession(
+        &mut self,
+        succession: &super::overlay_binding_lifecycle::UiPreparedPortalOverlayGraphSuccession,
+    ) {
+        self.generation = succession.successor().clone();
+    }
+
+    pub(super) fn generation(&self) -> &WorthUiPreparedApplicationGenerationIdentity {
+        &self.generation
+    }
+
     #[allow(
         dead_code,
         reason = "Binding-owner construction is consumed by owner tests and successor-facing setup."
@@ -71,7 +86,8 @@ impl UiPortalOverlayBindingOwner {
         Self {
             generation,
             runtime_surface,
-            portal_declarations: BTreeMap::new(),
+            portal_declarations: UiPersistentOrdMap::new(),
+            declaration_portals: UiPersistentOrdMap::new(),
         }
     }
 
@@ -84,7 +100,22 @@ impl UiPortalOverlayBindingOwner {
         declaration: UiPortalDeclarationId,
         portal: UiPortalIdentity,
     ) -> Result<(), UiPortalOverlayBindingDenial> {
-        Self::insert_binding(&mut self.portal_declarations, portal, declaration)
+        match self.portal_declarations.get(&portal) {
+            Some(current) if *current == declaration => {
+                return Err(UiPortalOverlayBindingDenial::DuplicateBinding);
+            }
+            Some(_) => return Err(UiPortalOverlayBindingDenial::PortalDeclarationConflict),
+            None => {}
+        }
+        self.portal_declarations.insert(portal, declaration);
+        let mut portals = self
+            .declaration_portals
+            .get(&declaration)
+            .cloned()
+            .unwrap_or_default();
+        portals.insert(portal);
+        self.declaration_portals.insert(declaration, portals);
+        Ok(())
     }
 
     pub(crate) fn binding_for_portal(
@@ -94,12 +125,54 @@ impl UiPortalOverlayBindingOwner {
         self.portal_declarations.get(&portal).copied()
     }
 
+    pub(crate) fn bindings(
+        &self,
+    ) -> impl Iterator<Item = (UiPortalIdentity, UiPortalDeclarationId)> + '_ {
+        self.portal_declarations
+            .iter()
+            .map(|(portal, declaration)| (*portal, *declaration))
+    }
+
     pub(crate) fn remove(&mut self, portal: UiPortalIdentity) {
-        self.portal_declarations.remove(&portal);
+        if let Some(declaration) = self.portal_declarations.get(&portal).copied() {
+            self.portal_declarations.remove(&portal);
+            let mut portals = self
+                .declaration_portals
+                .get(&declaration)
+                .cloned()
+                .expect("binding retains its declaration index");
+            portals.remove(&portal);
+            if portals.is_empty() {
+                self.declaration_portals.remove(&declaration);
+            } else {
+                self.declaration_portals.insert(declaration, portals);
+            }
+        }
+    }
+
+    pub(crate) fn portals_for_declaration(
+        &self,
+        declaration: UiPortalDeclarationId,
+    ) -> impl Iterator<Item = UiPortalIdentity> + '_ {
+        self.declaration_portals
+            .get(&declaration)
+            .into_iter()
+            .flat_map(|portals| portals.iter().copied())
+    }
+
+    pub(crate) fn changed_portals(&self, previous: &Self) -> (Vec<UiPortalIdentity>, usize) {
+        let (changed, work) = self
+            .portal_declarations
+            .changed_keys_with_work(&previous.portal_declarations);
+        (changed, work.cursor_steps())
     }
 
     pub(crate) fn is_empty(&self) -> bool {
         self.portal_declarations.is_empty()
+    }
+
+    pub(crate) fn binding_count(&self) -> usize {
+        self.portal_declarations.len()
     }
 
     #[allow(
@@ -110,11 +183,11 @@ impl UiPortalOverlayBindingOwner {
         &mut self,
         bindings: impl IntoIterator<Item = UiPortalOverlayBindingRow>,
     ) -> Result<(), UiPortalOverlayBindingDenial> {
-        let mut candidate = BTreeMap::new();
+        let mut candidate = Self::new(self.generation.clone(), self.runtime_surface);
         for binding in bindings {
-            Self::insert_binding(&mut candidate, binding.portal(), binding.declaration())?;
+            candidate.bind(binding.declaration(), binding.portal())?;
         }
-        self.portal_declarations = candidate;
+        *self = candidate;
         Ok(())
     }
 
@@ -140,7 +213,7 @@ impl UiPortalOverlayBindingOwner {
                 rows.push(UiPortalOverlayBindingRow::new(*declaration, portal));
             }
         }
-        for portal in self.portal_declarations.keys() {
+        for (portal, _) in self.portal_declarations.iter() {
             if !seen.contains(portal) {
                 return Err(UiPortalOverlayBindingDenial::MissingPortal);
             }
@@ -154,27 +227,6 @@ impl UiPortalOverlayBindingOwner {
             portal_revision: snapshot.owner_revision(),
             rows: rows.into_boxed_slice(),
         })
-    }
-
-    #[allow(
-        dead_code,
-        reason = "Binding insertion supports the dormant successor-facing mutation lane."
-    )]
-    fn insert_binding(
-        table: &mut BTreeMap<UiPortalIdentity, UiPortalDeclarationId>,
-        portal: UiPortalIdentity,
-        declaration: UiPortalDeclarationId,
-    ) -> Result<(), UiPortalOverlayBindingDenial> {
-        match table.entry(portal) {
-            Entry::Vacant(entry) => {
-                entry.insert(declaration);
-                Ok(())
-            }
-            Entry::Occupied(entry) if *entry.get() == declaration => {
-                Err(UiPortalOverlayBindingDenial::DuplicateBinding)
-            }
-            Entry::Occupied(_) => Err(UiPortalOverlayBindingDenial::PortalDeclarationConflict),
-        }
     }
 }
 

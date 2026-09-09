@@ -2,142 +2,47 @@
 
 ## Status and Placement
 
-Status: implementation in progress. Gates 0 and 1 are complete. Gate 1's
-approved integration SHA is `e1d61bce2aeaa059777028f861e797f09c0ea785`.
-Gate 2 is next and in progress, but is not complete.
+Implementation is in Gate 4. Gates 0 and 1 are complete; Gate 1's approved
+integration is `e1d61bce2aeaa059777028f861e797f09c0ea785`. All five Gate 4
+sections remain open. Static paint stays the live publisher until Gate 5.
 
-Milestone 3.16 follows the closed Milestone 3.15 production-runtime-services
-slice and precedes Milestone 3.17 DSL expressions and semantic evaluation. It
-closes the visual-meaning boundary that Milestone 9's professional design
-system, Milestone 3.19 diagnostics, Milestone 3.20 visual invariants, and
-Milestone 3.22 live style inspection will consume.
+| Section | Required result |
+| --- | --- |
+| [4a Mounted geometry](#gate-4a--mounted-geometry) | Exact occurrence allocation, surface binding, clipping, and paint order |
+| [4b Text foreground](#gate-4b--text-foreground) | Adopted spans, actual-image damage, accepted coverage, and paint-only work |
+| [4c Motion composition](#gate-4c--motion-composition) | Accepted samples composed once in both directions |
+| [4d Backdrop and Portal](#gate-4d--backdrop-and-portal) | Authored instances, extents, total order, and lifecycle |
+| [4e Integrated closure](#gate-4e--integrated-closure) | Combined mounting/headless behavior, locality, failure, reconstruction, and cleanup |
 
-This is not a widget-library milestone and not a renderer-polish pass. It makes
-appearance a first-class runtime-declarable semantic lane so a serious product
-can be beautiful without making beauty adapter-local, component-folklore, or
-an uninspectable pile of overrides.
+**Open product decision:** Gate 4a needs a structural placement contract.
+Explicit parent-relative placement for 3.16 and advancing automatic split/stack
+layout from Milestone 4 have different product meanings. Region roles, scalar
+sizing, and eligibility do not determine sibling rectangles. Settle that choice
+before occurrence geometry can close.
 
-The implementation remains subject to:
-
-- every repository engineering law in `_docs/coding_guidelines/`;
-- [Worth UI Vision](./worth-ui-vision.md);
-- [Worth UI DSL Vision](./worth-ui-dsl-vision.md);
-- [Milestone 3.15](./milestone-3.15.md);
-- [Worth UI AI orientation](../../workspaces/worth-ui/AI_README.md);
-- [Query AI orientation](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md);
-- the current authored-composition, hot-rebind, interaction, runtime-service,
-  text, native-host, inspection, and visual-inspection contracts; and
-- the existing atomic application/mounted publication and physical-settlement
-  boundaries.
+This spec governs decisions and acceptance. Routine implementation history and
+test-run reports belong in task output and code review, not this document.
 
 ## Goal and Central Claim
 
-The central claim is:
-
-> A Worth UI node's visible treatment is a deterministic, inspectable,
-> runtime-owned projection of an explicitly attached appearance role, an
-> admitted theme capability, and one coherent vector of owner-issued semantic
-> state. The host performs sealed mechanics for that projection but never
-> selects UI meaning, and a visual-only change reaches only the consumers and
-> mechanics whose declared inputs changed.
-
-The sibling overlay claim is equally explicit: an authored backdrop owns its
-identity, extent, presence, relative placement, optional Motion basis, and
-appearance role. Portal kind creates none of those meanings. A derived overlay
-planner combines declared relations with sealed current Portal/geometry inputs;
-the host only presents the resulting ordered mechanics.
-
-The complete semantic paths are:
+Appearance is a deterministic, inspectable, runtime-owned projection of an
+explicit role attachment, an admitted surface theme, and one coherent vector
+of owner-issued state. Hosts execute sealed mechanics rather than choose UI
+meaning. Changes reach only consumers whose declared inputs changed.
 
 ```text
-explicit node-to-role attachment
-+ role aspect contract and disjoint state decision tables
-+ one surface-bound admitted theme definition
-+ coherent owner-issued state-axis vector
--> UiAppearanceProjection
--> mounted appearance facts and bounded physical mechanics
--> existing atomic publication and host settlement
-
-explicit backdrop declaration
-+ admitted extent, presence, placement, and optional Motion bases
-+ explicitly attached background/opacity appearance role
-+ sealed current Portal and geometry exports when referenced
--> UiBackdropAppearanceProjection + UiOverlayStackSnapshot
--> mounted backdrop facts and bounded ordered mechanics
--> existing atomic publication and host settlement
+node + role + surface theme + coherent owner snapshot
+  -> UiAppearanceProjection -> mounted facts/mechanics -> existing settlement
+backdrop declaration + extent/presence/placement/Motion bases + role/theme
+  -> UiBackdropAppearanceProjection + UiOverlayStackSnapshot -> same settlement
 ```
 
-The milestone succeeds only if that path is simultaneously:
-
-- truthful: appearance cannot invent focus, selection, operability,
-  validation, hover, pressed, or Query posture;
-- deterministic: no selectors, specificity, cascade, source-order winner,
-  last-write-wins override, ambient theme lookup, or adapter default decides
-  the result;
-- local: state and theme changes use declared reverse indexes and do not
-  rediscover unrelated graph, layout, text-shaping, Query-binding, or service
-  neighborhoods;
-- rebind-safe: invalid or stale appearance changes preserve the exact current
-  predecessor, while a complete successor publishes through the existing
-  governed path;
-- host-neutral: headless and native hosts receive the same runtime-decided
-  meaning and differ only in physical execution;
-- beautiful: the cumulative Platform Pulse must pass a separate human product
-  and design judgment against the contemporary Linear-or-Notion quality bar,
-  not merely satisfy geometric assertions; and
-- future-bearing: Milestones 3.17, 3.19, 3.20, 3.22, 9, 13, and 15 can add
-  expressions, diagnostics, visual rules, style trials, component libraries,
-  accessibility semantics, and plugin themes without moving the 3.16
-  authority boundary or inventing a second appearance engine.
-
-## Inherited Boundary
-
-Milestone 3.16 may trust these predecessor guarantees:
-
-- file-authored and Rust-authored composition converge on one sealed semantic
-  package with stable identity and source provenance;
-- the runtime graph, plan, mounting, presentation, and host layers have
-  distinct authority and lifecycle;
-- layout allocation, presentation-sampled geometry, hit testing, clipping,
-  visible-region evidence, and mounted identity already have typed contracts;
-- semantic text carries one qualified layout through measurement,
-  accessibility geometry, headless presentation, native glyph rendering, and
-  reconstruction;
-- text foreground is paint-only when font collection lineage,
-  layout-affecting style, and layer order are unchanged;
-- interaction targeting, pointer capture, gesture continuity, semantic focus,
-  focus-visible modality, selection, motion, scroll, portal, and command
-  routing are runtime-owned;
-- operability preserves support, mutability, readiness, occupancy, policy,
-  affinity, and confirmation rather than flattening them into an enabled
-  boolean;
-- hot rebind admits owner-specific observations, resolves declared consumers,
-  compiles an immutable plan, and publishes one successor atomically;
-- mounted presentation is delta-based and the host retains mechanics by
-  runtime-issued identity;
-- inspection and visual snapshots are read-only, bounded projections whose
-  receipts cannot be promoted into authority;
-- the native host is the sole native-display platform and already owns
-  physical scheduling, recovery, capture, and settlement; and
-- Milestone 3.15's service state and Platform Pulse facts are real runtime
-  products that appearance may consume but may not replace.
-
-The inherited implementation is intentionally narrower than the destination:
-
-- `ThemeTokenValue` currently admits only color;
-- token descriptors currently carry bootstrap values rather than separating a
-  stable semantic slot catalog from a selectable theme definition;
-- component static paint resolves one token directly to one filled rectangle;
-- the host contract exposes one `UiMountedFilledRectMechanic` family;
-- qualified text already supports paint-only foreground replacement, but that
-  replacement is not yet unified with component appearance roles;
-- pointer motion maintains capture continuity but has no runtime hover owner;
-- pressed posture exists only inside gesture progression; and
-- no canonical appearance role, state vector, theme binding, coverage proof,
-  resolver, invalidation index, or appearance explanation exists.
-
-Those bootstrap paths are evidence of current reality, not parallel surfaces
-that may survive the cutover.
+Preserve canonical Rust/file lowering, qualified text, owner-issued interaction
+and service truth, delta mounting, atomic rebind/publication, and native physical
+reconciliation. Pixels, inspection, indexes, and projections are derived evidence,
+not authority. Repository coding guidelines, [UI vision](./worth-ui-vision.md),
+[DSL vision](./worth-ui-dsl-vision.md), [3.15](./milestone-3.15.md), and existing
+Query-binding, source, interaction, text, and host contracts remain governing.
 
 ## Non-Goals and Explicit Exclusions
 
@@ -181,1165 +86,569 @@ nearby color, square corner, missing outline, adapter theme, or silent no-op.
 
 ## Decisive Proof Portfolio
 
-The design is governed by three courtrooms. Native product quality, hostile
-state/currentness, and scale/locality are different claims; none may stand in
-for another, and none creates a new Cargo test target or executable.
+Use existing certification targets and the cumulative Pulse, not new executables
+or a proof ledger. Focused tests protect local behavior; integrated claims cross
+real owner boundaries. Simulated observations establish only their stated scope.
+Oracles may not call/copy the disputed resolver, selector, comparer, normalizer,
+compositor, or shader. Fixtures cannot mint live authority or physical success.
 
 ### `AP-01`: Native cumulative Platform Pulse
 
-Extend the existing `worth-ui-platform-pulse` process and its real
-960-by-600/1120-by-700 native journey. Keep the same source installation,
-Query installation, application generation, native window, service owners,
-product facts, external event stream, runner restrictions, node bound, capture
-bound, and at-most-45-second journey. This is one cumulative product, not an
-appearance-only fixture.
+Extend the same process at 960x600 and 1120x700, retaining source/Query/service
+owners, node/capture bounds, runner restrictions, and <=45-second journey. Runner
+uses OS input, watched edits, resize/focus, external capture, and public observations;
+no owner/resolver calls, receipt/color injection, or direct cursor setting.
 
-The source explicitly attaches appearance roles to the existing masthead,
-evidence rail, primary service stage, status band, real controls, text, portal
-content, and the required modal stack. The result must feel
-like one authored product with a composed Mosaic of materially distinct but
-harmonious regions, not one flat surface, a generic enterprise dashboard, a
-Microsoft/Fluent imitation, or a collection of disconnected cards.
+Show real normal/hover/pressed/focus-visible activation, owner-backed inoperability
+or validation, Selection/Focus, theme switch/back, resize, and rebind that moves
+hover and removes/reincarnates a focused/selected target. Invalid edits preserve
+the predecessor. At both sizes drive a real two-deep modal stack through
+`0 -> 1 -> 2 -> 1 -> 0`; each dialog has title/body/real Cancel and primary actions
+and a separately authored viewport backdrop immediately before it. Verify topmost
+input shielding and focus restoration independently of paint.
 
-The Pulse must visibly and truthfully demonstrate:
+Keep 24px gutters, eight-point rhythm, >=32x32 targets, 4.5:1 body text and 3:1
+purposeful-boundary contrast, text safety insets, and truthful wrapped Source
+Signal/Query Posture lines. Hover luminance is >=8% darker with preserved contrast;
+authored channel differences exceed twice interior channel tolerance 2. Pressed
+is independently distinct; focus-visible comes from modality and cursor from Intent.
+These are Pulse visual contracts, not platform defaults.
 
-1. an operable primary action with normal, hovered, pressed, and
-   focus-visible treatment;
-2. a second real control whose inoperable or validation-bearing posture comes
-   from its existing owner-issued fact and is visibly distinct without
-   pretending to authorize or deny Query work;
-3. a selected or focused region whose treatment follows the actual 3.15
-   Selection or Focus owner;
-4. a real two-deep `modal_dialog` stack plus two separately authored viewport
-   backdrops. Each backdrop explicitly follows one portal's presented lifecycle
-   and is placed immediately before that portal; the second therefore dims the
-   first dialog and application beneath it. Both dialogs retain conventional
-   title/content/action hierarchy and real Cancel/primary placement. One modal
-   shown twice, an adapter-created dimmer, or a floating unshielded panel does
-   not satisfy this item;
-5. an admitted switch from the initial Pulse theme to one second application
-   theme and back, using the same role declarations; and
-6. exact mounted appearance explanations for at least one background,
-   foreground, border, radius, opacity, and outline result.
+Switch changed shared/single-consumer slots, an equal-value slot, and an unused
+slot. Observe exact selection/suppression, zero unrelated/paint-only text work,
+and settlement. Explain all six aspects. Independent visual-contract control
+points, source-affine snapshots, external pixels, and resource census prove
+cumulative application dimming, the second backdrop dimming the exposed first
+dialog, no top-dialog self-dimming, and depth-one restoration within tolerance.
+Masks may exclude AA/edges/motion/external chrome, never disagreeing stable interiors.
 
-Hover on an operable activation target darkens the control's background by an
-authored semantic token; this is an `AP-01` Pulse visual-contract rule, not a
-platform resolver law. The hovered token's relative luminance is at least eight
-percent below the normal token while preserving its required foreground
-contrast. Interior activation-target control points use channel tolerance 2,
-and the authored normal/hover per-channel delta exceeds twice that tolerance.
-It is not simulated by the runner or inferred by the adapter.
-Pressed treatment is darker again or otherwise independently distinguishable
-under the checked visual contract. Focus-visible uses a real outline and
-appears only from the admitted focus-visible modality. A
-pointer-capable interactive target exposes the runtime-declared activation
-cursor affordance; decorative and inoperable regions do not acquire it from
-their color or bounds.
-
-The visual composition keeps the 24-pixel outer gutter, eight-point rhythm,
-Mosaic region allocation, at-least-32-by-32 interactive targets, 4.5:1 body
-text contrast, 3:1 purposeful non-text boundary contrast, and the inherited
-text-containment safety insets. Radius and borders may not reduce text fit,
-create clipped wrapping, disturb allocation, or make hit regions disagree
-with the mounted contract. The Source Signal and Query Posture text still
-exercise their truthful wrapped second lines at both native sizes.
-
-The theme-switch turn changes at least one token that has multiple consumers,
-one token with exactly one consumer, one declared token whose resolved value is
-equal in both themes, and one unused token. The visible and recorded outcomes
-must show:
-
-- only consumers of semantically changed slots enter appearance resolution;
-- equal resolved output produces no physical mechanic change;
-- text color changes reuse qualified layout and glyph geometry;
-- unused tokens produce no mounted work;
-- structure, layout, hit-test membership, Query binding, service state, text
-  shaping, and unrelated presentation commands remain unchanged; and
-- the successor becomes current only after the existing presentation boundary
-  settles it.
-
-The journey crosses native pointer move, press, release, keyboard focus,
-window-focus loss/regain, two-deep portal open/close, resize, and hot rebind.
-During rebind the currently hovered target moves and one focused or selected target is
-removed or reincarnated. Hover and pressed state must follow current
-presentation and capture law, stale incarnations must open no door, and the
-last admitted appearance remains visible after a deliberately invalid role or
-theme edit.
-
-The runner uses only real OS input, watched-file edits, native resize/focus,
-pixel capture, and the public Pulse observation stream. It may not call the
-appearance resolver, theme switch progression, state owners, Query, runtime,
-mounting, or host facades; inject an appearance receipt; set a native cursor;
-or publish expected colors.
-
-Independent evidence consists of:
-
-- mounted structure, appearance facts, state-vector bases, theme receipts,
-  command deltas, damage, and resource census from the product;
-- external compositor-visible client pixels from the executable child;
-- the existing source-affine native visual snapshot path;
-- an independent checked-in visual contract naming regions, semantic role and
-  slot identities, expected state transitions, contrast pairs, containment
-  bounds, control points, and permitted masks; and
-- a recorded human product/design review of the complete 960-by-600 and
-  1120-by-700 worlds, including zero-, one-, and two-modal depth and the
-  focus-visible state. The review must judge the full composition, the dialog
-  hierarchy, backdrop restraint, perceived elevation, and action placement;
-  exact alpha or contrast checks cannot approve those qualities.
-
-The structural and pixel proof cannot certify subjective quality, and the
-design review cannot certify authority or locality. Both are mandatory.
-
-At each native size the runner records the sequence `0 -> 1 -> 2 -> 1 -> 0`
-modal layers from the real child. The checked visual contract names stable
-control points on unobscured application content, on the exposed part of the
-first dialog, and inside the second dialog. Equal dark backdrop values must
-darken application content monotonically at depths one and two; the exposed
-first dialog is dimmed only by the second backdrop; the second dialog is not
-self-dimmed; and topmost close restores the exact depth-one appearance within
-the qualified channel tolerance. Input/focus observations separately prove
-that only the topmost modal accepts interaction and that dismissal restores the
-lawful underlying focus scope. Masks exclude dialog edges, text anti-aliasing,
-motion frames, and compositor-external chrome, but may not exclude stable
-interior pixels merely because they disagree.
+Human review of the actual executable at both sizes/modal depths/focus-visible
+must meet the Linear-or-Notion quality bar: coherent non-flat Mosaic, conventional
+hierarchy/actions, restrained elevation, no disconnected cards/Fluent imitation/
+muddy slab/weak wash. Mechanical checks cannot approve design; design cannot
+approve authority or locality.
 
 ### `AP-07`: Coherent-state, authority, and protocol hostility
 
-Use production public declarations, the active-session entry surfaces, the
-existing observation/rebind/publication progression, and production headless
-and native host contracts inside existing certification targets.
+Through production declarations/session/rebind/publication and headless/native
+contracts, combine a six-axis node, text, two modal depths, same-surface non-modal
+Portal, Motion-retained exit, and two themed surfaces. Press a selected focusable
+target; move presented geometry and captured pointer; change window modality;
+prepare A's theme switch; rebind/reincarnate target and change role/B's binding;
+deliver stale/duplicate/foreign bases in worst lawful order; reject before effects,
+then produce indeterminate physical work; shut down with pointer/switch/exit and
+reconciliation obligations live.
 
-The world contains one node whose role consumes all six state axes, a text
-child, a two-deep modal portal stack, a same-surface non-modal portal, a motion-
-retained exiting portal, and two semantic surfaces with different active theme
-bindings. Drive this hostile sequence with both modal layers initially visible:
-
-1. pointer press begins on a focusable selected target while its operability
-   and validation facts are current;
-2. a motion track changes current presentation geometry without changing the
-   semantic target;
-3. pointer motion crosses the target boundary while capture remains held;
-4. window focus changes focus-visible posture;
-5. a theme switch is prepared for surface A;
-6. a hot rebind retires the original target, reincarnates its stable authored
-   identity, changes one role decision table, and changes the active binding of
-   surface B;
-7. stale, duplicate, wrong-surface, wrong-generation, wrong-incarnation, and
-   wrong-theme receipts are presented in the worst lawful order;
-8. the qualified host rejects one successor before effects, then a separate
-   presentation becomes indeterminate after physical work may have begun; and
-9. shutdown begins while the pointer, prepared switch, retained exit node, and
-   indeterminate presentation obligations are live.
-
-Required typed outcomes:
-
-- every resolved `UiAppearanceStateVector` cites one coherent application,
-  surface, mounted incarnation, presentation, and owner-revision basis;
-- hover uses current presentation hit testing, pressed uses the gesture/capture
-  owner, focus uses semantic focus plus focus-visible modality, and none is
-  reconstructed from pixels or colors;
-- the reincarnated authored identity does not inherit hover, pressed, focus,
-  selection, validation, or theme authority merely because its ID is equal;
-- surface A's capability cannot switch surface B, and neither a theme ID,
-  revision, digest, slot key, inspection receipt, nor serialized projection can
-  construct switch or projection authority;
-- ambiguity, missing coverage, type mismatch, unsupported host mechanics, and
-  stale currentness deny before appearance or host effects;
-- rejection before effects preserves the exact predecessor;
-- an indeterminate host effect retains the existing reconciliation authority
-  and is never reported as rolled back or completed from timeout;
-- appearance does not replay focus, selection, gesture, Query, or service
-  semantics to recover physical work;
-- the overlay snapshot contains exactly the authored backdrop declarations at
-  their admitted positions; one modal has no backdrop, one non-modal portal has
-  an authored backdrop, and neither condition changes Portal shielding;
-- equal dark backdrops accumulate, transparent backdrops remain paint-only, and
-  no host, theme resolver, or appearance projection may invent, attenuate,
-  flatten, or reorder layers;
-- backdrop presence and Motion follow only their separately declared bases; a
-  presence-following backdrop with `UiBackdropMotionBasis::None` does not
-  silently inherit a Portal track;
-- topmost close, parent close, hot-rebind removal, and exit retention update all
-  declared presence/placement dependents atomically without one-frame flashes,
-  orphan commands, or stale shielding;
-- exit retention keeps only exact live projection/mechanic dependencies; and
-- shutdown reaches zero appearance roles, active bindings, prepared switches,
-  state vectors, retained projection facts, host commands, cursor mechanics,
-  and inherited service/host obligations, or reports the exact retained
-  indeterminate owner.
-
-Mutation sensitivity is mandatory. Inverting currentness, reading committed
-instead of presentation geometry for hover, copying stable-ID state to a new
-incarnation, replacing decision-table admission with source order, accepting a
-foreign theme receipt, dropping the text-layout reuse check, or converting
-indeterminate to success must turn this courtroom red. So must composing
-appearance and Motion opacity twice or after `u16` precision is discarded,
-sorting overlay layers by portal identity or depth alone, auto-creating a modal
-backdrop, retaining only the topmost backdrop, flattening the stack into one
-effective alpha, implicitly copying Portal Motion, or letting any backdrop
-create or disable shielding.
+Require coherent exact bases, no stable-ID inheritance or cross-surface theme
+authority, exact pre-effect preservation, retained indeterminate owner, and zero
+clean-shutdown census. Include modal-without-backdrop/non-modal-with-backdrop;
+preserve explicit presence/Motion/order and atomic close/rebind/exit dependents.
+Wrong currentness, mixed reads, committed-geometry hover, cascade, double opacity,
+early quantization, depth/ID sorting, automatic/flattened backdrops, implicit Portal
+Motion, paint-controlled shielding, or timeout-as-success must fail observations.
 
 ### `AP-10`: Scale, locality, and amplification
 
-Use the existing explicitly filtered closure-stress/subprocess lane, made
-required on the 3.16 integration spine and nightly/master qualification, with
-production role/theme registration, graph indexes, state owners, mounting,
-headless/native presentation contracts, and independent model oracles.
+Use the filtered closure-stress/subprocess lane on integration-spine and nightly/
+master qualification. World: 4,096 nodes in 64 neighborhoods (3,072 styled, 1,024
+unstyled controls), 256 roles, 512 slots, six axes with <=64 simultaneously changing
+consumers, 32 text paragraphs, four themed surfaces, 64 Motion tracks, and a 32-deep
+Portal stack with 48 independently placed dark/colored/transparent backdrops.
+All projections fit the ordinary bound. Change 12 slots, including three equal-value
+and four unused. Separate saturation denies projection 4,097.
 
-The scale world contains:
+| Operation | Charged scope |
+| --- | --- |
+| State | Changed owner facts + indexed exact consumers |
+| Theme | Changed slots + indexed consumers |
+| Resolution | Declared axes/aspects and compiled cells |
+| Mounting | Changed values or attribution |
+| Host | Changed commands/order + exact damage |
+| Portal/backdrop | Changed rows/declarations + indexed scope/presence/placement/Motion dependents |
+| Raster replay | Intersecting retained commands, separately from construction |
 
-- 4,096 mounted nodes across 64 unrelated appearance neighborhoods, of which
-  3,072 have appearance roles and 1,024 are unstyled unrelated-neighborhood
-  oracles;
-- 256 appearance roles and 512 semantic theme slots;
-- all six state-axis families, with at most 64 simultaneously hovered,
-  pressed, focused, selected, or validation-changing consumers;
-- 32 qualified text paragraphs whose foreground changes while layout meaning
-  does not;
-- four semantic surfaces, each with one explicit active theme binding;
-- one 32-deep portal stack on one surface with 48 separately declared
-  backdrops at varied before/after/region positions, including portals with no
-  backdrop and non-modal portals with backdrops; all count inside the ordinary
-  projection bound and use mixed equal-dark, colored, and transparent values;
-- 64 active Motion tracks whose sampled opacity composes mechanically with
-  appearance opacity; and
-- a theme switch changing 12 slots, of which three resolve to byte-equal values
-  and four have no mounted consumers.
-
-The ordinary mounted-projection limit remains 4,096. A separate focused
-saturation proof fills all 4,096 projection records and requires a typed
-capacity denial for the 4,097th while the predecessor remains current; `AP-10`
-does not confuse that ceiling proof with the 4,096-node locality world.
-
-Named counters include:
-
-- `appearance_state_sources_read`;
-- `appearance_vectors_resolved`;
-- `appearance_decision_cells_visited`;
-- `theme_slots_compared`;
-- `appearance_consumers_selected`;
-- `semantic_aspects_changed`;
-- `mounted_mechanics_changed`;
-- `equal_output_changes_suppressed`;
-- `text_layouts_reused` and `text_layouts_requalified`;
-- `damage_regions_emitted`;
-- `host_commands_added`, `changed`, and `removed`;
-- `portal_stack_rows_read`, `backdrop_declarations_selected`,
-  `overlay_relation_edges_visited`, `backdrop_mechanics_changed`, and
-  `backdrop_commands_replayed`;
-- `pointer_targets_retested`; and
-- `unrelated_neighborhoods_touched`.
-
-Ordinary bounds are:
-
-```text
-state turn = changed owner facts + indexed appearance consumers
-theme turn = changed slots + indexed consumers of those slots
-projection = declared axes/aspects and compiled decision cells for that role
-mounting = semantic aspects whose resolved values or attribution changed
-host work = changed commands, order edits, and exact damage
-portal turn = changed Portal rows + indexed backdrop scope/presence/placement/Motion dependents
-backdrop turn = changed declarations + exact mechanics + exact extent damage
-backdrop replay = retained commands intersecting that damage, reported separately
-```
-
-There is no whole-graph, whole-role-catalog, whole-theme, whole-backdrop-
-declaration, whole-overlay-relation, whole-text-layout, or whole-draw-list
-fallback after admission. `unrelated_neighborhoods_touched` is
-exactly zero; `text_layouts_requalified` is zero for a color-only switch;
-inactive state axes and unused roles cost zero per frame; and an unchanged turn
-produces zero appearance and host work.
-
-### Mutants the portfolio must kill
-
-The portfolio fails if an implementation:
-
-- styles by component kind, name, tree position, selector, registration order,
-  adapter default, or last writer instead of an explicit role attachment;
-- stores a generic map, JSON value, dynamic property bag, or untyped string for
-  appearance aspects, state axes, theme values, or host mechanics;
-- reduces operability, focus, validation, or selection to an unproven boolean;
-- lets appearance own or mutate a service, interaction, Query, layout,
-  participation, hit-test, text-layout, or accessibility truth;
-- uses committed target geometry instead of current presentation for hover;
-- treats pointer capture as hover or derives pressed state from a paint color;
-- permits overlapping decision rows, implicit fallback, incomplete coverage,
-  or source-order resolution;
-- treats a token ID, role ID, digest, revision, source span, or inspection record
-  as capability;
-- applies one surface's theme through process-global or ambient state;
-- keeps the legacy static-paint resolver or filled-rectangle contract alive as
-  a parallel appearance authority;
-- silently drops border, radius, outline, opacity, foreground, or cursor
-  mechanics when a host lacks support;
-- changes text color by reshaping, remeasuring, or rerasterizing alpha glyphs;
-- lets opacity zero remove hit testing or radius alter child clipping;
-- auto-creates or requires a backdrop from portal kind, collapses authored
-  backdrops to the topmost or one effective alpha, uses implicit source order,
-  or makes backdrop paint own an input shield;
-- lets border change allocation or paints it outside the allocation;
-- lets an outline accept input or omits its visual overflow from damage;
-- publishes a theme switch directly, creates a new settlement/retry lane, or
-  guesses success after uncertain native effects;
-- scans all nodes or all theme slots for one state or token change;
-- uses a detached screenshot, a generated mockup, or producer-authored expected
-  pixels as the product oracle;
-- passes all mechanical tests while the cumulative Pulse still looks like a
-  framework demo; or
-- exposes actionable undo/redo, raw Query, or ordinary replay.
-
-## Supporting Proof Portfolio
-
-The decisive courtrooms are supported by focused, mutation-sensitive evidence:
-
-- compile-pass Rust/DSL lowering-equivalence fixtures and public native/
-  host-neutral progression fixtures in the existing compile-contract sessions
-  (two Cargo invocations);
-- compile-fail proofs for forged capability receipts, raw role/theme IDs used
-  as authority, preview-to-live promotion, wrong application/surface/
-  generation/incarnation/axis version, value-kind mismatch, incomplete or
-  overlapping partitions, missing host support, generic authority markers,
-  and host attempts to construct semantic appearance;
-- exhaustive finite-partition tests for every admitted role fixture, plus
-  property tests that reorder declarations, aliases, slots, axes, and cells
-  without changing normalized meaning;
-- independent model tests for six-axis vector coherence, hover transitions,
-  pointer identity, capture-aware pressed state, focus-visible changes,
-  selection reincarnation, validation currentness, and duplicate/stale event
-  ordering;
-- theme catalog/definition tests for kind preservation, alias cycles and depth,
-  monotonic revision, explicit surface binding, equal-output succession,
-  source-edit and programmatic switch equivalence, capacity saturation, and
-  wrong-world receipts;
-- index deletion/reconstruction tests proving the state/role appearance
-  indexes, existing consumed-fact slot relation, and overlay dependency index
-  are derived, plus hostile mutants that add a second slot index or replace
-  indexed selection with a whole-graph, whole-catalog, or whole-overlay scan;
-- per-aspect equivalence and delta tests that independently compare semantic
-  projection change, resolved value change, mounted attribution change,
-  physical mechanic change, and equal-output suppression;
-- text tests using mixed authored paint spans, bidi, alpha glyphs, color-only
-  theme change, and opacity composition, with independent counters proving zero
-  qualification, shaping, measurement, rasterization, atlas upload, and caret/
-  hit-geometry drift. Intrinsic-color input is a typed denial under the frozen
-  BodyDefault v1 profile, not a vacuous emoji raster;
-- geometry/property tests for proportional radius normalization, inward border
-  limits, outline expansion, Mosaic seam ownership, half-open bounds, clip/
-  damage agreement, rounded paint with rectangular hit testing, and
-  logical-to-physical conversion at 1.0, 1.25, 1.5, and 2.0 scale;
-- headless/native contract parity for surface, outline, text foreground,
-  opacity, pointer affordance, initial/delta/unchanged work, reconstruction,
-  and explicit unsupported-version/mechanic denial;
-- deterministic reference-raster checks for anti-alias fringe, border/radius/
-  outline shape, premultiplication, opacity multiplication, and exact damage,
-  while keeping external native pixels as the executable product evidence;
-- rebind/failure tests for malformed role/theme edits, exact predecessor
-  preservation, stale prepared switch, supersession, cancellation before
-  effects, in-flight completion, indeterminate reconciliation, multi-surface
-  partial failure, and shutdown;
-- Platform Pulse structural tests against an independent visual contract,
-  contrast/luminance computation from authored theme values, text containment,
-  hit-test honesty, cursor semantics, ordered backdrop composition,
-  source-span attribution, and native pixel masks at both sizes and at zero,
-  one, and two modal depths;
-- independent overlay-stack model and retained-order tests over nested and
-  sibling portals; modal-without-backdrop and non-modal-with-backdrop cases;
-  before/after/region placement; same-depth sibling ordering; colored and
-  transparent backdrops; repeated per-portal instances; cross-scope denial;
-  topmost and parent close; exit retention; resize; reconstruction; and
-  reincarnation. The oracle folds source-over itself from
-  authored layer values and the issued overlay order; it may use
-  `1 - product(1 - alpha_i)` only as the equal-black-layer
-  cross-check, never call the production compositor or consume its effective
-  output;
-- a separate recorded human review of the actual cumulative executable worlds,
-  not a generated image or replacement mockup; and
-- extended Worth UI boundary/generated-context, dependency-direction,
-  feature-matrix, app-inclusive line-cap, protocol-version, documentation-link,
-  public-example, deletion-inventory, closure-stress, and exact-resource-census
-  checks.
-
-Fixtures may share setup builders. Oracles may not call or copy the production
-partition compiler, appearance resolver, theme comparer, reverse-index
-selector, radius normalizer, delta producer, opacity or backdrop compositor,
-or native shader logic whose correctness they claim. Test-only constructors may
-script legal owner observations through certification boundaries; they may not mint a
-live state vector, capability receipt, projection, prepared switch, mounted
-fact, or successful host settlement.
-
-## QA considerations
-
-Architecture review must verify that Portal remains the only owner of portal
-membership, ancestry, total stack order, shielding, focus containment,
-dismissal, and exit retention; authored Backdrop owns declaration, presence
-basis, extent, and placement; Appearance owns paint meaning; and the overlay
-planner only combines current inputs. Lifecycle QA must exercise push, topmost
-pop, parent close, rebind removal, resize, reconstruction, indeterminate
-presentation, and shutdown with no orphan portal, backdrop, shield, or retained
-command. Integration acceptance requires independent
-ordered-compositing evidence, external native pixels, real input/focus evidence,
-and recorded human design approval of the actual stacked Pulse; none of those
-evidence classes substitutes for another.
+Observe source reads, vectors/cells, slots compared, consumers, aspect/mechanic
+changes, suppression, layout reuse/requalification, damage, command add/change/
+remove, Portal rows, backdrop selections/changes/replay, relation edges, pointer
+retests, and unrelated neighborhoods through existing named counters.
+`unrelated_neighborhoods_touched` and color-only `text_layouts_requalified` are
+zero; unchanged turns/inactive demand do no work. No whole graph/catalog/theme/
+relation/text/draw-list fallback. Charge cold reconstruction, maintenance, memory,
+and failed admission/comparison separately; partial counters are not total cost.
 
 ## Product Decision Lock
 
 ### Appearance is a compiled semantic lane
 
-`UiAppearanceRole` is a stable, versioned declaration capability. A node uses a
-role only through an explicit attachment in its canonical declaration. The
-role may declare an `applies_to` admission constraint over component semantic
-capabilities, but that constraint validates an explicit attachment; it never
-searches the graph or reaches into descendants.
+`UiAppearanceRole` declares identity/version, source ownership/provenance, exact
+aspects, per-aspect axes/total decision tables, typed slots/literals, host support,
+disclosure, and successor compatibility. Attachment is explicit in canonical
+component meaning. `applies_to` validates attachment, never selects descendants
+or nodes by kind/name/tree position. Rust and DSL share sealed meaning/resolution.
 
-A role declares:
-
-- stable role identity and schema version;
-- source owner and source provenance;
-- exact appearance aspects it covers;
-- the state axes consumed by each aspect;
-- a complete finite decision table for each covered aspect;
-- semantic theme slots and typed literals consumed by each result;
-- host mechanic requirements;
-- inspection/disclosure posture; and
-- an explicit successor compatibility posture.
-
-`UiAppearanceProjection` is the immutable resolved product for one exact node
-incarnation and semantic surface. It carries the role, role revision, theme
-capability identity/revision reference, coherent state-vector basis, per-aspect
-resolution, source provenance, support posture, and semantic digest. It is
-derived truth. It
-authorizes neither a state change nor theme mutation and cannot be constructed
-from its public fields, digest, or inspection form.
-
-The capability itself remains surface-owned and is not copied into every node.
-A binding/capability revision invalidates only indexed consumers of slots whose
-resolved meaning changed, not every projection on the surface.
-
-The canonical source artifact, runtime graph, execution plan, appearance
-projection, mounted fact, and host mechanic remain distinct. Rust-authored and
-file-authored roles lower to the same sealed role declaration and the same
-resolver.
+`UiAppearanceProjection` is privately constructed immutable derived meaning for
+one node incarnation/surface. It carries role revision, theme reference, coherent
+state basis, per-aspect results, provenance/support/digest. It authorizes no state,
+theme, or publication effects. Theme capability stays surface-owned, not copied
+per node. Declarations, graph, plans, projections, mounted facts, and mechanics
+remain distinct; IDs/digests/inspection cannot replace concrete authority.
 
 ### Aspect coverage is explicit and typed
 
-Milestone 3.16 admits exactly these semantic aspects:
-
-| Aspect | Value | Physical meaning in 3.16 |
+| Aspect | Value | Meaning |
 | --- | --- | --- |
-| `appearance.background` | straight sRGBA color or explicit transparent | own surface fill |
-| `appearance.foreground` | straight sRGBA color | admitted alpha-text ranges; successor monochrome-icon consumers use the same aspect |
-| `appearance.border` | solid color plus nonnegative logical width | inward own-surface stroke |
-| `appearance.radius` | four nonnegative logical corner radii | own surface silhouette only |
-| `appearance.opacity` | canonical unit interval | own node mechanics, not descendants |
-| `appearance.outline` | solid color, width, and nonnegative offset | non-hit-tested visual ring outside allocation |
+| `appearance.background` | Straight sRGBA or explicit transparent | Own surface fill |
+| `appearance.foreground` | Straight sRGBA | Adopted alpha-text ranges; future monochrome icons |
+| `appearance.border` | Solid color/nonnegative logical width | Inward own-surface stroke |
+| `appearance.radius` | Four nonnegative logical radii | Own background/border silhouette |
+| `appearance.opacity` | Canonical unit interval | Own mechanics, not descendants |
+| `appearance.outline` | Solid color/width/nonnegative offset | Outside non-hit visual ring |
 
-Each component declaration publishes an exact required/optional appearance
-aspect contract. A role attachment must cover every required aspect with the
-right value family and may cover only admitted optional aspects. Missing,
-extra-incompatible, type-mismatched, or host-unsupported coverage denies before
-the candidate becomes active.
+Components declare required/optional aspects. Roles cover all required and only
+admitted optional aspects with matching kinds; missing/extra-incompatible/wrong-
+kind/unsupported coverage denies before activation. Backdrop separately admits
+only background and opacity, not node-state, cursor, or other aspect coverage.
 
-Backdrop is the one admitted non-node appearance target. Its declaration
-requires complete background and opacity coverage and rejects border, radius,
-outline, foreground, pointer-affordance, and component-state aspects. This is a
-distinct typed applicability contract, not a generic optional aspect bag.
+Paint changes no allocation/participation/visibility/hit/focus/accessibility/
+modality/routing truth. Zero opacity/transparency do not remove declared interaction.
+Rounded paint keeps declared hit geometry and does not clip descendants. Border
+paints inward without allocation cost. Normalize all radii once by the minimum
+proportional reduction fitting every edge pair, exact integers with nearest-even
+rounding; deny border width over half the normalized minimum dimension. Outline
+radii add offset to normalized surface radii; width/offset/qualified AA expand
+visual bounds/damage. Ancestors may clip pixels, but own allocation/radius cannot
+clip the outline or erase its expanded damage box.
 
-No aspect changes layout participation, allocation, visibility, hit-test
-membership, focusability, semantic focus, accessibility state, portal
-modality, or interaction routes. Explicit transparency and zero opacity are
-still present, participating, and hit-testable when the declaration says so.
-
-Borders paint inward and therefore consume no additional allocation. Radius
-clips only the node's own background and border; descendant clipping remains a
-separate existing clip contract. Outline is outside allocation, never enters
-hit-test order, and expands visual bounds/damage by its exact width, offset,
-and qualified anti-alias fringe. A parent clip may clip outline pixels; the
-node's own allocation/radius clip may not. Damage retains the outline's
-expanded visual box even where an ancestor clip removes pixels.
-Hit testing remains the declared allocation/hit-test geometry; a rounded
-painted corner does not create a rounded hit region in 3.16. During mounting,
-corner radii are normalized once in logical space by the canonical
-proportional-reduction rule: if either pair on an edge exceeds that edge, all
-radii are scaled by the minimum ratio that makes every edge sum fit. A border
-wider than half the normalized minimum dimension is denied rather than
-clamped. Outline radii follow the normalized surface radii plus their declared
-offset.
-Milestone 3.16 adds `MosaicSeamPaintOwner` to Mosaic declarations. Every shared
-edge names exactly one owning region; only that owner may paint the shared
-border. Interior shared corners are never radiused. Exterior-corner posture is
-declared by Mosaic rather than inferred from adjacency. A region that requests
-border or radius on an undeclared shared edge is incomplete coverage, not a
-collapse/default rule.
+`MosaicSeamPaintOwner` assigns one region per shared edge; only it paints the seam.
+Interior shared corners have no radius; Mosaic declares exterior-corner posture.
+Undeclared shared-edge paint is incomplete coverage, not a collapse/default rule.
 
 ### Backdrops are authored overlay participants, not modal side effects
 
-The existing `UiMountedPortalOverlayMechanic` remains the mounted portal
-surface, placement, lifecycle, and shielding affinity. It is not stretched or
-reinterpreted as a viewport dimmer. A backdrop is instead declared explicitly
-as `UiBackdropDeclaration`, with stable `UiBackdropIdentity`, exact extent
-basis, presence basis, overlay placement relation, optional declared Motion
-basis, and appearance role. Portal kind never creates, requires, positions,
-colors, animates, or removes a backdrop.
+`UiBackdropDeclaration` owns stable identity, role, extent, presence, scope,
+placement, and optional Motion. Extent is SurfaceViewport or current presented
+Mosaic region; presence is Always or WhilePortalPresented(declaration). Motion
+independently is None or an explicit Portal presentation export. Portal kind
+creates/requires no backdrop and implies no presence, Motion, or visual default.
 
-Milestone 3.16 admits `SurfaceViewport` and current presented Mosaic-region
-extent bases. Geometry comes from the named surface or region owner; Backdrop
-does not become a layout owner. Presence is either `Always` or the explicit
-`WhilePortalPresented(UiPortalDeclarationId)` basis. The latter consumes a
-sealed Portal lifecycle export but does not give Backdrop open/close authority.
-`UiBackdropMotionBasis` is independently `None` or explicitly follows one
-Portal presentation Motion export; presence does not imply motion and motion
-does not imply presence.
+Scope is SurfaceSingleton or PerPortalInstance(declaration). The latter mints
+`UiBackdropInstanceIdentity` per exact incarnation and resolves references there;
+reincarnation cannot reuse rows, and ambiguous cross-instance/scope references
+deny. `UiBackdropAppearanceProjection` binds these bases, role/theme, surface, and
+overlay snapshot, consumes projection capacity, and uses no fabricated node receipt.
+Future pure presence expressions may enter without changing these authorities.
 
-Declaration and live instance identity remain distinct. Every backdrop declares
-`UiBackdropScope::SurfaceSingleton` or
-`UiBackdropScope::PerPortalInstance(UiPortalDeclarationId)`. The second form
-materializes one sealed `UiBackdropInstanceIdentity` for each exact current
-portal incarnation matching the declaration and resolves same-portal presence,
-placement, and Motion against that incarnation. It is still authored behavior,
-not a portal default. Reincarnation mints a new backdrop instance; repeated
-component portals never share one global row. Cross-instance or cross-scope
-relations that cannot identify exactly one anchor deny before publication.
-Milestone 3.17 may supply pure authored presence inputs through the frozen
-expression boundary without changing backdrop identity, placement, or host
-mechanics.
+Placement is an acyclic typed relation: AboveSurfaceContent, ImmediatelyBefore/
+AfterPortal, or ImmediatelyBefore/AfterBackdrop. Portal anchors group surface and
+ordinary content indivisibly; nested Portals are separate participants. Missing,
+cyclic, cross-surface, ambiguous order denies. Raw z-index, source order, depth-only
+ties, and identity sorting cannot supply order.
 
-Placement is an explicit acyclic relation to a semantic overlay anchor:
-`AboveSurfaceContent`, `ImmediatelyBeforePortal`, `ImmediatelyAfterPortal`,
-`ImmediatelyBeforeBackdrop`, or `ImmediatelyAfterBackdrop`. Portal and backdrop
-anchors use typed declaration identities, never raw integers or runtime IDs.
-The Portal anchor denotes its indivisible presented surface and ordinary
-mounted-content subtree: `Before` precedes the surface and `After` follows that
-content. A backdrop cannot split portal content from its children. Nested
-portals remain separate Portal-stack participants with their own anchors.
-The overlay-composition planner combines the admitted relation graph with the
-current Portal stack and emits one sealed `UiOverlayStackSnapshot` for an exact
-application generation, semantic surface, presentation, Portal revision, and
-backdrop-declaration revision. Missing anchors, cross-surface references,
-cycles, and overlapping participants whose order remains ambiguous deny before
-publication. There is no CSS-like `z-index`, source-order tie-break, or adapter
-sort.
+Portal alone owns membership/parentage/activation/shielding/focus/dismissal/exit.
+`UiPortalStackSnapshot` carries total `UiPortalStackOrdinal` order. Non-idempotent
+open mints a monotonic session ordinal retained through closing; duplicates do
+not move it, topmost replacement gets a new ordinal, exhaustion denies.
 
-Portal remains the sole owner of portal membership, parentage, activation
-order, shielding, focus containment, dismissal, and lifecycle. It publishes a
-sealed `UiPortalStackSnapshot`; every live row carries a
-`UiPortalStackOrdinal` that totally orders nested and sibling portals. Depth is
-ancestry evidence and cannot break same-depth ties. The Portal owner mints the
-ordinal monotonically on a non-idempotent open, never reuses it during the
-session, and retains it through visible and closing postures. An idempotent
-duplicate does not move a portal; a lawful topmost replace receives a new
-ordinal in the same prepared transition. Exhaustion denies before effects.
+The derived planner emits one `UiOverlayStackSnapshot` bound to application
+generation, surface, presentation, Portal revision, and declaration revision.
+Reserve/publish all selected dependents atomically. Close/parent-close/resize/
+rebind/reincarnation/exit leave no flashes, orphan commands, or partial dependencies.
+Backdrops create no input shields/cursors/dismissal/focus. Clickable scrims need
+separately declared interaction. Modal-without-backdrop, non-modal-with-backdrop,
+Always-without-Portal, before/after, and multiple layers are lawful. Dialog actions
+remain real declarations with conventional title/body/secondary/primary placement.
 
-Because `UiAppearanceProjection` is node-incarnation meaning, mounting never
-forges a node receipt for a backdrop. The resolver emits the sealed sibling
-`UiBackdropAppearanceProjection`, bound to the backdrop declaration, exact
-extent/presence/placement bases, semantic surface, theme capability, role
-revision, and current overlay snapshot. It admits only background and opacity,
-uses the same typed role/theme machinery, consumes ordinary projection
-capacity, and grants no Portal, layout, or input operation.
-
-The product may therefore author, among other lawful arrangements:
-
-```text
-application content
--> backdrop A, while modal A is presented
--> modal A portal surface and descendants
--> backdrop B, while modal B is presented
--> modal B portal surface and descendants
-```
-
-That arrangement produces familiar cumulative modal dimming, but it is product
-composition rather than platform convention. A modal may lawfully have no
-backdrop. A dropdown may lawfully have one, and an `Always` backdrop may exist
-without any Portal. A backdrop may be placed after a portal to affect that
-portal, or multiple independently authored backdrops may occupy admitted
-positions in the same overlay plane.
-Nothing infers modality, shielding, dismissal, presence, or placement from
-paint.
-
-Composition is canonical premultiplied Porter-Duff source-over in bottom-to-top
-`UiOverlayStackSnapshot` order. Authored RGB remains straight sRGBA; the
-qualified v2 profile decodes RGB through the named sRGB transfer function,
-multiplies decoded linear-light channels by the exact product of color alpha
-and canonical `u16` appearance opacity, folds source-over in linear light, and
-encodes sRGB only at the qualified output boundary. Gate 0 freezes the transfer
-constants, conversions, round-to-nearest-even points, and headless reference
-algorithm. For equal black layers, `1 - product(1 - alpha_i)` is an independent
-oracle cross-check, never a flattened runtime value.
-
-Paint and interaction remain orthogonal. A backdrop is paint-only and never
-creates or removes a Portal shield, hit target, dismissal route, focus scope,
-or pointer cursor. A zero-opacity backdrop still occupies its declared visual
-position but has no input authority. If a product wants a clickable scrim, it
-must declare a real interaction surface and admitted action separately rather
-than making color clickable.
-
-A transition that changes Portal state may select zero, one, or many dependent
-backdrop declarations. Proposal compilation reserves and publishes the complete
-successor overlay snapshot atomically with the ordinary mounted successor, but
-does not call this a portal/backdrop pair. Portal close, parent close, rebind,
-resize, incarnation replacement, and exit retention recompute only declared
-scope, extent, presence, placement, and Motion dependents. No frame may expose
-stale geometry, orphan retained commands, guessed ordering, or partial dependent
-publication.
-
-The honest damage for a full-viewport backdrop change is its clipped viewport;
-a region backdrop damages only its presented region. Mechanic construction is
-proportional to changed declarations and indexed presence/placement dependents,
-while raster replay is counted separately for retained commands intersecting
-that damage. A lower-layer change recomposites its affected region and ordered
-suffix without reconstructing Portal state or scanning the UI graph.
-
-An action-bearing dialog or popover still uses authored header/body/action
-regions with ordinary title placement and real semantic controls. Cancel and
-primary actions route through admitted declarations and occupy conventional
-secondary/primary positions. An icon appears only through an admitted icon
-projection and host mechanic—never an adapter glyph or Unicode substitute.
+Compose bottom-to-top with premultiplied Porter-Duff source-over: decode straight
+sRGBA using qualified sRGB transfer, multiply linear RGB by color alpha and exact
+composed opacity, fold in linear light, encode at output. Gate 0 freezes transfer
+constants, conversions, nearest-even points, and reference algorithm. Never flatten
+runtime layers; `1 - product(1 - alpha_i)` is only an equal-black oracle cross-check.
+Viewport damage is clipped viewport; region damage is presented region. Indexed
+dependent construction and intersecting ordered replay have separate costs, without
+graph scans or recovery-time resolution. Paint never feeds effective alpha back
+as Appearance/Backdrop/Portal/input authority.
 
 ### Theme slots and theme definitions are separate meanings
 
-The bootstrap `ThemeTokenDescriptor` contract is cut over into two canonical
-responsibilities rather than copied:
+The slot catalog owns `ThemeTokenId`, family/kind, source, aliases, disclosure,
+and compatibility. `UiThemeDefinition` owns theme identity/revision and its complete
+typed value table. Cut over bootstrap descriptor value ownership, not copy it.
 
-- a semantic slot catalog declares `ThemeTokenId`, family, value kind, source
-  ownership, alias topology, disclosure, and compatibility; and
-- `UiThemeDefinition` declares one stable theme identity and revision plus a
-  complete, typed value table for the admitted slots it provides.
+| Canonical value | Rule |
+| --- | --- |
+| `UiThemeColor([u8; 4])` | Straight sRGBA; parse ASCII `#RRGGBB`/`#RRGGBBAA` once; six digits imply alpha 255; hex case immaterial; digest bytes |
+| Opacity | Integer interval, 65,535 is one; no unconstrained float |
+| `UiLogicalLength(i32)` | 1,000 subpixels/logical point; integer normalization/digests; nonnegative where required; physical conversion at host |
+| Radii/stroke/outline | Typed constituents/corner order; exact nearest-even proportional reduction; no bare float/negative-zero meaning |
 
-`ThemeTokenValue` expands from color-only bootstrap meaning to a closed typed
-sum for color, opacity, logical length, corner radii, solid stroke, and solid
-outline values. A role may consume only a slot whose declared kind matches its
-aspect. Aliases are cycle-free, kind-preserving semantic slot aliases; a theme
-definition cannot change an alias target or use an alias as override
-precedence.
+Aliases are kind-preserving cycle-free slot relationships, never precedence;
+themes cannot change targets. Semantic changes consume exact predecessors for
+monotonic revisions. Same identity/revision with different catalog/alias/value/
+support meaning denies conflict. Binding generation is separate; equal revisions
+from another application/surface do not substitute.
 
-Canonical numeric forms are deterministic:
-
-- authoring may use `#RRGGBB` or `#RRGGBBAA`, but registration parses it once
-  into `UiThemeColor([u8; 4])`, logical straight sRGBA. Six-digit form implies
-  alpha 255, ASCII hex case is immaterial, digests consume the four bytes, and
-  no ambient color-space lookup or mounting-time string parse exists;
-- opacity is an integer unit interval with 65,535 as one, not an unconstrained
-  floating-point value;
-- logical lengths use `UiLogicalLength(i32)` at the platform's 1,000-subpixel
-  logical-point scale, are nonnegative where their value kind requires it,
-  remain integers through normalization/digests, and convert to physical
-  pixels only in the host; and
-- four-corner radii, stroke, and outline values preserve their typed
-  constituents and canonical ordering. Proportional radius reduction uses
-  exact integer arithmetic with round-to-nearest-even; bare `f32` appearance
-  lengths and negative zero cannot enter ordinary meaning.
-
-Platform and application definitions are admitted in 3.16. Admission rejects
-`ThemeTokenSource::{PluginCustom, PluginAlias, PluginPlatformOverride}` and
-`ThemeTokenFamily::Unknown` before freeze. Plugin contribution and override
-remain unsupported until Milestone 15. The successor insertion contract is a
-typed `UiThemeContributionOwner` identity plus generation on registrations; no
-constructible placeholder type or empty module ships in 3.16, and no plugin
-owner may be fabricated merely to register an application theme.
-Milestone 9 may register curated light, dark, high-contrast, density-aware, and
-custom design-system definitions without changing slot or binding authority.
-
-A theme identity is stable within one application lineage and every semantic
-change consumes its exact predecessor revision to create one monotonic
-successor. The same identity/revision with different catalog, alias, value, or
-support meaning is a conflict denial. An active binding carries its own binding
-generation in addition to the chosen definition revision; equal numeric
-revisions from another application or surface are never substitutable.
-
-There is no ambient nearest-theme lookup. Every semantic surface has exactly
-one explicit `UiActiveThemeBinding`. An application default is materialized as
-an explicit per-surface binding during preparation, not inherited dynamically.
-This makes multi-window and future surface-specific themes additive without a
-process-global cascade.
+Each surface has one explicit `UiActiveThemeBinding`. Materialize defaults during
+preparation, not parent/global lookup. Admit platform/application definitions;
+PluginCustom/PluginAlias/PluginPlatformOverride sources and Unknown families deny
+before freeze. Milestone 15 adds typed contribution-owner identity/generation;
+no fabricated plugin owners or empty placeholders. Milestone 9 adds curated
+light/dark/high-contrast/density themes through the same registry.
 
 ### Theme capability and switching
 
-`UiThemeCapabilityReceipt` proves that one registered theme definition, slot
-catalog revision, required role set, semantic surface, application generation,
-and host support profile were admitted together. Only the application/theme
-admission owner constructs it. It authorizes resolution for that exact world;
-it does not authorize source edits, state changes, publication, host effects,
-another surface, or another theme revision.
-
-Initial bindings are prepared before application activation. A live switch
-uses:
+Application/theme admission alone constructs `UiThemeCapabilityReceipt`, binding
+one definition, catalog revision, required role set, surface, application generation,
+and host profile. It authorizes resolution only there, not edits/state/publication/
+host effects or another revision/surface.
 
 ```text
-UiThemeSwitchRequest
--> admitted observation-family origin
--> current application/theme admission
--> existing observation-turn and affected-scope/rebind planning
--> existing mounted publication and host settlement
--> UiThemeSwitchOutcome projected from UiRebindOutcome
+UiThemeSwitchRequest -> admitted observation origin -> current theme admission
+  -> existing affected-scope/rebind -> mounted publication/settlement
+  -> UiThemeSwitchOutcome projected from UiRebindOutcome
 ```
 
-The outcome distinguishes published, observed-no-change, duplicate,
-superseded-before-effects, rejected-before-effects, in-flight, and
-indeterminate. It does not introduce a theme publisher or retry/recovery lane.
-A source edit that changes a theme definition enters the same observation and
-rebind progression; programmatic switch is a typed sibling origin, not a
-parallel executor. `prepare_theme_switch` admits an origin and exact predecessor;
-there is no theme-specific `execute_theme_switch` presenter. The existing
-presentation-state theme revision/CAS becomes the active binding's internal
-predecessor check, and no direct per-token public mutation lane remains.
+Initial binding precedes activation. Source edits and programmatic switches share
+this progression. `prepare_theme_switch` admits origin and exact predecessor;
+no theme executor/publisher/token mutation/retry/recovery lane. Existing
+presentation-state revision/CAS owns the predecessor check. Outcomes distinguish
+published, observed-no-change, duplicate, superseded before effects, rejected
+before effects, in-flight, and indeterminate.
 
-Equal identity or equal pixels do not prove equivalence. Theme semantic
-comparison includes definition identity/revision, slot catalog, alias
-resolution, typed values, support requirements, and binding scope. A changed
-definition with byte-equal resolved outputs may advance evidence without
-physical work; inspection must distinguish that from no observation.
+Compare definition identity/revision, catalog/aliases/values, support, and scope;
+equal IDs/pixels alone are insufficient. Equal output may advance evidence without
+physical work; inspection distinguishes this from no observation.
 
 ### State axes consume owner-issued truth
 
-`UiAppearanceStateAxis` classifies a finite visual input family. It is not a
-generic `(name, bool)` or extensible value bag. The 3.16 set is sealed:
+Six sealed versioned schemas retain bounded references to full owner posture,
+revision/currentness, and reason. Roles pin versions; new visual classes require
+successor admission, never wildcards. Classes cannot become owner authority.
 
-- `operability`;
-- `focus`;
-- `validation`;
-- `selection`;
-- `hover`; and
-- `pressed`.
-
-Each has a separate adapter and typed source product. Several products do not
-exist at the start of this milestone; 3.16 creates them in the contract wave
-rather than treating test-only readers or six independent live reads as an
-inherited boundary.
-
-| Axis | Authority owner | Admitted appearance classes |
+| Axis | Source owner | Visual classes |
 | --- | --- | --- |
-| operability | Intent admission standing fact over the existing decision/affinity proof | ready, pending, occupied, denied, unsupported, stale |
-| focus | sealed Focus appearance export including window and focus-visible modality | unfocused, focused, focus-visible, focused-window-inactive |
-| validation | sealed typed application fact only | unspecified, valid, advisory, invalid, pending, stale |
-| selection | sealed Selection per-key export under owner/revision/incarnation | unselected, selected, anchor, cursor, selected-anchor-cursor |
-| hover | new pointer-presence owner over current presented hit testing | outside, hovered |
-| pressed | sealed Gesture/capture export | idle, armed-inside, captured-outside |
+| Operability | Intent standing decision/affinity | ready, pending, occupied, denied, unsupported, stale |
+| Focus | Focus target/window/modality | unfocused, focused, focus-visible, focused-window-inactive |
+| Validation | Sealed application fact | unspecified, valid, advisory, invalid, pending, stale |
+| Selection | Selection owner/key/incarnation | unselected, selected, anchor, cursor, selected-anchor-cursor |
+| Hover | Pointer presence over presented hit testing | outside, hovered |
+| Pressed | Gesture/capture | idle, armed-inside, captured-outside |
 
-Every axis has a stable schema identity and version. A role pins the axis
-version whose finite classes it partitions. A new owner distinction that maps
-honestly to an existing visual class does not change that version; a genuinely
-new visual class requires a successor axis version and explicit role
-admission. Unknown classes never enter an existing partition through a default
-or wildcard.
+`UiIntentOperabilityStandingFact` retains the complete decision for node,
+incarnation, and route. Consume the prepared catalog's unique product route;
+missing/ambiguous routes deny distinctly. Multi-route use requires authored
+selection. Never rerun admission, fabricate ready, or reduce evidence to a boolean.
+Class-preserving changes advance evidence; instance/binding retirement and
+application cutover clear indexed facts. Map existing `primary_cause()` exactly:
 
-The visual class is a lawful projection for decision-table finiteness; it does
-not replace the source posture. Every axis value retains a bounded reference to
-the exact owner-issued source, revision, currentness, and reason class needed
-for inspection. Appearance cannot turn the class back into an operability
-proof, focus request, selection receipt, validation fact, pointer observation,
-or gesture continuation.
-
-Intent admission adds `UiIntentOperabilityStandingFact`, keyed by graph node,
-mounted incarnation, and declared intent route. It retains the complete
-`UiIntentOperabilityDecision` and publishes when that decision's exact retained
-meaning changes; a class-preserving change is evidence succession, not a
-mechanical-state change.
-The appearance adapter is the following closed projection under the existing
-`primary_cause()` priority; `disabled` is not an axis class, preset name, or
-diagnostic:
-
-| Existing owner cause | Appearance class |
+| Cause | Class |
 | --- | --- |
-| no primary cause | `ready` |
-| `Pending` | `pending` |
-| `Occupied` | `occupied` |
-| `Unsupported` | `unsupported` |
-| `StaleTarget`, `WrongWorld`, `RebindRequired` | `stale` |
-| `PolicyDenied`, `Readonly`, `ConfirmationRequired` | `denied` |
+| None | ready |
+| Pending / Occupied / Unsupported | pending / occupied / unsupported |
+| StaleTarget, WrongWorld, RebindRequired | stale |
+| PolicyDenied, Readonly, ConfirmationRequired | denied |
 
-The adapter never re-runs intent admission and never reduces its retained
-source to `is_operable()`. “Affinity” is the governing owner axis name;
-“currentness” remains the admission/revalidation procedure.
+“Disabled” is not a class; affinity remains the owner axis and currentness the
+admission procedure. `UiValidationAppearanceFact` comes only from typed application
+state; missing means unspecified, not valid. Draft/IME, Query, operability, strings,
+and host logic cannot validate. `UiFocusAppearancePosture` maps no target to
+unfocused, inactive window before modality, then keyboard-visible to focus-visible;
+initial/pointer posture with a target is focused.
 
-Validation is presentation of admitted validation truth, not a new validator.
-3.16 admits only `UiValidationAppearanceFact`, a sealed application-fact family
-with identity, revision, currentness, and classes `unspecified | valid |
-advisory | invalid | pending | stale`. Its private constructor is owned by the
-existing typed application-fact state. Missing fact maps to `unspecified`, never
-`valid`. Draft/IME state, Intent operability, Query outcomes, strings, and
-adapter-side validation logic cannot populate it. A later forms milestone may
-add an owner-issued source through a successor version without creating a
-second validator.
+`UiSelectionAppearancePosture` uses owner/application key/incarnation and denies
+multiple-owner ambiguity. Map anchor+cursor, anchor, cursor, selected, none in
+that order. Preserve source bits and existing owner cursor, not a second lead or
+catalog-index inference. Pure appearance classes do not replace owner truth.
 
-Focus adds a production `UiFocusAppearancePosture` export carrying semantic
-target, window focus, focus-visible modality, and owner revision. `Initial`
-maps to `unfocused` when there is no semantic target and otherwise to `focused`;
-an existing target with inactive window maps to `focused-window-inactive`
-before modality is considered; otherwise only admitted keyboard-visible
-posture maps to `focus-visible`, and pointer posture maps to `focused`.
-Promoting a `#[cfg(test)]` reader is not a substitute for the sealed export.
+Pointer presence owns admitted latest-value/coalesced motion. Retest on positions
+or committed old/new presented geometry intersecting the last position, scoped to
+binding/neighborhood. Same-target motion has zero appearance work; coalescing
+invents no history. Only successful no-hit admits outside; denial preserves state.
+Receipt refresh preserves input sequence/primary identity. Presence and Gesture
+preflight their own batches. Host pointer identity keys presence; latest admitted
+mouse/stylus on a surface is primary, touch cannot select Activation, absence is
+Default. Pressed stays on its original presented incarnation: capture outside
+changes posture; replacement/loss/cancellation/release clear it with exact reason.
+No second pressed owner or mouse-button-only inference. Remove superseded hover/
+pressed replacement placeholders with their rebind-policy migration.
 
-Selection adds `UiSelectionAppearancePosture`, queried by owner identity,
-stable key, and mounted incarnation. It carries owner revision and returns a
-typed ambiguity denial instead of treating multiple owners as `None`. Its
-`cursor` class is exactly `UiSelectionOwnerRecord::cursor`; no second lead field
-or catalog-index inference exists. For one key the closed mapping is: anchor
-and cursor -> `selected-anchor-cursor`; anchor only -> `anchor`; cursor only ->
-`cursor`; selected only -> `selected`; none -> `unselected`. The retained owner
-source still carries selected/anchor/cursor bits even when the visual class
-groups them.
-
-The pointer-presence owner is added under runtime interaction because pointer
-motion currently has no hover truth owner. `MechanicalFamily::PointerMotion`
-becomes an admitted observation family owned by pointer presence. Latest-value
-coalescing remains lawful: hover means the latest admitted coalesced position,
-and an intermediate enter/leave pair erased by coalescing is not semantic
-history. The owner re-hit-tests on exactly two triggers: an admitted pointer
-observation, and a committed presentation whose old/new hit geometry intersects
-the last pointer position. Each retest is bounded to the changed hit-test
-neighborhood, never the whole surface. It publishes only when the current hover
-target changes, owns neither gesture capture nor appearance, and gives
-same-target motion zero appearance work.
-
-Presence is keyed by the host-issued pointer identity. The primary pointer is
-the most recently admitted mouse or stylus identity on that surface; touch
-cannot select `Activation`, and other pointers cannot overwrite it. One mounted
-pointer-affordance mechanic exists per surface. Absence maps to `Default`.
-
-Pressed state is an exported projection of the existing gesture/capture
-lifecycle. A press remains bound to its original presented incarnation;
-movement outside while captured becomes `captured-outside`, and replacement,
-capture loss, cancellation, or terminal release clears the state with an exact
-reason. Appearance may not infer pressed from a mouse button report alone.
-The gesture owner consumes the admitted latest pointer position and committed
-presentation trigger needed to maintain inside/outside posture; appearance does
-not create a second pressed owner. The superseded replacement-inventory hover
-and pressed placeholders are deleted with an exact rebind-policy migration.
+Canonical hit rows/order/spatial membership share one owner; no caller-supplied
+second predecessor. Derived indexes partition completed geometry by binding and
+coordinates. Disjoint clips retain rows without spatial membership; non-area
+completion denies. Presented targeting uses Portal baselines and accepted Motion,
+with receipt/order/currentness checks separate. Query budgets are 1,024 spatial
+visits and 256 candidates; exhaustion denies without partial winner or full scan.
+Invisible rows reserve capacity. Motion refreshes indexed Portal children while
+triggers stay stationary; retirement cannot erase accepted geometry. Charge the
+at-most-64 ordinary track scan separately; point queries do not scan tracks.
+Preflight cannot materialize full hit tables. Report row/map/spatial maintenance
+and retained predecessors separately from cold binding reconstruction.
 
 ### Coherent state vectors
 
-`UiAppearanceStateVector` is a sealed snapshot over only the axes declared by
-the role. Milestone 3.16 adds `UiAppearanceOwnerSnapshot` as one sealed product
-of observation-turn close. Each consumed owner supplies one exact-current,
-axis-relevant snapshot plus its revision to the session; the turn seals them
-together with admitted observations. The appearance vector's only constructor
-takes that one product and carries:
+Observation close seals `UiAppearanceOwnerSnapshot` from exact-current owner
+exports/revisions and admitted observations. `UiAppearanceStateVector` consumes
+that single product and only declared axes, carrying application/generation,
+surface/theme binding, node/instance/incarnation, relevant presentation, role
+revision, owner revisions, and provenance/currentness.
 
-- application and generation;
-- semantic surface and theme binding;
-- graph node, mounted instance, and incarnation;
-- completed presentation basis where pointer state is consumed;
-- role identity/revision;
-- exact owner revisions for every consumed axis; and
-- source provenance/currentness posture.
-
-The resolver cannot assemble a vector by reading six mutable owners at six
-different times, accept six owner references, or stamp independent reads with
-one application generation. State adapters are pure functions of the sealed
-snapshot and cannot import mutable Focus, Selection, Gesture, Intent, Portal,
-or Motion owner state. Any other construction is a typed denial and a
-compile-fail case. A changed axis selects consumers through the existing
-consumed-fact relation; it does not scan the role catalog or graph.
+Pure adapters cannot import mutable Focus/Selection/Gesture/Intent/Portal/Motion
+internals. Six independent reads/references or generation-stamped mixed snapshots
+cannot construct a coherent vector. These are compiler-visible boundaries;
+changed axes select through consumed facts, not graph or catalog scans.
 
 ### Resolution is a finite partition, never a cascade
 
-For each aspect, a role declares a finite set of state predicates over only
-the axes that affect that aspect. Its reachable space is exactly the Cartesian
-product of the admitted classes of those declared axes; no implicit cross-axis
-exclusion or owner folklore prunes it, and 3.16 admits no author-supplied
-reachability exclusions. Admission compiles predicates into one canonical
-partition of that exact product; a larger product receives the typed cell-cap
-denial rather than a wildcard or pruned lowering.
+Each aspect partitions exactly the Cartesian product of its declared axis classes.
+Admission proves exactly one result per cell: no authored reachability exclusions,
+owner folklore, overlap, holes, source-order/specificity/last-writer winners, or
+runtime defaults. Oversized products deny rather than prune or add a wildcard.
 
-Every reachable cell must map to exactly one result. Two rows that can match
-the same cell are an ambiguity denial. A cell with no result is a missing-
-coverage denial. Source order, specificity, declaration order, registration
-order, and `last wins` are never tie-breakers.
-
-An author may use explicit equivalence groups and an `otherwise same_as ...`
-lowering shorthand. One shared partition compiler expands that shorthand into
-the finite complement and proves the final cells disjoint and total before
-runtime. The cell capacity applies after complement expansion and equivalence-
-group merge. There is no runtime default branch and no ambient fallback token.
-
-Different aspects resolve independently. Hover and pressed may affect
-background without multiplying focus-outline rows; focus may affect outline
-without restating foreground. This prevents a Cartesian authoring explosion
-while keeping every individual aspect total and unambiguous.
-
-Canonical ordering is by stable axis identity, normalized value class, and
-canonical cell encoding. Semantically equivalent Rust and DSL declarations
-produce the same role meaning regardless of source ordering.
+One compiler expands equivalence groups and `otherwise same_as ...` into a total
+disjoint complement. Apply cell capacity after expansion and equivalence merge.
+Aspects partition independently; canonical axis/class/cell ordering makes Rust/DSL
+meaning invariant under declaration order.
 
 ### Projection, invalidation, and equivalence
 
-Appearance extends existing reconstructible indexing rather than creating a
-second slot relation:
+Use the existing consumed-fact relation for owner/slot changes, attached-consumer
+indexes for role revisions, and the mount journal for new/retired instances.
+Intersect axis dependencies with UI target/incarnation/surface/binding membership;
+an axis revision cannot select every consumer of that axis.
 
-```text
-state owner / axis source -> existing consumed-fact index -> appearance consumers
-theme slot selector -> existing consumed-fact index -> appearance consumers
-role revision -> attached consumers
-appearance consumer -> emitted semantic aspects -> mounted mechanics
-```
+Reuse Signal source/aspect/partition/region propagation and existing Query-installed
+conditional instances/subscribers. `mark_dirty_with_regions` cannot infer UI
+identity. No parallel Signal graph, slot relation, raw Query lane, or presentation
+owner. UI retains membership, interaction, and acceptance authority.
 
-For each candidate it distinguishes:
+New mounts enter without source/theme/state change. Retained appearance capsules
+are predecessors; receipt-only/PhysicalOnly entries are not new mounts. Preparation
+reads rather than consumes the journal: abandonment retries, unmount cancels, and
+reconstruction preserves explicit retirements after semantic rows disappear.
 
-- input evidence changed;
-- semantic appearance projection changed;
-- resolved aspect value changed;
-- mounted mechanical output changed;
-- physical output suppressed because the result is byte-equivalent; and
-- work denied before effects.
+Selection key deltas do not prove collection currentness. `bind_selection_item`
+requires current node receipt, same-surface declared owner, and admitted Query
+option; the owner consumes that projection or declares its exact SelectionCommit
+payload. Query row identity is not an application key; collection text rows are
+not independent item authority. Prepare changed collections before selection,
+including omitted replacement slots. Validate posture/revision/row/key/world/
+binding; preserve surviving bits/revision, deny removed/remapped keys before effects,
+and never install abandoned bindings or mutate Selection during preparation.
 
-Those distinctions appear in `UiAppearanceChangeReceipt` and bounded
-inspection. A state-source revision may advance while all appearance outputs
-remain equal. A theme value may change while no mounted consumer exists. A
-role attribution change may require a mounted fact change even when pixels are
-equal. None is mislabeled as another.
-
-The current `theme_token_graph_consumers` relation is revised in place as the
-canonical slot-selector specialization. The legacy
-`UiMountedThemeValueSource::ActiveCurrent::changed_graph_nodes` selection lane
-is removed rather than preserved beside it. Derived indexes can be independently
-reconstructed from sealed application truth. Index absence is diagnostic/
-reconstructive work, never authority for a whole-graph ordinary fallback.
+`UiAppearanceChangeReceipt` distinguishes input evidence, semantic projection,
+resolved value, mounted output, equal-output suppression, and denial. Attribution
+may change with equal pixels. Revise `theme_token_graph_consumers` in place and
+remove `ActiveCurrent::changed_graph_nodes`. Indexes reconstruct from sealed truth;
+absence never licenses an ordinary whole-graph fallback.
 
 ### Text, deferred icons, motion, and opacity
 
-Alpha text consumes `appearance.foreground` from the same projection and
-retains original UTF-8 paint-span ownership. No semantic-span-slot type is
-added. A text node that opts into `appearance.foreground` declares which
-existing `ComponentSemanticTextSpanContract` original UTF-8 ranges consume the
-role color. Those ranges keep their span identity; only the mounted resolved
-RGBA changes. Token-retaining ranges remain unchanged, cluster boundaries are
-preserved, and intrinsic-color clusters are excluded. A color-only change
-reuses qualified layout, glyph positions, hit geometry, selection rectangles,
-and alpha atlas entries. Only the paint command and exact damage change.
+Adopt existing original UTF-8 ranges through
+`ComponentSemanticTextSpanContract::with_appearance_foreground()`. Preserve span
+identity, clusters, token-retaining ranges, and independent posture/collection
+rows. Adoption affects frozen/executed meaning, not range/style/identity; a role
+does not adopt all text and no replacement semantic-span-slot type is added.
+Color-only changes paint/damage with zero qualification/shaping/measurement/
+rasterization/alpha upload or layout/glyph/caret/selection/hit-geometry drift.
 
-Icons are explicitly out of scope for 3.16. No reserved or empty icon mechanic
-type ships. The successor home is a mounting/host projection consuming the
-existing icon registry's color-support contract in Milestone 9. Pulse therefore
-removes `portal_icon_text` and its Unicode arrow substitute and remains
-aesthetically complete without an icon. `InheritsTextColor` icons remain
-unmounted until that mechanic exists.
+Text damage has two stages:
 
-Appearance opacity applies to the node's own surface, outline, and text, not
-recursively to descendants.
-Motion's presentation-sampled opacity remains a separate mechanical factor.
-Both are `u16` with 65,535 as one from the Motion sample onward; ordinary
-Motion ingress cannot use `from_runtime_sampling(f32)`. The runtime presentation
-producer multiplies them exactly once as a `u32` product divided by 65,535,
-saturating and rounding ties to even, and emits one composed
-`UiMountedPresentationOpacity`. The host performs no second multiplication or
-independent `u16`-to-`u8` requantization. DSL opacity is an integer or exact
-ratio such as `40/64`, never a decimal; `from_ratio(n, d)` is the only public
-non-integer authoring form. Appearance cannot retarget a Motion track, and
-Motion cannot mutate the semantic appearance projection.
+1. Mounting emits unresolved `UiAppearanceTextDamageRequirement` target/span
+   changes plus qualified layout/placement/clip/binding candidates. Candidate
+   uniqueness is command-based (instance/slot/collection correlation); foreground
+   and damage identity remain target/span. Preserve all commands
+   sharing a span; duplicate commands or duplicate span IDs within a candidate
+   deny. Current receipt/span membership separately proves foreground adoption.
+2. Existing text/atlas admission supplies actual images. Presentation joins complete
+   candidates with the exact binding's accepted old coverage, clips/finalizes
+   old/new physical damage before submission. Missing/ambiguous matches deny;
+   allocation/predicted extents cannot substitute. Empty non-text `damage()`
+   cannot erase text work. Mounting cannot bypass host miss admission by eager raster.
 
-A backdrop follows the same once-only multiplication law without pretending to
-be a node. Its appearance opacity composes once with any exact Motion sample
-named by its own declaration to produce the mechanic's presentation opacity;
-a Portal-following presence basis does not imply a Motion track. Source-over
-among backdrop layers is a later physical fold and must not be confused with
-per-layer multiplication. Neither mounting nor the host may multiply factors
-twice, and no effective stack alpha returns to Appearance, Backdrop, Portal,
-hit testing, or inspection as authority.
+Authenticate `CompleteLayout` and exact ordered command-specific runs through the
+text-owner callback. Empty `LogicalDamage` selects no glyphs. Scope belongs in
+demand v2 identity, not raster keys, and is independent of cost lane/effect authority.
+Flags/counts/broad rectangles or reordered/deduplicated runs cannot prove completeness;
+complete non-drawable text may have no images. Demand validation and its costs,
+atlas admission, and presentation acceptance remain distinct and effect-honest.
+
+Accepted coverage survives cache eviction. Validate candidate atlas/device affinity
+at the physical boundary. Pending/rejected/indeterminate/partial-surface work,
+rebind, and reconstruction use existing presentation ownership and each binding's
+accepted predecessor. Geometry-only changes refresh coverage with color fixed.
+Historical coverage is not reusable image authority; headless unresolved requirements
+are not physical damage. Intrinsic-color clusters cannot be retinted. Under frozen
+BodyDefault v1, prove exclusion by typed/compile admission, not unsupported emoji.
+Icons/global-text v2 remain deferred; remove Pulse's `portal_icon_text`/Unicode arrow.
+
+Appearance and Motion supply separate raw `u16` factors (65,535 is one). Runtime
+presentation multiplies exactly once: `u32` product / 65,535, saturation and
+nearest-even rounding, producing `UiMountedPresentationOpacity`. No float Motion
+sampling ingress, early `u8`, host remultiplication, or descendant propagation.
+DSL opacity is integer or exact ratio; `from_ratio(n,d)` is the public non-integer
+form. `UiMountedAppearanceOpacity` stays raw without composition. Static-paint
+sampling uses the identity appearance factor until cutover.
+
+Only physical acceptance installs retained samples. Appearance-only changes consume
+them; Motion-only changes refresh exact mechanics without semantic resolution.
+Retarget/terminal retirement/rejection cannot erase accepted overrides. Surface/
+outline/text/Portal/backdrop share composed opacity; backdrops consume Motion only
+when declared. Appearance cannot retarget Motion or mutate its timeline; Motion
+cannot mutate semantic appearance. Per-layer multiplication is separate from
+source-over, whose effective output cannot become semantic/input authority.
 
 ### Pointer affordance is an adjacent semantic mechanic
 
-A cursor is not a color and therefore is not an appearance aspect.
-Nevertheless an interactive surface that visually promises activation must not
-depend on adapter inference. Milestone 3.16 adds the narrow
-`UiPointerAffordanceProjection` sibling with `Default` and `Activation`
-families. It derives from the declared interaction kind, current operability,
-current hover target, and exact mounted incarnation.
+`UiPointerAffordanceProjection` has Default/Activation, separate from appearance
+aspects. Derive it from declared interaction, current Intent operability, primary
+presented target/incarnation, never paint/bounds/names/host widgets. Observe Activate
+without an event, payload projection, occupancy reservation, or appearance role.
+Standing reads share canonical decision/dependency admission and current physical
+epoch; do not duplicate catalog checks or create admission candidates.
 
-The runtime mounts one current pointer-affordance mechanic for the active
-pointer target. The native adapter maps the sealed family to the qualified OS
-cursor; headless records the same semantic mechanic. Paint, bounds, component
-name, and host widget class cannot select it. This projection has its own
-identity and invalidation row and cannot be placed inside
-`UiAppearanceProjection` as an optional field.
+Confirmation `observe_intent_confirmation(target,time_basis)` shares challenge
+matching/validation, yielding eligibility, typed stop, bounded lookup cost. It
+consumes no marker or counter. Equality at expiry is valid; next millisecond is
+expired. Ambiguous/terminal reads remain effect-free.
 
-Later text-entry, resize, drag, precision, and accessibility cursor families
-enter as typed siblings after their semantic owners exist. They do not change
-the appearance aspect algebra.
+Native close uses the read-only native-input-epoch clock installed before activation.
+`seal_at_host_time` is an as-of fallback only without it. Pointer timestamps, Signal
+ticks, retry clocks cannot establish freshness; untimed empty close denies. Final
+idle close handles stationary truth and composes eligible expiry+1ms with existing
+deadlines, restoring carried predecessors including ties. No timer thread/readiness
+owner/presentation queue; visibility cannot erase another owner's wake.
+
+Compare current pointer meaning with committed rows. Preparation/rejection and
+older in-flight settlement cannot acknowledge newer desire. Custom runtimes get
+the required callback through their ordinary pending-frame owner; fixed programs
+distinguish Program(index) from PointerRefresh without changing authored progress,
+capturing authored-frame evidence, or superseding another owner. Close samples
+after callbacks; host retry/physical work composes with existing waits.
+
+Snapshots are independent of appearance demand. One surface row holds primary
+mouse/stylus; touch supplies no cursor. Refresh full targets on receipt/physical-
+epoch succession. Reuse compares surface/binding/pointer/target/family, excluding
+receipt/sequence churn; suppression keeps last emitted predecessor. Admission
+cannot resurrect historical observations or be consumed by failed output batches.
+Observation, selected-membership, and targeting costs remain distinct.
+
+Surface-pointer fragments may replace departing with arriving primary identity;
+predecessor/successor each contain at most one correctly attributed pointer mechanic.
+Cursor-only work needs no damage/fake node. Requested surfaces emit independently,
+preserving omitted predecessors/retries. Native maps the sealed family to OS cursor;
+headless records it. Later text-entry/resize/drag/precision/accessibility cursors
+enter as typed siblings, not appearance fields.
 
 ### Host contract and clean protocol cutover
 
-The host receives physical mechanics, never roles, theme tokens, state axes,
-coverage rules, or resolver instructions.
+Hosts receive physical mechanics, never roles/slots/axes/resolver rules:
 
-Milestone 3.16 replaces the filled-rectangle-only bootstrap with these cohesive
-families:
+| Family | Required contract |
+| --- | --- |
+| Surface | Explicit fill-only/border-only/fill-and-border; radii, composed opacity, bounds/clip/order/receipt/attribution |
+| Outline | Outside non-hit ring, composed opacity, expanded visual bounds/damage |
+| Text foreground | Original-span adoption, qualified layout identity, composed opacity |
+| Backdrop | Independent instance/order receipt/extent/color/opacity/clip/attribution, paint-only |
+| Pointer affordance | Exact pointer/surface/target and sealed family |
 
-- `UiMountedSurfaceAppearanceMechanic`: own-surface fill, optional inward solid
-  border, own-surface radii, canonical opacity, exact bounds/clip/layer, node
-  receipt, projection attribution, and visual bounds;
-- `UiMountedOutlineAppearanceMechanic`: outside solid ring, opacity, exact
-  expanded damage/visual bounds, and non-hit-test posture;
-- `UiMountedBackdropMechanic`: backdrop identity, overlay placement receipt,
-  exact presented extent, straight sRGBA color, canonical opacity, clip,
-  appearance attribution, and paint-only posture;
-- the existing semantic-text mechanic extended with appearance foreground,
-  semantic paint-span attribution, and appearance opacity while preserving the
-  qualified layout identity; and
-- `UiMountedPointerAffordanceMechanic`: current pointer/surface/target affinity
-  and sealed cursor family.
+Portal overlay retains surface/lifecycle/shielding affinity, not dimmer meaning.
+Backdrop has an independent row/fate. Deny duplicate IDs, foreign/stale bases, and
+mismatch with current sealed overlay order before effects. Radius shares surface
+render fate, while semantic aspect facts remain separate.
 
-The surface mechanic admits explicit fill-only, border-only, and
-fill-and-border variants. It is not a growing optional property bag. Radius is
-shape geometry shared by fill and border because those mechanics have one
-physical render fate; semantic aspect facts remain separate for inspection and
-invalidation.
+Component rendering meaning owns concrete paint order independently of static paint.
+Role order, execution lanes, plan indices, identity, and host iteration cannot
+substitute. Surface then outline is the same-node exception; text keeps declared
+order; Portal content stays in its group. Other overlapping equal-order participants
+deny. Overlap is positive-area half-open visual-bound intersection after ancestor
+clip within one surface/binding/coordinate/Portal partition. Transparency, rounded
+pixels, and hollow rings do not relax it. Remove departures before inserting
+successors; validate retained peers and preserve the complete index on failure.
+Acceleration confers no paint order or interaction authority.
 
-Rounded surface rendering uses one qualified analytic anti-aliasing rule at
-1.0 and fractional device scale. Border width is resolved in logical units,
-painted inward, and snapped only by the host's recorded device transform.
-Damage derives from each mechanic's visual bounds, not allocation
-`bounds ∩ clip`. Only outline visual bounds may exceed their own allocation;
-ancestor clipping remains recorded separately. Outline damage includes the
-full physical anti-alias fringe. Damage normalization unions overlapping and
-edge-adjacent canonical boxes deterministically before command emission.
-Headless records the same completed mechanics and deterministic reference
-raster posture; it does not claim native compositor pixels.
+Qualified analytic AA supports integer/fractional scale; host's recorded transform
+alone snaps physical geometry. Keep visual bounds/ancestor clips separate; only
+outline exceeds own allocation. Normalize damage deterministically, merging only
+rectangular unions; retain offset overlaps/gaps, remove containment, deny overflow
+rather than widen. Hulls are lookup-only. Headless/reference raster is not native
+compositor evidence.
 
-`UiMountedPortalOverlayMechanic` remains the portal surface/lifecycle/shielding
-mechanic. Backdrop is a separate protocol row and retained command because its
-extent, appearance attribution, damage, presence, and replacement fate are
-independent. Runtime validation rejects duplicate backdrop identities, stale or
-foreign extent/presence/placement bases, unresolved or cyclic anchors, and any
-row whose application/surface/presentation basis disagrees with the sealed
-overlay snapshot. Headless transcripts preserve the issued total order; native
-retained commands use the same identities and order. The host receives no
-portal-kind-to-backdrop rule.
+Gate 5 changes these values atomically; earlier gates leave live values unchanged:
 
-The contract wave freezes these as intended successor values without changing
-any live `CURRENT` constant. One later atomic cutover commit changes all of:
+| Contract | Current -> successor |
+| --- | --- |
+| Host protocol floor/current | 6 -> 7; floor equals current |
+| Mounted/presentation schemas | 5 -> 6 |
+| Text schema | 3 -> 4 |
+| Observation / measurement / solicited effect | Remain 7 / 5 / 1 |
+| Windows profile | `worth-ui-windows-dx12-v1` -> `worth-ui-windows-dx12-v2` |
+| Qualified text | Remains `worth-ui-body-default-v1` |
 
-- host protocol `COMPATIBLE_FLOOR` and `CURRENT` advance together from 6 to 7,
-  leaving the admissible protocol range a single point;
-- mounted-frame and presentation schemas advance from 5 to 6;
-- `UiMountedTextSchemaVersion` advances from 3 to 4;
-- observation schema remains 7;
-- measurement schema remains 5;
-- solicited-effect schema remains 1; and
-- the qualified Windows appearance profile becomes
-  `worth-ui-windows-dx12-v2` while the qualified text profile remains
-  `worth-ui-body-default-v1`.
+BodyDefault v1 admits U+0020–U+007E through
+`UiUnsupportedBodyDefaultCodePoint::first_in`, denying before effects. Intrinsic-color
+adoption is excluded at compile/typed admission; global-text v2 raster proof waits
+for that successor. The Windows v2 qualification manifest freezes AA, family
+capacities, and one native surface. AP-10 semantic surfaces are not OS windows.
 
-Mounting enforces `worth-ui-body-default-v1`'s declared U+0020–U+007E range
-through `UiUnsupportedBodyDefaultCodePoint::first_in` and denies unsupported
-text before effects. Because that profile has no reachable intrinsic-color
-glyph, 3.16 proves non-retinting with compile-fail/typed-denial evidence rather
-than a vacuous emoji raster. Adoption of the staged `worth-ui-global-text-v2`
-profile and its intrinsic-color raster proof is explicitly deferred to the
-global-text successor milestone.
+After cutover reject protocol 6, mounted/presentation 5, static-paint schema 1,
+and every `UiMountedFilledRectMechanic`. Remove `UiMountedStaticPaintSchemaVersion`,
+static-paint modules/translators/exports, `ComponentStaticPaintContract`,
+`ComponentStaticPaintOrder`, `ComponentDescriptor::static_paint_contract`,
+bootstrap-only `theme_token_dependencies`, string-backed `ThemeColorValue`, Pulse
+bootstrap resolver/`portal_icon_text`, direct token publication, and legacy changed-
+node selection. Preserve canonical `ComponentSemanticTextSpanContract` with adoption.
 
-Negotiation rejects protocol 6, mounted-frame/presentation schema 5,
-`UiMountedStaticPaintSchemaVersion` 1, and every
-`UiMountedFilledRectMechanic`. The old
-`UiMountedStaticPaintSchemaVersion`,
-`static_paint` modules, public exports, native/headless translators, and Pulse
-bootstrap resolver are removed in the cutover. There is no compatibility
-alias, dual emission, or adapter fallback.
-
-The component cutover removes `ComponentDescriptor::static_paint_contract`,
-legacy `theme_token_dependencies` that existed only to feed bootstrap paint,
-`ComponentStaticPaintContract`, `ComponentStaticPaintOrder`, and their public
-facade exports. `ComponentSemanticTextSpanContract` remains canonical text
-meaning and is extended only by explicit original-range foreground adoption;
-it is not replaced by appearance roles.
-
-All workspace Rust registrations, checked-in `.wui` sources, fixtures,
-examples, and docs move in the same cutover. Former component-primary-token or
-static-paint source forms receive one source-linked migration diagnostic that
-names the required explicit role attachment; they do not lower to an implicit
-role. A running pre-cutover binary may preserve its last valid generation after
-an invalid edit under its existing rules, but one process never negotiates or
-publishes static-paint and appearance commands side by side.
-
-The Windows v2 qualification manifest updates analytic rounded-surface/
-outline anti-aliasing, command-family capacities, and its single native host
-surface. `AP-10`'s four semantic surfaces are application theme-binding scopes
-mounted into that one native host surface, not four OS windows or swapchains.
-All native-profile literals and qualification pins in host-native,
-native-platform, and runtime move together.
-
-Host support is negotiated per mechanic family and schema before effects. A
-host that cannot render a role's required border, radius, outline, opacity,
-text foreground, or pointer affordance returns a typed support denial; runtime
-does not substitute a square fill or drop the unsupported part.
+Migrate Rust/DSL registrations, fixtures, examples, docs, profile literals/pins
+in contract, native/native-platform/runtime and Pulse together. Old source forms
+receive source-linked explicit-role migration diagnostics, not implicit lowering.
+No aliases/dual emission/fallback. A pre-cutover process may retain its valid prior
+generation after invalid edit, but never publish both protocols. Negotiate required
+mechanic family/schema support before effects; never drop or approximate unsupported
+border/radius/outline/opacity/foreground/cursor.
 
 ### Publication, physical failure, and recovery
 
-Appearance uses the existing observation, affected-scope, identity-lifecycle,
-plan, publication, presentation, physical-work, and reconciliation owners.
-Resolver output alone cannot publish. A prepared theme switch or state change
-cannot bypass predecessor currentness, capacity, cancellation, deadline,
-surface support, or multi-surface atomicity.
-
-Rejection before host effects preserves the current appearance and active
-theme binding. In-flight work retains its completion handle. Effects that may
-have begun remain indeterminate and retain exact reconciliation authority.
-Recovery reconstructs physical mechanics from current mounted/runtime
-authority; it does not replay theme switching or state-owner semantics and
-does not infer appearance from retained pixels.
+Use existing observation/scope/identity/plan/publication/presentation/physical-work/
+reconciliation owners. Resolution cannot bypass predecessor currentness, capacity,
+deadlines, cancellation, support, or multi-surface atomicity. Before-effect denial
+preserves exact appearance/theme predecessors. In-flight work retains handles;
+uncertain effects stay indeterminate with reconciliation authority, never timeout-
+as-success or fictitious rollback. Recovery reconstructs mechanics from mounted/
+runtime truth, not pixels or replayed state-owner/Query/service/theme semantics.
 
 ### Inspection and developer courtesies
 
-`worth-ui-inspection` owns the public appearance inspection contracts and
-result vocabulary. The runtime owns only bounded producers that populate those
-contracts; it cannot mint a second inspection type family. The stable bounded
-surface includes:
+`worth-ui-inspection` owns public contracts; runtime supplies bounded producers.
+`why_appearance(node, aspect)` and `why_pointer_affordance(target)` explain role,
+theme/binding/slot/alias/source, coherent owner evidence, canonical cell, coverage/
+support, semantic/mechanical/suppressed posture, invalidation and costs. Outcomes:
+found, expired, unsupported, unavailable, wrong-world; no construction/mutation
+or preview-to-live authority.
 
-- `why_appearance(node, aspect)`;
-- current role identity/revision and source span;
-- active theme identity/revision, surface binding, slot and alias provenance;
-- active state classes and bounded owner-evidence references;
-- the matched canonical decision cell;
-- coverage and host-support posture;
-- semantic value, mounted mechanic, and physical-suppression posture;
-- exact invalidation cause and changed/visited counters; and
-- `why_pointer_affordance(target)`.
-
-`why_appearance` returns found, expired, unsupported, unavailable, or wrong-
-world posture. It is a read-only explanation; it cannot construct a state
-vector, capability receipt, projection, prepared switch, mounted fact, or host
-command.
-
-The public tooling also supplies:
-
-- an effect-free appearance view through the existing mounted-preview lane,
-  revised rather than duplicated. `UiMountedThemeValueSource::PreviewOnly`
-  takes one explicitly named admitted preview theme binding instead of
-  resolving every slot to `None`. Typed preview state remains non-authoritative
-  and cannot construct `UiAppearanceOwnerSnapshot`, a live state vector,
-  projection authority, mounted publication, or a state transition;
-- a normalized role matrix printer that shows finite cells rather than source
-  order;
-- missing/ambiguous coverage diagnostics naming role, aspect, state cell,
-  source spans, expected value kind, and lawful repair;
-- a theme-switch receipt summarizing changed slots, selected consumers,
-  changed semantic aspects, changed mechanics, equal-output suppression, text
-  reuse, and unrelated work; and
-- application-profile presets for common focus rings and activation-state
-  patterns that lower to ordinary explicit declarations rather than hidden
-  runtime branches.
-
-Rich detail remains lazy and budgeted. Ordinary projection facts retain compact
-provenance and bounded references, not full histories or formatted narratives.
+Extend the existing mounted-preview lane: PreviewOnly consumes an explicitly
+admitted preview theme rather than returning None for every slot. Preview cannot
+construct live snapshots/vectors/publication. Supply normalized role matrices,
+source-linked missing/ambiguous-cell diagnostics (role/aspect/cell/kind/repair),
+switch summaries, and focus/activation presets lowered as ordinary declarations.
+Rich detail is lazy/budgeted; ordinary facts retain compact provenance, not histories.
 
 ### Capacity and lifecycle
 
-`UiAppearanceCapacityProfile` is sealed during application preparation. The
-qualified ordinary profile admits at most:
+`UiAppearanceCapacityProfile` is sealed during preparation.
 
-- 4,096 appearance roles;
-- 4,096 backdrop declarations, each with one extent basis, one presence basis,
-  one materialization scope, one explicit placement relation, and at most one
-  explicit Motion basis;
-- 4,096 semantic theme slots and 32 registered theme definitions;
-- 64 slot references per role and 512 canonical decision cells per aspect after
-  complement expansion and equivalence merge;
-- 4,096 simultaneously mounted appearance projections across 64 semantic
-  surfaces;
-- 1,024 simultaneously mounted portal-surface rows and 1,024 independently
-  mounted backdrop rows; every backdrop also consumes one of the 4,096
-  appearance-projection records;
-- four concurrently prepared or in-flight theme switches; and
-- 64 retained compact appearance-change/inspection records.
+| Resource | Qualified ordinary maximum |
+| --- | --- |
+| Appearance roles / backdrop declarations / semantic slots | 4,096 each |
+| Registered themes | 32 |
+| Slot references per role | 64 |
+| Cells per aspect after complement expansion/equivalence merge | 512 |
+| Mounted projections / semantic surfaces | 4,096 / 64 |
+| Portal-surface rows / backdrop rows | 1,024 each; backdrops also consume projection capacity |
+| Prepared/in-flight switches | 4 |
+| Compact change/inspection records | 64 |
+
+Each backdrop has one extent, presence, scope, placement, and at most one Motion
+basis. The remaining alias, spatial-row, reservation, and lifecycle bounds below
+also apply.
 
 Alias resolution admits at most 16 hops and rejects cycles before activation.
 Dangling targets are typed registration denials and no alias path may `expect`
@@ -1354,6 +663,14 @@ bound or fall back to unbounded allocation. Capacity is reserved before the
 corresponding live state or host work. Saturation yields a typed denial or
 backpressure posture, never eviction of current authority, partial role
 coverage, a catalog scan, or a coarser global theme update.
+
+Ordinary surface/outline order admission reserves derived storage in the owning
+appearance candidate, within the same 4,096-node and 64-surface bounds. Each node
+retains at most two spatial rows (surface and outline), so partition and tree
+membership are bounded by those rows. The candidate reports its actual retained
+structural bytes, including exact-size row payloads; this is separate from a
+presented-frame visual lease. Failed admission preserves the prior index and
+mechanics, and successful retirement releases their derived entries.
 
 A proposal reserves every portal row, backdrop projection/row, overlay-order
 row, and retained command selected by its exact affected scope before mounted
@@ -1375,745 +692,500 @@ application close receipt may claim clean closure.
 
 ## Public Developer Experience
 
-The public facade is `worth_ui::facade::appearance`. It exports declaration,
-theme, switch, receipt, inspection-query, and typed value contracts. Runtime
-owners, indexes, state adapters, resolver internals, mounting tables, and host
-mechanics remain private to their owning crates.
+`worth_ui::facade::appearance` exports typed declaration/theme/switch/receipt/
+inspection contracts, not owners/indexes. Keep `register_theme_slot_catalog`,
+`register_theme`, `register_appearance_role`, `attach_appearance_role`,
+`register_backdrop`, and `bind_initial_theme` through the affine route to `freeze()`.
+Identity-bearing parameters use typed IDs; hex/path sugar parses at authoring.
+Component and backdrop attachments cannot substitute for each other.
 
-The intended Rust declaration shape is:
+Representative shape, with ordinary registrations omitted:
 
 ```rust
-use worth_ui::facade::appearance::{
-    UiAppearanceAspect, UiAppearanceCell, UiAppearanceRole, UiAppearanceRoleId,
-    UiAppearanceStatePredicate, UiBackdropDeclaration, UiBackdropExtentBasis,
-    UiBackdropIdentity, UiBackdropMotionBasis, UiBackdropPresenceBasis,
-    UiBackdropScope, UiOverlayPlacement,
-    UiSemanticSurfaceId, UiThemeColor, UiThemeDefinition, UiThemeDefinitionId,
-    UiThemeOpacity, UiThemeSlotCatalog,
-};
-use worth_ui::facade::declaration::{ComponentId, ThemeTokenFamily, ThemeTokenId};
-use worth_ui::facade::service::UiPortalDeclarationId;
-
-let slots = UiThemeSlotCatalog::new()
-    .declare_color(
-        ThemeTokenId::new("action.primary.background")?,
-        ThemeTokenFamily::accent(),
-    )?
-    .declare_color(
-        ThemeTokenId::new("action.primary.hover")?,
-        ThemeTokenFamily::accent(),
-    )?
-    .declare_color(
-        ThemeTokenId::new("action.primary.pressed")?,
-        ThemeTokenFamily::accent(),
-    )?
-    .declare_color(
-        ThemeTokenId::new("action.primary.foreground")?,
-        ThemeTokenFamily::text(),
-    )?
-    .declare_radii(
-        ThemeTokenId::new("control.radius.medium")?,
-        ThemeTokenFamily::surface(),
-    )?
-    .declare_outline(
-        ThemeTokenId::new("focus.ring")?,
-        ThemeTokenFamily::focus(),
-    )?
-    .declare_opacity(
-        ThemeTokenId::new("action.inoperable.opacity")?,
-        ThemeTokenFamily::disabled(),
-    )?;
-
-let dusk = UiThemeDefinition::new(UiThemeDefinitionId::new("pulse.dusk")?)
-    .with_color(ThemeTokenId::new("action.primary.background")?, UiThemeColor::hex("#6657D9")?)?
-    .with_color(ThemeTokenId::new("action.primary.hover")?, UiThemeColor::hex("#5849C5")?)?
-    .with_color(ThemeTokenId::new("action.primary.pressed")?, UiThemeColor::hex("#493CAD")?)?
-    .with_color(ThemeTokenId::new("action.primary.foreground")?, UiThemeColor::hex("#FFFFFF")?)?
-    .with_uniform_radii(ThemeTokenId::new("control.radius.medium")?, 8)?
-    .with_solid_outline(ThemeTokenId::new("focus.ring")?, 2, UiThemeColor::hex("#8B7CF6")?, 2)?
-    .with_opacity(ThemeTokenId::new("action.inoperable.opacity")?, UiThemeOpacity::from_ratio(40, 64)?)?;
-
-let primary_action_id = UiAppearanceRoleId::new("action.primary")?;
-let primary_action = UiAppearanceRole::new(primary_action_id)?
+let role = UiAppearanceRole::new(UiAppearanceRoleId::new("action.primary")?)?
     .applies_to(ComponentId::new("platform.control.activation")?)
-    .cover(
-        UiAppearanceAspect::Background,
-        [
-            UiAppearanceCell::named("ready-outside")
-                .when(UiAppearanceStatePredicate::ready_outside())
-                .uses_color("action.primary.background")?,
-            UiAppearanceCell::when(UiAppearanceStatePredicate::pressed_inside())
-                .uses_color("action.primary.pressed")?,
-            UiAppearanceCell::when(UiAppearanceStatePredicate::ready_hovered_not_pressed())
-                .uses_color("action.primary.hover")?,
-            UiAppearanceCell::otherwise_same_as("ready-outside"),
-        ],
-    )?
     .cover_foreground("action.primary.foreground")?
     .cover_radius("control.radius.medium")?
     .cover_outline_from_focus_visible(ThemeTokenId::new("focus.ring")?)?;
 
-let app = WorthUi::app()
-    .register_theme_slot_catalog(slots)?
-    .register_theme(dusk)?
-    .register_appearance_role(primary_action)?
-    .attach_appearance_role(
-        ComponentId::new("platform.pulse.action")?,
-        primary_action_id,
-    )?
-    .bind_initial_theme(
-        UiSemanticSurfaceId::new("platform.pulse.surface")?,
-        UiThemeDefinitionId::new("pulse.dusk")?,
-    )?
-    .freeze()?;
-```
+let scrim = UiBackdropDeclaration::new(UiBackdropIdentity::new("dialog.scrim")?)?
+    .with_scope(UiBackdropScope::per_portal_instance(portal))?
+    .with_extent(UiBackdropExtentBasis::surface_viewport(surface))?
+    .with_presence(UiBackdropPresenceBasis::while_portal_presented(portal))?
+    .with_placement(UiOverlayPlacement::immediately_before_portal(portal))?
+    .with_motion(UiBackdropMotionBasis::follow_portal_presentation(portal))?
+    .with_appearance_role(UiAppearanceRoleId::new("overlay.scrim")?)?;
 
-`register_theme_slot_catalog`, `register_theme`,
-`register_appearance_role`, `attach_appearance_role`, `register_backdrop`, and
-`bind_initial_theme` are new 3.16 builder surfaces and preserve the existing
-type-state route to `freeze()`. Every public identity-bearing parameter is a
-typed `ThemeTokenId`, `UiThemeDefinitionId`, `ComponentId`, semantic-surface
-identity, or `UiAppearanceRoleId`; `&str` is never a second runtime identity
-lane. Hex is authoring sugar parsed once into canonical bytes.
-
-Backdrop authoring uses the same role and theme registries but its own explicit
-declaration surface. `UiAppearanceRole::applies_to_backdrop()` admits only
-background and opacity coverage. A representative Rust-authored declaration is:
-
-```rust
-let surface = UiSemanticSurfaceId::new("platform.pulse.surface")?;
-let portal = UiPortalDeclarationId::new("pulse.confirmation")?;
-let scrim = UiBackdropDeclaration::new(
-    UiBackdropIdentity::new("pulse.confirmation.scrim")?,
-)?
-.with_scope(UiBackdropScope::per_portal_instance(portal))?
-.with_extent(UiBackdropExtentBasis::surface_viewport(surface))?
-.with_presence(UiBackdropPresenceBasis::while_portal_presented(portal))?
-.with_placement(UiOverlayPlacement::immediately_before_portal(portal))?
-.with_motion(UiBackdropMotionBasis::follow_portal_presentation(portal))?
-.with_appearance_role(UiAppearanceRoleId::new("overlay.scrim")?)?;
-
-let app = WorthUi::app()
-    .register_backdrop(scrim)?
-    // ordinary portal, role, theme, and component registrations
-    .freeze()?;
-```
-
-Component attachment cannot target a backdrop, and backdrop registration cannot
-target a component. A backdrop may reference a dropdown, popover, modal, or no
-portal at all; portal kind is not an admission constraint. Raw runtime portal
-identities and integer layer positions are not authoring surfaces.
-
-The public type and progression names in this specification are required.
-Builder receivers follow the repository's existing affine/borrowing builder
-conventions without changing these static relationships. In particular:
-
-- registration cannot accept an untyped map;
-- role attachment names both canonical identities;
-- each aspect table is admitted as a disjoint total partition;
-- token kind mismatch is reported before freeze;
-- initial theme selection is surface-scoped and explicit; and
-- builder conveniences lower to the same sealed declarations used by the DSL.
-
-The complete native and host-neutral forms are compile-pass fixtures in the
-existing compile-contract sessions (two Cargo invocations). Compile-fail fixtures prove that a
-foreign theme receipt, raw role ID, inspection result, wrong value kind,
-uncovered state cell, and mismatched component contract cannot advance the
-governed path.
-
-A programmatic theme switch follows one affine progression:
-
-```rust
 let origin = session.prepare_theme_switch(
     UiThemeSwitchRequest::new(surface, UiThemeDefinitionId::new("pulse.paper")?)
-        .observed_at_tick(now)
-        .with_deadline(deadline),
+        .observed_at_tick(now).with_deadline(deadline),
 )?;
-let prepared_rebind = session.prepare_rebind(origin.into_observation_origin())?;
-
-match UiThemeSwitchOutcome::from(prepared_rebind.execute()?) {
-    UiThemeSwitchOutcome::Published(receipt) => inspect_change(receipt),
-    UiThemeSwitchOutcome::ObservedNoChange(receipt) => inspect_no_change(receipt),
-    UiThemeSwitchOutcome::RejectedBeforeEffects(denial) => preserve_predecessor(denial),
-    UiThemeSwitchOutcome::InFlight(handle) => retain_completion(handle),
-    UiThemeSwitchOutcome::Indeterminate(handle) => reconcile_or_close(handle),
-    other => handle_terminal_switch_posture(other),
-}
+let prepared = session.prepare_rebind(origin.into_observation_origin())?;
+let outcome = UiThemeSwitchOutcome::from(prepared.execute()?);
 ```
 
-The source bridge remains simpler: editing a role or theme in a held `.wui`
-snapshot enters `begin_source_rebind` and the ordinary rebind outcome. It does
-not construct `UiThemeSwitchRequest` or call a theme-specific publisher.
-
-The DSL exposes the same semantic lane. A representative target is:
-
-```text
-theme pulse.dusk revision 1 {
-  color action.primary.background = #6657D9
-  color action.primary.hover = #5849C5
-  color action.primary.pressed = #493CAD
-  color action.primary.foreground = #FFFFFF
-  radii control.radius.medium = uniform(8)
-  outline focus.ring = solid(2, #8B7CF6, offset 2)
-  opacity action.inoperable.opacity = ratio(40, 64)
-  color overlay.scrim.color = #080B14
-  opacity overlay.scrim.opacity = ratio(18, 64)
-}
-
-appearance role action.primary applies_to platform.control.activation {
-  background over [operability, hover, pressed] {
-    cell ready-outside when operability = ready, hover = outside, pressed = idle
-      use token(action.primary.background)
-    when operability = ready, hover = hovered, pressed = idle
-      use token(action.primary.hover)
-    when operability = ready, pressed = armed-inside
-      use token(action.primary.pressed)
-    otherwise same_as ready-outside
-  }
-
-  foreground use token(action.primary.foreground)
-  radius use token(control.radius.medium)
-
-  outline over [focus] {
-    when focus = focus-visible use token(focus.ring)
-    otherwise use transparent-outline
-  }
-}
-
-appearance role overlay.scrim applies_to backdrop {
-  background use token(overlay.scrim.color)
-  opacity use token(overlay.scrim.opacity)
-}
-
-component platform.pulse.action {
-  appearance { role action.primary }
-}
-
-portal pulse.confirmation {
-  kind modal_dialog
-}
-
-backdrop pulse.confirmation.scrim {
-  scope per_portal_instance pulse.confirmation
-  extent surface_viewport platform.pulse.surface
-  presence while portal pulse.confirmation presented
-  place immediately_before portal pulse.confirmation
-  motion follow portal pulse.confirmation presentation
-  appearance { role overlay.scrim }
-}
-```
-
-This syntax contains no selector and no cascade. `applies_to` is a constraint
-checked on the explicit component attachment. `otherwise` is expanded and
-proved as the finite complement during lowering. Runtime never parses token
-paths or evaluates source-order rules.
-
-The default experience includes small courtesies developers otherwise
-implement inconsistently:
-
-- a canonical focus-visible outline pattern;
-- canonical ready/hover/pressed/inoperable activation partitions;
-- semantic transparent values rather than missing paint;
-- automatic text-layout reuse for paint-only foreground changes;
-- a precise missing-cell diagnostic with a suggested finite predicate;
-- an inspectable theme-switch summary;
-- current-target hover cleanup on replacement, capture loss, surface loss, and
-  shutdown;
-- qualified activation cursor projection for operable pointer targets; and
-- zero live owner/index/frame cost for unused roles, axes, themes, and pointer
-  affordances.
-
-Presets are ordinary normalized declarations. They may not branch inside the
-resolver, hide slot dependencies, install every state owner, or acquire theme
-authority implicitly.
-
-## Compile-Time and Mechanical Enforcement
-
-Milestone 3.16 adds or extends enforcement for:
-
-- no raw `worth-query` dependency from the new appearance, theme, pointer-
-  presence, mounting, host, Pulse, or public-facade lanes, and no ordinary
-  `worth-query-replay` dependency;
-- no `worth-*` dependency on `worthy-*`;
-- no host dependency on runtime appearance, theme, interaction, or service
-  internals;
-- no selector engine, specificity, cascade, style class list, ambient theme,
-  inherited-style walk, dynamic property bag, JSON appearance payload,
-  callback, or string-keyed runtime value map;
-- no public generic `AuthorityMarker` bound at governed appearance or theme
-  surfaces;
-- private constructors for capability receipts, coherent state vectors,
-  projections, Portal/overlay stack snapshots, prepared switches, mounted facts,
-  and host mechanics;
-- exhaustive sealed classification for appearance aspects, state axes, theme
-  value kinds, host mechanic families, support rows, resource census, and
-  inspection posture;
-- no role resolution by component name/kind/tree position and no role
-  attachment from outside the canonical declaration;
-- no overlapping or incomplete decision-table partition after lowering;
-- no role or theme registration order in semantic digest or resolution;
-- no backdrop creation, requirement, presence, placement, or appearance inferred
-  from portal policy/kind; no integer `z-index` or source-order overlay tie-break;
-- no untyped substitution among theme definition, slot catalog, active
-  binding, capability receipt, role revision, state vector, projection,
-  mounted fact, and host command;
-- no appearance dependency edge into Focus, Selection, Gesture, Intent,
-  Portal, Motion, Query binding, layout, or text internals; adapters consume
-  their sealed public runtime exports;
-- no Backdrop dependency on Portal internals or mutation surface; a declared
-  presence basis consumes only the sealed current lifecycle export;
-- no vector constructor that accepts independent owner references or reads
-  owners after observation-turn close;
-- no state owner callback into appearance and no family-to-family mutation;
-- no appearance-triggered layout, participation, hit-test-membership,
-  focusability, Query, or text-qualification work;
-- no use of color, opacity, bounds, component kind, or host widget type to
-  infer pointer affordance;
-- no legacy `static_paint` module, `UiMountedFilledRectMechanic`, schema,
-  public export, headless/native translator, Pulse bootstrap color resolver,
-  or compatibility alias after the protocol cutover;
-- no `portal_icon_text`, Unicode icon substitute, mounting-time color string
-  parse, legacy component-primary-token dependency, or direct per-token theme
-  publisher after the cutover;
-- no renderer-default color, border, radius, focus ring, cursor, or unsupported
-  mechanic fallback;
-- no process-global mutable theme, nearest-parent theme lookup, or cross-
-  surface capability reuse;
-- no direct theme/appearance publication or second retry/recovery coordinator;
-- no new Cargo test target or executable for the proof portfolio;
-- complete appearance/theme/support/census classification when a committed
-  successor adds a new aspect, value family, state axis, or host mechanic;
-- compile-pass Rust/DSL lowering-equivalence and native/host-neutral facade
-  examples in existing matrices;
-- compile-fail forged/wrong-world/coverage/value-kind/host-support cases;
-- the repository 400-line Rust cap for every touched code, test, fixture, and
-  support file unless an explicit governing exemption exists.
-
-The existing boundary and generated-context tools are extended to discover and
-classify `workspaces/worth-ui`; naming them before that extension does not count
-as evidence. Milestone 3.16 creates and wires four missing mechanical gates:
-
-- a checked-in exact-count deletion manifest for the frozen legacy inventory,
-  ending at zero for every removed symbol/path;
-- a protocol manifest asserting all live and intended-next protocol, mounted,
-  presentation, text, observation, measurement, solicited-effect, and native-
-  profile values, including `COMPATIBLE_FLOOR == CURRENT` after cutover;
-- a documentation/link gate over the continuing Worth UI docs and examples;
-  and
-- a feature-matrix gate extending the native feature checker across the new
-  mechanic families and qualified profiles.
-
-The line-cap guard expands to `workspaces/worth-ui/apps/**/*.rs`, is wired into
-CI, and the existing over-cap Worth UI files are split before that required lane
-is declared green. `closure-stress` becomes required on every 3.16 integration-
-spine merge and on the nightly/master qualification cadence. A smaller
-deterministic locality world runs per ordinary merge if the full subprocess
-world exceeds the fast-lane budget.
-
-Compile-fail evidence explicitly forbids three dishonest intermediate facades:
-a default appearance for unattached nodes, an always-`outside` pointer-presence
-stub, and a “coherent” basis assembled from independent live owner reads.
-
-Mechanical source scans are supporting proof, not substitutes for type and
-runtime tests. The implementation must not rename a forbidden bag or wrapper
-to evade a word-based guard.
+Rust/DSL produce byte-equivalent sealed meaning, including roles with >64 cells.
+DSL `foreground use token(action.primary.foreground)` matches the builder above;
+`applies_to` validates attachment and `otherwise` expands to a proved complement.
+Existing native/host-neutral compile sessions hold complete examples and invalid
+counterparts. Public type/progression names remain required. Presets lower as
+ordinary declarations, not hidden resolver branches or implicit owner demand.
 
 ## Architectural Destination
 
-The destination tree below is normative. Legend:
-
-- `[E]` existing and retained;
-- `[C]` created in 3.16;
-- `[M]` existing responsibility moved and replaced in 3.16;
-- `[R]` removed in 3.16; and
-- `[S]` committed successor destination; no empty placeholder is created now.
+Keep these ownership boundaries and stable facades. E = retained/revised,
+C = introduced by 3.16, R = removed at cutover, S = committed successor.
+Private leaf files follow composition laws; no empty successor placeholders.
 
 ```text
 workspaces/worth-ui/crates/
-├── worth-ui/
-│   └── src/facade/
-│       ├── appearance/                                    [C]
-│       │   ├── mod.rs
-│       │   ├── role.rs
-│       │   ├── backdrop.rs
-│       │   ├── theme.rs
-│       │   ├── state.rs
-│       │   ├── switching.rs
-│       │   └── inspection.rs                              [C, facade re-export only]
-│       ├── declaration.rs                                 [E, revised exports]
-│       └── service.rs                                     [M, portal declaration identity export]
-│
-├── worth-ui-dsl/
-│   └── src/
-│       ├── source/parse/                                  [M, parser forms]
-│       ├── source/legality/                               [M, partition admission]
-│       ├── source/lower/                                  [M, Rust/file equivalence]
-│       ├── source/compile/                                [M, sealed package]
-│       └── semantic/
-│           ├── appearance/                                [C]
-│           │   ├── mod.rs
-│           │   ├── role.rs
-│           │   ├── aspect.rs
-│           │   ├── state_partition.rs
-│           │   ├── theme.rs
-│           │   └── diagnostic.rs
-│           ├── overlay/                                   [C]
-│           │   ├── mod.rs
-│           │   ├── backdrop.rs
-│           │   ├── scope.rs
-│           │   ├── extent.rs
-│           │   ├── presence.rs
-│           │   ├── motion.rs
-│           │   ├── placement.rs
-│           │   └── diagnostic.rs
-│           ├── expression/                                [S, 3.17]
-│           └── module/                                    [S, 3.18]
-│
-├── worth-ui-runtime/
-│   └── src/
-│       ├── capability/registry/
-│       │   ├── component/                                 [M, role attachment; static-paint fields removed]
-│       │   ├── mosaic_region/                             [M, seam paint owner]
-│       │   ├── appearance_role/                           [C]
-│       │   │   ├── mod.rs
-│       │   │   ├── identity.rs
-│       │   │   ├── descriptor.rs
-│       │   │   ├── registration.rs
-│       │   │   ├── frozen_entry.rs
-│       │   │   └── support.rs
-│       │   ├── theme_token/                               [E, revised]
-│       │   │   ├── descriptor/                            [E, split slot/value meaning]
-│       │   │   ├── registration/                          [E]
-│       │   │   ├── frozen_theme_token_capabilities.rs     [E]
-│       │   │   └── theme_token_registry.rs                [E]
-│       │   └── theme/                                     [C]
-│       │       ├── mod.rs
-│       │       ├── definition.rs
-│       │       ├── identity.rs
-│       │       ├── registration.rs
-│       │       ├── frozen_entry.rs
-│       │       └── support.rs
-│       ├── declaration/
-│       │   └── appearance/                                [C]
-│       │       ├── mod.rs
-│       │       ├── attachment.rs
-│       │       ├── aspect_contract.rs
-│       │       ├── decision_cell.rs
-│       │       ├── decision_partition.rs
-│       │       ├── state_axis.rs
-│       │       ├── theme_slot_use.rs
-│       │       └── pointer_affordance.rs
-│       │   └── overlay/                                   [C]
-│       │       ├── mod.rs
-│       │       ├── backdrop.rs
-│       │       ├── scope.rs
-│       │       ├── extent.rs
-│       │       ├── presence.rs
-│       │       ├── motion.rs
-│       │       └── placement.rs
-│       ├── runtime/
-│       │   ├── appearance/                                [C]
-│       │   │   ├── mod.rs
-│       │   │   ├── capacity.rs
-│       │   │   ├── state/
-│       │   │   │   ├── mod.rs
-│       │   │   │   ├── vector.rs
-│       │   │   │   ├── coherent_basis.rs
-│       │   │   │   └── adapter/
-│       │   │   │       ├── mod.rs
-│       │   │   │       ├── operability.rs
-│       │   │   │       ├── focus.rs
-│       │   │   │       ├── validation.rs
-│       │   │   │       ├── selection.rs
-│       │   │   │       ├── hover.rs
-│       │   │   │       └── pressed.rs
-│       │   │   ├── theme/
-│       │   │   │   ├── mod.rs
-│       │   │   │   ├── active_binding.rs
-│       │   │   │   ├── capability_receipt.rs
-│       │   │   │   ├── switch_request.rs
-│       │   │   │   ├── prepared_switch.rs
-│       │   │   │   └── switch_outcome.rs
-│       │   │   ├── projection/
-│       │   │   │   ├── mod.rs
-│       │   │   │   ├── resolver/
-│       │   │   │   │   ├── mod.rs
-│       │   │   │   │   ├── cell_lookup.rs
-│       │   │   │   │   ├── aspect_resolution.rs
-│       │   │   │   │   ├── provenance.rs
-│       │   │   │   │   └── support.rs
-│       │   │   │   ├── resolved_aspect.rs
-│       │   │   │   ├── projection.rs
-│       │   │   │   ├── backdrop.rs                       [C]
-│       │   │   │   └── change_receipt.rs
-│       │   │   ├── invalidation/
-│       │   │   │   ├── mod.rs
-│       │   │   │   ├── state_consumer_index.rs
-│       │   │   │   ├── slot_consumer_query.rs             [M, consumed-fact specialization]
-│       │   │   │   ├── role_consumer_index.rs
-│       │   │   │   └── affected_scope.rs
-│       │   │   ├── inspection/
-│       │   │   │   ├── mod.rs
-│       │   │   │   └── producer.rs                        [C]
-│       │   │   └── trial/                                 [S, 3.22]
-│       │   ├── interaction/
-│       │   │   └── pointer_presence/                      [C]
-│       │   │       ├── mod.rs
-│       │   │       ├── owner.rs
-│       │   │       ├── current_target.rs
-│       │   │       ├── transition.rs
-│       │   │       └── inspection.rs
-│       │   ├── overlay_composition/                       [C, derived planner]
-│       │   │   ├── mod.rs
-│       │   │   ├── relation_graph.rs
-│       │   │   ├── dependency_index.rs
-│       │   │   ├── planner.rs
-│       │   │   └── snapshot.rs
-│       │   ├── focus/                                     [M, sealed appearance export]
-│       │   ├── portal/state/mounted_projection.rs          [M, sealed total stack snapshot]
-│       │   ├── motion/                                    [E, sealed export]
-│       │   ├── selection/                                 [M, per-key sealed export]
-│       │   ├── intent/                                    [M, standing facts]
-│       │   └── observation/                               [M, coherent close and pointer motion]
-│       ├── runtime/presentation_state.rs                  [M, binding revision owner]
-│       ├── runtime/session/application_state/
-│       │   └── theme_token_consumers.rs                   [M, canonical slot index]
-│       ├── facade/entry/mounted_preview/                  [M, appearance-aware existing lane]
-│       ├── mounting/theme_values.rs                       [M, explicit preview binding]
-│       ├── mounting/portal_overlay.rs                     [M, ordered portal surface]
-│       ├── mounting/backdrop.rs                           [C, authored overlay layer]
-│       ├── mounting/presentation/work_producer.rs         [M, visual-bounds damage]
-│       └── mounting/projection/
-│           ├── appearance/                                [C]
-│           │   ├── mod.rs
-│           │   ├── fact.rs
-│           │   ├── lowering.rs
-│           │   ├── surface.rs
-│           │   ├── outline.rs
-│           │   ├── backdrop.rs                            [C]
-│           │   ├── text_foreground.rs
-│           │   └── pointer_affordance.rs
-│           ├── semantic_text/                             [E, revised consumer]
-│           └── static_paint/                              [R]
-│
-├── worth-ui-host-contract/
-│   └── src/
-│       ├── mounted_frame/protocol.rs                      [M, atomic version cutover]
-│       ├── mounted_frame/presentation_work/
-│       │   └── command_change.rs                          [M, command-family cutover]
-│       └── mounted_projection/
-│           ├── appearance/                                [C]
-│           │   ├── mod.rs
-│           │   ├── color.rs
-│           │   ├── surface.rs
-│           │   ├── outline.rs
-│           │   ├── backdrop.rs                            [C]
-│           │   └── pointer_affordance.rs
-│           ├── semantic_text/                             [E, revised]
-│           ├── portal_overlay.rs                          [M, portal surface retained]
-│           └── static_paint.rs                            [R]
-│
-├── worth-ui-host-headless/
-│   └── src/
-│       ├── headless_translation/appearance/               [C]
-│       │   ├── mod.rs
-│       │   ├── surface.rs
-│       │   ├── outline.rs
-│       │   ├── backdrop.rs                                [C]
-│       │   └── pointer_affordance.rs
-│       ├── headless_transcript/appearance/                [C]
-│       │   ├── mod.rs
-│       │   ├── surface.rs
-│       │   ├── outline.rs
-│       │   ├── backdrop.rs                                [C]
-│       │   └── pointer_affordance.rs
-│       └── *_static_paint*                                [R]
-│
-├── worth-ui-host-native/
-│   ├── profiles/*.toml                                   [M, v2 qualification]
-│   ├── src/native_profile.rs                              [M]
-│   ├── src/qualification_tests.rs                         [M]
-│   └── src/native/
-│       ├── presentation/
-│       │   ├── appearance/                                [C]
-│       │   │   ├── mod.rs
-│       │   │   ├── command.rs
-│       │   │   ├── surface_pipeline.rs
-│       │   │   ├── outline_pipeline.rs
-│       │   │   ├── backdrop_pipeline.rs                   [C]
-│       │   │   ├── antialiasing.rs
-│       │   │   └── cursor.rs
-│       │   ├── text/                                      [E, revised]
-│       │   ├── retained_draw_list/                        [E, new command families]
-│       │   └── damage_regions.rs                          [E, revised]
-│       └── event_loop/
-│           └── pointer_cursor.rs                          [C]
-│
-├── worth-ui-inspection/                                   [M, appearance query/result contracts]
-├── worth-ui-retained-order/                               [M, new command families]
-├── worth-ui-certification/                                [M, courtrooms/static-paint fixtures]
-├── worth-ui-test-support/                                 [M, honest builders/oracles]
-└── worth-ui-native-platform/
-    └── src/profile.rs                                     [M, v2 identity]
-
-workspaces/worth-ui/apps/platform-pulse/                    [M, integration consumer]
-├── src/product_world/visual_composition/                   [M]
-├── src/application/presentation/                          [M]
-├── app/*.wui                                              [M]
-└── tests/executable_world/adjudication/                    [M]
+  worth-ui/src/facade/appearance/                         C: role/backdrop/theme/state/switch/inspection contracts
+  worth-ui-dsl/src/
+    source/{parse,legality,lower,compile}/                E: source progression
+    semantic/{appearance,overlay}/                       C: canonical role/partition/theme and backdrop declarations
+    semantic/{expression,module}/                        S: 3.17/3.18
+  worth-ui-runtime/src/
+    capability/registry/{appearance_role,theme}/          C: frozen admission
+    capability/registry/theme_token/                     E: slots, no live binding
+    capability/registry/{component,mosaic_region}/        E: attachment/order/seams
+    declaration/{appearance,overlay}/                    C: authored meaning
+    runtime/appearance/
+      state/adapter/                                     C: six pure owner adapters
+      state/{vector,coherent_basis}.rs                   C: sealed snapshot consumption
+      theme/                                             C: active binding/capability/switch origin
+      projection/resolver/                               C: canonical cells/aspects/support
+      projection/                                        C: node/backdrop/change receipts
+      invalidation/                                      C: consumed-fact selection
+      inspection/                                        C: bounded producers only
+      trial/                                             S: 3.22 canonical replacement
+    runtime/interaction/pointer_presence/                 C: pointer truth/lifecycle
+    runtime/overlay_composition/                          C: derived relations/dependencies/order
+    runtime/{focus,selection,intent,motion,portal}/        E: authoritative exports
+    runtime/observation/                                 E: coherent close
+    runtime/presentation_state.rs                        E: binding revision/CAS
+    runtime/session/application_state/theme_token_consumers.rs E: canonical slot relation
+    facade/entry/mounted_preview/                         E: sole preview lane
+    mounting/spatial_index/                              E: geometry-only acceleration
+    mounting/session_state/appearance_mount.rs            C: journal inputs
+    mounting/projection/frame_storage/                   E: completed geometry/text/affinity
+    mounting/projection/appearance/                      C: surface/outline/text/backdrop/pointer lowering
+    mounting/projection/semantic_text/                   E: range formatting/adoption
+    mounting/presentation/                               E: accepted samples/publication/damage
+    mounting/projection/static_paint/                    R
+  worth-ui-host-contract/src/
+    mounted_projection/appearance/                       C: sealed versioned mechanics
+    mounted_projection/semantic_text/                    E: qualified text
+    mounted_projection/portal_overlay.rs                 E: Portal affinity
+    mounted_frame/                                       E: protocol/command cutover
+    mounted_projection/static_paint.rs                   R
+  worth-ui-host-headless/src/
+    {headless_translation,headless_transcript}/appearance/ C: translation/observation
+    *_static_paint*                                      R
+  worth-ui-host-native/src/native/
+    presentation/appearance/                             C: pipelines/AA/coverage/cursor mechanics
+    presentation/{text,retained_draw_list}/               E: glyphs and transaction/replay lifecycle
+    event_loop/pointer_cursor.rs                         C: qualified OS effect
+  worth-ui-inspection/                                   E: public query/result vocabulary
+  worth-ui-retained-order/                               E: mechanic families
+  worth-ui-native-platform/                              E: profile/pins
+  worth-ui-{certification,test-support}/                 E: existing targets/oracles
+workspaces/worth-ui/apps/platform-pulse/                  E: cumulative integration consumer
+  src/product_world/visual_composition/
+  src/application/presentation/
+  app/*.wui
+  tests/executable_world/adjudication/
 ```
 
-The dominant axes and enforcement are:
+Registry/declaration truth flows toward derived resolution, mounting, then host
+mechanics. Overlay planning owns no Portal/layout/paint truth or effects. Spatial
+indexes confer no order/input authority. Inspection vocabulary stays in inspection;
+runtime produces it. Hosts cannot import runtime semantic internals. No style
+managers/property/helper bags, live bindings in slot registries, hover inside
+appearance/hosts, duplicate preview/slot indexes, or flattened cross-owner modules.
+Successors add within these axes, not through another authority.
 
-- capability registries own stable admissible declarations; they do not own
-  live surface bindings or state;
-- `declaration/appearance` owns canonical authored meaning and total coverage;
-  it does not resolve live values;
-- `declaration/overlay` owns stable backdrop, extent, presence, and relational
-  placement meaning; it owns no live Portal state or physical ordering;
-- `runtime/appearance/state` adapts sealed owner exports into a coherent vector;
-  it does not own the source state;
-- `runtime/appearance/theme` owns live binding and switch progression; token
-  and theme registries remain immutable capability truth;
-- `runtime/appearance/projection` owns deterministic derived visual meaning;
-  it does not publish or perform host work;
-- `runtime/overlay_composition` combines admitted authored relations with exact
-  current Portal and extent-owner snapshots into one derived total order; it
-  owns no source declaration, Portal lifecycle, appearance, or host effect;
-- `runtime/appearance/invalidation` owns reconstructible reverse indexes and
-  affected-scope selection while reusing the consumed-fact relation; it is not
-  source truth and owns no parallel slot index;
-- `worth-ui-inspection` owns public appearance inspection contracts; runtime
-  owns only their bounded producer;
-- the existing mounted-preview lane is the sole preview integration surface;
-- `mounting/projection/appearance` turns a resolved projection plus allocation
-  and mounted receipts into semantic mounted facts and physical requirements;
-- host-contract appearance owns versioned mechanics only;
-- native/headless appearance modules execute or record mechanics and cannot
-  import roles, slots, state axes, or resolver code; and
-- successor `expression` and `trial` destinations add typed producers or
-  replacement origins. They do not insert an override/cascade layer.
+## Implementation Gates
 
-The tree explicitly forbids:
+Contracts and proof dependencies govern order. Later foundations may be retained
+while a predecessor is open; they do not close missing integration.
 
-- `style.rs`, `styles.rs`, `theme_manager.rs`, `appearance_manager.rs`,
-  `visual_state.rs`, `properties.rs`, or generic `helpers/common/util/shared`
-  bags;
-- placing theme binding inside the immutable token registry;
-- placing hover inside appearance or native host code;
-- placing state adapters inside the state owners they consume;
-- creating a second theme-slot consumer index or a second preview facade;
-- placing semantic aspect facts inside host mechanics;
-- keeping filled-rectangle bootstrap beside the appearance surface mechanic;
-  and
-- flattening role declaration, resolution, invalidation, mounting, and
-  inspection into one file or directory because they all mention appearance.
+### Gates 0–3 — Contracts and foundations
 
-Committed successors remain additive:
+- **Gate 0:** Freeze aspects/numbers, owner exports/coherent close, partitions,
+  slots/themes/switch origins, geometry/text/opacity/order, intended versions,
+  removal inventory, and enforcement. Real compilable contracts, no live emission.
+- **Gate 1:** Implement declaration/DSL, state/pointer, Portal lifecycle, overlay
+  planning, resolver/inspection, unpublished mounting/text/headless, and native
+  mechanics. No static-paint bridge, unattached default, always-outside hover stub,
+  independent owner reads, or duplicate index/preview.
+- **Gate 2:** Merge declaration/state/Portal/order with equivalent lowering,
+  sealed exports, bounded triggers, and typed malformed/stale/capacity denials.
+- **Gate 3:** Merge resolver/indexes with distinct change postures, independent
+  reconstruction, one slot relation, and non-authoritative preview.
 
-- 3.17 expressions produce typed state/theme/role-selection inputs and declared
-  consumed facts; they do not change the resolver;
-- 3.19 diagnostics expand the existing denial/evidence projections;
-- 3.20 visual invariants consume mounted visual bounds and appearance facts;
-- 3.22 style trials enter `runtime/appearance/trial` as affine canonical
-  replacement plans bound to one selected projection, never ambient overrides;
-- Milestone 9 registers role/theme/component families against the same facade;
-- Milestone 13 consumes foreground/focus/contrast semantics for accessibility
-  without making appearance accessibility truth; and
-- Milestone 15 adds plugin-owned theme/role registrations with typed owner
-  generation and unload through the existing registries.
+### Gate 4: mounting, text, and headless integration
 
-## Contract-First Parallel Implementation
+Before further integration, check Query/Signal propagation against UI target and
+surface membership using the real multi-neighborhood proof in 4e. Keep that proof
+as parts compose; do not build a reactive framework or postpone locality to closure.
 
-The following gates are normative implementation order, not suggested project
-management. A worktree may begin only when its consumed contracts are merged.
-The contract baseline contains real compilable types, owners, and guards; empty
-module roots, placeholder mechanics, and public facades that claim unresolved
-behavior violate the composition laws.
+Each section closes through its production handoff and acceptance together.
+Typed denial cannot substitute for required supported success. Gate 4 permits
+unpublished mechanics, headless transport, and reference raster; Gate 5 owns live
+cutover and Gate 6 owns native executable/design qualification.
 
-### Gate 0: one contract baseline before any fork
+#### Gate 4a — Mounted geometry
 
-One short foundation wave freezes and merges:
+**Status: Open.**
 
-1. aspect/value kinds, canonical numeric types, host mechanic shapes, and the
-   intended-next protocol/version manifest while every live `CURRENT` remains
-   at protocol 6, mounted/presentation 5, and text schema 3;
-2. all six axis schemas, the operability cause table, validation application-
-   fact family, focus/selection/gesture exports, pointer-motion admission,
-   Mosaic seam ownership, Portal's sealed total stack snapshot/ordinal, and
-   `UiAppearanceOwnerSnapshot` construction at observation-turn close;
-3. role attachment, backdrop identity/extent/presence/placement, acyclic overlay
-   relation admission, aspect contracts, typed slot uses, exact Cartesian
-   reachability, 512-cell capacity, and the one partition-compiler contract
-   shared by Rust and DSL;
-4. slot catalog/theme-definition split, active binding, theme-switch origin,
-   capability receipt, existing consumed-fact index ownership, existing
-   mounted-preview ownership, and the presentation-state CAS decision;
-5. damage/clip/outline, integer opacity composition, text-range foreground,
-   independent portal-surface/backdrop rows, overlay-order snapshots,
-   source-over transfer/rounding, primary-pointer, and native-profile contracts;
-6. the exact removal/migration inventory, including static paint, bootstrap
-   component token dependencies, the string-backed `ThemeColorValue`, Pulse's
-   Unicode icon text, direct token publication, and legacy changed-node
-   selection; and
-7. boundary/context coverage for Worth UI, all four new enforcement gates,
-   expanded app line-cap coverage, and required closure-stress scheduling.
+**Result and ownership.** Surface and outline mechanics consume exact mounted
+allocation, layer/order, ancestor coverage, device-scale qualification, and
+visual bounds. Layout, Mosaic, Scroll, and Portal retain their geometry and
+lifecycle authority. Appearance consumes their completed facts; it cannot infer
+a surface binding from graph ancestry or treat its own allocation as an ancestor
+clip. This section supplies the geometry and attribution consumed by 4b–4d.
 
-This baseline may expose sealed types to implementation crates and compile-
-contract fixtures. It emits zero appearance host commands, changes no live
-protocol current/floor, creates no icon mechanic, and exposes no public facade
-that claims a resolved live appearance.
+**Plan.**
 
-### Gate 1: first parallel wave, no host emission
+1. Settle and admit the structural placement contract that determines exact
+   parent/child occurrence rectangles. Region role names, `Fill`, a scalar named
+   measurement, and placement eligibility cannot supply an implicit axis,
+   sibling distribution, or overlay arrangement. Freeze coordinate interpretation,
+   sizing/constraint interaction, overflow, and repeated surface placement before
+   implementing the producer. This is a layout-owned prerequisite; appearance
+   does not gain layout policy. Bind completed evidence to the exact executed
+   parent/child occurrences, current generation, coordinate space, and runtime
+   surface. A graph-node key cannot distinguish repeated layout occurrences.
+2. Carry exact declared-region-to-mounted-surface binding and current executed
+   geometry through mounted projection. Resolve Mosaic, Scroll, and Portal
+   ancestor coverage from their owners, including translated Portal children.
+   Replace the interim plan-wide Mosaic denial with target-local evidence;
+   retain typed denial when the required evidence is actually unavailable.
+   Preserve each independent geometry requirement: resolving a Portal binding
+   cannot waive an unresolved Scroll or Mosaic contribution. A closed Portal
+   child carries explicit suppression so its predecessor can be removed; it
+   cannot fall back to ordinary geometry or a fabricated zero allocation.
+3. Complete `mounting/projection/appearance/` geometry, clip, surface, and outline
+   lowering and its `frame_storage/` inputs. Carry layer/order explicitly;
+   remove omitted order from supported mounted paths. First separate surviving
+   ordinary paint-order meaning from the bootstrap static-paint contract in
+   `capability/registry/component/`, include it in frozen capability and executed
+   component meaning, and carry it through mounted node facts. Cut appearance
+   surface/outline transport over to the completed order; a bare reference into
+   the existing execution-lane table cannot close this handoff. Preserve canonical seam
+   ownership instead of painting a shared edge from both neighbors.
+4. Use the same completed geometry in unpublished initial, delta, removal, and
+   reconstruction work and headless translation. Derive damage from old/new
+   visual coverage, including outline expansion and the qualified AA fringe;
+   record ancestor clipping independently of own shape/allocation.
 
-After Gate 0, these worktrees can proceed concurrently against the merged
-contracts:
+**Acceptance.**
 
-- declaration + DSL: one partition compiler, Rust/DSL byte-equivalent lowering,
-  appearance attachment plus backdrop/overlay-relation admission, and typed
-  diagnostics;
-- state + pointer: pure adapters over sealed owner snapshots, pointer presence,
-  pressed posture, state-consumer selection, and currentness/reincarnation tests;
-- Portal stack + lifecycle: monotonic ordinals, sealed ordered snapshots,
-  topmost/parent close, rebind, and exit-retention behavior with no backdrop or
-  host convention;
-- overlay composition: relation compiler, indexed presence/placement
-  dependents, current extent bases, total snapshot, capacity reservation, and
-  reconstruction without appearance resolution or host emission;
-- resolver + inspection producer: node and backdrop projection,
-  equivalence, role/state/slot queries over existing indexes, change receipts,
-  bounded inspection, and the revised mounted-preview lane;
-- mounting + text + headless: unpublished surface/outline/text/cursor/backdrop
-  mechanics, issued overlay order, exact deltas/damage/
-  reconstruction, and text-layout reuse; and
-- native long pole: rounded-surface/outline pipelines, analytic AA, retained
-  command families, and OS cursor mapping behind non-current schema contracts.
+- Real mounted cases cover ungoverned, Mosaic, Scroll, and Portal-child geometry,
+  including two surfaces with copies of one declaration. Every emitted bound,
+  clip, layer, and attribution field agrees with independently stated expected
+  geometry. An unrelated nested Mosaic mount cannot deny an ordinary target.
+- The authored geometry world includes unequal sibling rectangles at nonzero
+  origins, repeated region and surface declarations under distinct parent
+  occurrences, and separate runtime surfaces. Resize one parent through the
+  real allocation path: only its dependent occurrence geometry and damage may
+  change. Independent expected coordinates must expose a graph-keyed overwrite,
+  root-viewport substitution, invented equal division, or reconstruction of a
+  Scroll viewport from maximum travel. Replacing arrangement evidence with any
+  of those proxies must fail the proof. Missing arrangement denies before
+  publication and preserves predecessors, but that denial cannot close a
+  supported geometry case.
+- At device scales 1.0, 1.25, 1.5, and 2.0, border/radius/outline cases preserve
+  seam ownership, half-open coverage, and exact visual damage. Unclipped outlines
+  extend beyond allocation; disjoint ancestor coverage suppresses visible work;
+  visible -> clipped -> visible succession restores the correct mechanic.
+- Missing, stale, foreign-surface, or unresolved geometry denies before output
+  publication and preserves the predecessor. Geometry repair does not alter hit,
+  shielding, or focus authority; rounded paint retains the specified hit shape.
+  Include a Portal child with an independently required ancestor clip: supplying
+  the Portal alone must still deny missing ancestry, while supplying both yields
+  their exact translated intersection. Closing and reopening the Portal removes
+  and restores the child's appearance without clipping an outline to its own
+  allocation.
+- Order evidence includes an outline-only node, nontrivial declared ranks that
+  disagree with plan/registration order, and an order-only change between
+  overlapping nodes. Exact output and independent overlap samples must change
+  together while unrelated surfaces retain their predecessors. Removing static
+  paint cannot remove appearance's order authority. Ambiguous overlapping order
+  denies before publication; neither receipt identity nor fragment iteration
+  may silently decide the winner.
+- Ordinary owner-state changes consume carried geometry without an ancestor or
+  whole-plan walk. Existing structural counters expose selected-instance/index
+  work separately from cold geometry reconstruction. Headless/reference-raster
+  checks would detect allocation-clipped outlines or a missing/duplicate seam.
 
-No worktree may introduce `Projection -> UiMountedFilledRectMechanic`, default
-appearance for unattached nodes, an always-outside hover stub, independent
-owner reads, a second slot index, or a second preview facade. Resolver/index
-tests use sealed projections with zero host commands. Native begins at Gate 0
-because it is the long pole; headless structural parity does not certify native
-pixels.
+#### Gate 4b — Text foreground
 
-### Gates 2–4: ordered merges into the integration spine
+**Status: Open.**
 
-- **Gate 2 — declaration, state, Portal, and overlay order:** lowering is byte-
-  identical for a corpus including a role with more than 64 canonical cells;
-  every axis consumes only sealed owner exports; Portal snapshots totally order
-  nested and sibling portals; backdrop relations compile to one acyclic total
-  overlay order; pointer/presentation triggers are bounded; malformed,
-  ambiguous, incomplete, wrong-kind, stale, and saturated cases deny typed.
-- **Gate 3 — resolver and indexes:** the six change distinctions are separately
-  observable; consumed-fact reconstruction matches an independent oracle; no
-  second slot-selection lane exists; preview stays non-authoritative.
-- **Gate 4 — mounting, text, and headless:** all new mechanic families are
-  field-for-field attributable to mounted facts; damage uses visual bounds;
-  per-layer opacity composes once; authored backdrop and portal rows preserve
-  the issued overlay order and reference-raster with source-over; text identity/
-  atlas reuse is exact.
-  Appearance host emission remains disabled and static paint remains the only
-  live publisher.
+**Result and ownership.** Appearance changes paint on explicitly adopted original
+UTF-8 ranges while the existing semantic-text owner retains span identity and
+qualified layout. This section consumes 4a geometry and supplies exact text
+mechanics for 4c. `ComponentSemanticTextSpanContract` remains the authoring
+boundary; no semantic-span-slot replacement or broader font profile is introduced.
+
+**Plan.**
+
+1. Carry authored foreground adoption through the existing text declaration,
+   qualified semantic-text projection, and mounted original-range attribution.
+   Connect real text input to `mounting/projection/appearance/text_foreground.rs`;
+   replace the empty foreground collection on supported production paths.
+2. Lower resolved RGBA only into adopted paint spans. Preserve token-retaining
+   spans, cluster boundaries, layout handles, and original text. Carry 4a clip,
+   layer, and damage facts into text output and headless transport.
+3. Route color-only changes through existing paint-only text updates and retained
+   raster/layout ownership. Exercise initial, changed, unchanged, removal, and
+   reconstruction paths without introducing an appearance-owned text cache.
+4. Connect text-content and adoption changes to exact mounted invalidation even
+   when no appearance owner axis changes. Join adopted ranges to current qualified
+   candidates, remove foreground output when text becomes empty or fully clipped,
+   and restore it from current text authority when visible again. Preserve the
+   distinction between semantic text changes that require layout work and
+   paint-only changes that do not.
+5. Route allocation, placement, ancestor-clip, layer/order, and surface-binding
+   changes into exact mounted foreground refresh even when owner state, theme,
+   text content, and resolved RGBA remain unchanged. Use the existing consumed
+   facts and mounted dependency machinery. Retain the geometry comparison basis
+   with the accepted appearance facts through identity-only advancement,
+   abandonment, and reconstruction; missing evidence cannot justify suppression.
+   Physical-input-only refresh reuses retained semantic appearance, while mixed
+   semantic changes retain their normal resolution requirements.
+6. Complete the staged damage handoff described in the text decision lock:
+   keep semantic target/span requirements in mounting and prepare actual image
+   geometry through existing text/atlas admission. Finalize exact physical
+   damage before submission and include it in the ordered raster replay plan,
+   including when ordinary non-appearance commands have no changes. Remove every
+   allocation/predicted-extent fallback; unresolved requirements cannot satisfy
+   the physical acceptance boundary.
+7. Integrate accepted per-command coverage with the existing presentation owner
+   across initial presentation, replacement, removal, and reconstruction. Bind
+   each candidate to its exact target, surface binding, attempt, qualified text,
+   and geometry. Carry its inverse through the existing delta and pending
+   settlement lifecycle; rejection preserves the accepted predecessor and an
+   omitted surface cannot be acknowledged. Signal completion alone cannot grant
+   presentation acceptance or establish a second coverage owner.
+8. Verify the complete handoff using the acceptance cases below, including mixed
+   text and non-text mechanics, geometry-only successors, rejection/retry, and
+   partial-surface settlement. Observe actual replay coverage, text/atlas work,
+   and retained resources independently. Charge candidate retention, comparison,
+   damage construction, and rollback work in their owning lanes; successful
+   finalization counters alone do not establish the full transaction cost.
+
+**Acceptance.**
+
+- A real mounted text consumer with adopted and non-adopted ranges changes only
+  the expected RGBA/span output. Exact original ranges, span identities, text,
+  qualified layout identity, glyph positions, selection/caret rectangles, and hit
+  geometry remain stable during a color-only change.
+- With theme, owner state, and resolved RGBA held fixed, change text placement,
+  qualified layout, partial ancestor clipping, and paint order through their
+  owning production paths. Assert an exact affected target/span replacement
+  even when both old and new text remain visible. Preserve every qualified
+  candidate belonging to that span; copies of the same span on another mounted
+  target or surface remain unchanged. Repeating identical geometry suppresses
+  work, and reconstruction reproduces the current geometry. Comparing color
+  alone, selecting the first matching candidate, or keying retention by span
+  alone must fail this proof.
+- Physical damage finalization joins those semantic requirements to actual
+  admitted glyph-image geometry and the exact binding's accepted predecessor
+  coverage. Insert, replace, and remove cover independently expected clipped
+  images, including disjoint images within one span. Cache eviction cannot erase
+  accepted coverage; rejected preparation cannot replace it. Unresolved span
+  requirements in a headless transcript and allocation-sized rectangles do not
+  satisfy this acceptance requirement.
+- Independent work observations show zero new qualification, shaping,
+  measurement, glyph rasterization, or alpha-atlas upload for color-only output.
+  Exact paint damage changes; unrelated text and equal-output consumers do not
+  acquire work. A changed paint receipt cannot masquerade as a new layout.
+- Invalid ranges, stale layout/span attribution, and unsupported foreground
+  adoption deny typed before effects. Frozen BodyDefault v1 coverage remains
+  enforced; intrinsic-color exclusion is proved at admission/contract boundaries,
+  not by pretending an unsupported emoji or global-text profile was rendered.
+- Headless output preserves the same text/paint identities through delta and
+  reconstruction. The oracle checks identities and work independently; it must
+  fail if a text node is reshaped or every span is retinted to pass a color test.
+- With owner state and theme held fixed, update text, clear and restore it, and
+  change adoption through the real declaration/content paths. Assert exact
+  affected mounted instances and current qualified ranges; no stale span may
+  survive and unrelated neighborhoods retain their predecessors. A simultaneous
+  focus change cannot supply the invalidation that this case is meant to prove.
+- Abandon a prepared text change and reject another before effects; both remain
+  pending for a successful retry. Publishing only one surface cannot acknowledge
+  an omitted mounted copy. When that copy returns, it uses its own accepted
+  presentation predecessor, with complete catch-up charged as reconstruction.
+  A stale acknowledgment cannot consume a newer text revision.
+- Drive visible -> fully ancestor-clipped -> visible text, including a translated
+  Portal child. Suppression removes the old foreground, restoration uses current
+  span attribution, and damage matches independently expected old/new visible
+  span coverage. Stable layout identity alone does not prove zero raster or
+  atlas work; observe those owners separately for the paint-only transitions.
+
+#### Gate 4c — Motion composition
+
+**Status: Open.**
+
+**Result and ownership.** Appearance's raw opacity and Motion's exact accepted
+presentation sample remain distinct inputs. Runtime presentation composes them
+once into `UiMountedPresentationOpacity`. Motion owns tracks, timing, retargeting,
+and terminal state; UI presentation owns physical acceptance. This section
+consumes 4a geometry and 4b text identity and supplies the composition contract
+used by authored backdrop Motion in 4d.
+
+**Plan.**
+
+1. Finish accepted-sample retention beside the exact presentation command owner
+   in `mounting/presentation/`, including current frame/binding/epoch admission,
+   pre-effect reservation, unchanged-command inheritance, and replacement,
+   reconstruction, rebind, and shutdown retirement. Retargeting or sampler
+   retirement cannot erase a physically retained override. Prepared or rejected
+   samples cannot become accepted evidence.
+2. Bind the exact accepted raw sample to mounted surface, outline, and text
+   lowering. Replace the production `motion_opacity: None` placeholder for bound
+   consumers. Distinguish no declared/current sample from stale, unavailable,
+   foreign, or ambiguous evidence; do not infer a node factor from the first of
+   several conflicting command/Portal samples.
+3. Complete both directions: appearance-only changes consume retained accepted
+   Motion, and Motion-only changes refresh exact affected unpublished mechanics
+   from retained semantic appearance without rerunning the resolver. Preserve
+   Portal target/group attribution and the stationary trigger's separate fate.
+4. Keep one runtime integer composition operation: `u32` product divided by
+   65,535, saturation and nearest-even rounding, with full `u16` precision until
+   host output. Hosts consume the composed value without another multiplication.
+
+**Acceptance.**
+
+- Real declared Motion enters the mounted producer and affects surface, outline,
+  and text field-for-field. Arithmetic fixtures alone do not close this section.
+  Endpoint and non-8-bit cases include `40000 * 32768 -> 20000` and
+  `40000 * 8192 -> 5000`; an independent integer oracle detects double
+  composition, requantization, and semantic/physical factor confusion.
+- Appearance-only, Motion-only, and simultaneous changes preserve exact target
+  scope. Motion-only work records zero semantic appearance resolutions and no
+  text-layout/atlas rebuilding. Geometry-free opacity still produces correct
+  command damage; appearance opacity does not recurse into descendants.
+- Rejected, pending, cancelled, and indeterminate presentations preserve or deny
+  physical truth according to the existing lifecycle. Prove semantic candidate
+  in flight -> Motion accepted -> unchanged command candidate settled, preserving
+  the accepted override. For forbidden overlap, prove the real admission denial
+  before mutation; do not mint an impossible newer frame to simulate adversity.
+- Retarget, terminal-track retirement, selective same-instance command
+  replacement, and rebind cannot reuse stale or clear unrelated evidence. Late
+  accepted work validates all current owners before any retained write. Budget
+  exhaustion denies before effects, accepted samples fit their reservation, and
+  shutdown releases all retained sample/command resources.
+
+#### Gate 4d — Backdrop and Portal
+
+**Status: Open.**
+
+**Result and ownership.** Authored backdrop instances and Portal surfaces lower
+from their distinct owners into the issued total overlay order. This section
+consumes 4a geometry, 4b Portal-child text, and 4c opacity composition. Portal
+retains membership, lifecycle, shielding, dismissal, and focus authority;
+backdrops remain paint-only authored participants.
+
+**Plan.**
+
+1. Connect admitted backdrop scope, extent, presence, placement, role/theme, and
+   optional Motion through `runtime/overlay_composition/`, mounted backdrop/
+   Portal projection, and the appearance lowering families. Materialize exact
+   surface-singleton or per-Portal-incarnation identities without fake node
+   receipts. Remove absent Portal identity from supported Portal surface inputs.
+2. Preserve the sealed overlay snapshot's bottom-to-top order through unpublished
+   output and headless translation. A Portal anchor includes its surface and
+   ordinary content subtree; a backdrop cannot split that group. Use 4c once-only
+   composition only when the backdrop explicitly declares a Motion basis.
+3. Complete indexed lifecycle deltas for open/close, parent close, exit retention,
+   resize, rebind, and reincarnation. Atomically retain or replace all affected
+   overlay dependents and compute old/new damage and the intersecting raster
+   suffix without scanning the UI graph or resolving appearance during recovery.
+
+**Acceptance.**
+
+- An authored mounted world covers nested and same-depth sibling Portals,
+  repeated per-Portal instances, viewport and Mosaic-region extents, before/after
+  placement, modal-without-backdrop, non-modal-with-backdrop, and `Always` without
+  a Portal. Exact identities, extents, presence, order, and attribution agree with
+  declarations and sealed owners; portal kind supplies no visual default.
+- An independent spatial oracle folds colored and transparent layers in issued
+  order using the specified linear-light premultiplied source-over. Compare
+  overlap and uncovered regions at zero, one, and two backdrop layers. The
+  equal-black `1 - product(1 - alpha_i)` result is an additional cross-check, not
+  a flattened runtime alpha or a call to the production compositor.
+- Close, parent close, retained exit, resize, rebind, and reincarnation leave no
+  orphan rows or cross-instance bindings. Missing/cyclic/ambiguous anchors and
+  stale or foreign extent/presence/Motion receipts deny before publication;
+  rejection and partial failure preserve or reconcile the complete predecessor.
+- Zero-opacity or absent backdrop paint changes no hit, shield, focus, dismissal,
+  or cursor authority. Full-viewport changes report full clipped viewport damage;
+  region changes report region damage. Indexed dependent construction and
+  intersecting ordered raster replay have separate, observable costs.
+
+#### Gate 4e — Integrated closure
+
+**Status: Open.**
+
+**Result and ownership.** The combined production mounting path satisfies 4a–4d
+at one coherent boundary. This is Gate 4's acceptance decision, not a sixth
+implementation lane or a substitute for the later live cutover.
+
+**Plan.**
+
+1. Extend the existing shared authored certification world to exercise surface,
+   outline, original-range text foreground, Motion, independent pointer output,
+   backdrops, and Portal content together on multiple semantic surfaces. Reach
+   unpublished mechanics through ordinary declaration, owner, and mounting
+   entry points; reuse the same world for headless transport/reference raster.
+2. Drive initial -> appearance-only -> Motion-only -> mixed change -> unchanged
+   -> removal -> reconstruction. Include rejection/retry and legal in-flight
+   ordering at the boundaries changed by 4a–4d. Compare exact predecessors,
+   successor identities, damage, retained resources, and output equivalence.
+3. Run focused owner and affected integration/host-contract/headless/native
+   contract tests, the relevant compile-time denials, formatting, scoped limits,
+   boundary/context checks, and removal/version guards. Review the final causal
+   diff independently and reconcile the status in this spec and the roadmap.
+
+**Acceptance.**
+
+- All 4a–4d acceptance requirements pass on the final shared implementation.
+  Every new mechanic family is field-for-field attributable to current mounted
+  facts, and the combined reference raster agrees with independently stated
+  spatial/color expectations. A collection of isolated mechanic constructors,
+  screenshots, or passing test counts cannot establish this result.
+- Multiple neighborhoods and surfaces preserve exact consumer scope, including
+  copies of one declaration. Existing Query/Signal and consumed-fact boundaries
+  remain canonical. Equal-output and unchanged cases prove the specified zero
+  resolution/layout/raster work where applicable; cold reconstruction is reported
+  separately. Pointer and interaction authority remain independent of paint.
+  Use at least two mounted neighborhoods on one surface and a copy on another
+  surface, all consuming the changed axis. Change an owner in only one
+  neighborhood and assert exact selected identities and unchanged unrelated
+  predecessors, then move the owned target between neighborhoods and verify
+  both departure and arrival. This must expose axis-wide selection even when
+  equal resolved values would hide it in final pixels. Signal transports declared
+  invalidation through its existing contracts; it cannot decide UI target
+  membership, presentation acceptance, or interaction state.
+- Real-path failure and cleanup evidence preserves predecessors before effects,
+  denies stale authority, and reconciles uncertain physical effects. No remaining
+  placeholder, conservative denial of a supported case, or fixture-only adapter
+  stands in for required geometry, foreground, Motion, or overlay integration.
+- Required checks include `cargo run --manifest-path tools/boundary-check/Cargo.toml
+  -- --root .`, `cargo run --manifest-path tools/agent-context/Cargo.toml -- check`,
+  `scripts/ci/check_workspace_rust_line_caps.sh dirty`, and
+  `python scripts/quality/scrutinize_rust_functions.py --dirty .`, together with
+  affected workspace formatting/build/test commands. Review advisory findings by
+  causal scope under the coding guidelines; do not absorb unrelated worktree debt.
+- Appearance still emits zero live host commands, the static-paint publisher and
+  live version constants remain in place, and the Gate 5 atomic cutover is the
+  explicit next handoff. Gate 6 retains full live switching/recovery, native
+  executable pixels and design adjudication, AP-07/AP-10 closure qualification,
+  Pulse migration completion, and milestone-wide documentation/shutdown closure.
+  Passing 4e closes Gate 4 only.
 
 ### Gate 5: one atomic live cutover
 
@@ -2154,7 +1226,30 @@ The real Pulse must be aesthetically excellent and mechanically honest. A
 green test suite does not waive the design judgment; a beautiful screenshot
 does not waive the contracts.
 
-## Documentation Deliverables
+## Verification and Documentation Deliverables
+
+Use focused owner tests, affected integration/headless/native contracts, Rust/DSL
+equivalence and valuable compiler denials in existing targets. Cover partitions,
+kinds, forged/wrong-world authority, preview promotion, support, aliases/revisions,
+geometry, exact damage, text reuse, lifecycle, and saturation at actual boundaries.
+
+Required boundary-relevant implementation checks:
+
+```text
+cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
+cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+scripts/ci/check_workspace_rust_line_caps.sh dirty
+python scripts/quality/scrutinize_rust_functions.py --dirty .
+```
+
+Also run affected formatting/build/tests, protocol/deletion manifests, docs/link
+checks, feature/profile matrix, and required closure-stress. Enforcement includes
+Worth UI apps, concrete authority/private constructors, exhaustive families/census,
+dependency direction, and no forbidden fallback/legacy lane. Preserve exact-count
+legacy deletion, intended/live version, documentation/link, and feature-matrix
+gates. Dirty line caps do not prove broader CI coverage; review advisory findings
+by causal scope. Source scans support, not replace, compiler/runtime evidence.
+No new executable/test target, progress ledger, or test-count quota is required.
 
 The implementation must revise these continuing documents rather than create
 milestone residue:
@@ -2219,145 +1314,21 @@ contract after cutover.
 No phase closeout, duplicate architecture summary, test-count ledger, or
 speculative theme cookbook is a deliverable.
 
-## Must Ship and Preserve
-
-Milestone 3.16 must ship:
-
-- `UiAppearanceRole` with explicit attachment and component applicability;
-- `UiAppearanceProjection` and per-aspect resolved facts;
-- `UiBackdropDeclaration`, declaration/instance identity, scope, extent,
-  presence, optional Motion, relational placement, and
-  `UiBackdropAppearanceProjection`; `UiPortalStackSnapshot`,
-  `UiPortalStackOrdinal`, and `UiOverlayStackSnapshot`; and no fabricated
-  backdrop node or modal default;
-- `UiAppearanceOwnerSnapshot`, `UiAppearanceStateAxis`, and coherent
-  `UiAppearanceStateVector`;
-- owner-issued adapters for operability, focus, validation, selection, hover,
-  and pressed;
-- the pointer-presence owner and exact-current hover lifecycle;
-- `UiThemeDefinition`, stable theme identity/revision, typed slot catalog,
-  explicit active surface binding, and `UiThemeCapabilityReceipt`;
-- typed color, opacity, logical length, radii, solid border, and solid outline
-  values with canonical encoding;
-- disjoint and total per-aspect state partitions with no cascade;
-- background, foreground, border, radius, opacity, and outline coverage;
-- one mandatory two-deep Pulse modal stack with two independently declared,
-  explicitly placed appearance-backed viewport layers, cumulative source-over,
-  and conventional real-control composition in both dialogs;
-- reconstructible state/role appearance indexes, the existing consumed-fact
-  slot relation, and exact cost receipts;
-- mounted surface, outline, backdrop, text-foreground, and pointer-
-  affordance facts;
-- headless/native mechanics and one clean protocol/schema cutover;
-- paint-only text foreground reuse and Motion-opacity composition;
-- live programmatic and source-edit theme/role changes through existing rebind,
-  publication, settlement, and recovery;
-- typed missing/ambiguous/type/support/currentness/wrong-world denials;
-- bounded `why_appearance`, role matrix, existing mounted-preview extension,
-  switch summary, and resource census;
-- cumulative Platform Pulse state/theme behavior with external pixel agreement
-  and separate product/design acceptance; and
-- complete removal of the legacy static-paint authority path, Unicode icon
-  substitute, and parallel token/preview/index lanes;
-- real Worth UI coverage in boundary/context/line-cap enforcement plus the four
-  new version/deletion/docs/feature gates.
-
-It must preserve:
-
-- the native host as sole native-display platform;
-- canonical source lowering and one runtime graph truth;
-- runtime ownership of appearance and owner-specific ownership of every input
-  state;
-- Query audience and authority boundaries, including no raw Query use in the
-  appearance lane and no confusion of UI operability with Query admission;
-- exact distinction among semantic target, presentation sample, allocation,
-  visual bounds, hit testing, and host geometry;
-- existing atomic application/mounted publication and physical settlement;
-- predecessor truth on before-effect denial and typed indeterminate posture
-  after uncertain effects;
-- qualified text layout, paint-span, intrinsic-color, raster, and atlas laws;
-- Motion as temporal owner and appearance as endpoint meaning;
-- appearance-only locality and unchanged-frame zero work;
-- explicit resource capacity and exact shutdown census;
-- pixels and inspection as evidence, never authority;
-- real product actions behind visible affordances; and
-- the explicit aspirational-only posture of undo/redo.
-
 ## Acceptance and Successor Handoff
 
-The milestone is accepted only when all of the following are true:
+The milestone closes when its locked contracts, Gates 4–6, decisive proofs,
+required checks, continuing docs, native/headless parity, and exact shutdown census
+are verified on the final implementation. No static-paint or parallel appearance/
+theme/preview/index/presentation authority survives.
 
-- `AP-01`, `AP-07`, and `AP-10` pass through their named production entry
-  surfaces and kill their specified mutants;
-- the cumulative native Pulse is coherent, polished, non-flat, unclipped,
-  usable at both sizes and admitted scales, and separately accepted against the
-  contemporary Linear-or-Notion quality bar at zero, one, and two modal
-  depths. At two depths the underlying dialog must visibly recede, the top
-  dialog must remain crisp and dominant, and the composition must avoid both a
-  muddy near-black slab and a mechanically weak translucent wash;
-- hover, pressed, focus-visible, selected, inoperable, and validation-bearing
-  outcomes shown by the Pulse cite the actual owner-issued state and current
-  mounted incarnation;
-- theme switching changes exactly the indexed consumers, suppresses equal
-  physical output, preserves unrelated structure/Query/service/text-layout
-  work at zero, and publishes through the existing successor boundary;
-- every admitted visible outcome is explained by declaration, role, theme
-  capability, state vector, projection, mounted fact, and host mechanic;
-- missing, ambiguous, type-mismatched, unsupported, stale, foreign, and
-  wrong-world inputs deny with distinct typed posture before effects;
-- native and headless hosts agree on semantic mechanics and support outcomes;
-- color-only text changes produce zero text qualification, shaping,
-  measurement, glyph-raster, and atlas-upload work;
-- radius, border, outline, per-layer opacity, ordered source-over, Mosaic seams,
-  hit testing, visual bounds, and damage obey the locked box laws;
-- the Pulse necessarily opens a real two-deep `modal_dialog` stack with Portal-
-  owned total order and shielding plus two separately declared backdrops whose
-  authored presence follows and whose authored placement precedes the relevant
-  portal. Both dialogs have real title/content/actions, conventional Cancel/
-  primary placement, topmost-first dismissal, and no adapter-made controls or
-  icons;
-- native pixels and the independent oracle prove cumulative darkening at stable
-  background and exposed-underlying-dialog control points, no self-dimming of
-  the top dialog, exact restoration after topmost close within the qualified
-  tolerance, and order-sensitive colored-layer behavior; transparent-layer
-  input tests separately prove that paint opacity never owns shielding;
-- host-neutral proofs admit a modal with no backdrop and a non-modal portal with
-  a backdrop, reject cyclic/ambiguous/cross-surface placement, and prove that
-  portal kind never auto-creates or rejects backdrop appearance;
-- old static-paint symbols, modules, translators, protocol rows, fixtures,
-  public exports, `portal_icon_text`, bootstrap token dependencies, and direct
-  token publication are absent from the production path;
-- no selector, cascade, ambient theme, generic property bag, adapter style,
-  second publisher, or hidden whole-graph fallback exists;
-- exact-zero appearance, pointer, theme-switch, mounted, host, and inherited
-  service resources are observed on clean shutdown;
-- all named continuing docs and the one app-author appearance guide agree with
-  real code and compiled/lowered examples; and
-- repository boundary, generated-context, app-inclusive line-cap,
-  feature-matrix, protocol, link, formatting, deletion-inventory, and required
-  closure-stress checks pass.
+- **3.17/3.18:** pure typed, aspect-tracked expressions/modules; no hidden resolver.
+- **3.19/3.20:** richer diagnostic projections and mounted visual invariants;
+  explanations and pixels remain evidence.
+- **3.22:** affine canonical style replacement/source edits, never inspector cascade.
+- **9:** registered theme/density/component families and admitted icon mechanics.
+- **13:** accessibility/state/contrast coverage without color-as-semantic-truth.
+- **15:** typed contribution owner/generation, admission/unload through registries,
+  not global overrides.
 
-The successor handoff is exact:
-
-- Milestone 3.17 may produce pure, aspect-tracked inputs for role selection or
-  state facts; it cannot add a hidden evaluator inside appearance;
-- Milestone 3.19 may make appearance denials and causal reports richer; it
-  cannot turn diagnostics into resolver or switch authority;
-- Milestone 3.20 consumes mounted visual bounds and appearance provenance for
-  invariants; pixels remain secondary;
-- Milestone 3.22 may trial one selected appearance through an affine canonical
-  replacement and propose an exact source edit; it cannot add an inspector-only
-  style overlay or cascade;
-- Milestone 9 may add themes, density, component roles, and professional
-  widgets through the frozen registries and facade; it cannot reopen theme,
-  state, or host authority as design-system folklore;
-- Milestone 13 may require accessibility/high-contrast coverage and semantic
-  state projection without allowing color alone to carry accessibility truth;
-  and
-- Milestone 15 may add plugin-owned definitions with capability, provenance,
-  precedence admission, and unload generation, never arbitrary global
-  overrides.
-
-If any successor requires moving the appearance facade, splitting a style
-manager, inventing ambient inheritance, replacing the resolver, or teaching a
-host to understand roles/state/theme meaning, Milestone 3.16 is not complete.
+Successors must not move the facade, replace the resolver, or teach hosts
+role/theme/state meaning.

@@ -20,8 +20,10 @@ use crate::facade::UiHostEffectPort;
 mod admission;
 mod cancellation;
 mod cancellation_settlement;
+mod candidate_preparation;
 mod duplicate_observation;
 mod host_truth;
+mod motion_evidence;
 mod motion_sample;
 mod pending_completion;
 mod physical_uncertainty;
@@ -38,6 +40,8 @@ mod surface_uncertainty;
 mod text_pins;
 mod work_preparation;
 
+pub(crate) use candidate_preparation::UiAcceptedAppearanceMotion;
+pub(super) use candidate_preparation::UiPreparedFrameCandidates;
 pub(crate) use motion_sample::UiMotionSamplePresentationOutcome;
 use presentation_attempt::{
     present_one_surface, UiMountedPresentationProgress, UiMountedPresentationStart,
@@ -132,7 +136,7 @@ impl UiMountedPresentationCoordinator {
         authority: UiMountedHostPresentationAuthority<'_>,
         now: u64,
     ) -> UiMountedPresentationOutcome {
-        let (frame, retention, attempt, deadline) = attempt.into_parts();
+        let (frame, retention, attempt, deadline, candidates) = attempt.into_parts();
         if deadline.expired_at(now) {
             self.active.borrow_mut().remove(&attempt);
             let rejections = frame_rejections(
@@ -141,14 +145,17 @@ impl UiMountedPresentationCoordinator {
             );
             return rejected_outcome(attempt, frame, retention, rejections);
         }
-        self.present_all(UiMountedPresentationStart {
-            frame,
-            retention,
-            attempt,
-            deadline,
-            host,
-            authority,
-        })
+        self.present_all(
+            UiMountedPresentationStart {
+                frame,
+                retention,
+                attempt,
+                deadline,
+                host,
+                authority,
+            },
+            candidates,
+        )
     }
 
     pub(crate) fn retain_appearance_attempt(
@@ -173,6 +180,7 @@ impl UiMountedPresentationCoordinator {
     fn present_all(
         &mut self,
         start: UiMountedPresentationStart<'_, '_>,
+        candidates: UiPreparedFrameCandidates,
     ) -> UiMountedPresentationOutcome {
         if let Err(rejections) =
             validate_before_effects(&start.frame, start.host.adapter(), start.authority)
@@ -180,7 +188,8 @@ impl UiMountedPresentationCoordinator {
             self.active.borrow_mut().remove(&start.attempt);
             return rejected_outcome(start.attempt, start.frame, start.retention, rejections);
         }
-        let prepared = match work_preparation::prepare(
+        let prepared = match work_preparation::issue(
+            candidates,
             &start.frame,
             &self.presentation_states,
             &self.reconstruction_bindings,

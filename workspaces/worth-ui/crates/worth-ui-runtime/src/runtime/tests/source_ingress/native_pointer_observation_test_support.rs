@@ -8,12 +8,10 @@ const CANDIDATE: &str = "workspace.component.active_session_candidate";
 const HOVER_CONSUMER: &str = "workspace.pointer.hover.consumer";
 const TOKEN: &str = "theme.pointer.hover";
 
-pub(crate) fn source_backed_hover_consumer_app_with_host<Host>(
-    host: Host,
-) -> crate::facade::WorthUiApp
-where
-    Host: crate::facade::host::WorthUiHostAdapter + 'static,
-{
+pub(crate) fn source_backed_hover_consumer_app_with_host(
+    host: crate::certification_support::ScriptedPresentationHost,
+) -> crate::facade::WorthUiApp {
+    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
     let role = hover_background_role();
     let snapshot = hover_component_builder(&role)
         .freeze()
@@ -45,6 +43,8 @@ fn hover_component_builder(
         .register_component(interactive_component(CANDIDATE))
         .register_appearance_role(role.clone())
         .unwrap()
+        .register_appearance_theme_bundle(hover_theme_bundle())
+        .unwrap()
         .register_theme_token(crate::capability::ThemeTokenDescriptor::define(
             crate::capability::ThemeTokenId::new(TOKEN).unwrap(),
             crate::capability::ThemeTokenFamily::surface(),
@@ -55,6 +55,42 @@ fn hover_component_builder(
         ))
         .register_mosaic_region_kind(source_backed_package_region())
         .register_mosaic_sizing_contract(source_backed_package_sizing())
+}
+
+fn hover_theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabilities {
+    use crate::capability::{
+        FrozenAppearanceThemeCapabilities, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
+        UiThemeDefinition, UiThemeDefinitionIdentity, UiThemeSlotCatalog, UiThemeSlotDeclaration,
+        UiThemeSlotDisclosure, UiThemeSlotSuccessorCompatibility,
+    };
+    let token = ThemeTokenId::new(TOKEN).unwrap();
+    let catalog = UiThemeSlotCatalog::admit(
+        1,
+        [UiThemeSlotDeclaration::new(
+            token.clone(),
+            ThemeTokenFamily::surface(),
+            worth_ui_dsl::UiThemeValueKind::Color,
+            ThemeTokenSource::application(),
+            UiThemeSlotDisclosure::Public,
+            UiThemeSlotSuccessorCompatibility::ExactMeaning,
+            None,
+        )],
+    )
+    .unwrap();
+    let identity = UiThemeDefinitionIdentity::new("theme.pointer-observation").unwrap();
+    let definition = UiThemeDefinition::admit(
+        identity.clone(),
+        1,
+        &catalog,
+        [(
+            token,
+            worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
+                34, 68, 102, 255,
+            ])),
+        )],
+    )
+    .unwrap();
+    FrozenAppearanceThemeCapabilities::admit(catalog, identity, vec![definition]).unwrap()
 }
 
 fn interactive_component(identity: &str) -> crate::capability::ComponentDescriptor {

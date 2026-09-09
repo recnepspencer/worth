@@ -14,7 +14,7 @@ pub(crate) struct UiPressedAppearanceState {
     pointer: Option<UiHostPointerIdentity>,
     presentation: Option<UiHostObservationPresentationBasis>,
     target: UiMountedInstanceIdentity,
-    node_receipt: UiMountedNodeReceiptIdentity,
+    node_receipt: Option<UiMountedNodeReceiptIdentity>,
     press_sequence: Option<UiHostObservationSequence>,
 }
 
@@ -32,7 +32,7 @@ pub(crate) fn adapt(
         .iter()
         .filter(|posture| {
             posture.target() == basis.mounted_instance()
-                && posture.node_receipt() == basis.owner_node_receipt()
+                && Some(posture.node_receipt()) == basis.owner_node_receipt()
         })
         .collect::<Vec<_>>();
     if postures.len() > 1 {
@@ -104,7 +104,7 @@ impl UiPressedAppearanceState {
         self.target
     }
 
-    pub(crate) const fn node_receipt(&self) -> UiMountedNodeReceiptIdentity {
+    pub(crate) const fn node_receipt(&self) -> Option<UiMountedNodeReceiptIdentity> {
         self.node_receipt
     }
 

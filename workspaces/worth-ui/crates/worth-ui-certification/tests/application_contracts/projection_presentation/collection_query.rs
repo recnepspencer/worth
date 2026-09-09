@@ -221,6 +221,7 @@ fn publish_collection_fact(
     request: u64,
 ) {
     let plan = collection_plan(session, observation);
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(request))
         .unwrap_or_else(|error| {

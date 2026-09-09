@@ -6,7 +6,36 @@ impl super::UiPortalRuntimeState {
         super::super::UiPreparedPortalServiceTransition,
         super::super::UiPortalServiceTransitionDenial,
     > {
-        let request = request.with_policy(self.policy);
+        self.prepare_with_policy(request, self.policy)
+    }
+
+    pub(crate) fn prepare_authored(
+        &self,
+        request: super::super::UiPortalServiceRequest,
+        policy: crate::declaration::UiPortalPolicy,
+    ) -> Result<
+        super::super::UiPreparedPortalServiceTransition,
+        super::super::UiPortalServiceTransitionDenial,
+    > {
+        self.prepare_with_policy(request, policy)
+    }
+
+    fn prepare_with_policy(
+        &self,
+        request: super::super::UiPortalServiceRequest,
+        open_policy: crate::declaration::UiPortalPolicy,
+    ) -> Result<
+        super::super::UiPreparedPortalServiceTransition,
+        super::super::UiPortalServiceTransitionDenial,
+    > {
+        let policy = match request.operation() {
+            super::super::request::UiPortalServiceOperation::Open => open_policy,
+            super::super::request::UiPortalServiceOperation::Close(_) => self
+                .records
+                .get(&request.portal())
+                .map_or(self.policy, |record| record.policy),
+        };
+        let request = request.with_policy(policy);
         let committed_revision = self
             .revision
             .checked_add(1)
@@ -75,6 +104,7 @@ impl super::UiPortalRuntimeState {
         }
         Ok(super::super::UiPreparedPortalServiceTransition::new(
             request,
+            policy,
             self.revision,
             committed_revision,
             staged_posture,

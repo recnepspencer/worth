@@ -10,6 +10,8 @@ use super::{
     UiLocalInputRecipientContract, UiLocalInputStopReason,
 };
 
+mod presentation_refresh;
+
 #[path = "state_ingress.rs"]
 mod ingress;
 #[cfg(test)]
@@ -22,6 +24,7 @@ pub(crate) struct UiInteractionRuntimeState {
     pointer_presence_capacity: super::pointer_presence::UiPointerPresenceCapacity,
     draft: UiDraftRuntimeState,
     semantic_interactions: u64,
+    presentation_refresh: Option<super::UiInteractionPresentationRefreshSnapshot>,
     application_generation: worth_ui_host_contract::UiHostApplicationGeneration,
 }
 
@@ -40,6 +43,10 @@ pub(crate) enum UiInteractionLifecycleStopReason {
 }
 
 impl UiInteractionRuntimeState {
+    pub(crate) const fn pointer_presence_is_enabled(&self) -> bool {
+        self.pointer_presence.is_some()
+    }
+
     pub(crate) fn new(
         pointer_presence_enabled: bool,
         pressed_appearance_enabled: bool,
@@ -53,6 +60,7 @@ impl UiInteractionRuntimeState {
             pointer_presence_capacity,
             draft: UiDraftRuntimeState::new(),
             semantic_interactions: 0,
+            presentation_refresh: None,
             application_generation: worth_ui_host_contract::UiHostApplicationGeneration::new(1)
                 .expect("the initial interaction application generation is nonzero"),
         }
@@ -130,8 +138,8 @@ impl UiInteractionRuntimeState {
         )
     }
 
-    pub(crate) fn reconcile_appearance_demand(&mut self, hover: bool, pressed: bool) {
-        match (hover, self.pointer_presence.is_some()) {
+    pub(crate) fn reconcile_pointer_observation_demand(&mut self, presence: bool, pressed: bool) {
+        match (presence, self.pointer_presence.is_some()) {
             (true, false) => {
                 self.pointer_presence = Some(super::pointer_presence::UiPointerPresenceOwner::new(
                     self.pointer_presence_capacity,
@@ -147,23 +155,18 @@ impl UiInteractionRuntimeState {
         dead_code,
         reason = "Gate 1 retains committed presentation observation for later mounted cutover"
     )]
+    /// Each owner admits its own batch. The caller must handle both outcomes independently.
+    #[cfg(test)]
     pub(crate) fn observe_committed_presentation(
         &mut self,
         trigger: &super::pointer_presence::UiPointerPresencePresentationTrigger,
         mounted: &crate::mounting::WorthUiMountedSessionState,
-        generation: &WorthUiActiveApplicationGenerationIdentity,
-    ) -> (usize, usize) {
-        if mounted
-            .validate_current_frame(trigger.presentation().frame())
-            .is_err()
-            || mounted
-                .validate_binding(trigger.presentation().binding())
-                .is_err()
-        {
-            return (0, 0);
-        }
-        let hover = self.pointer_presence.as_mut().map_or(0, |owner| {
-            owner.retest_committed_presentation(trigger, mounted, generation)
+    ) -> (
+        Result<usize, super::targeting::UiInteractionTargetingDenial>,
+        Result<usize, super::targeting::UiInteractionTargetingDenial>,
+    ) {
+        let hover = self.pointer_presence.as_mut().map_or(Ok(0), |owner| {
+            owner.retest_committed_presentation(trigger, mounted)
         });
         let pressed = self.pointer.retest_committed_presentation(trigger, mounted);
         (hover, pressed)

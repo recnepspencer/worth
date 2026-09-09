@@ -34,10 +34,15 @@ pub(crate) struct UiPortalRuntimeState {
     pub(super) revision: u64,
     pub(super) stack_ordinal_issuer: super::UiPortalStackOrdinalIssuer,
     pub(super) stack_order: order_index::UiPortalStackOrderIndex,
+    pub(super) surface_stacks: BTreeMap<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        super::stack_snapshot::UiPortalSurfaceStackSnapshot,
+    >,
     last_closed: Option<super::UiPortalClosedInspectionRecord>,
 }
 
 pub(super) struct UiPortalRecord {
+    pub(super) policy: crate::declaration::UiPortalPolicy,
     pub(super) posture: super::UiPortalLifecyclePosture,
     pub(super) semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     last_request: crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity,
@@ -77,6 +82,7 @@ impl UiPortalRuntimeState {
             revision: 0,
             stack_ordinal_issuer,
             stack_order: order_index::UiPortalStackOrderIndex::new(),
+            surface_stacks: BTreeMap::new(),
             last_closed: None,
         }
     }

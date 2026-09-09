@@ -49,6 +49,7 @@ fn real_port_upload_is_coupled_to_production_plan_receipt_and_census() {
             dpi_milli: 1_000,
             text_scale: UiTextScaleGeneration::new(1).unwrap(),
             lane: UiGlyphRasterLane::Ordinary,
+            scope: worth_ui_host_contract::UiGlyphRasterDemandScope::DamageFiltered,
             records: &records,
         })
         .unwrap();

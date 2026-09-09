@@ -92,7 +92,13 @@ fn topmost_dismissal_uses_activation_order_for_same_depth_siblings() {
     open_live(&mut state, second, 908);
 
     let UiPortalDismissalPreparation::Prepared(dismissal) = state
-        .prepare_dismissal(UiPortalDismissalTrigger::Escape, None, idempotency(909))
+        .prepare_dismissal(
+            UiPortalDismissalTrigger::Escape {
+                semantic_surface: state.semantic_surface_for_test(second).unwrap(),
+            },
+            None,
+            idempotency(909),
+        )
         .unwrap()
     else {
         panic!("Escape must select a live topmost portal")

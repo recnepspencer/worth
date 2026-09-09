@@ -3,8 +3,8 @@ use worth_ui_host_contract::{
 };
 
 use super::fact::UiMountedAppearanceBackdropInput;
-use super::opacity_composition::compose;
 use super::UiMountedAppearanceLoweringDenial;
+use crate::mounting::presentation::compose_opacity;
 
 pub(crate) fn lower(
     input: &UiMountedAppearanceBackdropInput,
@@ -16,7 +16,10 @@ pub(crate) fn lower(
         extent: input.extent,
         clip: input.clip,
         background: input.background,
-        opacity: compose(input.appearance_opacity, input.motion_opacity),
+        opacity: compose_opacity(
+            input.appearance_opacity,
+            input.motion_opacity.unwrap_or(u16::MAX),
+        ),
         attribution: input.attribution,
     })
     .map(UiMountedAppearanceMechanic::Backdrop)

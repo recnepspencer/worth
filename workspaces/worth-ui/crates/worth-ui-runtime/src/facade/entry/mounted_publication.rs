@@ -1,3 +1,10 @@
+mod focus_settlement;
+use focus_settlement::{place_reconciled_focus, reconcile_focus_after_published_frame_with_ports};
+mod observation;
+mod reconciliation;
+
+pub(super) use observation::record_mounted_observation;
+
 use crate::mounting::{
     UiMountedFrameOutcome, UiMountedFramePublicationReceipt, UiMountedPresentationInFlight,
     UiMountedPresentationOutcome,
@@ -19,12 +26,63 @@ impl WorthUiActiveApplicationSession {
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> UiMountedFrameOutcome {
-        let transition = self.mounted.present_prepared_frame(
+        let overlays = self.prepare_overlay_appearance_sources();
+        self.present_prepared_mounted_frame_with_overlay_sources(frame, deadline, now, overlays)
+    }
+
+    pub(crate) fn present_prepared_portal_frame_internal(
+        &mut self,
+        frame: crate::mounting::UiPreparedMountedFrame,
+        proposal: &crate::runtime::session::UiStagedPortalProposalTransaction,
+        retain_exit: bool,
+        deadline: worth_ui_host_contract::UiPresentationDeadline,
+        now: u64,
+    ) -> UiMountedFrameOutcome {
+        let (transition, stage, staged_motion) = proposal.overlay_appearance_sources();
+        let overlays = self.prepare_overlay_appearance_sources_for_portal_transition(
+            transition,
+            stage,
+            staged_motion,
+            retain_exit,
+        );
+        self.present_prepared_mounted_frame_with_overlay_sources(frame, deadline, now, overlays)
+    }
+
+    fn present_prepared_mounted_frame_with_overlay_sources(
+        &mut self,
+        frame: crate::mounting::UiPreparedMountedFrame,
+        deadline: worth_ui_host_contract::UiPresentationDeadline,
+        now: u64,
+        overlays: Result<
+            super::active_application_session::UiActiveOverlayAppearancePreparation,
+            (),
+        >,
+    ) -> UiMountedFrameOutcome {
+        let generation = self.generation_identity().clone();
+        let portal = self.portal.as_ref();
+        let motion = self.motion.as_ref();
+        let presentation = &self.presentation;
+        let capabilities = self.application.capabilities();
+        let appearance = self.appearance_owner_snapshot.as_ref();
+        let transition = self.mounted.present_prepared_frame_with_overlays(
             &self.host_session,
             frame,
             Some(&mut self.appearance_inspection),
             deadline,
             now,
+            |attempt, surfaces| {
+                overlays.as_ref().map_err(|_| ())?.lower(
+                    attempt,
+                    surfaces,
+                    &mut self.overlay_composition_owners,
+                    &generation,
+                    portal,
+                    motion,
+                    presentation,
+                    capabilities,
+                    appearance,
+                )
+            },
         );
         self.finish_mounted_transition(transition)
     }
@@ -36,49 +94,37 @@ impl WorthUiActiveApplicationSession {
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> UiMountedFrameOutcome {
-        let transition = self.mounted.present_prepared_superseding_frame(
-            &self.host_session,
-            frame,
-            predecessor,
-            Some(&mut self.appearance_inspection),
-            deadline,
-            now,
-        );
+        let overlays = self.prepare_overlay_appearance_sources();
+        let generation = self.generation_identity().clone();
+        let portal = self.portal.as_ref();
+        let motion = self.motion.as_ref();
+        let presentation = &self.presentation;
+        let capabilities = self.application.capabilities();
+        let appearance = self.appearance_owner_snapshot.as_ref();
+        let transition = self
+            .mounted
+            .present_prepared_superseding_frame_with_overlays(
+                &self.host_session,
+                frame,
+                predecessor,
+                Some(&mut self.appearance_inspection),
+                deadline,
+                now,
+                |attempt, surfaces| {
+                    overlays.as_ref().map_err(|_| ())?.lower(
+                        attempt,
+                        surfaces,
+                        &mut self.overlay_composition_owners,
+                        &generation,
+                        portal,
+                        motion,
+                        presentation,
+                        capabilities,
+                        appearance,
+                    )
+                },
+            );
         self.finish_mounted_transition(transition)
-    }
-
-    pub fn present_current_mounted_frame_for_reconciliation(
-        &mut self,
-        replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> Result<UiMountedFrameOutcome, crate::mounting::UiMountedIdentityDenial> {
-        let transition = self.mounted.present_current_for_reconciliation(
-            &self.host_session,
-            replacements,
-            Some(&mut self.appearance_inspection),
-            deadline,
-            now,
-        )?;
-        Ok(self.finish_mounted_transition(transition))
-    }
-
-    pub(crate) fn present_prepared_mounted_frame_for_reconciliation(
-        &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> Result<UiMountedFrameOutcome, crate::mounting::UiMountedIdentityDenial> {
-        let transition = self.mounted.present_prepared_for_reconciliation(
-            &self.host_session,
-            frame,
-            replacements,
-            Some(&mut self.appearance_inspection),
-            deadline,
-            now,
-        )?;
-        Ok(self.finish_mounted_transition(transition))
     }
 
     pub fn complete_mounted_presentation(
@@ -158,6 +204,7 @@ impl WorthUiActiveApplicationSession {
             Some(&mut self.appearance_inspection),
             Some(&mut self.presentation),
         );
+        self.overlay_composition_owners.settle(&outcome);
         if matches!(
             outcome,
             UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_)
@@ -233,12 +280,15 @@ pub(super) fn finish_mounted_transition(
     appearance_presentation: Option<
         &mut crate::runtime::presentation_state::UiApplicationPresentationState,
     >,
+    overlay_composition_owners: Option<
+        &mut super::active_application_session::UiActiveOverlayCompositionOwners,
+    >,
 ) -> UiMountedFrameOutcome {
     let active_generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
         application_session,
         generation,
     );
-    finish_mounted_transition_with_ports(
+    let outcome = finish_mounted_transition_with_ports(
         UiMountedPublicationSettlementPorts {
             mounted,
             focus,
@@ -251,7 +301,11 @@ pub(super) fn finish_mounted_transition(
         transition,
         appearance_inspection,
         appearance_presentation,
-    )
+    );
+    if let Some(owners) = overlay_composition_owners {
+        owners.settle(&outcome);
+    }
+    outcome
 }
 
 fn finish_mounted_transition_with_ports(
@@ -264,11 +318,19 @@ fn finish_mounted_transition_with_ports(
         &mut crate::runtime::presentation_state::UiApplicationPresentationState,
     >,
 ) -> UiMountedFrameOutcome {
-    let (outcome, observation, appearance) = transition.into_parts();
+    let (outcome, observation, appearance, hit_transition) = transition.into_parts();
     match &outcome {
         UiMountedFrameOutcome::Published(receipt)
         | UiMountedFrameOutcome::Unchanged(receipt)
         | UiMountedFrameOutcome::Reconciled(receipt) => {
+            if let (Some(presentation), Some(publication)) = (
+                appearance_presentation.as_deref_mut(),
+                ports
+                    .mounted
+                    .current_text_publication_for_frame(receipt.frame()),
+            ) {
+                presentation.settle_published_text(publication);
+            }
             ports.host_exchange.record_presented_frame(receipt.frame());
             reconcile_focus_after_published_frame_with_ports(&mut ports, receipt);
         }
@@ -304,7 +366,8 @@ fn finish_mounted_transition_with_ports(
                     presentation.settle_appearance_invalidation(invalidation);
                 }
             }
-            UiMountedFrameOutcome::RejectedBeforeEffects(_) => {
+            UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | UiMountedFrameOutcome::AdmissionDenied(_) => {
                 if let Some(producer) = appearance_inspection.as_deref_mut() {
                     producer.record_pre_effect_denials(records);
                 }
@@ -312,52 +375,12 @@ fn finish_mounted_transition_with_ports(
             _ => {}
         }
     }
-    outcome
-}
-
-fn reconcile_focus_after_published_frame_with_ports(
-    ports: &mut UiMountedPublicationSettlementPorts<'_>,
-    publication: &crate::mounting::UiMountedFramePublicationReceipt,
-) {
-    if let Some(portal) = ports.portal.as_deref_mut() {
-        rebind_portal_after_published_frame(portal, publication);
-    }
-    let Some(focus) = ports.focus.as_deref_mut() else {
-        return;
-    };
-    let Some(snapshot) = ports.mounted.focus_participation_snapshot() else {
-        return;
-    };
-    let transition = focus
-        .reconcile_mounted_participation(&snapshot)
-        .expect("mounted participant bounds fit the focus owner counters")
-        .transition();
-    let Some(transition) = transition else {
-        return;
-    };
-    place_reconciled_focus(ports, Some(transition), publication);
-}
-
-fn place_reconciled_focus(
-    ports: &mut UiMountedPublicationSettlementPorts<'_>,
-    transition: Option<crate::runtime::focus::UiFocusTransitionReceipt>,
-    publication: &crate::mounting::UiMountedFramePublicationReceipt,
-) {
-    let Some(transition) = transition else {
-        return;
-    };
-    super::focus_placement::ports::UiFocusPlacementPorts::new(
-        ports.mounted,
+    if let Some(transition) = hit_transition {
         ports
-            .focus
-            .as_deref_mut()
-            .expect("focus placement requires installed Focus support"),
-        ports.interaction,
-        ports.host_session,
-        ports.active_generation.clone(),
-    )
-    .place(transition, publication)
-    .expect("reconciled Focus successor retains exact mounted presentation basis");
+            .interaction
+            .observe_presented_hit_transition(&transition, ports.mounted);
+    }
+    outcome
 }
 
 fn rebind_portal_after_published_frame(
@@ -370,21 +393,4 @@ fn rebind_portal_after_published_frame(
     publication.with_surface_presentations(|surfaces| {
         portal.rebind_published_presentations(publication.frame(), surfaces)
     });
-}
-
-pub(super) fn record_mounted_observation(
-    host_exchange: &mut crate::host_exchange::WorthUiHostExchangeSessionState,
-    observation: crate::mounting::UiMountedHostObservationTransition,
-) {
-    match observation {
-        crate::mounting::UiMountedHostObservationTransition::NeverPresented(frame) => {
-            host_exchange.record_never_presented_frame(frame);
-        }
-        crate::mounting::UiMountedHostObservationTransition::Rejected(frame) => {
-            host_exchange.record_rejected_frame(frame);
-        }
-        crate::mounting::UiMountedHostObservationTransition::Indeterminate { frame, bindings } => {
-            host_exchange.record_indeterminate_frame(frame, &bindings);
-        }
-    }
 }

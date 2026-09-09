@@ -35,7 +35,8 @@ pub(crate) struct UiMountedFrameAssemblyInput<'input, 'graph> {
     pub portal_overlays: std::rc::Rc<[super::UiMountedPortalOverlayProjectionInput]>,
     pub semantic_content: super::UiMountedSemanticContentInput,
     pub theme_values: super::UiMountedThemeValueSource,
-    pub appearance_invalidation: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
+    pub appearance_invalidation:
+        Option<crate::runtime::appearance::UiAppearanceInvalidationInput<'input>>,
     pub font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     pub reuse_contract: super::UiMountedFrameReuseContract,
 }
@@ -133,13 +134,13 @@ impl UiMountedPlanProjectionSource<'_> {
 impl<'state> UiMountedFrameAssembler<'state> {
     pub(crate) fn begin(
         state: &'state UiMountedIdentityState,
+        occurrence_geometry: &'state super::UiMountedOccurrenceGeometryState,
         input: UiMountedFrameAssemblyInput<'_, '_>,
     ) -> Result<Self, UiMountedFramePreparationDenial> {
-        let semantic_predecessor = state
-            .current_projection()
-            .map(|frame| frame.semantic_projection());
+        let semantic_predecessor = state.semantic_predecessor();
         Self::begin_with_semantic_predecessor(
             state,
+            occurrence_geometry,
             semantic_predecessor,
             state.current_frame_identity(),
             input,
@@ -148,12 +149,14 @@ impl<'state> UiMountedFrameAssembler<'state> {
 
     pub(in crate::mounting) fn begin_graph_replacement(
         state: &'state UiMountedIdentityState,
+        occurrence_geometry: &'state super::UiMountedOccurrenceGeometryState,
         semantic_predecessor: Option<&super::projection::UiMountedSemanticProjection>,
         presentation_predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
         input: UiMountedFrameAssemblyInput<'_, '_>,
     ) -> Result<Self, UiMountedFramePreparationDenial> {
         Self::begin_with_semantic_predecessor(
             state,
+            occurrence_geometry,
             semantic_predecessor,
             presentation_predecessor,
             input,
@@ -162,6 +165,7 @@ impl<'state> UiMountedFrameAssembler<'state> {
 
     fn begin_with_semantic_predecessor(
         state: &'state UiMountedIdentityState,
+        occurrence_geometry: &'state super::UiMountedOccurrenceGeometryState,
         semantic_predecessor: Option<&super::projection::UiMountedSemanticProjection>,
         presentation_predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
         input: UiMountedFrameAssemblyInput<'_, '_>,
@@ -188,6 +192,7 @@ impl<'state> UiMountedFrameAssembler<'state> {
                 plan_digest: input.plan_digest,
                 plan: input.plan,
                 allocation_source: &input.allocation_source,
+                occurrence_geometry,
                 requested_surfaces: &surfaces,
                 preview: input.preview,
                 visual_overlay: input.visual_overlay,

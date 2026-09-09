@@ -16,6 +16,9 @@ pub use allocation_catalog_successor::{
     UiAllocationCatalogDeltaClosureDenial, UiAllocationCatalogSuccessorReceipt,
 };
 mod allocation_receipt;
+pub(crate) use allocation_receipt::{
+    UiCommittedOverlayExtentBounds, UiMountedOverlayExtentOwner, UiMountedOverlayRegionExtent,
+};
 mod application_item;
 pub(crate) use application_item::{UiApplicationItemKey, UiApplicationItemKeyFamily};
 pub(crate) mod appearance;
@@ -24,6 +27,7 @@ pub(crate) mod execution;
 pub(crate) mod exports;
 pub(crate) mod host_observation;
 pub(crate) mod intent;
+pub(crate) mod pointer_affordance;
 pub use intent::WorthUiActiveApplicationGenerationIdentity;
 pub(crate) mod intent_execution;
 pub(crate) mod interaction;

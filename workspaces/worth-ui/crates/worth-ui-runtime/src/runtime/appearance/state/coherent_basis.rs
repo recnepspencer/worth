@@ -4,6 +4,9 @@ use worth_ui_host_contract::{
     UiMountedNodeReceiptIdentity, UiSemanticSurfaceIdentity,
 };
 
+#[path = "coherent_basis_mounted_target.rs"]
+mod mounted_target;
+
 #[cfg(test)]
 #[path = "coherent_basis_test_support.rs"]
 mod test_support;
@@ -23,6 +26,7 @@ pub(crate) enum UiAppearanceCoherentBasisDenial {
     MountedTargetNotCurrent,
     PresentationNotCurrent,
     OperabilityRouteUnavailable,
+    SelectionBindingUnavailable,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -46,7 +50,7 @@ pub(crate) struct UiAppearanceCoherentBasis {
     graph_node: crate::graph::UiGraphNodeIdentity,
     mounted_instance: UiMountedInstanceIdentity,
     incarnation: UiMountIncarnation,
-    owner_node_receipt: UiMountedNodeReceiptIdentity,
+    owner_node_receipt: Option<UiMountedNodeReceiptIdentity>,
     node_receipt: UiMountedNodeReceiptIdentity,
     surface: UiSemanticSurfaceIdentity,
     theme: crate::runtime::appearance::UiActiveThemeBinding,
@@ -64,17 +68,18 @@ impl UiAppearanceCoherentBasis {
         themes: &crate::runtime::appearance::UiAppearanceThemeState,
         input: UiAppearanceCoherentBasisInput,
     ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
-        Self::admit_with_target_validation(snapshot, consumer, mounted, themes, input, true)
+        Self::admit_with_target_validation(snapshot, consumer, mounted, themes, input, None)
     }
 
     pub(crate) fn admit_prepared(
+        frame: &crate::mounting::UiPreparedMountedFrame,
         snapshot: &super::UiAppearanceOwnerSnapshot,
         consumer: &super::UiAppearanceStateConsumer,
         mounted: &crate::mounting::WorthUiMountedSessionState,
         themes: &crate::runtime::appearance::UiAppearanceThemeState,
         input: UiAppearanceCoherentBasisInput,
     ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
-        Self::admit_with_target_validation(snapshot, consumer, mounted, themes, input, false)
+        Self::admit_with_target_validation(snapshot, consumer, mounted, themes, input, Some(frame))
     }
 
     fn admit_with_target_validation(
@@ -83,16 +88,16 @@ impl UiAppearanceCoherentBasis {
         mounted: &crate::mounting::WorthUiMountedSessionState,
         themes: &crate::runtime::appearance::UiAppearanceThemeState,
         input: UiAppearanceCoherentBasisInput,
-        require_current_receipt: bool,
+        prepared: Option<&crate::mounting::UiPreparedMountedFrame>,
     ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
         let identity = &input.mounted_identity;
         if consumer.graph_node() != identity.graph_node_identity() {
             return Err(UiAppearanceCoherentBasisDenial::ConsumerTargetMismatch);
         }
-        if require_current_receipt {
-            validate_mounted_target(mounted, &input)?;
+        if prepared.is_none() {
+            mounted_target::validate_current(mounted, &input)?;
         } else {
-            validate_prepared_target(mounted, &input)?;
+            mounted_target::validate_prepared(mounted, &input)?;
         }
         for axis in axes() {
             if consumer.consumes(axis) && !snapshot.demand().contains(axis) {
@@ -105,19 +110,10 @@ impl UiAppearanceCoherentBasis {
             return Err(UiAppearanceCoherentBasisDenial::OperabilityRouteUnavailable);
         }
         let surface = identity.semantic_surface_identity();
+        mounted_target::validate_selection(mounted, consumer, &input, prepared)?;
         validate_theme(snapshot, themes, surface, &input.theme)?;
-        validate_presentation(mounted, input.presentation)?;
-        if input.presentation.is_none()
-            && (consumer.consumes(UiAppearanceStateAxis::Hover)
-                || consumer.consumes(UiAppearanceStateAxis::Pressed))
-        {
-            let axis = if consumer.consumes(UiAppearanceStateAxis::Hover) {
-                UiAppearanceStateAxis::Hover
-            } else {
-                UiAppearanceStateAxis::Pressed
-            };
-            return Err(UiAppearanceCoherentBasisDenial::MissingPresentation(axis));
-        }
+        validate_presentation(mounted, surface, input.presentation)?;
+        validate_owner_presentation(snapshot, consumer, &input)?;
         Ok(Self {
             turn: snapshot.turn(),
             session: snapshot.session(),
@@ -170,7 +166,7 @@ impl UiAppearanceCoherentBasis {
         self.node_receipt
     }
 
-    pub(crate) const fn owner_node_receipt(&self) -> UiMountedNodeReceiptIdentity {
+    pub(crate) const fn owner_node_receipt(&self) -> Option<UiMountedNodeReceiptIdentity> {
         self.owner_node_receipt
     }
 
@@ -239,7 +235,7 @@ impl UiAppearanceCoherentBasis {
             if let Some(pressed_owner) = snapshot.pressed() {
                 let mismatch = pressed_owner.postures().iter().any(|posture| {
                     posture.target() == self.mounted_instance
-                        && posture.node_receipt() == self.owner_node_receipt
+                        && Some(posture.node_receipt()) == self.owner_node_receipt
                         && self.presentation != Some(posture.presentation())
                 });
                 if mismatch {
@@ -281,45 +277,36 @@ impl UiAppearanceCoherentBasis {
     }
 }
 
-fn validate_mounted_target(
-    mounted: &crate::mounting::WorthUiMountedSessionState,
+fn validate_owner_presentation(
+    snapshot: &super::UiAppearanceOwnerSnapshot,
+    consumer: &super::UiAppearanceStateConsumer,
     input: &UiAppearanceCoherentBasisInput,
 ) -> Result<(), UiAppearanceCoherentBasisDenial> {
-    if mounted
-        .current_mounted_identity_basis(input.mounted_instance)
-        .as_ref()
-        != Some(&input.mounted_identity)
-        || mounted
-            .validate_current_receipt(
-                input.mounted_instance,
-                input.receipt_basis.owner_node_receipt(),
-            )
-            .is_err()
-    {
-        return Err(UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent);
+    if input.presentation.is_some() {
+        return Ok(());
     }
-    Ok(())
-}
-
-fn validate_prepared_target(
-    mounted: &crate::mounting::WorthUiMountedSessionState,
-    input: &UiAppearanceCoherentBasisInput,
-) -> Result<(), UiAppearanceCoherentBasisDenial> {
-    if mounted
-        .current_mounted_identity_basis(input.mounted_instance)
-        .as_ref()
-        != Some(&input.mounted_identity)
-        || input.receipt_basis.mounted_instance() != input.mounted_instance
-        || input.receipt_basis.incarnation() != input.mounted_identity.mount_incarnation()
-        || mounted.current_publication().is_none()
-        || mounted
-            .validate_current_receipt(
-                input.mounted_instance,
-                input.receipt_basis.owner_node_receipt(),
-            )
-            .is_err()
+    if consumer.consumes(UiAppearanceStateAxis::Hover)
+        && snapshot.pointer_presence().is_some_and(|owner| {
+            owner
+                .primary_pointer(input.mounted_identity.semantic_surface_identity())
+                .is_some()
+        })
     {
-        return Err(UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent);
+        return Err(UiAppearanceCoherentBasisDenial::MissingPresentation(
+            UiAppearanceStateAxis::Hover,
+        ));
+    }
+    if consumer.consumes(UiAppearanceStateAxis::Pressed)
+        && snapshot.pressed().is_some_and(|owner| {
+            owner.postures().iter().any(|posture| {
+                posture.target() == input.mounted_instance
+                    && Some(posture.node_receipt()) == input.receipt_basis.owner_node_receipt()
+            })
+        })
+    {
+        return Err(UiAppearanceCoherentBasisDenial::MissingPresentation(
+            UiAppearanceStateAxis::Pressed,
+        ));
     }
     Ok(())
 }
@@ -347,17 +334,14 @@ fn validate_theme(
 
 fn validate_presentation(
     mounted: &crate::mounting::WorthUiMountedSessionState,
+    surface: UiSemanticSurfaceIdentity,
     presentation: Option<UiHostObservationPresentationBasis>,
 ) -> Result<(), UiAppearanceCoherentBasisDenial> {
     if presentation.is_some_and(|presentation| {
         mounted
-            .validate_current_frame(presentation.frame())
-            .is_err()
-            || mounted.validate_binding(presentation.binding()).is_err()
-            || mounted
-                .current_publication()
-                .and_then(|publication| publication.semantic_surface_for_presentation(presentation))
-                .is_none()
+            .current_semantic_surface_for_presentation(presentation)
+            .ok()
+            != Some(surface)
     }) {
         return Err(UiAppearanceCoherentBasisDenial::PresentationNotCurrent);
     }

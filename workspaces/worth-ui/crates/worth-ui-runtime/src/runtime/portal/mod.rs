@@ -24,6 +24,10 @@ mod transition;
 #[cfg(test)]
 mod overlay_binding_tests;
 #[cfg(test)]
+mod state_authored_policy_tests;
+#[cfg(test)]
+mod state_dismissal_surface_tests;
+#[cfg(test)]
 mod state_dismissal_tests;
 #[cfg(test)]
 mod state_lifecycle_tests;
@@ -73,7 +77,7 @@ pub(crate) use stack_ordinal::UiPortalStackOrdinalIssuer;
     unused_imports,
     reason = "the sealed Portal stack contract is consumed by the later overlay lane"
 )]
-pub(crate) use stack_snapshot::UiPortalStackSnapshot;
+pub(crate) use stack_snapshot::{UiPortalStackSnapshot, UiPortalSurfaceStackSnapshot};
 pub(crate) use state::{UiPortalRuntimeState, UiPortalShutdownReport};
 pub(crate) use transition::{
     UiPortalExitTerminalDenial, UiPortalServiceTransitionDenial, UiPreparedPortalServiceTransition,

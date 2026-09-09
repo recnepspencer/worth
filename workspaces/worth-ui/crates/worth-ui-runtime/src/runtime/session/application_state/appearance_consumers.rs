@@ -1,6 +1,20 @@
 use super::WorthUiApplicationSessionState;
 
 impl WorthUiApplicationSessionState {
+    pub(crate) fn appearance_mounted_state_invalidation_batch(
+        &self,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        axis: worth_ui_dsl::UiAppearanceStateAxis,
+        instances: &[worth_ui_host_contract::UiMountedInstanceIdentity],
+    ) -> crate::runtime::appearance::UiAppearanceInvalidationBatch {
+        crate::runtime::appearance::UiAppearanceInvalidationBatch::mounted_owner_state(
+            self.app.prepared_authority().consumed_fact_index(),
+            mounted,
+            axis,
+            instances,
+        )
+    }
+
     pub(crate) fn appearance_initial_invalidation_batch(
         &self,
     ) -> crate::runtime::appearance::UiAppearanceInvalidationBatch {
@@ -16,16 +30,6 @@ impl WorthUiApplicationSessionState {
         crate::runtime::appearance::UiAppearanceInvalidationBatch::role_replacement(
             self.app.prepared_authority().consumed_fact_index(),
             role,
-        )
-    }
-
-    pub(crate) fn appearance_state_invalidation_batch(
-        &self,
-        axis: worth_ui_dsl::UiAppearanceStateAxis,
-    ) -> crate::runtime::appearance::UiAppearanceInvalidationBatch {
-        crate::runtime::appearance::UiAppearanceInvalidationBatch::owner_state(
-            self.app.prepared_authority().consumed_fact_index(),
-            axis,
         )
     }
 

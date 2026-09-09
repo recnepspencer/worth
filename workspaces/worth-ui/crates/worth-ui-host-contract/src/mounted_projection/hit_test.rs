@@ -166,26 +166,24 @@ impl UiMountedHitTestMechanic {
     pub fn presented_within_portal(
         self,
         portal: super::UiMountedPortalOverlayMechanic,
-    ) -> Result<Self, UiMountedHitTestCompletionDenial> {
-        let bounds =
-            super::UiMountedCanonicalBox::canonicalize(super::UiMountedCanonicalBoxInput {
-                x: portal.bounds().x() + self.bounds.x(),
-                y: portal.bounds().y() + self.bounds.y(),
-                width: self.bounds.width(),
-                height: self.bounds.height(),
-                coordinate_space: portal.bounds().coordinate_space(),
-            })
-            .map_err(|_| UiMountedHitTestCompletionDenial::NonAreaGeometry)?;
+    ) -> Result<Option<Self>, UiMountedHitTestCompletionDenial> {
+        let Some(geometry) =
+            super::portal_child_geometry::project(self.bounds, self.clip_bounds, portal)
+                .map_err(|_| UiMountedHitTestCompletionDenial::NonAreaGeometry)?
+        else {
+            return Ok(None);
+        };
         Self::complete_from_runtime_mounting(UiMountedHitTestCompletionInput {
             frame: self.frame,
             surface: self.surface,
             binding: self.binding,
             mounted_instance: self.mounted_instance,
             node_receipt: self.node_receipt,
-            bounds,
-            clip_bounds: portal.bounds(),
+            bounds: geometry.bounds,
+            clip_bounds: geometry.clip,
             order: self.order.presented_within_portal(),
         })
+        .map(Some)
     }
 }
 

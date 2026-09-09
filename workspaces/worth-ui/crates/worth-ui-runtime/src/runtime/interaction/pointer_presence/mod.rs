@@ -6,6 +6,7 @@ mod current_target;
 )]
 mod inspection;
 mod owner;
+#[cfg(test)]
 mod presentation;
 #[allow(
     dead_code,
@@ -25,6 +26,7 @@ pub(crate) use owner::UiPointerPresenceOwner;
     unused_imports,
     reason = "Gate 1 retains sealed pointer-presence geometry types for later presentation consumers"
 )]
+#[cfg(test)]
 pub(crate) use presentation::{
     UiPointerPresenceGeometry, UiPointerPresenceGeometryCandidate,
     UiPointerPresencePresentationTrigger, UiPointerPresencePresentationTriggerDenial,

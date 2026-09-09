@@ -61,7 +61,10 @@ fn release_plan(
     core_handle: &Rc<std::cell::RefCell<super::ownership::AtlasCore>>,
 ) {
     plan.committed = true;
-    core_handle.borrow_mut().reservation = None;
+    let mut core = core_handle.borrow_mut();
+    if core.reservation == Some(plan.reservation) {
+        core.reservation = None;
+    }
 }
 
 fn recover_indeterminate(

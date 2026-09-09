@@ -145,6 +145,9 @@ impl UiPortalServiceRequest {
         declared_portal: Option<worth_ui_dsl::UiPortalDeclarationId>,
     ) -> Self {
         self.declared_portal = declared_portal;
+        if declared_portal.is_some() {
+            self.shielding_uses_policy_default = true;
+        }
         self
     }
 

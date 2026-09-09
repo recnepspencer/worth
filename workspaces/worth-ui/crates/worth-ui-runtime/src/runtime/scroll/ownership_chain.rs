@@ -285,7 +285,7 @@ mod tests {
         let meaning =
             crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Layout(
                 crate::runtime::planning::execution_plan_input::WorthUiLayoutPlanMeaning::region(
-                    descriptor, None,
+                    descriptor, None, None,
                 ),
             );
         assert_eq!(

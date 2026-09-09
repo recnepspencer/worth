@@ -86,11 +86,12 @@ pub(crate) use inspection::{UiDeclarationAuthoredEvidenceIndex, UiDeclarationEvi
 pub(crate) use intent::{
     prepare_authored_intent_material, UiCanonicalIntentDeclaration, UiIntentCatalog,
     UiIntentCatalogCommandRoute, UiIntentCatalogResolvedRoute, UiIntentCatalogSemanticComparison,
-    UiResolvedIntentApplicationSource, UiResolvedIntentConfirmationContract,
-    UiResolvedIntentConfirmationSource, UiResolvedIntentMutabilitySource,
-    UiResolvedIntentPayloadBinding, UiResolvedIntentPayloadSource,
-    UiResolvedIntentProjectionSource, UiResolvedIntentReadinessSource,
-    WorthUiAuthoredIntentDeclaration, WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentRoute,
+    UiIntentSingleProductRouteDenial, UiResolvedIntentApplicationSource,
+    UiResolvedIntentConfirmationContract, UiResolvedIntentConfirmationSource,
+    UiResolvedIntentMutabilitySource, UiResolvedIntentPayloadBinding,
+    UiResolvedIntentPayloadSource, UiResolvedIntentProjectionSource,
+    UiResolvedIntentReadinessSource, WorthUiAuthoredIntentDeclaration,
+    WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentRoute,
 };
 pub use intent::{
     UiIntentApplicationFact, UiIntentApplicationFactIdentityError,

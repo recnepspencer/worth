@@ -47,7 +47,7 @@ impl UiMountedSemanticMechanicSource {
             return false;
         };
         let worth_ui_host_contract::UiMountedAllocationProjection::Known { bounds, basis } =
-            node.receipt.allocation()
+            node.presentation_allocation()
         else {
             return false;
         };

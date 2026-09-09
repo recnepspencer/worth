@@ -10,6 +10,10 @@ use super::mutation::{update_damage, visible_bounds};
 use super::{UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial, UiNativeRetainedReplayPlan};
 
 pub(crate) struct UiNativeRetainedSampleUndo {
+    pub(super) physical_coverage: Vec<(
+        UiMountedPaintCommandIdentity,
+        Option<super::physical_coverage::UiNativeCommandImageCoverage>,
+    )>,
     overrides: Vec<(
         UiMountedPaintCommandIdentity,
         Option<UiMountedPresentationSampleChange>,
@@ -45,8 +49,11 @@ impl UiNativeRetainedDrawList {
         let mut retired = Vec::with_capacity(retirements.len());
         for (identity, change, sampled, semantic) in retirements {
             if let Err(denial) = update_damage(&mut self.damage, identity, sampled, semantic) {
-                self.rollback_sample(UiNativeRetainedSampleUndo { overrides: retired })
-                    .expect("already-retired sample overrides roll back exactly");
+                self.rollback_sample(UiNativeRetainedSampleUndo {
+                    overrides: retired,
+                    physical_coverage: Vec::new(),
+                })
+                .expect("already-retired sample overrides roll back exactly");
                 return Err(denial);
             }
             self.sample_overrides.remove(&identity);
@@ -64,6 +71,7 @@ impl UiNativeRetainedDrawList {
     > {
         self.validate_sample(sample)?;
         let undo = UiNativeRetainedSampleUndo {
+            physical_coverage: Vec::new(),
             overrides: sample
                 .changes()
                 .iter()
@@ -87,6 +95,7 @@ impl UiNativeRetainedDrawList {
             let new = sampled_visible_bounds(command, Some(*change))?;
             if let Err(denial) = update_damage(&mut self.damage, change.command(), old, new) {
                 let applied_undo = UiNativeRetainedSampleUndo {
+                    physical_coverage: Vec::new(),
                     overrides: undo.overrides[..applied].to_vec(),
                 };
                 self.rollback_sample(applied_undo)
@@ -109,6 +118,7 @@ impl UiNativeRetainedDrawList {
         &mut self,
         undo: UiNativeRetainedSampleUndo,
     ) -> Result<(), UiNativeRetainedDrawListDenial> {
+        self.restore_physical_coverage(undo.physical_coverage)?;
         for (identity, previous) in undo.overrides {
             let command = self
                 .commands

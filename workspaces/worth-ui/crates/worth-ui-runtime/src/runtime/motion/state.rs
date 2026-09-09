@@ -21,6 +21,10 @@ pub(crate) struct UiMotionRuntimeState {
     policy: crate::declaration::UiMotionPolicy,
     next_track_identity: u64,
     pub(super) tracks: BTreeMap<super::UiMotionTargetIdentity, super::UiCommittedMotionTrack>,
+    pub(super) overlay_rows: BTreeMap<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        super::overlay_export::UiMotionOverlayRows,
+    >,
     exit_retentions: BTreeMap<super::UiMotionTrackIdentity, super::UiMotionExitRetentionReceipt>,
     census: super::UiMotionResourceCensus,
     publication_sequence: u64,
@@ -45,6 +49,7 @@ impl UiMotionRuntimeState {
             policy,
             next_track_identity: 1,
             tracks: BTreeMap::new(),
+            overlay_rows: BTreeMap::new(),
             exit_retentions: BTreeMap::new(),
             census: super::UiMotionResourceCensus::zero(),
             publication_sequence: 0,
@@ -259,6 +264,7 @@ impl UiMotionRuntimeState {
         request: super::UiMotionTransitionRequest,
         kind: super::UiMotionProducedFactKind,
     ) -> super::UiMotionProducedFact {
+        self.refresh_overlay_row(request, kind);
         self.publication_sequence = self
             .publication_sequence
             .checked_add(1)
@@ -284,6 +290,31 @@ impl UiMotionRuntimeState {
 
     pub(crate) const fn publication_count(&self) -> u64 {
         self.publication_sequence
+    }
+
+    #[cfg(test)]
+    pub(crate) fn commit_declared_transition_for_test(
+        &mut self,
+        identity: u64,
+        request: super::UiMotionTransitionRequest,
+        frame: worth_ui_host_contract::UiMountedFrameIdentity,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> super::UiMotionCommitReceipt {
+        let proposal =
+            crate::runtime::session::service_proposal::UiServiceProposalIdentity::for_test(
+                identity,
+            );
+        let staged = self.stage(proposal, request).unwrap();
+        let derived = self.derive(staged, frame);
+        let publication = crate::runtime::session::service_proposal::
+            UiServiceProposalPublicationReceipt::recorded_foreign_fixture(
+                proposal,
+                identity,
+                crate::runtime::session::service_proposal::
+                    UiServiceProposalPublicationDisposition::Accepted,
+            );
+        self.commit_published(derived, publication, frame, presentation)
+            .unwrap_or_else(|(_, denial)| panic!("declared test transition commits: {denial:?}"))
     }
 
     #[cfg(test)]

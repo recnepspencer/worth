@@ -1,6 +1,7 @@
 use super::WorthUiActiveFrameworkTurnExecution;
 
 mod lane_participation;
+mod reuse;
 
 pub(crate) struct WorthUiActiveMountedProjectionFrame<'frame, 'session> {
     execution: &'frame crate::runtime::WorthUiFrameworkTurnExecution<'session>,
@@ -67,6 +68,7 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         projection.execute_requested_lanes(lanes, virtualized_range)?;
         let mut frame = projection.finish()?;
         self.finish_appearance_projection(&mut frame)?;
+        frame.stage_pointer_affordance(self.pointer_affordance_snapshot.as_ref(), self.mounted)?;
         Ok(frame)
     }
 
@@ -93,6 +95,7 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         projection.execute_requested_lanes(lanes, virtualized_range)?;
         let mut frame = projection.finish()?;
         self.finish_appearance_projection(&mut frame)?;
+        frame.stage_pointer_affordance(self.pointer_affordance_snapshot.as_ref(), self.mounted)?;
         Ok(frame)
     }
 
@@ -112,7 +115,9 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         let mut projection =
             self.begin_mounted_projection(request, lanes, semantic_content, theme_values, None)?;
         projection.execute_requested_lanes(lanes, virtualized_range)?;
-        let frame = projection.finish_for_reconciliation(replacements)?;
+        let mut frame = projection.finish_for_reconciliation(replacements)?;
+        self.finish_appearance_projection(&mut frame)?;
+        frame.stage_pointer_affordance(self.pointer_affordance_snapshot.as_ref(), self.mounted)?;
         Ok(frame)
     }
 
@@ -142,6 +147,8 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
             .allocation_receipt_ledger
             .mounted_projection_source(self.mounted.current_allocation_truth_revision());
         let reuse_contract = self.reuse_contract(&request, lanes, allocation_truth_revision);
+        let appearance_invalidation =
+            self.appearance_invalidation_for_content(&semantic_content, predecessor);
         let input = crate::mounting::UiMountedFrameAssemblyInput {
             graph: self.graph,
             generation: self.generation_identity.clone(),
@@ -157,7 +164,12 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
             portal_overlays,
             semantic_content,
             theme_values,
-            appearance_invalidation: self.presentation.appearance_invalidation_batch(),
+            appearance_invalidation: Some(
+                crate::runtime::appearance::UiAppearanceInvalidationInput {
+                    index: self.consumed_facts,
+                    pending: appearance_invalidation,
+                },
+            ),
             font_collection: std::sync::Arc::clone(&self.font_collection),
             reuse_contract,
         };
@@ -171,30 +183,6 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
             execution: &self.execution,
             assembler,
         })
-    }
-
-    fn reuse_contract(
-        &self,
-        request: &crate::mounting::UiMountedFrameRequest,
-        lanes: crate::mounting::UiMountedLaneAssembly,
-        allocation_truth_revision: u64,
-    ) -> crate::mounting::UiMountedFrameReuseContract {
-        self.mounted
-            .seal_frame_reuse_contract(crate::mounting::UiMountedFrameReuseExternalBasis {
-                generation: self.generation_identity.clone(),
-                host_session: self.host_session_identity.as_u64(),
-                execution: crate::mounting::UiMountedFrameExecutionPosture::ActiveFrame {
-                    frame_epoch: self.execution.active_frame_epoch().as_u64(),
-                },
-                plan_digest: self.execution.active_plan_digest(),
-                allocation_truth_revision,
-                request: request.reuse_identity(),
-                lanes,
-                protocol: self.host_protocol,
-                capability_generation: self.host_capability_generation,
-                capability_profile_digest: self.host_capability_profile_digest,
-                visual_overlay_revision: request.visual_overlay_revision(),
-            })
     }
 }
 

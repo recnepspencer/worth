@@ -18,6 +18,7 @@ pub struct UiObservationTurn<'state> {
     retained_bytes: usize,
     poisoned: bool,
     appearance_close: Option<super::UiAppearanceObservationCloseInput<'state>>,
+    pointer_close: Option<super::UiPointerAffordanceObservationCloseInput<'state>>,
 }
 
 pub(crate) struct UiObservationTurnCloseAuthority {
@@ -43,6 +44,7 @@ impl<'state> UiObservationTurn<'state> {
         identity: u64,
         profile: UiObservationProfile,
         appearance_close: Option<super::UiAppearanceObservationCloseInput<'state>>,
+        pointer_close: Option<super::UiPointerAffordanceObservationCloseInput<'state>>,
     ) -> Self {
         Self {
             runtime,
@@ -54,6 +56,7 @@ impl<'state> UiObservationTurn<'state> {
             retained_bytes: 0,
             poisoned: false,
             appearance_close,
+            pointer_close,
         }
     }
 
@@ -298,14 +301,15 @@ impl crate::runtime::WorthUiRuntime {
         session: crate::facade::WorthUiActiveApplicationSessionIdentity,
         source_basis: u64,
     ) -> Result<UiObservationTurn<'state>, UiObservationTurnDenial> {
-        self.begin_observation_turn_with_appearance_close(session, source_basis, None)
+        self.begin_observation_turn_with_owner_close(session, source_basis, None, None)
     }
 
-    pub(crate) fn begin_observation_turn_with_appearance_close<'state>(
+    pub(crate) fn begin_observation_turn_with_owner_close<'state>(
         &'state mut self,
         session: crate::facade::WorthUiActiveApplicationSessionIdentity,
         source_basis: u64,
         appearance_close: Option<super::UiAppearanceObservationCloseInput<'state>>,
+        pointer_close: Option<super::UiPointerAffordanceObservationCloseInput<'state>>,
     ) -> Result<UiObservationTurn<'state>, UiObservationTurnDenial> {
         let profile = self.change_profile.observation();
         let (identity, profile) = self.observation.begin(profile)?;
@@ -316,6 +320,7 @@ impl crate::runtime::WorthUiRuntime {
             identity,
             profile,
             appearance_close,
+            pointer_close,
         ))
     }
 

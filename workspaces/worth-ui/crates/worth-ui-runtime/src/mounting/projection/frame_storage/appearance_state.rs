@@ -39,27 +39,102 @@ struct UiMountedAppearanceEpoch {
 #[derive(Clone)]
 pub(crate) struct UiMountedAppearanceFrameState {
     members: UiMountedAppearanceStateMembers,
+    retirements: super::appearance_state_retirement::UiMountedAppearanceRetirements,
     epoch: Option<UiMountedAppearanceEpoch>,
     batch: Option<UiAppearanceInvalidationBatch>,
     capacity_error: Option<UiAppearanceStateCapacityExceeded>,
     reconstruction_nodes: Option<Vec<super::UiMountedAppearanceNodeInputContext>>,
+    reconstruct_overlays: bool,
+    input_refresh_nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
     selection: Rc<UiMountedAppearanceProjectionSelection>,
+    node_work: Vec<super::appearance_output::UiMountedAppearanceNodeWork>,
+    overlay_sidecars: std::collections::BTreeMap<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        super::super::appearance::UiMountedAppearanceSidecar,
+    >,
+    active_portal_instances: std::collections::BTreeMap<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        std::collections::BTreeSet<worth_ui_host_contract::UiMountedInstanceIdentity>,
+    >,
+    overlay_work: Vec<super::appearance_output::UiMountedAppearanceOverlayWork>,
+    order: super::appearance_order::UiMountedAppearanceOrderIndex,
 }
 
 impl Default for UiMountedAppearanceFrameState {
     fn default() -> Self {
         Self {
             members: UiMountedAppearanceStateMembers::default(),
+            retirements: Default::default(),
             epoch: None,
             batch: None,
             capacity_error: None,
             reconstruction_nodes: None,
+            reconstruct_overlays: false,
+            input_refresh_nodes: Vec::new(),
             selection: Rc::new(UiMountedAppearanceProjectionSelection::empty()),
+            node_work: Vec::new(),
+            overlay_sidecars: Default::default(),
+            active_portal_instances: Default::default(),
+            overlay_work: Vec::new(),
+            order: Default::default(),
         }
     }
 }
 
 impl UiMountedAppearanceFrameState {
+    pub(in crate::mounting::projection) fn matches_geometry_input(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        input: &crate::mounting::UiMountedAppearanceGeometryInput,
+    ) -> (bool, usize) {
+        self.members.matches_geometry_input(instance, input)
+    }
+
+    pub(in crate::mounting) fn contains_instance(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> bool {
+        self.members.contains_instance(instance)
+    }
+
+    pub(in crate::mounting) fn after_surface_deregistration(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Self {
+        let mut successor = Self::fork(
+            Some(self),
+            Rc::new(UiMountedAppearanceProjectionSelection::empty()),
+        );
+        let mut work = successor.members.forget_surface(surface);
+        work.merge(successor.retirements.forget_surface(surface));
+        successor.selection.record_membership_work(work);
+        let work = successor.order.forget_surface(surface);
+        successor.selection.record_order_work(work);
+        successor.overlay_sidecars.remove(&surface);
+        successor.active_portal_instances.remove(&surface);
+        successor
+    }
+
+    #[cfg(test)]
+    pub(super) fn isolate_measurements(&mut self) {
+        self.selection = Rc::new(self.selection.with_independent_measurements());
+    }
+
+    #[cfg(test)]
+    pub(crate) fn pending_attempts_for_test(&self) -> Vec<UiAppearanceProjectionAttempt> {
+        self.members.pending_attempts()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn physical_node_receipts_for_test(
+        &self,
+    ) -> Vec<worth_ui_host_contract::UiMountedNodeReceiptIdentity> {
+        let mut receipts = self.members.physical_node_receipts();
+        receipts.extend(self.retirements.receipts());
+        receipts.sort();
+        receipts
+    }
+
     pub(crate) fn fork(
         predecessor: Option<&Self>,
         selection: Rc<UiMountedAppearanceProjectionSelection>,
@@ -69,10 +144,26 @@ impl UiMountedAppearanceFrameState {
                 .map(|state| state.members.fork())
                 .unwrap_or_default(),
             epoch: predecessor.and_then(|state| state.epoch.clone()),
+            retirements: predecessor
+                .map(|state| state.retirements.clone())
+                .unwrap_or_default(),
             batch: None,
             capacity_error: None,
             reconstruction_nodes: None,
+            reconstruct_overlays: false,
+            input_refresh_nodes: Vec::new(),
             selection,
+            node_work: Vec::new(),
+            overlay_sidecars: predecessor
+                .map(|state| state.overlay_sidecars.clone())
+                .unwrap_or_default(),
+            active_portal_instances: predecessor
+                .map(|state| state.active_portal_instances.clone())
+                .unwrap_or_default(),
+            overlay_work: Vec::new(),
+            order: predecessor
+                .map(|state| state.order.clone())
+                .unwrap_or_default(),
         }
     }
 
@@ -88,11 +179,16 @@ impl UiMountedAppearanceFrameState {
         self.batch = Some(batch);
     }
 
+    pub(crate) fn clear_batch(&mut self) {
+        self.batch = None;
+    }
+
     pub(crate) fn prepare_reconstruction(
         &mut self,
         nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
     ) {
         self.reconstruction_nodes = Some(nodes);
+        self.reconstruct_overlays = true;
     }
 
     pub(crate) fn batch(&self) -> Option<&UiAppearanceInvalidationBatch> {
@@ -116,12 +212,31 @@ impl UiMountedAppearanceFrameState {
             self.selection.record_membership_work(work);
             self.epoch = Some(epoch);
             self.capacity_error = None;
-            self.reconstruction_nodes = None;
         }
-        let (retired, work) = self.members.retire_instances(retired_instances);
+        let (retired, work) = self
+            .members
+            .retire_instances(retired_instances, &mut self.retirements);
         self.selection.record_membership_work(work);
         let retired_memberships = retired_memberships.saturating_add(retired);
         retired_memberships
+    }
+
+    pub(crate) fn retire_detached_on_epoch_change(
+        &mut self,
+        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        graph: crate::graph::UiGraphAuthority<'_>,
+    ) -> usize {
+        if self
+            .epoch
+            .as_ref()
+            .is_some_and(|epoch| epoch.session == session && epoch.generation == *generation)
+        {
+            return 0;
+        }
+        let (retired, work) = self.members.retire_unattached(graph, &mut self.retirements);
+        self.selection.record_membership_work(work);
+        retired
     }
 
     pub(crate) fn reserve(
@@ -169,6 +284,19 @@ impl UiMountedAppearanceFrameState {
         self.capacity_error
     }
 
+    pub(super) fn admit_order(
+        &mut self,
+        frame: &super::UiMountedProjectionFrame,
+    ) -> Result<(), super::UiMountedAppearanceOrderDenial> {
+        let (result, work) = self.order.admit(frame, &self.node_work);
+        self.selection.record_order_work(work);
+        result
+    }
+
+    pub(super) fn order_retained_bytes(&self) -> usize {
+        self.order.retained_bytes()
+    }
+
     pub(crate) fn validate_selection(
         &self,
         batch: &UiAppearanceInvalidationBatch,
@@ -182,7 +310,7 @@ impl UiMountedAppearanceFrameState {
     pub(crate) fn selection_cost_report(
         &self,
     ) -> super::super::UiMountedAppearanceSelectionCostReport {
-        self.selection.cost_report()
+        self.selection.cost_report(self.order.retained_bytes())
     }
 
     pub(crate) fn selected_instances(
@@ -202,74 +330,20 @@ impl UiMountedAppearanceFrameState {
     pub(crate) fn record_lifecycle_memberships_retired(&self, count: usize) {
         self.selection.record_lifecycle_memberships_retired(count);
     }
-
-    #[cfg(test)]
-    pub(super) fn membership_counts(&self) -> (usize, usize, usize) {
-        self.members.membership_counts()
-    }
-
-    #[cfg(test)]
-    pub(super) fn membership_roots_shared_with(&self, other: &Self) -> bool {
-        self.members.roots_shared_with(&other.members)
-    }
-
-    #[cfg(test)]
-    pub(super) fn membership_work(&self) -> (usize, usize, usize) {
-        let report = self.selection.cost_report();
-        (
-            report.membership_key_probes(),
-            report.membership_copied_avl_nodes(),
-            report.membership_traversed_entries(),
-        )
-    }
-
-    #[cfg(test)]
-    pub(super) fn retained_entry_for_test(
-        &self,
-        context: &crate::runtime::appearance::UiAppearanceAttemptContext,
-    ) -> Option<&UiMountedAppearanceStateEntry> {
-        let key = appearance_state_membership::state_key(context);
-        self.members.retained_entry(&key)
-    }
-
-    #[cfg(test)]
-    pub(super) fn retain_projection_for_test(
-        &mut self,
-        context: &crate::runtime::appearance::UiAppearanceAttemptContext,
-        projection: crate::runtime::appearance::UiAppearanceProjection,
-    ) {
-        let key = appearance_state_membership::state_key(context);
-        let (result, work) = self.members.insert_retained(UiMountedAppearanceStateEntry {
-            key,
-            context: context.clone(),
-            projection,
-            sidecar: Default::default(),
-        });
-        self.selection.record_membership_work(work);
-        result.expect("test retention uses one exact mounted identity");
-    }
-
-    #[cfg(test)]
-    pub(super) fn replace_sidecar_for_test(
-        &mut self,
-        context: &crate::runtime::appearance::UiAppearanceAttemptContext,
-        sidecar: super::super::appearance::UiMountedAppearanceSidecar,
-    ) {
-        let key = appearance_state_membership::state_key(context);
-        let entry = self
-            .members
-            .retained_entry(&key)
-            .expect("test state entry should exist before sidecar replacement");
-        let mut replacement = entry.clone();
-        replacement.sidecar = sidecar;
-        let (result, work) = self.members.insert_retained(replacement);
-        self.selection.record_membership_work(work);
-        result.expect("test sidecar replacement uses one exact mounted identity");
-    }
 }
 
 #[path = "appearance_state_lowering.rs"]
 mod lowering;
+
+#[path = "appearance_state_reconstruction.rs"]
+mod reconstruction;
+
+#[path = "appearance_state_input_refresh.rs"]
+mod input_refresh;
+
+#[path = "appearance_state_overlay.rs"]
+mod overlay;
+pub(super) use overlay::portal_instances;
 
 pub(super) fn state_key(
     context: &crate::runtime::appearance::UiAppearanceAttemptContext,
@@ -284,3 +358,7 @@ mod tests;
 #[cfg(test)]
 #[path = "appearance_state_reconstruction_tests.rs"]
 mod reconstruction_tests;
+
+#[cfg(test)]
+#[path = "appearance_state_test_support.rs"]
+mod test_support;

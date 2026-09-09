@@ -18,7 +18,9 @@ use super::{
 };
 
 mod inspection;
+mod presented_hits;
 mod visual_lease;
+pub(crate) use presented_hits::UiPresentedPointLookupDenial;
 
 pub(crate) struct UiMountedFrameRetentionCoordinator {
     authority: Rc<RefCell<UiMountedFrameRetentionAuthority>>,

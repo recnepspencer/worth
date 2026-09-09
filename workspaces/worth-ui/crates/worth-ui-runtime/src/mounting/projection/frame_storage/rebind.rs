@@ -11,7 +11,11 @@ impl UiMountedProjectionFrame {
             crate::mounting::UiSurfaceBindingIdentityView,
         )],
     ) -> Result<(), UiMountedProjectionDenial> {
-        self.mechanics.rebind(replacements)
+        self.rebind_semantic_surfaces(replacements)?;
+        self.hit_index_work
+            .merge(self.mechanics.rebind(replacements)?);
+        self.reconstruct_presented_hits()?;
+        Ok(())
     }
 
     pub(crate) fn rebound(
@@ -24,21 +28,40 @@ impl UiMountedProjectionFrame {
     ) -> Result<Self, UiMountedProjectionDenial> {
         let mut rebound = self.clone();
         rebound.frame = successor;
+        rebound.rebind_semantic_surfaces(replacements)?;
+        rebound.hit_index_work = rebound.mechanics.rebind(replacements)?;
+        rebound.reconstruct_presented_hits()?;
+        Ok(rebound)
+    }
+
+    fn rebind_semantic_surfaces(
+        &mut self,
+        replacements: &[(
+            UiSurfaceBindingGeneration,
+            crate::mounting::UiSurfaceBindingIdentityView,
+        )],
+    ) -> Result<(), UiMountedProjectionDenial> {
         for (affected, replacement) in replacements {
-            let mut surface = rebound
+            let replacement_binding = replacement.binding_generation();
+            let mut surface = self
                 .semantic
                 .surfaces
                 .get(affected)
                 .copied()
+                .or_else(|| self.semantic.surfaces.get(&replacement_binding).copied())
                 .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
             if surface.surface != replacement.semantic_surface_identity() {
                 return Err(UiMountedProjectionDenial::MissingSurfaceBinding);
             }
-            rebound.semantic.surfaces.remove(affected);
-            surface.binding = replacement.binding_generation();
-            rebound.semantic.surfaces.insert(surface.binding, surface);
+            if surface.binding != replacement_binding {
+                surface.binding = replacement_binding;
+                self.semantic.replace_surface(surface);
+            }
+            self.semantic.rebind_surface_allocations(
+                replacement.semantic_surface_identity(),
+                replacement_binding,
+            );
         }
-        rebound.mechanics.rebind(replacements)?;
-        Ok(rebound)
+        Ok(())
     }
 }

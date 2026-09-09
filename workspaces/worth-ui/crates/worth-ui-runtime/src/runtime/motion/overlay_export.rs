@@ -4,6 +4,10 @@
 )]
 
 use crate::runtime::motion::{UiCommittedMotionTrack, UiMotionTargetIdentity};
+pub(crate) type UiMotionOverlayRows = crate::runtime::persistent_index::UiPersistentOrdMap<
+    UiMotionTargetIdentity,
+    UiMotionOverlayOwnerRow,
+>;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiMotionOverlayOwnerRow {
@@ -12,6 +16,13 @@ pub(crate) struct UiMotionOverlayOwnerRow {
 }
 
 impl UiMotionOverlayOwnerRow {
+    pub(super) fn from_request(request: super::UiMotionTransitionRequest) -> Self {
+        Self {
+            target: request.successor().target(),
+            revision: request.successor().owner_revision(),
+        }
+    }
+
     pub(crate) const fn target(self) -> UiMotionTargetIdentity {
         self.target
     }
@@ -28,6 +39,15 @@ pub(crate) struct UiMotionOverlayOwnerExport {
 }
 
 impl UiMotionOverlayOwnerExport {
+    pub(crate) fn from_rows(
+        owner_revision: u64,
+        rows: impl IntoIterator<Item = UiMotionOverlayOwnerRow>,
+    ) -> Self {
+        Self {
+            owner_revision,
+            rows: rows.into_iter().collect::<Vec<_>>().into_boxed_slice(),
+        }
+    }
     pub(crate) const fn owner_revision(&self) -> u64 {
         self.owner_revision
     }
@@ -38,6 +58,36 @@ impl UiMotionOverlayOwnerExport {
 }
 
 impl super::UiMotionRuntimeState {
+    pub(crate) fn overlay_rows_for_surface(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> UiMotionOverlayRows {
+        self.overlay_rows.get(&surface).cloned().unwrap_or_default()
+    }
+
+    pub(super) fn refresh_overlay_row(
+        &mut self,
+        request: super::UiMotionTransitionRequest,
+        kind: super::UiMotionProducedFactKind,
+    ) {
+        let target = request.successor().target();
+        let surface = target.semantic_surface();
+        if matches!(kind, super::UiMotionProducedFactKind::Terminal(_)) {
+            if let Some(rows) = self.overlay_rows.get_mut(&surface) {
+                rows.remove(&target);
+                if rows.is_empty() {
+                    self.overlay_rows.remove(&surface);
+                }
+            }
+        } else {
+            let rows = self.overlay_rows.entry(surface).or_default();
+            let row = UiMotionOverlayOwnerRow::from_request(request);
+            if rows.get(&target) != Some(&row) {
+                rows.insert(target, row);
+            }
+        }
+    }
+
     /// Publish only the committed Motion target facts needed by Gate 1. The
     /// overlay adapter remains the sole owner of overlay snapshot sealing.
     pub(crate) fn overlay_owner_export(&self) -> UiMotionOverlayOwnerExport {

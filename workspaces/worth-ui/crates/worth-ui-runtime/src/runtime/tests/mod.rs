@@ -120,6 +120,8 @@ mod lane_meaning_parity_test_support;
 mod lifecycle_path_parity;
 #[path = "execution/measurement_boundary_tests.rs"]
 mod measurement_boundary_tests;
+#[path = "planning/mosaic_layout_contract_tests.rs"]
+mod mosaic_layout_contract_tests;
 #[path = "source_ingress/multi_removal_activation_tests.rs"]
 mod multi_removal_activation_tests;
 #[path = "source_ingress/native_pointer_observation_test_support.rs"]

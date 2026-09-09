@@ -269,6 +269,7 @@ pub(in crate::host_platform) fn execute_frame(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
     tick: u64,
 ) -> worth_ui_host_contract::UiHostPresentationCostReport {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let outcome = match session.execute_mounted_frame(
         UiMountedFrameRequest::all_bound_surfaces(),
         UiPresentationDeadline::at_tick(tick),

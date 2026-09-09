@@ -212,23 +212,6 @@ impl UiMountedFramePublicationReceipt {
             })
     }
 
-    pub(crate) fn semantic_surface_for_presentation(
-        &self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Option<worth_ui_host_contract::UiSemanticSurfaceIdentity> {
-        (presentation.frame() == self.frame()).then_some(())?;
-        self.inner
-            .surfaces
-            .borrow()
-            .iter()
-            .find(|surface| {
-                surface.host_surface() == presentation.host_surface()
-                    && surface.binding() == presentation.binding()
-                    && surface.epoch() == presentation.epoch()
-            })
-            .map(super::UiMountedSurfacePresentationReceipt::semantic_surface)
-    }
-
     pub(crate) fn with_surface_presentations(
         &self,
         consume: impl FnOnce(&[super::UiMountedSurfacePresentationReceipt]),

@@ -77,8 +77,16 @@ pub fn certify_portal_sample_replay(
             production_cost: Default::default(),
         })
         .map_err(|_| UiNativePortalSampleReplayCertificationDenial::InvalidSample)?;
-    let (replay, _) = retained
+    let basis = UiNativeRasterBasis::new(physical_extent, scale_factor);
+    let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    retained
+        .initialize_physical_coverage(basis, &atlas)
+        .map_err(|_| UiNativePortalSampleReplayCertificationDenial::InvalidReplay)?;
+    let (mut replay, mut undo) = retained
         .stage_sample(&sample)
+        .map_err(|_| UiNativePortalSampleReplayCertificationDenial::InvalidReplay)?;
+    retained
+        .refresh_physical_sample(&sample, &mut undo, basis, &mut replay)
         .map_err(|_| UiNativePortalSampleReplayCertificationDenial::InvalidReplay)?;
     let normalized_damage = replay
         .regions
@@ -86,11 +94,11 @@ pub fn certify_portal_sample_replay(
         .map(|region| region.damage.bounds())
         .collect::<Vec<_>>()
         .into_boxed_slice();
-    let basis = UiNativeRasterBasis::new(physical_extent, scale_factor);
-    let plan = super::sample::build_plan(
+    let plan = super::retained_raster::build_plan(
         basis,
         &retained,
         replay,
+        0,
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
     )
     .map_err(|_| UiNativePortalSampleReplayCertificationDenial::InvalidReplay)?;

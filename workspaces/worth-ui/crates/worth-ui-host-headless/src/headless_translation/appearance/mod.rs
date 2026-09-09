@@ -63,6 +63,11 @@ pub(crate) fn translate(
         || !mechanics_match
         || !changes_match
         || transcript.damage() != source.damage()
+        || !transcript
+            .text_damage_requirements()
+            .iter()
+            .copied()
+            .eq(source.text_damage_requirements())
         || transcript.posture() != source.posture()
         || transcript.predecessor() != source.predecessor()
         || transcript.predecessor_manifest() != source.predecessor_manifest()

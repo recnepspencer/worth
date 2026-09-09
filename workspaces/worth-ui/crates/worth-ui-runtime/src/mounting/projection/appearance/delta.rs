@@ -4,7 +4,6 @@ use worth_ui_host_contract::{
 
 use super::damage::damage_for_change;
 use super::fact::UiMountedAppearanceFacts;
-use super::mechanic_equivalence::same_physical_output;
 use super::UiMountedAppearanceLoweringDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -106,8 +105,6 @@ fn same_overlay_structure(
     successor: &worth_ui_host_contract::UiMountedOverlayOrderMechanic,
 ) -> bool {
     predecessor.semantic_surface() == successor.semantic_surface()
-        && predecessor.portal_revision() == successor.portal_revision()
-        && predecessor.backdrop_revision() == successor.backdrop_revision()
         && predecessor.bottom_to_top() == successor.bottom_to_top()
 }
 
@@ -155,17 +152,13 @@ pub(super) fn mechanic_changes(
                 None => Some(UiMountedAppearanceMechanicChange::Remove(
                     record.identity().clone(),
                 )),
-                Some(successor_record)
-                    if !same_physical_output(successor_record.mechanic(), record.mechanic()) =>
-                {
-                    Some(
-                        UiMountedAppearanceMechanicChange::replacement(
-                            record.identity().clone(),
-                            successor_record.mechanic().clone(),
-                        )
-                        .expect("same record identity produces a replacement"),
+                Some(successor_record) if !successor_record.same_physical_output(record) => Some(
+                    UiMountedAppearanceMechanicChange::replacement(
+                        record.identity().clone(),
+                        successor_record.mechanic().clone(),
                     )
-                }
+                    .expect("same record identity produces a replacement"),
+                ),
                 Some(_) => None,
             }
         })

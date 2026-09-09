@@ -160,6 +160,7 @@ pub(crate) fn prepare_theme_generation_rebinding<'binding>(
     host_profile: &worth_ui_host_contract::UiHostAppearanceProfileContract,
     predecessor: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     successor: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    required_roles: &[worth_ui_dsl::UiAppearanceRoleIdentity],
     bindings: impl IntoIterator<Item = &'binding UiActiveThemeBinding>,
 ) -> Result<UiPreparedThemeGenerationRebinding, UiThemeCapabilityReceiptDenial> {
     let mut replacements = Vec::new();
@@ -173,12 +174,6 @@ pub(crate) fn prepare_theme_generation_rebinding<'binding>(
         if binding.binding_generation() == u64::MAX {
             return Err(UiThemeCapabilityReceiptDenial::BindingGenerationExhausted);
         }
-        let required_roles = binding
-            .capability()
-            .required_roles()
-            .iter()
-            .map(|role| role.identity().clone())
-            .collect::<Vec<_>>();
         let admission = UiThemeCapabilityAdmission::from_frozen_capabilities(
             themes,
             binding.capability().definition(),
@@ -186,9 +181,6 @@ pub(crate) fn prepare_theme_generation_rebinding<'binding>(
             host_profile,
         )?;
         let prepared = admission.prepare(required_roles.iter().cloned(), successor.clone())?;
-        if prepared.required_roles.as_ref() != binding.capability().required_roles() {
-            return Err(UiThemeCapabilityReceiptDenial::RequiredRoleRevisionMismatch);
-        }
         replacements.push(UiPreparedThemeBindingReplacement {
             surface: binding.surface(),
             predecessor_generation: binding.binding_generation(),

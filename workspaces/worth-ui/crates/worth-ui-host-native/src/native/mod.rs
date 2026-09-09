@@ -48,7 +48,8 @@ pub use event_loop::{
     UiNativeEventLoopClientCleanup, UiNativeEventLoopClientClose, UiNativeEventLoopClientFailure,
     UiNativeEventLoopDirective, UiNativeEventLoopRunDenial, UiNativeEventLoopRunReport,
     UiNativeEventLoopShutdownOverlapObservation, UiNativeEventLoopStopReport,
-    UiNativeEventLoopThreadPosture, UiNativeInputReachability, UiNativeObservationReadinessGrant,
+    UiNativeEventLoopThreadPosture, UiNativeInputReachability, UiNativeObservationClock,
+    UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
     UiNativePhysicalPresentationCorrelation, UiNativePhysicalProgressClass,
     UiNativePhysicalProgressGrant, UiNativeReadinessGrant, UiNativeReducedMotionPosture,
     WorthUiNativeEventLoop,
@@ -104,16 +105,17 @@ pub use physical_work_signal::{
     UiNativePhysicalSignalTransitionObservation, UiNativePhysicalSignalWorkClass,
 };
 pub(crate) use platform::UiNativePointerInputPort;
-#[cfg(feature = "certification-support")]
+#[cfg(all(test, feature = "certification-support"))]
 pub(crate) use presentation::appearance::STAGED_APPEARANCE_MECHANICS;
 #[cfg(test)]
 pub(crate) use presentation::GPU_WAIT_DEADLINE;
 #[cfg(feature = "certification-support")]
 pub use presentation::{
-    certify_portal_sample_replay, classify_presentation_fault,
+    certify_mounted_surface_sample, certify_portal_sample_replay, classify_presentation_fault,
     UiNativePortalSampleReplayCertification, UiNativePortalSampleReplayCertificationDenial,
     UiNativePresentationFault, UiNativePresentationFaultDisposition,
-    UiNativePresentationRecoveryClass,
+    UiNativePresentationRecoveryClass, UiNativeSurfaceSampleCertification,
+    UiNativeSurfaceSampleCertificationDenial,
 };
 pub(crate) use presentation::{
     UiNativeOwnedPresentationSurface, UiNativePendingPresentation, UiNativeRetainedDrawList,
@@ -132,3 +134,10 @@ pub use readiness_certification::{
 };
 pub use text_atlas::UiNativeTextAtlasPlanObservation;
 pub use text_atlas::UiNativeTextPinObservation;
+
+#[cfg(feature = "certification-support")]
+pub use mechanics_adapter::text_atlas::{
+    UiNativeTextForegroundAtlasModel, UiNativeTextForegroundCoverageCertification,
+    UiNativeTextForegroundFinalizationDenial, UiNativeTextForegroundJoinCost,
+    UiNativeTextReplayOperation, UiNativeTextRetentionCertificationDenial,
+};

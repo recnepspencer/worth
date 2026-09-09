@@ -77,6 +77,7 @@ impl WorthUiActiveApplicationSession {
                 transition,
                 presentation,
                 self.active_generation_identity(),
+                None,
                 self.motion
                     .as_mut()
                     .expect("nested Portal certification retains Motion installation"),
@@ -118,8 +119,10 @@ impl WorthUiActiveApplicationSession {
             Ok(proposal) => proposal,
             Err(denial) => panic!("nested Portal proposal binding was denied: {denial:?}"),
         };
-        let outcome = self.present_prepared_mounted_frame_internal(
+        let outcome = self.present_prepared_portal_frame_internal(
             frame,
+            &proposal,
+            false,
             worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
             now_tick,
         );

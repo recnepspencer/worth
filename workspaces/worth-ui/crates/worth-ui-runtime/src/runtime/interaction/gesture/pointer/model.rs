@@ -77,7 +77,7 @@ pub(super) struct UiActivePointerGesture {
     pub(super) press_time_basis: UiHostObservationTimeBasis,
     pub(super) target: UiPresentedInteractionTarget,
     pub(super) position: worth_ui_host_contract::UiHostSurfacePosition,
-    pub(super) inside: bool,
+    pub(super) appearance: super::appearance::UiActivePressedAppearance,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -126,10 +126,10 @@ impl UiPressedAppearanceOwnerSnapshot {
             .iter()
             .map(|(pointer, active)| UiPressedAppearancePosture {
                 pointer: *pointer,
-                presentation: active.target.presentation(),
+                presentation: active.appearance.presentation(),
                 target: active.target.mounted_instance(),
-                node_receipt: active.target.node_receipt(),
-                class: if active.inside {
+                node_receipt: active.appearance.node_receipt(),
+                class: if active.appearance.inside() {
                     UiPressedAppearanceClass::ArmedInside
                 } else {
                     UiPressedAppearanceClass::CapturedOutside
@@ -158,6 +158,15 @@ impl UiPressedAppearanceOwnerSnapshot {
     reason = "Gate 0 freezes read-only pressed-axis products before Gate 1 adapters"
 )]
 impl UiPressedAppearancePosture {
+    pub(crate) fn appearance_dependency_eq(self, other: Self) -> bool {
+        self.pointer == other.pointer
+            && self.presentation.host_surface() == other.presentation.host_surface()
+            && self.presentation.binding() == other.presentation.binding()
+            && self.target == other.target
+            && self.class == other.class
+            && self.press_sequence == other.press_sequence
+    }
+
     pub(crate) const fn pointer(self) -> UiHostPointerIdentity {
         self.pointer
     }

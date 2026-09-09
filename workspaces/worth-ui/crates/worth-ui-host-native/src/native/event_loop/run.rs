@@ -32,9 +32,13 @@ impl WorthUiNativeEventLoop {
             application_readiness_ports,
             loop_resources,
         } = preflight;
+        let physical_clock = super::physical_clock::UiNativePhysicalEventClock::new();
         if client
-            .install_application_readiness(application_readiness_ports.into_vec())
+            .install_observation_clock(physical_clock.observation_clock())
             .is_err()
+            || client
+                .install_application_readiness(application_readiness_ports.into_vec())
+                .is_err()
         {
             let mut expected = vec![
                 readiness_owner,
@@ -69,7 +73,8 @@ impl WorthUiNativeEventLoop {
             thread_observation: None,
             loop_resources,
             port_crossings: 0,
-            physical_clock: super::physical_clock::UiNativePhysicalEventClock::new(),
+            physical_clock,
+            observation_wait: Default::default(),
             pointer_input: None,
             pending_input_reachability: Default::default(),
             thread_posture: self.thread_posture,

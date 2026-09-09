@@ -10,10 +10,10 @@ use super::mounted_application_lifecycle::known_empty_surface_world::{
     first_node, mounted_application_with_host, profile,
 };
 
-// Revision 4 retains predecessor protocol state plus the Phase 3 receipt, order,
-// damage, and structural-sharing indexes. This local ceiling complements the
-// retained-scale slope proofs; it is not itself an O(k) claim.
-const MAX_CHANGED_PUBLIC_ALLOCATIONS: u64 = 144;
+// The changed path retains predecessor protocol state plus receipt, order,
+// damage, and Gate 4 appearance-membership indexes. This local ceiling
+// complements the retained-scale slope proofs; it is not itself an O(k) claim.
+const MAX_CHANGED_PUBLIC_ALLOCATIONS: u64 = 192;
 const MAX_CHANGED_PUBLIC_BYTES: u64 = 64 * 1_024;
 
 #[test]
@@ -160,6 +160,7 @@ fn public_unchanged_is_allocation_free_and_one_instance_change_is_bounded() {
     session
         .mount_instance(node, surface)
         .expect("one-instance mounted delta is admitted");
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let mut changed = None;
     let changed_allocations = allocation_counter::measure(|| {
         changed = Some(
@@ -218,6 +219,7 @@ fn mount_one(
     session
         .mount_instance(node, surface)
         .expect("one graph node mounts");
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     surface
 }
 

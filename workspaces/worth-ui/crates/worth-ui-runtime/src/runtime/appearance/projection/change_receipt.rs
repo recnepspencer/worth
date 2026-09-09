@@ -152,6 +152,22 @@ impl UiAppearanceChangeReceipt {
             })
     }
 
+    /// A current retained semantic projection was lowered against new mounted
+    /// text facts; no owner-state or theme resolution was performed.
+    pub(crate) fn from_retained_paint_mount(
+        mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
+    ) -> Self {
+        Self {
+            input_evidence_changed: false,
+            semantic_projection_changed: false,
+            resolved_aspect_value_changed: false,
+            mounted_mechanical_output_changed: mounted_mechanical_output_changed(mounting),
+            equal_output_suppressed: false,
+            denied_before_effects: false,
+            mounting_result_available: true,
+        }
+    }
+
     pub(crate) const fn input_evidence_changed(self) -> bool {
         self.input_evidence_changed
     }

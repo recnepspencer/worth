@@ -97,6 +97,9 @@ impl WorthUiActiveApplicationSession {
         let interaction = self
             .interaction
             .cancel_binding(binding, UiInteractionLifecycleStopReason::SurfaceRebound);
+        if let Some(snapshot) = self.pointer_affordance_snapshot.as_mut() {
+            snapshot.invalidate_surface(semantic_surface);
+        }
         self.clear_displaced_input_recipient(previous_input);
         self.intent_confirmation.cancel_binding(
             binding,

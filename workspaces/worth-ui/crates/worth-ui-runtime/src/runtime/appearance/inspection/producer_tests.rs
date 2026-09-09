@@ -154,8 +154,10 @@ fn explanation(
         Box::<[UiAppearanceAxisClass]>::from([]),
         UiAppearanceInspectionDecisionCell::new(1, Box::<[UiAppearanceAxisClass]>::from([])),
         UiAppearanceInspectionSourceSpan::Unavailable,
-        "surface.background",
-        "surface.background",
+        worth_ui_inspection::UiAppearanceInspectionValueSource::ThemeSlot {
+            selected: "surface.background".into(),
+            terminal: "surface.background".into(),
+        },
         support,
         UiAppearanceInspectionValue::Resolved(UiThemeValue::Color(UiThemeColor::from_channels([
             1, 2, 3, 255,

@@ -28,6 +28,7 @@ pub use presentation::{
     UiHostSurfacePresentationDenial, UiHostSurfacePresentationOutcome, UiMountedCompletedEffects,
     UiMountedEffectFamily, UiMountedFrameConsumptionInput, UiMountedFrameConsumptionView,
     UiMountedSurfacePresentationCompletion, UiMountedSurfacePresentationSupersession,
+    UiMountedTextDemandValidationCost, UiMountedTextDemandValidationDenial,
     UiMountedTextRasterCallback, UiMountedTextRasterWork, UiPresentationDeadline,
 };
 pub use presentation_cost::{

@@ -23,7 +23,7 @@ pub(crate) fn adapt(
             UiAppearanceStateAxis::Selection,
         ))?;
     let owner = selector.owner();
-    if owner.semantic_surface() != basis.surface() || owner.graph_node() != basis.graph_node() {
+    if owner.semantic_surface() != basis.surface() {
         return Err(UiAppearanceStateAdapterDenial::ForeignSource(
             UiAppearanceStateAxis::Selection,
         ));

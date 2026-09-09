@@ -14,6 +14,13 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
+        prepare_overlays: impl FnOnce(
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+            &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        ) -> Result<
+            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
+            (),
+        >,
     ) -> Result<UiMountedPublicationTransition, crate::mounting::UiMountedIdentityDenial> {
         let capability_report = host.capability_report().clone();
         let frame = self.identity.prepare_current_reconciliation_frame(
@@ -29,6 +36,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             appearance_inspection,
             deadline,
             now,
+            prepare_overlays,
         ))
     }
 
@@ -42,6 +50,13 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
+        prepare_overlays: impl FnOnce(
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+            &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        ) -> Result<
+            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
+            (),
+        >,
     ) -> Result<UiMountedPublicationTransition, crate::mounting::UiMountedIdentityDenial> {
         if replacements.is_empty() || self.identity.publication_receipt().is_none() {
             return Err(crate::mounting::UiMountedIdentityDenial::ReconciliationBasisMismatch);
@@ -62,6 +77,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             appearance_inspection,
             deadline,
             now,
+            prepare_overlays,
         ))
     }
 
@@ -76,6 +92,13 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
+        prepare_overlays: impl FnOnce(
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+            &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        ) -> Result<
+            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
+            (),
+        >,
     ) -> UiMountedPublicationTransition {
         let current = self
             .identity
@@ -104,7 +127,26 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
                 );
             }
         };
-        let appearance_batch = admission.lower_appearance();
+        let surfaces = admission
+            .frame()
+            .surfaces()
+            .iter()
+            .map(|surface| surface.requirement().semantic_surface())
+            .collect::<Vec<_>>();
+        let appearance_batch = match prepare_overlays(admission.attempt(), &surfaces) {
+            Ok(overlays) => admission
+                .lower_appearance_with_overlays(capability_report.appearance_profile(), &overlays),
+            Err(()) => admission.deny_appearance_output(),
+        };
+        if !admission.appearance_output_available() {
+            let frame = admission.frame().canonical_core().frame();
+            let rejection = admission.reject_appearance_output();
+            return UiMountedPublicationTransition::with_observation_and_appearance(
+                UiMountedFrameOutcome::AdmissionDenied(rejection),
+                super::UiMountedHostObservationTransition::NeverPresented(frame),
+                appearance_batch,
+            );
+        }
         let reservation =
             UiMountedFrameReconciliationCandidate::reserve(&admission, &current, replacements);
         let attempt = admission.attempt();
@@ -140,6 +182,11 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
                 let replacements = reservation.replacements().to_vec();
                 match reservation.commit_presented(presented, &mut self.identity) {
                     crate::mounting::UiMountedFramePublicationCommit::Current(receipt) => {
+                        self.rebind_motion_sampling_after_publication(&receipt);
+                        self.retention.refresh_presented_hit_motion(
+                            &self.motion_sampling,
+                            &self.motion_sampling.retained_targets(),
+                        );
                         self.presentation
                             .commit_current_frame_reconciliation(&replacements);
                         UiMountedPublicationTransition::new(UiMountedFrameOutcome::Reconciled(

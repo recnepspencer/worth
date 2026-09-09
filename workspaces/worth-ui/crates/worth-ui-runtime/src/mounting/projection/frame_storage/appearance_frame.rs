@@ -1,39 +1,116 @@
 use super::{appearance_state, UiMountedProjectionFrame, UiMountedProjectionFrameOwner};
 
 impl UiMountedProjectionFrame {
+    pub(crate) fn portal_has_appearance_attachment(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Result<bool, super::super::UiMountedProjectionDenial> {
+        let node = self
+            .semantic
+            .node(instance)
+            .ok_or(super::super::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch)?;
+        if node.receipt().semantic_surface() != surface {
+            return Err(super::super::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch);
+        }
+        Ok(node.has_appearance_attachment)
+    }
+
     pub(crate) fn appearance_node_inputs_for_reconstruction(
         &self,
-    ) -> Vec<super::UiMountedAppearanceNodeInputContext> {
+    ) -> Result<
+        Vec<super::UiMountedAppearanceNodeInputContext>,
+        super::super::UiMountedProjectionDenial,
+    > {
         self.semantic
             .nodes_in_mounted_order()
-            .map(|node| {
-                let receipt = node.receipt();
-                let node_receipt = self
-                    .receipt_basis
-                    .receipt_for(receipt.mounted_instance())
-                    .expect("mounted projection node belongs to its receipt basis");
-                super::UiMountedAppearanceNodeInputContext {
-                    frame: self.frame,
-                    semantic_surface: receipt.semantic_surface(),
-                    mounted_instance: receipt.mounted_instance(),
-                    graph_node: receipt.graph_node(),
-                    incarnation: receipt.incarnation(),
-                    node_receipt,
-                    issuer: self.receipt_basis.issuer(),
-                    plan_digest: receipt.plan_digest(),
-                    allocation: receipt.allocation(),
-                }
-            })
+            .map(|node| self.appearance_node_input(node.receipt().mounted_instance()))
             .collect()
+    }
+
+    pub(super) fn appearance_node_input(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Result<super::UiMountedAppearanceNodeInputContext, super::super::UiMountedProjectionDenial>
+    {
+        let node = self
+            .semantic
+            .node(instance)
+            .ok_or(super::super::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch)?;
+        let receipt = node.receipt();
+        let node_receipt = self
+            .receipt_basis
+            .receipt_for(instance)
+            .ok_or(super::super::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch)?;
+        Ok(super::UiMountedAppearanceNodeInputContext {
+            frame: self.frame,
+            semantic_surface: receipt.semantic_surface(),
+            mounted_instance: instance,
+            graph_node: receipt.graph_node(),
+            incarnation: receipt.incarnation(),
+            node_receipt,
+            issuer: self.receipt_basis.issuer(),
+            plan_digest: receipt.plan_digest(),
+            allocation: node.completed_appearance_geometry().allocation,
+            appearance_clip: node.completed_appearance_geometry().clip,
+            surface_paint_order: node.surface_paint_order,
+            geometry_input: self
+                .semantic
+                .surface_for(receipt.semantic_surface())
+                .map(|surface| {
+                    super::super::appearance::UiMountedAppearanceGeometryInput::from_node(
+                        node,
+                        surface.binding,
+                    )
+                }),
+            text_foreground_spans: self.appearance_visible_foreground_spans(instance).map_err(
+                |_| super::super::UiMountedProjectionDenial::AppearanceTextCandidatesUnavailable,
+            )?,
+        })
     }
 }
 
 impl UiMountedProjectionFrameOwner {
+    pub(crate) fn stage_appearance_input_refresh(
+        &mut self,
+        node: &super::UiMountedAppearanceNodeInputContext,
+    ) -> bool {
+        self.appearance.stage_input_refresh(node)
+    }
+
+    pub(crate) fn appearance_order_retained_bytes(&self) -> usize {
+        self.appearance.order_retained_bytes()
+    }
+    #[cfg(test)]
+    pub(crate) fn qualified_outline_fringe_for_test(
+        &self,
+        bindings: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Result<
+        worth_ui_host_contract::UiAppearanceLogicalLength,
+        crate::mounting::UiMountedAppearanceLoweringDenial,
+    > {
+        super::super::appearance::UiMountedAppearanceGeometryScope::new(bindings, profile)
+            .outline_fringe(surface)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn clone_for_appearance_output_test(&self) -> Self {
+        let mut owner = self.clone();
+        owner.appearance.isolate_measurements();
+        owner
+    }
+
     pub(crate) fn set_appearance_invalidation_batch(
         &mut self,
         batch: crate::runtime::appearance::UiAppearanceInvalidationBatch,
     ) {
         self.appearance.set_batch(batch);
+    }
+
+    pub(crate) fn clear_appearance_invalidation_batch(&mut self) {
+        self.appearance.clear_batch();
     }
 
     pub(crate) fn appearance_invalidation_batch(
@@ -46,13 +123,17 @@ impl UiMountedProjectionFrameOwner {
         &mut self,
         session: crate::facade::WorthUiActiveApplicationSessionIdentity,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        graph: crate::graph::UiGraphAuthority<'_>,
     ) {
+        let detached = self
+            .appearance
+            .retire_detached_on_epoch_change(session, generation, graph);
         let retired_instances = self.appearance.retired_instances().to_vec();
         let retired_memberships =
             self.appearance
                 .begin_epoch(session, generation, &retired_instances);
         self.appearance
-            .record_lifecycle_memberships_retired(retired_memberships);
+            .record_lifecycle_memberships_retired(retired_memberships.saturating_add(detached));
     }
 
     pub(crate) fn validate_appearance_selection(
@@ -75,26 +156,7 @@ impl UiMountedProjectionFrameOwner {
             .selected_instances()
             .iter()
             .copied()
-            .map(|instance| {
-                let node = self.projection.semantic_projection().node(instance).ok_or(
-                    super::super::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch,
-                )?;
-                let receipt = node.receipt();
-                let node_receipt = self.projection.receipt_basis.receipt_for(instance).ok_or(
-                    super::super::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch,
-                )?;
-                Ok(super::UiMountedAppearanceNodeInputContext {
-                    frame: self.projection.frame_identity(),
-                    semantic_surface: receipt.semantic_surface(),
-                    mounted_instance: instance,
-                    graph_node: receipt.graph_node(),
-                    incarnation: receipt.incarnation(),
-                    node_receipt,
-                    issuer: self.projection.receipt_basis.issuer(),
-                    plan_digest: receipt.plan_digest(),
-                    allocation: receipt.allocation(),
-                })
-            })
+            .map(|instance| self.projection.appearance_node_input(instance))
             .collect::<Result<Vec<_>, super::super::UiMountedProjectionDenial>>()?;
         self.appearance.record_materialized_contexts(contexts.len());
         Ok(contexts)
@@ -106,9 +168,53 @@ impl UiMountedProjectionFrameOwner {
         self.appearance.selection_cost_report()
     }
 
-    pub(crate) fn prepare_appearance_reconstruction(&mut self) {
-        let nodes = self.projection.appearance_node_inputs_for_reconstruction();
+    pub(crate) fn appearance_motion_targets(
+        &self,
+        bindings: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
+        overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
+    ) -> Result<
+        Vec<(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+        )>,
+        super::UiMountedAppearanceOutputDenial,
+    > {
+        let mut appearance = self.appearance.clone();
+        appearance.stage_portal_ownership_changes(&self.projection, bindings, overlays)?;
+        let mut targets = appearance
+            .selected_instances()
+            .iter()
+            .copied()
+            .map(|instance| {
+                self.projection
+                    .appearance_node_input(instance)
+                    .map(|context| (context.semantic_surface, instance))
+                    .map_err(|_| {
+                        super::UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        targets.extend(overlays.iter().flat_map(|overlay| {
+            overlay
+                .backdrops
+                .iter()
+                .filter_map(|backdrop| backdrop.motion_target)
+                .map(|instance| (overlay.semantic_surface, instance))
+        }));
+        targets.sort_unstable();
+        targets.dedup();
+        Ok(targets)
+    }
+
+    pub(crate) fn prepare_appearance_reconstruction(
+        &mut self,
+    ) -> Result<(), super::super::UiMountedProjectionDenial> {
+        let nodes = self
+            .projection
+            .appearance_node_inputs_for_reconstruction()?;
+        self.pointer.require_reconstruction();
         self.appearance.prepare_reconstruction(nodes);
+        Ok(())
     }
 
     pub(crate) fn reserve_appearance_state(
@@ -134,7 +240,111 @@ impl UiMountedProjectionFrameOwner {
     pub(crate) fn lower_appearance(
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        bindings: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
     ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
-        self.appearance.lower(presentation)
+        self.lower_appearance_with_motion(
+            presentation,
+            bindings,
+            profile,
+            crate::mounting::presentation::UiAcceptedAppearanceMotion::default(),
+        )
+    }
+
+    pub(crate) fn lower_appearance_with_motion(
+        &mut self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        bindings: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
+        motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
+    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
+        self.lower_appearance_with_motion_and_overlays(presentation, bindings, profile, motion, &[])
+    }
+
+    pub(crate) fn lower_appearance_with_motion_and_overlays(
+        &mut self,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        bindings: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
+        motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
+        overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
+    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
+        let mut candidate = self.appearance.clone();
+        let portal_instances = super::appearance_state::portal_instances(overlays);
+        if candidate
+            .stage_portal_ownership_changes(&self.projection, bindings, overlays)
+            .is_err()
+        {
+            self.unpublished_appearance =
+                Err(super::UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable);
+            return self.appearance.reject_unpublished_output(Vec::new());
+        }
+        let geometry =
+            crate::mounting::projection::appearance::UiMountedAppearanceGeometryScope::with_motion(
+                bindings, profile, motion,
+            );
+        let records = match candidate.lower_with_portals(presentation, &geometry, &portal_instances)
+        {
+            Ok(records) => records,
+            Err(denial) => {
+                self.unpublished_appearance = Err(denial);
+                return self.appearance.reject_unpublished_output(Vec::new());
+            }
+        };
+        if records.iter().any(|record| {
+            matches!(
+                record,
+                crate::runtime::appearance::UiAppearanceInspectionRecord::Denial { denial, .. }
+                    if denial.blocks_mounted_output()
+            )
+        }) {
+            self.unpublished_appearance = Err(super::UiMountedAppearanceOutputDenial::NodeLowering);
+            return self.appearance.reject_unpublished_output(records);
+        }
+        if candidate
+            .lower_retirements(self.projection.frame_identity(), presentation)
+            .is_err()
+        {
+            self.unpublished_appearance = Err(super::UiMountedAppearanceOutputDenial::NodeLowering);
+            return self.appearance.reject_unpublished_output(records);
+        }
+        if let Err(denial) = candidate.admit_order(&self.projection) {
+            self.unpublished_appearance =
+                Err(super::UiMountedAppearanceOutputDenial::Order(denial));
+            return self.appearance.reject_unpublished_output(records);
+        }
+        if candidate
+            .lower_overlays(&self.projection, presentation, &geometry, overlays)
+            .is_err()
+        {
+            self.unpublished_appearance = Err(super::UiMountedAppearanceOutputDenial::NodeLowering);
+            return self.appearance.reject_unpublished_output(records);
+        }
+        match super::appearance_output::assemble(
+            &self.projection,
+            presentation,
+            bindings,
+            candidate.take_node_work(),
+            candidate.take_overlay_work(),
+            &self.pointer,
+        ) {
+            Ok((projection, pointers)) => {
+                self.appearance = candidate;
+                self.pointer = pointers;
+                self.unpublished_appearance = Ok(projection.map(std::rc::Rc::new));
+                records
+            }
+            Err(denial) => {
+                self.unpublished_appearance = Err(denial);
+                self.appearance.reject_unpublished_output(records)
+            }
+        }
+    }
+
+    pub(crate) fn deny_appearance_output(
+        &mut self,
+    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
+        self.unpublished_appearance = Err(super::UiMountedAppearanceOutputDenial::NodeLowering);
+        self.appearance.reject_unpublished_output(Vec::new())
     }
 }

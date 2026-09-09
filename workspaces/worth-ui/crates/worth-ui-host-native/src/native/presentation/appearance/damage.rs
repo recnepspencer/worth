@@ -51,16 +51,23 @@ impl UiNativeAppearanceDamageRect {
     }
 
     fn coalesces(self, other: Self) -> bool {
-        if self.intersects(other) {
-            return true;
-        }
-        let vertical_overlap = self.top < other.bottom && other.top < self.bottom;
-        let horizontal_edge =
-            (self.right == other.left || other.right == self.left) && vertical_overlap;
-        let horizontal_overlap = self.left < other.right && other.left < self.right;
-        let vertical_edge =
-            (self.bottom == other.top || other.bottom == self.top) && horizontal_overlap;
-        horizontal_edge || vertical_edge
+        self.contains(other)
+            || other.contains(self)
+            || (self.top == other.top
+                && self.bottom == other.bottom
+                && self.left <= other.right
+                && other.left <= self.right)
+            || (self.left == other.left
+                && self.right == other.right
+                && self.top <= other.bottom
+                && other.top <= self.bottom)
+    }
+
+    fn contains(self, other: Self) -> bool {
+        self.left <= other.left
+            && self.top <= other.top
+            && self.right >= other.right
+            && self.bottom >= other.bottom
     }
 
     fn sort_key(self) -> (i64, i64, i64, i64) {
@@ -140,5 +147,49 @@ mod tests {
         damage.add(region(0, 0, 10, 10)).unwrap();
         damage.add(region(10, 10, 20, 20)).unwrap();
         assert_eq!(damage.regions().len(), 2);
+    }
+
+    #[test]
+    fn offset_images_preserve_their_coverage_instead_of_filling_the_hull() {
+        for images in [
+            [region(0, 0, 3, 2), region(2, 1, 4, 4)],
+            [region(0, 0, 2, 3), region(2, 1, 4, 2)],
+            [region(0, 0, 1, 1), region(3, 3, 4, 4)],
+        ] {
+            for order in [images, [images[1], images[0]]] {
+                let mut damage = UiNativeAppearanceDamage::new(2);
+                for image in order {
+                    damage.add(image).unwrap();
+                }
+                assert_eq!(damage.regions().len(), 2);
+                for y in 0..4 {
+                    for x in 0..4 {
+                        let covers = |rect: &UiNativeAppearanceDamageRect| {
+                            rect.left <= x && x < rect.right && rect.top <= y && y < rect.bottom
+                        };
+                        assert_eq!(
+                            damage.regions().iter().any(covers),
+                            images.iter().any(covers),
+                            "damage changed image coverage at ({x}, {y})"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn containment_coalesces_but_capacity_cannot_widen_coverage() {
+        let outer = region(0, 0, 4, 4);
+        let mut damage = UiNativeAppearanceDamage::new(1);
+        damage.add(region(1, 1, 2, 2)).unwrap();
+        damage.add(outer).unwrap();
+        damage.add(region(2, 2, 3, 3)).unwrap();
+        assert_eq!(damage.regions(), &[outer]);
+        assert_eq!(
+            damage.add(region(3, 3, 5, 5)),
+            Err(UiNativeAppearanceDamageSetDenial::CapacityExceeded)
+        );
+        assert_eq!(damage.regions(), &[outer]);
     }
 }

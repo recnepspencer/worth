@@ -23,18 +23,27 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
     pub(super) host_session_identity: crate::facade::WorthUiHostSessionIdentity,
     pub(super) completion: WorthUiFrameworkTurnCompletion<'session>,
     pub(super) capabilities: &'session crate::capability::CapabilitySnapshot,
+    pub(super) intent_catalog: &'session crate::declaration::UiIntentCatalog,
+    pub(super) consumed_facts: &'session crate::graph::UiGraphConsumedFactIndex,
     pub(super) mounted: &'session mut crate::mounting::WorthUiMountedSessionState,
     pub(super) host_session: &'session crate::facade::WorthUiHostSessionAuthority,
     pub(super) host_exchange: &'session mut crate::host_exchange::WorthUiHostExchangeSessionState,
     pub(super) focus: Option<&'session mut crate::runtime::focus::UiFocusRuntimeState>,
     pub(super) portal: Option<&'session mut crate::runtime::portal::UiPortalRuntimeState>,
+    pub(super) overlay_composition_owners:
+        &'session mut super::active_application_session::UiActiveOverlayCompositionOwners,
     pub(super) interaction: &'session mut crate::runtime::interaction::UiInteractionRuntimeState,
     pub(super) presentation:
         &'session mut crate::runtime::presentation_state::UiApplicationPresentationState,
     pub(super) appearance_owner_snapshot:
         &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    pub(super) pointer_affordance_snapshot:
+        &'session Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
     pub(super) appearance_inspection:
         &'session mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+    pub(super) overlay_appearance:
+        Result<super::active_application_session::UiActiveOverlayAppearancePreparation, ()>,
+    pub(super) motion: Option<&'session crate::runtime::motion::UiMotionRuntimeState>,
 }
 
 /// Executable framework-turn authority lent by one active application session.
@@ -48,18 +57,27 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
     pub(super) host_session_identity: crate::facade::WorthUiHostSessionIdentity,
     pub(super) execution: crate::runtime::WorthUiFrameworkTurnExecution<'session>,
     pub(super) capabilities: &'session crate::capability::CapabilitySnapshot,
+    pub(super) intent_catalog: &'session crate::declaration::UiIntentCatalog,
+    pub(super) consumed_facts: &'session crate::graph::UiGraphConsumedFactIndex,
     pub(super) mounted: &'session mut crate::mounting::WorthUiMountedSessionState,
     pub(super) host_session: &'session crate::facade::WorthUiHostSessionAuthority,
     pub(super) host_exchange: &'session mut crate::host_exchange::WorthUiHostExchangeSessionState,
     pub(super) focus: Option<&'session mut crate::runtime::focus::UiFocusRuntimeState>,
     pub(super) portal: Option<&'session mut crate::runtime::portal::UiPortalRuntimeState>,
+    pub(super) overlay_composition_owners:
+        &'session mut super::active_application_session::UiActiveOverlayCompositionOwners,
     pub(super) interaction: &'session mut crate::runtime::interaction::UiInteractionRuntimeState,
     pub(super) presentation:
         &'session mut crate::runtime::presentation_state::UiApplicationPresentationState,
     pub(super) appearance_owner_snapshot:
         &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    pub(super) pointer_affordance_snapshot:
+        &'session Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
     pub(super) appearance_inspection:
         &'session mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+    pub(super) overlay_appearance:
+        Result<super::active_application_session::UiActiveOverlayAppearancePreparation, ()>,
+    pub(super) motion: Option<&'session crate::runtime::motion::UiMotionRuntimeState>,
     pub(super) host_protocol: worth_ui_host_contract::UiHostProtocolAgreement,
     pub(super) host_capability_generation:
         worth_ui_host_contract::WorthUiHostCapabilityObservationGeneration,
@@ -88,15 +106,21 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             host_session_identity,
             completion,
             capabilities,
+            intent_catalog,
+            consumed_facts,
             mounted,
             host_session,
             host_exchange,
             focus,
             portal,
+            overlay_composition_owners,
             interaction,
             presentation,
             appearance_owner_snapshot,
+            pointer_affordance_snapshot,
             appearance_inspection,
+            overlay_appearance,
+            motion,
         } = self;
         let host_protocol = host_session.protocol();
         let capability_report = host_session.capability_report();
@@ -110,15 +134,21 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 host_session_identity,
                 execution,
                 capabilities,
+                intent_catalog,
+                consumed_facts,
                 mounted,
                 host_session,
                 host_exchange,
                 focus,
                 portal,
+                overlay_composition_owners,
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
+                pointer_affordance_snapshot,
                 appearance_inspection,
+                overlay_appearance,
+                motion,
                 host_protocol,
                 host_capability_generation: capability_report.observation_generation(),
                 host_capability_profile_digest: capability_report.profile_identity_digest(),
@@ -133,15 +163,21 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 host_session_identity,
                 completion: *completion,
                 capabilities,
+                intent_catalog,
+                consumed_facts,
                 mounted,
                 host_session,
                 host_exchange,
                 focus,
                 portal,
+                overlay_composition_owners,
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
+                pointer_affordance_snapshot,
                 appearance_inspection,
+                overlay_appearance,
+                motion,
             })),
         }
     }

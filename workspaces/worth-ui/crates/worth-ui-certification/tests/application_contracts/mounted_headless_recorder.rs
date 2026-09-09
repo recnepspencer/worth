@@ -208,6 +208,7 @@ fn prepare_cross_lane(
 fn execute_cross_lane_frame(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
 ) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     session
         .execute_framework_turn(|_| {})
         .expect("no mounted presentation lease is active")
@@ -252,6 +253,7 @@ fn assert_exact_external_mechanics(
 fn prepare(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
 ) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     session
         .execute_framework_turn(|_| {})
         .expect("no mounted presentation lease is active")

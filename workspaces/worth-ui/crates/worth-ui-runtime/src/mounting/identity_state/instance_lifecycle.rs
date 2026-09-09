@@ -12,6 +12,41 @@ const MOUNTED_CLOSURE_LIMIT: usize = 4_097;
 const GRAPH_NODE_MOUNT_LIMIT: usize = 1_024;
 
 impl UiMountedIdentityState {
+    pub(crate) fn graph_occurrence_count(&self, graph_node: UiGraphNodeIdentity) -> usize {
+        self.by_graph.get(&graph_node).map_or(0, BTreeSet::len)
+    }
+
+    pub(crate) fn mark_occurrence_geometry_changed(
+        &mut self,
+        instances: &[UiMountedInstanceIdentity],
+    ) -> Result<(), UiMountedIdentityDenial> {
+        if instances
+            .iter()
+            .any(|instance| !self.instances.contains_key(instance))
+        {
+            return Err(UiMountedIdentityDenial::UnknownMountedInstance);
+        }
+        let semantic_revision = super::next(&super::NEXT_STATE_REVISION)?;
+        for instance in instances {
+            self.pending_projection_changes
+                .mark_changed_instance(*instance);
+        }
+        self.semantic_revision = semantic_revision;
+        Ok(())
+    }
+
+    pub(crate) fn mark_motion_appearance_changed(
+        &mut self,
+        instances: &[UiMountedInstanceIdentity],
+    ) {
+        for instance in instances {
+            if self.instances.contains_key(instance) {
+                self.pending_projection_changes
+                    .mark_appearance_input_changed(*instance);
+            }
+        }
+    }
+
     pub(crate) fn graph_node_handle(
         &self,
         graph: UiGraphAuthority<'_>,
@@ -61,6 +96,7 @@ impl UiMountedIdentityState {
     pub(crate) fn unmount(
         &mut self,
         identity: UiMountedInstanceIdentity,
+        occurrence_geometry_affected: &[UiMountedInstanceIdentity],
     ) -> Result<(), UiMountedIdentityDenial> {
         let record = self.instances.get(&identity).cloned().ok_or_else(|| {
             if self.retired_instances.contains(&identity) {
@@ -69,6 +105,12 @@ impl UiMountedIdentityState {
                 UiMountedIdentityDenial::UnknownMountedInstance
             }
         })?;
+        if occurrence_geometry_affected
+            .iter()
+            .any(|instance| !self.instances.contains_key(instance))
+        {
+            return Err(UiMountedIdentityDenial::UnknownMountedInstance);
+        }
         let semantic_revision = super::next(&super::NEXT_STATE_REVISION)?;
         self.instances.remove(&identity);
         if let Some(instances) = self.by_graph.get_mut(&record.basis.graph_node_identity()) {
@@ -87,6 +129,12 @@ impl UiMountedIdentityState {
         }
         self.pending_projection_changes
             .mark_retired_instance(identity);
+        for affected in occurrence_geometry_affected {
+            if *affected != identity {
+                self.pending_projection_changes
+                    .mark_changed_instance(*affected);
+            }
+        }
         self.remember_retirement(identity);
         self.semantic_revision = semantic_revision;
         Ok(())

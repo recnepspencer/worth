@@ -168,6 +168,7 @@ impl WorthUiActiveApplicationSession {
             let Some(slot) = family.projection_input_slot() else {
                 continue;
             };
+            self.mounted.refresh_selection_bindings(slot);
             let Some(worth_ui_query_binding::UiProjectionInputFactReference::Collection(
                 collection,
             )) = self.mounted.current_projection_input(slot)

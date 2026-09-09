@@ -3,28 +3,30 @@ use worth_ui_host_contract::{
     UiAppearanceDamageAttribution, UiAppearanceVisualBounds, UiMountedAppearanceColor,
     UiMountedAppearanceFrame, UiMountedAppearanceMechanic, UiMountedAppearanceMechanicIdentity,
     UiMountedAppearanceOpacity, UiMountedBackdropAppearanceAttribution, UiMountedBackdropIdentity,
-    UiMountedInstanceIdentity, UiMountedLayerProjection, UiMountedNodeAppearanceAttribution,
-    UiMountedNodeReceiptIdentity, UiMountedPresentationAttemptIdentity, UiMountedSurfacePaint,
-    UiMountedTextPaintSpanIdentity, UiOverlayPlacementReceipt, UiPointerAffordanceFamily,
-    UiSemanticSurfaceIdentity,
+    UiMountedInstanceIdentity, UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIdentity,
+    UiMountedPresentationAttemptIdentity, UiMountedSurfacePaint, UiMountedTextPaintSpanIdentity,
+    UiOverlayPlacementReceipt, UiSemanticSurfaceIdentity,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct UiMountedAppearanceNodeInput {
+    pub(super) geometry_input: Option<super::UiMountedAppearanceGeometryInput>,
     pub(super) issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
     pub(super) semantic_surface: UiSemanticSurfaceIdentity,
     pub(super) node_receipt: UiMountedNodeReceiptIdentity,
     pub(super) projection: UiMountedNodeAppearanceAttribution,
     pub(super) bounds: UiAppearanceAllocationBounds,
-    pub(super) clip: UiAppearanceClip,
-    pub(super) layer: UiMountedLayerProjection,
+    pub(super) clip: super::UiMountedAppearanceClip,
+    pub(super) surface_paint_order: Option<u32>,
     pub(super) radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii,
+    pub(super) surface_border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges,
+    pub(super) surface_border_omissions:
+        Box<[worth_ui_host_contract::UiMountedSurfaceBorderOmission]>,
     pub(super) surface_paint: Option<UiMountedSurfacePaint>,
     pub(super) outline: Option<UiMountedAppearanceOutlineInput>,
     pub(super) text_foregrounds: Box<[UiMountedAppearanceTextForegroundInput]>,
-    pub(super) pointer: Option<UiMountedAppearancePointerInput>,
     pub(super) appearance_opacity: UiMountedAppearanceOpacity,
-    pub(super) motion_opacity: Option<UiMountedAppearanceOpacity>,
+    pub(super) motion_opacity: Option<u16>,
     pub(super) semantic_digest: u64,
     pub(super) portal_instance: Option<UiMountedInstanceIdentity>,
 }
@@ -35,18 +37,13 @@ pub(crate) struct UiMountedAppearanceOutlineInput {
     pub(super) color: UiMountedAppearanceColor,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiMountedAppearanceTextForegroundInput {
     pub(super) span: UiMountedTextPaintSpanIdentity,
+    pub(super) command: worth_ui_host_contract::UiMountedPaintCommandIdentity,
+    pub(super) geometry: std::sync::Arc<[super::UiMountedAppearanceTextGeometry]>,
     pub(super) foreground: UiMountedAppearanceColor,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct UiMountedAppearancePointerInput {
-    pub(super) pointer: worth_ui_host_contract::UiHostPointerIdentity,
-    pub(super) surface: UiSemanticSurfaceIdentity,
-    pub(super) target: UiMountedInstanceIdentity,
-    pub(super) family: UiPointerAffordanceFamily,
+    pub(super) motion_opacity: Option<u16>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -58,9 +55,21 @@ pub(crate) struct UiMountedAppearanceBackdropInput {
     pub(super) clip: UiAppearanceClip,
     pub(super) background: UiMountedAppearanceColor,
     pub(super) appearance_opacity: UiMountedAppearanceOpacity,
-    pub(super) motion_opacity: Option<UiMountedAppearanceOpacity>,
+    pub(super) motion_opacity: Option<u16>,
+    pub(in crate::mounting::projection) motion_target: Option<UiMountedInstanceIdentity>,
     pub(super) attribution: UiMountedBackdropAppearanceAttribution,
     pub(super) semantic_digest: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct UiMountedAppearanceSurfaceOverlayInput {
+    pub(in crate::mounting::projection) semantic_surface: UiSemanticSurfaceIdentity,
+    pub(in crate::mounting::projection) portal_revision: u64,
+    pub(in crate::mounting::projection) backdrop_revision: u64,
+    pub(in crate::mounting::projection) portal_instances: Box<[UiMountedInstanceIdentity]>,
+    pub(in crate::mounting::projection) backdrops: Box<[UiMountedAppearanceBackdropInput]>,
+    pub(in crate::mounting::projection) bottom_to_top:
+        Box<[worth_ui_host_contract::UiOverlayParticipantIdentity]>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -82,16 +91,18 @@ pub(crate) struct UiMountedAppearanceLoweringInput {
     pub(super) overlay: UiMountedAppearanceOverlayInput,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum UiMountedAppearanceDamageShape {
+    /// Exact target/span coverage is resolved at the text presentation boundary.
+    TextForeground(std::sync::Arc<[super::UiMountedAppearanceTextGeometry]>),
     Visual {
         bounds: UiMountedAppearanceVisualBounds,
         attribution: UiAppearanceDamageAttribution,
     },
     Backdrop {
         extent: UiAppearanceBackdropExtent,
+        clip: UiAppearanceClip,
     },
-    None,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -103,15 +114,6 @@ pub(super) struct UiMountedAppearanceVisualBounds {
 }
 
 impl UiMountedAppearanceVisualBounds {
-    pub(super) const fn from_allocation(bounds: UiAppearanceAllocationBounds) -> Self {
-        Self {
-            x: bounds.x(),
-            y: bounds.y(),
-            width: bounds.width(),
-            height: bounds.height(),
-        }
-    }
-
     pub(super) const fn from_visual(bounds: UiAppearanceVisualBounds) -> Self {
         Self {
             x: bounds.x(),
@@ -175,6 +177,7 @@ impl UiMountedAppearanceFact {
         semantic_digest: u64,
         mechanic: UiMountedAppearanceMechanic,
         extent: UiAppearanceBackdropExtent,
+        clip: UiAppearanceClip,
     ) -> Self {
         let identity = mechanic.identity();
         Self {
@@ -185,14 +188,13 @@ impl UiMountedAppearanceFact {
             backdrop_attribution: Some(attribution),
             semantic_digest,
             mechanic,
-            damage: UiMountedAppearanceDamageShape::Backdrop { extent },
+            damage: UiMountedAppearanceDamageShape::Backdrop { extent, clip },
         }
     }
 
     pub(super) fn identity(&self) -> &UiMountedAppearanceMechanicIdentity {
         &self.identity
     }
-    #[cfg(test)]
     pub(super) const fn node_receipt(&self) -> Option<UiMountedNodeReceiptIdentity> {
         self.node_receipt
     }
@@ -203,8 +205,13 @@ impl UiMountedAppearanceFact {
     pub(super) fn mechanic(&self) -> &UiMountedAppearanceMechanic {
         &self.mechanic
     }
-    pub(super) const fn damage(&self) -> UiMountedAppearanceDamageShape {
-        self.damage
+    pub(super) const fn damage(&self) -> &UiMountedAppearanceDamageShape {
+        &self.damage
+    }
+
+    pub(super) fn same_physical_output(&self, other: &Self) -> bool {
+        super::mechanic_equivalence::same_physical_output(&self.mechanic, &other.mechanic)
+            && self.damage == other.damage
     }
 
     pub(super) fn same_semantic_meaning(&self, other: &Self) -> bool {
@@ -237,8 +244,9 @@ impl UiMountedAppearanceFact {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct UiMountedAppearanceFacts {
+    geometry_inputs: Box<[super::UiMountedAppearanceGeometryInput]>,
     frame: UiMountedAppearanceFrame,
     records: Box<[UiMountedAppearanceFact]>,
 }
@@ -247,11 +255,20 @@ impl UiMountedAppearanceFacts {
     pub(super) fn new(
         frame: UiMountedAppearanceFrame,
         records: Vec<UiMountedAppearanceFact>,
+        geometry_inputs: Box<[super::UiMountedAppearanceGeometryInput]>,
     ) -> Self {
         Self {
+            geometry_inputs,
             frame,
             records: records.into_boxed_slice(),
         }
+    }
+
+    pub(super) fn matches_geometry_input(
+        &self,
+        input: &super::UiMountedAppearanceGeometryInput,
+    ) -> bool {
+        self.geometry_inputs.contains(input)
     }
 
     pub(super) const fn frame(&self) -> &UiMountedAppearanceFrame {

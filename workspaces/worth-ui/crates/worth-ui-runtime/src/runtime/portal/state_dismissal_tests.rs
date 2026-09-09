@@ -30,7 +30,13 @@ fn escape_and_anchor_loss_dismiss_nested_portals_in_topmost_order() {
     state.commit_published(child_open).unwrap();
 
     let UiPortalDismissalPreparation::Prepared(dismiss_child) = state
-        .prepare_dismissal(UiPortalDismissalTrigger::Escape, None, idempotency(243))
+        .prepare_dismissal(
+            UiPortalDismissalTrigger::Escape {
+                semantic_surface: state.semantic_surface_for_test(child).unwrap(),
+            },
+            None,
+            idempotency(243),
+        )
         .unwrap()
     else {
         panic!("Escape must dismiss the topmost nested portal")
@@ -182,11 +188,13 @@ fn outside_press_respects_bounds_and_duplicate_dismissal_coalesces() {
     let opened = state.prepare(open_request(portal, 271)).unwrap();
     let bounds = opened.placement().unwrap().bounds().components();
     state.commit_published(opened).unwrap();
+    let surface = state.semantic_surface_for_test(portal).unwrap();
     let inside = [bounds[0] + 1.0, bounds[1] + 1.0].map(f32::to_bits);
     assert!(matches!(
         state
             .prepare_dismissal(
                 UiPortalDismissalTrigger::OutsidePress {
+                    semantic_surface: surface,
                     viewport_point_bits: inside
                 },
                 None,
@@ -208,6 +216,7 @@ fn outside_press_respects_bounds_and_duplicate_dismissal_coalesces() {
     let UiPortalDismissalPreparation::Prepared(dismissal) = state
         .prepare_dismissal(
             UiPortalDismissalTrigger::OutsidePress {
+                semantic_surface: surface,
                 viewport_point_bits: inside,
             },
             Some(sampled_bounds),
@@ -223,6 +232,7 @@ fn outside_press_respects_bounds_and_duplicate_dismissal_coalesces() {
         state
             .prepare_dismissal(
                 UiPortalDismissalTrigger::OutsidePress {
+                    semantic_surface: surface,
                     viewport_point_bits: inside
                 },
                 None,
@@ -242,7 +252,13 @@ fn a_second_non_anchor_dismissal_republishes_a_retained_closing_portal() {
     state.commit_published(opened).unwrap();
 
     let UiPortalDismissalPreparation::Prepared(first) = state
-        .prepare_dismissal(UiPortalDismissalTrigger::Escape, None, idempotency(282))
+        .prepare_dismissal(
+            UiPortalDismissalTrigger::Escape {
+                semantic_surface: state.semantic_surface_for_test(portal).unwrap(),
+            },
+            None,
+            idempotency(282),
+        )
         .unwrap()
     else {
         panic!("the first dismissal must prepare");
@@ -256,7 +272,9 @@ fn a_second_non_anchor_dismissal_republishes_a_retained_closing_portal() {
 
     let UiPortalDismissalPreparation::Prepared(second) = state
         .prepare_dismissal(
-            UiPortalDismissalTrigger::AcceptedSelection,
+            UiPortalDismissalTrigger::AcceptedSelection {
+                semantic_surface: state.semantic_surface_for_test(portal).unwrap(),
+            },
             None,
             idempotency(283),
         )
@@ -295,6 +313,7 @@ fn modal_policy_shields_input_and_disables_outside_press_dismissal() {
         state
             .prepare_dismissal(
                 UiPortalDismissalTrigger::OutsidePress {
+                    semantic_surface: state.semantic_surface_for_test(portal).unwrap(),
                     viewport_point_bits: [0.0_f32.to_bits(), 0.0_f32.to_bits()],
                 },
                 None,
@@ -318,9 +337,12 @@ fn accepted_selection_and_anchor_loss_respect_the_declared_policy() {
     let portal = portal(311, 321);
     let opened = state.prepare(open_request(portal, 331)).unwrap();
     state.commit_published(opened).unwrap();
+    let surface = state.semantic_surface_for_test(portal).unwrap();
 
     for trigger in [
-        UiPortalDismissalTrigger::AcceptedSelection,
+        UiPortalDismissalTrigger::AcceptedSelection {
+            semantic_surface: surface,
+        },
         UiPortalDismissalTrigger::AnchorLoss(portal),
     ] {
         assert!(matches!(
@@ -342,7 +364,9 @@ fn accepted_selection_closes_the_topmost_portal_with_its_typed_cause() {
 
     let UiPortalDismissalPreparation::Prepared(dismissal) = state
         .prepare_dismissal(
-            UiPortalDismissalTrigger::AcceptedSelection,
+            UiPortalDismissalTrigger::AcceptedSelection {
+                semantic_surface: state.semantic_surface_for_test(identity).unwrap(),
+            },
             None,
             idempotency(334),
         )

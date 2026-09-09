@@ -28,7 +28,7 @@ struct UiMountedPortalMotionContribution {
     viewport_clip: Option<UiMountedCanonicalBox>,
 }
 
-pub(super) struct UiMountedPortalMotionGroupView<'a> {
+pub(in crate::mounting::presentation) struct UiMountedPortalMotionGroupView<'a> {
     group: &'a UiMountedPortalMotionGroup,
 }
 
@@ -152,7 +152,9 @@ impl UiMountedPortalMotionGroups {
 }
 
 impl UiMountedPortalMotionGroupView<'_> {
-    pub(super) fn commands(&self) -> impl Iterator<Item = UiMountedPaintCommandIdentity> + '_ {
+    pub(in crate::mounting::presentation) fn commands(
+        &self,
+    ) -> impl Iterator<Item = UiMountedPaintCommandIdentity> + '_ {
         self.group
             .contributions
             .iter()

@@ -44,6 +44,7 @@ fn native_indeterminate_portal_publication_reconstructs_and_settles_the_predeces
     let mut shell = application
         .launch_native_surface()
         .expect("the production native composition root launches");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     let initial = match shell
         .present_frame(10, 1)
         .unwrap_or_else(|_| panic!("the initial native frame executes"))
@@ -175,6 +176,7 @@ fn applied_escape_is_retained_while_portal_open_publication_is_in_flight() {
     host.push_native_display_presented();
     let (application, _) = build_open_portal_application_with_host(host.clone());
     let mut shell = application.launch_native_surface().unwrap();
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell
             .present_frame(10, 1)

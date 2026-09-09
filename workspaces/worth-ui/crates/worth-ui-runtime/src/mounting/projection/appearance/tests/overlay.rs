@@ -15,20 +15,24 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
     let projection =
         UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 21, 4).unwrap();
     let node = UiMountedAppearanceNodeInput {
+        geometry_input: None,
         issuer,
         semantic_surface: surface,
         node_receipt: receipt,
         projection,
         bounds,
-        clip: UiAppearanceClip::new(0, 0, 100, 70).unwrap(),
-        layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+        clip: crate::mounting::projection::appearance::UiMountedAppearanceClip::Ancestor(
+            UiAppearanceClip::new(0, 0, 100, 70).unwrap(),
+        ),
+        surface_paint_order: Some(0),
         radii,
+        surface_border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
+        surface_border_omissions: Box::new([]),
         surface_paint: Some(UiMountedSurfacePaint::Fill(
             UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 255]),
         )),
         outline: None,
         text_foregrounds: Box::new([]),
-        pointer: None,
         appearance_opacity: UiMountedAppearanceOpacity::ONE,
         motion_opacity: None,
         semantic_digest: 13,
@@ -50,6 +54,7 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
         background: UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 128]),
         appearance_opacity: UiMountedAppearanceOpacity::ONE,
         motion_opacity: None,
+        motion_target: None,
         attribution: UiMountedBackdropAppearanceAttribution::from_runtime_transport(
             surface, placement, 31, 2,
         )
@@ -96,8 +101,8 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
     assert_eq!(work.damage().len(), 1);
     assert_eq!(work.damage()[0].x(), 0);
     assert_eq!(work.damage()[0].y(), 0);
-    assert_eq!(work.damage()[0].width(), 200);
-    assert_eq!(work.damage()[0].height(), 160);
+    assert_eq!(work.damage()[0].width(), 120);
+    assert_eq!(work.damage()[0].height(), 100);
     assert!(work
         .successor()
         .mechanics()

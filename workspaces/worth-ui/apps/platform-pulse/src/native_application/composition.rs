@@ -3,6 +3,7 @@ use crate::application::{
 };
 use crate::source_watch::PlatformPulseSourceWatch;
 use crate::visual_identity_execution::PlatformPulseVisualIdentityExecution;
+use worth_ui_platform_pulse::product_world::PlatformPulseMosaicSurface;
 
 pub(crate) struct PlatformPulseApplication {
     launch: crate::launch_configuration::AdmittedPlatformPulseLaunchConfiguration,
@@ -46,6 +47,11 @@ impl worth_ui_native_platform::UiNativeApplicationDefinition for PlatformPulseAp
             return preparation.deny(cause);
         }
         if let Err(cause) = preparation.install_application_composition(builder) {
+            return preparation.deny(cause);
+        }
+        if let Err(cause) =
+            preparation.install_native_surface_declaration(PlatformPulseMosaicSurface::Main.id())
+        {
             return preparation.deny(cause);
         }
         if let Err(cause) = preparation.install_application_runtime(runtime) {

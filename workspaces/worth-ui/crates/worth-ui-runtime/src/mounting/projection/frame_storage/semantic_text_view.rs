@@ -37,7 +37,7 @@ impl UiMountedProjectionFrame {
                 }
                 super::portal_child_view::UiMountedPortalChildPresentation::Suppressed => {}
                 super::portal_child_view::UiMountedPortalChildPresentation::Presented(portal) => {
-                    rows.push(
+                    rows.extend(
                         row.presented_within_portal(portal)
                             .map_err(UiMountedProjectionDenial::SemanticTextCompletion)?,
                     )

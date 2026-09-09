@@ -45,6 +45,12 @@ impl UiStagedPortalServiceProposal {
         &self.transition
     }
 
+    pub(in crate::runtime) const fn overlay_binding_stage(
+        &self,
+    ) -> Option<&super::UiPortalOverlayBindingStage> {
+        self.overlay_binding_stage.as_ref()
+    }
+
     pub(crate) fn overlay_binding_commit(&self) -> super::UiPortalOverlayBindingCommit {
         super::UiPortalOverlayBindingCommit::from_transition(
             &self.transition,

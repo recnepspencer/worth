@@ -19,12 +19,6 @@ pub(crate) struct UiIntentOperabilityStandingFact {
     owner_revision: u64,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiIntentOperabilityStandingFactSnapshot {
-    owner_revision: u64,
-    facts: Box<[UiIntentOperabilityStandingFact]>,
-}
-
 impl UiIntentOperabilityStandingFact {
     pub(crate) fn seal(
         candidate: &super::super::payload::UiPreparedIntentPayload,
@@ -87,22 +81,6 @@ impl UiIntentOperabilityStandingFact {
             class: UiIntentOperabilityAppearanceClass::Ready,
             owner_revision,
         }
-    }
-}
-
-impl UiIntentOperabilityStandingFactSnapshot {
-    pub(crate) fn seal(owner_revision: u64, facts: Vec<UiIntentOperabilityStandingFact>) -> Self {
-        Self {
-            owner_revision,
-            facts: facts.into_boxed_slice(),
-        }
-    }
-
-    pub(crate) const fn owner_revision(&self) -> u64 {
-        self.owner_revision
-    }
-    pub(crate) fn facts(&self) -> &[UiIntentOperabilityStandingFact] {
-        &self.facts
     }
 }
 

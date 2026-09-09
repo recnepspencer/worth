@@ -1,13 +1,15 @@
 //! Atlas snapshot and destruction boundary.
 
 use super::ownership::{AtlasCore, UiNativeTextAtlas};
-use super::recovery::UiNativeTextAtlasRecovery;
+use super::recovery::{UiNativeTextAtlasGeneration, UiNativeTextAtlasRecovery};
 use super::settlement::UiNativeTextAtlasSnapshot;
 
 impl UiNativeTextAtlas {
     #[cfg(feature = "certification-support")]
     pub(crate) fn can_mutate_for_reconstruction(&self) -> bool {
-        self.core.try_borrow_mut().is_ok()
+        self.core
+            .try_borrow_mut()
+            .is_ok_and(|core| next_clear_generation(&core).is_some())
     }
 
     pub(crate) fn snapshot(&self) -> UiNativeTextAtlasSnapshot {
@@ -37,8 +39,10 @@ impl UiNativeTextAtlas {
         let Ok(mut core) = self.core.try_borrow_mut() else {
             return false;
         };
-        let lineage = core.lineage;
-        *core = AtlasCore::new(lineage);
+        let Some(generation) = next_clear_generation(&core) else {
+            return false;
+        };
+        core.reset_for_reconstruction(generation);
         true
     }
 
@@ -81,4 +85,11 @@ fn recovery_matches(core: &AtlasCore, recovery: &UiNativeTextAtlasRecovery) -> b
     core.quarantined
         && recovery.generation().get() == core.generation.get().saturating_add(1)
         && recovery.lineage_identity() == core.lineage
+}
+
+fn next_clear_generation(core: &AtlasCore) -> Option<UiNativeTextAtlasGeneration> {
+    core.generation
+        .get()
+        .checked_add(1)
+        .and_then(UiNativeTextAtlasGeneration::new)
 }

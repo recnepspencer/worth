@@ -5,7 +5,7 @@ mod generation;
 pub use generation::UiAppearanceInspectionGenerationSuccessionDenial;
 pub(super) use generation::UiAppearanceInspectionScope;
 pub(crate) use generation::UiPreparedAppearanceInspectionGenerationSuccession;
-use worth_ui_dsl::UiAppearanceAspect;
+use worth_ui_dsl::{UiAppearanceAspect, UiAppearanceStateAxis};
 use worth_ui_inspection::{
     UiAppearanceInspectionExplanation, UiAppearanceInspectionOutcome, UiAppearanceInspectionQuery,
     UiAppearanceInspectionSupport, UiAppearanceInspectionWorld, UiEvidenceAuthorityGeneration,
@@ -15,10 +15,27 @@ const UI_APPEARANCE_INSPECTION_CAPACITY: usize = 64;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiAppearanceInspectionDenial {
+    MissingOperabilityRoute,
+    AmbiguousOperabilityRoute { routes: usize },
+    OperabilitySourceUnavailable,
+    InteractionSourceUnavailable(UiAppearanceStateAxis),
     Basis,
     Resolution,
     MountAffinity,
     MountLowering,
+}
+
+impl UiAppearanceInspectionDenial {
+    pub(crate) const fn blocks_mounted_output(self) -> bool {
+        !matches!(
+            self,
+            Self::MissingOperabilityRoute
+                | Self::AmbiguousOperabilityRoute { .. }
+                | Self::OperabilitySourceUnavailable
+                | Self::InteractionSourceUnavailable(_)
+                | Self::Resolution
+        )
+    }
 }
 
 pub(crate) enum UiAppearanceInspectionRecord {

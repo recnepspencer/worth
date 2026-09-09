@@ -39,6 +39,7 @@ fn portal_shift_tab_navigation_rebinds_enter_to_the_newly_focused_recipient() {
     let mut shell = application
         .launch_native_surface()
         .expect("the production native composition root launches");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell
             .present_frame(10, 1)

@@ -132,6 +132,7 @@ impl UiPointerGestureRuntimeState {
             }
         };
         let target_view = target.view();
+        let appearance = super::appearance::UiActivePressedAppearance::from_press(&target);
         let active = UiActivePointerGesture {
             kind: input.kind,
             capture_epoch: input.capture_epoch,
@@ -140,7 +141,7 @@ impl UiPointerGestureRuntimeState {
             press_time_basis: input.time_basis,
             target,
             position: input.position,
-            inside: true,
+            appearance,
         };
         self.active.insert(input.pointer, active);
         self.bump_appearance_revision();
@@ -229,22 +230,14 @@ impl UiPointerGestureRuntimeState {
         kind: crate::runtime::interaction::UiPrimaryPointerKind,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Vec<UiPointerGestureOutcome> {
-        let Some(active_capture_epoch) = self.active.get(&pointer).map(|active| {
-            (
-                active.capture_epoch,
-                (
-                    active.target.surface(),
-                    active.target.binding(),
-                    active.target.mounted_instance(),
-                    active.target.node_receipt(),
-                ),
-                active.inside,
-                active.kind,
-            )
-        }) else {
+        let Some(active_capture_epoch) = self
+            .active
+            .get(&pointer)
+            .map(|active| (active.capture_epoch, active.kind))
+        else {
             return Vec::new();
         };
-        if active_capture_epoch.3 != kind {
+        if active_capture_epoch.1 != kind {
             let active = self
                 .active
                 .remove(&pointer)
@@ -255,29 +248,27 @@ impl UiPointerGestureRuntimeState {
             return vec![self.active_stop(pointer, active, sequence, reason)];
         }
         if active_capture_epoch.0 == observed {
-            let active_target = active_capture_epoch.1;
-            self.active
+            let active = self
+                .active
                 .get_mut(&pointer)
-                .expect("active gesture remains present")
-                .position = position;
+                .expect("active gesture remains present");
+            active.position = position;
             if !self.appearance_enabled {
                 return Vec::new();
             }
-            let inside = resolve_presented_target(mounted, core.presentation(), position)
-                .is_ok_and(|target| {
-                    (
-                        target.surface(),
-                        target.binding(),
-                        target.mounted_instance(),
-                        target.node_receipt(),
-                    ) == active_target
-                });
-            if inside != active_capture_epoch.2 {
-                self.active
-                    .get_mut(&pointer)
-                    .expect("active gesture remains present")
-                    .inside = inside;
-                self.bump_appearance_revision();
+            match active
+                .appearance
+                .refresh(&active.target, core.presentation(), position, mounted)
+            {
+                Ok(true) => self.bump_appearance_revision(),
+                Ok(false) => {}
+                Err(denial) => {
+                    return self.stop_active_pointer_for_denial(
+                        pointer,
+                        sequence,
+                        UiPointerGestureStopReason::Targeting(denial),
+                    )
+                }
             }
             return Vec::new();
         }

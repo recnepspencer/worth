@@ -18,6 +18,8 @@ use worth_ui_host_contract::{
     UiUnpublishedAppearanceFrameProjection, WorthUiHostCapabilityObservationGeneration,
 };
 
+#[path = "unpublished_pointer_tests.rs"]
+mod pointer_tests;
 #[path = "unpublished_text_support.rs"]
 mod text_support;
 
@@ -83,15 +85,19 @@ fn surface(
             node_receipt: issuer.receipt_for(instance),
             bounds,
             clip: UiAppearanceClip::new(0, 0, 32, 32).unwrap(),
-            layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+            surface_paint_order: 0,
             radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii::normalize(
                 bounds,
                 [UiAppearanceLogicalLength::ZERO; 4],
             ),
+            border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
+            border_omissions: Box::new([]),
             paint: UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
                 0, 0, 0, 255,
             ])),
-            opacity: worth_ui_host_contract::UiMountedAppearanceOpacity::ONE,
+            opacity: worth_ui_host_contract::UiMountedPresentationOpacity::from_runtime_composition(
+                u16::MAX,
+            ),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
                 .unwrap(),
         },
@@ -157,19 +163,16 @@ fn fragment_with_text_candidates(
 ) -> UiUnpublishedAppearanceFragment {
     let (surface, issuer) = surface(context, instance);
     let receipt = issuer.receipt_for(instance);
-    let spans = [
-        UiMountedTextPaintSpanIdentity::from_runtime_mounting([101; 32]),
-        UiMountedTextPaintSpanIdentity::from_runtime_mounting([102; 32]),
-    ];
-    let foregrounds = spans.map(|span| {
-        UiMountedAppearanceMechanic::TextForeground(text_foreground(issuer, receipt, span))
-    });
+    let span = UiMountedTextPaintSpanIdentity::from_runtime_mounting([101; 32]);
+    let foregrounds = [UiMountedAppearanceMechanic::TextForeground(
+        text_foreground(issuer, receipt, span),
+    )];
     let candidates = [
         text_candidate(
             context,
             instance,
             receipt,
-            spans[0],
+            span,
             UiSemanticTextSlot::Value,
             UiTextOriginalRange::new(0, 3).unwrap(),
         ),
@@ -177,7 +180,7 @@ fn fragment_with_text_candidates(
             context,
             instance,
             receipt,
-            spans[1],
+            span,
             UiSemanticTextSlot::Posture,
             UiTextOriginalRange::new(3, 6).unwrap(),
         ),
@@ -246,9 +249,16 @@ fn text_foreground(
         UiMountedTextForegroundAppearanceCompletionInput {
             issuer,
             node_receipt: receipt,
+            command: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text_from_correspondence(
+                receipt.mounted_instance(),
+                0,
+                None,
+            ),
             paint_span: span,
             foreground: UiMountedAppearanceColor::from_straight_srgba([9, 8, 7, 255]),
-            opacity: worth_ui_host_contract::UiMountedAppearanceOpacity::ONE,
+            opacity: worth_ui_host_contract::UiMountedPresentationOpacity::from_runtime_composition(
+                u16::MAX,
+            ),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 2, 1)
                 .unwrap(),
         },
@@ -311,7 +321,7 @@ fn text_candidate(
 }
 
 #[test]
-fn facade_translates_actual_host_projection_in_fragment_order() {
+fn facade_preserves_shared_span_candidates_in_fragment_order() {
     let context = context();
     let first =
         fragment_with_text_candidates(&context, UiMountedInstanceIdentity::mint_unbound().unwrap());
@@ -354,7 +364,7 @@ fn facade_translates_actual_host_projection_in_fragment_order() {
             ),
             (
                 expected_candidates[1].node_receipt(),
-                UiMountedTextPaintSpanIdentity::from_runtime_mounting([102; 32])
+                UiMountedTextPaintSpanIdentity::from_runtime_mounting([101; 32])
             ),
         ]
     );
@@ -369,11 +379,7 @@ fn facade_translates_actual_host_projection_in_fragment_order() {
         assert_eq!(fragment.surface_binding(), context.requirement);
         assert_eq!(
             fragment.work().successor().mechanics().len(),
-            if index == 0 {
-                expected_candidates.len() + 1
-            } else {
-                1
-            }
+            if index == 0 { 2 } else { 1 }
         );
         assert_eq!(
             fragment.work().successor().overlay_order(),

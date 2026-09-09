@@ -6,11 +6,14 @@ pub(crate) enum UiAppearanceSupportPosture {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiAppearanceProvenance {
-    selected_slot: worth_ui_dsl::UiThemeSlotIdentity,
-    terminal_slot: worth_ui_dsl::UiThemeSlotIdentity,
-    source: Box<str>,
-    aliases_compared: u8,
+pub(crate) enum UiAppearanceProvenance {
+    ThemeSlot {
+        selected_slot: worth_ui_dsl::UiThemeSlotIdentity,
+        terminal_slot: worth_ui_dsl::UiThemeSlotIdentity,
+        source: Box<str>,
+        aliases_compared: u8,
+    },
+    Literal,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -24,35 +27,6 @@ pub(crate) struct UiResolvedAppearanceAspect {
     semantic_digest: u64,
     decision_cells_visited: u32,
     theme_slots_compared: u32,
-}
-
-impl UiAppearanceProvenance {
-    pub(crate) fn new(
-        selected_slot: worth_ui_dsl::UiThemeSlotIdentity,
-        terminal_slot: worth_ui_dsl::UiThemeSlotIdentity,
-        source: impl Into<Box<str>>,
-        aliases_compared: u8,
-    ) -> Self {
-        Self {
-            selected_slot,
-            terminal_slot,
-            source: source.into(),
-            aliases_compared,
-        }
-    }
-
-    pub(crate) fn selected_slot(&self) -> &worth_ui_dsl::UiThemeSlotIdentity {
-        &self.selected_slot
-    }
-    pub(crate) fn terminal_slot(&self) -> &worth_ui_dsl::UiThemeSlotIdentity {
-        &self.terminal_slot
-    }
-    pub(crate) fn source(&self) -> &str {
-        &self.source
-    }
-    pub(crate) const fn aliases_compared(&self) -> u8 {
-        self.aliases_compared
-    }
 }
 
 impl UiResolvedAppearanceAspect {

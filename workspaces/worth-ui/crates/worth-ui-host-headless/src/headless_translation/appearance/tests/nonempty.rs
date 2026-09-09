@@ -1,16 +1,16 @@
 use worth_ui_host_contract::{
     UiAppearanceAllocationBounds, UiAppearanceBackdropExtent, UiAppearanceClip,
     UiAppearanceDamageRegion, UiMountedAppearanceColor, UiMountedAppearanceFrame,
-    UiMountedAppearanceMechanic, UiMountedAppearanceMechanicChange, UiMountedAppearanceOpacity,
+    UiMountedAppearanceMechanic, UiMountedAppearanceMechanicChange,
     UiMountedAppearancePredecessorManifest, UiMountedAppearanceWork,
     UiMountedAppearanceWorkPosture, UiMountedBackdropAppearanceAttribution,
     UiMountedBackdropCompletionInput, UiMountedBackdropIdentity, UiMountedBackdropMechanic,
     UiMountedBackdropScope, UiMountedLayerProjection, UiMountedLayerReference,
     UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer, UiMountedOverlayOrderMechanic,
     UiMountedPortalSurfaceAppearanceMechanic, UiMountedPresentationAttemptIdentity,
-    UiMountedSurfaceAppearanceCompletionInput, UiMountedSurfaceAppearanceMechanic,
-    UiMountedSurfacePaint, UiOverlayParticipantIdentity, UiOverlayPlacementReceipt,
-    UiSemanticSurfaceIdentity,
+    UiMountedPresentationOpacity, UiMountedSurfaceAppearanceCompletionInput,
+    UiMountedSurfaceAppearanceMechanic, UiMountedSurfacePaint, UiOverlayParticipantIdentity,
+    UiOverlayPlacementReceipt, UiSemanticSurfaceIdentity,
 };
 
 struct FixtureIds {
@@ -233,7 +233,7 @@ fn frame_with(
             extent: UiAppearanceBackdropExtent::new(8, 8, 32, 24).unwrap(),
             clip: UiAppearanceClip::new(0, 0, 64, 48).unwrap(),
             background: UiMountedAppearanceColor::from_straight_srgba(backdrop_color),
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             attribution: UiMountedBackdropAppearanceAttribution::from_runtime_transport(
                 ids.surface,
                 placement,
@@ -278,13 +278,15 @@ fn surface(
             bounds,
             clip: UiAppearanceClip::new(bounds.x(), bounds.y(), bounds.width(), bounds.height())
                 .unwrap(),
-            layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+            surface_paint_order: 0,
             radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii::normalize(
                 bounds,
                 [worth_ui_host_contract::UiAppearanceLogicalLength::ZERO; 4],
             ),
+            border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
+            border_omissions: Box::new([]),
             paint: UiMountedSurfacePaint::Fill(color),
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
                 .unwrap(),
         },

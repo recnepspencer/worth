@@ -40,6 +40,7 @@ pub(crate) enum UiMountedHostMeasurementSettlementStop {
     PublicationLease(crate::mounting::UiMountedPublicationLeaseDenial),
     Evidence(Box<crate::facade::host::UiHostMeasurementEvidenceDenial>),
     Transition(Box<UiMountedHostMeasurementTransitionDenial>),
+    OccurrenceGeometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
 }
 
 impl<'session> From<UiMountedHostMeasurementSettlementStop>
@@ -55,6 +56,9 @@ impl<'session> From<UiMountedHostMeasurementSettlementStop>
             }
             UiMountedHostMeasurementSettlementStop::Transition(denial) => {
                 Self::HostMeasurementTransition(denial)
+            }
+            UiMountedHostMeasurementSettlementStop::OccurrenceGeometry(denial) => {
+                Self::OccurrenceGeometry(denial)
             }
         }
     }
@@ -110,21 +114,15 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let frame = execution
+        let mut frame = execution
             .prepare_mounted_frame_with_content_internal(
                 request,
                 projection.content(),
                 projection.theme_values(),
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        execution.presentation.commit(&projection);
-        let transition = execution.mounted.present_prepared_frame(
-            execution.host_session,
-            frame,
-            Some(execution.appearance_inspection),
-            deadline,
-            now,
-        );
+        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
+        let transition = execution.present_prepared_frame_with_appearance(frame, deadline, now);
         Ok(finish_mounted_transition(
             execution.mounted,
             execution.focus,
@@ -137,6 +135,7 @@ impl WorthUiActiveApplicationSession {
             transition,
             Some(execution.appearance_inspection),
             Some(execution.presentation),
+            Some(execution.overlay_composition_owners),
         ))
     }
 
@@ -159,7 +158,7 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let frame = execution
+        let mut frame = execution
             .prepare_mounted_reconciliation_frame_with_content_internal(
                 request,
                 projection.content(),
@@ -167,14 +166,8 @@ impl WorthUiActiveApplicationSession {
                 replacements,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        execution.presentation.commit(&projection);
-        let transition = execution.mounted.present_prepared_frame(
-            execution.host_session,
-            frame,
-            Some(execution.appearance_inspection),
-            deadline,
-            now,
-        );
+        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
+        let transition = execution.present_prepared_frame_with_appearance(frame, deadline, now);
         Ok(finish_mounted_transition(
             execution.mounted,
             execution.focus,
@@ -187,6 +180,7 @@ impl WorthUiActiveApplicationSession {
             transition,
             Some(execution.appearance_inspection),
             Some(execution.presentation),
+            Some(execution.overlay_composition_owners),
         ))
     }
 }

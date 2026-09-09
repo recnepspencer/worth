@@ -313,10 +313,18 @@ fn finish_progressed<'session>(
         );
     }
     let deadline = presentation_deadline(&admitted.plan);
-    let outcome = admitted.session.present_prepared_mounted_frame_internal(
-        rejected.into_frame(),
-        deadline,
-        now_tick,
-    );
+    let frame = rejected.into_frame();
+    let outcome = match admitted.transfer.portal_proposal.as_ref() {
+        Some(proposal) => admitted.session.present_prepared_portal_frame_internal(
+            frame,
+            proposal,
+            proposal.overlay_appearance_sources().0.closes_portal(),
+            deadline,
+            now_tick,
+        ),
+        None => admitted
+            .session
+            .present_prepared_mounted_frame_internal(frame, deadline, now_tick),
+    };
     super::finish_completion(admitted, outcome)
 }

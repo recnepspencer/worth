@@ -50,6 +50,13 @@ impl FrozenMosaicSizingCapabilities {
     }
 }
 
+impl MosaicSizingContractDescriptor {
+    /// The same complete descriptor basis used by the frozen capability catalog.
+    pub(crate) fn digest_basis(&self) -> u64 {
+        fold_mosaic_sizing_descriptor(0x8fc2_18a6_b47d_0e35, self)
+    }
+}
+
 fn fold_mosaic_sizing_descriptor(
     accumulator: u64,
     descriptor: &MosaicSizingContractDescriptor,

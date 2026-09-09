@@ -40,7 +40,7 @@ impl WorthUiActiveApplicationSession {
         ) {
             Ok(reservation) => reservation,
             Err(denial) => {
-                return Err(self.retain_intent_consequence_preparation_stop(denial, plan, transfer))
+                return Err(self.retain_intent_consequence_preparation_stop(denial, plan, transfer));
             }
         };
         let semantic_content = plan.content().clone();
@@ -186,6 +186,33 @@ impl WorthUiActiveApplicationSession {
         let frame_request = self
             .mounted_frame_request()
             .with_portal_overlays(portal_overlay_revision, portal_overlays);
+        self.prepare_intent_consequence_frame_with_request(semantic_content, frame_request)
+    }
+
+    #[cfg(test)]
+    pub(in crate::facade::entry) fn prepare_intent_consequence_frame_for_surface_for_test(
+        &mut self,
+        semantic_content: crate::mounting::UiMountedSemanticContentInput,
+        portal_overlay_revision: u64,
+        portal_overlays: Vec<crate::mounting::UiMountedPortalOverlayProjectionInput>,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Result<
+        crate::mounting::UiPreparedMountedFrame,
+        crate::runtime::rebind::UiRebindPreparationDenial,
+    > {
+        let frame_request = crate::mounting::UiMountedFrameRequest::exact_surfaces(vec![surface])
+            .with_portal_overlays(portal_overlay_revision, portal_overlays);
+        self.prepare_intent_consequence_frame_with_request(semantic_content, frame_request)
+    }
+
+    fn prepare_intent_consequence_frame_with_request(
+        &mut self,
+        semantic_content: crate::mounting::UiMountedSemanticContentInput,
+        frame_request: crate::mounting::UiMountedFrameRequest,
+    ) -> Result<
+        crate::mounting::UiPreparedMountedFrame,
+        crate::runtime::rebind::UiRebindPreparationDenial,
+    > {
         let completion = self.execute_framework_turn(|_| {}).map_err(|_| {
             crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
         })?;

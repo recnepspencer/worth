@@ -29,6 +29,7 @@ fn main() {
         dpi_milli: 96,
         text_scale: UiTextScaleGeneration::new(1).unwrap(),
         lane: UiGlyphRasterLane::Ordinary,
+        scope: worth_ui_host_contract::UiGlyphRasterDemandScope::DamageFiltered,
         records: &records,
     })
     .unwrap();

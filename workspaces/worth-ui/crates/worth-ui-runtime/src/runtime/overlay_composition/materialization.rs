@@ -169,7 +169,7 @@ pub(super) fn materialize_one(
         .into_iter()
         .map(|scope| {
             let identity = UiBackdropInstanceIdentity::new(declaration.identity(), scope);
-            let extent_value = resolve_extent(declaration, extent)?;
+            let extent_value = resolve_extent(declaration, scope, extent)?;
             let motion_value = resolve_motion(declaration, scope, portals, motion)?;
             Ok(UiOverlayBackdropRow::new(
                 identity,
@@ -192,6 +192,7 @@ fn present(presence: UiBackdropPresenceBasis, portals: &[UiOverlayPortalRow]) ->
 
 fn resolve_extent(
     declaration: &UiBackdropDeclaration,
+    scope: UiOverlayBackdropInstanceScope,
     extent: &UiOverlaySurfaceExtentSnapshot,
 ) -> Result<UiOverlayExtent, UiOverlayCompositionDenial> {
     match declaration.extent() {
@@ -206,8 +207,14 @@ fn resolve_extent(
         UiBackdropExtentBasis::PresentedMosaicRegion { surface, region }
             if surface == extent.declaration_surface() =>
         {
+            let occurrence = match scope {
+                UiOverlayBackdropInstanceScope::SurfaceSingleton => None,
+                UiOverlayBackdropInstanceScope::Portal(portal) => {
+                    Some(portal.owner().mounted_instance_identity())
+                }
+            };
             extent
-                .region(region)
+                .region(region, occurrence)
                 .map(|region_extent| UiOverlayExtent::PresentedMosaicRegion {
                     basis: declaration.extent(),
                     bounds: region_extent.bounds(),

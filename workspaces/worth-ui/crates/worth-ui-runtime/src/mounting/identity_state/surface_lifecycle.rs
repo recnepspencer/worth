@@ -162,6 +162,14 @@ impl UiMountedIdentityState {
         let removed = self.bindings.remove(&candidate.semantic_surface);
         debug_assert!(removed.is_some_and(|record| record.request == candidate.record.request));
         if !candidate.preserve_published_frame {
+            self.unprojected_semantic_predecessor = self.semantic_predecessor().cloned();
+            self.unprojected_pointer_predecessor = self
+                .pointer_predecessor()
+                .map(|state| state.after_surface_deregistration(candidate.semantic_surface));
+            self.unprojected_appearance_predecessor =
+                self.appearance_predecessor().map(|appearance| {
+                    appearance.after_surface_deregistration(candidate.semantic_surface)
+                });
             self.current_frame = None;
             self.current_receipt_basis = None;
             self.current_projection = None;

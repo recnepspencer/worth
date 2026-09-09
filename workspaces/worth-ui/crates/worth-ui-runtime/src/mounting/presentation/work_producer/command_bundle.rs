@@ -6,11 +6,19 @@ use crate::runtime::persistent_index::{UiPersistentOrdMap, UiPersistentRankedSeq
 
 #[derive(Clone, Default)]
 pub(super) struct UiMountedPresentationCommandBundle {
-    commands: UiPersistentOrdMap<UiMountedPresentationCommandKey, UiMountedPaintCommand>,
+    commands: UiPersistentOrdMap<UiMountedPresentationCommandKey, CommandRecord>,
     order: UiPersistentRankedSequence<UiMountedPresentationCommandKey>,
     identities:
         UiPersistentOrdMap<UiMountedPresentationIdentityKey, UiMountedPresentationCommandKey>,
     positions: UiPersistentOrdMap<UiMountedPresentationIdentityKey, usize>,
+}
+
+/// The optional raw sample occupies a slot in the admitted command record.
+/// Candidate bundles remain private until the host accepts their work.
+#[derive(Clone)]
+struct CommandRecord {
+    command: UiMountedPaintCommand,
+    motion: super::motion_evidence::UiCommandMotionAcceptance,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -41,7 +49,13 @@ impl UiMountedPresentationCommandBundle {
                 .order
                 .insert(bundle.order.len(), key)
                 .expect("bounded command bundle rank");
-            bundle.commands.insert(key, command.clone());
+            bundle.commands.insert(
+                key,
+                CommandRecord {
+                    command: command.clone(),
+                    motion: Default::default(),
+                },
+            );
             bundle.identities.insert(identity, key);
             bundle.positions.insert(identity, position);
         }
@@ -50,9 +64,28 @@ impl UiMountedPresentationCommandBundle {
 
     pub(super) fn iter(&self) -> impl ExactSizeIterator<Item = &UiMountedPaintCommand> {
         self.order.iter().map(|key| {
-            self.commands
+            &self
+                .commands
                 .get(key)
                 .expect("command order names an indexed command")
+                .command
+        })
+    }
+
+    pub(super) fn appearance_motion(
+        &self,
+    ) -> impl ExactSizeIterator<
+        Item = (
+            &UiMountedPaintCommand,
+            Option<super::super::motion_sampling::UiPresentationMotionSampleReceipt>,
+        ),
+    > {
+        self.order.iter().map(|key| {
+            let record = self
+                .commands
+                .get(key)
+                .expect("command order names an indexed command");
+            (&record.command, record.motion.sample())
         })
     }
 
@@ -64,6 +97,7 @@ impl UiMountedPresentationCommandBundle {
         let key = self.identities.get(&lookup)?;
         self.commands
             .get(key)
+            .map(|record| &record.command)
             .filter(|command| command.identity() == identity)
     }
 
@@ -82,13 +116,91 @@ impl UiMountedPresentationCommandBundle {
         let Some(predecessor) = self.commands.get(&key) else {
             return false;
         };
-        if predecessor.identity() != replacement.identity()
-            || predecessor.layer_semantic_order() != replacement.layer_semantic_order()
+        if predecessor.command.identity() != replacement.identity()
+            || predecessor.command.layer_semantic_order() != replacement.layer_semantic_order()
         {
             return false;
         }
-        self.commands.insert(key, replacement);
+        let motion = super::command_same_presentation_meaning(&predecessor.command, &replacement)
+            .then(|| predecessor.motion.clone())
+            .unwrap_or_default();
+        self.commands.insert(
+            key,
+            CommandRecord {
+                command: replacement,
+                motion,
+            },
+        );
         true
+    }
+
+    pub(super) fn motion_slot(
+        &self,
+        identity: UiMountedPaintCommandIdentity,
+    ) -> Option<&super::motion_evidence::UiCommandMotionAcceptance> {
+        let key = self
+            .identities
+            .get(&UiMountedPresentationIdentityKey::for_identity(identity))?;
+        let record = self.commands.get(key)?;
+        (record.command.identity() == identity).then_some(&record.motion)
+    }
+
+    pub(super) fn inherit_unchanged_motion(&mut self, predecessor: &Self) {
+        let inherited = self
+            .commands
+            .iter()
+            .filter_map(|(key, record)| {
+                let old = predecessor.commands.get(key)?;
+                (old.command.identity() == record.command.identity()
+                    && super::command_same_presentation_meaning(&old.command, &record.command))
+                .then(|| {
+                    (
+                        *key,
+                        CommandRecord {
+                            command: record.command.clone(),
+                            motion: old.motion.clone(),
+                        },
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+        for (key, record) in inherited {
+            self.commands.insert(key, record);
+        }
+    }
+
+    pub(super) fn inherit_rebound_motion(
+        &mut self,
+        predecessor: &Self,
+        affected: worth_ui_host_contract::UiSurfaceBindingGeneration,
+        replacement: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    ) {
+        let inherited = self
+            .commands
+            .iter()
+            .filter_map(|(key, record)| {
+                let old = predecessor.commands.get(key)?;
+                let same = old.command.identity() == record.command.identity()
+                    && super::command_same_presentation_meaning_after_binding_replacement(
+                        &old.command,
+                        &record.command,
+                        affected,
+                        replacement,
+                    );
+                same.then(|| {
+                    (
+                        *key,
+                        CommandRecord {
+                            command: record.command.clone(),
+                            motion: old.motion.clone(),
+                        },
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+        for (key, record) in inherited {
+            self.commands.insert(key, record);
+        }
     }
 }
 

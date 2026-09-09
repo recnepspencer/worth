@@ -31,6 +31,16 @@ pub(crate) enum UiMountedProjectionInputTransition {
     },
 }
 
+impl UiMountedProjectionInputTransition {
+    pub(in crate::mounting) fn replaces_table(&self, predecessor_capacity: usize) -> bool {
+        match self {
+            Self::Retain => false,
+            Self::Merge { capacity, .. } => *capacity != predecessor_capacity,
+            Self::Replace { .. } => true,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UiMountedSemanticTextContent {
     Scalar(UiMountedScalarSemanticTextContent),

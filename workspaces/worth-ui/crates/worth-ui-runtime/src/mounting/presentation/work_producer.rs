@@ -14,6 +14,10 @@ mod command_bundle;
 mod delta_diff;
 #[path = "work_producer/effect_expectations.rs"]
 mod effect_expectations;
+#[path = "work_producer/motion_evidence.rs"]
+mod motion_evidence;
+pub(in crate::mounting) use motion_evidence::motion_acceptance_reserved_bytes;
+pub(super) use motion_evidence::UiPreparedCommandMotionAcceptance;
 #[path = "work_producer/motion_sample.rs"]
 mod motion_sample;
 #[path = "work_producer/overlay_attribution.rs"]
@@ -98,6 +102,7 @@ impl UiMountedPresentationState {
             baseline: self.requirement.baseline(),
             projection: projection.clone(),
             commands: commands.clone(),
+            sample_overrides: self.reconstruction_motion_overrides(),
             order: order.clone(),
             order_integrity: self.order_integrity,
             damage: complete_damage(&commands),
@@ -159,19 +164,58 @@ fn command_same_presentation_meaning(
             UiMountedPaintCommand::FilledRect {
                 mechanic: right, ..
             },
-        ) => left.semantic_digest() == right.semantic_digest(),
+        ) => left.same_retained_paint_meaning(*right),
         (
             UiMountedPaintCommand::PortalOverlay { mechanic: left, .. },
             UiMountedPaintCommand::PortalOverlay {
                 mechanic: right, ..
             },
-        ) => left.semantic_digest() == right.semantic_digest(),
+        ) => left.same_retained_paint_meaning(*right),
         (
             UiMountedPaintCommand::SemanticText { mechanic: left, .. },
             UiMountedPaintCommand::SemanticText {
                 mechanic: right, ..
             },
-        ) => left.semantic_digest() == right.semantic_digest(),
+        ) => left.same_retained_paint_meaning(right),
+        _ => false,
+    }
+}
+
+fn command_same_presentation_meaning_after_binding_replacement(
+    left: &UiMountedPaintCommand,
+    right: &UiMountedPaintCommand,
+    affected: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    replacement: worth_ui_host_contract::UiSurfaceBindingGeneration,
+) -> bool {
+    match (left, right) {
+        (
+            UiMountedPaintCommand::FilledRect { mechanic: left, .. },
+            UiMountedPaintCommand::FilledRect {
+                mechanic: right, ..
+            },
+        ) => left.same_retained_paint_meaning_after_binding_replacement(
+            *right,
+            affected,
+            replacement,
+        ),
+        (
+            UiMountedPaintCommand::PortalOverlay { mechanic: left, .. },
+            UiMountedPaintCommand::PortalOverlay {
+                mechanic: right, ..
+            },
+        ) => left.same_retained_paint_meaning_after_binding_replacement(
+            *right,
+            affected,
+            replacement,
+        ),
+        (
+            UiMountedPaintCommand::SemanticText { mechanic: left, .. },
+            UiMountedPaintCommand::SemanticText {
+                mechanic: right, ..
+            },
+        ) => {
+            left.same_retained_paint_meaning_after_binding_replacement(right, affected, replacement)
+        }
         _ => false,
     }
 }

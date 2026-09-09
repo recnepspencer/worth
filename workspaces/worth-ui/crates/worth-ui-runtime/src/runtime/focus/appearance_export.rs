@@ -50,6 +50,13 @@ impl super::UiFocusRuntimeState {
 }
 
 impl UiFocusAppearancePosture {
+    pub(crate) fn appearance_dependency_eq(self, other: Self) -> bool {
+        self.target == other.target
+            && self.class == other.class
+            && self.window == other.window
+            && self.modality == other.modality
+    }
+
     pub(crate) const fn class(self) -> UiFocusAppearanceClass {
         self.class
     }

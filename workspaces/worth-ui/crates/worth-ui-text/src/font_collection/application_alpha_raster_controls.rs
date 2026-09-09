@@ -37,6 +37,9 @@ pub(super) fn public_alpha_raster_matches_exact_oracle_across_fractional_origins
         (0.0, 0.0, 0, 28),
         (0.25, 0.5, 16, 60),
         (0.75, 0.125, 48, 36),
+        (-0.75, -20.0, -48, -36),
+        (0.999, 0.0, 63, 28),
+        (-0.999, -20.0, -63, -36),
     ] {
         assert_matches_pinned_swash_oracle(
             &layout,
@@ -68,18 +71,19 @@ fn assert_matches_pinned_swash_oracle(
         layout,
         UiGlyphRasterDemandRequest {
             paint_spans: &[paint],
-            logical_damage: &[damage],
+            selection: crate::UiGlyphRasterDemandSelection::LogicalDamage(&[damage]),
             scale: UiGlyphRasterScale::new(1_000, layout.view().text_scale_generation()).unwrap(),
             placement: UiGlyphRasterPlacement::from_mounted_logical(origin.0, origin.1).unwrap(),
             lane: UiGlyphRasterLane::Ordinary,
         },
     )
     .unwrap();
-    let demand_record = demand
+    let (record_index, demand_record) = demand
         .records()
         .iter()
         .copied()
-        .find(|record| is_alpha(record.key().source()))
+        .enumerate()
+        .find(|(_, record)| is_alpha(record.key().source()))
         .expect("qualified alpha demand");
     assert_eq!(
         (
@@ -105,9 +109,30 @@ fn assert_matches_pinned_swash_oracle(
         digest: production.digest().bytes(),
         pixels: production.pixels().into(),
     };
+    let reference = pinned_swash_reference(layout, demand_record.key());
+    assert_eq!(observed, reference);
+    let positioned = demand
+        .positioned_glyph_for_record(layout, record_index)
+        .unwrap();
+    let origin_millipoints = [
+        positioned.origin_x_millipoints() + demand.placement().origin_x_millipoints(),
+        positioned.origin_y_millipoints() + demand.placement().origin_y_millipoints(),
+    ];
+    // Independent upstream image geometry at the integral pixel base. The
+    // reference renderer above already used the fractional phase for its pixels.
+    let expected = [
+        (origin_millipoints[0] as f64 / 1_000.0).trunc() as f32 + reference.bearing.0 as f32 / 64.0,
+        (origin_millipoints[1] as f64 / 1_000.0).trunc() as f32 - reference.bearing.1 as f32 / 64.0,
+        reference.extent.0 as f32,
+        reference.extent.1 as f32,
+    ];
     assert_eq!(
-        observed,
-        pinned_swash_reference(layout, demand_record.key())
+        production.bearing().positioned_bounds(
+            production.extent(),
+            origin_millipoints,
+            demand_record.key().dpi_milli(),
+        ),
+        Some(expected)
     );
 }
 

@@ -28,6 +28,7 @@ mod reconstruction;
 mod retained_draw_list;
 mod retained_evidence_copy;
 mod retained_order;
+mod retained_raster;
 mod retained_regions;
 mod sample;
 #[cfg(feature = "certification-support")]
@@ -48,6 +49,11 @@ use pipeline::{
 use raster::{rectangle_vertices, GlyphVertex, RasterRect, RasterVertex};
 use retained_evidence_copy::copy_evidence_pixels;
 
+#[cfg(feature = "certification-support")]
+pub use appearance::{
+    certify_mounted_surface_sample, UiNativeSurfaceSampleCertification,
+    UiNativeSurfaceSampleCertificationDenial,
+};
 pub(crate) use completed_effects::UiNativePresentationEffects;
 pub(crate) use delta::{present_delta, UiNativeDeltaPresentation};
 pub(crate) use pending_settlement::{
@@ -138,13 +144,24 @@ pub(crate) fn present_initial<Port: UiNativePresentationPort>(
         .text_raster_work()
         .map(|work| work.glyph_runs())
         .unwrap_or_default();
-    let retained = UiNativeRetainedDrawList::initial(initial_work, glyph_runs).map_err(|_| {
-        UiNativePresentationFailure::BeforeEffects(
-            UiHostSurfacePresentationDenial::MalformedProjection,
-        )
-    })?;
+    let mut retained =
+        UiNativeRetainedDrawList::initial(initial_work, glyph_runs).map_err(|_| {
+            UiNativePresentationFailure::BeforeEffects(
+                UiHostSurfacePresentationDenial::MalformedProjection,
+            )
+        })?;
     let initial = validate_initial(view).map_err(UiNativePresentationFailure::BeforeEffects)?;
-    let mut operations = initial_operations(view, graphics, atlas, &initial)?;
+    let mut operations = initial_operations(&retained, graphics, atlas, &initial)?;
+    retained
+        .initialize_physical_coverage(
+            raster::UiNativeRasterBasis::from_presentation_access(graphics),
+            atlas,
+        )
+        .map_err(|_| {
+            UiNativePresentationFailure::BeforeEffects(
+                UiHostSurfacePresentationDenial::MalformedProjection,
+            )
+        })?;
     operations.extend(
         retained
             .identity_overlay_operations(raster::UiNativeRasterBasis::from_presentation_access(
@@ -321,3 +338,6 @@ mod pipeline_glyph_tests;
 #[cfg(test)]
 #[path = "presentation_tests.rs"]
 mod tests;
+
+#[cfg(feature = "certification-support")]
+pub use retained_draw_list::UiNativeTextReplayOperation;

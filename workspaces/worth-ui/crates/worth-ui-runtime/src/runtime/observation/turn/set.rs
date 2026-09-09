@@ -7,6 +7,7 @@ pub struct UiAdmittedObservationSet {
     observations: Box<[UiAdmittedObservation]>,
     summary: UiObservationSetSummary,
     appearance_owner_snapshot: Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    pointer_snapshot: Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
     _lease: super::super::resource_ledger::UiObservationSetLease,
 }
 
@@ -18,9 +19,10 @@ impl UiAdmittedObservationSet {
         observations: Box<[UiAdmittedObservation]>,
         retained_bytes: usize,
         appearance_owner_snapshot: Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+        pointer_snapshot: Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
         lease: super::super::resource_ledger::UiObservationSetLease,
     ) -> Self {
-        debug_assert!(!observations.is_empty());
+        debug_assert!(!observations.is_empty() || pointer_snapshot.is_some());
         let families = observations
             .iter()
             .map(UiAdmittedObservation::family)
@@ -34,8 +36,20 @@ impl UiAdmittedObservationSet {
             observations,
             summary,
             appearance_owner_snapshot,
+            pointer_snapshot,
             _lease: lease,
         }
+    }
+
+    pub(crate) fn pointer_snapshot(
+        &self,
+    ) -> Option<&crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot> {
+        self.pointer_snapshot.as_ref()
+    }
+    pub(crate) fn take_pointer_snapshot(
+        &mut self,
+    ) -> Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot> {
+        self.pointer_snapshot.take()
     }
 
     pub const fn turn(&self) -> UiObservationTurnIdentity {

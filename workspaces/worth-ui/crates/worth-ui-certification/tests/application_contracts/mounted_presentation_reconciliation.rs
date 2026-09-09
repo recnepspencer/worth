@@ -1,19 +1,21 @@
 use worth_ui_runtime::facade::mounted::{
     UiHostPresentationReconciliation, UiHostSurfacePresentationMode, UiMountedFrameOutcome,
-    UiMountedFramePublicationReceipt, UiMountedFrameRequest, UiMountedFrameReuse,
-    UiMountedIdentityDenial, UiMountedPresentationAdmissionDenial, UiPresentationDeadline,
+    UiMountedFrameRequest, UiMountedFrameReuse, UiMountedIdentityDenial,
+    UiMountedPresentationAdmissionDenial, UiPresentationDeadline,
 };
-use worth_ui_test_support::WorthUiFrameworkTurnCertificationExt;
 use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
-use worth_ui_test_support::{
-    WorthUiMountedFrameExecutionCertificationExt, WorthUiMountedPublicationCertificationExt,
-};
+use worth_ui_test_support::WorthUiMountedPublicationCertificationExt;
 
 use super::mounted_application_lifecycle::in_flight_presentation_world::{
     mounted_session, prepared,
 };
 use super::mounted_application_lifecycle::known_empty_surface_world::profile;
 use super::mounted_host_protocol::scripted_host::ScriptedPresentationHost;
+
+#[path = "mounted_presentation_reconciliation/support.rs"]
+mod support;
+
+use support::{classify_reuse, expect_published, prepared_frame, prepared_with_request};
 
 #[test]
 fn published_predecessor_survives_indeterminacy_and_requires_exact_re_presentation() {
@@ -359,42 +361,4 @@ fn verified_candidate_only_deregistration_closes_its_blocked_generation() {
         session.present_prepared_mounted_frame(successor, UiPresentationDeadline::at_tick(30), 3,),
         UiMountedFrameOutcome::Published(_)
     ));
-}
-
-fn prepared_frame(
-    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
-    prepared(session)
-}
-
-fn prepared_with_request(
-    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-    request: &UiMountedFrameRequest,
-) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
-    session
-        .execute_framework_turn(|_| {})
-        .unwrap()
-        .into_execution()
-        .unwrap_or_else(|_| panic!("empty source turn permits mounted preparation"))
-        .prepare_mounted_frame(request.clone())
-        .unwrap()
-}
-
-fn classify_reuse(
-    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-    request: &UiMountedFrameRequest,
-) -> UiMountedFrameReuse {
-    session
-        .execute_framework_turn(|_| {})
-        .unwrap()
-        .into_execution()
-        .unwrap_or_else(|_| panic!("empty source turn carries mounted reuse authority"))
-        .classify_mounted_frame_reuse(request)
-}
-
-fn expect_published(outcome: UiMountedFrameOutcome) -> UiMountedFramePublicationReceipt {
-    match outcome {
-        UiMountedFrameOutcome::Published(receipt) => receipt,
-        _ => panic!("scripted predecessor presentation must publish"),
-    }
 }

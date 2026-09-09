@@ -210,6 +210,12 @@ For rebind, inspect the decision key and source basis before counts. Then compar
 planned structural cost with the mounted and host receipts. A matching pixel or
 digest cannot repair wrong generation or frame affinity.
 
+Appearance explanations distinguish a theme-slot source (selected and terminal
+slot), an authored literal, and unavailable resolution. Literal cells retain
+their role, theme binding, coherent state, and mounted attribution while recording
+zero theme-slot lookups. They never report a fabricated slot or alias. This
+inspection applies to the staged, unpublished appearance path until cutover.
+
 ## Anti-Patterns
 
 - Importing runtime storage, planning, mounting, or publication modules.

@@ -4,6 +4,7 @@ mod currentness;
 mod decision;
 mod metrics;
 mod settlement;
+mod standing_owner;
 mod state;
 mod stop;
 
@@ -22,6 +23,7 @@ pub use settlement::{
     UiIntentAdmissionCancellationReason, UiIntentAdmissionSettlementPosture,
     UiIntentAdmissionSettlementReceipt,
 };
+pub(crate) use standing_owner::UiIntentOperabilityStandingFactSnapshot;
 pub(crate) use state::UiIntentAdmissionState;
 pub use stop::{UiIntentAdmissionCost, UiIntentAdmissionStop, UiIntentAdmissionStopReason};
 

@@ -11,9 +11,11 @@ pub(super) fn same_physical_output(
         ) => {
             left.bounds() == right.bounds()
                 && left.clip() == right.clip()
-                && left.layer() == right.layer()
+                && left.surface_paint_order() == right.surface_paint_order()
                 && left.visual_bounds() == right.visual_bounds()
                 && left.radii() == right.radii()
+                && left.border_edges() == right.border_edges()
+                && left.border_omissions() == right.border_omissions()
                 && left.paint() == right.paint()
                 && left.opacity() == right.opacity()
         }
@@ -32,6 +34,7 @@ pub(super) fn same_physical_output(
             UiMountedAppearanceMechanic::Outline(right),
         ) => {
             left.clip() == right.clip()
+                && left.surface_paint_order() == right.surface_paint_order()
                 && left.allocation() == right.allocation()
                 && left.visual_bounds() == right.visual_bounds()
                 && left.color() == right.color()
@@ -59,7 +62,7 @@ pub(super) fn same_physical_output(
         ) => {
             left.identity() == right.identity()
                 && left.semantic_surface() == right.semantic_surface()
-                && left.placement() == right.placement()
+                && left.placement().ordinal() == right.placement().ordinal()
                 && left.extent() == right.extent()
                 && left.clip() == right.clip()
                 && left.background() == right.background()

@@ -109,8 +109,8 @@ impl UiMountedProjectionFrame {
                 &self.receipt_basis,
             )
             .expect("prepared hit-test mechanics remain attributable")
-            .map(|row| {
-                portal.map_or(row, |portal| {
+            .and_then(|row| {
+                portal.map_or(Some(row), |portal| {
                     row.presented_within_portal(portal)
                         .expect("validated Portal-relative hit region remains canonical")
                 })

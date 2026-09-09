@@ -4,7 +4,7 @@ use worth_ui_host_contract::{
 };
 
 use super::{
-    raster::raster_rect, text, UiNativePresentationAccess, UiNativePresentationFailure,
+    raster::raster_rect, UiNativePresentationAccess, UiNativePresentationFailure,
     UiNativeRasterOperation,
 };
 
@@ -89,24 +89,11 @@ pub(super) fn validate_initial(
 }
 
 pub(super) fn initial_operations(
-    view: &UiMountedFrameConsumptionView<'_>,
+    retained: &super::UiNativeRetainedDrawList,
     graphics: &UiNativePresentationAccess,
     atlas: &crate::native::text_atlas::UiNativeTextAtlas,
     initial: &ValidatedInitial,
 ) -> Result<Vec<UiNativeRasterOperation>, UiNativePresentationFailure> {
-    let runs = view
-        .text_raster_work()
-        .map(|work| work.glyph_runs())
-        .unwrap_or_default();
-    let glyphs = text::plan_glyph_commands(runs, atlas, graphics.extent())
-        .map_err(|_| before_effects_malformed())?;
-    if glyphs.iter().any(|glyph| {
-        !initial.commands.iter().any(|command| {
-            matches!(command, UiMountedPaintCommand::SemanticText { identity, .. } if *identity == glyph.run.mechanic())
-        })
-    }) {
-        return Err(before_effects_malformed());
-    }
     let mut operations = Vec::new();
     for command in &initial.commands {
         match command {
@@ -127,10 +114,15 @@ pub(super) fn initial_operations(
                 });
             }
             UiMountedPaintCommand::SemanticText { identity, .. } => operations.extend(
-                glyphs
+                retained
+                    .plan_text_commands(
+                        *identity,
+                        atlas,
+                        super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
+                    )
+                    .map_err(|_| before_effects_malformed())?
                     .iter()
                     .copied()
-                    .filter(|glyph| glyph.run.mechanic() == *identity)
                     .map(UiNativeRasterOperation::Glyph),
             ),
         }

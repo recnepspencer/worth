@@ -18,6 +18,7 @@ impl UiMountedIdentityState {
                 std::rc::Rc::new(successor),
                 current.appearance().clone(),
                 current.theme_revision(),
+                current.pointer.clone(),
             ),
         ));
         Ok(lost)
@@ -43,6 +44,7 @@ impl UiMountedIdentityState {
                 std::rc::Rc::new(successor),
                 current.appearance().clone(),
                 current.theme_revision(),
+                current.pointer.clone(),
             ),
         ));
         Ok(reconstructed)

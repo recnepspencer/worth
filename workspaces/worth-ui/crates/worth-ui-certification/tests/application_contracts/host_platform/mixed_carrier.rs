@@ -289,6 +289,7 @@ fn publish(
     let plan = session
         .compile_rebind_plan(lifecycle, UiRebindExecutionPolicy::ordinary())
         .unwrap();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(request))
         .unwrap();

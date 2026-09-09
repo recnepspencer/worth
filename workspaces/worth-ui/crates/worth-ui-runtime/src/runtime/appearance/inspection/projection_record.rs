@@ -32,8 +32,7 @@ pub(super) fn record_projection(
                 aspect.state_classes().to_vec().into_boxed_slice(),
             ),
             UiAppearanceInspectionSourceSpan::Unavailable,
-            aspect.provenance().selected_slot().as_str(),
-            aspect.provenance().terminal_slot().as_str(),
+            value_source(aspect.provenance()),
             support(aspect.support()),
             UiAppearanceInspectionValue::Resolved(aspect.value()),
             distinctions,
@@ -94,5 +93,23 @@ fn support(
         super::super::projection::UiAppearanceSupportPosture::Inapplicable => {
             UiAppearanceInspectionSupport::Inapplicable
         }
+    }
+}
+
+fn value_source(
+    provenance: &super::super::projection::UiAppearanceProvenance,
+) -> worth_ui_inspection::UiAppearanceInspectionValueSource {
+    use super::super::projection::UiAppearanceProvenance;
+    use worth_ui_inspection::UiAppearanceInspectionValueSource;
+    match provenance {
+        UiAppearanceProvenance::Literal => UiAppearanceInspectionValueSource::Literal,
+        UiAppearanceProvenance::ThemeSlot {
+            selected_slot,
+            terminal_slot,
+            ..
+        } => UiAppearanceInspectionValueSource::ThemeSlot {
+            selected: selected_slot.as_str().into(),
+            terminal: terminal_slot.as_str().into(),
+        },
     }
 }

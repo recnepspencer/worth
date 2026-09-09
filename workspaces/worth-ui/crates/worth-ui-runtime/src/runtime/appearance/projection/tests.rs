@@ -49,14 +49,10 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
             aspect.value(),
             UiThemeValue::Color(UiThemeColor::from_channels([1, 2, 3, 255]))
         );
-        assert_eq!(
-            aspect.provenance().selected_slot().as_str(),
-            "theme.appearance_consumer"
-        );
-        assert_eq!(
-            aspect.provenance().terminal_slot().as_str(),
-            "theme.appearance_consumer"
-        );
+        assert!(matches!(aspect.provenance(),
+            super::UiAppearanceProvenance::ThemeSlot { selected_slot, terminal_slot, .. }
+                if selected_slot.as_str() == "theme.appearance_consumer"
+                    && terminal_slot.as_str() == "theme.appearance_consumer"));
         assert_eq!(
             aspect.support(),
             super::UiAppearanceSupportPosture::Supported
@@ -179,13 +175,28 @@ pub(crate) fn inputs() -> (
     UiAppearanceStateVector,
     UiThemeResolutionView,
 ) {
+    use crate::runtime::tests::appearance_component_session_test_support as support;
+    let role = support::validation_background_role("theme.appearance_consumer");
+    inputs_from_session(
+        support::source_backed_two_node_appearance_session(&role),
+        role,
+    )
+}
+
+pub(crate) fn inputs_from_session(
+    mut session: crate::facade::WorthUiActiveApplicationSession,
+    role: worth_ui_dsl::UiAppearanceRoleDeclaration,
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    UiAppearanceNodeRoleBinding,
+    UiAppearanceTarget,
+    UiAppearanceStateVector,
+    UiThemeResolutionView,
+) {
     use crate::runtime::tests::appearance_component_session_test_support::{
-        source_backed_two_node_appearance_session, two_node_appearance_candidate_submission,
-        validation_background_role, APPEARANCE_NODE_A,
+        two_node_appearance_candidate_submission, APPEARANCE_NODE_A,
     };
 
-    let role = validation_background_role("theme.appearance_consumer");
-    let mut session = source_backed_two_node_appearance_session(&role);
     let candidate = two_node_appearance_candidate_submission(
         &session,
         "appearance-resolver-test",

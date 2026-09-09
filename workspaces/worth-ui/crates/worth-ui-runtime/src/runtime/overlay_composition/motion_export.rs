@@ -61,4 +61,8 @@ impl UiOverlayMotionOwnerExport {
     pub(super) fn snapshot(&self) -> &UiOverlayMotionSnapshot {
         &self.snapshot
     }
+
+    pub(super) fn is_empty(&self) -> bool {
+        self.snapshot.rows.is_empty()
+    }
 }

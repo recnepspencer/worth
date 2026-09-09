@@ -63,6 +63,22 @@ pub(crate) enum UiPortalProposalPreparationDenial {
 }
 
 impl UiStagedPortalProposalTransaction {
+    pub(crate) fn overlay_appearance_sources(
+        &self,
+    ) -> (
+        &crate::runtime::portal::UiPreparedPortalServiceTransition,
+        Option<&crate::runtime::portal::UiPortalOverlayBindingStage>,
+        Option<crate::runtime::motion::UiMotionOverlayOwnerRow>,
+    ) {
+        (
+            self.portal.transition(),
+            self.portal.overlay_binding_stage(),
+            self.motion.as_ref().map(|motion| motion.overlay_row()),
+        )
+    }
+}
+
+impl UiStagedPortalProposalTransaction {
     pub(crate) fn overlay_binding_commit(
         &self,
     ) -> crate::runtime::portal::UiPortalOverlayBindingCommit {

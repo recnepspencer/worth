@@ -111,20 +111,21 @@ fn node_both_receipts_accept_insert_against_successor_receipt() {
     let successor = successor_surface.node_receipt();
     let issuer = UiMountedNodeReceiptIssuer::mint_for(context.frame).unwrap();
     let span = UiMountedTextPaintSpanIdentity::from_runtime_mounting([31; 32]);
+    let candidate = super::super::text_row(&context, instance, successor, span);
     let foreground = UiMountedTextForegroundAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedTextForegroundAppearanceCompletionInput {
             issuer,
             node_receipt: successor,
+            command: UiMountedPaintCommandIdentity::semantic_text(&candidate),
             paint_span: span,
             foreground: UiMountedAppearanceColor::from_straight_srgba([1, 2, 3, 255]),
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
                 .unwrap(),
         },
     )
     .unwrap();
     let inserted = UiMountedAppearanceMechanic::TextForeground(foreground);
-    let candidate = super::super::text_row(&context, instance, successor, span);
     let work = work_with_manifest(
         &context,
         UiMountedAppearanceWorkPosture::Delta,

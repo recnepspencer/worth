@@ -152,6 +152,23 @@ impl UiIntentConfirmationState {
 }
 
 impl UiIntentConfirmationTerminal {
+    pub(super) fn stop_reason(&self) -> UiIntentConfirmationStopReason {
+        match self.kind {
+            UiIntentConfirmationTerminalKind::Continued => {
+                UiIntentConfirmationStopReason::AlreadyContinued
+            }
+            UiIntentConfirmationTerminalKind::Cancelled(reason) => {
+                UiIntentConfirmationStopReason::LifecycleCancelled(reason)
+            }
+            UiIntentConfirmationTerminalKind::Expired => {
+                UiIntentConfirmationStopReason::AlreadyStopped
+            }
+            UiIntentConfirmationTerminalKind::Stopped => {
+                UiIntentConfirmationStopReason::AlreadyStopped
+            }
+        }
+    }
+
     pub(super) fn from_challenge(
         challenge: &UiIntentConfirmationChallenge,
         kind: UiIntentConfirmationTerminalKind,

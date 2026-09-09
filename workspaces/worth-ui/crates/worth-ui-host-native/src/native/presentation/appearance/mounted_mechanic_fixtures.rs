@@ -1,16 +1,14 @@
 use worth_ui_host_contract::{
     UiAppearanceAllocationBounds, UiAppearanceBackdropExtent, UiAppearanceClip,
     UiAppearanceLogicalLength, UiAppearanceNormalizedLogicalRadii, UiAppearanceOutlineGeometry,
-    UiHostPointerIdentity, UiMountedAppearanceColor, UiMountedAppearanceOpacity,
-    UiMountedBackdropAppearanceAttribution, UiMountedBackdropCompletionInput,
-    UiMountedBackdropIdentity, UiMountedBackdropMechanic, UiMountedBackdropScope,
-    UiMountedFrameIdentity, UiMountedInstanceIdentity, UiMountedLayerProjection,
-    UiMountedLayerReference, UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
+    UiHostPointerIdentity, UiMountedAppearanceColor, UiMountedBackdropAppearanceAttribution,
+    UiMountedBackdropCompletionInput, UiMountedBackdropIdentity, UiMountedBackdropMechanic,
+    UiMountedBackdropScope, UiMountedFrameIdentity, UiMountedInstanceIdentity,
+    UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
     UiMountedOutlineAppearanceCompletionInput, UiMountedOutlineAppearanceMechanic,
-    UiMountedPointerAffordanceMechanic, UiMountedSurfaceAppearanceCompletionInput,
-    UiMountedSurfaceAppearanceMechanic, UiMountedSurfacePaint,
-    UiMountedTextForegroundAppearanceCompletionInput, UiMountedTextForegroundAppearanceMechanic,
-    UiMountedTextPaintSpanIdentity, UiOverlayPlacementReceipt, UiPointerAffordanceFamily,
+    UiMountedPointerAffordanceMechanic, UiMountedPresentationOpacity,
+    UiMountedSurfaceAppearanceCompletionInput, UiMountedSurfaceAppearanceMechanic,
+    UiMountedSurfacePaint, UiOverlayPlacementReceipt, UiPointerAffordanceFamily,
     UiSemanticSurfaceIdentity,
 };
 
@@ -27,11 +25,21 @@ pub(super) struct MountedSurfaceFixtureInput {
     pub(super) clip: UiAppearanceClip,
     pub(super) radii: [UiAppearanceLogicalLength; 4],
     pub(super) paint: UiMountedSurfacePaint,
-    pub(super) opacity: UiMountedAppearanceOpacity,
+    pub(super) opacity: UiMountedPresentationOpacity,
 }
 
 pub(super) fn mounted_surface(
     input: MountedSurfaceFixtureInput,
+) -> UiMountedSurfaceAppearanceMechanic {
+    mounted_surface_with_edges(
+        input,
+        worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
+    )
+}
+
+pub(super) fn mounted_surface_with_edges(
+    input: MountedSurfaceFixtureInput,
+    border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges,
 ) -> UiMountedSurfaceAppearanceMechanic {
     let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let issuer = UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
@@ -41,8 +49,10 @@ pub(super) fn mounted_surface(
             node_receipt: issuer.receipt_for(UiMountedInstanceIdentity::mint_unbound().unwrap()),
             bounds: input.allocation,
             clip: input.clip,
-            layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+            surface_paint_order: 0,
             radii: UiAppearanceNormalizedLogicalRadii::normalize(input.allocation, input.radii),
+            border_edges,
+            border_omissions: Box::new([]),
             paint: input.paint,
             opacity: input.opacity,
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
@@ -69,7 +79,7 @@ pub(super) fn filled_surface(
         clip: UiAppearanceClip::new(x, y, width, height).unwrap(),
         radii: [UiAppearanceLogicalLength::ZERO; 4],
         paint: UiMountedSurfacePaint::Fill(input.color),
-        opacity: UiMountedAppearanceOpacity::ONE,
+        opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
     })
 }
 
@@ -81,7 +91,7 @@ pub(super) struct MountedOutlineFixtureInput {
     pub(super) offset: UiAppearanceLogicalLength,
     pub(super) anti_alias_fringe: UiAppearanceLogicalLength,
     pub(super) color: UiMountedAppearanceColor,
-    pub(super) opacity: UiMountedAppearanceOpacity,
+    pub(super) opacity: UiMountedPresentationOpacity,
 }
 
 pub(super) fn mounted_outline(
@@ -99,6 +109,7 @@ pub(super) fn mounted_outline(
     let issuer = UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
     UiMountedOutlineAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedOutlineAppearanceCompletionInput {
+            surface_paint_order: 0,
             issuer,
             node_receipt: issuer.receipt_for(UiMountedInstanceIdentity::mint_unbound().unwrap()),
             clip: input.clip,
@@ -118,7 +129,7 @@ pub(super) struct MountedBackdropFixtureInput {
     pub(super) extent: UiAppearanceBackdropExtent,
     pub(super) clip: UiAppearanceClip,
     pub(super) background: UiMountedAppearanceColor,
-    pub(super) opacity: UiMountedAppearanceOpacity,
+    pub(super) opacity: UiMountedPresentationOpacity,
 }
 
 pub(super) fn mounted_backdrop(input: MountedBackdropFixtureInput) -> UiMountedBackdropMechanic {
@@ -164,40 +175,7 @@ pub(super) fn backdrop_for_surface(
         extent: UiAppearanceBackdropExtent::new(0, 0, 40, 40).unwrap(),
         clip: UiAppearanceClip::new(0, 0, 40, 40).unwrap(),
         background: UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 128]),
-        opacity: UiMountedAppearanceOpacity::ONE,
-    })
-}
-
-pub(super) struct MountedTextForegroundFixtureInput {
-    pub(super) seed: u8,
-    pub(super) foreground: UiMountedAppearanceColor,
-    pub(super) opacity: UiMountedAppearanceOpacity,
-}
-
-pub(super) fn mounted_text_foreground(
-    input: MountedTextForegroundFixtureInput,
-) -> UiMountedTextForegroundAppearanceMechanic {
-    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
-    let issuer = UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
-    UiMountedTextForegroundAppearanceMechanic::complete_from_runtime_mounting(
-        UiMountedTextForegroundAppearanceCompletionInput {
-            issuer,
-            node_receipt: issuer.receipt_for(UiMountedInstanceIdentity::mint_unbound().unwrap()),
-            paint_span: UiMountedTextPaintSpanIdentity::from_runtime_mounting([input.seed; 32]),
-            foreground: input.foreground,
-            opacity: input.opacity,
-            projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
-                .unwrap(),
-        },
-    )
-    .unwrap()
-}
-
-pub(super) fn text_foreground(seed: u8) -> UiMountedTextForegroundAppearanceMechanic {
-    mounted_text_foreground(MountedTextForegroundFixtureInput {
-        seed,
-        foreground: UiMountedAppearanceColor::from_straight_srgba([255, 255, 255, 255]),
-        opacity: UiMountedAppearanceOpacity::ONE,
+        opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
     })
 }
 

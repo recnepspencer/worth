@@ -48,17 +48,19 @@ mod tests {
                     node_receipt: issuer.receipt_for(surface_instance),
                     bounds,
                     clip: super::super::UiAppearanceClip::new(0, 0, 8, 8).unwrap(),
-                    layer: crate::UiMountedLayerProjection::Layer(
-                        crate::UiMountedLayerReference::new(0),
-                    ),
+                    surface_paint_order: 0,
                     radii: super::super::UiAppearanceNormalizedLogicalRadii::normalize(
                         bounds,
                         [super::super::UiAppearanceLogicalLength::ZERO; 4],
                     ),
+                    border_edges: super::super::UiMountedSurfaceBorderEdges::ALL,
+                    border_omissions: Box::new([]),
                     paint: super::super::UiMountedSurfacePaint::Fill(
                         super::super::UiMountedAppearanceColor::from_straight_srgba([0; 4]),
                     ),
-                    opacity: super::super::UiMountedAppearanceOpacity::ONE,
+                    opacity: crate::UiMountedPresentationOpacity::from_runtime_composition(
+                        u16::MAX,
+                    ),
                     projection:
                         super::super::UiMountedNodeAppearanceAttribution::from_runtime_mounting(
                             issuer, 1, 1,

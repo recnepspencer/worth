@@ -55,7 +55,7 @@ fn presented_geometry_adjudicates_overlap_clip_and_half_open_edges() {
     assert_targeting_stop(
         canonical.button(3, 1, UiHostPointerButtonTransition::Pressed, [152, 20]),
         UiInteractionTargetingDenial::NoTarget {
-            hit_test_rows_considered: 2,
+            hit_test_rows_considered: 0,
         },
     );
     let _ = canonical.session.shutdown();
@@ -75,7 +75,7 @@ fn presented_geometry_adjudicates_overlap_clip_and_half_open_edges() {
         clipped.button(1, 1, UiHostPointerButtonTransition::Pressed, [10, 20]),
         match expected_target([10, 20], true) {
             ExpectedTarget::None => UiInteractionTargetingDenial::NoTarget {
-                hit_test_rows_considered: 2,
+                hit_test_rows_considered: 0,
             },
             ExpectedTarget::Rank(_) => panic!("independent oracle must exclude the clipped point"),
         },

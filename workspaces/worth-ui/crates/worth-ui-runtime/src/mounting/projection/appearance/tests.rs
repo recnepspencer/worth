@@ -1,25 +1,26 @@
 use worth_ui_host_contract::{
     UiAppearanceAllocationBounds, UiAppearanceClip, UiAppearanceLogicalLength,
-    UiAppearanceNormalizedLogicalRadii, UiAppearanceOutlineGeometry, UiHostPointerIdentity,
-    UiMountedAppearanceColor, UiMountedAppearanceMechanic, UiMountedAppearanceMechanicIdentity,
-    UiMountedAppearanceOpacity, UiMountedAppearanceWorkPosture,
-    UiMountedBackdropAppearanceAttribution, UiMountedBackdropIdentity, UiMountedBackdropScope,
-    UiMountedFrameIdentity, UiMountedInstanceIdentity, UiMountedLayerProjection,
-    UiMountedLayerReference, UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
+    UiAppearanceNormalizedLogicalRadii, UiAppearanceOutlineGeometry, UiMountedAppearanceColor,
+    UiMountedAppearanceMechanic, UiMountedAppearanceMechanicIdentity, UiMountedAppearanceOpacity,
+    UiMountedAppearanceWorkPosture, UiMountedBackdropAppearanceAttribution,
+    UiMountedBackdropIdentity, UiMountedBackdropScope, UiMountedFrameIdentity,
+    UiMountedInstanceIdentity, UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
     UiMountedOverlayOrderMechanic, UiMountedSurfacePaint, UiMountedTextPaintSpanIdentity,
-    UiOverlayParticipantIdentity, UiOverlayPlacementReceipt, UiPointerAffordanceFamily,
-    UiSemanticSurfaceIdentity,
+    UiOverlayParticipantIdentity, UiOverlayPlacementReceipt, UiSemanticSurfaceIdentity,
 };
 
 use super::fact::{
     UiMountedAppearanceBackdropInput, UiMountedAppearanceLoweringInput,
     UiMountedAppearanceNodeInput, UiMountedAppearanceOutlineInput, UiMountedAppearanceOverlayInput,
-    UiMountedAppearancePointerInput, UiMountedAppearanceTextForegroundInput,
+    UiMountedAppearanceTextForegroundInput,
 };
 use super::UiMountedAppearanceSidecar;
 
+mod motion_composition;
+mod opacity_transport;
+mod outline_clipping;
 mod overlay;
-
+mod paint_order;
 struct NodeIds {
     frame: UiMountedFrameIdentity,
     issuer: UiMountedNodeReceiptIssuer,
@@ -72,14 +73,19 @@ fn node_input_for(
     let projection =
         UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 11, 3).unwrap();
     let node = UiMountedAppearanceNodeInput {
+        geometry_input: None,
         issuer,
         semantic_surface: surface,
         node_receipt: receipt,
         projection,
         bounds,
-        clip: UiAppearanceClip::new(0, 0, 90, 70).unwrap(),
-        layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+        clip: super::UiMountedAppearanceClip::Ancestor(
+            UiAppearanceClip::new(0, 0, 90, 70).unwrap(),
+        ),
+        surface_paint_order: Some(0),
         radii,
+        surface_border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
+        surface_border_omissions: Box::new([]),
         surface_paint: Some(UiMountedSurfacePaint::Fill(
             UiMountedAppearanceColor::from_straight_srgba(color),
         )),
@@ -89,17 +95,20 @@ fn node_input_for(
         }),
         text_foregrounds: vec![UiMountedAppearanceTextForegroundInput {
             span: UiMountedTextPaintSpanIdentity::from_runtime_mounting([8; 32]),
+            command: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text_from_correspondence(
+                instance,
+                0,
+                None,
+            ),
+            // Local paint arithmetic fixture; candidate geometry is exercised
+            // through the mounted text producer in text_geometry tests.
+            geometry: std::sync::Arc::from([]),
             foreground: UiMountedAppearanceColor::from_straight_srgba([20, 30, 40, 255]),
+            motion_opacity: Some(32_768),
         }]
         .into_boxed_slice(),
-        pointer: Some(UiMountedAppearancePointerInput {
-            pointer: UiHostPointerIdentity::new(5),
-            surface,
-            target: instance,
-            family: UiPointerAffordanceFamily::Activation,
-        }),
         appearance_opacity: UiMountedAppearanceOpacity::from_units(40_000),
-        motion_opacity: Some(UiMountedAppearanceOpacity::from_units(32_768)),
+        motion_opacity: Some(32_768),
         semantic_digest,
         portal_instance: None,
     };
@@ -147,12 +156,14 @@ pub(crate) fn mounted_sidecar_with_retained_facts_for_test(
 ) -> MountedAppearanceReconstructionTestFixture {
     let (mut input, ids) = node_input([1, 2, 3, 255], 7, false);
     let node = &mut input.nodes[0];
-    node.clip = UiAppearanceClip::new(10, 20, 100, 80).unwrap();
-    node.layer = UiMountedLayerProjection::Omitted(
-        worth_ui_host_contract::UiMountedOmissionReason::NotDefinedByCurrentRuntime,
+    node.bounds = UiAppearanceAllocationBounds::new(10_000, 20_000, 100_000, 80_000).unwrap();
+    node.radii = UiAppearanceNormalizedLogicalRadii::normalize(
+        node.bounds,
+        [UiAppearanceLogicalLength::ZERO; 4],
     );
+    node.clip = super::UiMountedAppearanceClip::Unclipped;
+    node.surface_paint_order = Some(0);
     node.text_foregrounds = Box::new([]);
-    node.pointer = None;
     node.appearance_opacity = UiMountedAppearanceOpacity::ONE;
     node.motion_opacity = None;
     node.surface_paint = Some(UiMountedSurfacePaint::Fill(
@@ -183,8 +194,8 @@ fn initial_mount_records_attribution_and_visual_bounds_without_host_commands() {
     let work = sidecar.mount(input).unwrap();
 
     assert_eq!(work.posture(), UiMountedAppearanceWorkPosture::Initial);
-    assert_structural_appearance_work(&work, 4);
-    assert_eq!(work.changes().len(), 4);
+    assert_structural_appearance_work(&work, 3);
+    assert_eq!(work.changes().len(), 3);
     assert_eq!(work.damage().len(), 1);
     assert_eq!(work.damage()[0].x(), ids.outline.visual_bounds().x());
     assert_eq!(work.damage()[0].y(), ids.outline.visual_bounds().y());
@@ -309,7 +320,7 @@ fn paint_change_is_mechanical_and_semantic_change_can_still_suppress_output() {
         UiMountedAppearanceWorkPosture::Unchanged
     );
     assert!(semantic_work.changes().is_empty());
-    assert_eq!(semantic_summary.semantic_facts_changed(), 3);
+    assert_eq!(semantic_summary.semantic_facts_changed(), 2);
     assert!(!semantic_summary.mechanics_changed());
     assert!(semantic_summary.output_suppressed());
     assert_eq!(ids.surface, second_surface(&sidecar));
@@ -374,9 +385,8 @@ fn assert_structural_appearance_work(
     work: &worth_ui_host_contract::UiMountedAppearanceWork,
     expected: usize,
 ) {
-    // Gate 1 carries semantic appearance mechanics and change records only;
-    // the actual work graph is the independent no-host oracle. This checks the
-    // produced structure rather than the literal no-host accessors.
+    // The independent no-host oracle checks semantic mechanics and changes,
+    // rather than relying on literal no-host accessors.
     assert_eq!(work.successor().mechanics().len(), expected);
     assert_eq!(work.changes().len(), expected);
     assert!(work.changes().iter().all(|change| match change {

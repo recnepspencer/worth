@@ -11,6 +11,8 @@ use worth_ui_dsl::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthUiAuthoredOverlayMaterial {
     backdrop_declarations: Box<[WorthUiAuthoredBackdropDeclaration]>,
+    backdrop_declarations_by_surface:
+        std::collections::BTreeMap<UiSemanticSurfaceDeclarationIdentity, Box<[usize]>>,
     overlay_relation_graph: Option<UiOverlayRelationGraph>,
     overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings,
     portal_anchor_bindings: Box<[WorthUiAuthoredPortalAnchorBinding]>,
@@ -33,12 +35,17 @@ pub struct WorthUiAuthoredPortalAnchorBinding {
 impl WorthUiAuthoredOverlayMaterial {
     pub(super) fn from_package(package: &WorthUiSealedSemanticPackage) -> Self {
         let mut backdrop_declarations = Vec::new();
+        let mut backdrop_declarations_by_surface = std::collections::BTreeMap::<_, Vec<_>>::new();
         let mut portal_anchor_bindings = Vec::new();
         let overlay_declaration_bindings = package.overlay_declaration_bindings();
         for module_id in package.module_ids() {
             for view in package.declaration_views(module_id).into_iter().flatten() {
                 match view.declaration() {
                     WorthUiSemanticDeclaration::Backdrop(declaration) => {
+                        backdrop_declarations_by_surface
+                            .entry(declaration.declaration().surface())
+                            .or_default()
+                            .push(backdrop_declarations.len());
                         backdrop_declarations.push(WorthUiAuthoredBackdropDeclaration {
                             declaration: declaration.clone(),
                             provenance: view.provenance().clone(),
@@ -71,6 +78,7 @@ impl WorthUiAuthoredOverlayMaterial {
         }
         Self {
             backdrop_declarations: backdrop_declarations.into_boxed_slice(),
+            backdrop_declarations_by_surface: boxed_index(backdrop_declarations_by_surface),
             overlay_relation_graph: package.overlay_relation_graph().cloned(),
             overlay_declaration_bindings: package.overlay_declaration_bindings().clone(),
             portal_anchor_bindings: portal_anchor_bindings.into_boxed_slice(),
@@ -79,6 +87,29 @@ impl WorthUiAuthoredOverlayMaterial {
 
     pub fn backdrop_declarations(&self) -> &[WorthUiAuthoredBackdropDeclaration] {
         &self.backdrop_declarations
+    }
+
+    pub(crate) fn backdrop_declarations_for_surface(
+        &self,
+        surface: UiSemanticSurfaceDeclarationIdentity,
+    ) -> impl Iterator<Item = &worth_ui_dsl::UiBackdropDeclaration> {
+        self.backdrop_declarations_by_surface
+            .get(&surface)
+            .into_iter()
+            .flat_map(|indices| indices.iter())
+            .map(|index| {
+                self.backdrop_declarations[*index]
+                    .declaration()
+                    .declaration()
+            })
+    }
+
+    pub(crate) fn backdrop_appearance_role_identities(
+        &self,
+    ) -> impl Iterator<Item = worth_ui_dsl::UiAppearanceRoleIdentity> + '_ {
+        self.backdrop_declarations
+            .iter()
+            .map(|authored| authored.declaration().declaration().role().clone())
     }
 
     pub fn overlay_relation_graph(&self) -> Option<&UiOverlayRelationGraph> {
@@ -101,6 +132,15 @@ impl WorthUiAuthoredOverlayMaterial {
             .iter()
             .find(|binding| binding.portal_declaration_id == declaration)
     }
+}
+
+fn boxed_index<K: Ord, V>(
+    values: std::collections::BTreeMap<K, Vec<V>>,
+) -> std::collections::BTreeMap<K, Box<[V]>> {
+    values
+        .into_iter()
+        .map(|(key, values)| (key, values.into_boxed_slice()))
+        .collect()
 }
 
 impl WorthUiAuthoredBackdropDeclaration {
@@ -128,6 +168,10 @@ impl WorthUiAuthoredPortalAnchorBinding {
 
     pub fn anchor(&self) -> &str {
         self.portal.anchor()
+    }
+
+    pub(crate) fn policy(&self) -> crate::declaration::UiPortalPolicy {
+        super::authored_service_policy::portal_policy(&self.portal)
     }
 
     pub fn provenance(&self) -> &WorthUiArtifactInputProvenance {

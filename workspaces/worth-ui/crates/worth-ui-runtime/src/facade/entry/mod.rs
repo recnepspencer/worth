@@ -35,6 +35,7 @@ mod intent_consequence_publication;
 mod intent_consequence_rebind;
 mod intent_evidence;
 mod intent_execution;
+mod intent_operability_observation;
 mod intent_payload;
 mod intent_resource_census;
 mod intent_routing;
@@ -50,6 +51,9 @@ mod mounted_frame_execution;
 mod mounted_identity;
 mod mounted_inspection;
 mod mounted_interaction_lifecycle;
+mod mounted_occurrence_geometry;
+#[cfg(test)]
+pub(crate) mod mounted_occurrence_geometry_test_support;
 mod mounted_preview;
 mod mounted_publication;
 #[cfg(test)]
@@ -92,7 +96,9 @@ mod pointer_device_admission_tests;
 mod presentation_currentness_tests;
 mod rebind_execution;
 mod rebind_recovery;
+mod selection_binding;
 mod selection_interaction;
+pub use selection_binding::UiMountedSelectionBindingDenial;
 #[cfg(test)]
 mod typed_pointer_observation_tests;
 mod visual_overlay;
@@ -172,6 +178,7 @@ pub use mounted_interaction_lifecycle::{
     UiSurfaceRebindInteractionDenial, UiSurfaceRebindInteractionReceipt,
     WorthUiMountedInteractionLifecycleCertificationExt,
 };
+pub use mounted_occurrence_geometry::WorthUiMountedLayout;
 pub use mounted_preview::{
     WorthUiMountedPreviewAdmissionRejection, WorthUiMountedPreviewCompletionRejection,
     WorthUiMountedPreviewDisposition, WorthUiMountedPreviewInFlight, WorthUiMountedPreviewOutcome,
@@ -188,6 +195,7 @@ pub(crate) use native_application_shell::{
     UiNativeApplicationQueryCloseObservation, UiNativeComponentPresenceProgress,
 };
 pub use native_application_shell::{
+    UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput,
     WorthUiNativeApplicationCleanup, WorthUiNativeApplicationShell,
     WorthUiNativeApplicationShellLaunchDenial, WorthUiNativeApplicationShutdownReceipt,
     WorthUiNativePhysicalPresentationRecovery, WorthUiNativePresentationRecoveryDenial,

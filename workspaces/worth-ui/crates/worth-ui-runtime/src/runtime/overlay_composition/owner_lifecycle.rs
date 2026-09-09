@@ -10,6 +10,7 @@ pub(crate) use super::owner_bridge::{UiOverlayOwnerBridgeDenial, UiOverlayOwnerS
 /// coordinator; application/session and host lifecycles remain outside it.
 pub(crate) struct UiOverlayCompositionOwnerLifecycle {
     bridge: UiOverlayCompositionOwnerBridge,
+    last_counters: super::planner::UiOverlayPlanCounters,
 }
 
 impl UiOverlayCompositionOwnerLifecycle {
@@ -22,8 +23,10 @@ impl UiOverlayCompositionOwnerLifecycle {
     ) -> Result<Self, UiOverlayOwnerBridgeDenial> {
         let mut lifecycle = Self {
             bridge: UiOverlayCompositionOwnerBridge::admit(declarations, declaration_revision)?,
+            last_counters: super::planner::UiOverlayPlanCounters::default(),
         };
         let initial = lifecycle.bridge.prepare_initial(sources)?;
+        lifecycle.last_counters = initial.counters();
         lifecycle.bridge.retain_prepared(initial)?;
         Ok(lifecycle)
     }
@@ -47,10 +50,15 @@ impl UiOverlayCompositionOwnerLifecycle {
         &mut self,
         prepared: UiPreparedOverlayComposition,
     ) -> Result<(), UiOverlayOwnerBridgeDenial> {
+        self.last_counters = prepared.counters();
         self.bridge.retain_prepared(prepared)
     }
 
     pub(crate) fn current(&self) -> Option<&super::snapshot::UiOverlayStackSnapshot> {
         self.bridge.current()
+    }
+
+    pub(crate) const fn last_counters(&self) -> super::planner::UiOverlayPlanCounters {
+        self.last_counters
     }
 }

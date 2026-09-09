@@ -97,6 +97,9 @@ impl<'a> WorthUiMosaicRowLowerer<'a> {
             Some(self.root_identity.to_owned()),
             WorthUiPlanOrdinaryMeaning::Layout(WorthUiLayoutPlanMeaning::region(
                 region.descriptor().clone(),
+                region
+                    .sizing_contract()
+                    .map(|(_, descriptor)| descriptor.clone()),
                 range_identity,
             )),
         ));
@@ -122,6 +125,9 @@ impl<'a> WorthUiMosaicRowLowerer<'a> {
             Some(self.root_identity.to_owned()),
             WorthUiPlanOrdinaryMeaning::Layout(WorthUiLayoutPlanMeaning::surface(
                 mount.descriptor().clone(),
+                mount
+                    .placement_policy()
+                    .map(|(_, descriptor)| descriptor.clone()),
                 range_identity,
             )),
         ));

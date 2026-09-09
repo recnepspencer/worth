@@ -1,60 +1,14 @@
 use super::UiMountedAppearanceFrameState;
+use crate::mounting::projection::appearance::UiMountedAppearanceGeometryScope;
 
 #[path = "appearance_state_capacity_tests.rs"]
 mod capacity_tests;
 #[path = "appearance_state_persistent_tests.rs"]
 mod persistent_tests;
 
-#[derive(Clone, Copy)]
-struct ContextIdentities {
-    frame: worth_ui_host_contract::UiMountedFrameIdentity,
-    issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
-    instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    incarnation: worth_ui_host_contract::UiMountIncarnation,
-}
-
-fn context_identities() -> ContextIdentities {
-    let frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
-    let issuer = worth_ui_host_contract::UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
-    let instance = worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap();
-    ContextIdentities {
-        frame,
-        issuer,
-        instance,
-        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
-        incarnation: worth_ui_host_contract::UiMountIncarnation::mint_unbound().unwrap(),
-    }
-}
-
-fn context(
-    identities: ContextIdentities,
-    session: crate::facade::WorthUiActiveApplicationSessionIdentity,
-    generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    ordinal: u64,
-) -> crate::runtime::appearance::UiAppearanceAttemptContext {
-    let target = crate::runtime::appearance::UiAppearanceTarget::new(
-        session,
-        identities.surface,
-        crate::graph::UiGraphNodeIdentity::new(ordinal),
-        identities.instance,
-        identities.incarnation,
-        identities.issuer.receipt_for(identities.instance),
-    )
-    .unwrap();
-    crate::runtime::appearance::UiAppearanceAttemptContext::new(
-        target,
-        identities.frame,
-        identities.issuer,
-        ordinal,
-        worth_ui_host_contract::UiMountedAllocationProjection::Omitted(
-            worth_ui_host_contract::UiMountedOmissionReason::NoCommittedAllocation,
-        ),
-        generation.clone(),
-        0,
-        0,
-    )
-}
+#[path = "appearance_state_attempt_fixture.rs"]
+mod attempt_fixture;
+use attempt_fixture::{context, context_identities, ContextIdentities};
 
 #[test]
 fn appearance_state_retirement_and_epoch_succession_preserve_exact_membership() {
@@ -197,7 +151,7 @@ fn appearance_state_duplicate_stage_and_lower_release_preserve_replacement_capac
 
     let presentation =
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
-    let records = state.lower(presentation);
+    let records = state.lower(presentation, &unqualified_geometry()).unwrap();
     assert_eq!(records.len(), 1);
     let crate::runtime::appearance::UiAppearanceInspectionRecord::Denial {
         context,
@@ -229,7 +183,7 @@ fn appearance_state_duplicate_stage_and_lower_release_preserve_replacement_capac
         )
         .unwrap();
     assert_eq!(state.membership_counts(), (0, 0, 1));
-    state.lower(presentation);
+    state.lower(presentation, &unqualified_geometry()).unwrap();
     assert_eq!(state.membership_counts(), (1, 0, 0));
     assert!(state.retained_entry_for_test(&first).is_some());
 
@@ -242,7 +196,7 @@ fn appearance_state_duplicate_stage_and_lower_release_preserve_replacement_capac
             ),
         )
         .unwrap();
-    state.lower(presentation);
+    state.lower(presentation, &unqualified_geometry()).unwrap();
     assert_eq!(state.membership_counts(), (1, 0, 0));
     state.reserve(&second).unwrap();
     assert_eq!(state.membership_counts(), (1, 1, 0));
@@ -299,7 +253,7 @@ fn duplicate_denial_on_retained_entry_emits_latest_denial_and_preserves_predeces
 
     let presentation =
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
-    let records = state.lower(presentation);
+    let records = state.lower(presentation, &unqualified_geometry()).unwrap();
     assert_eq!(records.len(), 1);
     assert!(matches!(
         records.as_slice(),
@@ -379,7 +333,7 @@ fn one_staged_entry_lowers_without_scanning_or_disturbing_many_retained_entries(
 
     let presentation =
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
-    let records = state.lower(presentation);
+    let records = state.lower(presentation, &unqualified_geometry()).unwrap();
     assert_eq!(records.len(), 1);
     assert!(matches!(
         records[0],
@@ -391,4 +345,8 @@ fn one_staged_entry_lowers_without_scanning_or_disturbing_many_retained_entries(
     assert_eq!(state.membership_counts(), (32, 0, 0));
     assert!(state.retained_entry_for_test(&first_retained).is_some());
     let _ = session.shutdown();
+}
+
+fn unqualified_geometry() -> UiMountedAppearanceGeometryScope {
+    UiMountedAppearanceGeometryScope::new(&[], None)
 }

@@ -1,4 +1,5 @@
 use super::UiMountedAppearanceFrameState;
+use crate::mounting::projection::appearance::UiMountedAppearanceGeometryScope;
 use crate::mounting::projection::frame_storage::UiMountedAppearanceNodeInputContext;
 
 fn known_allocation() -> worth_ui_host_contract::UiMountedAllocationProjection {
@@ -43,6 +44,10 @@ fn retained_context(
         fixture.issuer,
         7,
         known_allocation(),
+        crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
+        Some(0),
+        None,
+        Box::new([]),
         generation.clone(),
         0,
         0,
@@ -64,6 +69,7 @@ fn successor_node(
         frame,
         receipt,
         UiMountedAppearanceNodeInputContext {
+            geometry_input: None,
             frame,
             semantic_surface: fixture.surface,
             mounted_instance: fixture.instance,
@@ -72,7 +78,11 @@ fn successor_node(
             node_receipt: receipt,
             issuer,
             plan_digest: 7,
+            surface_paint_order: Some(0),
+            text_foreground_spans: Box::new([]),
             allocation: known_allocation(),
+            appearance_clip:
+                crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
         },
     )
 }
@@ -114,7 +124,12 @@ fn reconstruction_uses_successor_receipt_and_retained_projection_facts() {
     state.prepare_reconstruction(vec![successor_node]);
     let presentation =
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
-    let records = state.lower(presentation);
+    let records = state
+        .lower(
+            presentation,
+            &UiMountedAppearanceGeometryScope::new(&[], None),
+        )
+        .unwrap();
 
     assert_eq!(records.len(), 1);
     match &records[0] {
@@ -192,7 +207,12 @@ fn reconstruction_matches_reversed_nodes_and_denies_missing_nodes_without_erasin
     state.prepare_reconstruction(vec![second_node, first_node]);
     let presentation =
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
-    let records = state.lower(presentation);
+    let records = state
+        .lower(
+            presentation,
+            &UiMountedAppearanceGeometryScope::new(&[], None),
+        )
+        .unwrap();
     assert_eq!(records.len(), 2);
     assert!(records.iter().all(|record| matches!(
         record,
@@ -222,7 +242,12 @@ fn reconstruction_matches_reversed_nodes_and_denies_missing_nodes_without_erasin
         .current_node_receipts();
 
     state.prepare_reconstruction(Vec::new());
-    let records = state.lower(presentation);
+    let records = state
+        .lower(
+            presentation,
+            &UiMountedAppearanceGeometryScope::new(&[], None),
+        )
+        .unwrap();
     assert_eq!(records.len(), 2);
     assert!(records.iter().all(|record| matches!(
         record,

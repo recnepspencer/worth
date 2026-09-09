@@ -17,15 +17,21 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             host_session_identity,
             completion,
             capabilities,
+            intent_catalog,
+            consumed_facts,
             mounted,
             host_session,
             host_exchange,
             focus,
             portal,
+            overlay_composition_owners,
             interaction,
             presentation,
             appearance_owner_snapshot,
+            pointer_affordance_snapshot,
             appearance_inspection,
+            overlay_appearance,
+            motion,
         } = self;
         let preview_theme_observation = presentation.preview_theme_observation();
         match completion.into_pending_mounted_preview() {
@@ -59,15 +65,21 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 host_session_identity,
                 completion: *completion,
                 capabilities,
+                intent_catalog,
+                consumed_facts,
                 mounted,
                 host_session,
                 host_exchange,
                 focus,
                 portal,
+                overlay_composition_owners,
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
+                pointer_affordance_snapshot,
                 appearance_inspection,
+                overlay_appearance,
+                motion,
             })),
         }
     }
@@ -147,6 +159,7 @@ impl<'session> WorthUiPendingMountedPreview<'session> {
                 capability_generation: capability_report.observation_generation(),
                 capability_profile_digest: capability_report.profile_identity_digest(),
                 visual_overlay_revision: 0,
+                pointer_affordance: Default::default(),
             },
         );
         let assembler = self

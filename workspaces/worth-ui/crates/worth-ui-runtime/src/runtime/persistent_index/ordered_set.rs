@@ -44,6 +44,31 @@ impl<K: Ord + Clone> UiPersistentOrdSet<K> {
         (entry.is_some(), probes)
     }
 
+    pub(crate) fn contains(&self, value: &K) -> bool {
+        self.contains_with_probes(value).0
+    }
+
+    pub(crate) fn remove(&mut self, value: &K) -> bool {
+        self.remove_with_work(value).0
+    }
+
+    pub(crate) fn clear(&mut self) {
+        self.entries = UiPersistentOrdMap::default();
+    }
+
+    pub(crate) fn extend(&mut self, values: impl IntoIterator<Item = K>) {
+        for value in values {
+            self.insert(value);
+        }
+    }
+
+    pub(crate) fn changed_keys_with_work(
+        &self,
+        previous: &Self,
+    ) -> (Vec<K>, super::UiPersistentMapComparisonWork) {
+        self.entries.changed_keys_with_work(&previous.entries)
+    }
+
     pub(crate) fn insert(&mut self, value: K) -> bool {
         self.insert_with_work(value).0
     }

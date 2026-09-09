@@ -2,8 +2,10 @@ use std::rc::Rc;
 
 use crate::runtime::tests::appearance_component_session_test_support as support;
 
-#[path = "appearance_projection_locality_support.rs"]
+#[path = "appearance_projection_locality_test_support.rs"]
 mod fixture;
+#[path = "appearance_projection_retirement_tests.rs"]
+mod retirement_tests;
 use fixture::{
     admit_owner_snapshot, admit_theme, background_role, graph_node_for, locality_fixture,
     theme_bundle,
@@ -22,6 +24,7 @@ struct LocalityMetrics {
     key_probes: usize,
     copied_nodes: usize,
     traversed: usize,
+    motion_commands: u64,
     host_completed_without_effects: bool,
 }
 
@@ -57,6 +60,22 @@ fn appearance_preparation_locality_slope_and_projection_owner_identity() {
         .repeated
         .iter()
         .all(|metrics| { metrics.index_entries == large.repeated[0].index_entries }));
+    assert_eq!(
+        small
+            .repeated
+            .iter()
+            .map(|metrics| metrics.motion_commands)
+            .collect::<Vec<_>>(),
+        large
+            .repeated
+            .iter()
+            .map(|metrics| metrics.motion_commands)
+            .collect::<Vec<_>>()
+    );
+    assert!(large
+        .repeated
+        .iter()
+        .all(|metrics| metrics.motion_commands <= 3));
     assert_eq!(small.retirement.selected, 1);
     assert_eq!(large.retirement.selected, 1);
     assert_eq!(small.retirement.lifecycle_retired, 1);
@@ -191,6 +210,12 @@ fn run_case(retained_count: usize) -> LocalityCase {
             ],
         )
         .expect("locality fixture allocation should commit");
+    crate::facade::entry::mounted_occurrence_geometry_test_support::install_nonoverlapping_surface_geometry(
+        &mut session,
+        surface,
+        1,
+        &[],
+    );
     admit_owner_snapshot(
         &mut session,
         &role_a,
@@ -239,6 +264,7 @@ fn run_case(retained_count: usize) -> LocalityCase {
     assert_eq!(surviving.canonical_consumers, 1);
     assert!(surviving.host_completed_without_effects);
 
+    let retired_predecessor = retirement_tests::capture(&session, candidate_instances[0]);
     session.unmount_instance(candidate_instances[0]).unwrap();
     admit_theme(&mut session, token_a, 4, "#a0b0c0");
     let retirement = prepare_and_publish(&mut session, &host_observer, 6, false);
@@ -247,6 +273,7 @@ fn run_case(retained_count: usize) -> LocalityCase {
     assert_eq!(retirement.lifecycle_retired, 1);
     assert_eq!(retirement.traversed, 0);
     assert!(retirement.host_completed_without_effects);
+    retirement_tests::assert_removed(&session, &retired_predecessor);
     admit_theme(&mut session, token_b, 2, "#b0c0d0");
     let after_retirement = prepare_and_publish(&mut session, &host_observer, 7, false);
     assert_eq!(after_retirement.selected, retained_count - 2);
@@ -270,25 +297,47 @@ fn prepare_and_publish(
     now: u64,
     native_effects: bool,
 ) -> LocalityMetrics {
-    if native_effects {
-        host.push_native_display_presented();
-    } else {
-        host.push_native_display_settled_without_effects();
+    for _ in session.inspect_mounted_identity().surface_bindings() {
+        if native_effects {
+            host.push_native_display_presented();
+        } else {
+            host.push_native_display_settled_without_effects();
+        }
     }
     let frame = session
         .prepare_mounted_frame_with_application_presentation(
             crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
             |_| {},
         )
-        .unwrap_or_else(|_| panic!("locality frame should prepare"));
+        .unwrap_or_else(|stop| match stop {
+            crate::facade::entry::WorthUiMountedFrameExecutionStop::Preparation(denial) => {
+                panic!("locality frame should prepare: {denial:?}")
+            }
+            _ => panic!("locality frame stopped before preparation"),
+        });
     let candidate_projection = frame.projection_rc_for_test();
+    // Tick 5 is the first multi-consumer successor with a published owner basis.
+    if now == 2
+        && frame
+            .appearance_selection_cost_report()
+            .selected_instance_count()
+            == 1
+    {
+        frame.verify_mixed_appearance_reconstruction_denial_and_retry();
+    }
+    if now == 5 {
+        frame.verify_unpublished_appearance_member_denial();
+    }
+    if now == 6 {
+        retirement_tests::verify_retry(session, &frame);
+    }
     let canonical_consumers = frame
         .appearance_invalidation_batch()
-        .map_or(0, |batch| batch.consumers().len());
+        .map_or(0, |batch| batch.graph_consumers().len());
     let surface_projection = frame
         .surfaces()
         .first()
-        .expect("locality frame has one surface")
+        .expect("locality frame has bound surfaces")
         .projection_owner();
     assert!(Rc::ptr_eq(&candidate_projection, &surface_projection));
     let report = frame.appearance_selection_cost_report();
@@ -299,6 +348,13 @@ fn prepare_and_publish(
     );
     let host_completed_without_effects =
         !native_effects && presentation_completed_without_effects(&outcome);
+    let motion_commands = match &outcome {
+        crate::mounting::UiMountedFrameOutcome::Published(receipt)
+        | crate::mounting::UiMountedFrameOutcome::Reconciled(receipt) => {
+            receipt.cost_report().appearance_motion_commands_visited()
+        }
+        _ => 0,
+    };
     assert!(matches!(
         outcome,
         crate::mounting::UiMountedFrameOutcome::Published(_)
@@ -316,6 +372,7 @@ fn prepare_and_publish(
         key_probes: report.membership_key_probes(),
         copied_nodes: report.membership_copied_avl_nodes(),
         traversed: report.membership_traversed_entries(),
+        motion_commands,
         host_completed_without_effects,
     }
 }

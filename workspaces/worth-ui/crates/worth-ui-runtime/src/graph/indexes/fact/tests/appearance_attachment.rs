@@ -119,12 +119,12 @@ fn appearance_invalidation_batches_select_from_the_existing_index_without_host_w
 
     for batch in [&state_batch, &role_batch] {
         assert_eq!(batch.selected_count(), 1);
-        assert_eq!(batch.consumers(), [node]);
+        assert_eq!(batch.graph_consumers(), [node]);
     }
     assert_eq!(slot_batch.selected_count(), 2);
     assert_eq!(
         slot_batch
-            .consumers()
+            .graph_consumers()
             .iter()
             .copied()
             .collect::<BTreeSet<_>>(),
@@ -203,7 +203,7 @@ fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
         slot.as_str(),
     )
     .expect("declared theme slot should resolve");
-    assert_eq!(batch.consumers(), [attached]);
+    assert_eq!(batch.graph_consumers(), [attached]);
     assert_ne!(attached, peer);
 }
 

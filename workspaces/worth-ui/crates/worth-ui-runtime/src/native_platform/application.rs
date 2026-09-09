@@ -37,6 +37,7 @@ pub struct UiNativeApplicationPreparation {
     presentation_async:
         Option<crate::native_platform::text_presentation::UiPresentationAsyncRuntime>,
     application_runtime: Option<Box<dyn super::UiNativeApplicationRuntime>>,
+    native_surface_declaration: Option<Box<str>>,
 }
 
 #[must_use]
@@ -52,6 +53,7 @@ pub struct UiPreparedNativeApplication {
     presentation_async:
         Option<crate::native_platform::text_presentation::UiPresentationAsyncRuntime>,
     application_runtime: Option<Box<dyn super::UiNativeApplicationRuntime>>,
+    native_surface_declaration: Option<Box<str>>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -66,6 +68,7 @@ pub enum UiNativeApplicationPreparationDenialCause {
     ApplicationRuntimeAlreadyInstalled,
     ApplicationCompositionAlreadyInstalled,
     ApplicationRuntimeFrameProgramConflict,
+    NativeSurfaceDeclarationAlreadyInstalled,
 }
 
 #[must_use]
@@ -90,6 +93,7 @@ impl UiNativeApplicationPreparation {
             program: None,
             presentation_async: None,
             application_runtime: None,
+            native_surface_declaration: None,
         }
     }
 
@@ -166,6 +170,19 @@ impl UiNativeApplicationPreparation {
         Ok(())
     }
 
+    pub fn install_native_surface_declaration(
+        &mut self,
+        authored_name: impl Into<Box<str>>,
+    ) -> Result<(), UiNativeApplicationPreparationDenialCause> {
+        if self.native_surface_declaration.is_some() {
+            return Err(
+                UiNativeApplicationPreparationDenialCause::NativeSurfaceDeclarationAlreadyInstalled,
+            );
+        }
+        self.native_surface_declaration = Some(authored_name.into());
+        Ok(())
+    }
+
     pub fn complete(mut self) -> UiNativeApplicationPreparationOutcome {
         let Some(builder) = self.builder.take() else {
             return self
@@ -188,6 +205,7 @@ impl UiNativeApplicationPreparation {
                     }),
                     presentation_async: self.presentation_async.take(),
                     application_runtime: self.application_runtime.take(),
+                    native_surface_declaration: self.native_surface_declaration.take(),
                 },
             )),
             Err(_) => {
@@ -323,6 +341,7 @@ impl UiPreparedNativeApplication {
         crate::facade::WorthUiApp,
         super::UiNativeApplicationProgram,
         Option<Box<dyn super::UiNativeApplicationRuntime>>,
+        Option<Box<str>>,
     ) {
         debug_assert_eq!(
             self.binding.profile(),
@@ -330,7 +349,12 @@ impl UiPreparedNativeApplication {
         );
         let mut application = self.application.bind_qualified_native(host);
         application.install_presentation_async_owner(self.presentation_async);
-        (application, self.program, self.application_runtime)
+        (
+            application,
+            self.program,
+            self.application_runtime,
+            self.native_surface_declaration,
+        )
     }
 }
 

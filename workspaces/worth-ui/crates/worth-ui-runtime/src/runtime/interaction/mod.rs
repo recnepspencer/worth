@@ -37,7 +37,6 @@ pub use pointer_presence::UiPointerPresenceTargetTransition;
 pub(crate) use pointer_presence::{
     UiPointerPresenceAppearanceOwnerSnapshot, UiPointerPresenceAppearancePosture,
     UiPointerPresenceCapacity, UiPointerPresenceClass, UiPointerPresenceOwner,
-    UiPointerPresencePresentationTrigger, UiPointerPresencePresentationTriggerDenial,
     UiPrimaryPointerKind,
 };
 pub(crate) use semantic::{
@@ -60,3 +59,14 @@ pub use targeting::{
 };
 pub(crate) use targeting::{UiPresentedInteractionGeometry, UiPresentedViewportGeometry};
 pub use transition::{UiInteractionStop, UiInteractionTransition};
+
+mod presentation_refresh;
+pub(crate) use presentation_refresh::{
+    UiInteractionPresentationRefreshSnapshot, UiPointerPresentationRefreshReport,
+};
+
+#[cfg(test)]
+pub(crate) use pointer_presence::{
+    UiPointerPresenceGeometry, UiPointerPresenceGeometryCandidate,
+    UiPointerPresencePresentationTrigger,
+};

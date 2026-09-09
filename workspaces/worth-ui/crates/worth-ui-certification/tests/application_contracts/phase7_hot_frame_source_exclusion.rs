@@ -121,6 +121,7 @@ fn poisoned_watched_source_cannot_enter_unchanged_or_changed_mounted_frames() {
     session
         .mount_instance(node, surface)
         .expect("one-instance semantic delta remains valid");
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let changed = published(
         session
             .execute_mounted_frame(request, UiPresentationDeadline::at_tick(30), 3, |_| {})
@@ -160,6 +161,7 @@ fn mount_one_instance(
     session
         .mount_instance(first_node(session), surface)
         .expect("one active graph node mounts");
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     surface
 }
 

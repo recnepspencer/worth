@@ -6,13 +6,26 @@ use worth_ui_host_contract::{
 use super::UiMountedProjectionDenial;
 
 mod appearance_frame;
+mod appearance_geometry;
+#[cfg(test)]
+mod appearance_suppression_tests;
+pub(super) use appearance_geometry::UiMountedAppearanceGeometry;
+mod appearance_order;
+mod appearance_output;
+mod appearance_text;
+pub(crate) use appearance_order::UiMountedAppearanceOrderDenial;
+pub(crate) use appearance_output::UiMountedAppearanceOutputDenial;
 mod appearance_state;
 mod appearance_state_membership;
 mod appearance_state_membership_work;
+mod appearance_state_predecessor;
+mod appearance_state_retirement;
 pub(in crate::mounting) mod diagnostic_source;
 mod drawable_order;
+mod hit_mechanics;
 mod lane_recording;
 mod layout_reconstruction;
+pub(in crate::mounting) use hit_mechanics::UiMountedHitMechanicSource;
 mod mechanic_source;
 #[cfg(test)]
 pub(crate) mod mechanic_source_tests;
@@ -23,6 +36,7 @@ mod portal_overlay_view;
 mod presentation_effects;
 pub(crate) mod presentation_sources;
 mod presentation_view;
+mod presented_hits;
 mod projection_owner;
 mod rebind;
 mod semantic_mechanics;
@@ -49,55 +63,8 @@ pub(crate) use appearance_state::{
 pub(crate) use appearance_state_membership_work::UiMountedAppearanceMembershipWork;
 pub(crate) use projection_owner::UiMountedProjectionFrameOwner;
 
-#[derive(Clone)]
-pub(crate) struct UiMountedAppearanceNodeInputContext {
-    pub(crate) frame: worth_ui_host_contract::UiMountedFrameIdentity,
-    pub(crate) semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    pub(crate) mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    pub(crate) graph_node: crate::graph::UiGraphNodeIdentity,
-    pub(crate) incarnation: worth_ui_host_contract::UiMountIncarnation,
-    pub(crate) node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
-    issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
-    plan_digest: u64,
-    allocation: worth_ui_host_contract::UiMountedAllocationProjection,
-}
-
-impl UiMountedAppearanceNodeInputContext {
-    pub(crate) const fn issuer(&self) -> worth_ui_host_contract::UiMountedNodeReceiptIssuer {
-        self.issuer
-    }
-
-    pub(crate) const fn plan_digest(&self) -> u64 {
-        self.plan_digest
-    }
-
-    pub(crate) const fn allocation(&self) -> worth_ui_host_contract::UiMountedAllocationProjection {
-        self.allocation
-    }
-
-    pub(crate) fn lower_retained_projection(
-        &self,
-        projection: &crate::runtime::appearance::UiAppearanceProjection,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-    ) -> Result<super::UiMountedAppearanceLoweringInput, super::UiMountedAppearanceLoweringDenial>
-    {
-        let input = super::UiMountedAppearanceNodeInput::from_resolved_projection(
-            self.issuer,
-            self.semantic_surface,
-            self.node_receipt,
-            self.graph_node,
-            self.plan_digest,
-            self.allocation,
-            projection,
-        )?;
-        Ok(super::UiMountedAppearanceLoweringInput::for_single_node(
-            self.frame,
-            self.semantic_surface,
-            presentation,
-            input,
-        ))
-    }
-}
+mod appearance_input_context;
+pub(crate) use appearance_input_context::UiMountedAppearanceNodeInputContext;
 
 const TABLE_LIMIT: usize = 2_048;
 const RESOURCE_LIMIT: usize = 1_024;
@@ -110,6 +77,7 @@ pub struct UiMountedProjectionFrame {
     plan_digest: u64,
     semantic: UiMountedSemanticProjection,
     mechanics: UiMountedMechanicSource,
+    hit_index_work: crate::mounting::hit_test_work::UiHitTestSpatialWork,
     presentation_effects: UiMountedPresentationEffectSource,
     diagnostics: UiMountedDiagnosticSource,
     changed_instances: std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
@@ -166,6 +134,7 @@ impl UiMountedProjectionFrame {
             plan_digest: input.plan_digest,
             semantic: input.semantic,
             mechanics: input.mechanics,
+            hit_index_work: Default::default(),
             presentation_effects: input.presentation_effects,
             diagnostics: input.diagnostics,
             changed_instances: input.changed_instances,
@@ -270,6 +239,7 @@ impl UiMountedProjectionFrame {
     }
 
     pub(super) fn complete_mechanics(&mut self) -> Result<(), UiMountedProjectionDenial> {
+        self.complete_appearance_geometry()?;
         let mutation = self.mechanics.apply(UiMountedMechanicCompletion {
             frame: self.frame,
             content: self.content_generation,
@@ -287,8 +257,10 @@ impl UiMountedProjectionFrame {
             mutation.semantic_text,
         )?;
         self.record_rows::<worth_ui_host_contract::UiMountedHitTestMechanic>(mutation.hit_tests)?;
+        self.hit_index_work.merge(mutation.hit_index_work);
         self.precise_command_instances = mutation.precise_instances.into();
         self.presentation_command_changes = mutation.command_changes.into();
+        self.complete_presented_hits()?;
         Ok(())
     }
 

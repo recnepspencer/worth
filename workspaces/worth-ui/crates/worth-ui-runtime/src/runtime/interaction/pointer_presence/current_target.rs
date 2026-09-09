@@ -14,8 +14,7 @@ pub(crate) struct UiPointerPresenceAppearancePosture {
     pub(super) pointer: UiHostPointerIdentity,
     pub(super) kind: super::UiPrimaryPointerKind,
     pub(super) presentation: UiHostObservationPresentationBasis,
-    pub(super) target: Option<UiMountedInstanceIdentity>,
-    pub(super) node_receipt: Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity>,
+    pub(super) target: Option<crate::runtime::interaction::UiPresentedInteractionTargetView>,
     pub(super) class: UiPointerPresenceClass,
     pub(super) owner_revision: u64,
     pub(super) observation_sequence: UiHostObservationSequence,
@@ -39,6 +38,23 @@ impl UiPointerPresenceAppearanceOwnerSnapshot {
     pub(crate) fn postures(&self) -> &[UiPointerPresenceAppearancePosture] {
         &self.postures
     }
+    pub(crate) fn primary_postures(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            UiSemanticSurfaceIdentity,
+            UiPointerPresenceAppearancePosture,
+        ),
+    > + '_ {
+        self.primary_by_surface
+            .iter()
+            .filter_map(|(surface, pointer)| {
+                self.postures
+                    .binary_search_by_key(pointer, |posture| posture.pointer())
+                    .ok()
+                    .map(|index| (*surface, self.postures[index]))
+            })
+    }
     pub(crate) fn primary_pointer(
         &self,
         surface: UiSemanticSurfaceIdentity,
@@ -54,6 +70,15 @@ impl UiPointerPresenceAppearanceOwnerSnapshot {
     reason = "Gate 0 seals pointer posture before role resolution"
 )]
 impl UiPointerPresenceAppearancePosture {
+    pub(crate) fn appearance_dependency_eq(self, other: Self) -> bool {
+        self.pointer == other.pointer
+            && self.kind == other.kind
+            && self.presentation.host_surface() == other.presentation.host_surface()
+            && self.presentation.binding() == other.presentation.binding()
+            && self.target() == other.target()
+            && self.class == other.class
+    }
+
     pub(crate) const fn pointer(self) -> UiHostPointerIdentity {
         self.pointer
     }
@@ -63,13 +88,18 @@ impl UiPointerPresenceAppearancePosture {
     pub(crate) const fn presentation(self) -> UiHostObservationPresentationBasis {
         self.presentation
     }
-    pub(crate) const fn target(self) -> Option<UiMountedInstanceIdentity> {
+    pub(crate) fn target(self) -> Option<UiMountedInstanceIdentity> {
+        self.target.map(|target| target.mounted_instance())
+    }
+    pub(crate) const fn presented_target(
+        self,
+    ) -> Option<crate::runtime::interaction::UiPresentedInteractionTargetView> {
         self.target
     }
-    pub(crate) const fn node_receipt(
+    pub(crate) fn node_receipt(
         self,
     ) -> Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity> {
-        self.node_receipt
+        self.target.map(|target| target.node_receipt())
     }
     pub(crate) const fn class(self) -> UiPointerPresenceClass {
         self.class

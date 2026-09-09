@@ -19,7 +19,10 @@ impl super::WorthUiActiveApplicationSession {
         let Some(publication) = self.mounted.current_publication().cloned() else {
             return false;
         };
-        let Some(surface) = publication.semantic_surface_for_presentation(presentation) else {
+        let Ok(surface) = self
+            .mounted
+            .current_semantic_surface_for_presentation(presentation)
+        else {
             return false;
         };
         if let UiHostFocusNavigation::Traverse(direction) = navigation {
@@ -29,6 +32,7 @@ impl super::WorthUiActiveApplicationSession {
                 };
                 let scope = focus
                     .current_semantic_focus()
+                    .filter(|current| current.scope().semantic_surface() == surface)
                     .map(crate::runtime::focus::UiSemanticKeyboardFocus::scope)
                     .or_else(|| focus.default_scope_for_surface(surface));
                 let Some(scope) = scope else {
@@ -53,7 +57,7 @@ impl super::WorthUiActiveApplicationSession {
             let Some(focus) = self.focus.as_mut() else {
                 return false;
             };
-            match focus.navigate_container(key) {
+            match focus.navigate_container(surface, key) {
                 Ok(Some(navigation)) => navigation,
                 Ok(None) | Err(_) => return false,
             }

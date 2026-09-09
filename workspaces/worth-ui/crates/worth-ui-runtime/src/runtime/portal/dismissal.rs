@@ -1,8 +1,15 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPortalDismissalTrigger {
-    Escape,
-    OutsidePress { viewport_point_bits: [u32; 2] },
-    AcceptedSelection,
+    Escape {
+        semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    },
+    OutsidePress {
+        semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        viewport_point_bits: [u32; 2],
+    },
+    AcceptedSelection {
+        semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    },
     AnchorLoss(super::UiPortalIdentity),
 }
 
@@ -32,28 +39,29 @@ impl super::UiPortalRuntimeState {
         sampled_bounds: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
         idempotency: crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity,
     ) -> Result<UiPortalDismissalPreparation, super::UiPortalServiceTransitionDenial> {
+        let Some((portal, record)) = self.dismissal_target(trigger) else {
+            return Ok(UiPortalDismissalPreparation::Ignored(
+                UiPortalDismissalIgnoreReason::NoMatchingPortal,
+            ));
+        };
         let admitted_by_policy = match trigger {
-            UiPortalDismissalTrigger::Escape => self.policy.dismisses_on_escape(),
+            UiPortalDismissalTrigger::Escape { .. } => record.policy.dismisses_on_escape(),
             UiPortalDismissalTrigger::OutsidePress { .. } => {
-                self.policy.dismisses_on_outside_press()
+                record.policy.dismisses_on_outside_press()
             }
-            UiPortalDismissalTrigger::AcceptedSelection => {
-                self.policy.dismisses_on_accepted_selection()
+            UiPortalDismissalTrigger::AcceptedSelection { .. } => {
+                record.policy.dismisses_on_accepted_selection()
             }
-            UiPortalDismissalTrigger::AnchorLoss(_) => self.policy.dismisses_on_anchor_loss(),
+            UiPortalDismissalTrigger::AnchorLoss(_) => record.policy.dismisses_on_anchor_loss(),
         };
         if !admitted_by_policy {
             return Ok(UiPortalDismissalPreparation::Ignored(
                 UiPortalDismissalIgnoreReason::NoMatchingPortal,
             ));
         }
-        let Some((portal, record)) = self.dismissal_target(trigger) else {
-            return Ok(UiPortalDismissalPreparation::Ignored(
-                UiPortalDismissalIgnoreReason::NoMatchingPortal,
-            ));
-        };
         if let UiPortalDismissalTrigger::OutsidePress {
             viewport_point_bits,
+            ..
         } = trigger
         {
             let point = viewport_point_bits.map(f32::from_bits);
@@ -70,11 +78,11 @@ impl super::UiPortalRuntimeState {
             }
         }
         let cause = match trigger {
-            UiPortalDismissalTrigger::Escape => super::UiPortalDismissalCause::Escape,
+            UiPortalDismissalTrigger::Escape { .. } => super::UiPortalDismissalCause::Escape,
             UiPortalDismissalTrigger::OutsidePress { .. } => {
                 super::UiPortalDismissalCause::OutsidePress
             }
-            UiPortalDismissalTrigger::AcceptedSelection => {
+            UiPortalDismissalTrigger::AcceptedSelection { .. } => {
                 super::UiPortalDismissalCause::AcceptedSelection
             }
             UiPortalDismissalTrigger::AnchorLoss(_) => super::UiPortalDismissalCause::AnchorLoss,
@@ -128,23 +136,26 @@ impl super::UiPortalRuntimeState {
                 })
                 .map(|(portal, record)| (*portal, record));
         }
-        self.records
-            .iter()
-            .filter(|(_, record)| {
-                matches!(
-                    record.posture,
-                    super::UiPortalLifecyclePosture::Open
-                        | super::UiPortalLifecyclePosture::Visible
-                        | super::UiPortalLifecyclePosture::Closing
-                ) && match trigger {
-                    UiPortalDismissalTrigger::Escape
-                    | UiPortalDismissalTrigger::OutsidePress { .. }
-                    | UiPortalDismissalTrigger::AcceptedSelection => true,
-                    UiPortalDismissalTrigger::AnchorLoss(_) => unreachable!(),
-                }
-            })
-            .max_by_key(|(_, record)| record.stack_ordinal)
-            .map(|(portal, record)| (*portal, record))
+        let semantic_surface = match trigger {
+            UiPortalDismissalTrigger::Escape { semantic_surface }
+            | UiPortalDismissalTrigger::OutsidePress {
+                semantic_surface, ..
+            }
+            | UiPortalDismissalTrigger::AcceptedSelection { semantic_surface } => semantic_surface,
+            UiPortalDismissalTrigger::AnchorLoss(_) => unreachable!(),
+        };
+        let portal = self
+            .surface_stacks
+            .get(&semantic_surface)?
+            .topmost_portal()?;
+        let record = self.records.get(&portal)?;
+        matches!(
+            record.posture,
+            super::UiPortalLifecyclePosture::Open
+                | super::UiPortalLifecyclePosture::Visible
+                | super::UiPortalLifecyclePosture::Closing
+        )
+        .then_some((portal, record))
     }
 
     pub(super) fn portal_descends_from(

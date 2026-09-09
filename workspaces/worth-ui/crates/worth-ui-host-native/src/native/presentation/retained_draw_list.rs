@@ -16,14 +16,34 @@ mod complete;
 mod delta_transaction;
 #[path = "retained_draw_list/denial.rs"]
 mod denial;
+#[cfg(feature = "certification-support")]
+mod foreground_replay_certification;
 #[path = "retained_draw_list/lifecycle.rs"]
 mod lifecycle;
 #[path = "retained_draw_list/mutation.rs"]
 mod mutation;
+#[path = "retained_draw_list/physical_coverage.rs"]
+mod physical_coverage;
+#[path = "retained_draw_list/physical_replay.rs"]
+mod physical_replay;
+#[cfg(feature = "certification-support")]
+#[path = "retained_draw_list/physical_replay_certification.rs"]
+mod physical_replay_certification;
+#[cfg(feature = "certification-support")]
+mod text_transition_certification;
+#[cfg(feature = "certification-support")]
+pub use foreground_replay_certification::UiNativeTextReplayOperation;
+mod appearance_replay;
 #[path = "retained_draw_list/replay.rs"]
 mod replay;
 #[path = "retained_draw_list/sample_transaction.rs"]
 mod sample_transaction;
+#[path = "retained_draw_list/text_coverage.rs"]
+mod text_coverage;
+#[cfg(feature = "certification-support")]
+#[path = "retained_draw_list/text_coverage_certification.rs"]
+mod text_coverage_certification;
+mod text_raster;
 
 pub(super) use delta_transaction::UiNativeRetainedDeltaUndo;
 pub(super) use denial::UiNativeRetainedDrawListDenial;
@@ -31,6 +51,11 @@ pub(super) use sample_transaction::sampled_visible_bounds;
 pub(super) use sample_transaction::UiNativeRetainedSampleUndo;
 
 pub(crate) struct UiNativeRetainedDrawList {
+    physical_coverage: Option<physical_coverage::UiNativePhysicalCoverage>,
+    staged_appearance: Option<(
+        worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
+        super::appearance::UiNativeAppearanceRetained,
+    )>,
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
@@ -63,6 +88,8 @@ pub(super) struct UiNativeRetainedPresentationAttribution {
 pub(crate) struct UiNativeRetainedReplayPlan {
     pub(super) baseline_rgba8: [u8; 4],
     pub(super) regions: Box<[UiNativeRetainedReplayRegion]>,
+    pub(super) physical_text_regions: Vec<super::RasterRect>,
+    pub(super) staged_appearance_regions: Box<[super::appearance::UiNativeAppearanceReplayRegion]>,
     pub(super) counters: UiNativeRetainedMutationCounters,
     pub(super) identity_overlay_effect: bool,
 }

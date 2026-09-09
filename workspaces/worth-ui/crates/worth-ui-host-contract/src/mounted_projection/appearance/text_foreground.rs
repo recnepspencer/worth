@@ -1,9 +1,10 @@
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiMountedTextForegroundAppearanceMechanic {
     node_receipt: crate::UiMountedNodeReceiptIdentity,
+    command: crate::UiMountedPaintCommandIdentity,
     paint_span: crate::UiMountedTextPaintSpanIdentity,
     foreground: super::UiMountedAppearanceColor,
-    opacity: super::UiMountedAppearanceOpacity,
+    opacity: crate::UiMountedPresentationOpacity,
     projection: super::UiMountedNodeAppearanceAttribution,
 }
 
@@ -11,15 +12,17 @@ pub struct UiMountedTextForegroundAppearanceMechanic {
 pub struct UiMountedTextForegroundAppearanceCompletionInput {
     pub issuer: crate::UiMountedNodeReceiptIssuer,
     pub node_receipt: crate::UiMountedNodeReceiptIdentity,
+    pub command: crate::UiMountedPaintCommandIdentity,
     pub paint_span: crate::UiMountedTextPaintSpanIdentity,
     pub foreground: super::UiMountedAppearanceColor,
-    pub opacity: super::UiMountedAppearanceOpacity,
+    pub opacity: crate::UiMountedPresentationOpacity,
     pub projection: super::UiMountedNodeAppearanceAttribution,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiMountedTextForegroundAppearanceCompletionDenial {
     NodeReceiptFrameMismatch,
+    CommandMismatch,
     ProjectionIssuerMismatch,
 }
 
@@ -33,6 +36,11 @@ impl UiMountedTextForegroundAppearanceMechanic {
                 UiMountedTextForegroundAppearanceCompletionDenial::NodeReceiptFrameMismatch,
             );
         }
+        if input.command.mounted_instance() != input.node_receipt.mounted_instance()
+            || input.command.semantic_text_identity_parts().is_none()
+        {
+            return Err(UiMountedTextForegroundAppearanceCompletionDenial::CommandMismatch);
+        }
         if !input.projection.matches_issuer(input.issuer) {
             return Err(
                 UiMountedTextForegroundAppearanceCompletionDenial::ProjectionIssuerMismatch,
@@ -40,6 +48,7 @@ impl UiMountedTextForegroundAppearanceMechanic {
         }
         Ok(Self {
             node_receipt: input.node_receipt,
+            command: input.command,
             paint_span: input.paint_span,
             foreground: input.foreground,
             opacity: input.opacity,
@@ -52,10 +61,13 @@ impl UiMountedTextForegroundAppearanceMechanic {
     pub const fn paint_span(&self) -> crate::UiMountedTextPaintSpanIdentity {
         self.paint_span
     }
+    pub const fn command(&self) -> crate::UiMountedPaintCommandIdentity {
+        self.command
+    }
     pub const fn foreground(&self) -> super::UiMountedAppearanceColor {
         self.foreground
     }
-    pub const fn opacity(&self) -> super::UiMountedAppearanceOpacity {
+    pub const fn opacity(&self) -> crate::UiMountedPresentationOpacity {
         self.opacity
     }
     pub const fn projection(&self) -> super::UiMountedNodeAppearanceAttribution {

@@ -63,6 +63,7 @@ impl super::UiPortalRuntimeState {
         for portal in &prepared.removed {
             if let Some(record) = self.records.remove(portal) {
                 self.stack_order.remove(record.stack_ordinal, *portal);
+                self.remove_surface_stack_row(record.semantic_surface, *portal);
             }
         }
         if !prepared.removed.is_empty() {
@@ -99,11 +100,13 @@ impl super::UiPortalRuntimeState {
             record.posture != super::UiPortalLifecyclePosture::Closed && record.placement.is_some()
         }) {
             let placement = record.placement.expect("filtered portal retains placement");
-            let predecessor = placement.prepared().presentation();
-            let surface = surfaces
+            let Some(surface) = surfaces
                 .iter()
-                .find(|surface| surface.host_surface() == predecessor.host_surface())
-                .expect("published portal overlay retains its exact host surface");
+                .find(|surface| surface.semantic_surface() == record.semantic_surface)
+            else {
+                // Partial publications leave omitted surfaces at their accepted basis.
+                continue;
+            };
             let presentation = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
                 surface.host_surface(),
                 frame,

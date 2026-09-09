@@ -11,6 +11,7 @@ pub struct UiMountedPresentationAdmission {
     pub(super) retention: super::super::retention::UiMountedRetentionReservation,
     pub(super) attempt: UiMountedPresentationAttemptIdentity,
     pub(super) deadline: UiPresentationDeadline,
+    candidates: super::coordinator::UiPreparedFrameCandidates,
     lease: UiPresentationAdmissionLease,
 }
 
@@ -26,6 +27,7 @@ pub struct UiMountedPresentationAttempt {
 
 pub struct UiMountedPresentationAdmissionRejection {
     denial: UiMountedPresentationAdmissionDenial,
+    attempt: Option<UiMountedPresentationAttemptIdentity>,
     frame: Box<UiPreparedMountedFrame>,
 }
 
@@ -86,6 +88,8 @@ pub enum UiMountedPresentationAdmissionDenial {
     ReconciliationBasisMismatch,
     IdentityExhausted,
     SupersedingPredecessorUnavailable,
+    CandidatePreparation(worth_ui_host_contract::UiHostSurfacePresentationDenial),
+    AppearanceOutputUnavailable,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -99,10 +103,12 @@ impl UiMountedPresentationAdmission {
         attempt: UiMountedPresentationAttemptIdentity,
         deadline: UiPresentationDeadline,
         active: Rc<RefCell<BTreeSet<UiMountedPresentationAttemptIdentity>>>,
+        candidates: super::coordinator::UiPreparedFrameCandidates,
     ) -> Self {
         let (frame, retention) = prepared.into_parts();
         Self {
             frame,
+            candidates,
             retention,
             attempt,
             deadline,
@@ -128,8 +134,52 @@ impl UiMountedPresentationAdmission {
 
     pub(crate) fn lower_appearance(
         &mut self,
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
     ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
-        self.frame.lower_appearance(self.attempt)
+        let targets = self.frame.appearance_motion_targets(&[]);
+        let motion = self.candidates.accepted_appearance_motion(&targets);
+        self.frame
+            .record_accepted_motion_commands_visited(motion.commands_visited());
+        self.frame
+            .lower_appearance_with_motion(self.attempt, profile, motion)
+    }
+
+    pub(crate) fn lower_appearance_with_overlays(
+        &mut self,
+        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
+        overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
+    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
+        let targets = self.frame.appearance_motion_targets(overlays);
+        let motion = self.candidates.accepted_appearance_motion(&targets);
+        self.frame
+            .record_accepted_motion_commands_visited(motion.commands_visited());
+        self.frame.lower_appearance_with_motion_and_overlays(
+            self.attempt,
+            profile,
+            motion,
+            overlays,
+        )
+    }
+
+    pub(crate) fn deny_appearance_output(
+        &mut self,
+    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
+        self.frame.deny_appearance_output()
+    }
+
+    pub(crate) fn appearance_output_available(&self) -> bool {
+        self.frame.appearance_output_available()
+    }
+
+    pub(crate) fn reject_appearance_output(self) -> UiMountedPresentationAdmissionRejection {
+        let attempt = self.attempt;
+        let frame = self.frame;
+        drop(self.retention);
+        UiMountedPresentationAdmissionRejection::new_with_attempt(
+            frame,
+            UiMountedPresentationAdmissionDenial::AppearanceOutputUnavailable,
+            attempt,
+        )
     }
 
     pub fn into_attempt(self) -> UiMountedPresentationAttempt {
@@ -144,6 +194,19 @@ impl UiMountedPresentationAdmissionRejection {
     ) -> Self {
         Self {
             denial,
+            attempt: None,
+            frame: Box::new(frame),
+        }
+    }
+
+    fn new_with_attempt(
+        frame: UiPreparedMountedFrame,
+        denial: UiMountedPresentationAdmissionDenial,
+        attempt: UiMountedPresentationAttemptIdentity,
+    ) -> Self {
+        Self {
+            denial,
+            attempt: Some(attempt),
             frame: Box::new(frame),
         }
     }
@@ -154,6 +217,10 @@ impl UiMountedPresentationAdmissionRejection {
 
     pub fn frame(&self) -> &UiPreparedMountedFrame {
         &self.frame
+    }
+
+    pub fn attempt(&self) -> Option<UiMountedPresentationAttemptIdentity> {
+        self.attempt
     }
 
     pub fn into_frame(self) -> UiPreparedMountedFrame {
@@ -178,6 +245,7 @@ impl UiMountedPresentationAttempt {
         super::super::retention::UiMountedRetentionReservation,
         UiMountedPresentationAttemptIdentity,
         UiPresentationDeadline,
+        super::coordinator::UiPreparedFrameCandidates,
     ) {
         self.admission.lease.release_on_drop = false;
         (
@@ -185,6 +253,7 @@ impl UiMountedPresentationAttempt {
             self.admission.retention,
             self.admission.attempt,
             self.admission.deadline,
+            self.admission.candidates,
         )
     }
 }

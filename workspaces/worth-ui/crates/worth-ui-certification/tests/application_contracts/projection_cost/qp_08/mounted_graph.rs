@@ -74,6 +74,7 @@ fn assert_zero_unchanged_graph_turn(graph_width: usize) {
     session
         .mount_instance(node, surface)
         .expect("one node mounts");
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let request = UiMountedFrameRequest::all_bound_surfaces();
     let first = require_published(
         session

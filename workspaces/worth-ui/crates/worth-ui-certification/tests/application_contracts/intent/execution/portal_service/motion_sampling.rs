@@ -279,14 +279,13 @@ fn validated_tick_observations_sample_motion_without_new_semantic_frames() {
         .iter()
         .find(|fill| {
             fill.mounted_instance() != trigger
-                && fill.clip_bounds() == portal.bounds()
                 && fill.layer_semantic_order() > portal.layer_semantic_order()
         })
-        .expect("the real Portal fixture publishes a clipped authored child")
+        .expect("the real Portal fixture publishes its authored child above the overlay")
         .mounted_instance();
     assert_ne!(portal_child, trigger);
     let portal_child_commands =
-        portal_child_commands::exact_portal_child_commands(open_transcript, portal_child);
+        portal_child_commands::exact_portal_child_commands(open_transcript, portal_child, portal);
     let mut portal_motion_commands = portal_child_commands;
     portal_motion_commands
         .insert(worth_ui_host_contract::UiMountedPaintCommandIdentity::portal_overlay(&portal));
@@ -356,14 +355,14 @@ fn validated_tick_observations_sample_motion_without_new_semantic_frames() {
             .collect::<std::collections::HashSet<_>>(),
         portal_motion_commands
     );
-    assert!(retained_mid.changes().iter().any(|change| {
+    assert!(retained_mid.changes().iter().all(|change| {
         let Some(transform) = change.transform() else {
             return false;
         };
         transform.sampled().y() > transform.source().y()
             && transform.sampled().y() < transform.source().y() + 8.0
-            && change.opacity().factor() > 0.0
-            && change.opacity().factor() < 1.0
+            && change.opacity().units() == 57_343
+            && mid.opacity_units() == Some(57_343)
     }));
 
     let repeated_tick = motion_tick_batch(&world.session, mid_presentation, 5, 71);
@@ -392,7 +391,7 @@ fn validated_tick_observations_sample_motion_without_new_semantic_frames() {
     assert_eq!(terminal.retained_samples(), 1);
     assert_eq!(terminal.semantic_publications(), 2);
     assert_eq!(terminal.last_tick(), Some(141));
-    assert_eq!(terminal.opacity(), Some(1.0));
+    assert_eq!(terminal.opacity_units(), Some(u16::MAX));
     assert_eq!(
         recorder.observed_transcripts().len(),
         semantic_transcript_count

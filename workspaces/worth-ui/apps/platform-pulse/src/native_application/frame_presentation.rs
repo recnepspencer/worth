@@ -25,8 +25,18 @@ impl PlatformPulseApplicationRuntime {
         };
         let first_frame = self.initial_source.is_some();
         let viewport_successor = shell.native_viewport_presentation_pending();
-        if !first_frame && !viewport_successor {
+        if !first_frame && !viewport_successor && !shell.native_pointer_presentation_pending() {
             return;
+        }
+        if first_frame || viewport_successor {
+            match super::layout::publish_native_layout(shell) {
+                Ok(true) => {}
+                Ok(false) => return,
+                Err(detail) => {
+                    self.fail(PlatformPulseTerminalError::FrameExecution(detail), Ok(()));
+                    return;
+                }
+            }
         }
         self.presentation_tick = self.presentation_tick.saturating_add(1);
         let deadline = self.presentation_tick.saturating_add(1);

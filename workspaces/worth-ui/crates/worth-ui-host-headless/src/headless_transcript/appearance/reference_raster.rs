@@ -11,21 +11,24 @@ use worth_ui_host_contract::{
 pub(crate) fn compose(frame: &UiMountedAppearanceFrame) -> Option<UiMountedAppearanceColor> {
     let mut layers = Vec::new();
     for participant in frame.overlay_order().bottom_to_top() {
-        let mechanic = frame
-            .mechanics()
-            .iter()
-            .find(|mechanic| match participant {
-                UiOverlayParticipantIdentity::Portal(instance) => matches!(
-                    mechanic,
-                    UiMountedAppearanceMechanic::PortalSurface(surface)
-                        if surface.portal_instance() == *instance
-                ),
-                UiOverlayParticipantIdentity::Backdrop(identity) => matches!(
-                    mechanic,
-                    UiMountedAppearanceMechanic::Backdrop(backdrop)
-                        if backdrop.identity() == identity
-                ),
-            })?;
+        let mechanic = frame.mechanics().iter().find(|mechanic| match participant {
+            UiOverlayParticipantIdentity::Portal(instance) => matches!(
+                mechanic,
+                UiMountedAppearanceMechanic::PortalSurface(surface)
+                    if surface.portal_instance() == *instance
+            ),
+            UiOverlayParticipantIdentity::Backdrop(identity) => matches!(
+                mechanic,
+                UiMountedAppearanceMechanic::Backdrop(backdrop)
+                    if backdrop.identity() == identity
+            ),
+        });
+        let Some(mechanic) = mechanic else {
+            if matches!(participant, UiOverlayParticipantIdentity::Portal(_)) {
+                continue;
+            }
+            return None;
+        };
         match mechanic {
             UiMountedAppearanceMechanic::PortalSurface(surface) => layers.push((
                 surface_color(surface.surface().paint()),
@@ -46,22 +49,21 @@ pub(crate) fn has_issued_participants(frame: &UiMountedAppearanceFrame) -> bool 
         .bottom_to_top()
         .iter()
         .enumerate()
-        .all(|(ordinal, participant)| {
-            frame.mechanics().iter().any(|mechanic| match participant {
-                UiOverlayParticipantIdentity::Portal(instance) => matches!(
-                    mechanic,
-                    UiMountedAppearanceMechanic::PortalSurface(surface)
-                        if surface.portal_instance() == *instance
-                ),
-                UiOverlayParticipantIdentity::Backdrop(identity) => matches!(
-                    mechanic,
-                    UiMountedAppearanceMechanic::Backdrop(backdrop)
-                        if backdrop.identity() == identity
-                            && backdrop.placement().overlay_revision()
-                                == frame.overlay_order().portal_revision()
-                            && usize::try_from(backdrop.placement().ordinal()) == Ok(ordinal)
-                ),
-            })
+        .all(|(ordinal, participant)| match participant {
+            UiOverlayParticipantIdentity::Portal(_) => true,
+            UiOverlayParticipantIdentity::Backdrop(_) => {
+                frame.mechanics().iter().any(|mechanic| match participant {
+                    UiOverlayParticipantIdentity::Backdrop(identity) => matches!(
+                        mechanic,
+                        UiMountedAppearanceMechanic::Backdrop(backdrop)
+                            if backdrop.identity() == identity
+                                && backdrop.placement().overlay_revision()
+                                    == frame.overlay_order().portal_revision()
+                                && usize::try_from(backdrop.placement().ordinal()) == Ok(ordinal)
+                    ),
+                    UiOverlayParticipantIdentity::Portal(_) => unreachable!(),
+                })
+            }
         })
         && frame
             .mechanics()
@@ -80,7 +82,10 @@ pub(crate) fn has_issued_participants(frame: &UiMountedAppearanceFrame) -> bool 
 
 fn surface_color(paint: &UiMountedSurfacePaint) -> UiMountedAppearanceColor {
     match paint {
-        UiMountedSurfacePaint::Fill(color) | UiMountedSurfacePaint::Border { color, .. } => *color,
+        UiMountedSurfacePaint::Fill(color) => *color,
+        UiMountedSurfacePaint::Border { .. } => {
+            UiMountedAppearanceColor::from_straight_srgba([0; 4])
+        }
         UiMountedSurfacePaint::FillAndBorder { fill, .. } => *fill,
     }
 }
@@ -103,17 +108,17 @@ mod tests {
                     node_receipt: issuer.receipt_for(instance),
                     bounds,
                     clip: worth_ui_host_contract::UiAppearanceClip::new(0, 0, 8, 8).unwrap(),
-                    layer: worth_ui_host_contract::UiMountedLayerProjection::Layer(
-                        worth_ui_host_contract::UiMountedLayerReference::new(0),
-                    ),
+                    surface_paint_order: 0,
                     radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii::normalize(
                         bounds,
                         [worth_ui_host_contract::UiAppearanceLogicalLength::ZERO; 4],
                     ),
+                    border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
+                    border_omissions: Box::new([]),
                     paint: UiMountedSurfacePaint::Fill(
                         UiMountedAppearanceColor::from_straight_srgba(color),
                     ),
-                    opacity: worth_ui_host_contract::UiMountedAppearanceOpacity::ONE,
+                    opacity: worth_ui_host_contract::UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
                     projection: worth_ui_host_contract::UiMountedNodeAppearanceAttribution::
                         from_runtime_mounting(issuer, 1, 1)
                         .unwrap(),
@@ -156,7 +161,7 @@ mod tests {
                     background: UiMountedAppearanceColor::from_straight_srgba(
                         [255, 0, 0, 128],
                     ),
-                    opacity: worth_ui_host_contract::UiMountedAppearanceOpacity::ONE,
+                    opacity: worth_ui_host_contract::UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
                     attribution: worth_ui_host_contract::UiMountedBackdropAppearanceAttribution::
                         from_runtime_transport(surface, placement, 1, 1)
                         .unwrap(),
@@ -192,5 +197,36 @@ mod tests {
             compose(&frame).unwrap().straight_srgba(),
             [156, 213, 0, 192]
         );
+        let structural = worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap();
+        let mut participants = frame.overlay_order().bottom_to_top().to_vec();
+        participants.insert(1, UiOverlayParticipantIdentity::Portal(structural));
+        let order = worth_ui_host_contract::UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
+            surface, presentation, 3, 4, participants).unwrap();
+        let anchored = UiMountedAppearanceFrame::from_runtime_mounting(
+            frame_identity,
+            surface,
+            frame.mechanics().to_vec(),
+            order.clone(),
+        )
+        .unwrap();
+        assert!(has_issued_participants(&anchored));
+        assert_eq!(
+            compose(&anchored).unwrap().straight_srgba(),
+            [156, 213, 0, 192]
+        );
+        let missing_backdrop = UiMountedAppearanceFrame::from_runtime_mounting(
+            frame_identity,
+            surface,
+            [frame.mechanics()[1].clone()],
+            order,
+        )
+        .unwrap();
+        assert!(!has_issued_participants(&missing_backdrop));
+        assert!(compose(&missing_backdrop).is_none());
+        let unordered_paint = UiMountedAppearanceFrame::from_runtime_mounting(
+            frame_identity, surface, [frame.mechanics()[1].clone()],
+            worth_ui_host_contract::UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
+                surface, presentation, 3, 4, [UiOverlayParticipantIdentity::Portal(structural)]).unwrap()).unwrap();
+        assert!(!has_issued_participants(&unordered_paint));
     }
 }

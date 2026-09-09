@@ -67,18 +67,43 @@ fn push_shape(
     fact: &UiMountedAppearanceFact,
 ) -> Result<(), UiMountedAppearanceLoweringDenial> {
     let shape = match fact.damage() {
+        UiMountedAppearanceDamageShape::TextForeground(_) => return Ok(()),
         UiMountedAppearanceDamageShape::Visual { bounds, .. } => {
             UiAppearanceDamageRegion::new(bounds.x(), bounds.y(), bounds.width(), bounds.height())
                 .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)?
         }
-        UiMountedAppearanceDamageShape::Backdrop { extent } => {
-            UiAppearanceDamageRegion::new(extent.x(), extent.y(), extent.width(), extent.height())
-                .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)?
+        UiMountedAppearanceDamageShape::Backdrop { extent, clip } => {
+            let Some(region) = clipped_backdrop(*extent, *clip)? else {
+                return Ok(());
+            };
+            region
         }
-        UiMountedAppearanceDamageShape::None => return Ok(()),
     };
     regions.push(shape);
     Ok(())
+}
+
+fn clipped_backdrop(
+    extent: worth_ui_host_contract::UiAppearanceBackdropExtent,
+    clip: worth_ui_host_contract::UiAppearanceClip,
+) -> Result<Option<UiAppearanceDamageRegion>, UiMountedAppearanceLoweringDenial> {
+    let x = extent.x().max(clip.x());
+    let y = extent.y().max(clip.y());
+    let right = (i64::from(extent.x()) + i64::from(extent.width()))
+        .min(i64::from(clip.x()) + i64::from(clip.width()));
+    let bottom = (i64::from(extent.y()) + i64::from(extent.height()))
+        .min(i64::from(clip.y()) + i64::from(clip.height()));
+    if right <= i64::from(x) || bottom <= i64::from(y) {
+        return Ok(None);
+    }
+    UiAppearanceDamageRegion::new(
+        x,
+        y,
+        (right - i64::from(x)) as u32,
+        (bottom - i64::from(y)) as u32,
+    )
+    .map(Some)
+    .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)
 }
 
 fn participant_fact<'a>(

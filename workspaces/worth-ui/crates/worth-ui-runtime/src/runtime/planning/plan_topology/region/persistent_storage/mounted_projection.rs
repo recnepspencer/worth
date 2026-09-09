@@ -22,6 +22,25 @@ impl super::WorthUiPlanRegionStore {
             .and_then(|executable| executable.ordinary_meaning_reference())
     }
 
+    pub(crate) fn mounted_projection_ordinary_meaning_with_identity(
+        &self,
+        plan_index: u32,
+    ) -> Option<(
+        String,
+        Rc<crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning>,
+    )> {
+        let slot = u64::from(plan_index);
+        let identity = self
+            .handle_for_stable_slot(slot)?
+            .region_identity()
+            .exact_basis()
+            .to_owned();
+        let meaning = self
+            .executable_for_stable_slot(slot)?
+            .ordinary_meaning_reference()?;
+        Some((identity, meaning))
+    }
+
     pub(crate) fn mounted_projection_ordinary_meaning_for_identity(
         &self,
         identity: &str,

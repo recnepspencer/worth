@@ -228,6 +228,7 @@ fn execute_content_plan(
     plan: worth_ui::facade::rebind::UiRebindPlan,
     request: u64,
 ) {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(request))
         .expect("content plan prepares");

@@ -5,8 +5,17 @@ use worth_ui_host_contract::{
 
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 
+#[path = "assembly/pointer_affordance.rs"]
+mod pointer_affordance;
 #[path = "assembly/prepared_frame.rs"]
 mod prepared_frame;
+
+#[cfg(test)]
+#[path = "assembly/appearance_order_tests.rs"]
+mod appearance_order_tests;
+#[cfg(test)]
+#[path = "assembly/appearance_output_tests.rs"]
+mod appearance_output_tests;
 
 pub(crate) use prepared_frame::binding_requirement;
 
@@ -43,6 +52,8 @@ pub enum UiMountedFramePreparationDenial {
     IntegrityMismatch,
     AppearanceStateCapacityExceeded(super::projection::UiAppearanceStateCapacityExceeded),
     AppearanceStateIdentityMismatch,
+    PointerSnapshotGenerationMismatch,
+    PointerSnapshotTargetUnavailable(worth_ui_host_contract::UiMountedInstanceIdentity),
 }
 
 #[derive(Clone)]
@@ -84,6 +95,13 @@ pub(crate) struct UiPreparedMountedFrameAdmission {
 }
 
 impl UiMountedFrameRequest {
+    pub(crate) fn includes_surface(&self, surface: UiSemanticSurfaceIdentity) -> bool {
+        match &self.surfaces {
+            UiMountedSurfaceSelection::AllBound => true,
+            UiMountedSurfaceSelection::Exact(surfaces) => surfaces.contains(&surface),
+        }
+    }
+
     pub fn all_bound_surfaces() -> Self {
         Self {
             surfaces: UiMountedSurfaceSelection::AllBound,

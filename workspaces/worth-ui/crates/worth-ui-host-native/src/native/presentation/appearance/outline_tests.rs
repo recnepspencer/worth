@@ -4,7 +4,7 @@ use super::mounted_mechanic_fixtures::{
 };
 use super::outline_pipeline::UiNativeOutlinePipeline;
 use worth_ui_host_contract::{
-    UiAppearanceClip, UiMountedAppearanceColor, UiMountedAppearanceOpacity,
+    UiAppearanceClip, UiMountedAppearanceColor, UiMountedPresentationOpacity,
 };
 
 #[test]
@@ -24,7 +24,7 @@ fn outline_damage_keeps_full_fringe_while_parent_clip_only_removes_pixels() {
                 offset: logical_length(1_000),
                 anti_alias_fringe: logical_length(1_000),
                 color: UiMountedAppearanceColor::from_straight_srgba([8, 16, 32, 255]),
-                opacity: UiMountedAppearanceOpacity::ONE,
+                opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             }),
             UiNativeAppearanceScale::qualified(milli).unwrap(),
         )

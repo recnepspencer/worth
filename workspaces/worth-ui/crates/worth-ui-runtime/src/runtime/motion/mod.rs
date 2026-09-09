@@ -17,7 +17,9 @@ pub(crate) use declaration::{
     UiMotionDeclaration, UiMotionEasing, UiMotionFillPolicy, UiMotionInterruptionPolicy,
     UiMotionPropertyChannel, UiMotionPropertyChannels, UiMotionReducedMotionPolicy,
 };
-pub(crate) use overlay_export::UiMotionOverlayOwnerExport;
+pub(crate) use overlay_export::{
+    UiMotionOverlayOwnerExport, UiMotionOverlayOwnerRow, UiMotionOverlayRows,
+};
 pub(crate) use produced_fact::{UiMotionProducedFact, UiMotionProducedFactKind};
 pub(crate) use rebind::UiPreparedMotionRebind;
 pub(crate) use receipt::{

@@ -1,6 +1,18 @@
 use super::super::appearance::UiMountedAppearanceSidecar;
 use super::appearance_state_membership_work::UiMountedAppearanceMembershipWork;
+use super::appearance_state_predecessor::{
+    UiMountedAppearancePhysicalPredecessor, UiMountedAppearanceStatePredecessor,
+};
 use crate::runtime::persistent_index::UiPersistentOrdMap;
+
+#[cfg(test)]
+#[path = "appearance_state_output_observation.rs"]
+mod output_observation;
+
+#[path = "appearance_state_membership_retirement.rs"]
+mod retirement;
+
+mod observation;
 
 type Mutation<T> = (
     Result<T, super::UiMountedAppearanceStateMutationDenial>,
@@ -29,10 +41,11 @@ pub(super) struct UiMountedAppearanceStateEntry {
 #[derive(Clone)]
 pub(super) enum UiMountedAppearanceStateMembership {
     Retained(UiMountedAppearanceStateEntry),
+    PhysicalOnly(UiMountedAppearancePhysicalPredecessor),
     Reserved,
     Staged {
         attempt: crate::runtime::appearance::UiAppearanceProjectionAttempt,
-        predecessor: Option<UiMountedAppearanceStateEntry>,
+        predecessor: Option<UiMountedAppearanceStatePredecessor>,
     },
 }
 
@@ -72,6 +85,13 @@ impl Default for UiMountedAppearanceStateMembers {
 }
 
 impl UiMountedAppearanceStateMembers {
+    pub(super) fn contains_instance(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> bool {
+        self.reverse.get_with_probes(&instance).0.is_some()
+    }
+
     pub(super) fn new() -> Self {
         Self {
             primary: UiPersistentOrdMap::default(),
@@ -86,42 +106,6 @@ impl UiMountedAppearanceStateMembers {
             reverse: self.reverse.clone(),
             pending_keys: Vec::new(),
         }
-    }
-
-    pub(super) fn clear_for_epoch(&mut self) -> (usize, UiMountedAppearanceMembershipWork) {
-        let retired = self.primary.len();
-        let mut work = UiMountedAppearanceMembershipWork::default();
-        // Dropping the two persistent roots is logically constant-time, while
-        // releasing their bounded nodes is charged to lifecycle retirement.
-        work.add_traversal(retired);
-        self.primary = UiPersistentOrdMap::default();
-        self.reverse = UiPersistentOrdMap::default();
-        self.pending_keys.clear();
-        (retired, work)
-    }
-
-    pub(super) fn retire_instances(
-        &mut self,
-        instances: &[worth_ui_host_contract::UiMountedInstanceIdentity],
-    ) -> (usize, UiMountedAppearanceMembershipWork) {
-        let mut retired = 0;
-        let mut work = UiMountedAppearanceMembershipWork::default();
-        for instance in instances {
-            let (local_key, reverse_probes) = self.reverse.get_with_probes(instance);
-            work.add_lookup(reverse_probes);
-            let Some(local_key) = local_key.cloned() else {
-                continue;
-            };
-            if local_key.mounted_instance != *instance {
-                continue;
-            }
-            let (membership, remove_work) = self.remove(&local_key);
-            work.merge(remove_work);
-            if membership.is_some() {
-                retired += 1;
-            }
-        }
-        (retired, work)
     }
 
     pub(super) fn reserve(
@@ -192,7 +176,11 @@ impl UiMountedAppearanceStateMembers {
         let predecessor = match membership {
             Some(UiMountedAppearanceStateMembership::Retained(entry)) => {
                 self.pending_keys.push(key.clone());
-                Some(entry)
+                Some(UiMountedAppearanceStatePredecessor::Resolved(entry))
+            }
+            Some(UiMountedAppearanceStateMembership::PhysicalOnly(physical)) => {
+                self.pending_keys.push(key.clone());
+                Some(UiMountedAppearanceStatePredecessor::PhysicalOnly(physical))
             }
             Some(UiMountedAppearanceStateMembership::Reserved) => None,
             Some(UiMountedAppearanceStateMembership::Staged { predecessor, .. }) => predecessor,
@@ -253,6 +241,19 @@ impl UiMountedAppearanceStateMembers {
         )
     }
 
+    pub(super) fn restore_predecessor(
+        &mut self,
+        predecessor: UiMountedAppearanceStatePredecessor,
+    ) -> Mutation<Option<UiMountedAppearanceStateMembership>> {
+        match predecessor {
+            UiMountedAppearanceStatePredecessor::Resolved(entry) => self.insert_retained(entry),
+            UiMountedAppearanceStatePredecessor::PhysicalOnly(physical) => self.insert_membership(
+                physical.key.clone(),
+                UiMountedAppearanceStateMembership::PhysicalOnly(physical),
+            ),
+        }
+    }
+
     fn insert_membership(
         &mut self,
         key: UiMountedAppearanceLocalNodeKey,
@@ -293,25 +294,44 @@ impl UiMountedAppearanceStateMembers {
             Some(membership) => match membership {
                 UiMountedAppearanceStateMembership::Retained(entry) => Some(entry),
                 UiMountedAppearanceStateMembership::Reserved
+                | UiMountedAppearanceStateMembership::PhysicalOnly(_)
                 | UiMountedAppearanceStateMembership::Staged { .. } => None,
             },
             None => None,
         }
     }
 
+    pub(super) fn retained_entry_for_local_node(
+        &self,
+        key: &UiMountedAppearanceLocalNodeKey,
+    ) -> Option<&UiMountedAppearanceStateEntry> {
+        match self.primary.get(key) {
+            Some(UiMountedAppearanceStateMembership::Retained(entry)) => Some(entry),
+            _ => None,
+        }
+    }
+
     pub(super) fn retained_keys_for_reconstruction(
         &self,
     ) -> (
-        Vec<UiMountedAppearanceStateKey>,
+        Result<
+            Vec<UiMountedAppearanceStateKey>,
+            super::appearance_output::UiMountedAppearanceOutputDenial,
+        >,
         UiMountedAppearanceMembershipWork,
     ) {
         let mut work = UiMountedAppearanceMembershipWork::default();
         work.add_traversal(self.primary.len());
+        let mut unavailable = false;
         let mut keys = self
             .primary
             .iter()
             .filter_map(|(local_key, membership)| match membership {
                 UiMountedAppearanceStateMembership::Retained(entry) => Some(entry.key.clone()),
+                UiMountedAppearanceStateMembership::PhysicalOnly(_) => {
+                    unavailable = true;
+                    None
+                }
                 UiMountedAppearanceStateMembership::Reserved
                 | UiMountedAppearanceStateMembership::Staged { .. } => {
                     let _ = local_key;
@@ -320,33 +340,14 @@ impl UiMountedAppearanceStateMembers {
             })
             .collect::<Vec<_>>();
         keys.sort_by(|left, right| left.local_node().cmp(right.local_node()));
-        (keys, work)
-    }
-
-    #[cfg(test)]
-    pub(super) fn membership_counts(&self) -> (usize, usize, usize) {
-        self.primary
-            .iter()
-            .fold((0, 0, 0), |counts, (_, membership)| {
-                let (retained, reserved, staged) = counts;
-                match membership {
-                    UiMountedAppearanceStateMembership::Retained(_) => {
-                        (retained + 1, reserved, staged)
-                    }
-                    UiMountedAppearanceStateMembership::Reserved => {
-                        (retained, reserved + 1, staged)
-                    }
-                    UiMountedAppearanceStateMembership::Staged { .. } => {
-                        (retained, reserved, staged + 1)
-                    }
-                }
-            })
-    }
-
-    #[cfg(test)]
-    pub(super) fn roots_shared_with(&self, other: &Self) -> bool {
-        self.primary.root_is_shared_with(&other.primary)
-            && self.reverse.root_is_shared_with(&other.reverse)
+        (
+            if unavailable {
+                Err(super::appearance_output::UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable)
+            } else {
+                Ok(keys)
+            },
+            work,
+        )
     }
 }
 
@@ -376,3 +377,7 @@ pub(super) fn local_node_key(
         incarnation: node.incarnation,
     }
 }
+
+#[cfg(test)]
+#[path = "appearance_state_membership_test_support.rs"]
+mod test_support;

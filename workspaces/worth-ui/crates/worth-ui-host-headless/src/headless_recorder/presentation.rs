@@ -105,7 +105,7 @@ pub(super) fn apply_work(
             )
             .map_err(|_| malformed())?;
             let order_cost = order.take_cost();
-            *current = Some(UiHeadlessRetainedPresentation::initial(
+            let mut retained = UiHeadlessRetainedPresentation::initial(
                 view.frame(),
                 view.surface(),
                 view.binding(),
@@ -116,7 +116,10 @@ pub(super) fn apply_work(
                 initial_node_positions(work.projection())?,
                 initial_nodes_by_position(work.projection())?,
                 work.auxiliary().clone(),
-            ));
+            );
+            retained
+                .install_reconstruction_sample_overrides(work.sample_overrides(), work.damage())?;
+            *current = Some(retained);
             Ok((Some(recorded), order_cost))
         }
         UiMountedPresentationWorkView::Sample(sample) => {
@@ -355,3 +358,7 @@ pub(super) fn add_order_cost(
 #[cfg(test)]
 #[path = "presentation_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "presentation_reconstruction_tests.rs"]
+mod reconstruction_tests;

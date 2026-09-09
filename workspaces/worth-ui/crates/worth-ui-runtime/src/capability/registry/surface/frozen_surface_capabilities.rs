@@ -51,6 +51,13 @@ impl FrozenSurfaceCapabilities {
     }
 }
 
+impl SurfaceDescriptor {
+    /// The complete surface basis shared with the frozen capability catalog.
+    pub(crate) fn digest_basis(&self) -> u64 {
+        fold_surface_descriptor(0x1c04_5d89_e9f3_27ab, self)
+    }
+}
+
 fn fold_surface_descriptor(accumulator: u64, descriptor: &SurfaceDescriptor) -> u64 {
     let with_id = fold_bytes(accumulator, descriptor.id().as_str().as_bytes());
     let with_kind = fold_bytes(with_id, descriptor.kind().digest_basis().as_bytes());

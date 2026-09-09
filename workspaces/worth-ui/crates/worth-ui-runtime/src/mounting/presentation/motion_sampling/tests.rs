@@ -2,6 +2,10 @@ use super::*;
 
 #[path = "tests/damage.rs"]
 mod damage;
+#[path = "tests/opacity.rs"]
+mod opacity;
+#[path = "tests/presented_index.rs"]
+mod presented_index;
 
 fn commit_tick(
     sampler: &mut UiMountedMotionSampler,
@@ -176,6 +180,70 @@ fn discarded_prepared_sample_changes_no_presented_truth_or_terminal_state() {
 }
 
 #[test]
+fn active_track_capacity_denies_before_mutating_the_sampler() {
+    let world = World::new();
+    let mut sampler = UiMountedMotionSampler::default();
+    for identity in 1..=sampling::MAX_PRESENTATION_TRACKS as u64 {
+        let target = crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+            world.target.semantic_surface(),
+            worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
+            identity,
+        );
+        sampler
+            .install(world.receipt_for_target(identity, target))
+            .unwrap();
+    }
+    let before = sampler.certification_observation();
+    let overflow = crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+        world.target.semantic_surface(),
+        worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
+        10_000,
+    );
+
+    assert_eq!(
+        sampler.install(world.receipt_for_target(10_000, overflow)),
+        Err(UiPresentationMotionSamplingDenial::TrackCapacityExceeded)
+    );
+    let after = sampler.certification_observation();
+    assert_eq!(after.0, before.0);
+    assert_eq!(after.1, before.1);
+    assert_eq!(after.2, before.2);
+    assert_eq!(after.3, before.3);
+    assert_eq!(after.4, before.4 + 1);
+    assert_eq!(
+        after.5,
+        Some(UiPresentationMotionSamplingDenial::TrackCapacityExceeded)
+    );
+}
+
+#[test]
+fn published_surface_rebind_preserves_the_active_track_and_current_sample() {
+    let world = World::new();
+    let mut sampler = UiMountedMotionSampler::default();
+    sampler.install(world.receipt(75, 0.0, None)).unwrap();
+    let mid = commit_tick(&mut sampler, 70, world.presentation).samples()[0];
+    let replacement = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
+        worth_ui_host_contract::UiHostSurfaceIdentity::mint_unbound().unwrap(),
+        worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap(),
+        worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap(),
+        worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(2),
+    );
+
+    sampler.rebind_published_presentation(world.target.semantic_surface(), replacement);
+
+    let current = sampler.certification_observation().3.unwrap();
+    assert_eq!(current.presentation_basis(), replacement);
+    assert_eq!(current.opacity_units(), mid.opacity_units());
+    assert_eq!(
+        current.geometry().unwrap().presentation_basis(),
+        replacement
+    );
+    let next = commit_tick(&mut sampler, 71, replacement);
+    assert_eq!(next.samples().len(), 1);
+    assert!(next.terminals().is_empty());
+}
+
+#[test]
 fn a_track_installed_after_a_long_idle_starts_on_its_own_first_tick() {
     let world = World::new();
     let mut sampler = UiMountedMotionSampler::default();
@@ -256,6 +324,24 @@ impl World {
             true,
             declaration,
             retarget,
+        )
+    }
+
+    fn receipt_for_target(
+        &self,
+        identity: u64,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> crate::runtime::motion::UiMotionCommitReceipt {
+        crate::runtime::motion::UiMotionCommitReceipt::for_sampling_test_transition(
+            identity,
+            target,
+            self.presentation,
+            Some([0.0, 0.0, 20.0, 10.0]),
+            true,
+            Some([20.0, 10.0, 24.0, 12.0]),
+            true,
+            crate::runtime::motion::UiMotionDeclaration::portal_entrance(),
+            None,
         )
     }
 

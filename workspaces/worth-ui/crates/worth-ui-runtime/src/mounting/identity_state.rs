@@ -23,6 +23,7 @@ mod frame_lifecycle;
 mod graph_replacement;
 mod instance_lifecycle;
 mod interaction_affinity;
+mod layout_basis;
 mod layout_reconstruction;
 mod presentation_attribution;
 pub(crate) mod surface_lifecycle;
@@ -72,6 +73,11 @@ pub(crate) struct UiMountedIdentityState {
     current_frame: Option<UiMountedFrameIdentity>,
     current_receipt_basis: Option<super::UiMountedNodeReceiptBasis>,
     current_projection: Option<std::rc::Rc<super::UiMountedProjectionFrameOwner>>,
+    // Identity progression revokes current projection authority while the next
+    // projection still needs accepted semantic inputs and physical predecessors.
+    unprojected_semantic_predecessor: Option<super::projection::UiMountedSemanticProjection>,
+    unprojected_appearance_predecessor: Option<super::projection::UiMountedAppearanceFrameState>,
+    unprojected_pointer_predecessor: Option<super::projection::UiMountedPointerAffordanceState>,
     current_manifest: Option<worth_ui_host_contract::UiMountedFrameManifest>,
     current_core: Option<worth_ui_host_contract::UiMountedFrameCanonicalCore>,
     current_publication: Option<super::UiMountedFramePublicationReceipt>,
@@ -108,6 +114,9 @@ impl UiMountedIdentityState {
             current_frame: None,
             current_receipt_basis: None,
             current_projection: None,
+            unprojected_semantic_predecessor: None,
+            unprojected_appearance_predecessor: None,
+            unprojected_pointer_predecessor: None,
             current_manifest: None,
             current_core: None,
             current_publication: None,
@@ -201,6 +210,44 @@ impl UiMountedIdentityState {
 
     pub(crate) fn current_projection_owner(&self) -> Option<&super::UiMountedProjectionFrameOwner> {
         self.current_projection.as_deref()
+    }
+
+    pub(in crate::mounting) fn retain_pointer_observation_admission(
+        &mut self,
+        observation: crate::runtime::pointer_affordance::UiPointerAffordanceObservationIdentity,
+        surfaces: &[UiSemanticSurfaceIdentity],
+    ) {
+        if let Some(owner) = &mut self.current_projection {
+            std::rc::Rc::make_mut(owner)
+                .pointer
+                .retain_observation_admission(observation, surfaces);
+        }
+    }
+
+    pub(in crate::mounting) fn appearance_predecessor(
+        &self,
+    ) -> Option<&super::projection::UiMountedAppearanceFrameState> {
+        match self.current_projection_owner() {
+            Some(owner) => Some(owner.appearance()),
+            None => self.unprojected_appearance_predecessor.as_ref(),
+        }
+    }
+
+    pub(in crate::mounting) fn semantic_predecessor(
+        &self,
+    ) -> Option<&super::projection::UiMountedSemanticProjection> {
+        match self.current_projection_owner() {
+            Some(owner) => Some(owner.projection().semantic_projection()),
+            None => self.unprojected_semantic_predecessor.as_ref(),
+        }
+    }
+
+    pub(in crate::mounting) fn pointer_predecessor(
+        &self,
+    ) -> Option<&super::projection::UiMountedPointerAffordanceState> {
+        self.current_projection_owner()
+            .map(|owner| &owner.pointer)
+            .or(self.unprojected_pointer_predecessor.as_ref())
     }
 
     pub(crate) fn focus_participation_snapshot(

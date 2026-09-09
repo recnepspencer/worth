@@ -29,7 +29,7 @@ pub use appearance::{
     UiAppearanceInspectionExplanation, UiAppearanceInspectionMountedMechanic,
     UiAppearanceInspectionOutcome, UiAppearanceInspectionPhysicalSuppression,
     UiAppearanceInspectionQuery, UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport,
-    UiAppearanceInspectionValue, UiAppearanceInspectionWorld,
+    UiAppearanceInspectionValue, UiAppearanceInspectionValueSource, UiAppearanceInspectionWorld,
 };
 pub use appearance_change_distinctions::UiAppearanceInspectionChangeDistinctions;
 

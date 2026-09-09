@@ -7,8 +7,7 @@ use super::fact::{
     UiMountedAppearanceNodeInput, UiMountedAppearanceVisualBounds,
 };
 use super::{
-    backdrop, outline, overlay_order, pointer_affordance, surface, text_foreground,
-    UiMountedAppearanceLoweringDenial,
+    backdrop, outline, overlay_order, surface, text_foreground, UiMountedAppearanceLoweringDenial,
 };
 
 pub(super) fn lower(
@@ -36,6 +35,7 @@ pub(super) fn lower(
             backdrop_input.semantic_digest,
             mechanic.clone(),
             backdrop_input.extent,
+            backdrop_input.clip,
         ));
         mechanics.push(mechanic);
     }
@@ -49,7 +49,16 @@ pub(super) fn lower(
         overlay_order,
     )
     .map_err(UiMountedAppearanceLoweringDenial::Frame)?;
-    Ok(UiMountedAppearanceFacts::new(frame, records))
+    let geometry_inputs = input
+        .nodes
+        .iter()
+        .filter_map(|node| node.geometry_input.clone())
+        .collect();
+    Ok(UiMountedAppearanceFacts::new(
+        frame,
+        records,
+        geometry_inputs,
+    ))
 }
 
 fn validate_backdrop_placements(
@@ -107,15 +116,7 @@ fn lower_node(
     }
     if let Some(portal_instance) = node.portal_instance {
         if portal_instance != node.node_receipt.mounted_instance() {
-            return Err(UiMountedAppearanceLoweringDenial::PointerTargetMismatch);
-        }
-    }
-    if let Some(pointer) = node.pointer {
-        if pointer.target != node.node_receipt.mounted_instance() {
-            return Err(UiMountedAppearanceLoweringDenial::PointerTargetMismatch);
-        }
-        if pointer.surface != input.semantic_surface {
-            return Err(UiMountedAppearanceLoweringDenial::PointerSurfaceMismatch);
+            return Err(UiMountedAppearanceLoweringDenial::PortalTargetMismatch);
         }
     }
     if let Some(surface) = surface::lower(node)? {
@@ -161,30 +162,16 @@ fn lower_node(
         ));
         mechanics.push(outline);
     }
-    for text in text_foreground::lower(node)? {
+    for (text, geometry) in text_foreground::lower(node)? {
         records.push(UiMountedAppearanceFact::node(
             input.semantic_surface,
             node.node_receipt,
             node.projection,
             node.semantic_digest,
             text.clone(),
-            super::fact::UiMountedAppearanceDamageShape::Visual {
-                bounds: UiMountedAppearanceVisualBounds::from_allocation(node.bounds),
-                attribution: worth_ui_host_contract::UiAppearanceDamageAttribution::TextForeground,
-            },
+            super::fact::UiMountedAppearanceDamageShape::TextForeground(geometry),
         ));
         mechanics.push(text);
-    }
-    if let Some(pointer) = pointer_affordance::lower(node)? {
-        records.push(UiMountedAppearanceFact::node(
-            input.semantic_surface,
-            node.node_receipt,
-            node.projection,
-            node.semantic_digest,
-            pointer.clone(),
-            super::fact::UiMountedAppearanceDamageShape::None,
-        ));
-        mechanics.push(pointer);
     }
     Ok(())
 }
@@ -195,13 +182,7 @@ fn require_issued_participants(
 ) -> Result<(), UiMountedAppearanceLoweringDenial> {
     for participant in order.bottom_to_top() {
         let present = match participant {
-            UiOverlayParticipantIdentity::Portal(instance) => mechanics.iter().any(|mechanic| {
-                matches!(
-                    mechanic,
-                    UiMountedAppearanceMechanic::PortalSurface(surface)
-                        if surface.portal_instance() == *instance
-                )
-            }),
+            UiOverlayParticipantIdentity::Portal(_) => true,
             UiOverlayParticipantIdentity::Backdrop(identity) => mechanics.iter().any(|mechanic| {
                 matches!(
                     mechanic,

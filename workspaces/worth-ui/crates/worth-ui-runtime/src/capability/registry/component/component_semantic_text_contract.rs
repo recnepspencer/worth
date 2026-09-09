@@ -136,10 +136,11 @@ impl ComponentSemanticTextContract {
                 use std::fmt::Write;
                 let _ = write!(
                     digest,
-                    ":{}-{}:{}:",
+                    ":{}-{}:{}:appearance:{}:",
                     span.original_range().start(),
                     span.original_range().end(),
-                    span.foreground_token().as_str()
+                    span.foreground_token().as_str(),
+                    span.uses_appearance_foreground()
                 );
                 for byte in span.style().identity_digest() {
                     let _ = write!(digest, "{byte:02x}");

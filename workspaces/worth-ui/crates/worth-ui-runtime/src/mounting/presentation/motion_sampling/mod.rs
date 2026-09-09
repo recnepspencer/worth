@@ -1,6 +1,7 @@
 mod curve;
 mod damage;
 mod interruption;
+mod opacity;
 mod receipt;
 mod sampled_geometry;
 mod sampling;

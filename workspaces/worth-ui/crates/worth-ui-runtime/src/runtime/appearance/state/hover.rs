@@ -52,7 +52,8 @@ pub(crate) fn adapt(
         .presentation()
         .is_some_and(|presentation| posture.presentation() == presentation)
         && posture.target() == Some(basis.mounted_instance())
-        && posture.node_receipt() == Some(basis.owner_node_receipt());
+        && basis.owner_node_receipt().is_some()
+        && posture.node_receipt() == basis.owner_node_receipt();
     Ok(UiHoverAppearanceState {
         class: if on_target {
             UiAppearanceAxisClass::Hovered

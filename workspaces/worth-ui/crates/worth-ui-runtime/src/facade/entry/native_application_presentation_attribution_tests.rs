@@ -1,4 +1,6 @@
-use super::native_application_identity_trace_test_support::{completed, frame_receipt};
+use super::native_application_identity_trace_test_support::{
+    completed, frame_receipt, install_bound_surface_geometry,
+};
 use super::native_identity_trace_host::NativeIdentityTraceHost;
 use crate::capability::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
@@ -33,6 +35,7 @@ fn presentation_attribution_follows_the_latest_physical_publication() {
     let mut shell = app
         .launch_native_surface()
         .expect("painted native fixture should launch");
+    install_bound_surface_geometry(&mut shell);
 
     let predecessor = frame_receipt(completed(shell.present_frame(100, 1)));
     let predecessor_attribution = shell
@@ -98,6 +101,7 @@ fn admitted_zero_consumer_theme_slot_commits_without_mounted_work() {
     let mut shell = app
         .launch_native_surface()
         .expect("zero-consumer fixture should launch");
+    install_bound_surface_geometry(&mut shell);
     completed(shell.present_frame(100, 1));
 
     let zero_consumer_token = ThemeTokenId::new(ZERO_CONSUMER_TOKEN).expect("fixture token id");

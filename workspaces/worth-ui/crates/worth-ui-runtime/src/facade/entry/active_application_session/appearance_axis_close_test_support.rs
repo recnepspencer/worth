@@ -111,6 +111,10 @@ pub(super) fn six_axis_builder(
         )
         .expect("selection projection registration should admit");
     six_axis_appearance_component_builder(role)
+        .register_appearance_theme_bundle(
+            crate::runtime::tests::appearance_theme_test_support::bundle(),
+        )
+        .expect("six-axis appearance theme should register")
         .register_collection_projection(selection_projection)
         .expect("selection projection should register")
         .register_intent_boolean_fact(

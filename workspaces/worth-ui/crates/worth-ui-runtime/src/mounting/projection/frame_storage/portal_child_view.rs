@@ -45,6 +45,13 @@ impl UiMountedProjectionFrame {
             return true;
         };
         self.portal_overlays.iter().copied().any(|input| {
+            if !matches!(
+                input.lifecycle(),
+                crate::runtime::portal::UiPortalLifecyclePosture::Open
+                    | crate::runtime::portal::UiPortalLifecyclePosture::Visible
+            ) {
+                return false;
+            }
             self.semantic.node(input.owner()).is_some_and(|owner| {
                 owner.receipt.semantic_surface() == node.receipt.semantic_surface()
                     && owner.component_id.as_ref() == Some(owner_component)
@@ -58,18 +65,31 @@ impl UiMountedProjectionFrame {
         surface: UiSemanticSurfaceIdentity,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
     ) -> Result<UiMountedPortalChildPresentation, UiMountedProjectionDenial> {
-        let Some(node) = self.semantic.node(instance) else {
-            return Ok(UiMountedPortalChildPresentation::Ordinary);
+        self.portal_child_presentation_with_work(instance, surface, binding)
+            .map(|(presentation, _, _)| presentation)
+    }
+
+    /// Returns the presentation, actual node-index probes, and overlay rows visited.
+    pub(super) fn portal_child_presentation_with_work(
+        &self,
+        instance: UiMountedInstanceIdentity,
+        surface: UiSemanticSurfaceIdentity,
+        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    ) -> Result<(UiMountedPortalChildPresentation, usize, usize), UiMountedProjectionDenial> {
+        let (node, mut probes) = self.semantic.nodes.get_with_probes(&instance);
+        let Some(node) = node else {
+            return Ok((UiMountedPortalChildPresentation::Ordinary, probes, 0));
         };
         let Some(owner_component) = node.portal_child_owner.as_ref() else {
-            return Ok(UiMountedPortalChildPresentation::Ordinary);
+            return Ok((UiMountedPortalChildPresentation::Ordinary, probes, 0));
         };
         let mut matched = None;
         for input in self.portal_overlays.iter().copied() {
-            let owner = self
-                .semantic
-                .node(input.owner())
-                .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
+            let (owner, work) = self.semantic.nodes.get_with_probes(&input.owner());
+            probes = probes
+                .checked_add(work)
+                .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
+            let owner = owner.ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
             if owner.receipt.semantic_surface() != surface
                 || owner.component_id.as_ref() != Some(owner_component)
             {
@@ -88,9 +108,13 @@ impl UiMountedProjectionFrame {
                     .map_err(UiMountedProjectionDenial::PortalOverlayCompletion)?,
             );
         }
-        Ok(matched.map_or(
-            UiMountedPortalChildPresentation::Suppressed,
-            UiMountedPortalChildPresentation::Presented,
+        Ok((
+            matched.map_or(
+                UiMountedPortalChildPresentation::Suppressed,
+                UiMountedPortalChildPresentation::Presented,
+            ),
+            probes,
+            self.portal_overlays.len(),
         ))
     }
 }

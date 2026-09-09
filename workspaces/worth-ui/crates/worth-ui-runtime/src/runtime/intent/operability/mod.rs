@@ -9,6 +9,7 @@ mod proof;
     reason = "milestone 3.16 Gate 0 seals operability appearance standing facts before consumption"
 )]
 mod standing_fact;
+mod standing_observation;
 
 pub use axes::{
     UiIntentAffinityPosture, UiIntentConfirmationPosture, UiIntentMutabilityPosture,
@@ -42,5 +43,8 @@ pub use proof::{
 )]
 pub(crate) use standing_fact::{
     UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact,
-    UiIntentOperabilityStandingFactSnapshot,
+};
+pub(crate) use standing_observation::{
+    observe_activation_operability, UiIntentStandingOperabilityObservation,
+    UiIntentStandingOperabilityUnavailable,
 };

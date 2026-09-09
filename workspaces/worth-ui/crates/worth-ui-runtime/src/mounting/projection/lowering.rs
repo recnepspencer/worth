@@ -5,16 +5,19 @@ use super::participation::lower_participation;
 use super::prepared_projection::{UiPreparedMountedProjection, UiPreparedMountedProjectionInput};
 use super::{UiMountedAppearanceProjectionSelection, UiMountedProjectionDenial};
 
+mod appearance_input;
 mod delta;
 #[path = "lowering/node_draft.rs"]
 mod node_draft;
 mod node_lowering;
+pub(super) mod portal_changes;
 
 pub(crate) struct UiMountedProjectionInput<'input, 'graph> {
     pub(crate) graph: crate::graph::UiGraphAuthority<'graph>,
     pub(crate) plan_digest: u64,
     pub(crate) plan: super::super::UiMountedPlanProjectionSource<'input>,
     pub(crate) allocation_source: &'input crate::runtime::UiMountedAllocationProjectionSource,
+    pub(crate) occurrence_geometry: &'input super::super::UiMountedOccurrenceGeometryState,
     pub(crate) requested_surfaces: &'input [worth_ui_host_contract::UiSemanticSurfaceIdentity],
     pub(crate) preview: Option<UiMountedPreviewProjectionInput>,
     pub(crate) visual_overlay: Option<super::super::UiMountedVisualOverlayProjectionInput>,
@@ -22,7 +25,7 @@ pub(crate) struct UiMountedProjectionInput<'input, 'graph> {
     pub(crate) semantic_content: &'input super::super::UiMountedSemanticContentInput,
     pub(crate) theme_values: &'input super::super::UiMountedThemeValueSource,
     pub(crate) appearance_invalidation:
-        Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
+        Option<crate::runtime::appearance::UiAppearanceInvalidationInput<'input>>,
     pub(crate) font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     pub(in crate::mounting) semantic_predecessor: Option<&'input UiMountedSemanticProjection>,
     pub(crate) capability_generation:
@@ -41,9 +44,11 @@ pub(crate) struct UiMountedPreviewProjectionInput {
 }
 
 struct UiMountedNodeLoweringContext<'input, 'graph> {
+    state: &'input super::super::UiMountedIdentityState,
     graph: crate::graph::UiGraphAuthority<'graph>,
     plan: super::super::UiMountedPlanProjectionSource<'input>,
     allocation_source: &'input crate::runtime::UiMountedAllocationProjectionSource,
+    occurrence_geometry: &'input super::super::UiMountedOccurrenceGeometryState,
     plan_digest: u64,
     semantic_content: &'input super::super::UiMountedSemanticContentInput,
     theme_values: &'input super::super::UiMountedThemeValueSource,
@@ -61,6 +66,12 @@ struct UiMountedProjectionNodeDraft {
     role: worth_ui_host_contract::UiMountedMechanicalRole,
     participation: worth_ui_host_contract::UiMountedParticipation,
     allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+    appearance_allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+    appearance_clip: super::appearance::UiMountedAppearanceClip,
+    surface_paint_posture: super::super::UiMountedSurfacePaintPosture,
+    surface_paint_order: Option<u32>,
+    has_appearance_attachment: bool,
+    clip_ancestry_entries: usize,
     plan_index: Option<u32>,
     static_paint: Option<super::static_paint::UiMountedStaticPaintSeed>,
     semantic_text: Option<super::semantic_text::UiMountedSemanticTextSeed>,
@@ -94,20 +105,46 @@ pub(crate) fn prepare_projection(
     state: &super::super::UiMountedIdentityState,
     input: UiMountedProjectionInput<'_, '_>,
 ) -> Result<UiPreparedMountedProjection, UiMountedProjectionDenial> {
-    let mut appearance_selection = UiMountedAppearanceProjectionSelection::derive(
-        state,
-        input.requested_surfaces,
-        input.appearance_invalidation.as_ref(),
-    )
-    .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
+    for surface in input.requested_surfaces {
+        let binding = state
+            .projection_surface(*surface)
+            .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?
+            .0
+            .binding_generation();
+        if !input
+            .occurrence_geometry
+            .validates_binding(*surface, binding)
+        {
+            return Err(UiMountedProjectionDenial::OccurrenceGeometry(
+                super::super::UiMountedOccurrenceGeometryDenial::StaleOccurrenceGeometry,
+            ));
+        }
+    }
+    let appearance_input = input.appearance_invalidation;
+    if appearance_input.as_ref().is_some_and(|input| {
+        input
+            .pending
+            .as_ref()
+            .is_some_and(|batch| batch.basis() != input.index.basis())
+    }) {
+        return Err(UiMountedProjectionDenial::AppearanceSelectionFrameMismatch);
+    }
+    let pending = appearance_input
+        .as_ref()
+        .and_then(|input| input.pending.as_ref());
+    let mut appearance_selection =
+        UiMountedAppearanceProjectionSelection::derive(state, input.requested_surfaces, pending)
+            .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
     let lowering = UiMountedNodeLoweringContext {
+        state,
         graph: input.graph,
         plan: input.plan,
         allocation_source: input.allocation_source,
+        occurrence_geometry: input.occurrence_geometry,
         plan_digest: input.plan_digest,
         semantic_content: input.semantic_content,
         theme_values: input.theme_values,
-        appearance_invalidation: input.appearance_invalidation,
+        appearance_invalidation: pending.cloned(),
         predecessor: input.semantic_predecessor,
         mechanics_predecessor_available: state
             .current_projection()
@@ -123,7 +160,7 @@ pub(crate) fn prepare_projection(
                 .supports_surfaces(input.requested_surfaces)
         });
     let portal_changed_instances =
-        portal_changed_instances(delta_predecessor, input.portal_overlays.as_ref());
+        portal_changes::changed_owners(delta_predecessor, input.portal_overlays.as_ref());
     let portal_overlays_changed = !portal_changed_instances.is_empty();
     let delta = match (delta_predecessor, input.allocation_source.delta()) {
         (
@@ -155,18 +192,38 @@ pub(crate) fn prepare_projection(
     build
         .semantic
         .apply_projection_inputs(input.semantic_content);
+    let mut portal_geometry_changes = Vec::new();
     if !portal_changed_instances.is_empty() {
         let mut changed = build.presentation_changed_instances.to_vec();
-        changed.extend(
-            build
-                .semantic
-                .portal_children_for_owners(&portal_changed_instances),
+        let (children, work) = portal_changes::children_in_transition(
+            delta_predecessor.map(super::UiMountedProjectionFrame::semantic_projection),
+            &build.semantic,
+            &portal_changed_instances,
         );
+        portal_geometry_changes.extend_from_slice(&children);
+        portal_geometry_changes.extend_from_slice(&portal_changed_instances);
+        portal_geometry_changes.sort_unstable();
+        portal_geometry_changes.dedup();
+        changed.extend(children);
+        build.cost.index_entries = build
+            .cost
+            .index_entries
+            .checked_add(work)
+            .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
         changed.extend(portal_changed_instances);
         changed.sort_unstable();
         changed.dedup();
         build.presentation_changed_instances = changed.into();
     }
+    let appearance_invalidation = appearance_input::finish(
+        state,
+        input.requested_surfaces,
+        appearance_input,
+        &mut build,
+        &mut appearance_selection,
+        &portal_geometry_changes,
+        &projection_changes,
+    )?;
     let counters = begin_build_counters(build.cost, build.replaced_order_rows)?;
     Ok(UiPreparedMountedProjection::new(
         UiPreparedMountedProjectionInput {
@@ -178,6 +235,7 @@ pub(crate) fn prepare_projection(
             projection_changes,
             presentation_changed_instances: build.presentation_changed_instances,
             appearance_selection: std::rc::Rc::new(appearance_selection),
+            appearance_invalidation,
             theme_revision: input.theme_values.active_theme_revision(),
             portal_overlays_changed,
             counters,
@@ -194,25 +252,8 @@ impl UiMountedNodeLoweringContext<'_, '_> {
             && self
                 .appearance_invalidation
                 .as_ref()
-                .is_some_and(|batch| batch.selects(graph_node))
+                .is_some_and(|batch| batch.selects_graph(graph_node))
     }
-}
-
-fn portal_changed_instances(
-    predecessor: Option<&super::UiMountedProjectionFrame>,
-    successor: &[super::super::UiMountedPortalOverlayProjectionInput],
-) -> Vec<worth_ui_host_contract::UiMountedInstanceIdentity> {
-    let predecessor = predecessor
-        .map(super::UiMountedProjectionFrame::portal_overlay_inputs)
-        .unwrap_or(&[]);
-    if predecessor == successor {
-        return Vec::new();
-    }
-    predecessor
-        .iter()
-        .chain(successor)
-        .map(|overlay| overlay.owner())
-        .collect()
 }
 
 fn begin_build_counters(
@@ -242,25 +283,37 @@ fn build_full_projection(
         .into_iter()
         .flat_map(UiMountedSemanticProjection::mounted_instances)
         .collect::<Vec<_>>();
-    let retired_instances = predecessor_instances
+    let mut retired_instances = predecessor_instances
         .iter()
-        .filter(|instance| !current_instances.contains(instance))
+        .filter(|instance| {
+            !current_instances.contains(instance)
+                && input.state.projection_instance(**instance).is_none()
+        })
         .copied()
         .collect::<Vec<_>>();
+    // A request omitting a still-mounted surface is not an unmount. Its
+    // appearance predecessor remains owned until that surface is requested.
+    // An identity-only capsule can retain appearance after losing semantic
+    // rows. Its explicit unmounts still retire physical predecessors.
+    retired_instances.extend(input.changes.retired_instances());
+    retired_instances.sort_unstable();
+    retired_instances.dedup();
     let retired = retired_instances.len();
     let mut presentation_changed_instances = current_instances.iter().copied().collect::<Vec<_>>();
     presentation_changed_instances.extend(predecessor_instances.iter().copied());
     presentation_changed_instances.sort_unstable();
     presentation_changed_instances.dedup();
+    let mut clip_ancestry_entries = 0usize;
     let nodes = instances
         .iter()
         .map(|instance| {
-            input
-                .lowering
-                .lower(instance)
-                .map(UiMountedProjectionNodeDraft::materialize)
+            let draft = input.lowering.lower(instance)?;
+            clip_ancestry_entries = clip_ancestry_entries
+                .checked_add(draft.clip_ancestry_entries)
+                .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
+            Ok(draft.materialize())
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Result<Vec<_>, UiMountedProjectionDenial>>()?;
     let surfaces = projection_surfaces(input.state, input.requested_surfaces)?;
     let node_count = nodes.len();
     let surface_count = surfaces.len();
@@ -270,7 +323,7 @@ fn build_full_projection(
     } else {
         super::super::UiMountWorkClass::InitialMount
     };
-    let mut semantic = UiMountedSemanticProjection::initial(nodes, surfaces);
+    let (mut semantic, portal_work) = UiMountedSemanticProjection::build_initial(nodes, surfaces);
     semantic.inherit_projection_inputs(input.lowering.predecessor);
     Ok(UiMountedProjectionBuild {
         semantic,
@@ -283,6 +336,9 @@ fn build_full_projection(
                 .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?,
             index_entries: node_count
                 .checked_mul(2)
+                .and_then(|count| count.checked_add(clip_ancestry_entries))
+                .and_then(|count| count.checked_add(portal_work.key_probes()))
+                .and_then(|count| count.checked_add(portal_work.node_copies()))
                 .and_then(|count| {
                     count.checked_add(input.appearance_selection.index_entries_touched())
                 })

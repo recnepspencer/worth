@@ -25,7 +25,7 @@ pub(super) fn validate(
         UiUnpublishedAppearanceFragmentIdentity::SurfacePointer {
             surface: identity_surface,
             pointer,
-        } => validate_pointer(surface, identity_surface, pointer, mechanics, changes),
+        } => validate_pointer(fragment, surface, identity_surface, pointer),
     }
 }
 
@@ -148,7 +148,18 @@ fn validate_overlay(
     if identity_surface != surface {
         return Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch);
     }
-    if !mechanics.iter().any(is_overlay_mechanic) && !changes.iter().any(change_belongs_to_overlay)
+    if !mechanics.iter().any(is_overlay_mechanic)
+        && !changes.iter().any(change_belongs_to_overlay)
+        && fragment
+            .work
+            .successor()
+            .overlay_order()
+            .bottom_to_top()
+            .is_empty()
+        && fragment
+            .work
+            .predecessor_manifest()
+            .is_none_or(|manifest| manifest.overlay_order().is_empty())
     {
         return Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch);
     }
@@ -166,43 +177,63 @@ fn validate_overlay(
 }
 
 fn validate_pointer(
+    fragment: &UiUnpublishedAppearanceFragment,
     surface: crate::UiSemanticSurfaceIdentity,
     identity_surface: crate::UiSemanticSurfaceIdentity,
     pointer: crate::UiHostPointerIdentity,
-    mechanics: &[UiMountedAppearanceMechanic],
-    changes: &[UiMountedAppearanceMechanicChange],
 ) -> Result<(), UiUnpublishedAppearanceFrameProjectionDenial> {
-    if identity_surface != surface {
-        return Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch);
-    }
-    if !mechanics
-        .iter()
-        .any(|mechanic| pointer_matches(mechanic, surface, pointer))
-        && !changes
-            .iter()
-            .any(|change| change_belongs_to_pointer(change, surface, pointer))
+    if identity_surface != surface
+        || fragment
+            .work
+            .predecessor_manifest()
+            .is_some_and(|manifest| !manifest.overlay_order().is_empty())
+        || !fragment
+            .work
+            .successor()
+            .overlay_order()
+            .bottom_to_top()
+            .is_empty()
     {
         return Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch);
     }
-    if mechanics
-        .iter()
-        .filter(|mechanic| matches!(mechanic, UiMountedAppearanceMechanic::Pointer(candidate) if candidate.surface() == surface))
-        .count()
-        > 1
-    {
-        return Err(
-            UiUnpublishedAppearanceFrameProjectionDenial::MultiplePointerMechanicsForSurface(
-                surface,
-            ),
-        );
-    }
-    if mechanics
-        .iter()
-        .any(|mechanic| !pointer_matches(mechanic, surface, pointer))
-        || changes
-            .iter()
-            .any(|change| !change_belongs_to_pointer(change, surface, pointer))
-    {
+    let previous = fragment
+        .work
+        .predecessor_manifest()
+        .map_or(&[][..], |manifest| manifest.mechanic_identities());
+    let previous_pointer = match previous {
+        [] => None,
+        [UiMountedAppearanceMechanicIdentity::Pointer {
+            surface: previous_surface,
+            pointer: previous_pointer,
+            ..
+        }] if *previous_surface == surface => Some(*previous_pointer),
+        [_] => return Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch),
+        _ => {
+            return Err(
+                UiUnpublishedAppearanceFrameProjectionDenial::MultiplePointerMechanicsForSurface(
+                    surface,
+                ),
+            );
+        }
+    };
+    let current_pointer = match fragment.work.successor().mechanics() {
+        [] => None,
+        [UiMountedAppearanceMechanic::Pointer(current)] if current.surface() == surface => {
+            Some(current.pointer())
+        }
+        [_] => return Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch),
+        _ => {
+            return Err(
+                UiUnpublishedAppearanceFrameProjectionDenial::MultiplePointerMechanicsForSurface(
+                    surface,
+                ),
+            );
+        }
+    };
+    // The sealed work already proves the exact predecessor-to-successor delta.
+    // A primary handoff may remove a different pointer on this same surface.
+    // Removal-only work identifies the departing pointer; empty work is invalid.
+    if current_pointer.or(previous_pointer) != Some(pointer) {
         return Err(UiUnpublishedAppearanceFrameProjectionDenial::FragmentIdentityMismatch);
     }
     Ok(())
@@ -265,43 +296,16 @@ fn overlay_participants_match(fragment: &UiUnpublishedAppearanceFragment) -> boo
         .bottom_to_top()
         .iter()
         .all(|participant| match participant {
-            crate::UiOverlayParticipantIdentity::Portal(instance) => fragment
-                .work
-                .successor()
-                .mechanics()
-                .iter()
-                .any(|mechanic| matches!(mechanic, UiMountedAppearanceMechanic::PortalSurface(portal) if portal.portal_instance() == *instance)),
+            crate::UiOverlayParticipantIdentity::Portal(_) => true,
             crate::UiOverlayParticipantIdentity::Backdrop(identity) => fragment
                 .work
                 .successor()
                 .mechanics()
                 .iter()
                 .any(|mechanic| matches!(mechanic, UiMountedAppearanceMechanic::Backdrop(backdrop) if backdrop.identity() == identity)),
-        })
-}
-
-fn pointer_matches(
-    mechanic: &UiMountedAppearanceMechanic,
-    surface: crate::UiSemanticSurfaceIdentity,
-    pointer: crate::UiHostPointerIdentity,
-) -> bool {
-    matches!(mechanic, UiMountedAppearanceMechanic::Pointer(candidate)
-        if candidate.surface() == surface && candidate.pointer() == pointer)
-}
-
-fn change_belongs_to_pointer(
-    change: &UiMountedAppearanceMechanicChange,
-    surface: crate::UiSemanticSurfaceIdentity,
-    pointer: crate::UiHostPointerIdentity,
-) -> bool {
-    change
-        .successor()
-        .is_none_or(|mechanic| pointer_matches(mechanic, surface, pointer))
-        && change.identity().is_none_or(|identity| {
-            matches!(identity, UiMountedAppearanceMechanicIdentity::Pointer {
-                pointer: candidate,
-                surface: candidate_surface,
-                ..
-            } if *candidate == pointer && *candidate_surface == surface)
+        }) && fragment.work.successor().mechanics().iter().all(|mechanic| match mechanic {
+            UiMountedAppearanceMechanic::PortalSurface(portal) => fragment.work.successor().overlay_order().bottom_to_top().contains(&crate::UiOverlayParticipantIdentity::Portal(portal.portal_instance())),
+            UiMountedAppearanceMechanic::Backdrop(backdrop) => fragment.work.successor().overlay_order().bottom_to_top().contains(&crate::UiOverlayParticipantIdentity::Backdrop(backdrop.identity().clone())),
+            _ => false,
         })
 }

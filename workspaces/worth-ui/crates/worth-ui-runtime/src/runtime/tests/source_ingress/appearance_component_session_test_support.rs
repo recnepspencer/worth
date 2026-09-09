@@ -12,6 +12,11 @@ mod contract_tests;
 mod role_support;
 pub(crate) use role_support::{validation_background_role, validation_background_role_with_axis};
 
+#[path = "appearance_fixture_test_support.rs"]
+mod fixture_support;
+pub(crate) use fixture_support::appearance_fixture;
+use fixture_support::appearance_fixture_without_attachment;
+
 const ACTIVE_COMPONENT: &str = "workspace.component.active_session_current";
 const CANDIDATE_COMPONENT: &str = "workspace.component.active_session_candidate";
 pub(crate) const APPEARANCE_TOKEN: &str = "theme.appearance_consumer";
@@ -279,7 +284,8 @@ fn appearance_component_builder_with_contract_and_static_token(
                 static_paint_token.clone(),
                 appearance_contract,
             )
-            .unwrap(),
+            .unwrap()
+            .with_surface_paint_order(65_537),
         )
         .register_appearance_role(role.clone())
         .unwrap()
@@ -330,10 +336,21 @@ pub(crate) fn appearance_theme_token_with_color(
         token,
         crate::capability::ThemeTokenFamily::surface(),
         crate::capability::ThemeTokenSource::application(),
-        crate::capability::ThemeTokenValue::color(
-            crate::capability::ThemeColorValue::hex(hex).unwrap(),
-        ),
+        appearance_theme_value(hex),
     )
+}
+
+pub(crate) fn appearance_theme_value(hex: &str) -> crate::capability::ThemeTokenValue {
+    crate::capability::ThemeTokenValue::color(crate::capability::ThemeColorValue::hex(hex).unwrap())
+}
+
+type InitialAppearanceThemeChange = crate::facade::entry::UiNativeThemeTokenValueChange;
+
+pub(crate) fn initial_appearance_theme_change(
+    token: crate::capability::ThemeTokenId,
+    value: crate::capability::ThemeTokenValue,
+) -> InitialAppearanceThemeChange {
+    InitialAppearanceThemeChange::new(token, value).unwrap()
 }
 
 pub(crate) fn static_paint_component(
@@ -341,6 +358,20 @@ pub(crate) fn static_paint_component(
     token: crate::capability::ThemeTokenId,
 ) -> crate::capability::ComponentDescriptor {
     static_paint_component_with_contract(identity, token, component_appearance_contract()).unwrap()
+}
+
+pub(crate) fn static_paint_component_with_allocation(
+    identity: &str,
+    token: crate::capability::ThemeTokenId,
+    allocation: crate::capability::ComponentAllocationMeasurementContract,
+) -> crate::capability::ComponentDescriptor {
+    source_backed_package_component(identity).with_static_paint(
+        crate::capability::ComponentStaticPaintContract::opaque_fill(
+            token,
+            crate::capability::ComponentStaticPaintOrder::back_to_front(0),
+        ),
+        allocation,
+    )
 }
 
 fn static_paint_component_with_contract(
@@ -351,43 +382,11 @@ fn static_paint_component_with_contract(
     crate::capability::ComponentDescriptor,
     crate::capability::ComponentAppearanceAspectContractDenial,
 > {
-    source_backed_package_component(identity)
-        .with_static_paint(
-            crate::capability::ComponentStaticPaintContract::opaque_fill(
-                token,
-                crate::capability::ComponentStaticPaintOrder::back_to_front(0),
-            ),
-            crate::capability::ComponentAllocationMeasurementContract::fill_viewport(),
-        )
-        .with_appearance_aspect_contract(appearance_contract)
-}
-
-pub(crate) fn appearance_fixture(
-    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
-) -> crate::facade::WorthUiRustAuthoredDeclarationFixture {
-    let attachment = worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration::new(
-        role.role().clone(),
-        role.revision(),
-    );
-    crate::facade::WorthUiRustAuthoredDeclarationFixture::named("appearance-consumer-current")
-        .with_appearance_role("appearance/consumer", role.clone())
-        .with_component_appearance_role("appearance/consumer", ACTIVE_COMPONENT, attachment)
-}
-
-fn appearance_fixture_without_attachment() -> crate::facade::WorthUiRustAuthoredDeclarationFixture {
-    crate::facade::WorthUiRustAuthoredDeclarationFixture::named("appearance-capable-current")
-        .with_semantic_artifact_spec(
-            worth_ui_dsl::UiDslSemanticArtifactSpec::new(
-                worth_ui_dsl::UiDslSemanticKey::new(ACTIVE_COMPONENT),
-                worth_ui_dsl::UiDslSemanticFamily::Control,
-                worth_ui_dsl::UiDslSourceProvenance::rust_authored("appearance/consumer", 0),
-            )
-            .with_structural_token(worth_ui_dsl::UiDslStructuralToken::new(
-                "control:appearance-consumer",
-            ))
-            .with_component_reference(
-                worth_ui_dsl::UiDslComponentReference::new(ACTIVE_COMPONENT).unwrap(),
-            )
-            .unwrap(),
-        )
+    static_paint_component_with_allocation(
+        identity,
+        token,
+        crate::capability::ComponentAllocationMeasurementContract::fill_viewport(),
+    )
+    .with_surface_paint_order(65_536)
+    .with_appearance_aspect_contract(appearance_contract)
 }

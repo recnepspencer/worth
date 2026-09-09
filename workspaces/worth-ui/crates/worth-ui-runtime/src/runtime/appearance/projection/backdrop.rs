@@ -5,9 +5,8 @@ pub(crate) struct UiBackdropAppearanceProjection {
     instance: UiBackdropInstanceIdentity,
     declaration: worth_ui_dsl::UiBackdropDeclaration,
     state: super::super::state::UiBackdropAppearanceStateVector,
-    theme: Box<str>,
-    theme_revision: u64,
-    catalog_revision: u64,
+    role: worth_ui_dsl::UiAppearanceRoleDeclaration,
+    theme: super::super::theme::UiThemeResolutionView,
     overlay: super::UiOverlayStackSnapshot,
     aspects: Box<[super::UiResolvedAppearanceAspect]>,
     semantic_digest: u64,
@@ -17,6 +16,7 @@ impl UiBackdropAppearanceProjection {
     pub(super) fn seal(
         instance: UiBackdropInstanceIdentity,
         declaration: &worth_ui_dsl::UiBackdropDeclaration,
+        role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
         state: super::super::state::UiBackdropAppearanceStateVector,
         theme: &super::super::theme::UiThemeResolutionView,
         overlay: super::UiOverlayStackSnapshot,
@@ -46,9 +46,8 @@ impl UiBackdropAppearanceProjection {
             instance,
             declaration: declaration.clone(),
             state,
-            theme: theme.definition_identity().into(),
-            theme_revision: theme.definition_revision(),
-            catalog_revision: theme.catalog_revision(),
+            role: role.clone(),
+            theme: theme.clone(),
             overlay,
             aspects,
             semantic_digest,
@@ -68,15 +67,15 @@ impl UiBackdropAppearanceProjection {
     }
 
     pub(crate) fn theme(&self) -> &str {
-        &self.theme
+        self.theme.definition_identity()
     }
 
     pub(crate) const fn theme_revision(&self) -> u64 {
-        self.theme_revision
+        self.theme.definition_revision()
     }
 
     pub(crate) const fn catalog_revision(&self) -> u64 {
-        self.catalog_revision
+        self.theme.catalog_revision()
     }
 
     pub(crate) const fn overlay(&self) -> &super::UiOverlayStackSnapshot {
@@ -93,6 +92,40 @@ impl UiBackdropAppearanceProjection {
 
     pub(crate) fn exactly_equivalent(&self, other: &Self) -> bool {
         self == other
+    }
+
+    /// Backdrop roles have no owner-state axes. Carry new evidence and overlay
+    /// geometry without resolving unchanged, exactly admitted semantic inputs.
+    pub(crate) fn reuse_for_overlay(
+        &self,
+        declaration: &worth_ui_dsl::UiBackdropDeclaration,
+        role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
+        state: &super::super::state::UiBackdropAppearanceStateVector,
+        theme: &super::super::theme::UiThemeResolutionView,
+        overlay: &super::UiOverlayStackSnapshot,
+    ) -> Option<Self> {
+        if self.declaration != *declaration
+            || self.role != *role
+            || self.theme != *theme
+            || self.state.session() != state.session()
+            || self.state.generation() != state.generation()
+            || self.state.surface() != state.surface()
+            || overlay.application() != Some(theme.application().prepared_generation())
+            || overlay.surface() != state.surface()
+            || overlay.declaration_surface() != declaration.surface()
+            || !overlay.contains(self.instance, declaration.identity())
+        {
+            return None;
+        }
+        Some(Self::seal(
+            self.instance,
+            declaration,
+            role,
+            state.clone(),
+            theme,
+            overlay.clone(),
+            self.aspects.clone(),
+        ))
     }
 }
 

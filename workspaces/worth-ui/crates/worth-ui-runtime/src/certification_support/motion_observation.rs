@@ -5,7 +5,7 @@ pub struct UiMotionPresentationCertificationSnapshot {
     last_tick: Option<u64>,
     semantic_publications: u64,
     geometry: Option<[f32; 4]>,
-    opacity: Option<f32>,
+    opacity_units: Option<u16>,
     hit_test_visible: Option<bool>,
     presentation: Option<worth_ui_host_contract::UiHostObservationPresentationBasis>,
     sampling_ready: bool,
@@ -45,7 +45,7 @@ impl UiMotionPresentationCertificationSnapshot {
         last_tick: Option<u64>,
         semantic_publications: u64,
         geometry: Option<[f32; 4]>,
-        opacity: Option<f32>,
+        opacity_units: Option<u16>,
         hit_test_visible: Option<bool>,
         presentation: Option<worth_ui_host_contract::UiHostObservationPresentationBasis>,
         sampling_ready: bool,
@@ -60,7 +60,7 @@ impl UiMotionPresentationCertificationSnapshot {
             last_tick,
             semantic_publications,
             geometry,
-            opacity,
+            opacity_units,
             hit_test_visible,
             presentation,
             sampling_ready,
@@ -86,8 +86,8 @@ impl UiMotionPresentationCertificationSnapshot {
     pub const fn geometry(self) -> Option<[f32; 4]> {
         self.geometry
     }
-    pub const fn opacity(self) -> Option<f32> {
-        self.opacity
+    pub const fn opacity_units(self) -> Option<u16> {
+        self.opacity_units
     }
     pub const fn hit_test_visible(self) -> Option<bool> {
         self.hit_test_visible

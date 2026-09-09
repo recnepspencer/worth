@@ -1,18 +1,32 @@
+use super::program_progress::UiNativePresentationSource;
 use super::program_progress::{
     FrameProgress, UiNativeApplicationProgramProgress, UiNativeProgramReconstructionAuthority,
 };
 use crate::facade::WorthUiNativeApplicationShell;
 
 impl UiNativeApplicationProgramProgress {
+    pub(super) fn settle_physical_reconstruction(
+        &mut self,
+        correlation: worth_ui_host_native::UiNativePhysicalPresentationCorrelation,
+    ) -> Result<(), ()> {
+        self.physical_recovery
+            .commit_settlement(correlation)
+            .map_err(|_| ())?;
+        if self.physical_recovery.is_empty() {
+            self.recovery_source = None;
+        }
+        Ok(())
+    }
+
     pub(super) fn resume_reconstruction(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
-        program_frame: usize,
+        source: UiNativePresentationSource,
         authority: worth_ui_host_native::UiNativePhysicalPresentationCorrelation,
     ) -> Result<(), ()> {
         let authority = UiNativeProgramReconstructionAuthority::Physical(authority);
-        let progress = self.attempt_reconstruction(shell, program_frame, authority)?;
-        if self.settle_reconstruction_attempt(program_frame, authority, progress)? {
+        let progress = self.attempt_reconstruction(shell, source, authority)?;
+        if self.settle_reconstruction_attempt(authority, progress)? {
             self.advance(shell)?;
         }
         Ok(())
@@ -21,19 +35,18 @@ impl UiNativeApplicationProgramProgress {
     fn attempt_reconstruction(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
-        program_frame: usize,
+        source: UiNativePresentationSource,
         authority: UiNativeProgramReconstructionAuthority,
     ) -> Result<FrameProgress, ()> {
         self.next_completion_tick = self.next_completion_tick.saturating_add(1);
         let outcome = shell
             .reconstruct_current_presentation(u64::MAX, self.next_completion_tick)
             .map_err(|_| ())?;
-        self.retain_or_attribute(shell, outcome, program_frame, None, Some(authority), false)
+        self.retain_or_attribute(shell, outcome, source, None, Some(authority), false)
     }
 
     fn settle_reconstruction_attempt(
         &mut self,
-        _program_frame: usize,
         authority: UiNativeProgramReconstructionAuthority,
         progress: FrameProgress,
     ) -> Result<bool, ()> {
@@ -41,9 +54,7 @@ impl UiNativeApplicationProgramProgress {
             FrameProgress::Retained => Ok(false),
             FrameProgress::Settled => {
                 if let UiNativeProgramReconstructionAuthority::Physical(correlation) = authority {
-                    self.physical_recovery
-                        .commit_settlement(correlation)
-                        .map_err(|_| ())?;
+                    self.settle_physical_reconstruction(correlation)?;
                 }
                 Ok(true)
             }

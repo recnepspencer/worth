@@ -10,15 +10,21 @@ use crate::runtime::allocation_receipt::{
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiOverlayRegionExtent {
     identity: worth_ui_dsl::UiMosaicRegionDeclarationIdentity,
+    occurrence: worth_ui_host_contract::UiMountedInstanceIdentity,
     bounds: worth_ui_host_contract::UiMountedCanonicalBox,
 }
 
 impl UiOverlayRegionExtent {
     pub(in crate::runtime::overlay_composition) const fn new(
         identity: worth_ui_dsl::UiMosaicRegionDeclarationIdentity,
+        occurrence: worth_ui_host_contract::UiMountedInstanceIdentity,
         bounds: worth_ui_host_contract::UiMountedCanonicalBox,
     ) -> Self {
-        Self { identity, bounds }
+        Self {
+            identity,
+            occurrence,
+            bounds,
+        }
     }
 
     pub(crate) const fn identity(self) -> worth_ui_dsl::UiMosaicRegionDeclarationIdentity {
@@ -27,6 +33,10 @@ impl UiOverlayRegionExtent {
 
     pub(crate) const fn bounds(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
         self.bounds
+    }
+
+    pub(crate) const fn occurrence(self) -> worth_ui_host_contract::UiMountedInstanceIdentity {
+        self.occurrence
     }
 }
 
@@ -48,6 +58,7 @@ impl UiOverlaySurfaceExtentSnapshot {
             .map(|region| {
                 Ok(UiOverlayRegionExtent::new(
                     region.identity(),
+                    region.occurrence(),
                     project_bounds(region.bounds())?,
                 ))
             })
@@ -69,11 +80,11 @@ impl UiOverlaySurfaceExtentSnapshot {
         regions: impl IntoIterator<Item = UiOverlayRegionExtent>,
     ) -> Result<Self, ()> {
         let mut regions = regions.into_iter().collect::<Vec<_>>();
-        regions.sort_by_key(|region| region.identity());
-        if regions
-            .windows(2)
-            .any(|window| window[0].identity() == window[1].identity())
-        {
+        regions.sort_by_key(|region| (region.identity(), region.occurrence()));
+        if regions.windows(2).any(|window| {
+            (window[0].identity(), window[0].occurrence())
+                == (window[1].identity(), window[1].occurrence())
+        }) {
             return Err(());
         }
         Ok(Self {
@@ -102,11 +113,26 @@ impl UiOverlaySurfaceExtentSnapshot {
     pub(crate) fn region(
         &self,
         identity: worth_ui_dsl::UiMosaicRegionDeclarationIdentity,
+        occurrence: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
     ) -> Option<UiOverlayRegionExtent> {
-        self.regions
-            .binary_search_by_key(&identity, |region| region.identity())
-            .ok()
-            .map(|index| self.regions[index])
+        match occurrence {
+            Some(occurrence) => self
+                .regions
+                .binary_search_by_key(&(identity, occurrence), |region| {
+                    (region.identity(), region.occurrence())
+                })
+                .ok()
+                .map(|index| self.regions[index]),
+            None => {
+                let mut matches = self
+                    .regions
+                    .iter()
+                    .copied()
+                    .filter(|region| region.identity() == identity);
+                let only = matches.next()?;
+                matches.next().is_none().then_some(only)
+            }
+        }
     }
 }
 
@@ -154,7 +180,7 @@ impl UiOverlayMotionBinding {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiOverlayMotionSnapshot {
     owner_revision: u64,
-    rows: Box<[UiOverlayMotionBinding]>,
+    pub(in crate::runtime::overlay_composition) rows: Box<[UiOverlayMotionBinding]>,
 }
 
 impl UiOverlayMotionSnapshot {

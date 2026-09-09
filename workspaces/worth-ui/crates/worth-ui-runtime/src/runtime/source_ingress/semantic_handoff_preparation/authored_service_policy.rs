@@ -2,7 +2,6 @@ use super::{WorthUiAuthoredServiceDeclaration, WorthUiSemanticHandoffEvidence};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum WorthUiAuthoredServicePolicy {
-    Portal(crate::declaration::UiPortalPolicy),
     Focus(crate::declaration::UiFocusPolicy),
     Motion(crate::declaration::UiMotionPolicy),
     Scroll(crate::declaration::UiScrollPolicy),
@@ -31,22 +30,9 @@ impl WorthUiAuthoredServiceDeclaration {
 
     fn authored_policy(&self) -> Option<WorthUiAuthoredServicePolicy> {
         Some(match self.meaning() {
-            worth_ui_dsl::WorthUiServiceDeclarationMeaning::Portal(portal) => {
-                let policy = match portal.layer() {
-                    worth_ui_dsl::WorthUiPortalLayer::Transient => {
-                        crate::declaration::UiPortalPolicy::dropdown()
-                    }
-                    worth_ui_dsl::WorthUiPortalLayer::Modal => {
-                        crate::declaration::UiPortalPolicy::modal_dialog()
-                    }
-                }
-                .with_focus_restoration(portal.restores_focus())
-                .with_escape_dismissal(portal.dismissal().escape())
-                .with_outside_press_dismissal(portal.dismissal().outside_press())
-                .with_accepted_selection_dismissal(portal.dismissal().accepted_selection())
-                .with_anchor_loss_dismissal(portal.dismissal().anchor_gone());
-                WorthUiAuthoredServicePolicy::Portal(policy)
-            }
+            // Portal declarations retain exact policy at their live Portal row.
+            // They cannot collapse into one application-wide family default.
+            worth_ui_dsl::WorthUiServiceDeclarationMeaning::Portal(_) => return None,
             worth_ui_dsl::WorthUiServiceDeclarationMeaning::Focus(focus) => {
                 let policy = match focus.scope() {
                     worth_ui_dsl::WorthUiFocusScope::Workbench => {
@@ -103,13 +89,30 @@ impl WorthUiAuthoredServiceDeclaration {
     }
 }
 
+pub(super) fn portal_policy(
+    portal: &worth_ui_dsl::WorthUiPortalDeclaration,
+) -> crate::declaration::UiPortalPolicy {
+    match portal.layer() {
+        worth_ui_dsl::WorthUiPortalLayer::Transient => {
+            crate::declaration::UiPortalPolicy::dropdown()
+        }
+        worth_ui_dsl::WorthUiPortalLayer::Modal => {
+            crate::declaration::UiPortalPolicy::modal_dialog()
+        }
+    }
+    .with_focus_restoration(portal.restores_focus())
+    .with_escape_dismissal(portal.dismissal().escape())
+    .with_outside_press_dismissal(portal.dismissal().outside_press())
+    .with_accepted_selection_dismissal(portal.dismissal().accepted_selection())
+    .with_anchor_loss_dismissal(portal.dismissal().anchor_gone())
+}
+
 impl WorthUiAuthoredServicePolicy {
     fn apply(
         self,
         defaults: crate::declaration::UiServicePolicyDefaults,
     ) -> crate::declaration::UiServicePolicyDefaults {
         match self {
-            Self::Portal(policy) => defaults.with_portal(policy),
             Self::Focus(policy) => defaults.with_focus(policy),
             Self::Motion(policy) => defaults.with_motion(policy),
             Self::Scroll(policy) => defaults.with_scroll(policy),
@@ -119,7 +122,6 @@ impl WorthUiAuthoredServicePolicy {
 
     fn digest_basis(self) -> u64 {
         match self {
-            Self::Portal(policy) => policy.digest_basis(),
             Self::Focus(policy) => policy.digest_basis(),
             Self::Motion(policy) => policy.digest_basis(),
             Self::Scroll(policy) => policy.digest_basis(),

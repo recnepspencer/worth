@@ -85,6 +85,7 @@ fn real_wui_lifecycle_closes_phase_one_through_eight_authority_seams() {
         mounted_measurement_session("host-measurement-allocation", 1);
     assert_eq!(host.native_registration_count(), 1);
     let predecessor = begin_portal(&mut session, bindings[0], 100, 0);
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let workspace = replacement_workspace("host-measurement-allocation");
     let (pending, catalog, boundary) = stage_replacement(&workspace, &mut session);
     let replacement = match session

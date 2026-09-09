@@ -10,7 +10,7 @@ fn published_appearance_attempt_settles_only_after_host_publication() {
         .presentation
         .appearance_invalidation_batch()
         .is_some());
-    fixture.host.push_native_display_presented();
+    fixture.host.push_native_display_settled_without_effects();
 
     assert!(matches!(
         execute(&mut fixture, 3),
@@ -100,7 +100,7 @@ fn in_flight_appearance_attempt_waits_and_keeps_newer_invalidation() {
         .presentation
         .appearance_invalidation_batch()
         .is_some());
-    fixture.host.push_native_display_presented();
+    fixture.host.push_native_display_settled_without_effects();
     assert!(matches!(
         execute(&mut fixture, 5),
         crate::mounting::UiMountedFrameOutcome::Published(_)
@@ -252,7 +252,7 @@ fn older_publication_does_not_settle_a_newer_theme_revision() {
         .appearance_invalidation_batch()
         .is_some());
 
-    fixture.host.push_native_display_presented();
+    fixture.host.push_native_display_settled_without_effects();
     assert!(matches!(
         execute(&mut fixture, 6),
         crate::mounting::UiMountedFrameOutcome::Published(_)
@@ -315,9 +315,7 @@ fn native_completion() -> crate::certification_support::ScriptedSurfaceCompletio
         worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
             crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
             crate::certification_support::scripted_presentation_epoch(),
-            worth_ui_host_contract::UiMountedCompletedEffects::new(vec![
-                worth_ui_host_contract::UiMountedEffectFamily::NativePaint,
-            ]),
+            worth_ui_host_contract::UiMountedCompletedEffects::new(Vec::new()),
             worth_ui_host_contract::UiHostPresentationCostReport::default(),
         ),
     )

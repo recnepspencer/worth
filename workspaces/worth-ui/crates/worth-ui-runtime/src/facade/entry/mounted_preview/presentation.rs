@@ -40,6 +40,7 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
             publication,
             None,
             None,
+            None,
         );
         finish_preview_outcome(outcome, before, transition, planning_counters, ports)
     }
@@ -95,6 +96,7 @@ impl<'session> WorthUiMountedPreviewInFlight<'session> {
             &ports.generation_identity,
             ports.host_exchange,
             publication,
+            None,
             None,
             None,
         );

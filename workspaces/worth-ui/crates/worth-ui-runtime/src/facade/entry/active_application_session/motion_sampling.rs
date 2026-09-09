@@ -123,7 +123,13 @@ impl super::WorthUiActiveApplicationSession {
         &mut self,
         settlement: crate::mounting::UiMountedMotionSampleSettlement,
     ) {
-        if let crate::mounting::UiMountedMotionSampleSettlement::Committed(sampling) = settlement {
+        if let crate::mounting::UiMountedMotionSampleSettlement::Committed(mut sampling) =
+            settlement
+        {
+            if let Some(transition) = sampling.take_hit_transition() {
+                self.interaction
+                    .observe_presented_hit_transition(&transition, &self.mounted);
+            }
             for terminal in sampling.terminals().iter().copied() {
                 self.settle_motion_terminal_request(terminal);
             }
@@ -162,7 +168,7 @@ impl super::WorthUiActiveApplicationSession {
             last_tick,
             self.motion.as_ref().map_or(0, |motion| motion.publication_count()),
             sample.and_then(|sample| sample.geometry().map(|geometry| geometry.components())),
-            sample.map(|sample| sample.opacity()),
+            sample.map(|sample| sample.opacity_units()),
             sample.map(|sample| sample.hit_test_visible()),
             presentation,
             self.mounted.has_active_motion_samples(),

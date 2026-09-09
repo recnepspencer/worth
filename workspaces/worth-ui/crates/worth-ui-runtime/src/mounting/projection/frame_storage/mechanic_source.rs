@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use worth_ui_host_contract::{
-    UiMountedFilledRectMechanic, UiMountedHitTestMechanic, UiMountedInstanceIdentity,
-};
+use worth_ui_host_contract::{UiMountedFilledRectMechanic, UiMountedInstanceIdentity};
 
 use super::semantic_mechanics::UiMountedSemanticMechanicSource;
 use super::UiMountedSemanticProjection;
@@ -16,16 +14,9 @@ mod view;
 pub(in crate::mounting::projection) struct UiMountedMechanicSource {
     filled_rects: UiPersistentOrdMap<UiMountedInstanceIdentity, UiMountedFilledRectMechanic>,
     semantic_text: UiMountedSemanticMechanicSource,
-    hit_tests: UiPersistentOrdMap<UiMountedInstanceIdentity, UiMountedHitTestMechanic>,
-    hit_test_orders: UiPersistentOrdMap<
-        (
-            worth_ui_host_contract::UiSemanticSurfaceIdentity,
-            worth_ui_host_contract::UiMountedHitTestOrder,
-        ),
-        UiMountedInstanceIdentity,
-    >,
+    hit_tests: super::UiMountedHitMechanicSource,
+    pub(super) presented_hits: crate::mounting::presented_hit_index::UiPresentedHitIndex,
     filled_digest: u64,
-    hit_digest: u64,
 }
 
 pub(super) struct UiMountedMechanicCompletion<'a> {
@@ -45,6 +36,7 @@ pub(super) struct UiMountedMechanicMutation {
     pub(super) filled_rects: usize,
     pub(super) semantic_text: usize,
     pub(super) hit_tests: usize,
+    pub(super) hit_index_work: crate::mounting::hit_test_work::UiHitTestSpatialWork,
     pub(super) command_changes: Vec<worth_ui_host_contract::UiMountedPaintCommandChange>,
     pub(super) precise_instances: Vec<UiMountedInstanceIdentity>,
 }
@@ -65,8 +57,11 @@ impl UiMountedMechanicSource {
             super::super::semantic_text::UiMountedTextQualificationCache::default();
         for instance in completion.changed {
             let predecessor_rect = self.filled_rects.get(instance).copied();
-            self.remove_non_text(*instance);
+            self.remove_filled_rect(*instance);
             let Some(node) = completion.semantic.node(*instance) else {
+                mutation
+                    .hit_index_work
+                    .merge(self.hit_tests.replace(*instance, None)?);
                 mutation
                     .command_changes
                     .extend(self.semantic_text.remove_instance(*instance));
@@ -123,43 +118,26 @@ impl UiMountedMechanicSource {
                 .checked_add(text_update.rows_materialized)
                 .ok_or(UiMountedProjectionDenial::SemanticTextCapacityExceeded)?;
             mutation.command_changes.extend(text_update.command_changes);
-            if let Some(hit) = super::super::hit_test::complete_hit_test(
+            let hit = super::super::hit_test::complete_hit_test(
                 completion.frame,
                 completion.receipts,
                 completion.semantic,
                 node,
-            )? {
-                let key = (hit.surface(), hit.order());
-                if self
-                    .hit_test_orders
-                    .get(&key)
-                    .is_some_and(|owner| *owner != *instance)
-                {
-                    return Err(UiMountedProjectionDenial::DuplicateHitTestOrder {
-                        surface: hit.surface(),
-                        order: hit.order(),
-                    });
-                }
-                self.hit_test_orders.insert(key, *instance);
-                self.hit_digest ^= row_digest(hit.semantic_digest());
-                self.hit_tests.insert(*instance, hit);
-                mutation.hit_tests += 1;
-            }
+            )?;
+            mutation
+                .hit_index_work
+                .merge(self.hit_tests.replace(*instance, hit)?);
+            mutation.hit_tests += usize::from(hit.is_some());
         }
         self.validate_capacity()?;
         Ok(mutation)
     }
 
-    fn remove_non_text(&mut self, instance: UiMountedInstanceIdentity) {
+    fn remove_filled_rect(&mut self, instance: UiMountedInstanceIdentity) {
         if let Some(row) = self.filled_rects.get(&instance).copied() {
             self.filled_digest ^= row_digest(row.semantic_digest());
         }
         self.filled_rects.remove(&instance);
-        if let Some(hit) = self.hit_tests.get(&instance).copied() {
-            self.hit_digest ^= row_digest(hit.semantic_digest());
-            self.hit_test_orders.remove(&(hit.surface(), hit.order()));
-        }
-        self.hit_tests.remove(&instance);
     }
 
     fn validate_capacity(&self) -> Result<(), UiMountedProjectionDenial> {
@@ -276,7 +254,8 @@ impl UiMountedMechanicSource {
             worth_ui_host_contract::UiSurfaceBindingGeneration,
             crate::mounting::UiSurfaceBindingIdentityView,
         )],
-    ) -> Result<(), UiMountedProjectionDenial> {
+    ) -> Result<crate::mounting::hit_test_work::UiHitTestSpatialWork, UiMountedProjectionDenial>
+    {
         let mut filled = self
             .filled_rects
             .iter()
@@ -289,12 +268,7 @@ impl UiMountedMechanicSource {
             .cloned()
             .collect::<Vec<_>>();
         super::super::semantic_text::rebind_semantic_text(&mut text, replacements)?;
-        let mut hit = self
-            .hit_tests
-            .iter()
-            .map(|(_, row)| *row)
-            .collect::<Vec<_>>();
-        super::super::hit_test::rebind_hit_tests(&mut hit, replacements)?;
+        let (hit_tests, hit_work) = self.hit_tests.rebind(replacements)?;
         self.filled_rects = UiPersistentOrdMap::default();
         self.filled_digest = 0;
         for row in filled {
@@ -303,23 +277,8 @@ impl UiMountedMechanicSource {
         }
         self.semantic_text = UiMountedSemanticMechanicSource::default();
         self.semantic_text.replace_all(text)?;
-        self.hit_tests = UiPersistentOrdMap::default();
-        self.hit_test_orders = UiPersistentOrdMap::default();
-        self.hit_digest = 0;
-        for row in hit {
-            let instance = row.mounted_instance();
-            let key = (row.surface(), row.order());
-            if self.hit_test_orders.get(&key).is_some() {
-                return Err(UiMountedProjectionDenial::DuplicateHitTestOrder {
-                    surface: row.surface(),
-                    order: row.order(),
-                });
-            }
-            self.hit_test_orders.insert(key, instance);
-            self.hit_digest ^= row_digest(row.semantic_digest());
-            self.hit_tests.insert(instance, row);
-        }
-        Ok(())
+        self.hit_tests = hit_tests;
+        Ok(hit_work)
     }
 
     pub(super) fn table_digest(&self) -> u64 {
@@ -329,7 +288,7 @@ impl UiMountedMechanicSource {
             self.hit_tests.len() as u64,
             self.filled_digest,
             self.semantic_text.digest(),
-            self.hit_digest,
+            self.hit_tests.digest(),
         ]
         .into_iter()
         .fold(0x6d65_6368_736f_7572_u64, |digest, value| {
@@ -344,6 +303,7 @@ impl UiMountedMechanicSource {
             self.filled_rects.clone(),
             self.hit_tests.clone(),
             self.semantic_text.clone(),
+            self.presented_hits.clone(),
         )
     }
 }

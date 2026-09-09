@@ -16,6 +16,7 @@ pub enum WorthUiMountedAllocationEstablishmentDenial {
     MissingCandidateMountTransition(crate::graph::UiGraphNodeIdentity),
     CandidateAllocationPartition,
     StaleGraphSuccessor,
+    StaleOverlayBindingGeneration,
     MissingMeasurementRequest(UiMeasurementEvidenceFamily),
     MeasurementRequestIdentityExhausted,
     HostMeasurement(crate::host::UiHostMeasurementEvidenceDenial),

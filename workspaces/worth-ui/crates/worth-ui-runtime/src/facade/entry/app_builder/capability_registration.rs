@@ -58,6 +58,14 @@ impl<ChangeProfileState, IntentWiringState>
         self
     }
 
+    pub fn register_mosaic_seam_paint_contract(
+        mut self,
+        contract: crate::capability::MosaicSeamPaintContract,
+    ) -> Result<Self, crate::capability::MosaicSeamPaintContractDenial> {
+        self.inner = self.inner.register_mosaic_seam_paint_contract(contract)?;
+        Ok(self)
+    }
+
     pub fn register_mosaic_placement_policy(
         mut self,
         descriptor: MosaicPlacementPolicyDescriptor,

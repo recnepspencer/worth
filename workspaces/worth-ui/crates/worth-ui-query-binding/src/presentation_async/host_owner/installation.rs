@@ -29,6 +29,7 @@ pub struct WorthUiPresentationAsyncInstallation {
 pub enum WorthUiPresentationAsyncInstallationError {
     Builder(Box<super::super::super::WorthUiScalarProjectionInstallationError>),
     Completion(Box<runtime::WorthQueryHostRuntimeCompletionError>),
+    Installation(String),
     Runtime(Box<runtime::WorthQueryRuntimeError>),
 }
 
@@ -57,6 +58,21 @@ impl WorthUiPresentationAsyncHostPlan {
         WorthUiPresentationAsyncHostCompletion,
     ) {
         (self.request, self.completion)
+    }
+
+    #[cfg(feature = "certification-construction")]
+    pub fn install_for_certification(
+        self,
+    ) -> Result<WorthUiPresentationAsyncInstallation, WorthUiPresentationAsyncInstallationError>
+    {
+        let (request, completion) = self.into_parts();
+        let installation =
+            worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller::new()
+                .install(request.generation(), request.into_packages())
+                .map_err(|error| {
+                    WorthUiPresentationAsyncInstallationError::Installation(format!("{error:?}"))
+                })?;
+        completion.complete(installation)
     }
 }
 

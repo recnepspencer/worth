@@ -20,13 +20,12 @@ pub(super) fn process(
         return Ok(None);
     }
     match (owner.as_mut(), admission.kind(), report.payload()) {
-        (Some(owner), Some(kind), UiHostObservationPayload::PointerMotion { .. }) => {
-            owner.process_pointer_report(core, report, kind, mounted, generation)
-        }
-        (Some(owner), Some(kind), UiHostObservationPayload::PointerButton { pointer, .. }) => {
-            owner.admit_pointer_kind(*pointer, kind)?;
-            Ok(None)
-        }
+        (
+            Some(owner),
+            Some(kind),
+            UiHostObservationPayload::PointerMotion { .. }
+            | UiHostObservationPayload::PointerButton { .. },
+        ) => owner.process_pointer_report(core, report, kind, mounted, generation),
         _ => Ok(None),
     }
 }

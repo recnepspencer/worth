@@ -107,5 +107,6 @@ fn is_test_source(path: &Path) -> bool {
             || component.ends_with("_tests")
             || component.ends_with("_tests.rs")
             || component.ends_with("_test_support.rs")
+            || component.ends_with("_test_world")
     })
 }

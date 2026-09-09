@@ -6,15 +6,24 @@ mod denial;
 mod focus_participation;
 mod frame_assembler;
 mod frame_manifest_validation;
+mod hit_test_work;
+mod presented_hit_index;
+mod spatial_index;
+pub(crate) use presented_hit_index::{UiPresentedHitChanges, UiPresentedHitQueryDenial};
+pub(crate) use retention::UiCommittedPresentedHitTransition;
+pub(crate) use retention::UiPresentedPointLookupDenial;
 mod host_truth;
 mod identity;
 mod identity_overlay;
 mod identity_state;
 mod identity_trace_basis;
 mod identity_view;
+mod occurrence_geometry;
 mod portal_overlay;
 pub(crate) mod presentation;
 mod projection;
+#[cfg(test)]
+pub(crate) use projection::derive_unbound_ancestry;
 mod projection_changes;
 mod publication;
 #[cfg(any(test, feature = "certification-support"))]
@@ -22,8 +31,10 @@ pub(crate) mod qualified_text_test_support;
 mod receipt_basis;
 mod retention;
 mod reuse;
+mod selection_binding;
 mod semantic_content;
 mod session_state;
+pub use session_state::UiMountedSelectionBindingDenial;
 mod surface_binding;
 mod text_reuse;
 mod theme_values;
@@ -58,6 +69,15 @@ pub use identity_view::{
     UiMountedFrameIdentityView, UiMountedIdentityView, UiMountedInstanceIdentityView,
     UiSurfaceBindingIdentityView,
 };
+pub(crate) use occurrence_geometry::UiMountedOccurrenceGeometryState;
+pub use occurrence_geometry::{
+    UiMountedLayoutBasis, UiMountedLayoutCompletionReceipt, UiMountedLayoutRevision,
+    UiMountedMosaicRegionGeometry, UiMountedOccurrenceGeometry, UiMountedOccurrenceGeometryDenial,
+    UiMountedOccurrencePlacement, UiMountedSurfaceGeometryBatch,
+};
+pub(crate) use occurrence_geometry::{
+    UiMountedMosaicClipBinding, UiMountedScrollClipBinding, UiMountedSurfacePaintPosture,
+};
 pub(crate) use portal_overlay::UiMountedPortalOverlayProjectionInput;
 pub use presentation::{
     UiFocusHostPlacementReconciliationDenial, UiFocusHostPlacementReconciliationOutcome,
@@ -88,12 +108,14 @@ pub(crate) use projection::{
     UiPreparedMountedProjection,
 };
 pub(crate) use projection::{
-    UiMountedAppearanceFrameState, UiMountedAppearanceStateMutationDenial,
-    UiMountedProjectionFrameOwner,
+    UiMountedAppearanceClip, UiMountedAppearanceClipDenial, UiMountedAppearanceGeometryInput,
+    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
+    UiMountedAppearanceNodeInput, UiMountedAppearanceSurfaceOverlayInput,
+    UiMountedAppearanceTextSpanInput, UiResolvedAppearanceNodeSource,
 };
 pub(crate) use projection::{
-    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
-    UiMountedAppearanceNodeInput,
+    UiMountedAppearanceFrameState, UiMountedAppearanceStateMutationDenial,
+    UiMountedProjectionFrameOwner,
 };
 pub use projection::{
     UiMountedNodeReceipt, UiMountedProjectionDenial, UiMountedProjectionFrame,
@@ -171,3 +193,5 @@ pub use worth_ui_host_contract::{
 pub(crate) fn prove_paint_only_mechanic_locality() {
     projection::prove_paint_only_mechanic_locality();
 }
+
+pub(crate) use hit_test_work::UiHitTestSpatialWork;

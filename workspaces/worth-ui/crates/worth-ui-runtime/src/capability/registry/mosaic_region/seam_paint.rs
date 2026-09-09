@@ -172,6 +172,17 @@ impl MosaicSeamPaintContract {
     pub fn owners(&self) -> &[MosaicSeamPaintOwner] {
         &self.owners
     }
+    pub fn paint_owner_for(
+        &self,
+        first: &MosaicRegionKindId,
+        second: &MosaicRegionKindId,
+    ) -> Option<&MosaicRegionKindId> {
+        let edge = MosaicSharedEdge::new(first.clone(), second.clone()).ok()?;
+        self.owners
+            .binary_search_by(|candidate| candidate.edge.cmp(&edge))
+            .ok()
+            .map(|index| self.owners[index].owner())
+    }
     pub fn exterior_corners(&self) -> &[MosaicExteriorCorner] {
         &self.exterior_corners
     }
@@ -227,7 +238,10 @@ mod tests {
             Err(MosaicSeamPaintContractDenial::MissingOwner(edge.clone()))
         );
         let owner = MosaicSeamPaintOwner::new(edge.clone(), a.clone()).unwrap();
-        assert!(MosaicSeamPaintContract::admit([a, b], [edge], [owner], []).is_ok());
+        let contract =
+            MosaicSeamPaintContract::admit([a.clone(), b.clone()], [edge], [owner], []).unwrap();
+        assert_eq!(contract.paint_owner_for(&a, &b), Some(&a));
+        assert_eq!(contract.paint_owner_for(&b, &a), Some(&a));
     }
 
     #[test]

@@ -188,6 +188,7 @@ fn project_first_node(
     let surface = registered_surface(session);
     let node = first_node(session);
     let mounted_instance = session.mount_instance(node, surface).unwrap();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let candidate = session
         .execute_framework_turn(|_| {})
         .expect("no mounted presentation lease is active")

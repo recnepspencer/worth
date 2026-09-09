@@ -12,6 +12,10 @@ pub(crate) struct UiPointerPresenceCapacity {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiPointerPresenceAdmissionDenial {
+    Targeting {
+        pointer: UiHostPointerIdentity,
+        denial: crate::runtime::interaction::targeting::UiInteractionTargetingDenial,
+    },
     MissingDeviceKind {
         pointer: UiHostPointerIdentity,
         family: UiHostObservationFamily,
@@ -49,7 +53,8 @@ impl UiPointerPresenceCapacity {
 impl UiPointerPresenceAdmissionDenial {
     pub(crate) const fn pointer(self) -> UiHostPointerIdentity {
         match self {
-            Self::MissingDeviceKind { pointer, .. }
+            Self::Targeting { pointer, .. }
+            | Self::MissingDeviceKind { pointer, .. }
             | Self::CapacityExceeded { pointer, .. }
             | Self::PointerKindChanged { pointer, .. } => pointer,
         }

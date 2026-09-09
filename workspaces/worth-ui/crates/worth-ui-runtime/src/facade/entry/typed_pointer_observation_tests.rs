@@ -18,6 +18,9 @@ fn host_pointer_kinds_reach_owners_and_touch_cannot_activate() {
     let mut shell = source_backed_hover_consumer_app_with_host(host)
         .launch_native_surface()
         .expect("typed pointer fixture should launch");
+    super::native_application_identity_trace_test_support::install_bound_surface_geometry(
+        &mut shell,
+    );
     let frame = published(shell.present_frame(100, 1));
     let binding = *frame.bindings().first().expect("native binding");
     let host_surface = shell.session.mounted.view().surface_bindings()[0].host_surface_identity();

@@ -2,6 +2,8 @@ mod change_classification;
 mod framework_turn;
 mod inspection;
 mod mounted_allocation;
+mod mounted_region;
+pub(crate) use mounted_region::UiMountedRegionDeclarationBinding;
 #[path = "application_state/service_proposal.rs"]
 mod service_proposal;
 pub(crate) use service_proposal::{
@@ -105,15 +107,28 @@ impl WorthUiApplicationSessionState {
         appearance_close: Option<
             crate::runtime::observation::UiAppearanceObservationCloseInput<'state>,
         >,
+        pointer_owners: Option<
+            crate::runtime::observation::UiPointerAffordanceObservationOwners<'state>,
+        >,
     ) -> Result<
         crate::facade::observation::UiObservationTurn<'state>,
         crate::facade::observation::UiObservationTurnDenial,
     > {
         let source_basis = self.app.capabilities().digest().as_u64();
-        self.runtime.begin_observation_turn_with_appearance_close(
+        let prepared = self.app.prepared_authority();
+        let pointer_close = pointer_owners.map(|owners| {
+            crate::runtime::observation::UiPointerAffordanceObservationCloseInput::new(
+                owners,
+                prepared.intent_catalog(),
+                prepared.capabilities().intent_definitions(),
+                prepared.intent_execution_bindings(),
+            )
+        });
+        self.runtime.begin_observation_turn_with_owner_close(
             session,
             source_basis,
             appearance_close,
+            pointer_close,
         )
     }
 

@@ -11,7 +11,7 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 
 - Public surface: workspace-owned; package targets remain the explicit export or composition owners
 - Facade exports: `none`
-- Owned internal modules: `allocation, appearance, evidence_contract, facade, intent, posture, query, receipt, scope, service, target`
+- Owned internal modules: `allocation, appearance, evidence, evidence_contract, facade, intent, posture, query, receipt, scope, service, target`
 - Allowed in-tree dependency bands: `WORTH UI manifest-declared dependencies`
 
 Machine fences:

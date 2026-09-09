@@ -27,7 +27,7 @@ pub(in crate::mounting::projection) fn complete_hit_test(
             node.receipt.graph_node(),
         ));
     }
-    let bounds = match node.receipt.allocation() {
+    let bounds = match node.presentation_allocation() {
         UiMountedAllocationProjection::Known { bounds, .. } => bounds,
         UiMountedAllocationProjection::PortalAnchorObservation { .. } => {
             return Err(UiMountedProjectionDenial::UnsupportedHitTestAllocation(
@@ -67,9 +67,16 @@ pub(in crate::mounting) fn reattribute_hit_test(
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
     receipts: &super::super::super::UiMountedNodeReceiptBasis,
 ) -> Result<UiMountedHitTestMechanic, UiMountedProjectionDenial> {
-    let node_receipt = receipts
-        .receipt_for(row.mounted_instance())
-        .ok_or(UiMountedProjectionDenial::HitTestNodeReceiptMismatch)?;
+    reattribute_hit_test_with_probes(row, frame, receipts).map(|(row, _)| row)
+}
+
+pub(in crate::mounting) fn reattribute_hit_test_with_probes(
+    row: UiMountedHitTestMechanic,
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    receipts: &super::super::super::UiMountedNodeReceiptBasis,
+) -> Result<(UiMountedHitTestMechanic, usize), UiMountedProjectionDenial> {
+    let (receipt, probes) = receipts.receipt_for_with_probes(row.mounted_instance());
+    let node_receipt = receipt.ok_or(UiMountedProjectionDenial::HitTestNodeReceiptMismatch)?;
     UiMountedHitTestMechanic::complete_from_runtime_mounting(UiMountedHitTestCompletionInput {
         frame,
         surface: row.surface(),
@@ -80,6 +87,7 @@ pub(in crate::mounting) fn reattribute_hit_test(
         clip_bounds: row.clip_bounds(),
         order: row.order(),
     })
+    .map(|row| (row, probes))
     .map_err(UiMountedProjectionDenial::HitTestCompletion)
 }
 

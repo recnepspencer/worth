@@ -59,6 +59,30 @@ fn complete_projection_retains_current_paint_after_incremental_projection_commit
         content.posture().trim().is_empty(),
         "application-authored copy has no synthetic user-visible posture"
     );
+
+    let older_publication = complete.text_publication();
+    state
+        .admit_semantic_text(&[
+            crate::facade::entry::UiNativeComponentSemanticTextChange::successor(
+                "component:test",
+                1,
+                "newer text",
+            )
+            .unwrap(),
+        ])
+        .unwrap();
+    state.settle_published_text(&older_publication);
+    assert!(!state.project().unwrap().content().is_empty());
+    let incomplete_scope = state
+        .project()
+        .unwrap()
+        .text_publication()
+        .retain_complete_graphs(|_| false);
+    state.settle_published_text(&incomplete_scope);
+    assert!(!state.project().unwrap().content().is_empty());
+    let current_publication = state.project().unwrap().text_publication();
+    state.settle_published_text(&current_publication);
+    assert!(state.project().unwrap().content().is_empty());
 }
 
 #[test]

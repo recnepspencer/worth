@@ -4,10 +4,20 @@ use worth_ui_host_contract::{
 
 use super::super::UiMountedNodeReceipt;
 
+mod portal_children;
+mod surface_rebind;
+
 #[derive(Clone)]
 pub(in crate::mounting) struct UiMountedProjectionNodeRecord {
     pub(in crate::mounting::projection) receipt: UiMountedNodeReceipt,
     pub(in crate::mounting::projection) plan_index: Option<u32>,
+    pub(in crate::mounting::projection) surface_paint_order: Option<u32>,
+    pub(in crate::mounting::projection) has_appearance_attachment: bool,
+    pub(in crate::mounting::projection) appearance_clip:
+        super::super::appearance::UiMountedAppearanceClip,
+    pub(in crate::mounting::projection) appearance_geometry: super::UiMountedAppearanceGeometry,
+    pub(in crate::mounting::projection) occurrence_allocation:
+        worth_ui_host_contract::UiMountedAllocationProjection,
     pub(in crate::mounting::projection) static_paint:
         Option<super::super::static_paint::UiMountedStaticPaintSeed>,
     pub(in crate::mounting::projection) semantic_text:
@@ -24,6 +34,16 @@ pub(in crate::mounting) struct UiMountedProjectionNodeRecord {
 impl UiMountedProjectionNodeRecord {
     pub(in crate::mounting) const fn receipt(&self) -> &UiMountedNodeReceipt {
         &self.receipt
+    }
+
+    pub(in crate::mounting::projection) fn presentation_allocation(
+        &self,
+    ) -> worth_ui_host_contract::UiMountedAllocationProjection {
+        if self.portal_child_owner.is_some() {
+            self.occurrence_allocation
+        } else {
+            self.receipt.allocation()
+        }
     }
 }
 
@@ -46,6 +66,7 @@ pub(in crate::mounting) struct UiMountedSemanticProjection {
     membership: crate::runtime::persistent_index::UiPersistentOrdSet<
         worth_ui_host_contract::UiMountedInstanceIdentity,
     >,
+    portal_children: portal_children::UiMountedPortalChildMembership,
     semantic_surfaces:
         crate::runtime::persistent_index::UiPersistentOrdSet<UiSemanticSurfaceIdentity>,
     binding_by_surface: crate::runtime::persistent_index::UiPersistentOrdMap<
@@ -63,10 +84,21 @@ pub(in crate::mounting) struct UiMountedSemanticProjection {
 }
 
 impl UiMountedSemanticProjection {
+    #[cfg(test)]
     pub(in crate::mounting::projection) fn initial(
         nodes: Vec<UiMountedProjectionNodeRecord>,
         surfaces: Vec<UiMountedProjectionSurface>,
     ) -> Self {
+        Self::build_initial(nodes, surfaces).0
+    }
+
+    pub(in crate::mounting::projection) fn build_initial(
+        nodes: Vec<UiMountedProjectionNodeRecord>,
+        surfaces: Vec<UiMountedProjectionSurface>,
+    ) -> (
+        Self,
+        crate::runtime::persistent_index::UiPersistentIndexMutationWork,
+    ) {
         let mut order = crate::runtime::persistent_index::UiPersistentOrder::default();
         for node in &nodes {
             order
@@ -75,8 +107,14 @@ impl UiMountedSemanticProjection {
         }
         let mut node_index = crate::runtime::persistent_index::UiPersistentOrdMap::default();
         let mut membership = crate::runtime::persistent_index::UiPersistentOrdSet::default();
+        let mut portal_children = portal_children::UiMountedPortalChildMembership::default();
+        let mut portal_work =
+            crate::runtime::persistent_index::UiPersistentIndexMutationWork::default();
         for node in nodes {
             let instance = node.receipt.mounted_instance();
+            portal_work
+                .merge(portal_children.replace(None, Some(&node)))
+                .expect("initial membership work fits address space");
             node_index.insert(instance, node);
             membership.insert(instance);
         }
@@ -89,16 +127,20 @@ impl UiMountedSemanticProjection {
             binding_by_surface.insert(surface.surface, surface.binding);
             surface_index.insert(surface.binding, surface);
         }
-        Self {
-            nodes: node_index,
-            order,
-            membership,
-            semantic_surfaces,
-            binding_by_surface,
-            surfaces: surface_index,
-            projection_input_capacity: 0,
-            projection_inputs: Default::default(),
-        }
+        (
+            Self {
+                nodes: node_index,
+                order,
+                membership,
+                portal_children,
+                semantic_surfaces,
+                binding_by_surface,
+                surfaces: surface_index,
+                projection_input_capacity: 0,
+                projection_inputs: Default::default(),
+            },
+            portal_work,
+        )
     }
 
     pub(in crate::mounting::projection) fn membership(
@@ -133,21 +175,64 @@ impl UiMountedSemanticProjection {
         self.nodes.get(&instance)
     }
 
+    pub(in crate::mounting::projection) fn node_with_probes(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> (Option<&UiMountedProjectionNodeRecord>, usize) {
+        self.nodes.get_with_probes(&instance)
+    }
+
     pub(in crate::mounting::projection) fn insert_node(
         &mut self,
         node: UiMountedProjectionNodeRecord,
     ) -> crate::runtime::persistent_index::UiPersistentIndexMutationWork {
         let instance = node.receipt.mounted_instance();
-        self.membership.insert(instance);
-        self.nodes.insert_with_work(instance, node)
+        let (previous, probes) = self.nodes.get_with_probes(&instance);
+        let mut work =
+            crate::runtime::persistent_index::UiPersistentIndexMutationWork::with_key_probes(
+                probes,
+            );
+        work.merge(self.portal_children.replace(previous, Some(&node)))
+            .expect("mounted index work fits address space");
+        work.merge(self.membership.insert_with_work(instance).1)
+            .expect("mounted index work fits address space");
+        if previous.is_none() {
+            work.merge(
+                self.order
+                    .append(instance)
+                    .expect("new mounted projection identity appends once"),
+            )
+            .expect("mounted index work fits address space");
+        }
+        work.merge(self.nodes.insert_with_work(instance, node))
+            .expect("mounted index work fits address space");
+        work
     }
 
     pub(in crate::mounting::projection) fn remove_node(
         &mut self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> crate::runtime::persistent_index::UiPersistentIndexMutationWork {
-        self.membership.remove_with_work(&instance);
-        self.nodes.remove_with_work(&instance).1
+        let (previous, probes) = self.nodes.get_with_probes(&instance);
+        let mut work =
+            crate::runtime::persistent_index::UiPersistentIndexMutationWork::with_key_probes(
+                probes,
+            );
+        work.merge(self.portal_children.replace(previous, None))
+            .expect("mounted index work fits address space");
+        work.merge(self.membership.remove_with_work(&instance).1)
+            .expect("mounted index work fits address space");
+        if previous.is_some() {
+            work.merge(
+                self.order
+                    .remove(instance)
+                    .expect("projected mounted identity owns one order row"),
+            )
+            .expect("mounted index work fits address space");
+        }
+        work.merge(self.nodes.remove_with_work(&instance).1)
+            .expect("mounted index work fits address space");
+        work
     }
 
     pub(in crate::mounting::projection) fn replace_order(
@@ -197,30 +282,6 @@ impl UiMountedSemanticProjection {
         self.nodes.len()
     }
 
-    pub(in crate::mounting::projection) fn portal_children_for_owners(
-        &self,
-        owners: &[worth_ui_host_contract::UiMountedInstanceIdentity],
-    ) -> Vec<worth_ui_host_contract::UiMountedInstanceIdentity> {
-        let owner_components = owners
-            .iter()
-            .filter_map(|owner| self.nodes.get(owner))
-            .filter_map(|owner| owner.component_id.as_ref())
-            .collect::<std::collections::BTreeSet<_>>();
-        self.order
-            .iter()
-            .filter_map(|instance| {
-                self.nodes
-                    .get(instance)
-                    .filter(|node| {
-                        node.portal_child_owner
-                            .as_ref()
-                            .is_some_and(|owner| owner_components.contains(owner))
-                    })
-                    .map(|_| *instance)
-            })
-            .collect()
-    }
-
     pub(in crate::mounting::projection) fn mounted_instances(
         &self,
     ) -> impl ExactSizeIterator<Item = worth_ui_host_contract::UiMountedInstanceIdentity> + '_ {
@@ -261,6 +322,7 @@ impl UiMountedSemanticProjection {
             .checked_add(self.nodes.retained_structural_bytes()?)?
             .checked_add(self.order.retained_structural_bytes()?)?
             .checked_add(self.membership.retained_structural_bytes()?)?
+            .checked_add(self.portal_children.retained_structural_bytes()?)?
             .checked_add(self.semantic_surfaces.retained_structural_bytes()?)?
             .checked_add(self.binding_by_surface.retained_structural_bytes()?)?
             .checked_add(self.surfaces.retained_structural_bytes()?)?
@@ -285,56 +347,21 @@ impl UiMountedSemanticProjection {
         &self,
         surface: UiSemanticSurfaceIdentity,
     ) -> Option<UiMountedProjectionSurface> {
-        self.binding_by_surface
-            .get(&surface)
-            .and_then(|binding| self.surfaces.get(binding))
-            .copied()
+        self.surface_for_with_probes(surface).0
     }
 
-    pub(in crate::mounting::projection) fn apply_projection_inputs(
-        &mut self,
-        content: &super::super::super::UiMountedSemanticContentInput,
-    ) {
-        use crate::mounting::semantic_content::UiMountedProjectionInputTransition as Transition;
-
-        let (capacity, inputs) = match content.projection_input_transition() {
-            Transition::Retain => return,
-            Transition::Merge { capacity, inputs } => {
-                if self.projection_input_capacity != *capacity {
-                    self.projection_input_capacity = *capacity;
-                    self.projection_inputs = Default::default();
-                }
-                (*capacity, inputs)
-            }
-            Transition::Replace { capacity, inputs } => {
-                self.projection_input_capacity = *capacity;
-                self.projection_inputs = Default::default();
-                (*capacity, inputs)
-            }
-        };
-        for (slot, transition) in inputs {
-            debug_assert!(slot.index() < capacity);
-            let predecessor = self.projection_inputs.get(slot.index()).cloned();
-            let input = transition.apply(predecessor.as_ref());
-            self.projection_inputs.insert(slot.index(), input.clone());
-        }
-    }
-
-    pub(in crate::mounting::projection) fn inherit_projection_inputs(
-        &mut self,
-        predecessor: Option<&Self>,
-    ) {
-        let Some(predecessor) = predecessor else {
-            return;
-        };
-        self.projection_input_capacity = predecessor.projection_input_capacity;
-        self.projection_inputs = predecessor.projection_inputs.clone();
-    }
-
-    pub(in crate::mounting) fn projection_input(
+    pub(in crate::mounting::projection) fn surface_for_with_probes(
         &self,
-        slot: worth_ui_query_binding::UiProjectionInputSlot,
-    ) -> Option<&worth_ui_query_binding::UiProjectionInputFactReference> {
-        self.projection_inputs.get(slot.index())
+        surface: UiSemanticSurfaceIdentity,
+    ) -> (Option<UiMountedProjectionSurface>, usize) {
+        let (binding, probes) = self.binding_by_surface.get_with_probes(&surface);
+        let Some(binding) = binding else {
+            return (None, probes);
+        };
+        let (surface, surface_probes) = self.surfaces.get_with_probes(binding);
+        (surface.copied(), probes + surface_probes)
     }
 }
+
+#[path = "semantic_projection_inputs.rs"]
+mod projection_inputs;

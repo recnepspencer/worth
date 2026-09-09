@@ -174,7 +174,7 @@ fn mixed_bidi_native_runs_keep_logical_paint_ownership() {
     let join = super::MountedTextDemandJoin {
         dpi: super::UiMountedEventTimeDpiAuthority(std::num::NonZeroU32::new(1_000).unwrap()),
         lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
-        damage: &damage,
+        selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(&damage),
         resolve: |_| Some(layout.as_ref()),
         _layout: std::marker::PhantomData,
     };
@@ -194,7 +194,7 @@ fn mixed_bidi_native_runs_keep_logical_paint_ownership() {
                     UiMountedTextPaintSpanIdentity::from_runtime_mounting([29; 32]),
                 ),
             ],
-            logical_damage: &damage,
+            selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(&damage),
             scale: worth_ui_text::UiGlyphRasterScale::new(1_000, mechanic.qualified_layout_scale())
                 .unwrap(),
             placement: worth_ui_text::UiGlyphRasterPlacement::from_mounted_logical(
@@ -243,7 +243,7 @@ fn single_color_and_logical_order_mutants_disagree_with_native_runs() {
     let join = super::MountedTextDemandJoin {
         dpi: super::UiMountedEventTimeDpiAuthority(std::num::NonZeroU32::new(1_000).unwrap()),
         lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
-        damage: &damage,
+        selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(&damage),
         resolve: |_| Some(layout.as_ref()),
         _layout: std::marker::PhantomData,
     };

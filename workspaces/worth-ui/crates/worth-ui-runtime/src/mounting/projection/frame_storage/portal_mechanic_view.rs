@@ -45,7 +45,7 @@ impl UiMountedProjectionFrame {
             )? {
                 UiMountedPortalChildPresentation::Ordinary => rows.push(row),
                 UiMountedPortalChildPresentation::Suppressed => {}
-                UiMountedPortalChildPresentation::Presented(portal) => rows.push(
+                UiMountedPortalChildPresentation::Presented(portal) => rows.extend(
                     row.presented_within_portal(portal)
                         .map_err(UiMountedProjectionDenial::StaticPaintCompletion)?,
                 ),
@@ -88,7 +88,7 @@ impl UiMountedProjectionFrame {
             )? {
                 UiMountedPortalChildPresentation::Ordinary => rows.push(row),
                 UiMountedPortalChildPresentation::Suppressed => {}
-                UiMountedPortalChildPresentation::Presented(portal) => rows.push(
+                UiMountedPortalChildPresentation::Presented(portal) => rows.extend(
                     row.presented_within_portal(portal)
                         .map_err(UiMountedProjectionDenial::HitTestCompletion)?,
                 ),

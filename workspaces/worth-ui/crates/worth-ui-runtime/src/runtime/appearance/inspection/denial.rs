@@ -52,8 +52,7 @@ pub(super) fn record_attempt_denial(
                 state_classes.clone().into_boxed_slice(),
             ),
             worth_ui_inspection::UiAppearanceInspectionSourceSpan::Unavailable,
-            "unresolved",
-            "unresolved",
+            worth_ui_inspection::UiAppearanceInspectionValueSource::Unavailable,
             worth_ui_inspection::UiAppearanceInspectionSupport::Supported,
             worth_ui_inspection::UiAppearanceInspectionValue::Missing,
             distinctions,
@@ -82,6 +81,20 @@ fn denial_posture(
     denial: super::UiAppearanceInspectionDenial,
 ) -> worth_ui_inspection::UiAppearanceInspectionDenialPosture {
     match denial {
+        super::UiAppearanceInspectionDenial::MissingOperabilityRoute => {
+            worth_ui_inspection::UiAppearanceInspectionDenialPosture::MissingOperabilityRoute
+        }
+        super::UiAppearanceInspectionDenial::AmbiguousOperabilityRoute { routes } => {
+            worth_ui_inspection::UiAppearanceInspectionDenialPosture::AmbiguousOperabilityRoute {
+                routes,
+            }
+        }
+        super::UiAppearanceInspectionDenial::OperabilitySourceUnavailable => {
+            worth_ui_inspection::UiAppearanceInspectionDenialPosture::Basis
+        }
+        super::UiAppearanceInspectionDenial::InteractionSourceUnavailable(_) => {
+            worth_ui_inspection::UiAppearanceInspectionDenialPosture::Basis
+        }
         super::UiAppearanceInspectionDenial::Basis => {
             worth_ui_inspection::UiAppearanceInspectionDenialPosture::Basis
         }

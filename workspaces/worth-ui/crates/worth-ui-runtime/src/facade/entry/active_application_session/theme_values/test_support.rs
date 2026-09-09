@@ -110,6 +110,8 @@ pub(super) fn mounted_session(
         .receipts()
         .iter()
         .any(|receipt| receipt.identity().graph_node_identity() == graph_node));
+    crate::facade::entry::mounted_occurrence_geometry_test_support::
+        refresh_nonoverlapping_surface_geometry(&mut session, surface);
     let baseline = publish_frame(&mut session, 0);
     assert_eq!(baseline.cost_report().adapter().presented_surfaces(), 1);
     assert_eq!(host.presentation_calls(), 1);

@@ -65,6 +65,9 @@ fn pointer_stop_reason(
     denial: &UiPointerPresenceAdmissionDenial,
 ) -> Option<UiPointerGestureStopReason> {
     match denial {
+        UiPointerPresenceAdmissionDenial::Targeting { denial, .. } => {
+            Some(UiPointerGestureStopReason::Targeting(*denial))
+        }
         UiPointerPresenceAdmissionDenial::MissingDeviceKind { .. } => {
             Some(UiPointerGestureStopReason::MissingPointerDeviceKind)
         }

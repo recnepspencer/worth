@@ -9,13 +9,24 @@ pub(super) fn prepare_successor_theme(
     WorthUiApplicationCutoverDenial,
 > {
     let candidate_index = pending.next_app.prepared_authority().consumed_fact_index();
-    let has_candidate_consumers = candidate_index.has_appearance_consumers();
+    let mut required_roles = candidate_index
+        .appearance_required_role_identities()
+        .into_vec();
+    required_roles.extend(
+        pending
+            .next_app
+            .prepared_authority()
+            .authored_overlay_material()
+            .backdrop_appearance_role_identities(),
+    );
+    required_roles.sort();
+    required_roles.dedup();
     let bindings = session
         .presentation
         .appearance_theme_state()
         .map(|state| state.active_bindings().cloned().collect::<Vec<_>>())
         .unwrap_or_default();
-    if !has_candidate_consumers {
+    if required_roles.is_empty() {
         return session
             .prepare_appearance_replacement_succession(successor, None, None, None)
             .map_err(map_appearance_succession_denial);
@@ -40,12 +51,7 @@ pub(super) fn prepare_successor_theme(
             pending.next_app.capabilities().appearance_roles(),
             host_profile,
         )
-        .and_then(|admission| {
-            admission.prepare(
-                candidate_index.appearance_required_role_identities(),
-                successor.clone(),
-            )
-        })
+        .and_then(|admission| admission.prepare(required_roles.iter().cloned(), successor.clone()))
         .map_err(WorthUiApplicationCutoverDenial::AppearanceThemeAdmission)?;
     let rebinding = if bindings.is_empty() {
         None
@@ -57,6 +63,7 @@ pub(super) fn prepare_successor_theme(
                 host_profile,
                 &session.active_generation_identity(),
                 successor.clone(),
+                &required_roles,
                 bindings.iter(),
             )
             .map_err(WorthUiApplicationCutoverDenial::AppearanceThemeAdmission)?,
@@ -116,13 +123,19 @@ pub(super) fn validate_candidate_owner_installation(
 pub(super) fn reconcile_successor_owners(
     session: &mut crate::facade::WorthUiActiveApplicationSession,
 ) {
+    session.pointer_affordance_snapshot = None;
     let demand = session
         .application
         .prepared_authority()
         .consumed_fact_index()
         .appearance_axis_demand();
-    session.interaction.reconcile_appearance_demand(
-        demand.contains(worth_ui_dsl::UiAppearanceStateAxis::Hover),
+    session.interaction.reconcile_pointer_observation_demand(
+        demand.contains(worth_ui_dsl::UiAppearanceStateAxis::Hover)
+            || session
+                .application
+                .prepared_authority()
+                .intent_catalog()
+                .has_activation_routes(),
         demand.contains(worth_ui_dsl::UiAppearanceStateAxis::Pressed),
     );
     session.intent_admission.reconcile_operability_appearance(

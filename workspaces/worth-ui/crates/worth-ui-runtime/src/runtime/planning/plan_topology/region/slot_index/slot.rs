@@ -29,8 +29,7 @@ impl WorthUiPlanRegionHandle {
         })
     }
 
-    #[cfg(test)]
-    pub fn region_identity(&self) -> &WorthUiPlanRegionIdentity {
+    pub(crate) fn region_identity(&self) -> &WorthUiPlanRegionIdentity {
         &self.region_identity
     }
 

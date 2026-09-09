@@ -12,6 +12,9 @@ use crate::runtime::intent_execution::{
 #[path = "intent_consequence/portal_service_request.rs"]
 mod portal_service_request;
 use portal_service_request::{portal_placement_stop_reason, portal_service_request};
+#[path = "intent_consequence/query_restoration.rs"]
+mod query_restoration;
+use query_restoration::{restore_query_from_batch, restore_query_from_facts};
 
 impl WorthUiActiveApplicationSession {
     pub fn publish_intent_consequences(
@@ -75,6 +78,7 @@ impl WorthUiActiveApplicationSession {
         execution: crate::runtime::rebind::UiRebindExecutionRequest,
     ) -> UiIntentConsequencePublicationOutcome<'_> {
         let mut portal_binding_stage = None;
+        let mut authored_portal_policy = None;
         let explicit_portal_transition = match handoff.runtime_service_destination() {
             Some(crate::capability::UiIntentRuntimeServiceDestination::InvokeCommand) => {
                 if handoff.command_route().is_none() {
@@ -145,11 +149,16 @@ impl WorthUiActiveApplicationSession {
                                 UiIntentConsequenceStopReason::RuntimeServicePortalBinding(
                                     denial.stop_reason(),
                                 ),
-                            )
+                            );
                         }
                     };
+                    authored_portal_policy = self.authored_portal_policy(declaration);
                 }
-                match portal.prepare(request) {
+                let prepared = match authored_portal_policy {
+                    Some(policy) => portal.prepare_authored(request, policy),
+                    None => portal.prepare(request),
+                };
+                match prepared {
                     Ok(transition) => Some(transition),
                     Err(
                         crate::runtime::portal::UiPortalServiceTransitionDenial::RevisionExhausted
@@ -187,9 +196,23 @@ impl WorthUiActiveApplicationSession {
             && handoff.interaction_family()
                 == crate::capability::UiSemanticInteractionFamily::SelectionCommit
         {
+            let semantic_surface = match self
+                .mounted
+                .current_semantic_surface_for_presentation(handoff.target().presentation())
+            {
+                Ok(surface) => surface,
+                Err(_) => {
+                    return self.stop_intent_consequence(
+                        handoff,
+                        UiIntentConsequenceStopReason::RuntimeServiceTransitionExhausted,
+                    );
+                }
+            };
             match self.portal.as_ref().map(|portal| {
                 portal.prepare_dismissal(
-                    crate::runtime::portal::UiPortalDismissalTrigger::AcceptedSelection,
+                    crate::runtime::portal::UiPortalDismissalTrigger::AcceptedSelection {
+                        semantic_surface,
+                    },
                     None,
                     handoff.idempotency(),
                 )
@@ -269,7 +292,7 @@ impl WorthUiActiveApplicationSession {
                     return self.stop_intent_consequence(
                         handoff,
                         UiIntentConsequenceStopReason::IntentPostureIdentityExhausted,
-                    )
+                    );
                 }
             }
         } else {
@@ -373,24 +396,4 @@ impl WorthUiActiveApplicationSession {
         restore_query_from_facts(&mut handoff, facts);
         self.stop_intent_consequence(handoff, reason)
     }
-}
-
-fn restore_query_from_batch(
-    handoff: &mut UiIntentConsequenceHandoff,
-    batch: crate::runtime::observation::UiIntentConsequenceObservationBatch,
-) {
-    let (_, query, projection) = batch.into_parts();
-    if let Some(query) = query {
-        handoff.restore_query_consequence(query);
-    }
-    if let Some(projection) = projection {
-        handoff.restore_query_projection(projection);
-    }
-}
-
-fn restore_query_from_facts(
-    handoff: &mut UiIntentConsequenceHandoff,
-    facts: Box<[crate::fact_contract::UiProducedFact]>,
-) {
-    handoff.restore_query_from_facts(facts);
 }

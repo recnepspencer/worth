@@ -25,7 +25,21 @@ impl UiMountedPortalOverlayProjectionInput {
         self.owner
     }
 
-    #[cfg(test)]
+    pub(crate) fn same_mounted_projection_meaning(self, other: Self) -> bool {
+        let left_presentation = self.placement.presentation();
+        let right_presentation = other.placement.presentation();
+        self.portal_identity == other.portal_identity
+            && self.owner == other.owner
+            && left_presentation.host_surface() == right_presentation.host_surface()
+            && left_presentation.binding() == right_presentation.binding()
+            && self.placement.anchor() == other.placement.anchor()
+            && self.placement.clip_bounds() == other.placement.clip_bounds()
+            && self.placement.bounds() == other.placement.bounds()
+            && self.placement.layer() == other.placement.layer()
+            && self.placement.shielding() == other.placement.shielding()
+            && self.lifecycle == other.lifecycle
+    }
+
     pub(crate) const fn lifecycle(self) -> crate::runtime::portal::UiPortalLifecyclePosture {
         self.lifecycle
     }

@@ -55,6 +55,7 @@ impl UiNativeComponentSemanticTextChange {
 
     /// Build an application-owned semantic-text successor against the exact
     /// revision last admitted for this authored component.
+    /// Empty text clears the value while retaining its declared formatting.
     pub fn successor(
         authored_semantic_identity: impl Into<Box<str>>,
         expected_revision: u64,
@@ -62,10 +63,7 @@ impl UiNativeComponentSemanticTextChange {
     ) -> Result<Self, UiNativeApplicationProgramDenial> {
         let identity = authored_semantic_identity.into();
         let text = text.into();
-        if !identity.starts_with("component:")
-            || identity.len() == "component:".len()
-            || text.is_empty()
-        {
+        if !identity.starts_with("component:") || identity.len() == "component:".len() {
             return Err(UiNativeApplicationProgramDenial::InvalidComponentIdentity);
         }
         Ok(Self {

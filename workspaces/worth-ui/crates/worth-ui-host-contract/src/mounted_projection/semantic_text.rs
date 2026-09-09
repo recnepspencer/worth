@@ -6,6 +6,7 @@ use crate::{
     WorthUiHostCapabilityObservationGeneration,
 };
 
+mod appearance_clip;
 mod foreground;
 mod frame_affinity;
 mod table;
@@ -350,21 +351,19 @@ impl UiMountedSemanticTextMechanic {
     pub fn presented_within_portal(
         &self,
         portal: super::UiMountedPortalOverlayMechanic,
-    ) -> Result<Self, UiMountedSemanticTextCompletionDenial> {
-        let bounds =
-            super::UiMountedCanonicalBox::canonicalize(super::UiMountedCanonicalBoxInput {
-                x: portal.bounds().x() + self.bounds.x(),
-                y: portal.bounds().y() + self.bounds.y(),
-                width: self.bounds.width(),
-                height: self.bounds.height(),
-                coordinate_space: portal.bounds().coordinate_space(),
-            })
-            .map_err(|_| UiMountedSemanticTextCompletionDenial::NonAreaGeometry)?;
+    ) -> Result<Option<Self>, UiMountedSemanticTextCompletionDenial> {
+        let Some(geometry) =
+            super::portal_child_geometry::project(self.bounds, self.clip_bounds, portal)
+                .map_err(|_| UiMountedSemanticTextCompletionDenial::NonAreaGeometry)?
+        else {
+            return Ok(None);
+        };
+        let bounds = geometry.bounds;
         let mut presented = self.clone();
         presented.bounds = bounds;
-        presented.clip_bounds = portal.bounds();
-        presented.origin_x = portal.bounds().x() + self.origin_x;
-        presented.origin_y = portal.bounds().y() + self.origin_y;
+        presented.clip_bounds = geometry.clip;
+        presented.origin_x = self.origin_x + portal.bounds().x() - portal.anchor_bounds().x();
+        presented.origin_y = self.origin_y + portal.bounds().y() - portal.anchor_bounds().y();
         presented.layer_semantic_order = portal
             .layer_semantic_order()
             .saturating_add(1 + self.layer_semantic_order.min(1_024));
@@ -378,10 +377,10 @@ impl UiMountedSemanticTextMechanic {
             return Err(UiMountedSemanticTextCompletionDenial::InvalidTextOrigin);
         }
         presented.semantic_digest = validation::semantic_digest_mechanic(&presented);
-        Ok(presented)
+        Ok(Some(presented))
     }
 }
 
 #[cfg(test)]
 #[path = "semantic_text_tests.rs"]
-mod tests;
+pub(super) mod tests;

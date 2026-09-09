@@ -18,6 +18,16 @@ impl UiMountedProjectionNodeDraft {
                 allocation: self.allocation,
             }),
             plan_index: self.plan_index,
+            occurrence_allocation: self.appearance_allocation,
+            appearance_geometry:
+                super::super::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
+                    self.appearance_allocation,
+                    self.appearance_clip,
+                )
+                .with_surface_paint_posture(self.surface_paint_posture),
+            appearance_clip: self.appearance_clip,
+            surface_paint_order: self.surface_paint_order,
+            has_appearance_attachment: self.has_appearance_attachment,
             static_paint: self.static_paint,
             semantic_text: self.semantic_text,
             hit_test: self.hit_test,

@@ -4,7 +4,6 @@ use super::delta::{
     semantic_facts_changed, UiMountedAppearanceDelta, UiMountedAppearanceDeltaSummary,
 };
 use super::fact::{UiMountedAppearanceFacts, UiMountedAppearanceLoweringInput};
-use super::mechanic_equivalence::same_physical_output;
 use super::{lowering, UiMountedAppearanceLoweringDenial};
 
 pub(super) fn rebuild(
@@ -71,17 +70,13 @@ fn reconstruction_changes(
                 None => Some(UiMountedAppearanceMechanicChange::Remove(
                     record.identity().clone(),
                 )),
-                Some(successor_record)
-                    if !same_physical_output(successor_record.mechanic(), record.mechanic()) =>
-                {
-                    Some(
-                        UiMountedAppearanceMechanicChange::replacement(
-                            record.identity().clone(),
-                            successor_record.mechanic().clone(),
-                        )
-                        .expect("same record identity produces a reconstruction replacement"),
+                Some(successor_record) if !successor_record.same_physical_output(record) => Some(
+                    UiMountedAppearanceMechanicChange::replacement(
+                        record.identity().clone(),
+                        successor_record.mechanic().clone(),
                     )
-                }
+                    .expect("same record identity produces a reconstruction replacement"),
+                ),
                 Some(_) => None,
             }
         })

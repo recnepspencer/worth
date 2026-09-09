@@ -7,7 +7,8 @@ use worth_ui_host_contract::{
 
 use super::{
     DemandBatchAdmission, UiGlyphRasterDemandBatch, UiGlyphRasterDemandDenial,
-    UiGlyphRasterDemandProvenance, UiGlyphRasterDemandRequest, MAX_DEMAND_RECORDS,
+    UiGlyphRasterDemandProvenance, UiGlyphRasterDemandRequest, UiGlyphRasterDemandSelection,
+    MAX_DEMAND_RECORDS,
 };
 use crate::raster::cost::{UiGlyphRasterLaneCost, UiGlyphRasterLaneCostInput};
 use crate::raster::demand_candidate::candidate_for_positioned;
@@ -21,6 +22,7 @@ struct DerivedDemand {
     scale: super::UiGlyphRasterScale,
     placement: crate::raster::placement::UiGlyphRasterPlacement,
     lane: worth_ui_host_contract::UiGlyphRasterLane,
+    scope: worth_ui_host_contract::UiGlyphRasterDemandScope,
     records: Vec<UiGlyphRasterDemandRecord>,
     provenance: Vec<UiGlyphRasterDemandProvenance>,
     cost: UiGlyphRasterLaneCost,
@@ -64,6 +66,7 @@ impl UiGlyphRasterDemandBatch {
             derived.scale,
             derived.placement,
             derived.lane,
+            derived.scope,
             &derived.records,
         );
         Self::admit_records(DemandBatchAdmission {
@@ -72,6 +75,7 @@ impl UiGlyphRasterDemandBatch {
             scale: derived.scale,
             placement: derived.placement,
             lane: derived.lane,
+            scope: derived.scope,
             records: derived.records,
             provenance: derived.provenance,
             lane_cost: derived.cost,
@@ -105,6 +109,7 @@ fn collect_demand(
         scale: request.scale,
         placement: request.placement,
         lane: request.lane,
+        scope: request.selection.scope(),
         records,
         provenance,
         cost: counters.cost(),
@@ -128,12 +133,10 @@ fn collect_demand_records(
     let mut counters = DemandCounters::default();
     for (positioned_index, positioned) in layout.positioned_glyphs().iter().enumerate() {
         counters.layout_visits = counters.layout_visits.saturating_add(1);
-        if !damage_intersects(
-            positioned.ink_bounds(),
-            request.placement,
-            request.logical_damage,
-        ) {
-            continue;
+        if let UiGlyphRasterDemandSelection::LogicalDamage(damage) = request.selection {
+            if !damage_intersects(positioned.ink_bounds(), request.placement, damage) {
+                continue;
+            }
         }
         let Some(candidate) =
             candidate_for_positioned(layout, positioned_index, request.scale, request.placement)?

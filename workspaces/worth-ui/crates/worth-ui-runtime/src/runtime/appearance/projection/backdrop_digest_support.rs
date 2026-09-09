@@ -24,7 +24,18 @@ pub(super) fn inputs() -> (
     UiBackdropAppearanceStateVector,
     UiThemeResolutionView,
 ) {
-    let role = backdrop_role("test.backdrop.digest");
+    inputs_for_role(backdrop_role("test.backdrop.digest"))
+}
+
+pub(super) fn inputs_for_role(
+    role: UiAppearanceRoleDeclaration,
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    UiAppearanceRoleDeclaration,
+    worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    UiBackdropAppearanceStateVector,
+    UiThemeResolutionView,
+) {
     let mut session = backdrop_session(&role);
     let candidate = crate::runtime::tests::appearance_component_session_test_support::
         attached_appearance_candidate_submission(

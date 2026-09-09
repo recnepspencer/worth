@@ -1,5 +1,6 @@
 use worth_ui_host_contract::{
-    UiMountedAppearanceColor, UiMountedSurfaceAppearanceMechanic, UiMountedSurfacePaint,
+    UiMountedAppearanceColor, UiMountedSurfaceAppearanceMechanic, UiMountedSurfaceBorderEdges,
+    UiMountedSurfaceBorderSide, UiMountedSurfacePaint,
 };
 
 use super::antialiasing::{
@@ -47,6 +48,15 @@ pub(crate) struct UiNativeSurfacePrimitive {
     fill_color: Option<UiMountedAppearanceColor>,
     border_color: Option<UiMountedAppearanceColor>,
     opacity: u16,
+    border_edges: UiMountedSurfaceBorderEdges,
+    border_omissions: Box<[UiNativeSurfaceBorderOmission]>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct UiNativeSurfaceBorderOmission {
+    side: UiMountedSurfaceBorderSide,
+    start: i64,
+    end: i64,
 }
 
 pub(crate) struct UiNativeSurfacePipeline;
@@ -93,6 +103,19 @@ impl UiNativeSurfacePipeline {
             fill_color,
             border_color,
             opacity: mechanic.opacity().units(),
+            border_edges: mechanic.border_edges(),
+            border_omissions: mechanic
+                .border_omissions()
+                .iter()
+                .map(|omission| {
+                    Ok(UiNativeSurfaceBorderOmission {
+                        side: omission.side(),
+                        start: scale.scale_logical(i64::from(omission.start()))?,
+                        end: scale.scale_logical(i64::from(omission.end()))?,
+                    })
+                })
+                .collect::<Result<Vec<_>, UiNativeGeometryDenial>>()?
+                .into_boxed_slice(),
         })
     }
 }
@@ -127,27 +150,30 @@ impl UiNativeSurfacePrimitive {
             self.allocation,
             self.radii,
         ));
+        let inner_rect = self.allocation.inset(self.border_width).ok();
         let inner = if self.border_width == 0 {
-            UiNativeAnalyticCoverage::ZERO
+            outer
         } else {
-            let inner_rect = self
-                .allocation
-                .inset(self.border_width)
-                .expect("the sealed border-width contract leaves a positive inner contour");
-            let inner_radii = self
-                .radii
-                .map(|radius| radius.saturating_sub(self.border_width));
-            coverage_from_signed_distance(rounded_signed_distance(
-                pixel_x,
-                pixel_y,
-                inner_rect,
-                inner_radii,
-            ))
+            inner_rect.map_or(UiNativeAnalyticCoverage::ZERO, |inner_rect| {
+                let inner_radii = self
+                    .radii
+                    .map(|radius| radius.saturating_sub(self.border_width));
+                coverage_from_signed_distance(rounded_signed_distance(
+                    pixel_x,
+                    pixel_y,
+                    inner_rect,
+                    inner_radii,
+                ))
+            })
         };
         let border_coverage = match self.paint_kind {
             UiNativeSurfacePaintKind::Fill => zero,
             UiNativeSurfacePaintKind::Border | UiNativeSurfacePaintKind::FillAndBorder => {
-                outer.subtract(inner)
+                if self.border_edge_enabled(pixel_x, pixel_y) {
+                    outer.subtract(inner)
+                } else {
+                    zero
+                }
             }
         };
         UiNativeSurfaceSample {
@@ -167,6 +193,32 @@ impl UiNativeSurfacePrimitive {
             self.paint_kind,
             UiNativeSurfacePaintKind::Border | UiNativeSurfacePaintKind::FillAndBorder
         ) && self.border_width != 0
+    }
+
+    fn border_edge_enabled(&self, pixel_x: i64, pixel_y: i64) -> bool {
+        let [x, y] = super::geometry::pixel_center(pixel_x, pixel_y)
+            .expect("qualified physical pixel coordinates fit the surface sample basis");
+        (y < self.allocation.top + self.border_width
+            && self.side_enabled(UiMountedSurfaceBorderSide::Top, x - self.allocation.left))
+            || (x >= self.allocation.right - self.border_width
+                && self.side_enabled(UiMountedSurfaceBorderSide::Right, y - self.allocation.top))
+            || (y >= self.allocation.bottom - self.border_width
+                && self.side_enabled(UiMountedSurfaceBorderSide::Bottom, x - self.allocation.left))
+            || (x < self.allocation.left + self.border_width
+                && self.side_enabled(UiMountedSurfaceBorderSide::Left, y - self.allocation.top))
+    }
+
+    fn side_enabled(&self, side: UiMountedSurfaceBorderSide, offset: i64) -> bool {
+        let enabled = match side {
+            UiMountedSurfaceBorderSide::Top => self.border_edges.top(),
+            UiMountedSurfaceBorderSide::Right => self.border_edges.right(),
+            UiMountedSurfaceBorderSide::Bottom => self.border_edges.bottom(),
+            UiMountedSurfaceBorderSide::Left => self.border_edges.left(),
+        };
+        enabled
+            && !self.border_omissions.iter().any(|omission| {
+                omission.side == side && omission.start <= offset && offset < omission.end
+            })
     }
 }
 

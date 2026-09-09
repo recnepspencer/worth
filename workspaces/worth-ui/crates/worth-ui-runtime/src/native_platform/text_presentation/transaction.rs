@@ -47,17 +47,31 @@ impl<'layout, 'cache> UiNativeTextAtlasTransaction<'layout, 'cache> {
         binding_pins: &[worth_ui_host_contract::UiGlyphRasterPinRequest],
         operation: impl FnOnce(&worth_ui_host_contract::UiMountedTextRasterWork<'_>) -> Output,
     ) -> (Output, super::rasterization::UiNativeTextRasterWorkReport) {
-        struct Callback<'rasterizer> {
-            rasterizer: std::cell::RefCell<
-                &'rasterizer mut dyn worth_ui_host_contract::UiGlyphRasterMissRasterizer,
-            >,
+        struct Callback<'rasterizer, 'layout, 'cache> {
+            rasterizer:
+                std::cell::RefCell<&'rasterizer mut UiNativeTextMissRasterizer<'layout, 'cache>>,
         }
-        impl worth_ui_host_contract::UiMountedTextRasterCallback for Callback<'_> {
+        impl worth_ui_host_contract::UiMountedTextRasterCallback for Callback<'_, '_, '_> {
+            fn validate_complete_demand(
+                &self,
+                command: worth_ui_host_contract::UiMountedPaintCommandIdentity,
+                demand: worth_ui_host_contract::UiGlyphRasterDemandBatchView<'_>,
+                glyph_runs: &[worth_ui_host_contract::UiGlyphRunView],
+            ) -> Result<
+                worth_ui_host_contract::UiMountedTextDemandValidationCost,
+                worth_ui_host_contract::UiMountedTextDemandValidationDenial,
+            > {
+                self.rasterizer
+                    .borrow()
+                    .validate_complete_demand(command, demand, glyph_runs)
+            }
+
             fn rasterize(
                 &self,
                 misses: worth_ui_host_contract::UiGlyphRasterMissSelectionView<'_>,
                 sink: &mut dyn worth_ui_host_contract::UiGlyphRasterBatchSink,
             ) -> Result<(), worth_ui_host_contract::UiGlyphRasterCallbackDenial> {
+                use worth_ui_host_contract::UiGlyphRasterMissRasterizer;
                 self.rasterizer.borrow_mut().rasterize(misses, sink)
             }
         }

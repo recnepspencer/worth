@@ -20,14 +20,14 @@ fn sources<'a>(
     bindings: &'a UiPortalOverlayBindingOwner,
     motion: &'a UiMotionRuntimeState,
 ) -> UiOverlayOwnerSources<'a> {
-    UiOverlayOwnerSources {
+    UiOverlayOwnerSources::new(
         generation,
-        portal,
+        Some(portal),
         extent,
         presentation,
         bindings,
-        motion,
-    }
+        Some(motion),
+    )
 }
 
 fn prepared_owner() -> crate::facade::entry::WorthUiHostNeutralApp {

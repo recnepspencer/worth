@@ -7,6 +7,7 @@ mod delta;
 mod identity;
 mod inspection;
 mod model;
+mod projection_mapping;
 mod proposal;
 mod reducer;
 mod request;
@@ -15,13 +16,19 @@ mod scale_certification;
 mod staged_transition;
 mod state;
 
-pub(crate) use delta::{UiSelectionDelta, UiSelectionReconciliationReceipt};
+pub(crate) use delta::{
+    UiSelectionDelta, UiSelectionPositionChanges, UiSelectionPositions,
+    UiSelectionReconciliationReceipt,
+};
 pub(crate) use identity::{
     UiSelectionOwnerIdentity, UiSelectionOwnerIncarnation, UiSelectionStableKey,
 };
 pub(crate) use inspection::{UiSelectionDropInspectionReason, UiSelectionDropInspectionRecord};
 pub(crate) use model::UiDeclaredSelectionBinding;
 pub(crate) use model::{UiSelectionCatalogPosture, UiSelectionPolicy, UiSelectionRegistration};
+pub(crate) use projection_mapping::{
+    UiSelectionProjectionMapping, UiSelectionProjectionMappingDenial,
+};
 pub(in crate::runtime) use proposal::UiStagedSelectionServiceProposal;
 pub(crate) use request::{UiSelectionRequest, UiSelectionRequestDenial};
 #[cfg(feature = "certification-support")]
@@ -44,6 +51,6 @@ mod state_tests;
     reason = "milestone 3.16 Gate 0 exposes the sealed selection appearance contract internally"
 )]
 pub(crate) use appearance_export::{
-    UiSelectionAppearanceClass, UiSelectionAppearanceOwnerSnapshot, UiSelectionAppearancePosture,
-    UiSelectionAppearancePostureDenial,
+    UiSelectionAppearanceChange, UiSelectionAppearanceClass, UiSelectionAppearanceOwnerSnapshot,
+    UiSelectionAppearancePosture, UiSelectionAppearancePostureDenial,
 };

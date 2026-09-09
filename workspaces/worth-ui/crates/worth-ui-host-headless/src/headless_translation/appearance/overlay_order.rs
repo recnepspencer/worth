@@ -9,8 +9,8 @@ pub(super) fn validate(
     order: &UiMountedOverlayOrderMechanic,
 ) -> bool {
     order.semantic_surface() == surface
-        && order.portal_revision() != 0
-        && order.backdrop_revision() != 0
+        && (order.bottom_to_top().is_empty()
+            || (order.portal_revision() != 0 && order.backdrop_revision() != 0))
         && order
             .bottom_to_top()
             .iter()

@@ -1,10 +1,16 @@
+#[path = "publication/settlement.rs"]
+mod settlement;
+
 use super::WorthUiMountedSessionState;
 use crate::mounting::{
     UiMountedFrameOutcome, UiMountedFramePublicationCandidate, UiMountedFramePublicationReceipt,
     UiMountedPresentationInFlight, UiMountedPresentationOutcome,
 };
+mod host_authority;
 #[path = "publication/reconciliation.rs"]
 mod reconciliation;
+mod transition;
+pub(super) use host_authority::mounted_host_authority;
 
 #[derive(Clone, Copy)]
 pub(crate) struct UiMountedObservationValidationBasis<'session> {
@@ -16,6 +22,7 @@ pub(crate) struct UiMountedPublicationTransition {
     outcome: UiMountedFrameOutcome,
     observation: Option<UiMountedHostObservationTransition>,
     appearance: Option<crate::runtime::appearance::UiAppearanceInspectionAttemptBatch>,
+    hit_transition: Option<crate::mounting::UiCommittedPresentedHitTransition>,
 }
 pub(crate) enum UiMountedHostObservationTransition {
     NeverPresented(worth_ui_host_contract::UiMountedFrameIdentity),
@@ -43,6 +50,33 @@ impl WorthUiMountedSessionState {
         >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
+    ) -> UiMountedPublicationTransition {
+        self.present_prepared_frame_with_overlays(
+            host,
+            frame,
+            appearance_inspection,
+            deadline,
+            now,
+            |_, _| Ok(Vec::new()),
+        )
+    }
+
+    pub(crate) fn present_prepared_frame_with_overlays(
+        &mut self,
+        host: &crate::facade::WorthUiHostSessionAuthority,
+        frame: crate::mounting::UiPreparedMountedFrame,
+        appearance_inspection: Option<
+            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+        >,
+        deadline: worth_ui_host_contract::UiPresentationDeadline,
+        now: u64,
+        prepare_overlays: impl FnOnce(
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+            &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        ) -> Result<
+            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
+            (),
+        >,
     ) -> UiMountedPublicationTransition {
         let capability_report = host.capability_report().clone();
         let admitted = match self.identity.admit_prepared_frame_authority(frame) {
@@ -73,6 +107,7 @@ impl WorthUiMountedSessionState {
             appearance_inspection,
             deadline,
             now,
+            prepare_overlays,
         )
     }
 
@@ -86,6 +121,35 @@ impl WorthUiMountedSessionState {
         >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
+    ) -> UiMountedPublicationTransition {
+        self.present_prepared_superseding_frame_with_overlays(
+            host,
+            frame,
+            predecessor,
+            appearance_inspection,
+            deadline,
+            now,
+            |_, _| Ok(Vec::new()),
+        )
+    }
+
+    pub(crate) fn present_prepared_superseding_frame_with_overlays(
+        &mut self,
+        host: &crate::facade::WorthUiHostSessionAuthority,
+        frame: crate::mounting::UiPreparedMountedFrame,
+        predecessor: crate::mounting::UiMountedSupersedingPresentationBasis,
+        appearance_inspection: Option<
+            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
+        >,
+        deadline: worth_ui_host_contract::UiPresentationDeadline,
+        now: u64,
+        prepare_overlays: impl FnOnce(
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+            &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        ) -> Result<
+            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
+            (),
+        >,
     ) -> UiMountedPublicationTransition {
         if !self
             .presentation
@@ -133,6 +197,7 @@ impl WorthUiMountedSessionState {
             appearance_inspection,
             deadline,
             now,
+            prepare_overlays,
         )
     }
 
@@ -147,6 +212,13 @@ impl WorthUiMountedSessionState {
         >,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
+        prepare_overlays: impl FnOnce(
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+            &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        ) -> Result<
+            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
+            (),
+        >,
     ) -> UiMountedPublicationTransition {
         let mut admission =
             match self
@@ -162,7 +234,26 @@ impl WorthUiMountedSessionState {
                     );
                 }
             };
-        let appearance_batch = admission.lower_appearance();
+        let surfaces = admission
+            .frame()
+            .surfaces()
+            .iter()
+            .map(|surface| surface.requirement().semantic_surface())
+            .collect::<Vec<_>>();
+        let appearance_batch = match prepare_overlays(admission.attempt(), &surfaces) {
+            Ok(overlays) => admission
+                .lower_appearance_with_overlays(capability_report.appearance_profile(), &overlays),
+            Err(()) => admission.deny_appearance_output(),
+        };
+        if !admission.appearance_output_available() {
+            let frame = admission.frame().canonical_core().frame();
+            let rejection = admission.reject_appearance_output();
+            return UiMountedPublicationTransition::with_observation_and_appearance(
+                UiMountedFrameOutcome::AdmissionDenied(rejection),
+                UiMountedHostObservationTransition::NeverPresented(frame),
+                appearance_batch,
+            );
+        }
         let reservation =
             UiMountedFramePublicationCandidate::reserve(&admission, publication_predecessor);
         let attempt = admission.attempt();
@@ -180,120 +271,6 @@ impl WorthUiMountedSessionState {
             now,
         );
         self.finish_presentation(outcome)
-    }
-
-    pub(crate) fn complete_presentation(
-        &mut self,
-        host: &crate::facade::WorthUiHostSessionAuthority,
-        in_flight: UiMountedPresentationInFlight,
-        now: u64,
-    ) -> UiMountedPublicationTransition {
-        match self
-            .presentation
-            .complete(in_flight, host.effect_port(), now)
-        {
-            Ok(outcome) => self.finish_presentation(outcome),
-            Err(denial) => {
-                UiMountedPublicationTransition::new(UiMountedFrameOutcome::CompletionDenied(denial))
-            }
-        }
-    }
-
-    pub(crate) fn cancel_presentation(
-        &mut self,
-        host: &crate::facade::WorthUiHostSessionAuthority,
-        in_flight: UiMountedPresentationInFlight,
-    ) -> UiMountedPublicationTransition {
-        match self.presentation.cancel(in_flight, host.effect_port()) {
-            Ok(outcome) => self.finish_presentation(outcome),
-            Err(denial) => {
-                UiMountedPublicationTransition::new(UiMountedFrameOutcome::CompletionDenied(denial))
-            }
-        }
-    }
-
-    pub(crate) fn supersede_presentation(
-        &mut self,
-        host: &crate::facade::WorthUiHostSessionAuthority,
-        in_flight: UiMountedPresentationInFlight,
-    ) -> UiMountedPublicationTransition {
-        match self.presentation.supersede(in_flight, host.effect_port()) {
-            Ok(outcome) => self.finish_presentation(outcome),
-            Err(denial) => {
-                UiMountedPublicationTransition::new(UiMountedFrameOutcome::CompletionDenied(denial))
-            }
-        }
-    }
-
-    pub(crate) fn admit_duplicate_native_presentation_observation(
-        &mut self,
-        presentation: worth_ui_host_native::UiNativePhysicalPresentationCorrelation,
-    ) -> Result<(), ()> {
-        self.presentation
-            .admit_duplicate_native_presentation_observation(presentation)
-    }
-
-    pub(crate) fn finish_presentation(
-        &mut self,
-        outcome: UiMountedPresentationOutcome,
-    ) -> UiMountedPublicationTransition {
-        let attempt = presentation_attempt(&outcome);
-        let retain_appearance = matches!(&outcome, UiMountedPresentationOutcome::InFlight(_));
-        let appearance_batch = (!retain_appearance)
-            .then(|| self.presentation.take_appearance_attempt(attempt))
-            .flatten();
-        let mut transition = if self.reconciliation_reservations.contains_key(&attempt) {
-            self.finish_reconciliation(outcome, attempt)
-        } else {
-            match outcome {
-                UiMountedPresentationOutcome::Presented(presented) => {
-                    let attempt = presented.receipt().attempt();
-                    let reservation = self
-                        .publication_reservations
-                        .remove(&attempt)
-                        .expect("every presented attempt has a pre-effect publication reservation");
-                    match reservation.commit_presented(presented, &mut self.identity) {
-                        crate::mounting::UiMountedFramePublicationCommit::Current(receipt) => {
-                            UiMountedPublicationTransition::new(UiMountedFrameOutcome::Published(
-                                receipt,
-                            ))
-                        }
-                        crate::mounting::UiMountedFramePublicationCommit::Superseded(frame) => {
-                            UiMountedPublicationTransition::new(UiMountedFrameOutcome::Superseded(
-                                frame,
-                            ))
-                        }
-                    }
-                }
-                UiMountedPresentationOutcome::RejectedBeforeEffects(rejected) => {
-                    self.remove_publication_reservation(rejected.attempt());
-                    let frame = rejected.frame().canonical_core().frame();
-                    UiMountedPublicationTransition::with_observation(
-                        UiMountedFrameOutcome::RejectedBeforeEffects(rejected),
-                        UiMountedHostObservationTransition::Rejected(frame),
-                    )
-                }
-                UiMountedPresentationOutcome::Superseded(superseded) => {
-                    self.remove_publication_reservation(superseded.attempt());
-                    UiMountedPublicationTransition::new(UiMountedFrameOutcome::Superseded(
-                        superseded,
-                    ))
-                }
-                UiMountedPresentationOutcome::InFlight(in_flight) => {
-                    UiMountedPublicationTransition::new(UiMountedFrameOutcome::InFlight(in_flight))
-                }
-                UiMountedPresentationOutcome::PresentationIndeterminate(indeterminate) => {
-                    self.remove_publication_reservation(indeterminate.report().attempt());
-                    let observation = indeterminate_observation(&indeterminate);
-                    UiMountedPublicationTransition::with_observation(
-                        UiMountedFrameOutcome::PresentationIndeterminate(indeterminate),
-                        observation,
-                    )
-                }
-            }
-        };
-        transition.appearance = appearance_batch;
-        transition
     }
 
     pub(crate) fn current_publication(&self) -> Option<&UiMountedFramePublicationReceipt> {
@@ -329,49 +306,6 @@ impl UiMountedObservationValidationBasis<'_> {
     ) -> bool {
         self.presentation.binding_requires_reconciliation(binding)
     }
-}
-
-impl UiMountedPublicationTransition {
-    fn new(outcome: UiMountedFrameOutcome) -> Self {
-        Self {
-            outcome,
-            observation: None,
-            appearance: None,
-        }
-    }
-
-    fn with_observation(
-        outcome: UiMountedFrameOutcome,
-        observation: UiMountedHostObservationTransition,
-    ) -> Self {
-        Self {
-            outcome,
-            observation: Some(observation),
-            appearance: None,
-        }
-    }
-
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        UiMountedFrameOutcome,
-        Option<UiMountedHostObservationTransition>,
-        Option<crate::runtime::appearance::UiAppearanceInspectionAttemptBatch>,
-    ) {
-        (self.outcome, self.observation, self.appearance)
-    }
-}
-
-pub(super) fn mounted_host_authority<'host>(
-    host: &'host crate::facade::WorthUiHostSessionAuthority,
-    capability_report: &'host worth_ui_host_contract::WorthUiHostCapabilityReport,
-) -> crate::mounting::UiMountedHostPresentationAuthority<'host> {
-    crate::mounting::UiMountedHostPresentationAuthority::new(
-        host.identity().as_u64(),
-        host.protocol(),
-        capability_report,
-        host.mounted_presentation_lease(),
-    )
 }
 
 fn presentation_attempt(

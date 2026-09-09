@@ -257,6 +257,14 @@ impl UiMotionTransitionRequest {
         self.successor.presentation = presentation;
         Ok(self)
     }
+
+    pub(in crate::runtime) fn rebind_published_successor(
+        mut self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Self {
+        self.successor.presentation = presentation;
+        self
+    }
 }
 
 impl UiCommittedMotionPredecessorReceipt {

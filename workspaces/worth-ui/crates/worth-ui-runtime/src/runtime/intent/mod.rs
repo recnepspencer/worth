@@ -12,7 +12,7 @@ pub(crate) use admission::{
     prepare_typed_admission_candidate, revalidate_typed_candidate_for_execution,
     validate_typed_inoperable, UiAdmittedIntentIdentity, UiCurrentIntentAdmissionCandidate,
     UiIntentAdmissionCurrentnessContext, UiIntentAdmissionLease, UiIntentAdmissionState,
-    UiPreparedIntentAdmissionCandidate,
+    UiIntentOperabilityStandingFactSnapshot, UiPreparedIntentAdmissionCandidate,
 };
 pub use admission::{
     UiAdmittedIntent, UiIntentAdmissionCancellationReason, UiIntentAdmissionCost,
@@ -25,21 +25,24 @@ pub use application_generation_identity::WorthUiActiveApplicationGenerationIdent
 pub use attempt_lineage::UiIntentAttemptLineage;
 pub(crate) use causal_trace::UiIntentCausalTraceAdmissionPrefix;
 pub(crate) use confirmation::{
-    continue_confirmation, UiIntentConfirmationContinuationContext, UiIntentConfirmationState,
+    continue_confirmation, observe_confirmation, UiIntentConfirmationReadContext,
+    UiIntentConfirmationState,
 };
 pub use confirmation::{
     UiConfirmedIntentCandidate, UiIntentConfirmationCancellationReason,
     UiIntentConfirmationChallenge, UiIntentConfirmationContinuation,
     UiIntentConfirmationIssueOutcome, UiIntentConfirmationLookupCost, UiIntentConfirmationMetrics,
-    UiIntentConfirmationSettlementReceipt, UiIntentConfirmationShutdownReport,
-    UiIntentConfirmationSlotIdentity, UiIntentConfirmationStop, UiIntentConfirmationStopReason,
-    UiIntentConfirmationTimeBasisKind, UiPendingIntentConfirmation,
+    UiIntentConfirmationObservation, UiIntentConfirmationSettlementReceipt,
+    UiIntentConfirmationShutdownReport, UiIntentConfirmationSlotIdentity, UiIntentConfirmationStop,
+    UiIntentConfirmationStopReason, UiIntentConfirmationTimeBasisKind, UiPendingIntentConfirmation,
     UI_INTENT_CONFIRMATION_TTL_MILLIS, UI_PENDING_INTENT_CONFIRMATION_LIMIT,
 };
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use operability::UiIntentOperabilityDecisionInput;
 pub(crate) use operability::{
-    evaluate_intent_operability, UiIntentOccupancyPlacement, UiIntentOccupancyState,
+    evaluate_intent_operability, observe_activation_operability, UiIntentOccupancyPlacement,
+    UiIntentOccupancyState, UiIntentStandingOperabilityObservation,
+    UiIntentStandingOperabilityUnavailable,
 };
 pub use operability::{
     UiInoperableIntentCandidate, UiIntentAffinityPosture, UiIntentConfirmationPosture,
@@ -59,10 +62,7 @@ pub(crate) use operability::{UiIntentOccupancyReservation, UiIntentOccupancyRese
     unused_imports,
     reason = "Gate 1 retains sealed intent standing facts for later appearance consumers"
 )]
-pub(crate) use operability::{
-    UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact,
-    UiIntentOperabilityStandingFactSnapshot,
-};
+pub(crate) use operability::{UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact};
 pub(crate) use payload::{
     prepare_intent_payload, UiIntentApplicationFactState, UiValidationAppearanceClass,
     UiValidationAppearanceFactSnapshot,

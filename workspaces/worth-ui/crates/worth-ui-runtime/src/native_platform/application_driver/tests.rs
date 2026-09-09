@@ -182,7 +182,11 @@ fn nested_reconstruction_retains_physical_authority_until_in_flight_settlement()
         UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
     );
     progress
-        .resume_reconstruction(&mut shell, 0, recovery)
+        .resume_reconstruction(
+            &mut shell,
+            super::program_progress::UiNativePresentationSource::Program(0),
+            recovery,
+        )
         .expect("nested reconstruction must retain the in-flight successor");
 
     let pending = progress.pending.front().expect("in-flight successor");

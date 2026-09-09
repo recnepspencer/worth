@@ -33,6 +33,11 @@ mod focus_observation;
 mod host_session_identity;
 #[path = "active_application_session/motion_sampling.rs"]
 mod motion_sampling;
+#[path = "active_application_session/overlay_appearance.rs"]
+mod overlay_appearance;
+pub(in crate::facade::entry) use overlay_appearance::{
+    UiActiveOverlayAppearancePreparation, UiActiveOverlayCompositionOwners,
+};
 #[path = "active_application_session/portal_exit_publication.rs"]
 mod portal_exit_publication;
 pub(in crate::facade::entry) use portal_exit_publication::UiPortalExitTerminalProgress;
@@ -80,6 +85,7 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) portal:
         crate::runtime::UiRuntimeServiceInstallation<crate::runtime::portal::UiPortalRuntimeState>,
     pub(super) authored_overlay_bindings: crate::runtime::portal::UiPortalOverlayBindingLifecycle,
+    pub(super) overlay_composition_owners: UiActiveOverlayCompositionOwners,
     pub(super) dormant_portal_stack_ordinal_issuer:
         Option<crate::runtime::portal::UiPortalStackOrdinalIssuer>,
     pub(super) motion:
@@ -104,6 +110,9 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) appearance_theme_admission:
         Option<crate::runtime::appearance::UiPreparedThemeBindingAdmission>,
     pub(super) appearance_inspection: crate::runtime::appearance::UiAppearanceInspectionProducer,
+    pub(super) observation_clock: Option<worth_ui_host_native::UiNativeObservationClock>,
+    pub(super) pointer_affordance_snapshot:
+        Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
     pub(super) appearance_owner_snapshot:
         Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
     pub(super) visual_inspection:
@@ -217,6 +226,8 @@ impl WorthUiActiveApplicationSession {
         }
         let host_session_identity = self.host_session.identity();
         let font_collection = std::sync::Arc::clone(self.application.font_collection());
+        let overlay_appearance = self.prepare_overlay_appearance_sources();
+        let motion = self.motion.as_ref();
         let turn = self.application.execute_framework_turn(collect_sources);
         let (
             generation_identity,
@@ -225,6 +236,8 @@ impl WorthUiActiveApplicationSession {
             active_plan_digest,
             completion,
             capabilities,
+            intent_catalog,
+            consumed_facts,
         ) = turn.into_parts();
         Ok(WorthUiActiveFrameworkTurnCompletion {
             application_session_identity: self.identity,
@@ -236,15 +249,21 @@ impl WorthUiActiveApplicationSession {
             host_session_identity,
             completion,
             capabilities,
+            intent_catalog,
+            consumed_facts,
             mounted: &mut self.mounted,
             host_session: &self.host_session,
             host_exchange: &mut self.host_exchange,
             focus: self.focus.as_mut(),
             portal: self.portal.as_mut(),
+            overlay_composition_owners: &mut self.overlay_composition_owners,
             interaction: &mut self.interaction,
             presentation: &mut self.presentation,
             appearance_owner_snapshot: &self.appearance_owner_snapshot,
+            pointer_affordance_snapshot: &self.pointer_affordance_snapshot,
             appearance_inspection: &mut self.appearance_inspection,
+            overlay_appearance,
+            motion,
         })
     }
 }

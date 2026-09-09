@@ -110,6 +110,13 @@ impl super::UiPortalRuntimeState {
             .get(&transition.portal())
             .map(|record| record.stack_ordinal);
         let request = transition.request();
+        let policy = if transition.is_idempotent() {
+            self.records
+                .get(&transition.portal())
+                .map_or(transition.policy(), |record| record.policy)
+        } else {
+            transition.policy()
+        };
         let posture = posture.unwrap_or(transition.staged_posture());
         assert!(
             posture != super::super::UiPortalLifecyclePosture::Closing || exit_retention.is_some(),
@@ -167,6 +174,7 @@ impl super::UiPortalRuntimeState {
             self.retain_committed_record(
                 request,
                 super::UiPortalRecord {
+                    policy,
                     posture,
                     semantic_surface: request.semantic_surface(),
                     last_request: request.idempotency(),
@@ -210,6 +218,7 @@ impl super::UiPortalRuntimeState {
         portal: super::super::UiPortalIdentity,
         record: super::UiPortalRecord,
     ) {
+        self.refresh_surface_stack(portal, &record);
         if record.posture == super::super::UiPortalLifecyclePosture::Closed {
             self.records.remove(&portal);
             self.closed_requests.retain(

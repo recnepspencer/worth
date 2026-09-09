@@ -91,6 +91,7 @@ fn stale_predecessor_typed_values_deny_replacement_before_publication() {
         &profile,
         &predecessor,
         successor.clone(),
+        &[role.role().clone()],
         bindings.iter(),
     )
     .unwrap();

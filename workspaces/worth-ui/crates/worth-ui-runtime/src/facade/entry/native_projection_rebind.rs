@@ -31,12 +31,12 @@ impl WorthUiNativeApplicationShell {
         let admitted = match admitted {
             NativeProjectionAdmission::Admitted(admitted) => admitted,
             NativeProjectionAdmission::Duplicate(receipt) => {
-                return Ok(crate::runtime::rebind::UiRebindOutcome::Duplicate(receipt))
+                return Ok(crate::runtime::rebind::UiRebindOutcome::Duplicate(receipt));
             }
             NativeProjectionAdmission::Superseded(receipt) => {
                 return Ok(
                     crate::runtime::rebind::UiRebindOutcome::SupersededBeforeEffects(receipt),
-                )
+                );
             }
         };
         let classified = self
@@ -97,19 +97,19 @@ fn admit_projection(
         Err(crate::runtime::observation::UiObservationAdmissionDenial::DuplicateOwnerOrder) => {
             return Ok(NativeProjectionAdmission::Duplicate(
                 crate::runtime::rebind::UiDuplicateObservationReceipt::new(identity),
-            ))
+            ));
         }
         Err(crate::runtime::observation::UiObservationAdmissionDenial::HistoricalOwnerOrder) => {
             return Ok(NativeProjectionAdmission::Superseded(
                 crate::runtime::rebind::UiRebindSupersededReceipt::before_effects(
                     crate::runtime::rebind::UiRebindStoppedPhase::ObservationAdmission,
                 ),
-            ))
+            ));
         }
         Err(denial) => {
             return Err(WorthUiNativeProjectionRebindDenial::ObservationAdmission(
                 denial,
-            ))
+            ));
         }
     }
     turn.seal()
@@ -126,7 +126,7 @@ fn plan_projection_rebind(
         crate::runtime::observation::UiChangeClassificationOutcome::Changed(change) => change,
         crate::runtime::observation::UiChangeClassificationOutcome::ObservedNoChange(_)
         | crate::runtime::observation::UiChangeClassificationOutcome::EvidenceOnly(_) => {
-            return Err(WorthUiNativeProjectionRebindDenial::UnexpectedClassification)
+            return Err(WorthUiNativeProjectionRebindDenial::UnexpectedClassification);
         }
     };
     let lifecycle = session

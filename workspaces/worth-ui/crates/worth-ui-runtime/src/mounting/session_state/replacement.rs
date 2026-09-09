@@ -2,6 +2,7 @@ use super::WorthUiMountedSessionState;
 
 pub(crate) struct UiMountedGraphReplacementSuccessor {
     identity: Box<crate::mounting::UiMountedIdentityState>,
+    occurrence_geometry: crate::mounting::UiMountedOccurrenceGeometryState,
     semantic_predecessor: Option<Box<crate::mounting::projection::UiMountedSemanticProjection>>,
     presentation_predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
 }
@@ -95,6 +96,7 @@ impl UiMountedGraphReplacementSuccessor {
     > {
         crate::mounting::UiMountedFrameAssembler::begin_graph_replacement(
             &self.identity,
+            &self.occurrence_geometry,
             self.semantic_predecessor.as_deref(),
             self.presentation_predecessor,
             input,
@@ -122,6 +124,7 @@ impl WorthUiMountedSessionState {
             .prepare_graph_replacement_successor(graph)
             .map(|identity| UiMountedGraphReplacementSuccessor {
                 identity: Box::new(identity),
+                occurrence_geometry: self.occurrence_geometry.clone(),
                 semantic_predecessor,
                 presentation_predecessor,
             })
@@ -132,6 +135,8 @@ impl WorthUiMountedSessionState {
         successor: UiMountedGraphReplacementSuccessor,
     ) {
         self.identity = *successor.identity;
+        self.occurrence_geometry = successor.occurrence_geometry;
+        self.selection_bindings.clear();
     }
 
     pub(crate) fn prepare_graph_replacement_presentation(
@@ -167,7 +172,7 @@ impl WorthUiMountedSessionState {
                 };
             }
         };
-        let admission =
+        let mut admission =
             match self
                 .presentation
                 .admit_current(retained, &capability_report, deadline, now)
@@ -183,6 +188,9 @@ impl WorthUiMountedSessionState {
                     };
                 }
             };
+        // Candidate replacement reconciles retained physical membership; fresh
+        // resolver records are produced by the successor's observation turn.
+        let _appearance = admission.lower_appearance(capability_report.appearance_profile());
         let publication = crate::mounting::UiMountedFramePublicationCandidate::reserve(
             &admission,
             self.identity.view().current_frame(),

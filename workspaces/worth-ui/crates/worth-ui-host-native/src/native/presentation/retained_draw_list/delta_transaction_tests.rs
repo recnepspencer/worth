@@ -8,6 +8,9 @@ use super::*;
 #[path = "delta_transaction_tests/sample_override.rs"]
 mod sample_override;
 
+#[path = "delta_transaction_tests/identity_replacement.rs"]
+mod identity_replacement;
+
 struct UnsettledPresentation;
 
 impl UiNativePendingExternalObligation for UnsettledPresentation {

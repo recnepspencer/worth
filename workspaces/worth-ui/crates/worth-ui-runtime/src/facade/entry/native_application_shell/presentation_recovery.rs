@@ -10,6 +10,7 @@ pub enum WorthUiNativePresentationRecoveryDenial {
     ViewportSettlementTransition(
         Box<crate::facade::entry::mounted_application_presentation::UiMountedHostMeasurementTransitionDenial>,
     ),
+    ViewportSettlementOccurrenceGeometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
     FramePreparationUnavailable,
     FramePresentationUnavailable,
     RasterReconstructionObservationUnavailable,
@@ -154,6 +155,9 @@ impl super::WorthUiNativeApplicationShell {
                 }
                 crate::facade::entry::mounted_application_presentation::UiMountedHostMeasurementSettlementStop::Transition(denial) => {
                     WorthUiNativePresentationRecoveryDenial::ViewportSettlementTransition(denial)
+                }
+                crate::facade::entry::mounted_application_presentation::UiMountedHostMeasurementSettlementStop::OccurrenceGeometry(denial) => {
+                    WorthUiNativePresentationRecoveryDenial::ViewportSettlementOccurrenceGeometry(denial)
                 }
             })?;
         let request = self.session.mounted_frame_request();

@@ -79,7 +79,12 @@ fn native_explicit_touch_can_settle_posture_but_cannot_activate() {
         .interaction
         .pointer_presence_appearance_snapshot()
         .expect("the hover consumer installs pointer presence");
-    assert!(presence.postures().is_empty());
+    assert_eq!(presence.postures().len(), 1);
+    assert_eq!(
+        presence.postures()[0].kind().host_kind(),
+        UiHostPointerDeviceKind::Touch
+    );
+    assert!(presence.primary_postures().next().is_none());
     let _ = world.shell.shutdown();
 }
 
@@ -153,6 +158,9 @@ fn pointer_world() -> PointerWorld {
     let mut shell = source_backed_hover_consumer_app_with_host(host)
         .launch_native_surface()
         .expect("pointer shell should launch");
+    super::native_application_identity_trace_test_support::install_bound_surface_geometry(
+        &mut shell,
+    );
     let frame = published(&mut shell);
     let binding = *frame.bindings().first().expect("native binding");
     let host_surface = shell.session.mounted.view().surface_bindings()[0].host_surface_identity();

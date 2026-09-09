@@ -59,11 +59,24 @@ pub(crate) fn present_cold_reconstruction<Port: UiNativePresentationPort>(
         .text_raster_work()
         .map(|work| work.glyph_runs())
         .unwrap_or_default();
-    let retained = match UiNativeRetainedDrawList::reconstruction(work, glyph_runs) {
+    let mut retained = match UiNativeRetainedDrawList::reconstruction(work, glyph_runs) {
         Ok(retained) => retained,
         Err(_) => return Err(before_effects(malformed_denial(), recovery, None)),
     };
-    let plan = match build_plan(graphics, atlas, &retained) {
+    if retained
+        .initialize_physical_coverage(
+            super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
+            atlas,
+        )
+        .is_err()
+    {
+        return Err(before_effects(malformed_denial(), recovery, None));
+    }
+    let plan = match build_plan(
+        super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
+        atlas,
+        &retained,
+    ) {
         Ok(plan) => plan,
         Err(failure) => {
             let (denial, successor_cause) = presentation_before_effects(failure);
@@ -118,14 +131,14 @@ pub(crate) fn present_cold_reconstruction<Port: UiNativePresentationPort>(
 }
 
 use super::{
-    raster::raster_rect, reserve_presentation_owners, settle_port_result,
-    UiNativePresentationAccess, UiNativePresentationFailure, UiNativePresentationPort,
-    UiNativePresentationPortPlan, UiNativeRasterOperation, UiNativeResourceRegistry,
-    UiNativeRetainedDrawList,
+    raster::{raster_damage_for_basis, UiNativeRasterBasis},
+    reserve_presentation_owners, settle_port_result, UiNativePresentationAccess,
+    UiNativePresentationFailure, UiNativePresentationPort, UiNativePresentationPortPlan,
+    UiNativeRasterOperation, UiNativeResourceRegistry, UiNativeRetainedDrawList,
 };
 
-fn build_plan(
-    graphics: &UiNativePresentationAccess,
+pub(super) fn build_plan(
+    basis: UiNativeRasterBasis,
     atlas: &crate::native::text_atlas::UiNativeTextAtlas,
     retained: &UiNativeRetainedDrawList,
 ) -> Result<UiNativePresentationPortPlan, UiNativePresentationFailure> {
@@ -135,35 +148,57 @@ fn build_plan(
     let mut operations = Vec::with_capacity(commands.len());
     let mut rendered_pixels = 0_u64;
     for command in commands {
+        let sample = retained.sample_override(command.identity());
+        let opacity = sample.map_or(1.0, |sample| sample.opacity().factor());
         match command {
             UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                let rect = raster_rect(*mechanic, graphics).map_err(|_| malformed())?;
+                let Some(bounds) =
+                    super::retained_draw_list::sampled_visible_bounds(command, sample)
+                        .map_err(|_| malformed())?
+                else {
+                    continue;
+                };
+                let Some(rect) = raster_damage_for_basis(bounds, basis).map_err(|_| malformed())?
+                else {
+                    continue;
+                };
                 rendered_pixels = rendered_pixels
                     .checked_add(u64::from(rect.physical_width) * u64::from(rect.physical_height))
                     .ok_or_else(malformed)?;
                 operations.push(UiNativeRasterOperation::FilledRect {
                     rect,
-                    source_rgba8: mechanic.color().channels(),
+                    source_rgba8: super::retained_raster::sampled_color(
+                        mechanic.color().channels(),
+                        opacity,
+                    ),
                 });
             }
             UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
-                let rect = super::raster::raster_portal_overlay(*mechanic, graphics)
-                    .map_err(|_| malformed())?;
+                let Some(bounds) =
+                    super::retained_draw_list::sampled_visible_bounds(command, sample)
+                        .map_err(|_| malformed())?
+                else {
+                    continue;
+                };
+                let Some(rect) = raster_damage_for_basis(bounds, basis).map_err(|_| malformed())?
+                else {
+                    continue;
+                };
                 rendered_pixels = rendered_pixels
                     .checked_add(u64::from(rect.physical_width) * u64::from(rect.physical_height))
                     .ok_or_else(malformed)?;
                 operations.push(UiNativeRasterOperation::FilledRect {
                     rect,
-                    source_rgba8: mechanic.color().channels(),
+                    source_rgba8: super::retained_raster::sampled_color(
+                        mechanic.color().channels(),
+                        opacity,
+                    ),
                 });
             }
             UiMountedPaintCommand::SemanticText { identity, .. } => {
-                let glyphs = super::text::plan_glyph_commands(
-                    retained.glyph_runs(*identity),
-                    atlas,
-                    graphics.extent(),
-                )
-                .map_err(|_| malformed())?;
+                let glyphs = retained
+                    .plan_text_commands(*identity, atlas, basis)
+                    .map_err(|_| malformed())?;
                 for glyph in glyphs {
                     rendered_pixels = rendered_pixels
                         .checked_add(
@@ -177,13 +212,11 @@ fn build_plan(
     }
     operations.extend(
         retained
-            .identity_overlay_operations(
-                super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
-            )
+            .identity_overlay_operations(basis)
             .map_err(UiNativePresentationFailure::BeforeEffects)?,
     );
     let rows = u64::try_from(operations.len()).map_err(|_| malformed())?;
-    let pixels = u64::from(graphics.extent()[0]) * u64::from(graphics.extent()[1]);
+    let pixels = u64::from(basis.extent()[0]) * u64::from(basis.extent()[1]);
     Ok(UiNativePresentationPortPlan {
         clear_retained_target: true,
         operations: operations.into_boxed_slice(),

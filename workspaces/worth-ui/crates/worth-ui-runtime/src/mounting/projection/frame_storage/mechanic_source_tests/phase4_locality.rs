@@ -326,6 +326,31 @@ fn semantic_projection_with_width(
                 },
             }),
             plan_index: Some(0),
+        occurrence_allocation: UiMountedAllocationProjection::Known {
+                    bounds,
+                    basis: UiMountedAllocationBasis::new(
+                        1,
+                        2,
+                        3,
+                        UiMountedTransformProjection::Identity,
+                    ),
+                },
+        appearance_geometry: crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
+                UiMountedAllocationProjection::Known {
+                    bounds,
+                    basis: UiMountedAllocationBasis::new(
+                        1,
+                        2,
+                        3,
+                        UiMountedTransformProjection::Identity,
+                    ),
+                },
+                crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
+            ),
+        surface_paint_order: Some(0),
+        has_appearance_attachment: false,
+            appearance_clip:
+                crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             static_paint: None,
             semantic_text: Some(seed),
             hit_test: None,

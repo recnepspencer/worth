@@ -6,7 +6,8 @@ impl WorthUiPreparedApplicationActivation {
     }
 }
 
-pub(super) struct UiMountedReplacementReuseBasis {
+pub(super) struct UiMountedReplacementFrameBasis {
+    pub(super) application_session: crate::facade::WorthUiActiveApplicationSessionIdentity,
     pub(super) generation:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
     pub(super) host_session: u64,
@@ -20,11 +21,15 @@ pub(super) fn prepare_candidate_mounted_frame(
     application: &WorthUiPreparedApplicationActivation,
     state: &crate::mounting::UiMountedGraphReplacementSuccessor,
     graph: crate::graph::UiGraphAuthority<'_>,
-    reuse_basis: UiMountedReplacementReuseBasis,
+    reuse_basis: UiMountedReplacementFrameBasis,
     semantic_content: crate::mounting::UiMountedSemanticContentInput,
     request: crate::mounting::UiMountedFrameRequest,
 ) -> Result<crate::mounting::UiPreparedMountedFrame, crate::mounting::UiMountedFramePreparationDenial>
 {
+    let generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+        reuse_basis.application_session,
+        &reuse_basis.generation,
+    );
     let range = request.virtualized_range();
     let visual_overlay = request.visual_overlay();
     let visual_overlay_revision = request.visual_overlay_revision();
@@ -47,6 +52,7 @@ pub(super) fn prepare_candidate_mounted_frame(
             capability_generation: reuse_basis.capability_generation,
             capability_profile_digest: reuse_basis.capability_profile_digest,
             visual_overlay_revision,
+            pointer_affordance: Default::default(),
         });
     let mut assembler =
         state.begin_frame_assembly(crate::mounting::UiMountedFrameAssemblyInput {
@@ -70,7 +76,12 @@ pub(super) fn prepare_candidate_mounted_frame(
             reuse_contract,
         })?;
     execute_candidate_lanes(application, &mut assembler, lanes, range)?;
-    assembler.finish()
+    let mut frame = assembler.finish()?;
+    frame.clear_pointer_affordance();
+    frame
+        .begin_appearance_lifecycle(reuse_basis.application_session, &generation, graph)
+        .map_err(crate::mounting::UiMountedFramePreparationDenial::Projection)?;
+    Ok(frame)
 }
 
 fn candidate_lanes(

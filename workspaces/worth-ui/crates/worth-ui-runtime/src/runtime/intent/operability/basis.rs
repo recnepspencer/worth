@@ -229,6 +229,23 @@ const fn boolean_policy(admitted: bool) -> UiIntentPolicyPosture {
 }
 
 impl UiIntentOperabilityBasis {
+    pub(crate) fn decision(
+        &self,
+        affinity: super::UiIntentAffinityPosture,
+    ) -> super::UiIntentOperabilityDecision {
+        super::UiIntentOperabilityDecision::new(super::UiIntentOperabilityDecisionInput {
+            contract_identity: self.contract_identity().into(),
+            support: self.support(),
+            mutability: self.mutability(),
+            readiness: self.readiness(),
+            occupancy: self.occupancy().posture(),
+            policy: self.policy(),
+            affinity,
+            confirmation: self.confirmation(),
+            selected_dependencies_visited: 7,
+        })
+    }
+
     pub(crate) fn contract_identity(&self) -> &str {
         &self.contract_identity
     }

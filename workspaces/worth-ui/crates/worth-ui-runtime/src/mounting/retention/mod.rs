@@ -21,6 +21,7 @@ pub use budget::{
     UiMountedFrameRetentionDenial, UiMountedRetentionClass, UiMountedRetentionClassBudget,
 };
 pub(crate) use coordinator::UiMountedFrameRetentionCoordinator;
+pub(crate) use coordinator::UiPresentedPointLookupDenial;
 pub(crate) use diagnostic_evidence::UiRetainedMountedDiagnostics;
 pub(crate) use evidence::{
     UiPresentedFrameBasisDenial, UiPresentedFrameBasisRelation, UiRetainedPresentedFrame,
@@ -47,3 +48,6 @@ pub(crate) use reservation::{
 pub(crate) use snapshot::{UiMountedFrameRetentionSnapshot, UiMountedRetentionUsageSnapshot};
 pub(crate) use visual_capture_basis::UiMountedVisualCaptureBasis;
 pub(crate) use visual_lease::UiMountedVisualRetentionDenial;
+
+mod hit_transition;
+pub(crate) use hit_transition::UiCommittedPresentedHitTransition;

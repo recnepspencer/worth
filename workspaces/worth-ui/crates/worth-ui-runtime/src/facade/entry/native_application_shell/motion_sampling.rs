@@ -25,10 +25,10 @@ impl WorthUiNativeApplicationShell {
 
         match self.session.progress_portal_exit_terminal(tick) {
             UiPortalExitTerminalProgress::Retry => {
-                return Ok(UiNativeMotionTickDisposition::Active)
+                return Ok(UiNativeMotionTickDisposition::Active);
             }
             UiPortalExitTerminalProgress::AwaitingPhysical => {
-                return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion)
+                return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion);
             }
             UiPortalExitTerminalProgress::Published | UiPortalExitTerminalProgress::Idle => {}
         }
@@ -158,7 +158,7 @@ impl WorthUiNativeApplicationShell {
         };
         match progress {
             UiPortalExitTerminalProgress::AwaitingPhysical => {
-                return UiNativeMotionTickDisposition::AwaitingPhysicalCompletion
+                return UiNativeMotionTickDisposition::AwaitingPhysicalCompletion;
             }
             UiPortalExitTerminalProgress::Retry => return UiNativeMotionTickDisposition::Active,
             UiPortalExitTerminalProgress::Published | UiPortalExitTerminalProgress::Idle => {}

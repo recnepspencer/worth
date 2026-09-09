@@ -12,6 +12,9 @@ fn managed_source_rebind_remains_owned_until_host_progress_or_shutdown() {
     let mut shell = source_backed_component_app_with_host(host.clone())
         .launch_native_surface()
         .expect("source-backed native fixture should launch");
+    super::native_application_identity_trace_test_support::install_bound_surface_geometry(
+        &mut shell,
+    );
     assert!(matches!(
         shell.present_frame(100, 1),
         Ok(UiMountedFrameOutcome::Published(_))

@@ -94,6 +94,7 @@ fn real_source_and_query_turn_publishes_one_semantic_application_successor() {
         candidate != predecessor,
         "a real source semantic change must own a successor generation"
     );
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(314))
         .expect("mixed source and Query successor prepares");

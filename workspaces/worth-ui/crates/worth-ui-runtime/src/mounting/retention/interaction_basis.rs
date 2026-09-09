@@ -9,6 +9,7 @@ pub(crate) struct UiPresentedHitTestBasis {
     presentation: UiHostObservationPresentationBasis,
     relation: UiPresentedFrameBasisRelation,
     rows: Box<[UiPresentedHitTestRow]>,
+    query_work: crate::mounting::hit_test_work::UiHitTestSpatialWork,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -21,6 +22,24 @@ pub(crate) struct UiPresentedHitTestRow {
 }
 
 impl UiPresentedHitTestBasis {
+    pub(in crate::mounting) fn from_candidates(
+        presentation: UiHostObservationPresentationBasis,
+        relation: UiPresentedFrameBasisRelation,
+        query: crate::mounting::presented_hit_index::UiPresentedHitQuery,
+    ) -> Self {
+        Self {
+            presentation,
+            relation,
+            rows: query.rows.into_boxed_slice(),
+            query_work: query.work,
+        }
+    }
+
+    pub(in crate::mounting) const fn query_work(
+        &self,
+    ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
+        self.query_work
+    }
     pub(crate) fn new(
         presentation: UiHostObservationPresentationBasis,
         relation: UiPresentedFrameBasisRelation,
@@ -29,6 +48,10 @@ impl UiPresentedHitTestBasis {
         Self {
             presentation,
             relation,
+            query_work: crate::mounting::hit_test_work::UiHitTestSpatialWork {
+                reconstructed_rows: rows.len(),
+                ..Default::default()
+            },
             rows: rows
                 .into_vec()
                 .into_iter()
@@ -64,7 +87,9 @@ impl UiPresentedHitTestBasis {
 }
 
 impl UiPresentedHitTestRow {
-    fn from_mounted(presentation: crate::mounting::UiMountedHitTestPresentation) -> Self {
+    pub(in crate::mounting) fn from_mounted(
+        presentation: crate::mounting::UiMountedHitTestPresentation,
+    ) -> Self {
         let mounted = presentation.mechanic();
         let portal_target = presentation.portal().map(portal_motion_target);
         Self {
@@ -76,19 +101,41 @@ impl UiPresentedHitTestRow {
         }
     }
 
-    fn with_current_motion(
+    pub(in crate::mounting) fn with_current_motion(
         self,
         sampler: &crate::mounting::presentation::motion_sampling::UiMountedMotionSampler,
         presentation: UiHostObservationPresentationBasis,
     ) -> Option<Self> {
+        self.with_current_motion_work(sampler, presentation).0
+    }
+
+    pub(in crate::mounting) fn with_current_motion_work(
+        self,
+        sampler: &crate::mounting::presentation::motion_sampling::UiMountedMotionSampler,
+        presentation: UiHostObservationPresentationBasis,
+    ) -> (Option<Self>, usize) {
+        let mut considered = 0;
         let sample = self.portal_motion_target.map_or_else(
             || {
-                sampler
-                    .current_sample_for(self.mounted.mounted_instance(), presentation)
-                    .filter(|_| !self.owns_presented_portal)
+                if self.owns_presented_portal {
+                    return None;
+                }
+                let (sample, work) = sampler
+                    .current_sample_for_with_work(self.mounted.mounted_instance(), presentation);
+                considered = work;
+                sample
             },
             |target| sampler.current_sample_for_target(target, presentation),
         );
+        (self.with_motion_sample(sample), considered)
+    }
+
+    fn with_motion_sample(
+        self,
+        sample: Option<
+            crate::mounting::presentation::motion_sampling::UiPresentationMotionSampleReceipt,
+        >,
+    ) -> Option<Self> {
         let Some(sample) = sample else {
             return Some(self);
         };
@@ -117,6 +164,30 @@ impl UiPresentedHitTestRow {
 
     pub(crate) const fn mounted(self) -> UiMountedHitTestMechanic {
         self.mounted
+    }
+
+    pub(in crate::mounting) const fn portal_motion_target(
+        self,
+    ) -> Option<crate::runtime::motion::UiMotionTargetIdentity> {
+        self.portal_motion_target
+    }
+
+    pub(in crate::mounting) const fn owns_presented_portal(self) -> bool {
+        self.owns_presented_portal
+    }
+
+    pub(in crate::mounting) fn reattributed(
+        mut self,
+        receipts: &crate::mounting::UiMountedNodeReceiptBasis,
+    ) -> (Self, usize) {
+        let (mounted, probes) = crate::mounting::projection::reattribute_hit_test_with_probes(
+            self.mounted,
+            receipts.frame(),
+            receipts,
+        )
+        .expect("indexed presented row retains exact mounted receipt membership");
+        self.mounted = mounted;
+        (self, probes)
     }
     pub(crate) const fn bounds(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
         self.bounds

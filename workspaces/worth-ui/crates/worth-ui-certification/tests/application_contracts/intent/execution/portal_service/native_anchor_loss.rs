@@ -38,6 +38,7 @@ fn anchor_loss_defers_native_unmount_until_portal_dismissal_is_physically_commit
     let mut shell = application
         .launch_native_surface()
         .expect("the production native composition root launches");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell
             .present_frame(10, 1)

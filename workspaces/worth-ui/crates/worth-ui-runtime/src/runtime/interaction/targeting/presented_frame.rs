@@ -24,6 +24,9 @@ pub enum UiInteractionTargetingDenial {
     BindingNoLongerCurrent,
     MountedInstanceNoLongerCurrent,
     MountedSurfaceAffinityChanged,
+    HitTestNodeBudgetExceeded,
+    HitTestCandidateBudgetExceeded,
+    InvalidHitTestPoint,
 }
 
 pub(crate) fn resolve_presented_target(
@@ -32,13 +35,20 @@ pub(crate) fn resolve_presented_target(
     position: UiHostSurfacePosition,
 ) -> Result<UiPresentedInteractionTarget, UiInteractionTargetingDenial> {
     require_viewport_logical(position.basis())?;
+    let point = canonical_point(position);
     let basis = mounted
-        .interaction_hit_test_basis(presentation)
-        .map_err(map_presentation_denial)?;
+        .interaction_hit_test_candidates(presentation, point.map(f64::from))
+        .map_err(|denial| match denial {
+            crate::mounting::UiPresentedPointLookupDenial::Presentation(denial) => {
+                map_presentation_denial(denial)
+            }
+            crate::mounting::UiPresentedPointLookupDenial::Query(denial) => {
+                map_hit_query_denial(denial)
+            }
+        })?;
     debug_assert_eq!(basis.presentation(), presentation);
     let relation = map_relation(basis.relation());
     let rows = basis.rows();
-    let point = canonical_point(position);
     let mut selected: Option<crate::mounting::UiPresentedHitTestRow> = None;
     for row in rows {
         if row.bounds().coordinate_space() != UiMountedCoordinateSpace::Viewport {
@@ -136,10 +146,10 @@ pub(crate) fn require_current_presentation(
     mounted: &crate::mounting::WorthUiMountedSessionState,
     presentation: UiHostObservationPresentationBasis,
 ) -> Result<(), UiInteractionTargetingDenial> {
-    let basis = mounted
-        .interaction_hit_test_basis(presentation)
+    let relation = mounted
+        .classify_interaction_presentation(presentation)
         .map_err(map_presentation_denial)?;
-    if map_relation(basis.relation()) != UiPresentedTargetFrameRelation::Current {
+    if map_relation(relation) != UiPresentedTargetFrameRelation::Current {
         return Err(UiInteractionTargetingDenial::ExpiredPresentation);
     }
     Ok(())
@@ -176,6 +186,9 @@ pub(crate) fn map_current_affinity_denial(
     denial: crate::mounting::UiCurrentHitTargetAffinityDenial,
 ) -> UiInteractionTargetingDenial {
     match denial {
+        crate::mounting::UiCurrentHitTargetAffinityDenial::PresentationNotCurrent => {
+            UiInteractionTargetingDenial::ExpiredPresentation
+        }
         crate::mounting::UiCurrentHitTargetAffinityDenial::SurfaceNoLongerBound => {
             UiInteractionTargetingDenial::SurfaceNoLongerBound
         }
@@ -204,7 +217,7 @@ fn map_relation(
     }
 }
 
-fn map_presentation_denial(
+pub(super) fn map_presentation_denial(
     denial: crate::mounting::UiPresentedFrameBasisDenial,
 ) -> UiInteractionTargetingDenial {
     match denial {
@@ -264,4 +277,23 @@ pub(crate) fn admit_current_target_incarnation(
             },
         )
         .map_err(map_current_affinity_denial)
+}
+
+pub(crate) fn map_hit_query_denial(
+    denial: crate::mounting::UiPresentedHitQueryDenial,
+) -> UiInteractionTargetingDenial {
+    match denial {
+        crate::mounting::UiPresentedHitQueryDenial::IncompatibleCoordinateSpace(row) => {
+            UiInteractionTargetingDenial::IncompatibleHitTestCoordinateSpace { row }
+        }
+        crate::mounting::UiPresentedHitQueryDenial::InvalidPoint => {
+            UiInteractionTargetingDenial::InvalidHitTestPoint
+        }
+        crate::mounting::UiPresentedHitQueryDenial::NodeBudget { .. } => {
+            UiInteractionTargetingDenial::HitTestNodeBudgetExceeded
+        }
+        crate::mounting::UiPresentedHitQueryDenial::CandidateBudget { .. } => {
+            UiInteractionTargetingDenial::HitTestCandidateBudgetExceeded
+        }
+    }
 }

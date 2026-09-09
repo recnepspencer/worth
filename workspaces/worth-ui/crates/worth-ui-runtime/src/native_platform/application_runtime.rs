@@ -96,6 +96,18 @@ pub trait UiNativeApplicationRuntime: 'static {
         Ok((application, UiNativeApplicationRuntimeDirective::Continue))
     }
 
+    /// Present current pointer meaning through the application's existing frame lifecycle.
+    fn native_pointer_affordance_ready(
+        &mut self,
+        application: crate::facade::WorthUiNativeApplicationShell,
+    ) -> Result<
+        (
+            crate::facade::WorthUiNativeApplicationShell,
+            UiNativeApplicationRuntimeDirective,
+        ),
+        UiNativeApplicationRuntimeProgressStopped,
+    >;
+
     /// Progress one host-owned viewport successor after the native driver has
     /// installed its exact physical basis in the runtime shell. The callback
     /// carries no copied extent and is not measurement authority.

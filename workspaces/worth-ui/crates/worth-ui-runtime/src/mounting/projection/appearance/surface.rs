@@ -4,8 +4,8 @@ use worth_ui_host_contract::{
 };
 
 use super::fact::UiMountedAppearanceNodeInput;
-use super::opacity_composition::compose;
 use super::UiMountedAppearanceLoweringDenial;
+use crate::mounting::presentation::compose_opacity;
 
 pub(super) fn lower(
     input: &UiMountedAppearanceNodeInput,
@@ -18,11 +18,22 @@ pub(super) fn lower(
             issuer: input.issuer,
             node_receipt: input.node_receipt,
             bounds: input.bounds,
-            clip: input.clip,
-            layer: input.layer,
+            clip: input.clip.for_visual_bounds(
+                worth_ui_host_contract::UiAppearanceVisualBounds::from_surface_allocation(
+                    input.bounds,
+                ),
+            )?,
+            surface_paint_order: input
+                .surface_paint_order
+                .ok_or(UiMountedAppearanceLoweringDenial::SurfacePaintOrderUnavailable)?,
             radii: input.radii,
+            border_edges: input.surface_border_edges,
+            border_omissions: input.surface_border_omissions.clone(),
             paint,
-            opacity: compose(input.appearance_opacity, input.motion_opacity),
+            opacity: compose_opacity(
+                input.appearance_opacity,
+                input.motion_opacity.unwrap_or(u16::MAX),
+            ),
             projection: input.projection,
         },
     )

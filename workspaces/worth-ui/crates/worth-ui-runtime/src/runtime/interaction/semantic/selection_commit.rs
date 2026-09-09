@@ -12,6 +12,7 @@ pub enum UiSelectionCommitStopReason {
     ProjectionNotCurrent(worth_ui_query_binding::UiProjectionInputPosture),
     ProjectionShapeMismatch,
     ProjectionRevisionChanged,
+    MountedSelectionBindingUnavailable,
 }
 
 #[derive(Debug)]
@@ -67,8 +68,11 @@ fn selection_stop_reason(
             current.posture(),
         ));
     }
-    (current.revision() != option.owner_revision())
-        .then_some(UiSelectionCommitStopReason::ProjectionRevisionChanged)
+    if current.revision() != option.owner_revision() {
+        return Some(UiSelectionCommitStopReason::ProjectionRevisionChanged);
+    }
+    (!mounted.selection_item_matches_option(activation.target().mounted_instance(), option))
+        .then_some(UiSelectionCommitStopReason::MountedSelectionBindingUnavailable)
 }
 
 impl UiSelectionCommitInteraction {

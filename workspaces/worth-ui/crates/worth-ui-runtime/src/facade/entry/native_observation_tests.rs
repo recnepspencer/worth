@@ -1,5 +1,4 @@
 use crate::certification_support::ScriptedPresentationHost;
-use crate::mounting::{UiMountedFrameOutcome, UiMountedFramePublicationReceipt};
 use crate::runtime::tests::active_application_session_test_support::{
     source_backed_component_session, source_backed_focusable_component_app_with_host,
 };
@@ -17,6 +16,10 @@ use worth_ui_host_contract::{
     UiHostProtocolNegotiation, UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 
+#[path = "native_observation_test_support.rs"]
+mod support;
+use support::published;
+
 #[test]
 fn native_observation_ready_path_drains_through_runtime_interaction_owner() {
     let host = ScriptedPresentationHost::native_display();
@@ -24,6 +27,9 @@ fn native_observation_ready_path_drains_through_runtime_interaction_owner() {
     let mut shell = source_backed_focusable_component_app_with_host(host.clone())
         .launch_native_surface()
         .expect("native shell should launch");
+    super::native_application_identity_trace_test_support::install_bound_surface_geometry(
+        &mut shell,
+    );
 
     let first = published(shell.present_frame(100, 1), "first");
     assert_eq!(
@@ -75,6 +81,9 @@ fn native_window_event_drain_preserves_typed_mouse_hover_and_press() {
     let mut shell = source_backed_hover_consumer_app_with_host(host)
         .launch_native_surface()
         .expect("pointer-presence shell should launch");
+    super::native_application_identity_trace_test_support::install_bound_surface_geometry(
+        &mut shell,
+    );
     let frame = published(shell.present_frame(100, 1), "hover");
     let binding = *frame.bindings().first().expect("native binding");
     let host_session = shell.session.host_session.identity().as_u64();
@@ -161,6 +170,9 @@ fn pointer_motion_publishes_only_owner_issued_target_changes() {
     let mut shell = source_backed_hover_consumer_app_with_host(host.clone())
         .launch_native_surface()
         .expect("pointer-presence shell should launch");
+    super::native_application_identity_trace_test_support::install_bound_surface_geometry(
+        &mut shell,
+    );
     let frame = published(shell.present_frame(100, 1), "hover");
     let binding = *frame.bindings().first().expect("native binding");
     let host_surface = shell.session.mounted.view().surface_bindings()[0].host_surface_identity();
@@ -303,35 +315,6 @@ fn pointer_motion_publishes_only_owner_issued_target_changes() {
     ));
     let _ = foreign.shutdown();
     let _ = shell.shutdown();
-}
-
-fn published(
-    outcome: Result<
-        UiMountedFrameOutcome,
-        crate::facade::entry::WorthUiMountedFrameExecutionStop<'_>,
-    >,
-    label: &str,
-) -> UiMountedFramePublicationReceipt {
-    let outcome = match outcome {
-        Ok(outcome) => outcome,
-        Err(_) => panic!("{label} frame should execute"),
-    };
-    match outcome {
-        UiMountedFrameOutcome::Published(receipt)
-        | UiMountedFrameOutcome::Unchanged(receipt)
-        | UiMountedFrameOutcome::Reconciled(receipt) => receipt,
-        UiMountedFrameOutcome::RejectedBeforeEffects(_) => {
-            panic!("{label} frame was rejected before effects")
-        }
-        UiMountedFrameOutcome::InFlight(_) => panic!("{label} frame remained in flight"),
-        UiMountedFrameOutcome::Superseded(_) => panic!("{label} frame was superseded"),
-        UiMountedFrameOutcome::PresentationIndeterminate(_) => {
-            panic!("{label} frame became indeterminate")
-        }
-        UiMountedFrameOutcome::RetentionDenied(_) => panic!("{label} frame retention was denied"),
-        UiMountedFrameOutcome::AdmissionDenied(_) => panic!("{label} frame admission was denied"),
-        UiMountedFrameOutcome::CompletionDenied(_) => panic!("{label} frame completion was denied"),
-    }
 }
 
 fn focus_batch(

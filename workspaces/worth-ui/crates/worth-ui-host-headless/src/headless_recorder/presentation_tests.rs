@@ -203,7 +203,7 @@ fn sample_for(
         changes: vec![UiMountedPresentationSampleChange::from_runtime_sampling(
             command,
             Some(UiMountedPresentationTransform::from_runtime_sampling(bounds, bounds).unwrap()),
-            UiMountedPresentationOpacity::from_runtime_sampling(0.5).unwrap(),
+            UiMountedPresentationOpacity::from_runtime_composition(32_768),
         )],
         damage: vec![UiMountedLogicalDamage::from_runtime_mounting(bounds)],
         production_cost: Default::default(),

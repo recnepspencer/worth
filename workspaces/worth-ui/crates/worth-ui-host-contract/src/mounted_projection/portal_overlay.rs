@@ -202,6 +202,41 @@ impl UiMountedPortalOverlayMechanic {
     pub const fn semantic_digest(self) -> u64 {
         self.semantic_digest
     }
+
+    #[doc(hidden)]
+    pub fn same_retained_paint_meaning(self, other: Self) -> bool {
+        self.schema == other.schema
+            && self.surface == other.surface
+            && self.binding == other.binding
+            && self.owner == other.owner
+            && self.portal_identity == other.portal_identity
+            && self.anchor_presentation.host_surface() == other.anchor_presentation.host_surface()
+            && self.anchor_presentation.binding() == other.anchor_presentation.binding()
+            && self.anchor_bounds == other.anchor_bounds
+            && self.bounds == other.bounds
+            && self.clip_bounds == other.clip_bounds
+            && self.color == other.color
+            && self.layer_semantic_order == other.layer_semantic_order
+            && self.layer_depth == other.layer_depth
+            && self.lifecycle == other.lifecycle
+            && self.shielding == other.shielding
+    }
+
+    /// Reconciliation may move one unchanged command onto the admitted replacement binding.
+    #[doc(hidden)]
+    pub fn same_retained_paint_meaning_after_binding_replacement(
+        self,
+        other: Self,
+        affected: UiSurfaceBindingGeneration,
+        replacement: UiSurfaceBindingGeneration,
+    ) -> bool {
+        if self.binding != affected || other.binding != replacement {
+            return false;
+        }
+        let mut rebound = self;
+        rebound.binding = replacement;
+        rebound.same_retained_paint_meaning(other)
+    }
 }
 
 impl UiMountedPortalOverlayTable {

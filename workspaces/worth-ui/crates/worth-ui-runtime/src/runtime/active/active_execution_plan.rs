@@ -33,6 +33,17 @@ impl WorthUiActiveExecutionPlan {
         self.bundle.mounted_projection_ordinary_meaning(plan_index)
     }
 
+    pub(crate) fn mounted_projection_ordinary_meaning_with_identity(
+        &self,
+        plan_index: u32,
+    ) -> Option<(
+        String,
+        std::rc::Rc<crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning>,
+    )> {
+        self.bundle
+            .mounted_projection_ordinary_meaning_with_identity(plan_index)
+    }
+
     pub(crate) fn mounted_projection_ordinary_meaning_for_identity(
         &self,
         identity: &str,

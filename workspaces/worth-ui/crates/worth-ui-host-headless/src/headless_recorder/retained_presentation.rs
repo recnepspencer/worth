@@ -89,6 +89,32 @@ impl UiHeadlessRetainedPresentation {
         Ok(())
     }
 
+    pub(super) fn install_reconstruction_sample_overrides(
+        &mut self,
+        changes: &[worth_ui_host_contract::UiMountedPresentationSampleChange],
+        reconstruction_damage: &[worth_ui_host_contract::UiMountedLogicalDamage],
+    ) -> Result<(), worth_ui_host_contract::UiHostSurfacePresentationDenial> {
+        let overrides = changes
+            .iter()
+            .copied()
+            .map(|change| (change.command(), change))
+            .collect::<HashMap<_, _>>();
+        if overrides.len() != changes.len()
+            || overrides
+                .keys()
+                .any(|identity| !self.commands.contains_key(identity))
+        {
+            return Err(malformed());
+        }
+        self.sample_damage = if overrides.is_empty() {
+            Box::default()
+        } else {
+            reconstruction_damage.to_vec().into_boxed_slice()
+        };
+        self.sample_overrides = overrides;
+        Ok(())
+    }
+
     pub(super) fn clear_sample_overrides_for(
         &mut self,
         identities: impl IntoIterator<Item = worth_ui_host_contract::UiMountedPaintCommandIdentity>,

@@ -1,4 +1,4 @@
-use super::build_plan;
+use crate::native::presentation::retained_raster::build_plan;
 use crate::native::presentation::{
     raster::UiNativeRasterBasis,
     retained_draw_list::tests::{command, DrawListWorld},
@@ -35,13 +35,22 @@ fn sampled_rect_moves_and_applies_alpha_without_mutating_semantic_command() {
     let identity = command(rect).identity();
     let semantic_command = command(rect);
     let mut retained = UiNativeRetainedDrawList::initial(&initial, &[]).unwrap();
-    let sample = sample(&world, frame, identity, 10.0, 30.0, 0.5);
+    let sample = sample(&world, frame, identity, 10.0, 30.0, 32_768);
 
-    let (replay, _undo) = retained.stage_sample(&sample).unwrap();
+    let basis = UiNativeRasterBasis::new([100, 100], 1.0);
+    let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    retained
+        .initialize_physical_coverage(basis, &atlas)
+        .unwrap();
+    let (mut replay, mut undo) = retained.stage_sample(&sample).unwrap();
+    retained
+        .refresh_physical_sample(&sample, &mut undo, basis, &mut replay)
+        .unwrap();
     let plan = build_plan(
-        UiNativeRasterBasis::new([100, 100], 1.0),
+        basis,
         &retained,
         replay,
+        0,
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
     )
     .unwrap();
@@ -65,9 +74,9 @@ fn rejected_successor_sample_restores_the_previous_override() {
     let initial = world.initial(frame, [rect]);
     let identity = command(rect).identity();
     let mut retained = UiNativeRetainedDrawList::initial(&initial, &[]).unwrap();
-    let first = sample(&world, frame, identity, 10.0, 20.0, 0.75);
+    let first = sample(&world, frame, identity, 10.0, 20.0, 49_151);
     retained.stage_sample(&first).unwrap();
-    let successor = sample(&world, frame, identity, 10.0, 40.0, 0.25);
+    let successor = sample(&world, frame, identity, 10.0, 40.0, 16_384);
     let (_replay, undo) = retained.stage_sample(&successor).unwrap();
 
     retained.rollback_sample(undo).unwrap();
@@ -87,7 +96,7 @@ fn stale_or_coordinate_mismatched_sample_denies_without_override_mutation() {
         UiNativeRetainedDrawList::initial(&world.initial(frame, [rect]), &[]).unwrap();
 
     let foreign_frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
-    let stale = sample(&world, foreign_frame, identity, 10.0, 20.0, 0.5);
+    let stale = sample(&world, foreign_frame, identity, 10.0, 20.0, 32_768);
     assert!(retained.stage_sample(&stale).is_err());
     assert_eq!(retained.sample_override(identity), None);
 
@@ -97,7 +106,7 @@ fn stale_or_coordinate_mismatched_sample_denies_without_override_mutation() {
         identity,
         viewport_box(10.0, 0.0, 10.0, 10.0),
         viewport_box(20.0, 0.0, 10.0, 10.0),
-        0.5,
+        32_768,
     );
     assert!(retained.stage_sample(&wrong_space).is_err());
     assert_eq!(retained.sample_override(identity), None);
@@ -112,13 +121,22 @@ fn offscreen_sample_commits_derived_state_without_native_paint_cost() {
     let initial = world.initial(frame, [rect]);
     let identity = command(rect).identity();
     let mut retained = UiNativeRetainedDrawList::initial(&initial, &[]).unwrap();
-    let sample = sample(&world, frame, identity, 120.0, 140.0, 0.5);
+    let sample = sample(&world, frame, identity, 120.0, 140.0, 32_768);
 
-    let (replay, _undo) = retained.stage_sample(&sample).unwrap();
+    let basis = UiNativeRasterBasis::new([100, 100], 1.0);
+    let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    retained
+        .initialize_physical_coverage(basis, &atlas)
+        .unwrap();
+    let (mut replay, mut undo) = retained.stage_sample(&sample).unwrap();
+    retained
+        .refresh_physical_sample(&sample, &mut undo, basis, &mut replay)
+        .unwrap();
     let plan = build_plan(
-        UiNativeRasterBasis::new([100, 100], 1.0),
+        basis,
         &retained,
         replay,
+        0,
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
     )
     .unwrap();
@@ -160,13 +178,21 @@ fn production_sample_plan_moves_clipped_portal_and_renders_expected_pixels() {
     .unwrap();
     let source = viewport_box(10.0, 0.0, 30.0, 20.0);
     let sampled = viewport_box(40.0, 0.0, 30.0, 20.0);
-    let sample = sample_with_bounds(&world, frame, identity, source, sampled, 0.5);
-    let (replay, _undo) = retained.stage_sample(&sample).unwrap();
+    let sample = sample_with_bounds(&world, frame, identity, source, sampled, 32_768);
     let basis = UiNativeRasterBasis::new([80, 32], 1.0);
+    let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    retained
+        .initialize_physical_coverage(basis, &atlas)
+        .unwrap();
+    let (mut replay, mut undo) = retained.stage_sample(&sample).unwrap();
+    retained
+        .refresh_physical_sample(&sample, &mut undo, basis, &mut replay)
+        .unwrap();
     let plan = build_plan(
         basis,
         &retained,
         replay,
+        0,
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
     )
     .unwrap();
@@ -204,11 +230,11 @@ fn sample(
     identity: worth_ui_host_contract::UiMountedPaintCommandIdentity,
     source_x: f32,
     sampled_x: f32,
-    opacity: f32,
+    opacity_units: u16,
 ) -> UiMountedPresentationSample {
     let source = bounds(source_x);
     let sampled = bounds(sampled_x);
-    sample_with_bounds(world, frame, identity, source, sampled, opacity)
+    sample_with_bounds(world, frame, identity, source, sampled, opacity_units)
 }
 
 fn sample_with_bounds(
@@ -217,7 +243,7 @@ fn sample_with_bounds(
     identity: worth_ui_host_contract::UiMountedPaintCommandIdentity,
     source: UiMountedCanonicalBox,
     sampled: UiMountedCanonicalBox,
-    opacity: f32,
+    opacity_units: u16,
 ) -> UiMountedPresentationSample {
     UiMountedPresentationSample::from_inert_mechanics(UiMountedPresentationSampleInput {
         frame,
@@ -228,7 +254,7 @@ fn sample_with_bounds(
         changes: vec![UiMountedPresentationSampleChange::from_runtime_sampling(
             identity,
             Some(UiMountedPresentationTransform::from_runtime_sampling(source, sampled).unwrap()),
-            UiMountedPresentationOpacity::from_runtime_sampling(opacity).unwrap(),
+            UiMountedPresentationOpacity::from_runtime_composition(opacity_units),
         )],
         damage: vec![
             UiMountedLogicalDamage::from_runtime_mounting(source),

@@ -4,6 +4,7 @@
 )]
 
 use worth_ui_dsl::{UiMosaicRegionDeclarationIdentity, UiSemanticSurfaceDeclarationIdentity};
+use worth_ui_host_contract::UiMountedInstanceIdentity;
 use worth_ui_host_contract::UiSemanticSurfaceIdentity;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -57,15 +58,21 @@ impl UiCommittedOverlayExtentBounds {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiMountedOverlayRegionExtent {
     identity: UiMosaicRegionDeclarationIdentity,
+    occurrence: UiMountedInstanceIdentity,
     bounds: UiCommittedOverlayExtentBounds,
 }
 
 impl UiMountedOverlayRegionExtent {
     pub(crate) const fn new(
         identity: UiMosaicRegionDeclarationIdentity,
+        occurrence: UiMountedInstanceIdentity,
         bounds: UiCommittedOverlayExtentBounds,
     ) -> Self {
-        Self { identity, bounds }
+        Self {
+            identity,
+            occurrence,
+            bounds,
+        }
     }
 
     pub(crate) const fn identity(self) -> UiMosaicRegionDeclarationIdentity {
@@ -74,6 +81,10 @@ impl UiMountedOverlayRegionExtent {
 
     pub(crate) const fn bounds(self) -> UiCommittedOverlayExtentBounds {
         self.bounds
+    }
+
+    pub(crate) const fn occurrence(self) -> UiMountedInstanceIdentity {
+        self.occurrence
     }
 }
 
@@ -190,11 +201,11 @@ fn canonical_regions(
     regions: impl IntoIterator<Item = UiMountedOverlayRegionExtent>,
 ) -> Result<Box<[UiMountedOverlayRegionExtent]>, UiMountedOverlayExtentDenial> {
     let mut regions = regions.into_iter().collect::<Vec<_>>();
-    regions.sort_by_key(|region| region.identity());
-    if regions
-        .windows(2)
-        .any(|window| window[0].identity() == window[1].identity())
-    {
+    regions.sort_by_key(|region| (region.identity(), region.occurrence()));
+    if regions.windows(2).any(|window| {
+        (window[0].identity(), window[0].occurrence())
+            == (window[1].identity(), window[1].occurrence())
+    }) {
         return Err(UiMountedOverlayExtentDenial::DuplicateRegion);
     }
     Ok(regions.into_boxed_slice())

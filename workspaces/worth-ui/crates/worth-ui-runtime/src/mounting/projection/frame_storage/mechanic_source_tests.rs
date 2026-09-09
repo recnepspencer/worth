@@ -24,8 +24,11 @@ use crate::mounting::projection::{
 };
 
 mod frame_affinity;
+mod hit_locality;
 mod phase4_locality;
 mod phase4_portal_children;
+mod semantic_fixture;
+use semantic_fixture::{semantic_projection, semantic_projection_with_static_color};
 
 #[test]
 pub(crate) fn mechanic_source_routes_paint_only_work_through_current_mounted_authority() {
@@ -279,69 +282,6 @@ fn completion<'a>(
         capability_profile_digest: capability_generation,
         font_collection: fonts,
     }
-}
-
-fn semantic_projection(
-    graph_node: crate::graph::UiGraphNodeIdentity,
-    instance: UiMountedInstanceIdentity,
-    surface: UiSemanticSurfaceIdentity,
-    binding: UiSurfaceBindingGeneration,
-    seed: UiMountedSemanticTextSeed,
-) -> UiMountedSemanticProjection {
-    semantic_projection_with_static_color(
-        graph_node,
-        instance,
-        surface,
-        binding,
-        seed,
-        UiMountedRgba8::new(47, 129, 247, 255),
-    )
-}
-
-fn semantic_projection_with_static_color(
-    graph_node: crate::graph::UiGraphNodeIdentity,
-    instance: UiMountedInstanceIdentity,
-    surface: UiSemanticSurfaceIdentity,
-    binding: UiSurfaceBindingGeneration,
-    seed: UiMountedSemanticTextSeed,
-    static_color: UiMountedRgba8,
-) -> UiMountedSemanticProjection {
-    UiMountedSemanticProjection::initial(
-        vec![UiMountedProjectionNodeRecord {
-            receipt: UiMountedNodeReceipt::from_input(UiMountedNodeReceiptInput {
-                mounted_instance: instance,
-                graph_node,
-                semantic_surface: surface,
-                incarnation: UiMountIncarnation::mint_unbound().unwrap(),
-                plan_digest: 7,
-                role: UiMountedMechanicalRole::Control,
-                participation: admitted_participation(),
-                allocation: UiMountedAllocationProjection::Known {
-                    bounds: canonical_bounds(),
-                    basis: UiMountedAllocationBasis::new(
-                        1,
-                        2,
-                        3,
-                        UiMountedTransformProjection::Identity,
-                    ),
-                },
-            }),
-            plan_index: Some(0),
-            static_paint: Some(UiMountedStaticPaintSeed::for_test(static_color)),
-            semantic_text: Some(seed),
-            hit_test: Some(UiMountedHitTestSeed::for_test(0)),
-            focus_support: crate::capability::ComponentFocusSupport::not_focusable(),
-            focus_scope: None,
-            focus_container_owner: None,
-            component_id: None,
-            portal_child_owner: None,
-        }],
-        vec![UiMountedProjectionSurface {
-            surface,
-            binding,
-            audience: UiMountedProjectionAudience::full(),
-        }],
-    )
 }
 
 fn receipt_basis(

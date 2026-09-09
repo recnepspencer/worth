@@ -239,12 +239,7 @@ fn service_dsl_demands_only_its_declared_owner_closure() {
     );
     assert_eq!(
         policy_plan.portal(),
-        Some(
-            crate::declaration::UiPortalPolicy::dropdown()
-                .with_outside_press_dismissal(false)
-                .with_accepted_selection_dismissal(false)
-                .with_anchor_loss_dismissal(true)
-        )
+        Some(crate::declaration::UiPortalPolicy::modal_dialog())
     );
     assert_eq!(
         policy_plan.selection(),

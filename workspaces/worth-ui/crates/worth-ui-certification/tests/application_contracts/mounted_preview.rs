@@ -39,6 +39,7 @@ fn real_wui_preview_records_and_publishes_through_the_mounted_contract() {
     let handle = session.mounted_graph_node(target).unwrap();
     let instance = session.mount_instance(handle, surface).unwrap();
 
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let pending = submit_preview(&mut session, target, 320.0);
     let prepared = match pending.prepare(instance) {
         Ok(prepared) => prepared,

@@ -6,6 +6,9 @@ use super::super::{
 use super::support::mixed_text_row;
 use crate::*;
 
+#[path = "unpublished_text_tests/exact_command_tests.rs"]
+mod exact_command_tests;
+
 fn candidate_with_slot(
     context: &Context,
     instance: UiMountedInstanceIdentity,
@@ -92,6 +95,7 @@ fn surface_text_result(
 fn foreground(
     context: &Context,
     receipt: UiMountedNodeReceiptIdentity,
+    command: UiMountedPaintCommandIdentity,
     span: UiMountedTextPaintSpanIdentity,
 ) -> UiMountedTextForegroundAppearanceMechanic {
     let issuer = UiMountedNodeReceiptIssuer::mint_for(context.frame).unwrap();
@@ -99,9 +103,10 @@ fn foreground(
         UiMountedTextForegroundAppearanceCompletionInput {
             issuer,
             node_receipt: receipt,
+            command,
             paint_span: span,
             foreground: UiMountedAppearanceColor::from_straight_srgba([9, 8, 7, 255]),
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
                 .unwrap(),
         },
@@ -117,7 +122,13 @@ fn mixed_candidate_retains_nonadopted_spans_and_joins_adopted_span() {
     let receipt = mechanic.node_receipt();
     let adopted = UiMountedTextPaintSpanIdentity::from_runtime_mounting([51; 32]);
     let retained = UiMountedTextPaintSpanIdentity::from_runtime_mounting([52; 32]);
-    let mechanic = foreground(&context, receipt, adopted);
+    let candidate = mixed_text_row(&context, instance, receipt, adopted, retained);
+    let mechanic = foreground(
+        &context,
+        receipt,
+        UiMountedPaintCommandIdentity::semantic_text(&candidate),
+        adopted,
+    );
     let (_, work) = text_work(&context, mechanic, receipt);
     let fragment = UiUnpublishedAppearanceFragment::from_runtime_mounting(
         UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
@@ -125,9 +136,7 @@ fn mixed_candidate_retains_nonadopted_spans_and_joins_adopted_span() {
             successor: Some(receipt),
         },
         work,
-        [mixed_text_row(
-            &context, instance, receipt, adopted, retained,
-        )],
+        [candidate],
         context.requirement,
         node_affinity(&context, receipt),
     )
@@ -228,53 +237,31 @@ fn same_receipt_candidates_preserve_value_collection_and_posture_rows() {
 }
 
 #[test]
-fn duplicate_receipt_and_paint_span_is_denied_even_for_distinct_slots() {
+fn duplicate_candidate_command_is_denied_even_when_its_span_changes() {
     let context = context();
     let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
     let mechanic = surface_mechanic(&context, instance);
     let receipt = mechanic.node_receipt();
-    let span = UiMountedTextPaintSpanIdentity::from_runtime_mounting([81; 32]);
-    let value = candidate_with_slot(
-        &context,
-        instance,
-        receipt,
-        span,
-        UiSemanticTextSlot::Value,
-        None,
-        7,
-        11,
-    );
-    let posture = candidate_with_slot(
-        &context,
-        instance,
-        receipt,
-        span,
-        UiSemanticTextSlot::Posture,
-        None,
-        7,
-        11,
-    );
-    let (_, work) = surface_work(&context, mechanic);
-    let result = UiUnpublishedAppearanceFragment::from_runtime_mounting(
-        UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
-            predecessor: None,
-            successor: Some(receipt),
-        },
-        work,
-        [value, posture],
-        context.requirement,
-        node_affinity(&context, receipt),
-    );
-
-    assert_eq!(
-        result,
-        Err(
-            UiUnpublishedAppearanceFrameProjectionDenial::ConflictingTextCandidate {
-                receipt,
-                span,
-            }
+    let row = |span| {
+        candidate_with_slot(
+            &context,
+            instance,
+            receipt,
+            UiMountedTextPaintSpanIdentity::from_runtime_mounting([span; 32]),
+            UiSemanticTextSlot::Value,
+            None,
+            7,
+            11,
         )
-    );
+    };
+    let first = row(81);
+    let identity = UiMountedPaintCommandIdentity::semantic_text(&first);
+    for second in [first.clone(), row(82)] {
+        assert_eq!(
+            surface_text_result(&context, mechanic.clone(), [first.clone(), second]),
+            Err(UiUnpublishedAppearanceFrameProjectionDenial::DuplicateTextCandidate(identity))
+        );
+    }
 }
 
 #[test]
@@ -323,5 +310,25 @@ fn text_candidate_admission_stops_at_capacity_plus_one() {
             node_affinity(&context, receipt),
         ),
         Err(UiUnpublishedAppearanceFrameProjectionDenial::TextCandidateCapacityExceeded)
+    );
+}
+
+#[test]
+fn duplicate_span_inside_one_candidate_remains_ambiguous() {
+    let context = context();
+    let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let mechanic = surface_mechanic(&context, instance);
+    let receipt = mechanic.node_receipt();
+    let span = UiMountedTextPaintSpanIdentity::from_runtime_mounting([83; 32]);
+    let candidate = mixed_text_row(&context, instance, receipt, span, span);
+    let command = UiMountedPaintCommandIdentity::semantic_text(&candidate);
+    assert_eq!(
+        surface_text_result(&context, mechanic, [candidate]),
+        Err(
+            UiUnpublishedAppearanceFrameProjectionDenial::DuplicateTextCandidateSpan {
+                command,
+                span,
+            }
+        )
     );
 }

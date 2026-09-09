@@ -4,6 +4,8 @@ use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSemanticSurfaceIdentit
 pub(crate) struct UiMountedProjectionChanges {
     changed_instances:
         crate::runtime::persistent_index::UiPersistentOrdSet<UiMountedInstanceIdentity>,
+    appearance_input_changed_instances:
+        crate::runtime::persistent_index::UiPersistentOrdSet<UiMountedInstanceIdentity>,
     retired_instances:
         crate::runtime::persistent_index::UiPersistentOrdSet<UiMountedInstanceIdentity>,
     changed_surfaces:
@@ -32,8 +34,16 @@ impl UiMountedProjectionChanges {
         }
     }
 
+    pub(crate) fn mark_appearance_input_changed(&mut self, instance: UiMountedInstanceIdentity) {
+        if !self.appearance_input_changed_instances.insert(instance) {
+            self.record_coalesced();
+        }
+    }
+
     pub(crate) fn mark_retired_instance(&mut self, instance: UiMountedInstanceIdentity) {
         self.changed_instances.remove_with_work(&instance);
+        self.appearance_input_changed_instances
+            .remove_with_work(&instance);
         if !self.retired_instances.insert(instance) {
             self.record_coalesced();
         }
@@ -81,6 +91,10 @@ impl UiMountedProjectionChanges {
         for instance in applied.changed_instances.iter() {
             self.changed_instances.remove_with_work(instance);
         }
+        for instance in applied.appearance_input_changed_instances.iter() {
+            self.appearance_input_changed_instances
+                .remove_with_work(instance);
+        }
         for instance in applied.retired_instances.iter() {
             self.retired_instances.remove_with_work(instance);
         }
@@ -99,8 +113,32 @@ impl UiMountedProjectionChanges {
         }
     }
 
+    fn merge(&mut self, addition: &Self) {
+        for instance in addition.changed_instances.iter().copied() {
+            self.mark_changed_instance(instance);
+        }
+        for instance in addition.appearance_input_changed_instances.iter().copied() {
+            if !self.appearance_input_changed_instances.insert(instance) {
+                self.record_coalesced();
+            }
+        }
+        for instance in addition.retired_instances.iter().copied() {
+            self.mark_retired_instance(instance);
+        }
+        for surface in addition.changed_surfaces.iter().copied() {
+            self.mark_changed_surface(surface);
+        }
+        for surface in addition.removed_surfaces.iter().copied() {
+            self.mark_removed_surface(surface);
+        }
+        self.order_changed |= addition.order_changed;
+        self.coalesced = self.coalesced.saturating_add(addition.coalesced);
+        self.overflowed |= addition.overflowed;
+    }
+
     fn is_empty(&self) -> bool {
         self.changed_instances.is_empty()
+            && self.appearance_input_changed_instances.is_empty()
             && self.retired_instances.is_empty()
             && self.changed_surfaces.is_empty()
             && self.removed_surfaces.is_empty()
@@ -122,6 +160,22 @@ impl UiMountedProjectionChangeSnapshot {
 
     pub(crate) fn retired_instances(&self) -> impl Iterator<Item = UiMountedInstanceIdentity> + '_ {
         self.applied.retired_instances.iter().copied()
+    }
+
+    pub(crate) fn appearance_input_changed(&self, instance: UiMountedInstanceIdentity) -> bool {
+        self.applied
+            .appearance_input_changed_instances
+            .contains_with_probes(&instance)
+            .0
+    }
+
+    pub(crate) fn appearance_input_changed_instances(
+        &self,
+    ) -> impl Iterator<Item = UiMountedInstanceIdentity> + '_ {
+        self.applied
+            .appearance_input_changed_instances
+            .iter()
+            .copied()
     }
 
     pub(crate) fn changed_surfaces(&self) -> impl Iterator<Item = UiSemanticSurfaceIdentity> + '_ {
@@ -210,7 +264,14 @@ impl UiMountedProjectionChangeSnapshot {
     }
 
     pub(crate) fn commit_into(&self, pending: &mut UiMountedProjectionChanges) {
-        *pending = self.remainder.clone();
+        // Preserve physical changes recorded after this candidate took its
+        // snapshot. This is required when accepted Motion advances an
+        // unchanged command while a semantic successor is in flight.
+        let mut late = pending.clone();
+        late.apply(&self.observed);
+        let mut remainder = self.remainder.clone();
+        remainder.merge(&late);
+        *pending = remainder;
     }
 }
 

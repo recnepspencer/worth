@@ -21,6 +21,7 @@ pub(crate) enum UiPortalExitTerminalDenial {
 #[must_use = "a prepared portal transition changes no truth until it is committed"]
 pub(crate) struct UiPreparedPortalServiceTransition {
     request: super::UiPortalServiceRequest,
+    policy: crate::declaration::UiPortalPolicy,
     expected_revision: u64,
     committed_revision: u64,
     staged_posture: super::UiPortalLifecyclePosture,
@@ -33,6 +34,7 @@ pub(crate) struct UiPreparedPortalServiceTransition {
 impl UiPreparedPortalServiceTransition {
     pub(super) const fn new(
         request: super::UiPortalServiceRequest,
+        policy: crate::declaration::UiPortalPolicy,
         expected_revision: u64,
         committed_revision: u64,
         staged_posture: super::UiPortalLifecyclePosture,
@@ -43,6 +45,7 @@ impl UiPreparedPortalServiceTransition {
     ) -> Self {
         Self {
             request,
+            policy,
             expected_revision,
             committed_revision,
             staged_posture,
@@ -55,6 +58,10 @@ impl UiPreparedPortalServiceTransition {
 
     pub(crate) const fn request(&self) -> super::UiPortalServiceRequest {
         self.request
+    }
+
+    pub(super) const fn policy(&self) -> crate::declaration::UiPortalPolicy {
+        self.policy
     }
 
     pub(crate) const fn portal(&self) -> super::UiPortalIdentity {

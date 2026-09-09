@@ -7,7 +7,7 @@ use worth_ui_host_contract::{
 use super::{
     interaction::{PositionedCluster, PositionedLineAnchor},
     line_fitting::LinePlan,
-    units::LayoutUnit,
+    units::{LayoutUnit, UnitKind},
     visual_order::{PositionedUnit, VisualLine},
 };
 use crate::UiShapedTextParagraph;
@@ -222,6 +222,9 @@ fn position_glyphs(
     baseline: i64,
     output: &mut Vec<UiPositionedTextGlyphRecord>,
 ) {
+    if unit.kind != UnitKind::Glyphs {
+        return;
+    }
     let run = logical_runs[unit.logical_run_index as usize];
     let style = shaped.styles()[unit.style_index as usize].style();
     let mut x = positioned.x_millipoints;

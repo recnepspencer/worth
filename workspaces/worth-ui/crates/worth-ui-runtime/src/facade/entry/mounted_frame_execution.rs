@@ -15,6 +15,7 @@ pub enum WorthUiMountedFrameExecutionStop<'session> {
     PublicationLease(UiMountedPublicationLeaseDenial),
     HostMeasurement(Box<crate::facade::host::UiHostMeasurementEvidenceDenial>),
     HostMeasurementTransition(Box<super::UiMountedHostMeasurementTransitionDenial>),
+    OccurrenceGeometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
     FrameworkTransition(WorthUiMountedFrameFrameworkTransitionStop<'session>),
     Preparation(Box<UiMountedFramePreparationDenial>),
 }
@@ -69,7 +70,7 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let frame = execution
+        let mut frame = execution
             .prepare_mounted_reconciliation_frame_with_content_internal(
                 request,
                 projection.content(),
@@ -77,7 +78,7 @@ impl WorthUiActiveApplicationSession {
                 replacements,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        execution.presentation.commit(&projection);
+        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
         Ok(frame)
     }
 
@@ -100,7 +101,7 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let frame = execution
+        let mut frame = execution
             .prepare_mounted_reconciliation_frame_with_content_internal(
                 request,
                 projection.content(),
@@ -108,7 +109,7 @@ impl WorthUiActiveApplicationSession {
                 replacements,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        execution.presentation.commit(&projection);
+        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
         Ok(frame)
     }
 
@@ -129,14 +130,14 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let frame = execution
+        let mut frame = execution
             .prepare_mounted_frame_with_content_internal(
                 request,
                 projection.content(),
                 projection.theme_values(),
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        execution.presentation.commit(&projection);
+        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
         Ok(frame)
     }
 
@@ -158,7 +159,7 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let frame = execution
+        let mut frame = execution
             .prepare_mounted_superseding_frame_with_content_internal(
                 request,
                 projection.content(),
@@ -166,7 +167,7 @@ impl WorthUiActiveApplicationSession {
                 predecessor,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        execution.presentation.commit(&projection);
+        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
         Ok(frame)
     }
 }
@@ -185,9 +186,20 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
         })?;
 
         match execution.classify_mounted_frame_reuse_internal(&request) {
-            UiMountedFrameReuse::Exact(witness) => Ok(UiMountedFrameOutcome::Unchanged(
-                witness.publication().clone(),
-            )),
+            UiMountedFrameReuse::Exact(witness) => {
+                execution
+                    .mounted
+                    .admit_pointer_reuse_observation(
+                        execution.pointer_affordance_snapshot.as_ref(),
+                        &request,
+                    )
+                    .map_err(|denial| {
+                        WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial))
+                    })?;
+                Ok(UiMountedFrameOutcome::Unchanged(
+                    witness.publication().clone(),
+                ))
+            }
             UiMountedFrameReuse::ComparisonRequired(_) => {
                 let frame =
                     execution
@@ -195,13 +207,8 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                         .map_err(|denial| {
                             WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial))
                         })?;
-                let transition = execution.mounted.present_prepared_frame(
-                    execution.host_session,
-                    frame,
-                    Some(execution.appearance_inspection),
-                    deadline,
-                    now,
-                );
+                let transition =
+                    execution.present_prepared_frame_with_appearance(frame, deadline, now);
                 Ok(finish_mounted_transition(
                     execution.mounted,
                     execution.focus,
@@ -214,6 +221,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                     transition,
                     Some(execution.appearance_inspection),
                     Some(execution.presentation),
+                    Some(execution.overlay_composition_owners),
                 ))
             }
         }

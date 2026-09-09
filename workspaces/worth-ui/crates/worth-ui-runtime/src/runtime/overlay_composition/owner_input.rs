@@ -59,7 +59,8 @@ impl UiOverlayOwnerExportVector {
                 )
             })
             .transpose()
-            .map_err(|_| UiOverlayOwnerExportDenial::BindingExport)?;
+            .map_err(|_| UiOverlayOwnerExportDenial::BindingExport)?
+            .filter(|motion| !motion.is_empty());
         let bindings = UiOverlayPortalBindingExport::from_owner(prepared_generation, bindings)
             .map_err(|_| UiOverlayOwnerExportDenial::BindingExport)?;
         let portal_snapshot = portal.into_snapshot();

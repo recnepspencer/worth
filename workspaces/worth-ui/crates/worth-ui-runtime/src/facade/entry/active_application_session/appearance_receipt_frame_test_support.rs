@@ -45,9 +45,60 @@ pub(super) fn publish_frame(
             now,
             |_| {},
         )
-        .unwrap_or_else(|_| panic!("receipt frame should publish"));
-    assert!(matches!(
-        outcome,
-        crate::mounting::UiMountedFrameOutcome::Published(_)
-    ));
+        .unwrap_or_else(|stop| {
+            use crate::facade::entry::WorthUiMountedFrameExecutionStop as Stop;
+            match stop {
+                Stop::Preparation(denial) => {
+                    panic!("receipt frame preparation at {now}: {denial:?}")
+                }
+                Stop::PublicationLease(denial) => {
+                    panic!("receipt frame lease at {now}: {denial:?}")
+                }
+                Stop::HostMeasurement(denial) => {
+                    panic!("receipt frame measurement at {now}: {denial:?}")
+                }
+                Stop::HostMeasurementTransition(denial) => {
+                    panic!("receipt frame measurement transition at {now}: {denial:?}")
+                }
+                Stop::OccurrenceGeometry(denial) => {
+                    panic!("receipt frame occurrence geometry at {now}: {denial:?}")
+                }
+                Stop::FrameworkTransition(_) => {
+                    panic!("receipt frame framework transition at {now}")
+                }
+            }
+        });
+    match outcome {
+        crate::mounting::UiMountedFrameOutcome::Published(_) => {}
+        crate::mounting::UiMountedFrameOutcome::Unchanged(_) => {
+            panic!("receipt frame was unchanged at {now}")
+        }
+        crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejection) => {
+            panic!("receipt frame admission at {now}: {:?}", rejection.denial())
+        }
+        crate::mounting::UiMountedFrameOutcome::RetentionDenied(rejection) => {
+            panic!("receipt frame retention at {now}: {:?}", rejection.denial())
+        }
+        crate::mounting::UiMountedFrameOutcome::CompletionDenied(denial) => {
+            panic!("receipt frame completion at {now}: {denial:?}")
+        }
+        crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejection) => {
+            panic!(
+                "receipt frame rejection at {now}: {:?}",
+                rejection.rejections()
+            )
+        }
+        crate::mounting::UiMountedFrameOutcome::InFlight(_) => {
+            panic!("receipt frame remained in flight at {now}")
+        }
+        crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_) => {
+            panic!("receipt frame became indeterminate at {now}")
+        }
+        crate::mounting::UiMountedFrameOutcome::Superseded(_) => {
+            panic!("receipt frame was superseded at {now}")
+        }
+        crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
+            panic!("receipt frame reconciled at {now}")
+        }
+    }
 }

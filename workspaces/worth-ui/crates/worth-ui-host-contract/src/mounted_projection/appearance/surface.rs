@@ -12,16 +12,63 @@ pub enum UiMountedSurfacePaint {
     },
 }
 
+/// Exact allocation edges on which an inward surface border may paint.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct UiMountedSurfaceBorderEdges(u8);
+
+impl UiMountedSurfaceBorderEdges {
+    const TOP: u8 = 1;
+    const RIGHT: u8 = 2;
+    const BOTTOM: u8 = 4;
+    const LEFT: u8 = 8;
+
+    pub const ALL: Self = Self(Self::TOP | Self::RIGHT | Self::BOTTOM | Self::LEFT);
+
+    #[doc(hidden)]
+    pub const fn from_runtime_mosaic(top: bool, right: bool, bottom: bool, left: bool) -> Self {
+        Self(
+            (if top { Self::TOP } else { 0 })
+                | (if right { Self::RIGHT } else { 0 })
+                | (if bottom { Self::BOTTOM } else { 0 })
+                | (if left { Self::LEFT } else { 0 }),
+        )
+    }
+
+    pub const fn top(self) -> bool {
+        self.0 & Self::TOP != 0
+    }
+    pub const fn right(self) -> bool {
+        self.0 & Self::RIGHT != 0
+    }
+    pub const fn bottom(self) -> bool {
+        self.0 & Self::BOTTOM != 0
+    }
+    pub const fn left(self) -> bool {
+        self.0 & Self::LEFT != 0
+    }
+    pub const fn any(self) -> bool {
+        self.0 != 0
+    }
+}
+
+impl Default for UiMountedSurfaceBorderEdges {
+    fn default() -> Self {
+        Self::ALL
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiMountedSurfaceAppearanceMechanic {
     node_receipt: crate::UiMountedNodeReceiptIdentity,
     bounds: super::UiAppearanceAllocationBounds,
     clip: super::UiAppearanceClip,
-    layer: crate::UiMountedLayerProjection,
+    surface_paint_order: u32,
     visual_bounds: super::UiAppearanceVisualBounds,
     radii: super::UiAppearanceNormalizedLogicalRadii,
+    border_edges: UiMountedSurfaceBorderEdges,
+    border_omissions: Box<[super::UiMountedSurfaceBorderOmission]>,
     paint: UiMountedSurfacePaint,
-    opacity: super::UiMountedAppearanceOpacity,
+    opacity: crate::UiMountedPresentationOpacity,
     projection: super::UiMountedNodeAppearanceAttribution,
 }
 
@@ -31,10 +78,12 @@ pub struct UiMountedSurfaceAppearanceCompletionInput {
     pub node_receipt: crate::UiMountedNodeReceiptIdentity,
     pub bounds: super::UiAppearanceAllocationBounds,
     pub clip: super::UiAppearanceClip,
-    pub layer: crate::UiMountedLayerProjection,
+    pub surface_paint_order: u32,
     pub radii: super::UiAppearanceNormalizedLogicalRadii,
+    pub border_edges: UiMountedSurfaceBorderEdges,
+    pub border_omissions: Box<[super::UiMountedSurfaceBorderOmission]>,
     pub paint: UiMountedSurfacePaint,
-    pub opacity: super::UiMountedAppearanceOpacity,
+    pub opacity: crate::UiMountedPresentationOpacity,
     pub projection: super::UiMountedNodeAppearanceAttribution,
 }
 
@@ -44,6 +93,7 @@ pub enum UiMountedSurfaceAppearanceCompletionDenial {
     ProjectionIssuerMismatch,
     RadiiAllocationMismatch,
     BorderWidthExceedsHalfMinimumDimension,
+    BorderOmissionOutOfBounds,
 }
 
 impl UiMountedSurfaceAppearanceMechanic {
@@ -70,13 +120,26 @@ impl UiMountedSurfaceAppearanceMechanic {
                 UiMountedSurfaceAppearanceCompletionDenial::BorderWidthExceedsHalfMinimumDimension,
             );
         }
+        if input.border_omissions.iter().any(|omission| {
+            let extent = match omission.side() {
+                super::UiMountedSurfaceBorderSide::Top
+                | super::UiMountedSurfaceBorderSide::Bottom => input.bounds.width(),
+                super::UiMountedSurfaceBorderSide::Right
+                | super::UiMountedSurfaceBorderSide::Left => input.bounds.height(),
+            };
+            omission.end() > extent
+        }) {
+            return Err(UiMountedSurfaceAppearanceCompletionDenial::BorderOmissionOutOfBounds);
+        }
         Ok(Self {
             node_receipt: input.node_receipt,
             bounds: input.bounds,
             clip: input.clip,
-            layer: input.layer,
+            surface_paint_order: input.surface_paint_order,
             visual_bounds: super::UiAppearanceVisualBounds::from_surface_allocation(input.bounds),
             radii: input.radii,
+            border_edges: input.border_edges,
+            border_omissions: input.border_omissions,
             paint: input.paint,
             opacity: input.opacity,
             projection: input.projection,
@@ -92,8 +155,8 @@ impl UiMountedSurfaceAppearanceMechanic {
     pub const fn clip(&self) -> super::UiAppearanceClip {
         self.clip
     }
-    pub const fn layer(&self) -> crate::UiMountedLayerProjection {
-        self.layer
+    pub const fn surface_paint_order(&self) -> u32 {
+        self.surface_paint_order
     }
     pub const fn visual_bounds(&self) -> super::UiAppearanceVisualBounds {
         self.visual_bounds
@@ -101,10 +164,16 @@ impl UiMountedSurfaceAppearanceMechanic {
     pub const fn radii(&self) -> super::UiAppearanceNormalizedLogicalRadii {
         self.radii
     }
+    pub const fn border_edges(&self) -> UiMountedSurfaceBorderEdges {
+        self.border_edges
+    }
+    pub fn border_omissions(&self) -> &[super::UiMountedSurfaceBorderOmission] {
+        &self.border_omissions
+    }
     pub const fn paint(&self) -> &UiMountedSurfacePaint {
         &self.paint
     }
-    pub const fn opacity(&self) -> super::UiMountedAppearanceOpacity {
+    pub const fn opacity(&self) -> crate::UiMountedPresentationOpacity {
         self.opacity
     }
     pub const fn projection(&self) -> super::UiMountedNodeAppearanceAttribution {
@@ -134,16 +203,18 @@ mod tests {
             node_receipt: issuer.receipt_for(instance),
             bounds,
             clip: super::super::UiAppearanceClip::new(0, 0, width, height).unwrap(),
-            layer: crate::UiMountedLayerProjection::Layer(crate::UiMountedLayerReference::new(0)),
+            surface_paint_order: 0,
             radii: super::super::UiAppearanceNormalizedLogicalRadii::normalize(
                 bounds,
                 [super::super::UiAppearanceLogicalLength::ZERO; 4],
             ),
+            border_edges: UiMountedSurfaceBorderEdges::ALL,
+            border_omissions: Box::new([]),
             paint: UiMountedSurfacePaint::Border {
                 color: super::super::UiMountedAppearanceColor::from_straight_srgba([0; 4]),
                 inward_width: length(inward_width),
             },
-            opacity: super::super::UiMountedAppearanceOpacity::ONE,
+            opacity: crate::UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection: super::super::UiMountedNodeAppearanceAttribution::from_runtime_mounting(
                 issuer, 1, 1,
             )
@@ -185,6 +256,24 @@ mod tests {
         assert_eq!(
             UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(mismatched),
             Err(UiMountedSurfaceAppearanceCompletionDenial::RadiiAllocationMismatch)
+        );
+    }
+
+    #[test]
+    fn surface_completion_denies_border_omission_beyond_its_side() {
+        let mut surface = input(5, 9, 0);
+        surface.border_omissions = Box::new([
+            super::super::UiMountedSurfaceBorderOmission::from_runtime_mosaic(
+                super::super::UiMountedSurfaceBorderSide::Top,
+                4,
+                6,
+            )
+            .unwrap(),
+        ]);
+
+        assert_eq!(
+            UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(surface),
+            Err(UiMountedSurfaceAppearanceCompletionDenial::BorderOmissionOutOfBounds)
         );
     }
 

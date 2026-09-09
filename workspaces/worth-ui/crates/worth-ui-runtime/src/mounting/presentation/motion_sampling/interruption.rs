@@ -2,7 +2,7 @@
 pub(super) enum UiPresentationMotionInstallation {
     Install {
         geometry: Option<[f32; 4]>,
-        opacity: f32,
+        opacity_units: u16,
         duration_ticks: u32,
     },
     SnapToTarget,
@@ -10,7 +10,7 @@ pub(super) enum UiPresentationMotionInstallation {
 
 pub(super) fn resolve(
     track: crate::runtime::motion::UiCommittedMotionTrack,
-    current: Option<(Option<[f32; 4]>, f32)>,
+    current: Option<(Option<[f32; 4]>, u16)>,
     reduced_motion: super::UiPresentationReducedMotionPosture,
 ) -> UiPresentationMotionInstallation {
     let declaration = track.declaration();
@@ -23,7 +23,7 @@ pub(super) fn resolve(
         }
         return UiPresentationMotionInstallation::Install {
             geometry: semantic_predecessor(track),
-            opacity: predecessor_opacity(track),
+            opacity_units: predecessor_opacity_units(track),
             duration_ticks: 1,
         };
     }
@@ -31,18 +31,22 @@ pub(super) fn resolve(
     match track.retarget() {
         None => UiPresentationMotionInstallation::Install {
             geometry: semantic_predecessor(track),
-            opacity: predecessor_opacity(track),
+            opacity_units: predecessor_opacity_units(track),
             duration_ticks,
         },
         Some(crate::runtime::motion::UiMotionRetargetDisposition::Install {
             predecessor:
                 crate::runtime::motion::UiMotionRetargetPredecessor::CurrentPresentationSample,
         }) => {
-            let (geometry, opacity) = current
-                .unwrap_or_else(|| (semantic_predecessor(track), predecessor_opacity(track)));
+            let (geometry, opacity_units) = current.unwrap_or_else(|| {
+                (
+                    semantic_predecessor(track),
+                    predecessor_opacity_units(track),
+                )
+            });
             UiPresentationMotionInstallation::Install {
                 geometry,
-                opacity,
+                opacity_units,
                 duration_ticks,
             }
         }
@@ -57,12 +61,12 @@ pub(super) fn semantic_predecessor(
         .map(crate::runtime::motion::UiMotionSemanticGeometry::components)
 }
 
-pub(super) const fn predecessor_opacity(
+pub(super) const fn predecessor_opacity_units(
     track: crate::runtime::motion::UiCommittedMotionTrack,
-) -> f32 {
+) -> u16 {
     if track.predecessor_visible() {
-        1.0
+        u16::MAX
     } else {
-        0.0
+        0
     }
 }

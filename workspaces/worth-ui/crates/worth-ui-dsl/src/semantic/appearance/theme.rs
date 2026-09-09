@@ -131,13 +131,6 @@ impl UiThemeOpacity {
     pub const fn units(self) -> u16 {
         self.0
     }
-
-    pub fn compose(self, other: Self) -> Self {
-        Self(round_ratio_to_even(
-            u128::from(self.0) * u128::from(other.0),
-            u128::from(u16::MAX),
-        ) as u16)
-    }
 }
 
 fn round_ratio_to_even(numerator: u128, denominator: u128) -> u128 {
@@ -279,15 +272,9 @@ mod tests {
     }
 
     #[test]
-    fn opacity_uses_exact_nearest_even_integer_composition() {
+    fn opacity_authoring_quantizes_exact_ratios_to_nearest_even_units() {
         assert_eq!(UiThemeOpacity::from_ratio(1, 2).unwrap().units(), 32_768);
         assert_eq!(UiThemeOpacity::from_ratio(40, 64).unwrap().units(), 40_959);
-        assert_eq!(
-            UiThemeOpacity::ONE
-                .compose(UiThemeOpacity::from_units(7))
-                .units(),
-            7
-        );
         assert_eq!(
             UiThemeOpacity::from_ratio(u64::MAX - 1, u64::MAX)
                 .unwrap()

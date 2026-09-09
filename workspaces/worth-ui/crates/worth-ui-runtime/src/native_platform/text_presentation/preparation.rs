@@ -8,6 +8,10 @@ use worth_ui_host_contract::{
     UiMountedPresentationWorkView, UiMountedSurfaceBindingRequirement,
 };
 
+#[path = "preparation/complete.rs"]
+mod complete;
+pub(crate) use complete::prepare_complete_semantic_text;
+
 #[path = "preparation/demand_join.rs"]
 mod demand_join;
 #[path = "preparation/mounted_work.rs"]
@@ -98,24 +102,20 @@ pub(crate) fn prepare_mounted_semantic_text<'work>(
     ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
 ) -> Option<UiNativeTextPresentationPreparation> {
     let pin_work = mounted_semantic_text(work);
-    // A delta removal carries only its command identity.  Preserve it here so
-    // the runtime's committed command-to-pin owner can decide whether it is a
-    // text release.  Arbitrary non-text removals remain insufficient because
-    // the mounted text coordinator rejects zero-demand candidates that do not
-    // change committed text ownership.
-    if pin_work.mechanics.is_empty()
-        && pin_work.removals.is_empty()
-        && !pin_work.complete
-        && !matches!(work, UiMountedPresentationWorkView::Delta(_))
-    {
+    // Every mounted successor, including unchanged paint, carries Query
+    // currentness through host acceptance. Empty demand preserves retained
+    // commands and pins without preparing layout or raster work. Physical
+    // samples retain the mounted frame and have their own acceptance path.
+    if matches!(work, UiMountedPresentationWorkView::Sample(_)) {
         return None;
     }
     let lane = lane_for(work);
-    let damage = canonical_damage(logical_damage(work));
     let join = MountedTextDemandJoin {
         dpi,
         lane,
-        damage: &damage,
+        // Native retention replaces each selected command's entire glyph-run set.
+        // Damage narrows replay, not the evidence retained for future replay.
+        selection: worth_ui_text::UiGlyphRasterDemandSelection::CompleteLayout,
         resolve,
         _layout: std::marker::PhantomData,
     };
@@ -360,3 +360,11 @@ fn lane_for(work: UiMountedPresentationWorkView<'_>) -> UiGlyphRasterLane {
 #[cfg(test)]
 #[path = "preparation_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "preparation/retained_demand_tests.rs"]
+mod retained_demand_tests;
+
+#[cfg(test)]
+#[path = "preparation/currentness_tests.rs"]
+mod currentness_tests;

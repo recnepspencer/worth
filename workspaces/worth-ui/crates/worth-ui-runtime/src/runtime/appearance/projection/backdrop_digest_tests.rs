@@ -221,3 +221,80 @@ fn unadmitted_backdrop_role_denial_is_independent_and_effect_free() {
         let _ = session.shutdown();
     });
 }
+
+#[test]
+fn literal_backdrop_values_resolve_without_slot_work_and_still_require_surface_authority() {
+    super::tests::run_on_appearance_fixture_stack(|| {
+        use worth_ui_dsl::*;
+        let background = UiThemeValue::Color(UiThemeColor::from_channels([16, 32, 48, 255]));
+        let opacity = UiThemeValue::Opacity(UiThemeOpacity::from_ratio(1, 2).unwrap());
+        let contract = UiAppearanceAspectContract::backdrop();
+        let role = UiAppearanceRoleDeclaration::admit(
+            UiAppearanceRoleIdentity::new("test.backdrop.literal").unwrap(),
+            UiAppearanceRoleRevision::new(1).unwrap(),
+            UiAppearanceRoleApplicability::Backdrop,
+            &contract,
+            [
+                (UiAppearanceAspect::Background, background),
+                (UiAppearanceAspect::Opacity, opacity),
+            ]
+            .map(|(aspect, value)| {
+                (
+                    aspect,
+                    UiAppearanceDecisionPartition::compile(
+                        [],
+                        [UiAppearanceDecisionRule::new(
+                            [],
+                            UiAppearanceDecisionResult::literal(value),
+                        )],
+                    )
+                    .unwrap(),
+                )
+            }),
+        )
+        .unwrap();
+        let (session, role, surface, vector, theme) =
+            super::backdrop_digest_support::inputs_for_role(role);
+        let projection = projection_for(&session, &role, surface, &vector, &theme, 7, 1, 1);
+        assert_eq!(projection.aspects().len(), 2);
+        for (aspect, expected) in projection.aspects().iter().zip([background, opacity]) {
+            assert_eq!(aspect.value(), expected);
+            assert_eq!(aspect.provenance(), &super::UiAppearanceProvenance::Literal);
+            assert_eq!(aspect.theme_slots_compared(), 0);
+            assert_eq!(
+                aspect.support(),
+                super::UiAppearanceSupportPosture::Supported
+            );
+        }
+        let declaration_surface = UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
+        let identity = UiBackdropIdentity::new(7).unwrap();
+        let declaration = declaration(&role, identity, declaration_surface);
+        let instance = UiBackdropInstanceIdentity::surface_singleton(identity);
+        let overlay = overlay(
+            &session,
+            surface,
+            declaration_surface,
+            &declaration,
+            instance,
+            true,
+            1,
+            1,
+        );
+        let foreign_surface =
+            worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+        let foreign_theme = backdrop_theme_view(&session, &role, foreign_surface);
+        let denial = UiAppearanceResolver::new()
+            .resolve_backdrop(
+                instance,
+                &declaration,
+                &role,
+                &vector,
+                &foreign_theme,
+                &overlay,
+            )
+            .unwrap_err();
+        assert_eq!(denial.denial(), UiAppearanceResolutionDenial::WrongSurface);
+        assert_eq!(denial.theme_slots_compared(), 0);
+        let _ = session.shutdown();
+    });
+}

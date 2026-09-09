@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-const MAX_PRESENTATION_TRACKS: usize = 64;
+mod presented_samples;
+
+pub(super) const MAX_PRESENTATION_TRACKS: usize = 64;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPresentationMotionSamplingDenial {
@@ -60,6 +62,26 @@ impl Default for UiMountedMotionSampler {
 }
 
 impl UiMountedMotionSampler {
+    pub(in crate::mounting) fn retained_targets(
+        &self,
+    ) -> Vec<crate::runtime::motion::UiMotionTargetIdentity> {
+        self.tracks.keys().copied().collect()
+    }
+
+    pub(in crate::mounting) fn rebind_published_presentation(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) {
+        for state in self
+            .tracks
+            .values_mut()
+            .filter(|state| state.track.target().semantic_surface() == surface)
+        {
+            state.rebind_published_presentation(presentation);
+        }
+    }
+
     pub(crate) fn install(
         &mut self,
         receipt: crate::runtime::motion::UiMotionCommitReceipt,
@@ -81,19 +103,19 @@ impl UiMountedMotionSampler {
         let current = self.tracks.get(&target).and_then(|state| {
             state
                 .active
-                .then_some((state.current_geometry, state.current_opacity))
+                .then_some((state.current_geometry, state.current_opacity_units))
         });
         match super::interruption::resolve(track, current, self.reduced_motion) {
             super::interruption::UiPresentationMotionInstallation::Install {
                 geometry,
-                opacity,
+                opacity_units,
                 duration_ticks,
             } => {
                 let state = match super::track_sampling::UiPresentationTrackState::new(
                     track,
                     None,
                     geometry,
-                    opacity,
+                    opacity_units,
                     duration_ticks,
                 ) {
                     Ok(state) => state,
@@ -225,38 +247,6 @@ impl UiMountedMotionSampler {
         Ok(super::UiPresentationMotionSamplingReceipt::new(
             samples, terminals, considered,
         ))
-    }
-
-    pub(crate) fn current_sample_for(
-        &self,
-        mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Option<super::UiPresentationMotionSampleReceipt> {
-        let mut matches = self.tracks.values().filter_map(|state| {
-            if !state.presented {
-                return None;
-            }
-            let sample = state.current?;
-            (sample.target().mounted_instance() == mounted_instance
-                && same_surface_binding(sample.geometry()?.presentation_basis(), presentation))
-            .then_some(sample)
-        });
-        let sample = matches.next()?;
-        matches.next().is_none().then_some(sample)
-    }
-
-    pub(crate) fn current_sample_for_target(
-        &self,
-        target: crate::runtime::motion::UiMotionTargetIdentity,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Option<super::UiPresentationMotionSampleReceipt> {
-        let state = self.tracks.get(&target)?;
-        if !state.presented {
-            return None;
-        }
-        let sample = state.current?;
-        same_surface_binding(sample.geometry()?.presentation_basis(), presentation)
-            .then_some(sample)
     }
 
     pub(crate) fn retire_terminal_track(

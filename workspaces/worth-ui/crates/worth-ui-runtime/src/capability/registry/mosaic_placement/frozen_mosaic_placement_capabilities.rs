@@ -51,6 +51,13 @@ impl FrozenMosaicPlacementCapabilities {
     }
 }
 
+impl MosaicPlacementPolicyDescriptor {
+    /// The same complete descriptor basis used by the frozen capability catalog.
+    pub(crate) fn digest_basis(&self) -> u64 {
+        fold_mosaic_placement_descriptor(0x6c8e_9cf5_7b2d_4a31, self)
+    }
+}
+
 fn fold_mosaic_placement_descriptor(
     accumulator: u64,
     descriptor: &MosaicPlacementPolicyDescriptor,

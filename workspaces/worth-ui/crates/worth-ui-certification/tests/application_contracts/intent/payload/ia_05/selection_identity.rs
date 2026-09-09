@@ -153,6 +153,12 @@ fn assert_selection_payload(
     let UiSemanticInteraction::Activate(activation) = super::activation(world, [10, 20]) else {
         panic!("current target produces activation")
     };
+    let target_receipt = activation.target().node_receipt();
+    world
+        .interaction
+        .session
+        .bind_selection_item(target_receipt, target_receipt, option.clone())
+        .expect("the declared single-item owner binds its current option");
     let selection = world
         .interaction
         .session

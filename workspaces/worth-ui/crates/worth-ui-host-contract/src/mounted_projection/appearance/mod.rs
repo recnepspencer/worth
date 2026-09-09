@@ -16,6 +16,8 @@ mod pointer_affordance;
 mod portal_surface;
 mod radii;
 mod surface;
+mod surface_border;
+mod text_damage;
 mod text_foreground;
 mod unpublished;
 
@@ -78,8 +80,10 @@ pub use portal_surface::{
 pub use radii::UiAppearanceNormalizedLogicalRadii;
 pub use surface::{
     UiMountedSurfaceAppearanceCompletionDenial, UiMountedSurfaceAppearanceCompletionInput,
-    UiMountedSurfaceAppearanceMechanic, UiMountedSurfacePaint,
+    UiMountedSurfaceAppearanceMechanic, UiMountedSurfaceBorderEdges, UiMountedSurfacePaint,
 };
+pub use surface_border::{UiMountedSurfaceBorderOmission, UiMountedSurfaceBorderSide};
+pub use text_damage::{UiAppearanceTextDamageRequirement, UiAppearanceTextDamageTransition};
 pub use text_foreground::{
     UiMountedTextForegroundAppearanceCompletionDenial,
     UiMountedTextForegroundAppearanceCompletionInput, UiMountedTextForegroundAppearanceMechanic,

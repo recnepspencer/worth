@@ -17,6 +17,8 @@ mod tests;
 
 #[cfg(test)]
 pub(crate) use tests::inputs as projection_test_inputs;
+#[cfg(test)]
+pub(crate) use tests::inputs_from_session as projection_test_inputs_from_session;
 
 #[allow(
     unused_imports,

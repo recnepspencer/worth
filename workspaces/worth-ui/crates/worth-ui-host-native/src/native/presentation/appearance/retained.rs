@@ -1,3 +1,12 @@
+#[path = "retained/damage.rs"]
+mod damage;
+use damage::record_damage;
+#[path = "retained/text_paint.rs"]
+mod text_paint;
+#[path = "retained/text_transaction.rs"]
+mod text_transaction;
+pub(crate) use text_transaction::UiNativeTextCoverageUndo;
+
 use std::collections::BTreeMap;
 
 use super::super::damage_index::{UiNativeDamageIndex, UiNativeDamageIndexDenial};
@@ -6,9 +15,7 @@ use super::command::{
     UiNativeAppearanceCommand, UiNativeAppearanceCommandFamily, UiNativeAppearanceCommandIdentity,
     UiNativeAppearanceCommandKey,
 };
-use super::damage::{
-    UiNativeAppearanceDamage, UiNativeAppearanceDamageRect, UiNativeAppearanceDamageSetDenial,
-};
+use super::damage::{UiNativeAppearanceDamage, UiNativeAppearanceDamageRect};
 use super::damage_candidate::candidate_bounds;
 use super::geometry::{UiNativeAppearanceScale, UiNativeGeometryDenial};
 
@@ -33,6 +40,7 @@ pub(crate) enum UiNativeAppearanceRetainedDenial {
     FamilyCapacityExceeded,
     IdentityFamilyMismatch,
     EmptyDamage,
+    StaleTextImages,
     Geometry(UiNativeGeometryDenial),
     DamageCapacityExceeded,
     DamageIndexCapacityExceeded,
@@ -100,9 +108,7 @@ impl UiNativeAppearanceRetained {
             .damage_rect(self.scale)
             .map_err(UiNativeAppearanceRetainedDenial::Geometry)?;
         let mut pending_damage = self.pending_damage.clone();
-        if let Some(rect) = damage {
-            pending_damage.add(rect).map_err(map_damage_denial)?;
-        }
+        record_damage(&command, damage, &mut pending_damage)?;
         let candidate = damage
             .map(|rect| candidate_bounds(rect).map_err(UiNativeAppearanceRetainedDenial::Geometry))
             .transpose()?;
@@ -149,15 +155,12 @@ impl UiNativeAppearanceRetained {
             .damage_rect(self.scale)
             .map_err(UiNativeAppearanceRetainedDenial::Geometry)?;
         let mut pending_damage = self.pending_damage.clone();
-        if old_damage.is_some() || new_damage.is_some() {
-            let changed = match (old_damage, new_damage) {
-                (Some(old), Some(new)) => old.union(new),
-                (Some(old), None) => old,
-                (None, Some(new)) => new,
-                (None, None) => unreachable!("the guarded damage branch has a region"),
-            };
-            pending_damage.add(changed).map_err(map_damage_denial)?;
-        }
+        let previous = self
+            .commands
+            .get(&key)
+            .ok_or(UiNativeAppearanceRetainedDenial::MissingIdentity)?;
+        record_damage(previous, old_damage, &mut pending_damage)?;
+        record_damage(&command, new_damage, &mut pending_damage)?;
         self.replace_damage_index(key, old_damage, new_damage)?;
         self.commands.insert(key, command);
         match new_damage {
@@ -209,8 +212,8 @@ impl UiNativeAppearanceRetained {
             .ok_or(UiNativeAppearanceRetainedDenial::MissingIdentity)?;
         let damage = self.damage_bounds.get(&key).copied();
         let mut pending_damage = self.pending_damage.clone();
-        if let Some(rect) = damage {
-            pending_damage.add(rect).map_err(map_damage_denial)?;
+        record_damage(command, damage, &mut pending_damage)?;
+        if damage.is_some() {
             self.damage_index.remove(key).map_err(map_index_denial)?;
         }
         self.order
@@ -259,9 +262,16 @@ impl UiNativeAppearanceRetained {
         self.counters.damage_branch_probes += query.branch_aabb_probes;
         self.counters.damage_leaf_probes += query.leaf_command_bounds_probes;
         let candidates = query.identities.into_iter().filter(|key| {
-            self.damage_bounds
-                .get(key)
-                .is_some_and(|bounds| bounds.intersects(damage))
+            self.commands.get(key).is_some_and(|command| {
+                command.text_coverage().map_or_else(
+                    || {
+                        self.damage_bounds
+                            .get(key)
+                            .is_some_and(|bounds| bounds.intersects(damage))
+                    },
+                    |regions| regions.iter().any(|region| region.intersects(damage)),
+                )
+            })
         });
         let ordered = self
             .order
@@ -283,6 +293,13 @@ impl UiNativeAppearanceRetained {
         key: UiNativeAppearanceCommandKey,
     ) -> Option<&UiNativeAppearanceCommand> {
         self.commands.get(&key)
+    }
+
+    pub(crate) fn key_for_identity(
+        &self,
+        identity: &UiNativeAppearanceCommandIdentity,
+    ) -> Option<UiNativeAppearanceCommandKey> {
+        self.identities.get(identity).copied()
     }
 
     pub(crate) fn counters(&self) -> UiNativeAppearanceRetentionCounters {
@@ -336,19 +353,6 @@ fn family_capacity(
         }
         UiNativeAppearanceCommandFamily::PointerAffordance => {
             usize::from(profile.pointer_affordance_commands)
-        }
-    }
-}
-
-fn map_damage_denial(
-    denial: UiNativeAppearanceDamageSetDenial,
-) -> UiNativeAppearanceRetainedDenial {
-    match denial {
-        UiNativeAppearanceDamageSetDenial::CapacityExceeded => {
-            UiNativeAppearanceRetainedDenial::DamageCapacityExceeded
-        }
-        UiNativeAppearanceDamageSetDenial::Empty => {
-            UiNativeAppearanceRetainedDenial::Geometry(UiNativeGeometryDenial::CoordinateOverflow)
         }
     }
 }

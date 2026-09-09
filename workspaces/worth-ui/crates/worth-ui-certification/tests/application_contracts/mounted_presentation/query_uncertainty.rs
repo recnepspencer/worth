@@ -16,6 +16,7 @@ fn native_partial_effect_cancellation_advances_query_to_recovery_required() {
         vec![ScriptedSurfaceCompletion::Pending],
         UiHostSurfaceCancellationOutcome::EffectsMayHaveBegun,
     );
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     let presented = shell
         .present_frame(2, 0)
         .unwrap_or_else(|_| panic!("native semantic frame must enter presentation"));
@@ -34,6 +35,7 @@ fn direct_host_indeterminacy_advances_query_to_recovery_required() {
     host.push_presentation(
         worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
     );
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell
             .present_frame(2, 0)

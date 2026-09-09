@@ -91,7 +91,8 @@ impl WorthUiActiveApplicationSession {
             &application,
             &mounted_successor,
             crate::graph::UiGraphAuthority::new(&candidate_graph),
-            super::mounted_frame::UiMountedReplacementReuseBasis {
+            super::mounted_frame::UiMountedReplacementFrameBasis {
+                application_session: self.identity,
                 generation: candidate_generation,
                 host_session: self.host_session.identity().as_u64(),
                 protocol: self.host_session.protocol(),

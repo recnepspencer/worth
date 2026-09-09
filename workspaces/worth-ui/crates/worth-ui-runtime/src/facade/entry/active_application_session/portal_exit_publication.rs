@@ -315,8 +315,10 @@ impl super::WorthUiActiveApplicationSession {
             Ok(proposal) => proposal,
             Err(_) => return self.retain_portal_exit_retry(track),
         };
-        let outcome = self.present_prepared_mounted_frame_internal(
+        let outcome = self.present_prepared_portal_frame_internal(
             frame,
+            &proposal,
+            false,
             worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
             now_tick,
         );

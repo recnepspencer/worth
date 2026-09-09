@@ -44,6 +44,20 @@ pub(crate) struct RasterRect {
 }
 
 impl RasterRect {
+    pub(super) fn intersection(self, other: Self, extent: [u32; 2]) -> Option<Self> {
+        raster_physical_bounds(
+            [
+                self.physical_left.max(other.physical_left),
+                self.physical_top.max(other.physical_top),
+                (self.physical_left + self.physical_width)
+                    .min(other.physical_left + other.physical_width),
+                (self.physical_top + self.physical_height)
+                    .min(other.physical_top + other.physical_height),
+            ],
+            extent,
+        )
+    }
+
     pub(super) const fn physical_bounds(self) -> [f32; 4] {
         [
             self.physical_left as f32,
@@ -56,7 +70,7 @@ impl RasterRect {
 
 pub(super) fn raster_physical_bounds(bounds: [u32; 4], extent: [u32; 2]) -> Option<RasterRect> {
     let [left, top, right, bottom] = bounds;
-    (left < right && top < bottom && right <= extent[0] && bottom <= extent[1]).then_some(
+    (left < right && top < bottom && right <= extent[0] && bottom <= extent[1]).then(|| {
         RasterRect {
             left: left as f32 * 2.0 / extent[0] as f32 - 1.0,
             top: 1.0 - top as f32 * 2.0 / extent[1] as f32,
@@ -66,8 +80,8 @@ pub(super) fn raster_physical_bounds(bounds: [u32; 4], extent: [u32; 2]) -> Opti
             physical_height: bottom - top,
             physical_left: left,
             physical_top: top,
-        },
-    )
+        }
+    })
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -87,13 +101,23 @@ pub(super) fn raster_rect(
     mechanic: worth_ui_host_contract::UiMountedFilledRectMechanic,
     graphics: &UiNativePresentationAccess,
 ) -> Result<RasterRect, ()> {
+    raster_rect_for_basis(
+        mechanic,
+        UiNativeRasterBasis::from_presentation_access(graphics),
+    )
+}
+
+pub(super) fn raster_rect_for_basis(
+    mechanic: worth_ui_host_contract::UiMountedFilledRectMechanic,
+    basis: UiNativeRasterBasis,
+) -> Result<RasterRect, ()> {
     let bounds = mechanic.bounds();
     let clip = mechanic.clip_bounds();
     raster_from_basis(
         [bounds.x(), bounds.y(), bounds.width(), bounds.height()],
         [clip.x(), clip.y(), clip.width(), clip.height()],
-        graphics.extent(),
-        graphics.scale_factor() as f32,
+        basis.extent(),
+        basis.scale_factor(),
     )
 }
 
@@ -101,13 +125,23 @@ pub(super) fn raster_portal_overlay(
     mechanic: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
     graphics: &UiNativePresentationAccess,
 ) -> Result<RasterRect, ()> {
+    raster_portal_overlay_for_basis(
+        mechanic,
+        UiNativeRasterBasis::from_presentation_access(graphics),
+    )
+}
+
+pub(super) fn raster_portal_overlay_for_basis(
+    mechanic: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+    basis: UiNativeRasterBasis,
+) -> Result<RasterRect, ()> {
     let bounds = mechanic.bounds();
     let clip = mechanic.clip_bounds();
     raster_from_basis(
         [bounds.x(), bounds.y(), bounds.width(), bounds.height()],
         [clip.x(), clip.y(), clip.width(), clip.height()],
-        graphics.extent(),
-        graphics.scale_factor() as f32,
+        basis.extent(),
+        basis.scale_factor(),
     )
 }
 

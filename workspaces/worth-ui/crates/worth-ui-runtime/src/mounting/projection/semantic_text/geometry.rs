@@ -19,7 +19,7 @@ pub(super) fn require_allocation(
     ),
     UiMountedProjectionDenial,
 > {
-    match node.receipt.allocation() {
+    match node.presentation_allocation() {
         UiMountedAllocationProjection::Known { bounds, basis } => Ok((bounds, basis)),
         UiMountedAllocationProjection::PortalAnchorObservation { .. } => Err(
             UiMountedProjectionDenial::UnsupportedSemanticTextAllocation(node.receipt.graph_node()),

@@ -107,7 +107,7 @@ fn require_static_paint_allocation(
     ),
     UiMountedProjectionDenial,
 > {
-    match node.receipt.allocation() {
+    match node.presentation_allocation() {
         UiMountedAllocationProjection::Known { bounds, basis } => Ok((bounds, basis)),
         UiMountedAllocationProjection::PortalAnchorObservation { .. } => Err(
             UiMountedProjectionDenial::UnsupportedStaticPaintAllocation(node.receipt.graph_node()),

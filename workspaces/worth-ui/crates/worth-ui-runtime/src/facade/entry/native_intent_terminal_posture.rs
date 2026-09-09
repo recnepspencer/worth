@@ -28,13 +28,13 @@ impl WorthUiNativeApplicationShell {
                 crate::fact_contract::UiIntentPostureKind::Cancelled
             }
             Posture::Partial { .. } | Posture::Indeterminate { .. } => {
-                return WorthUiNativeIntentTerminalPostureOutcome::RecoveryRetained
+                return WorthUiNativeIntentTerminalPostureOutcome::RecoveryRetained;
             }
             Posture::Started
             | Posture::PendingBeforeEffect
             | Posture::PendingEffectMayHaveBegun
             | Posture::Completed { .. } => {
-                return WorthUiNativeIntentTerminalPostureOutcome::NotTerminal
+                return WorthUiNativeIntentTerminalPostureOutcome::NotTerminal;
             }
         };
         let Some(basis) = transition.posture_basis() else {

@@ -18,8 +18,12 @@ pub(crate) use inspection::{
     UiPreparedAppearanceInspectionGenerationSuccession,
 };
 pub(crate) use invalidation::UiAppearanceInvalidationBatch;
+mod invalidation_input;
+pub(crate) use invalidation_input::UiAppearanceInvalidationInput;
 #[cfg(test)]
 pub(crate) use projection::projection_test_inputs;
+#[cfg(test)]
+pub(crate) use projection::projection_test_inputs_from_session;
 #[allow(
     unused_imports,
     reason = "Gate 1 retains sealed appearance projection re-exports for later mounting consumers"
@@ -42,9 +46,9 @@ pub(crate) use state::{
     UiAppearanceNodeRoleBinding, UiAppearanceSelectionSelector, UiAppearanceStateAdapterDenial,
     UiAppearanceStateAxisDemand, UiAppearanceStateConsumer, UiAppearanceStateConsumerSelection,
     UiAppearanceStateConsumerSelectionCost, UiAppearanceStateVector, UiAppearanceStateVectorDenial,
-    UiAppearanceTarget, UiFocusAppearanceState, UiHoverAppearanceState,
-    UiOperabilityAppearanceState, UiPressedAppearanceState, UiSelectionAppearanceState,
-    UiValidationAppearanceState,
+    UiAppearanceTarget, UiBackdropAppearanceStateVector, UiFocusAppearanceState,
+    UiHoverAppearanceState, UiOperabilityAppearanceState, UiPressedAppearanceState,
+    UiSelectionAppearanceState, UiValidationAppearanceState,
 };
 pub(crate) use theme::{
     prepare_theme_generation_rebinding, UiActiveThemeBinding, UiAppearanceThemeState,

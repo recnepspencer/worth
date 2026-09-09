@@ -80,6 +80,9 @@ impl UiMountedIdentityState {
         let frame = candidate.frame();
         self.current_frame = Some(frame);
         self.current_receipt_basis = Some(candidate.receipt_basis);
+        self.unprojected_semantic_predecessor = self.semantic_predecessor().cloned();
+        self.unprojected_appearance_predecessor = self.appearance_predecessor().cloned();
+        self.unprojected_pointer_predecessor = self.pointer_predecessor().cloned();
         self.current_projection = None;
         self.current_manifest = None;
         self.current_core = None;
@@ -107,6 +110,9 @@ impl UiMountedIdentityState {
         self.current_frame = Some(frame);
         self.current_receipt_basis = Some(identity_candidate.receipt_basis);
         self.current_projection = Some(std::rc::Rc::new(owner));
+        self.unprojected_semantic_predecessor = None;
+        self.unprojected_appearance_predecessor = None;
+        self.unprojected_pointer_predecessor = None;
         self.current_publication = Some(receipt);
         self.current_trace_source = Some(trace_source);
         self.current_reuse_contract = Some(reuse_contract);
@@ -135,6 +141,9 @@ impl UiMountedIdentityState {
         self.current_frame = Some(frame);
         self.current_receipt_basis = Some(identity_candidate.receipt_basis);
         self.current_projection = Some(std::rc::Rc::new(owner));
+        self.unprojected_semantic_predecessor = None;
+        self.unprojected_appearance_predecessor = None;
+        self.unprojected_pointer_predecessor = None;
         self.current_publication = Some(receipt);
         self.current_trace_source = Some(trace_source);
         self.current_reuse_contract = Some(reuse_contract);
@@ -188,6 +197,13 @@ impl UiMountedIdentityState {
         &self,
         replacements: &[super::super::UiMountedSurfaceReconciliationBinding],
     ) -> Result<Vec<UiReconciledBindingView>, UiMountedIdentityDenial> {
+        let distinct = replacements
+            .iter()
+            .map(|replacement| replacement.affected())
+            .collect::<std::collections::BTreeSet<_>>();
+        if distinct.len() != replacements.len() {
+            return Err(UiMountedIdentityDenial::ReconciliationBasisMismatch);
+        }
         replacements
             .iter()
             .map(|replacement| {
@@ -235,6 +251,7 @@ impl UiMountedIdentityState {
                     std::rc::Rc::new(super::super::UiMountedAppearanceProjectionSelection::empty()),
                 ),
                 current_owner.theme_revision(),
+                current_owner.pointer.clone(),
             ),
             identity_candidate,
             projection_changes,

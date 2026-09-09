@@ -22,6 +22,7 @@ mod appearance_state;
 mod authored_aspect_consumers;
 mod canonical_entries;
 mod consumer;
+mod projection_consumer;
 mod subsystem;
 
 use super::intent_posture::intent_posture_consumers;

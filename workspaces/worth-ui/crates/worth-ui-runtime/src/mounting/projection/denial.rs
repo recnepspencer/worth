@@ -1,6 +1,7 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiMountedProjectionDenial {
     Identity(super::super::UiMountedIdentityDenial),
+    OccurrenceGeometry(super::super::UiMountedOccurrenceGeometryDenial),
     UnknownGraphNode,
     MissingSurfaceBinding,
     MissingMosaicFocusScope(crate::graph::UiGraphNodeIdentity),
@@ -75,6 +76,8 @@ pub enum UiMountedProjectionDenial {
     CostCounterOverflow,
     AppearanceSelectionBatchMismatch,
     AppearanceSelectionFrameMismatch,
+    AppearanceRetainedProjectionUnavailable,
+    AppearanceTextCandidatesUnavailable,
     ProjectionOwnerUnavailable,
 }
 

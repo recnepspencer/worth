@@ -4,90 +4,95 @@ use crate::runtime::tests::appearance_component_session_test_support as support;
 mod test_support;
 use test_support::theme_session;
 
+#[path = "appearance_projection_denial_tests.rs"]
+mod denial_tests;
+
+#[path = "appearance_projection_removal_tests.rs"]
+mod removal_tests;
+
+#[path = "appearance_projection_succession_tests.rs"]
+mod succession_tests;
+
+#[path = "appearance_projection_surface_tests.rs"]
+mod surface_tests;
+
+#[path = "appearance_projection_mounting_fixture.rs"]
+mod mounting_fixture;
+
+#[path = "appearance_projection_clip_denial_tests.rs"]
+mod clip_denial_tests;
+#[path = "appearance_projection_outline_tests.rs"]
+mod outline_tests;
+
+#[path = "appearance_projection_pointer_tests.rs"]
+mod pointer_tests;
+
+#[path = "appearance_projection_focus_tests.rs"]
+mod focus_tests;
+
+#[path = "appearance_projection_validation_tests.rs"]
+mod validation_tests;
+
+#[path = "mounted_occurrence_geometry_tests.rs"]
+mod occurrence_geometry_tests;
+#[path = "appearance_projection_operability_tests.rs"]
+mod operability_tests;
+#[path = "appearance_projection_selection_tests.rs"]
+mod selection_tests;
+
+enum Lifecycle {
+    Unmount,
+    RoleDetachment,
+    SurfaceDeregistration,
+    Reconstruction,
+}
+
 #[test]
 fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
-    let role = support::validation_background_role(support::APPEARANCE_TOKEN);
-    let (mut session, host) = theme_session(&role);
-    let surface = session.create_semantic_surface().unwrap();
-    session
-        .register_host_surface(
-            surface,
-            crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
-            crate::facade::mounted::UiSurfaceBindingProfile::new(
-                1_000,
-                crate::facade::mounted::UiSurfaceBindingCoordinatePosture::LogicalPoints,
-                1,
-            )
-            .unwrap(),
-        )
-        .unwrap();
-    let graph_nodes = {
-        let graph = session.graph();
-        graph
-            .node_identities()
-            .filter_map(|identity| {
-                let lookup = graph.lookup().graph_node(identity)?;
-                let semantic = lookup
-                    .value()
-                    .declaration_identity()
-                    .authored_semantic_name()
-                    .to_owned();
-                (semantic != "worth_ui.runtime.bootstrap.product_root")
-                    .then(|| (identity, Box::<str>::from(semantic)))
-            })
-            .collect::<Vec<_>>()
-    };
-    for (graph_node, authored_semantic_identity) in graph_nodes {
-        session
-            .register_application_semantic_text(authored_semantic_identity, graph_node)
-            .unwrap();
-        let mounted_node = session.mounted_graph_node(graph_node).unwrap();
-        session.mount_instance(mounted_node, surface).unwrap();
+    production_appearance_case(
+        worth_ui_dsl::UiAppearanceStateAxis::Validation,
+        Lifecycle::Unmount,
+    );
+}
+
+#[test]
+fn source_role_detachment_retires_appearance_in_the_replacement_frame() {
+    production_appearance_case(
+        worth_ui_dsl::UiAppearanceStateAxis::Validation,
+        Lifecycle::RoleDetachment,
+    );
+}
+
+#[test]
+fn deregistration_discards_only_the_removed_surfaces_retained_appearance() {
+    production_appearance_case(
+        worth_ui_dsl::UiAppearanceStateAxis::Validation,
+        Lifecycle::SurfaceDeregistration,
+    );
+}
+
+#[test]
+fn reconstruction_refreshes_expired_appearance_from_current_owners() {
+    production_appearance_case(
+        worth_ui_dsl::UiAppearanceStateAxis::Validation,
+        Lifecycle::Reconstruction,
+    );
+}
+
+#[test]
+fn first_mount_consumes_empty_pointer_and_pressed_owners() {
+    for axis in [
+        worth_ui_dsl::UiAppearanceStateAxis::Hover,
+        worth_ui_dsl::UiAppearanceStateAxis::Pressed,
+    ] {
+        production_appearance_case(axis, Lifecycle::Unmount);
     }
-    let graph_node = session
-        .graph()
-        .snapshot()
-        .nodes()
-        .iter()
-        .find(|node| node.appearance_role_attachment().is_some())
-        .expect("the production fixture has one appearance consumer")
-        .graph_node_identity();
-    let capability = session.host_measurement_capability();
-    let assumptions = crate::host::UiHostMeasurementAssumptionProfile::from_capability_report(
-        capability.capability_report(),
-        1,
-        2,
-        3,
-        4,
-    );
-    let allocation_receipt = session
-        .establish_mounted_allocation_catalog(
-            1,
-            [
-                crate::facade::entry::UiMountedAllocationMeasurementRequest::new(
-                    worth_ui_host_contract::UiMeasurementEvidenceFamily::ViewportExtent,
-                    crate::host::UiHostMeasurementNeed::ViewportExtent(
-                        worth_ui_host_contract::UiViewportExtentRequest,
-                    ),
-                    crate::host::UiHostMeasurementNormalizationContext::viewport_logical_exact(
-                        assumptions,
-                    ),
-                ),
-            ],
-        )
-        .expect("mounted allocation should commit the component allocation");
-    let committed_nodes = allocation_receipt
-        .committed()
-        .receipts()
-        .iter()
-        .map(|receipt| receipt.identity().graph_node_identity())
-        .collect::<Vec<_>>();
-    assert!(
-        committed_nodes.contains(&graph_node),
-        "appearance node {:?} was not admitted; committed allocation nodes: {:?}",
-        graph_node,
-        committed_nodes
-    );
+}
+
+fn production_appearance_case(axis: worth_ui_dsl::UiAppearanceStateAxis, lifecycle: Lifecycle) {
+    let role = support::validation_background_role_with_axis(support::APPEARANCE_TOKEN, axis);
+    let (mut session, host) = theme_session(&role);
+    let (surface, graph_node) = mounting_fixture::mount(&mut session, 1_000);
     let initial_observation = support::attached_appearance_candidate_submission(
         &session,
         "appearance-production-initial",
@@ -99,39 +104,71 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
     session.classify_observations(initial_admitted).unwrap();
     assert!(session.has_appearance_owner_snapshot_for_test());
     session.advance_mounted_identity_frame().unwrap();
-    host.push_native_display_presented();
-    test_support::publish_frame(&mut session, 0);
-
-    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
-    let value = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex("#405060").unwrap(),
+    assert_eq!(host.presentation_calls(), 0);
+    assert!(session.mounted.current_publication().is_none());
+    test_support::publish_initial_appearance(&mut session, &role, graph_node, 1);
+    let initial_projection = session
+        .mounted
+        .current_unpublished_appearance()
+        .expect("initial appearance transport is admitted")
+        .expect("initial resolved appearance produces unpublished work");
+    test_support::assert_unpublished_surface(initial_projection, [17, 34, 51, 255]);
+    assert_eq!(
+        initial_projection.fragments()[0].work().posture(),
+        worth_ui_host_contract::UiMountedAppearanceWorkPosture::Initial
     );
-    let change = super::super::UiNativeThemeTokenValueChange::new(token, value).unwrap();
-    session.admit_application_theme_values(&[change]).unwrap();
+    let initial_frame = initial_projection.frame();
+    if axis != worth_ui_dsl::UiAppearanceStateAxis::Validation {
+        let _ = session.shutdown();
+        return;
+    }
+
+    test_support::change_appearance_color(&mut session, 0, "#405060");
     assert!(session
         .presentation
         .appearance_invalidation_batch()
         .is_some_and(|batch| batch.selected_count() > 0));
 
-    let outcome = session
-        .execute_mounted_frame(
+    let prepared = session
+        .prepare_mounted_frame_with_application_presentation(
             crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
-            worth_ui_host_contract::UiPresentationDeadline::at_tick(100),
-            1,
             |_| {},
         )
         .unwrap_or_else(|_| {
             panic!("the ordinary production frame should resolve and mount appearance")
         });
+    prepared.verify_unpublished_appearance_denial_and_retry();
+    host.push_native_display_settled_without_effects();
+    let outcome = session.present_prepared_mounted_frame_internal(
+        prepared,
+        worth_ui_host_contract::UiPresentationDeadline::at_tick(100),
+        2,
+    );
     assert!(matches!(
         outcome,
         crate::mounting::UiMountedFrameOutcome::Published(_)
     ));
     let static_paint_colors = host.last_filled_rect_colors();
-    assert!(!static_paint_colors.is_empty());
-    assert!(static_paint_colors
-        .iter()
-        .all(|color| color.channels() == [17, 34, 51, 255]));
+    assert!(
+        static_paint_colors.is_empty(),
+        "Gate 4 keeps resolved appearance out of the live host command lane"
+    );
+
+    let projection = session
+        .mounted
+        .current_unpublished_appearance()
+        .expect("runtime work has current binding and receipt affinity")
+        .expect("resolved background must reach the unpublished frame");
+    test_support::assert_unpublished_surface(projection, [64, 80, 96, 255]);
+    let physical_predecessor = projection.clone();
+    assert_eq!(
+        projection.fragments()[0].work().posture(),
+        worth_ui_host_contract::UiMountedAppearanceWorkPosture::Delta
+    );
+    assert_eq!(
+        projection.fragments()[0].work().predecessor(),
+        Some(initial_frame)
+    );
 
     let world = session.appearance_inspection_world(surface);
     let query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
@@ -163,158 +200,37 @@ fn why_appearance_reads_the_production_resolve_and_mount_receipt() {
         )
     );
 
-    let _ = session.shutdown();
-}
-
-#[test]
-fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
-    let role = support::validation_background_role_with_axis(
-        support::APPEARANCE_TOKEN,
-        worth_ui_dsl::UiAppearanceStateAxis::Hover,
-    );
-    let (mut session, _host) = theme_session(&role);
-    let surface = session.create_semantic_surface().unwrap();
-    session
-        .register_host_surface(
-            surface,
-            crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
-            crate::facade::mounted::UiSurfaceBindingProfile::new(
-                1_000,
-                crate::facade::mounted::UiSurfaceBindingCoordinatePosture::LogicalPoints,
-                1,
-            )
-            .unwrap(),
-        )
-        .unwrap();
-    let graph_nodes = {
-        let graph = session.graph();
-        graph
-            .node_identities()
-            .filter_map(|identity| {
-                let lookup = graph.lookup().graph_node(identity)?;
-                let semantic = lookup
-                    .value()
-                    .declaration_identity()
-                    .authored_semantic_name()
-                    .to_owned();
-                (semantic != "worth_ui.runtime.bootstrap.product_root")
-                    .then(|| (identity, Box::<str>::from(semantic)))
-            })
-            .collect::<Vec<_>>()
-    };
-    for (graph_node, authored_semantic_identity) in graph_nodes {
-        session
-            .register_application_semantic_text(authored_semantic_identity, graph_node)
-            .unwrap();
-        let mounted_node = session.mounted_graph_node(graph_node).unwrap();
-        session.mount_instance(mounted_node, surface).unwrap();
+    host.push_native_display_settled_without_effects();
+    test_support::publish_without_selected_appearance(&mut session, 3);
+    if matches!(lifecycle, Lifecycle::Reconstruction) {
+        succession_tests::reconstruct_across_source_generation(
+            &mut session,
+            &host,
+            physical_predecessor,
+            &role,
+        );
+        let _ = session.shutdown();
+        return;
     }
-    let graph_node = session
-        .graph()
-        .snapshot()
-        .nodes()
-        .iter()
-        .find(|node| node.appearance_role_attachment().is_some())
-        .expect("the production fixture has one appearance consumer")
-        .graph_node_identity();
-    let capability = session.host_measurement_capability();
-    let assumptions = crate::host::UiHostMeasurementAssumptionProfile::from_capability_report(
-        capability.capability_report(),
-        1,
-        2,
-        3,
-        4,
+    let physical_predecessor = succession_tests::retain_across_source_generation(
+        &mut session,
+        &host,
+        physical_predecessor,
+        &role,
     );
-    let allocation_receipt = session
-        .establish_mounted_allocation_catalog(
-            1,
-            [
-                crate::facade::entry::UiMountedAllocationMeasurementRequest::new(
-                    worth_ui_host_contract::UiMeasurementEvidenceFamily::ViewportExtent,
-                    crate::host::UiHostMeasurementNeed::ViewportExtent(
-                        worth_ui_host_contract::UiViewportExtentRequest,
-                    ),
-                    crate::host::UiHostMeasurementNormalizationContext::viewport_logical_exact(
-                        assumptions,
-                    ),
-                ),
-            ],
-        )
-        .expect("mounted allocation should commit before the denied appearance attempt");
-    assert!(allocation_receipt
-        .committed()
-        .receipts()
-        .iter()
-        .any(|receipt| receipt.identity().graph_node_identity() == graph_node));
-    let initial_observation = support::appearance_candidate_submission(
-        &session,
-        "appearance-production-denial",
-        Some(&role),
-    );
-    let mut initial_turn = session.begin_observation_turn().unwrap();
-    initial_turn.admit_source(initial_observation).unwrap();
-    let initial_admitted = initial_turn.seal().unwrap();
-    session.classify_observations(initial_admitted).unwrap();
-    assert!(session.has_appearance_owner_snapshot_for_test());
-    session.advance_mounted_identity_frame().unwrap();
-
-    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
-    let value = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex("#405060").unwrap(),
-    );
-    let change = super::super::UiNativeThemeTokenValueChange::new(token, value).unwrap();
-    session.admit_application_theme_values(&[change]).unwrap();
-    assert!(session
-        .presentation
-        .appearance_invalidation_batch()
-        .is_some_and(|batch| batch.selected_count() > 0));
-
-    let outcome = session
-        .execute_mounted_frame(
-            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
-            worth_ui_host_contract::UiPresentationDeadline::at_tick(100),
-            1,
-            |_| {},
-        )
-        .unwrap_or_else(|_| panic!("the production frame should retain the appearance denial"));
-    assert!(matches!(
-        outcome,
-        crate::mounting::UiMountedFrameOutcome::Published(_)
-    ));
-
-    let world = session.appearance_inspection_world(surface);
-    let query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
-        world,
-        graph_node.digest(),
-        worth_ui_dsl::UiAppearanceAspect::Background,
-    );
-    let explanation = match session.why_appearance(query) {
-        worth_ui_inspection::UiAppearanceInspectionOutcome::Found(explanation) => explanation,
-        outcome => panic!("first appearance denial was not inspected: {outcome:?}"),
-    };
-    assert!(!explanation.input_evidence_changed());
-    assert!(!explanation.semantic_projection_changed());
-    assert!(!explanation.resolved_aspect_value_changed());
-    assert!(!explanation.mounted_mechanical_output_changed());
-    assert!(!explanation.equal_output_suppressed());
-    assert!(explanation.denied_before_effects());
-    assert_eq!(
-        explanation.value(),
-        worth_ui_inspection::UiAppearanceInspectionValue::Missing
-    );
-    assert_eq!(
-        explanation.mounted_mechanic(),
-        worth_ui_inspection::UiAppearanceInspectionMountedMechanic::NotAttempted
-    );
-    assert_eq!(
-        explanation.physical_suppression(),
-        worth_ui_inspection::UiAppearanceInspectionPhysicalSuppression::NotAttempted
-    );
-    assert_eq!(
-        explanation.denial_posture(),
-        Some(worth_ui_inspection::UiAppearanceInspectionDenialPosture::Basis)
-    );
-    assert_eq!(explanation.cost().theme_slots_compared(), 0);
-
+    match lifecycle {
+        Lifecycle::Reconstruction => unreachable!("reconstruction owns its successor lifecycle"),
+        Lifecycle::RoleDetachment => {
+            succession_tests::detach_role(&mut session, &host, physical_predecessor, &role)
+        }
+        Lifecycle::Unmount => removal_tests::remove_last_nodes_without_a_theme_change(
+            &mut session,
+            &host,
+            physical_predecessor,
+        ),
+        Lifecycle::SurfaceDeregistration => {
+            surface_tests::deregister_one_surface(&mut session, &host, physical_predecessor)
+        }
+    }
     let _ = session.shutdown();
 }

@@ -8,10 +8,18 @@ use crate::facade::WorthUiNativeApplicationShell;
 
 #[path = "program_progress/physical_progress.rs"]
 mod physical_progress;
+#[path = "program_progress/pointer_refresh.rs"]
+mod pointer_refresh;
 #[path = "program_progress/presentation_outcome.rs"]
 mod presentation_outcome;
 #[path = "program_progress/superseding_pair.rs"]
 mod superseding_pair;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum UiNativePresentationSource {
+    Program(usize),
+    PointerRefresh,
+}
 
 pub(super) struct UiNativeApplicationProgramProgress {
     program: crate::facade::entry::UiNativeApplicationProgram,
@@ -20,6 +28,7 @@ pub(super) struct UiNativeApplicationProgramProgress {
     next_present_tick: u64,
     pub(super) pending: VecDeque<UiNativePendingProgramFrame>,
     pub(super) next_completion_tick: u64,
+    pub(super) recovery_source: Option<UiNativePresentationSource>,
     pub(super) physical_recovery: UiNativePhysicalRecoveryTracker,
     pub(super) pending_retry: Option<UiNativePendingProgramRetry>,
     pub(super) readiness_generation: u64,
@@ -33,7 +42,7 @@ pub(super) struct UiNativeApplicationProgramProgress {
 }
 
 pub(super) struct UiNativePendingProgramFrame {
-    pub(super) program_frame: usize,
+    pub(super) source: UiNativePresentationSource,
     pub(super) presentation: crate::mounting::UiMountedPresentationInFlight,
     pub(super) reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
     pub(super) cancel_after_external_submission: bool,
@@ -45,7 +54,7 @@ pub(super) struct UiNativeStagedSupersedingSuccessor {
 }
 
 pub(super) struct UiNativePendingProgramRetry {
-    pub(super) program_frame: usize,
+    pub(super) source: UiNativePresentationSource,
     pub(super) rejected: crate::mounting::UiMountedRejectedFrame,
     pub(super) reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
     pub(super) cancel_after_external_submission: bool,
@@ -94,6 +103,7 @@ impl UiNativeApplicationProgramProgress {
             next_present_tick: 1,
             pending: VecDeque::new(),
             next_completion_tick: 1,
+            recovery_source: None,
             physical_recovery: UiNativePhysicalRecoveryTracker::default(),
             pending_retry: None,
             readiness_generation: 0,
@@ -166,7 +176,8 @@ impl UiNativeApplicationProgramProgress {
                     self.program.frames()[self.next_frame].starts_by_superseding_pending();
                 let may_supersede = starts_by_superseding
                     && self.pending.iter().all(|pending| {
-                        pending.presentation.awaits_progress_class(
+                        matches!(pending.source, UiNativePresentationSource::Program(_))
+                            && pending.presentation.awaits_progress_class(
                         worth_ui_host_contract::UiHostPresentationProgressClass::PhysicalSurface,
                     )
                     });
@@ -225,7 +236,7 @@ impl UiNativeApplicationProgramProgress {
             let progress = self.retain_or_attribute(
                 shell,
                 outcome,
-                program_frame,
+                UiNativePresentationSource::Program(program_frame),
                 None,
                 reconstruction_authority,
                 frame.cancels_after_external_submission(),
@@ -250,7 +261,7 @@ impl UiNativeApplicationProgramProgress {
 
     pub(super) fn retain_retry(
         &mut self,
-        program_frame: usize,
+        source: UiNativePresentationSource,
         rejected: crate::mounting::UiMountedRejectedFrame,
         reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
         cancel_after_external_submission: bool,
@@ -260,7 +271,7 @@ impl UiNativeApplicationProgramProgress {
             return Err(());
         }
         self.pending_retry = Some(UiNativePendingProgramRetry {
-            program_frame,
+            source,
             rejected,
             reconstruction_authority,
             cancel_after_external_submission,
@@ -290,14 +301,14 @@ impl UiNativeApplicationProgramProgress {
         let progress = self.retain_or_attribute(
             shell,
             outcome,
-            pending.program_frame,
+            pending.source,
             None,
             pending.reconstruction_authority,
             pending.cancel_after_external_submission,
         )?;
         match progress {
             FrameProgress::Retained => {
-                if self.next_frame == pending.program_frame {
+                if pending.source == UiNativePresentationSource::Program(self.next_frame) {
                     self.next_frame = self.next_frame.saturating_add(1);
                 }
                 Ok(false)
@@ -306,11 +317,9 @@ impl UiNativeApplicationProgramProgress {
                 if let Some(UiNativeProgramReconstructionAuthority::Physical(correlation)) =
                     pending.reconstruction_authority
                 {
-                    self.physical_recovery
-                        .commit_settlement(correlation)
-                        .map_err(|_| ())?;
+                    self.settle_physical_reconstruction(correlation)?;
                 }
-                if self.next_frame == pending.program_frame {
+                if pending.source == UiNativePresentationSource::Program(self.next_frame) {
                     self.next_frame = self.next_frame.saturating_add(1);
                 }
                 Ok(true)

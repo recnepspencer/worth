@@ -8,6 +8,39 @@ pub(crate) enum UiMountedMotionSampleSettlement {
 }
 
 impl WorthUiMountedSessionState {
+    pub(super) fn rebind_motion_sampling_after_publication(
+        &mut self,
+        publication: &crate::mounting::UiMountedFramePublicationReceipt,
+    ) {
+        publication.with_surface_presentations(|surfaces| {
+            for surface in surfaces {
+                self.motion_sampling.rebind_published_presentation(
+                    surface.semantic_surface(),
+                    worth_ui_host_contract::UiHostObservationPresentationBasis::new(
+                        surface.host_surface(),
+                        publication.frame(),
+                        surface.binding(),
+                        surface.epoch(),
+                    ),
+                );
+            }
+        });
+    }
+
+    pub(crate) fn accepted_motion_for_command(
+        &self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        command: worth_ui_host_contract::UiMountedPaintCommandIdentity,
+    ) -> Result<
+        Option<crate::mounting::presentation::motion_sampling::UiPresentationMotionSampleReceipt>,
+        crate::mounting::UiPresentedFrameBasisDenial,
+    > {
+        self.retention
+            .current_semantic_surface_for_presentation(presentation)?;
+        self.presentation
+            .accepted_motion_for_command(presentation, command)
+    }
+
     pub(crate) fn install_motion_commit(
         &mut self,
         receipt: crate::runtime::motion::UiMotionCommitReceipt,
@@ -103,6 +136,7 @@ impl WorthUiMountedSessionState {
                         .mark_motion_sample_indeterminate(presentation.binding());
                     return UiMountedMotionSampleSettlement::PresentationIndeterminate;
                 };
+                let hit_predecessor = self.retention.current_hit_evidence();
                 if self
                     .retention
                     .update_current_presentation_epoch(presentation)
@@ -112,9 +146,24 @@ impl WorthUiMountedSessionState {
                         .mark_motion_sample_indeterminate(presentation.binding());
                     return UiMountedMotionSampleSettlement::PresentationIndeterminate;
                 }
-                UiMountedMotionSampleSettlement::Committed(
-                    self.motion_sampling.commit_prepared(prepared),
-                )
+                let mut receipt = self.motion_sampling.commit_prepared(prepared);
+                let targets = receipt
+                    .samples()
+                    .iter()
+                    .map(|sample| sample.target())
+                    .collect::<Vec<_>>();
+                let hit_work = self
+                    .retention
+                    .refresh_presented_hit_motion(&self.motion_sampling, &targets);
+                receipt.record_hit_index_work(hit_work);
+                receipt.record_hit_transition(
+                    self.retention.committed_hit_transition(hit_predecessor),
+                );
+                let changed = self
+                    .presentation
+                    .motion_appearance_instances(presentation.binding(), &targets);
+                self.identity.mark_motion_appearance_changed(&changed);
+                UiMountedMotionSampleSettlement::Committed(receipt)
             }
             Outcome::InFlight => UiMountedMotionSampleSettlement::Deferred,
             Outcome::RejectedBeforeEffects => UiMountedMotionSampleSettlement::Discarded,

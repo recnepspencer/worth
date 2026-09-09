@@ -115,6 +115,8 @@ impl WorthUiMountedSessionState {
         let view = self
             .identity
             .commit_surface_registration(candidate, baseline);
+        self.occurrence_geometry
+            .rebind_surface(semantic_surface, view.binding_generation());
         self.presentation.commit_surface_rebind(prior_binding, view);
         Ok(view)
     }
@@ -144,6 +146,10 @@ impl WorthUiMountedSessionState {
             preserve_for_rebind,
         );
         let semantic_surface = self.identity.commit_surface_deregistration(candidate);
+        if !preserve_for_rebind {
+            self.selection_bindings.retire_surface(semantic_surface);
+            self.occurrence_geometry.retire_surface(semantic_surface);
+        }
         if has_published_predecessor && requires_reconciliation && !required_by_current {
             self.presentation
                 .reconcile_candidate_only_deregistration(binding);
@@ -172,12 +178,108 @@ impl WorthUiMountedSessionState {
         self.identity.mount(graph, node, surface)
     }
 
+    pub(crate) fn replace_occurrence_geometry(
+        &mut self,
+        batch: super::super::UiMountedSurfaceGeometryBatch,
+    ) -> Result<
+        super::super::UiMountedLayoutCompletionReceipt,
+        super::super::UiMountedOccurrenceGeometryDenial,
+    > {
+        if self.has_active_presentation_attempt() {
+            return Err(super::super::UiMountedOccurrenceGeometryDenial::PresentationInFlight);
+        }
+        // Validate and build the complete surface replacement away from the
+        // live table. Revision exhaustion must not leave geometry advanced
+        // without the semantic currentness change that revokes prepared work.
+        let surface = batch.surface();
+        let revision = batch.layout_revision();
+        let binding = self
+            .identity
+            .projection_surface(surface)
+            .ok_or(super::super::UiMountedOccurrenceGeometryDenial::MissingSurfaceBinding)?
+            .0
+            .binding_generation();
+        let graph_world = self.identity.world_identity();
+        let mut successor = self.occurrence_geometry.clone();
+        let (
+            changed,
+            region_index_rows,
+            region_lookup_steps,
+            seam_index_rows,
+            seam_adjacencies_visited,
+        ) = successor.replace_surface(&self.identity, batch)?;
+        if !changed.is_empty() {
+            self.identity
+                .mark_occurrence_geometry_changed(&changed)
+                .map_err(|denial| match denial {
+                    super::super::UiMountedIdentityDenial::UnknownMountedInstance => {
+                        super::super::UiMountedOccurrenceGeometryDenial::UnknownMountedInstance
+                    }
+                    super::super::UiMountedIdentityDenial::IdentityExhausted => {
+                        super::super::UiMountedOccurrenceGeometryDenial::StateRevisionExhausted
+                    }
+                    _ => {
+                        unreachable!(
+                            "occurrence change validates membership before revision minting"
+                        )
+                    }
+                })?;
+        }
+        self.occurrence_geometry = successor;
+        Ok(super::super::UiMountedLayoutCompletionReceipt::new(
+            surface,
+            binding,
+            graph_world,
+            revision,
+            changed.len(),
+        )
+        .add_region_resolution_work(region_index_rows, region_lookup_steps)
+        .with_seam_resolution_work(seam_index_rows, seam_adjacencies_visited))
+    }
+
+    pub(crate) fn validate_occurrence_geometry_batch(
+        &self,
+        batch: &super::super::UiMountedSurfaceGeometryBatch,
+    ) -> Result<(), super::super::UiMountedOccurrenceGeometryDenial> {
+        if self.has_active_presentation_attempt() {
+            return Err(super::super::UiMountedOccurrenceGeometryDenial::PresentationInFlight);
+        }
+        let mut candidate = self.occurrence_geometry.clone();
+        candidate
+            .replace_surface(&self.identity, batch.clone())
+            .map(drop)
+    }
+
+    pub(crate) fn next_occurrence_geometry_revision(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Result<
+        super::super::UiMountedLayoutRevision,
+        super::super::UiMountedOccurrenceGeometryDenial,
+    > {
+        self.occurrence_geometry.next_layout_revision(surface)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn next_occurrence_geometry_revision_for_test(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> super::super::UiMountedLayoutRevision {
+        self.next_occurrence_geometry_revision(surface)
+            .expect("test layout revision remains available")
+    }
+
     pub(crate) fn unmount_instance(
         &mut self,
         identity: UiMountedInstanceIdentity,
     ) -> Result<(), UiMountedIdentityDenial> {
         self.ensure_identity_mutation_available()?;
-        self.identity.unmount(identity)
+        let mut successor_geometry = self.occurrence_geometry.clone();
+        let affected = successor_geometry.retire_instance(identity);
+        self.identity.unmount(identity, &affected)?;
+        self.occurrence_geometry = successor_geometry;
+        self.selection_bindings.retire_mount(identity);
+        Ok(())
     }
 
     pub(crate) fn reorder_mounted_instances(

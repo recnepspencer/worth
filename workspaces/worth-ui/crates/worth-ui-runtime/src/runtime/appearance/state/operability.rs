@@ -29,35 +29,16 @@ pub(crate) fn adapt(
             UiAppearanceStateAxis::Operability,
         ));
     };
-    let scoped = owner.facts().iter().filter(|fact| {
-        fact.graph_node() == basis.graph_node()
-            && fact.mounted_instance() == basis.mounted_instance()
-            && fact.route() == route
-    });
-    let scoped_facts = scoped.collect::<Vec<_>>();
-    let current_facts = scoped_facts
-        .iter()
-        .copied()
-        .filter(|fact| fact.node_receipt() == basis.owner_node_receipt())
-        .collect::<Vec<_>>();
-    let fact = match current_facts.as_slice() {
-        [fact] => *fact,
-        [] if !scoped_facts.is_empty() => {
-            return Err(UiAppearanceStateAdapterDenial::StaleSource(
-                UiAppearanceStateAxis::Operability,
-            ));
-        }
-        [] => {
-            return Err(UiAppearanceStateAdapterDenial::MissingSource(
-                UiAppearanceStateAxis::Operability,
-            ));
-        }
-        _ => {
-            return Err(UiAppearanceStateAdapterDenial::AmbiguousSource(
-                UiAppearanceStateAxis::Operability,
-            ));
-        }
-    };
+    let fact = owner
+        .fact_for(basis.graph_node(), basis.mounted_instance(), route)
+        .ok_or(UiAppearanceStateAdapterDenial::MissingSource(
+            UiAppearanceStateAxis::Operability,
+        ))?;
+    if Some(fact.node_receipt()) != basis.owner_node_receipt() {
+        return Err(UiAppearanceStateAdapterDenial::StaleSource(
+            UiAppearanceStateAxis::Operability,
+        ));
+    }
     Ok(UiOperabilityAppearanceState {
         class: map_class(fact.class()),
         source_class: fact.class(),
@@ -128,5 +109,41 @@ impl UiOperabilityAppearanceState {
 
     pub(crate) fn decision(&self) -> &crate::runtime::intent::UiIntentOperabilityDecision {
         &self.decision
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn operability_adapter_rejects_stale_receipt_and_foreign_route() {
+        let fixture = super::super::adapter_tests::fixture();
+        for (receipt, route, denial) in [
+            (
+                UiMountedNodeReceiptIdentity::mint_unbound().unwrap(),
+                "select",
+                UiAppearanceStateAdapterDenial::StaleSource(UiAppearanceStateAxis::Operability),
+            ),
+            (
+                fixture.basis.node_receipt(),
+                "other-route",
+                UiAppearanceStateAdapterDenial::MissingSource(UiAppearanceStateAxis::Operability),
+            ),
+        ] {
+            let basis = UiAppearanceCoherentBasis::for_test(
+                &fixture.snapshot,
+                super::super::UiAppearanceStateConsumer::all_axes_for_test(
+                    fixture.basis.graph_node(),
+                ),
+                fixture.basis.mounted_instance(),
+                fixture.basis.incarnation(),
+                receipt,
+                fixture.basis.surface(),
+                fixture.basis.presentation(),
+                None,
+                Some(route.into()),
+            );
+            assert_eq!(adapt(&fixture.snapshot, &basis), Err(denial));
+        }
     }
 }

@@ -117,6 +117,7 @@ fn authored_application_stack_and_emoji_fallback_cross_mounted_headless_consumer
     let plan = session
         .compile_rebind_plan(lifecycle, UiRebindExecutionPolicy::ordinary())
         .unwrap();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(414))
         .unwrap();

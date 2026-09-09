@@ -52,6 +52,12 @@ impl UiProjectionOptionReference {
     pub fn application_item_key(&self) -> Option<core::num::NonZeroU64> {
         self.application_item_key
     }
+
+    /// Carries the original row correlation for current-catalog lookup. This
+    /// reference carries no revision or Selection authority of its own.
+    pub fn row_reference(&self) -> UiCollectionProjectionRowReference {
+        UiCollectionProjectionRowReference::query_issued(self.query_row_identity.as_ref().clone())
+    }
 }
 
 impl UiProjectionOptionStableKey {

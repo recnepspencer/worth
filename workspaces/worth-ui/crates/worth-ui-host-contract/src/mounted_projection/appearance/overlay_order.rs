@@ -23,6 +23,7 @@ pub struct UiMountedOverlayOrderMechanic {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum UiMountedOverlayOrderMechanicDenial {
     DuplicateParticipant(UiOverlayParticipantIdentity),
+    MissingRevision,
 }
 
 impl UiMountedOverlayOrderMechanic {
@@ -35,6 +36,9 @@ impl UiMountedOverlayOrderMechanic {
         bottom_to_top: impl IntoIterator<Item = UiOverlayParticipantIdentity>,
     ) -> Result<Self, UiMountedOverlayOrderMechanicDenial> {
         let bottom_to_top = bottom_to_top.into_iter().collect::<Vec<_>>();
+        if !bottom_to_top.is_empty() && (portal_revision == 0 || backdrop_revision == 0) {
+            return Err(UiMountedOverlayOrderMechanicDenial::MissingRevision);
+        }
         let mut seen = BTreeSet::new();
         if let Some(duplicate) = bottom_to_top
             .iter()

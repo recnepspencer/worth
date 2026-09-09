@@ -75,6 +75,63 @@ impl UiIntent for AuthoredPortalIntent {
 
 pub(super) fn authored_overlay_builder(
 ) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
+    authored_overlay_builder_with_appearance_contract(
+        worth_ui_dsl::UiAppearanceAspectContract::component(
+            [worth_ui_dsl::UiAppearanceAspect::Background],
+            [],
+        )
+        .expect("overlay component appearance contract"),
+    )
+}
+
+pub(super) fn authored_overlay_builder_with_appearance_contract(
+    contract: worth_ui_dsl::UiAppearanceAspectContract,
+) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
+    authored_overlay_builder_with_appearance_contract_and_region(
+        contract,
+        crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_region(),
+    )
+}
+
+pub(super) fn authored_overlay_builder_with_appearance_contract_and_region(
+    contract: worth_ui_dsl::UiAppearanceAspectContract,
+    region: crate::capability::MosaicRegionKindDescriptor,
+) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
+    authored_overlay_builder_with_component_and_region(
+        ComponentDescriptor::new(
+            ComponentId::new("workspace.component.overlay").expect("valid component identity"),
+            ComponentPropSchema::named("workspace.component.overlay.props"),
+            ComponentChildPolicy::no_children(),
+            ComponentStateOwnership::runtime_owned(),
+        )
+        .with_hit_test(
+            crate::capability::ComponentHitTestContract::allocation_bounds(
+                crate::capability::ComponentHitTestOrder::front_to_back(0),
+                crate::capability::ComponentAllocationMeasurementContract::viewport_inset(
+                    crate::capability::ComponentViewportInset::symmetric(0, 0),
+                ),
+            ),
+        )
+        .with_surface_paint_order(0)
+        .with_appearance_aspect_contract(contract)
+        .expect("component appearance contract should admit"),
+        region,
+    )
+}
+
+pub(super) fn authored_overlay_builder_with_component(
+    component: ComponentDescriptor,
+) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
+    authored_overlay_builder_with_component_and_region(
+        component,
+        crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_region(),
+    )
+}
+
+fn authored_overlay_builder_with_component_and_region(
+    component: ComponentDescriptor,
+    region: crate::capability::MosaicRegionKindDescriptor,
+) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
     WorthUi::app()
         .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
         .register_intent_boolean_fact(
@@ -107,12 +164,7 @@ pub(super) fn authored_overlay_builder(
             ),
         )
         .expect("authored Portal runtime-service definition should register")
-        .register_component(ComponentDescriptor::new(
-            ComponentId::new("workspace.component.overlay").expect("valid component identity"),
-            ComponentPropSchema::named("workspace.component.overlay.props"),
-            ComponentChildPolicy::no_children(),
-            ComponentStateOwnership::runtime_owned(),
-        ))
+        .register_component(component)
         .register_surface(SurfaceDescriptor::new(
             SurfaceId::new("workspace.surface.overlay").expect("valid surface identity"),
             SurfaceKind::overlay_content(),
@@ -120,9 +172,7 @@ pub(super) fn authored_overlay_builder(
             SurfacePlacementClass::overlay_layer(),
             SurfaceStateClass::restorable(),
         ))
-        .register_mosaic_region_kind(
-            crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_region(),
-        )
+        .register_mosaic_region_kind(region)
         .register_mosaic_sizing_contract(
             crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_sizing(),
         )
@@ -144,7 +194,18 @@ pub(super) fn authored_overlay_session() -> crate::facade::WorthUiActiveApplicat
     authored_overlay_builder()
         .with_candidate_submission(submission)
         .freeze()
-        .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)
+        .map(|app| {
+            crate::facade::entry::WorthUiCertificationApplicationTransition::activate_recorder(
+                app,
+                worth_ui_host_headless::WorthUiHeadlessRecorder::with_viewport_extent(
+                    worth_ui_host_headless::UiHeadlessRecorderCapacity::production_default(),
+                    worth_ui_host_contract::UiViewportExtentObservation {
+                        width: 640.0,
+                        height: 480.0,
+                    },
+                ),
+            )
+        })
         .expect("authored Portal source should prepare")
         .launch()
         .expect("authored Portal source should launch")

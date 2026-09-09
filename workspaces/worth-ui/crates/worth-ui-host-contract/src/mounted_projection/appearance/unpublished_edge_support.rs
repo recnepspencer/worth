@@ -38,15 +38,17 @@ pub(super) fn surface_at(
             node_receipt: issuer.receipt_for(instance),
             bounds,
             clip: UiAppearanceClip::new(0, 0, 32, 32).unwrap(),
-            layer: UiMountedLayerProjection::Layer(UiMountedLayerReference::new(0)),
+            surface_paint_order: 0,
             radii: UiAppearanceNormalizedLogicalRadii::normalize(
                 bounds,
                 [UiAppearanceLogicalLength::ZERO; 4],
             ),
+            border_edges: UiMountedSurfaceBorderEdges::ALL,
+            border_omissions: Box::new([]),
             paint: UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
                 0, 0, 0, 255,
             ])),
-            opacity: UiMountedAppearanceOpacity::ONE,
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
                 .unwrap(),
         },

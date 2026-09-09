@@ -84,7 +84,7 @@ fn observed_slot_consumers(
         authored_identity,
     )
     .expect("declared theme slot should resolve");
-    batch.consumers().iter().copied().collect()
+    batch.graph_consumers().iter().copied().collect()
 }
 
 fn authoritative_role_slot_consumers(

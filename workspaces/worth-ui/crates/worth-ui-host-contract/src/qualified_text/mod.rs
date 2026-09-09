@@ -8,6 +8,7 @@ mod layout_records;
 mod raster_batch_identity;
 mod raster_batch_view;
 mod raster_demand_view;
+mod raster_draw_geometry;
 mod raster_key;
 mod raster_transaction;
 mod records;
@@ -38,7 +39,8 @@ pub use raster_batch_view::{
 };
 pub use raster_demand_view::{
     UiGlyphRasterAttribution, UiGlyphRasterDemandBatchView, UiGlyphRasterDemandBatchViewInput,
-    UiGlyphRasterDemandIdentity, UiGlyphRasterDemandRecord, UiGlyphRasterLane,
+    UiGlyphRasterDemandIdentity, UiGlyphRasterDemandRecord, UiGlyphRasterDemandScope,
+    UiGlyphRasterLane,
 };
 pub use raster_key::{
     UiGlyphRasterFractionalOrigin, UiGlyphRasterKey, UiGlyphRasterKeyInput, UiGlyphRasterPalette,

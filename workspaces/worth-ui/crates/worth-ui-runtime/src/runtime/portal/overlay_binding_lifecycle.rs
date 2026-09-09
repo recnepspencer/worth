@@ -1,5 +1,10 @@
 use std::collections::BTreeMap;
 
+mod generation;
+pub(crate) use generation::UiPreparedPortalOverlayGraphSuccession;
+#[path = "overlay_binding_lifecycle/appearance_candidate.rs"]
+mod appearance_candidate;
+
 use crate::runtime::intent::WorthUiActiveApplicationGenerationIdentity;
 use crate::runtime::source_ingress::WorthUiAuthoredOverlayMaterial;
 use worth_ui_dsl::{UiPortalDeclarationId, UiSemanticSurfaceDeclarationIdentity};
@@ -252,6 +257,24 @@ impl UiPortalOverlayBindingLifecycle {
                     .map_err(UiPortalOverlayBindingLifecycleDenial::Owner)
             })
             .collect()
+    }
+
+    pub(crate) fn bound_owners(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            UiSemanticSurfaceDeclarationIdentity,
+            UiSemanticSurfaceIdentity,
+            &UiPortalOverlayBindingOwner,
+        ),
+    > {
+        self.surface_bindings
+            .iter()
+            .filter_map(|(declaration, runtime)| {
+                self.owners
+                    .get(runtime)
+                    .map(|owner| (*declaration, *runtime, owner))
+            })
     }
 
     pub(crate) fn replace_generation(

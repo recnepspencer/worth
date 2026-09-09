@@ -69,6 +69,7 @@ fn observe_stop(stop: &WorthUiMountedFrameExecutionStop<'_>) {
         WorthUiMountedFrameExecutionStop::FrameworkTransition(transition) => {
             let _ = transition.generation_identity();
         }
+        WorthUiMountedFrameExecutionStop::OccurrenceGeometry(_) => {}
         WorthUiMountedFrameExecutionStop::Preparation(_) => {}
     }
 }

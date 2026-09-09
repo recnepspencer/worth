@@ -1,3 +1,4 @@
+use super::UiNativePresentationSource;
 use super::*;
 
 impl UiNativeApplicationProgramProgress {
@@ -45,7 +46,7 @@ impl UiNativeApplicationProgramProgress {
         let predecessor = self
             .pending
             .iter()
-            .find(|pending| pending.program_frame == self.next_frame)
+            .find(|pending| pending.source == UiNativePresentationSource::Program(self.next_frame))
             .map(|pending| pending.presentation.superseding_basis())
             .ok_or(())?;
         self.present_staged_frame(shell, successor_index, staged.frame, Some(predecessor))?;
@@ -100,7 +101,7 @@ impl UiNativeApplicationProgramProgress {
         let progress = self.retain_or_attribute(
             shell,
             outcome,
-            frame_index,
+            UiNativePresentationSource::Program(frame_index),
             None,
             None,
             program_frame.cancels_after_external_submission(),

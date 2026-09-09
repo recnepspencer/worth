@@ -73,7 +73,7 @@ impl UiMountedProjectionFrame {
             UiMountedPortalChildPresentation::Suppressed => Vec::new(),
             UiMountedPortalChildPresentation::Presented(portal) => commands
                 .into_iter()
-                .map(|command| present_portal_child_command(command, portal))
+                .filter_map(|command| present_portal_child_command(command, portal))
                 .collect(),
         };
         for input in self
@@ -160,12 +160,12 @@ impl UiMountedProjectionFrame {
 fn present_portal_child_command(
     command: worth_ui_host_contract::UiMountedPaintCommand,
     portal: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-) -> worth_ui_host_contract::UiMountedPaintCommand {
-    match command {
+) -> Option<worth_ui_host_contract::UiMountedPaintCommand> {
+    Some(match command {
         worth_ui_host_contract::UiMountedPaintCommand::FilledRect { mechanic, .. } => {
             let mechanic = mechanic
                 .presented_within_portal(portal)
-                .expect("validated Portal-relative paint remains canonical");
+                .expect("validated Portal-relative paint remains canonical")?;
             worth_ui_host_contract::UiMountedPaintCommand::FilledRect {
                 identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::filled_rect(
                     &mechanic,
@@ -176,7 +176,7 @@ fn present_portal_child_command(
         worth_ui_host_contract::UiMountedPaintCommand::SemanticText { mechanic, .. } => {
             let mechanic = mechanic
                 .presented_within_portal(portal)
-                .expect("validated Portal-relative text remains canonical");
+                .expect("validated Portal-relative text remains canonical")?;
             worth_ui_host_contract::UiMountedPaintCommand::SemanticText {
                 identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text(
                     &mechanic,
@@ -187,5 +187,5 @@ fn present_portal_child_command(
         worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay { .. } => {
             unreachable!("Portal children cannot own nested overlay commands here")
         }
-    }
+    })
 }

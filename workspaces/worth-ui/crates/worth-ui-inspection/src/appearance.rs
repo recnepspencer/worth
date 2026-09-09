@@ -1,3 +1,6 @@
+mod value_source;
+pub use value_source::UiAppearanceInspectionValueSource;
+
 use crate::UiEvidenceAuthorityGeneration;
 use worth_ui_dsl::{UiAppearanceAspect, UiAppearanceAxisClass, UiThemeValue};
 
@@ -105,6 +108,8 @@ pub enum UiAppearanceInspectionSourceSpan {
 /// Typed posture for an appearance attempt denied before mounting effects.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiAppearanceInspectionDenialPosture {
+    MissingOperabilityRoute,
+    AmbiguousOperabilityRoute { routes: usize },
     Basis,
     Resolution,
     MountAffinity,
@@ -230,8 +235,7 @@ pub struct UiAppearanceInspectionExplanation {
     state_classes: Box<[UiAppearanceAxisClass]>,
     matched_cell: UiAppearanceInspectionDecisionCell,
     source_span: UiAppearanceInspectionSourceSpan,
-    selected_slot: Box<str>,
-    terminal_slot: Box<str>,
+    value_source: UiAppearanceInspectionValueSource,
     support: UiAppearanceInspectionSupport,
     value: UiAppearanceInspectionValue,
     change_distinctions: super::UiAppearanceInspectionChangeDistinctions,
@@ -254,8 +258,7 @@ impl UiAppearanceInspectionExplanation {
         state_classes: impl Into<Box<[UiAppearanceAxisClass]>>,
         matched_cell: UiAppearanceInspectionDecisionCell,
         source_span: UiAppearanceInspectionSourceSpan,
-        selected_slot: impl Into<Box<str>>,
-        terminal_slot: impl Into<Box<str>>,
+        value_source: UiAppearanceInspectionValueSource,
         support: UiAppearanceInspectionSupport,
         value: UiAppearanceInspectionValue,
         change_distinctions: super::UiAppearanceInspectionChangeDistinctions,
@@ -274,8 +277,7 @@ impl UiAppearanceInspectionExplanation {
             state_classes: state_classes.into(),
             matched_cell,
             source_span,
-            selected_slot: selected_slot.into(),
-            terminal_slot: terminal_slot.into(),
+            value_source,
             support,
             value,
             change_distinctions,
@@ -312,11 +314,8 @@ impl UiAppearanceInspectionExplanation {
     pub const fn source_span(&self) -> &UiAppearanceInspectionSourceSpan {
         &self.source_span
     }
-    pub fn selected_slot(&self) -> &str {
-        &self.selected_slot
-    }
-    pub fn terminal_slot(&self) -> &str {
-        &self.terminal_slot
+    pub const fn value_source(&self) -> &UiAppearanceInspectionValueSource {
+        &self.value_source
     }
     pub const fn support(&self) -> UiAppearanceInspectionSupport {
         self.support

@@ -253,6 +253,10 @@ fn create_and_mount_surfaces(
             ],
         )
         .unwrap_or_else(|_| panic!("the multisurface frame should publish"));
+    for surface in surfaces {
+        crate::facade::entry::mounted_occurrence_geometry_test_support::
+            refresh_nonoverlapping_surface_geometry(session, surface);
+    }
     refresh_appearance_owner_snapshot(session, role, "appearance-inspection-multisurface-mounted");
     surfaces
 }

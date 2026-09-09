@@ -41,19 +41,11 @@ impl UiFocusPlacementPorts<'_> {
             return Ok(None);
         };
         let target = current.mounted_target();
-        let inspected = self.inspect_target(target, publication)?;
-        let surface = inspected
-            .presentation()
-            .surfaces()
-            .iter()
-            .find(|surface| surface.semantic_surface() == current.scope().semantic_surface())
+        self.inspect_target(target, publication)?;
+        let presentation = self
+            .mounted
+            .current_presentation_for_surface(current.scope().semantic_surface())
             .ok_or(UiFocusPlacementExecutionDenial::SurfaceUnavailable)?;
-        let presentation = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-            surface.host_surface(),
-            inspected.frame(),
-            surface.binding(),
-            surface.epoch(),
-        );
         let supported = self
             .host_session
             .capability_report()
@@ -64,8 +56,8 @@ impl UiFocusPlacementPorts<'_> {
                 crate::mounting::UiMountedFocusPlacementRequestBasis {
                     protocol: self.host_session.protocol(),
                     host_session: self.host_session.identity().as_u64(),
-                    host_surface: surface.host_surface(),
-                    binding: surface.binding(),
+                    host_surface: presentation.host_surface(),
+                    binding: presentation.binding(),
                     presentation,
                     target,
                 },

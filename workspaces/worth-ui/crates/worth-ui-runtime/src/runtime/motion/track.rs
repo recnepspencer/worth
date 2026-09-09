@@ -102,6 +102,10 @@ impl UiStagedMotionServiceProposal {
 }
 
 impl UiDerivedMotionServiceProposal {
+    pub(in crate::runtime) fn overlay_row(&self) -> super::UiMotionOverlayOwnerRow {
+        super::UiMotionOverlayOwnerRow::from_request(self.staged.request)
+    }
+
     pub(in crate::runtime) fn derivation_receipt(
         &self,
     ) -> crate::runtime::session::service_proposal::UiServiceProposalStageReceipt {
@@ -173,6 +177,14 @@ impl UiCommittedMotionTrack {
 
     pub(crate) const fn declaration(self) -> super::UiMotionDeclaration {
         self.request.declaration()
+    }
+
+    pub(crate) fn rebind_published_presentation(
+        mut self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Self {
+        self.request = self.request.rebind_published_successor(presentation);
+        self
     }
 
     #[cfg(test)]

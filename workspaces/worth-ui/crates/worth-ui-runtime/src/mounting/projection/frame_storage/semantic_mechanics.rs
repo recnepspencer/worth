@@ -184,7 +184,7 @@ impl UiMountedSemanticMechanicSource {
         })
     }
 
-    pub(super) const fn len(&self) -> usize {
+    pub(in crate::mounting) const fn len(&self) -> usize {
         self.row_count
     }
 

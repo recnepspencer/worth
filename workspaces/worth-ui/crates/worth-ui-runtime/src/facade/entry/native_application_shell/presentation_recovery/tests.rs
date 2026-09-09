@@ -1,6 +1,7 @@
 use crate::facade::mounted::{
     UiHostSurfacePresentationDenial, UiHostSurfacePresentationOutcome, UiMountedFrameOutcome,
 };
+#[cfg(feature = "certification-support")]
 use crate::inspection::mounted_frame::{UiMountedInspectionReceipt, UiMountedInspectionRequest};
 
 #[test]
@@ -12,6 +13,8 @@ fn host_required_reconstruction_recovers_through_current_mounted_authority() {
         )
         .launch_native_surface()
         .expect("native certification shell launches");
+    crate::facade::entry::native_application_identity_trace_test_support::
+        install_bound_surface_geometry(&mut shell);
 
     host.push_native_display_presented();
     assert!(matches!(
@@ -52,6 +55,8 @@ fn non_reconstruction_rejection_is_returned_without_an_extra_host_attempt() {
         )
         .launch_native_surface()
         .expect("native certification shell launches");
+    crate::facade::entry::native_application_identity_trace_test_support::
+        install_bound_surface_geometry(&mut shell);
     host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
         UiHostSurfacePresentationDenial::ExternalTimeout,
     ));
@@ -82,6 +87,8 @@ fn indeterminate_recovery_waits_for_the_exact_physical_correlation() {
         )
         .launch_native_surface()
         .expect("native certification shell launches");
+    crate::facade::entry::native_application_identity_trace_test_support::
+        install_bound_surface_geometry(&mut shell);
 
     host.push_native_display_presented();
     assert!(matches!(
@@ -167,6 +174,8 @@ fn indeterminate_recovery_reconciles_an_uncertain_surface_deregistration() {
         )
         .launch_native_surface()
         .expect("native certification shell launches");
+    crate::facade::entry::native_application_identity_trace_test_support::
+        install_bound_surface_geometry(&mut shell);
 
     host.push_native_display_presented();
     assert!(matches!(

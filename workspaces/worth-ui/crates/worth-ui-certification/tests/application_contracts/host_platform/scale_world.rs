@@ -114,6 +114,9 @@ pub(super) fn verify() -> usize {
         Err(worth_ui::facade::app::WorthUiMountedFrameExecutionStop::FrameworkTransition(_)) => {
             panic!("scale framework transition stopped")
         }
+        Err(worth_ui::facade::app::WorthUiMountedFrameExecutionStop::OccurrenceGeometry(
+            denial,
+        )) => panic!("scale occurrence geometry denied: {denial:?}"),
         Err(worth_ui::facade::app::WorthUiMountedFrameExecutionStop::Preparation(denial)) => {
             panic!("scale frame preparation denied: {denial:?}")
         }

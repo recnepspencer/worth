@@ -84,6 +84,9 @@ impl ScriptedPresentationHost {
                 state
                     .reconstruction_portal_overlay_counts
                     .push(work.projection().portal_overlays().rows().len());
+                state
+                    .reconstruction_sample_overrides
+                    .push(work.sample_overrides().to_vec().into_boxed_slice());
             }
             #[cfg(feature = "certification-support")]
             {

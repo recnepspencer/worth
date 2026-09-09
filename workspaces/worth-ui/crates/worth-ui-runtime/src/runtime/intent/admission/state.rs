@@ -1,3 +1,4 @@
+use super::standing_owner::UiIntentOperabilityStandingOwner;
 use super::{
     UiAdmittedIntent, UiCurrentIntentAdmissionCandidate, UiIntentAdmissionCancellationReason,
     UiIntentAdmissionCost, UiIntentAdmissionDecision, UiIntentAdmissionMetrics,
@@ -9,22 +10,6 @@ pub(crate) struct UiIntentAdmissionState {
     lineage: super::super::attempt_lineage::UiIntentAttemptLineageState,
     counters: UiIntentAdmissionCounters,
     standing_owner: Option<UiIntentOperabilityStandingOwner>,
-}
-
-struct UiIntentOperabilityStandingOwner {
-    facts: std::collections::BTreeMap<
-        UiIntentStandingFactKey,
-        super::super::operability::UiIntentOperabilityStandingFact,
-    >,
-    revision: u64,
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-struct UiIntentStandingFactKey {
-    graph_node: crate::graph::UiGraphNodeIdentity,
-    mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
-    route: Box<str>,
 }
 
 #[derive(Default)]
@@ -40,22 +25,15 @@ impl UiIntentAdmissionState {
         Self {
             lineage: super::super::attempt_lineage::UiIntentAttemptLineageState::new(),
             counters: Default::default(),
-            standing_owner: operability_appearance_enabled.then(|| {
-                UiIntentOperabilityStandingOwner {
-                    facts: Default::default(),
-                    revision: 0,
-                }
-            }),
+            standing_owner: operability_appearance_enabled
+                .then(UiIntentOperabilityStandingOwner::default),
         }
     }
 
     pub(crate) fn reconcile_operability_appearance(&mut self, enabled: bool) {
         match (enabled, self.standing_owner.is_some()) {
             (true, false) => {
-                self.standing_owner = Some(UiIntentOperabilityStandingOwner {
-                    facts: Default::default(),
-                    revision: 0,
-                });
+                self.standing_owner = Some(UiIntentOperabilityStandingOwner::default());
             }
             (false, true) => self.standing_owner = None,
             _ => {}
@@ -70,31 +48,7 @@ impl UiIntentAdmissionState {
         let Some(owner) = self.standing_owner.as_mut() else {
             return;
         };
-        let target = candidate.input_basis().target();
-        let key = UiIntentStandingFactKey {
-            graph_node: candidate.graph_node(),
-            mounted_instance: target.mounted_instance(),
-            binding: target.binding(),
-            route: candidate.declaration_identity().into(),
-        };
-        let changed = owner.facts.get(&key).is_none_or(|fact| {
-            fact.decision() != decision || fact.node_receipt() != target.node_receipt()
-        });
-        if !changed {
-            return;
-        }
-        owner.revision = owner
-            .revision
-            .checked_add(1)
-            .expect("bounded operability standing-fact revision exhausted");
-        owner.facts.insert(
-            key,
-            super::super::operability::UiIntentOperabilityStandingFact::seal(
-                candidate,
-                decision.clone(),
-                owner.revision,
-            ),
-        );
+        owner.record(candidate, decision);
     }
 
     #[allow(
@@ -103,13 +57,10 @@ impl UiIntentAdmissionState {
     )]
     pub(crate) fn operability_standing_snapshot(
         &self,
-    ) -> Option<super::super::operability::UiIntentOperabilityStandingFactSnapshot> {
-        self.standing_owner.as_ref().map(|owner| {
-            super::super::operability::UiIntentOperabilityStandingFactSnapshot::seal(
-                owner.revision,
-                owner.facts.values().cloned().collect(),
-            )
-        })
+    ) -> Option<super::UiIntentOperabilityStandingFactSnapshot> {
+        self.standing_owner
+            .as_ref()
+            .map(UiIntentOperabilityStandingOwner::snapshot)
     }
 
     pub(crate) fn issue_lineage(&mut self) -> Option<super::super::UiIntentAttemptLineage> {
@@ -171,7 +122,9 @@ impl UiIntentAdmissionState {
         execution: &mut crate::runtime::intent_execution::UiIntentExecutionState,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
     ) -> usize {
-        self.retire_standing_facts(|key| key.binding == binding);
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.retire_binding(binding);
+        }
         self.record_lifecycle_cancellation(execution.cancel_binding(binding))
     }
 
@@ -180,7 +133,9 @@ impl UiIntentAdmissionState {
         execution: &mut crate::runtime::intent_execution::UiIntentExecutionState,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> usize {
-        self.retire_standing_facts(|key| key.mounted_instance == instance);
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.retire_instance(instance);
+        }
         self.record_lifecycle_cancellation(execution.cancel_instance(instance))
     }
 
@@ -190,7 +145,9 @@ impl UiIntentAdmissionState {
         reason: UiIntentAdmissionCancellationReason,
     ) -> usize {
         let cancelled = execution.cancel_all(reason);
-        self.retire_standing_facts(|_| true);
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.clear();
+        }
         self.record_lifecycle_cancellation(cancelled)
     }
 
@@ -202,7 +159,9 @@ impl UiIntentAdmissionState {
         crate::runtime::intent_execution::UiIntentExecutionShutdownReport,
     ) {
         let execution_report = execution.shutdown();
-        self.retire_standing_facts(|_| true);
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.clear();
+        }
         self.record_lifecycle_cancellation(execution_report.reservation_backed_entries_disposed());
         (
             UiIntentAdmissionShutdownReport::new(
@@ -211,23 +170,6 @@ impl UiIntentAdmissionState {
             ),
             execution_report,
         )
-    }
-
-    fn retire_standing_facts(
-        &mut self,
-        mut selected: impl FnMut(&UiIntentStandingFactKey) -> bool,
-    ) {
-        let Some(owner) = self.standing_owner.as_mut() else {
-            return;
-        };
-        let before = owner.facts.len();
-        owner.facts.retain(|key, _| !selected(key));
-        if owner.facts.len() != before {
-            owner.revision = owner
-                .revision
-                .checked_add(1)
-                .expect("bounded standing-fact revision exhausted");
-        }
     }
 
     pub(crate) fn metrics(

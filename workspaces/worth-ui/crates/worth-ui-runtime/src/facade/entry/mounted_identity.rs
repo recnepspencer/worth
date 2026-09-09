@@ -91,6 +91,13 @@ pub trait WorthUiMountedIdentityCertificationExt {
 }
 
 impl WorthUiActiveApplicationSession {
+    pub(crate) fn current_mounted_identity_basis(
+        &self,
+        instance: UiMountedInstanceIdentity,
+    ) -> Option<crate::mounting::UiMountedIdentityBasis> {
+        self.mounted.current_mounted_identity_basis(instance)
+    }
+
     pub(crate) fn create_semantic_surface(
         &mut self,
     ) -> Result<UiSemanticSurfaceIdentity, UiMountedIdentityDenial> {

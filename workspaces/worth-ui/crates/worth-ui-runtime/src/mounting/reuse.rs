@@ -32,6 +32,7 @@ pub enum UiMountedFrameReuseDependency {
     MountedPresentationSchema,
     CapabilityGeneration,
     CapabilityProfile,
+    PointerAffordance,
     VisualOverlay,
 }
 
@@ -52,6 +53,7 @@ pub struct UiMountedFrameReuseContract {
     capability_generation: worth_ui_host_contract::WorthUiHostCapabilityObservationGeneration,
     capability_profile_digest: u64,
     visual_overlay_revision: u64,
+    pointer_affordance: crate::runtime::pointer_affordance::UiPointerAffordanceReuseBasis,
 }
 
 pub(crate) struct UiMountedFrameReuseExternalBasis {
@@ -67,6 +69,7 @@ pub(crate) struct UiMountedFrameReuseExternalBasis {
     pub capability_generation: worth_ui_host_contract::WorthUiHostCapabilityObservationGeneration,
     pub capability_profile_digest: u64,
     pub visual_overlay_revision: u64,
+    pub pointer_affordance: crate::runtime::pointer_affordance::UiPointerAffordanceReuseBasis,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -101,6 +104,7 @@ impl UiMountedFrameReuseContract {
             capability_generation,
             capability_profile_digest,
             visual_overlay_revision,
+            pointer_affordance,
         } = basis;
         Self {
             generation,
@@ -117,6 +121,7 @@ impl UiMountedFrameReuseContract {
             capability_generation,
             capability_profile_digest,
             visual_overlay_revision,
+            pointer_affordance,
         }
     }
 
@@ -142,6 +147,7 @@ impl UiMountedFrameReuseContract {
             UiMountedFrameReuseDependency::MountedPresentationSchema,
             UiMountedFrameReuseDependency::CapabilityGeneration,
             UiMountedFrameReuseDependency::CapabilityProfile,
+            UiMountedFrameReuseDependency::PointerAffordance,
             UiMountedFrameReuseDependency::VisualOverlay,
         ]
     }

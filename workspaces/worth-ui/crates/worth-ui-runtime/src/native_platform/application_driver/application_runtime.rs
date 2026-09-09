@@ -127,6 +127,27 @@ impl UiNativeApplicationDriver {
         }
     }
 
+    pub(super) fn progress_application_runtime_pointer(
+        &mut self,
+    ) -> Result<worth_ui_host_native::UiNativeEventLoopDirective, ()> {
+        if !self.application_runtime_active {
+            return Err(());
+        }
+        let runtime = self.application_runtime.as_mut().ok_or(())?;
+        let shell = self.shell.take().ok_or(())?;
+        match runtime.native_pointer_affordance_ready(shell) {
+            Ok((shell, directive)) => {
+                self.shell = Some(shell);
+                self.arm_motion_readiness_now();
+                Ok(map_directive(directive))
+            }
+            Err(stopped) => {
+                self.shell = Some(stopped.into_application());
+                Err(())
+            }
+        }
+    }
+
     pub(super) fn progress_application_runtime_viewport(
         &mut self,
     ) -> Result<worth_ui_host_native::UiNativeEventLoopDirective, ()> {

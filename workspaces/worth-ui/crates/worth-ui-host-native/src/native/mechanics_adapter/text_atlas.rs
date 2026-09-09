@@ -107,3 +107,13 @@ mod text_atlas_settlement;
 
 #[path = "text_atlas_transaction.rs"]
 mod text_atlas_transaction;
+
+#[cfg(feature = "certification-support")]
+#[path = "text_foreground_atlas_model.rs"]
+mod text_foreground_atlas_model;
+#[cfg(feature = "certification-support")]
+pub use text_foreground_atlas_model::{
+    UiNativeTextForegroundAtlasModel, UiNativeTextForegroundCoverageCertification,
+    UiNativeTextForegroundFinalizationDenial, UiNativeTextForegroundJoinCost,
+    UiNativeTextReplayOperation, UiNativeTextRetentionCertificationDenial,
+};

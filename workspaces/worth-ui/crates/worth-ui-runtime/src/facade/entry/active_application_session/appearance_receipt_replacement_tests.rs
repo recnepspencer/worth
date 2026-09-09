@@ -266,6 +266,7 @@ fn alias_terminal_change_is_denied_before_replacement_publication() {
         &profile,
         &predecessor,
         successor.clone(),
+        &[role.role().clone()],
         bindings.iter(),
     )
     .unwrap();

@@ -5,6 +5,7 @@ mod outline;
 mod overlay_order;
 mod pointer_affordance;
 pub(crate) mod reference_raster;
+mod spatial_reference;
 mod surface;
 mod text_foreground;
 pub(crate) mod work;
@@ -43,6 +44,7 @@ pub struct UiHeadlessAppearanceWorkTranscript {
     successor: UiHeadlessAppearanceFrameTranscript,
     changes: Box<[UiHeadlessAppearanceMechanicChange]>,
     damage: Box<[UiAppearanceDamageRegion]>,
+    text_damage_requirements: Box<[worth_ui_host_contract::UiAppearanceTextDamageRequirement]>,
     order_changed: bool,
 }
 
@@ -145,6 +147,7 @@ impl UiHeadlessAppearanceWorkTranscript {
             successor: UiHeadlessAppearanceFrameTranscript::from_mounted(work.successor())?,
             changes: work::translate_changes(work.changes()),
             damage: work.damage().to_vec().into_boxed_slice(),
+            text_damage_requirements: work.text_damage_requirements().collect(),
             order_changed: work.order_changed(),
         })
     }
@@ -171,6 +174,12 @@ impl UiHeadlessAppearanceWorkTranscript {
 
     pub fn damage(&self) -> &[UiAppearanceDamageRegion] {
         &self.damage
+    }
+
+    pub fn text_damage_requirements(
+        &self,
+    ) -> &[worth_ui_host_contract::UiAppearanceTextDamageRequirement] {
+        &self.text_damage_requirements
     }
 
     pub const fn order_changed(&self) -> bool {

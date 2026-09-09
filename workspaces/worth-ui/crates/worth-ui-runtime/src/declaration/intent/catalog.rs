@@ -40,6 +40,12 @@ pub(crate) enum UiIntentCatalogCommandRoute {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum UiIntentSingleProductRouteDenial {
+    Missing,
+    Ambiguous { routes: usize },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UiIntentCatalogMetrics {
     definitions: usize,
     declarations: usize,
@@ -64,6 +70,38 @@ pub(crate) enum UiIntentCatalogSemanticComparison {
 }
 
 impl UiIntentCatalog {
+    /// Installation/replacement demand; ordinary turns use the installed owner.
+    pub(crate) fn has_activation_routes(&self) -> bool {
+        self.product_routes
+            .iter()
+            .any(|route| route.interaction() == UiSemanticInteractionFamily::Activate)
+            || self
+                .confirmation_index
+                .keys()
+                .any(|(_, family)| *family == UiSemanticInteractionFamily::Activate)
+    }
+
+    /// A single declared product route is usable without inferring a family.
+    /// Multi-route controls require an explicit selector before consumption.
+    pub(crate) fn single_product_route_identity(
+        &self,
+        graph_node: crate::graph::UiGraphNodeIdentity,
+    ) -> Result<&super::UiIntentDeclarationIdentity, UiIntentSingleProductRouteDenial> {
+        let start = self
+            .product_routes
+            .partition_point(|route| route.graph_node() < graph_node);
+        let end = self
+            .product_routes
+            .partition_point(|route| route.graph_node() <= graph_node);
+        match &self.product_routes[start..end] {
+            [] => Err(UiIntentSingleProductRouteDenial::Missing),
+            [route] => Ok(self.declarations[route.declaration_index() as usize].identity()),
+            routes => Err(UiIntentSingleProductRouteDenial::Ambiguous {
+                routes: routes.len(),
+            }),
+        }
+    }
+
     pub(crate) fn prepare(
         material: &crate::declaration::WorthUiAuthoredIntentMaterial,
         definitions: &crate::capability::FrozenIntentDefinitionCapabilities,

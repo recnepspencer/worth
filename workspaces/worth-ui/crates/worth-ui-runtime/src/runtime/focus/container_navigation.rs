@@ -14,9 +14,13 @@ pub(crate) enum UiFocusContainerNavigationReceipt {
 impl super::UiFocusRuntimeState {
     pub(crate) fn navigate_container(
         &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         key: UiFocusContainerNavigationKey,
     ) -> Result<Option<UiFocusContainerNavigationReceipt>, super::UiFocusRoutingDenial> {
-        let Some(current) = self.current else {
+        let Some(current) = self
+            .current
+            .filter(|current| current.scope().semantic_surface() == surface)
+        else {
             return Ok(None);
         };
         let Some(current_participant) = self.exact_current_successor(current) else {

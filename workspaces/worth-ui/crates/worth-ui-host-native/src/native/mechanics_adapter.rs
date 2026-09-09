@@ -18,7 +18,7 @@ mod measurement;
 mod presentation;
 #[path = "mechanics_adapter/presentation/text_atlas.rs"]
 mod presentation_text_atlas;
-mod text_atlas;
+pub(super) mod text_atlas;
 
 #[cfg(test)]
 pub(crate) use text_atlas::seed_pending_atlas_for_event_loop;

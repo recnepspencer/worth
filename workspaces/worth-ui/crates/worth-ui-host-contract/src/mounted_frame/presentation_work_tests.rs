@@ -105,7 +105,7 @@ fn sample_contract_brands_finite_same_frame_unique_work() {
     );
     let source = canonical_box(crate::UiMountedCoordinateSpace::Viewport, 1.0, 2.0);
     let sampled = canonical_box(crate::UiMountedCoordinateSpace::Viewport, 3.0, 4.0);
-    let opacity = UiMountedPresentationOpacity::from_runtime_sampling(0.5).unwrap();
+    let opacity = UiMountedPresentationOpacity::from_runtime_composition(32_768);
     let change = UiMountedPresentationSampleChange::from_runtime_sampling(
         command,
         Some(UiMountedPresentationTransform::from_runtime_sampling(source, sampled).unwrap()),
@@ -139,15 +139,7 @@ fn sample_contract_brands_finite_same_frame_unique_work() {
 }
 
 #[test]
-fn sample_values_reject_non_finite_opacity_and_mixed_coordinate_spaces() {
-    assert_eq!(
-        UiMountedPresentationOpacity::from_runtime_sampling(f32::NAN),
-        Err(UiMountedPresentationSampleConstructionDenial::NonFiniteOpacity)
-    );
-    assert_eq!(
-        UiMountedPresentationOpacity::from_runtime_sampling(1.01),
-        Err(UiMountedPresentationSampleConstructionDenial::OpacityOutOfRange)
-    );
+fn sample_values_reject_mixed_coordinate_spaces() {
     assert_eq!(
         UiMountedPresentationTransform::from_runtime_sampling(
             canonical_box(crate::UiMountedCoordinateSpace::Viewport, 0.0, 0.0),
@@ -155,6 +147,16 @@ fn sample_values_reject_non_finite_opacity_and_mixed_coordinate_spaces() {
         ),
         Err(UiMountedPresentationSampleConstructionDenial::CoordinateSpaceMismatch)
     );
+}
+
+#[test]
+fn presentation_opacity_preserves_all_canonical_units() {
+    for units in 0..=u16::MAX {
+        assert_eq!(
+            UiMountedPresentationOpacity::from_runtime_composition(units).units(),
+            units
+        );
+    }
 }
 
 fn canonical_box(

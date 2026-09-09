@@ -38,6 +38,9 @@ pub(super) fn stop_label(
         worth_ui::facade::app::WorthUiMountedFrameExecutionStop::HostMeasurementTransition(
             denial,
         ) => host_measurement_transition_label(denial),
+        worth_ui::facade::app::WorthUiMountedFrameExecutionStop::OccurrenceGeometry(denial) => {
+            format!("occurrence-geometry:{denial:?}")
+        }
         worth_ui::facade::app::WorthUiMountedFrameExecutionStop::FrameworkTransition(_) => {
             "framework-transition".to_owned()
         }

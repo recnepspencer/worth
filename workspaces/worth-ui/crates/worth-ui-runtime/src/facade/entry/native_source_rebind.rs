@@ -69,12 +69,12 @@ impl WorthUiNativeApplicationShell {
         let admitted = match admitted {
             NativeSourceAdmission::Admitted(admitted) => admitted,
             NativeSourceAdmission::Duplicate(receipt) => {
-                return Ok(crate::runtime::rebind::UiRebindOutcome::Duplicate(receipt))
+                return Ok(crate::runtime::rebind::UiRebindOutcome::Duplicate(receipt));
             }
             NativeSourceAdmission::Superseded(receipt) => {
                 return Ok(
                     crate::runtime::rebind::UiRebindOutcome::SupersededBeforeEffects(receipt),
-                )
+                );
             }
         };
         let classified = classify_source_change(&mut self.session, admitted)?;
@@ -126,19 +126,19 @@ fn admit_source_candidate(
         Err(crate::runtime::observation::UiObservationAdmissionDenial::DuplicateOwnerOrder) => {
             return Ok(NativeSourceAdmission::Duplicate(
                 crate::runtime::rebind::UiDuplicateObservationReceipt::new(identity),
-            ))
+            ));
         }
         Err(crate::runtime::observation::UiObservationAdmissionDenial::HistoricalOwnerOrder) => {
             return Ok(NativeSourceAdmission::Superseded(
                 crate::runtime::rebind::UiRebindSupersededReceipt::before_effects(
                     crate::runtime::rebind::UiRebindStoppedPhase::ObservationAdmission,
                 ),
-            ))
+            ));
         }
         Err(denial) => {
             return Err(WorthUiNativeSourceRebindDenial::ObservationAdmission(
                 denial,
-            ))
+            ));
         }
     }
     turn.seal()
@@ -167,7 +167,7 @@ fn plan_source_rebind(
 ) -> Result<NativeSourceRebindPlan, WorthUiNativeSourceRebindDenial> {
     let plan = match classified {
         crate::runtime::observation::UiChangeClassificationOutcome::ObservedNoChange(receipt) => {
-            return Ok(NativeSourceRebindPlan::ObservedNoChange(receipt))
+            return Ok(NativeSourceRebindPlan::ObservedNoChange(receipt));
         }
         crate::runtime::observation::UiChangeClassificationOutcome::EvidenceOnly(change) => session
             .compile_preservation_rebind(change, policy)

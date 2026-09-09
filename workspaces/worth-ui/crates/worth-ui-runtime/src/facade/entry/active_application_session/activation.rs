@@ -25,12 +25,20 @@ impl WorthUiActiveApplicationSession {
         let service_policy_plan = app.service_policy_plan();
         let mut dormant_portal_stack_ordinal_issuer =
             Some(crate::runtime::portal::UiPortalStackOrdinalIssuer::new());
+        let mut required_appearance_roles = app
+            .prepared_authority()
+            .consumed_fact_index()
+            .appearance_required_role_identities()
+            .into_vec();
+        required_appearance_roles.extend(
+            app.prepared_authority()
+                .authored_overlay_material()
+                .backdrop_appearance_role_identities(),
+        );
+        required_appearance_roles.sort();
+        required_appearance_roles.dedup();
         let appearance_theme_admission =
-            if app
-                .prepared_authority()
-                .consumed_fact_index()
-                .has_appearance_consumers()
-            {
+            if !required_appearance_roles.is_empty() {
                 let themes = app.capabilities().appearance_themes().ok_or(
                     crate::runtime::WorthUiRuntimeLaunchDenial::AppearanceThemeAdmission(
                         crate::runtime::appearance::UiThemeCapabilityReceiptDenial::MissingBundle,
@@ -53,9 +61,7 @@ impl WorthUiActiveApplicationSession {
                 Some(
                     admission
                         .prepare(
-                            app.prepared_authority()
-                                .consumed_fact_index()
-                                .appearance_required_role_identities(),
+                            required_appearance_roles,
                             WorthUiActiveApplicationGenerationIdentity::current(
                                 identity,
                                 app.generation_identity(),
@@ -110,8 +116,12 @@ impl WorthUiActiveApplicationSession {
         );
         let application =
             crate::runtime::session::WorthUiApplicationSessionState::new(app, runtime);
-        let pointer_presence_enabled =
-            appearance_axis_demand.contains(worth_ui_dsl::UiAppearanceStateAxis::Hover);
+        let pointer_presence_enabled = appearance_axis_demand
+            .contains(worth_ui_dsl::UiAppearanceStateAxis::Hover)
+            || application
+                .prepared_authority()
+                .intent_catalog()
+                .has_activation_routes();
         let pressed_appearance_enabled =
             appearance_axis_demand.contains(worth_ui_dsl::UiAppearanceStateAxis::Pressed);
         let mounted = crate::mounting::WorthUiMountedSessionState::new(
@@ -167,6 +177,7 @@ impl WorthUiActiveApplicationSession {
                 crate::runtime::portal::UiPortalOverlayBindingLifecycle::new(
                     initial_generation.clone(),
                 ),
+            overlay_composition_owners: super::UiActiveOverlayCompositionOwners::new(),
             dormant_portal_stack_ordinal_issuer,
             motion: crate::runtime::UiRuntimeServiceInstallation::from_optional(
                 service_policy_plan.motion().map(|policy| {
@@ -204,6 +215,8 @@ impl WorthUiActiveApplicationSession {
             appearance_inspection:
                 crate::runtime::appearance::UiAppearanceInspectionProducer::new(initial_generation),
             appearance_owner_snapshot: None,
+            observation_clock: None,
+            pointer_affordance_snapshot: None,
             visual_inspection,
             next_visual_capture_identity: 1,
             next_visual_overlay_identity: 1,

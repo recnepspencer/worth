@@ -1,3 +1,6 @@
+mod focus_changes;
+mod pointer_changes;
+
 #[derive(Clone)]
 pub struct UiAppearanceOwnerSnapshot {
     turn: crate::runtime::observation::UiObservationTurnIdentity,
