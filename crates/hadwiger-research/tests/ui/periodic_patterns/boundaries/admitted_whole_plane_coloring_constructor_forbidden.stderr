@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `admitted_whole_plane_coloring` found for struct `hadwiger_research::facade::GeneratedPatternReplaySuite` in the current scope
- --> tests/ui/periodic_patterns/boundaries/admitted_whole_plane_coloring_constructor_forbidden.rs:4:42
-  |
-4 |     let _ = GeneratedPatternReplaySuite::admitted_whole_plane_coloring("not-a-proof");
-  |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::GeneratedPatternReplaySuite`

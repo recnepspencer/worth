@@ -177,14 +177,10 @@ authority.
 state, resources, forms, routing, local branch truth, and React integration.
 The default path does not silently fall back to the main thread.
 
-### Supporting and research crates
+### Supporting crates
 
-- [`worth-math`](./crates/worth-math) and
-  [`worth-geom`](./crates/worth-geom) contain numerical and geometric substrate.
 - [`worth-harness`](./crates/worth-harness) provides shared scenario,
   certification, parity, diagnostics, and hostile-workload infrastructure.
-- [`hadwiger-research`](./crates/hadwiger-research) explores a Query-first
-  artifact pipeline for Hadwiger-Nelson proof search.
 - Crates and packages retaining the older `forge-*` name are migration or
   compatibility surfaces, not the preferred vocabulary for new integrations.
 
@@ -192,7 +188,7 @@ The default path does not silently fall back to the main thread.
 
 | Path | Contents |
 |---|---|
-| [`crates`](./crates) | Shared runtime, protocol, foundation, delivery, and research crates |
+| [`crates`](./crates) | Shared runtime, protocol, foundation, and delivery crates |
 | [`workspaces/worth-contracts`](./workspaces/worth-contracts) | Pure public schema contracts and graph-constitution meaning |
 | [`workspaces/worth-query`](./workspaces/worth-query) | Query declarations, installation, admission, execution, publication, facades, replay, and certification |
 | [`workspaces/worth-store`](./workspaces/worth-store) | Durable physical store, recovery, integrity, operations, and certification |

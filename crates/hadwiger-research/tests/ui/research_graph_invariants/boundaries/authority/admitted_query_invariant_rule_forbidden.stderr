@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `admitted_query_invariant` found for struct `hadwiger_research::facade::ResearchGraphInvariantRule` in the current scope
- --> tests/ui/research_graph_invariants/boundaries/authority/admitted_query_invariant_rule_forbidden.rs:4:41
-  |
-4 |     let _ = ResearchGraphInvariantRule::admitted_query_invariant("bad");
-  |                                         ^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::ResearchGraphInvariantRule`

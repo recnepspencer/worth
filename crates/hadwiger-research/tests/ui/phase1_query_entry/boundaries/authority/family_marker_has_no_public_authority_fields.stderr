@@ -1,7 +1,0 @@
-error[E0560]: struct `CandidateGraphDeclarationFamily` has no field named `authority`
- --> tests/ui/phase1_query_entry/boundaries/authority/family_marker_has_no_public_authority_fields.rs:5:9
-  |
-5 |         authority: "fake theorem authority",
-  |         ^^^^^^^^^ `CandidateGraphDeclarationFamily` does not have this field
-  |
-  = note: all struct fields are already assigned

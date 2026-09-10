@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_visual_adjacency` found for struct `TilingContactFact` in the current scope
- --> tests/ui/tiling_geometry/boundaries/visual_adjacency_contact_forbidden.rs:4:32
-  |
-4 |     let _ = TilingContactFact::from_visual_adjacency("tile-a", "tile-b");
-  |                                ^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `TilingContactFact`

@@ -1,5 +1,0 @@
-error[E0609]: no field `parent_artifacts` on type `&mut hadwiger_research::facade::GraphVersion`
- --> tests/ui/canonical_artifacts/boundaries/immutability/parent_references_mutation_forbidden.rs:4:13
-  |
-4 |     version.parent_artifacts.push(parent);
-  |             ^^^^^^^^^^^^^^^^ unknown field

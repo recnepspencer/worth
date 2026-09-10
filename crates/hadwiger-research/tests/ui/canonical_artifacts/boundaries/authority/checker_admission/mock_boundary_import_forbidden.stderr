@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `hadwiger_research::facade::HadwigerMockBoundaryCausalEvidence`
- --> tests/ui/canonical_artifacts/boundaries/authority/checker_admission/mock_boundary_import_forbidden.rs:1:5
-  |
-1 | use hadwiger_research::facade::HadwigerMockBoundaryCausalEvidence;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^----------------------------------
-  |     |                          |
-  |     |                          help: a similar name exists in the module: `HadwigerCheckerCausalEvidence`
-  |     no `HadwigerMockBoundaryCausalEvidence` in `facade`

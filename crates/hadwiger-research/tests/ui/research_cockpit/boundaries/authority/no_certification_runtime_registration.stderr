@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `register_runtime_invariants` found for struct `hadwiger_research::facade::HadwigerCertificationBundle` in the current scope
- --> tests/ui/research_cockpit/boundaries/authority/no_certification_runtime_registration.rs:4:42
-  |
-4 |     let _ = HadwigerCertificationBundle::register_runtime_invariants("catalog");
-  |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::HadwigerCertificationBundle`

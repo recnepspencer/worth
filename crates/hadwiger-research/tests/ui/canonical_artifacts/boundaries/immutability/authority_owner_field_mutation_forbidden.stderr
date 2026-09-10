@@ -1,5 +1,0 @@
-error[E0609]: no field `authority_owner` on type `&mut hadwiger_research::facade::GraphIdentity`
- --> tests/ui/canonical_artifacts/boundaries/immutability/authority_owner_field_mutation_forbidden.rs:4:11
-  |
-4 |     graph.authority_owner = HadwigerArtifactAuthorityOwner::ProofCandidate;
-  |           ^^^^^^^^^^^^^^^ unknown field

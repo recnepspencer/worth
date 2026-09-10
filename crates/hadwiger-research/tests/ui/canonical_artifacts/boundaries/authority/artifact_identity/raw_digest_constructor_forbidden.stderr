@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `new_unchecked` found for struct `HadwigerArtifactDigest` in the current scope
- --> tests/ui/canonical_artifacts/boundaries/authority/artifact_identity/raw_digest_constructor_forbidden.rs:4:37
-  |
-4 |     let _ = HadwigerArtifactDigest::new_unchecked("fake");
-  |                                     ^^^^^^^^^^^^^ function or associated item not found in `HadwigerArtifactDigest`

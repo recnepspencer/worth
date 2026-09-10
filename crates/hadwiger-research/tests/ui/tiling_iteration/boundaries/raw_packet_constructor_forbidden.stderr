@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `new_unchecked` found for struct `hadwiger_research::facade::TilingIterationPacket` in the current scope
- --> tests/ui/tiling_iteration/boundaries/raw_packet_constructor_forbidden.rs:4:36
-  |
-4 |     let _ = TilingIterationPacket::new_unchecked();
-  |                                    ^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::TilingIterationPacket`

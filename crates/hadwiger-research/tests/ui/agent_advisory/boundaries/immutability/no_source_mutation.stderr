@@ -1,5 +1,0 @@
-error[E0616]: field `agent_identity` of struct `AgentSourceRecord` is private
-  --> tests/ui/agent_advisory/boundaries/immutability/no_source_mutation.rs:11:12
-   |
-11 |     source.agent_identity = "other".to_string();
-   |            ^^^^^^^^^^^^^^ private field

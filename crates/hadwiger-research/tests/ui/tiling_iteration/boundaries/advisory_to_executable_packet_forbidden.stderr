@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_agent_advisory_unchecked` found for struct `TilingIterationPacketRequest` in the current scope
- --> tests/ui/tiling_iteration/boundaries/advisory_to_executable_packet_forbidden.rs:4:43
-  |
-4 |     let _ = TilingIterationPacketRequest::from_agent_advisory_unchecked(advisory);
-  |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `TilingIterationPacketRequest`

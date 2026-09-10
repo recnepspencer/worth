@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `hadwiger_research::facade::explain_rejection_unchecked`
- --> tests/ui/explanations/boundaries/unchecked_explanation_function_forbidden.rs:1:5
-  |
-1 | use hadwiger_research::facade::explain_rejection_unchecked;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `explain_rejection_unchecked` in `facade`

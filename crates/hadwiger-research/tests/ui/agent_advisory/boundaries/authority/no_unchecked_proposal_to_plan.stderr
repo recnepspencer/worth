@@ -1,5 +1,0 @@
-error[E0599]: no method named `into_experiment_plan_unchecked` found for struct `AgentExperimentProposal` in the current scope
- --> tests/ui/agent_advisory/boundaries/authority/no_unchecked_proposal_to_plan.rs:7:22
-  |
-7 |     let _ = proposal.into_experiment_plan_unchecked();
-  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `AgentExperimentProposal`

@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `minimal_unchecked` found for struct `hadwiger_research::facade::ConflictCoreExtractionReport` in the current scope
- --> tests/ui/conflict_graph_extraction/boundaries/unchecked_core_constructor_forbidden.rs:4:43
-  |
-4 |     let _ = ConflictCoreExtractionReport::minimal_unchecked();
-  |                                           ^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::ConflictCoreExtractionReport`

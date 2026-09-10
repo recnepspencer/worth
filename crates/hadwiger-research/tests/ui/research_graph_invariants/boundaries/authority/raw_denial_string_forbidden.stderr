@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_raw_string` found for struct `hadwiger_research::facade::ResearchGraphInvariantDenial` in the current scope
- --> tests/ui/research_graph_invariants/boundaries/authority/raw_denial_string_forbidden.rs:4:43
-  |
-4 |     let _ = ResearchGraphInvariantDenial::from_raw_string("bad");
-  |                                           ^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::ResearchGraphInvariantDenial`
