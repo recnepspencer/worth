@@ -67,6 +67,7 @@ impl<'authority> UiMountedHostPresentationAuthority<'authority> {
             deadline: input.deadline,
             requirement: input.requirement,
             presentation_work: input.presentation_work.view(),
+            appearance_work: input.presentation_work.appearance(),
             qualified_text: input.presentation_work,
             text_raster_work: input.text_raster_work,
         })

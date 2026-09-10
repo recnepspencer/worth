@@ -205,8 +205,8 @@ pub(super) fn publish(
     );
     if let UiMountedFrameOutcome::AdmissionDenied(rejection) = &outcome {
         panic!(
-            "exact surface appearance admission denied: {:?}",
-            rejection.denial()
+            "exact surface appearance admission denied for {surfaces:?}: {:?}",
+            rejection.denial(),
         );
     }
     assert!(matches!(

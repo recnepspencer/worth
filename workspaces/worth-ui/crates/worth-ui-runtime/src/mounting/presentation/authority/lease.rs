@@ -124,6 +124,7 @@ mod tests {
                 presentation_work: worth_ui_host_contract::UiMountedPresentationWorkView::Initial(
                     &initial,
                 ),
+                appearance_work: None,
                 qualified_text: &NoQualifiedText,
                 text_raster_work: None,
             },

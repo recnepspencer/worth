@@ -12,7 +12,7 @@ use super::UiNativeHostState;
 
 mod capability;
 #[cfg(feature = "certification-support")]
-pub use capability::staged_appearance_report;
+pub use capability::appearance_report;
 mod construction;
 mod measurement;
 mod presentation;
@@ -32,7 +32,7 @@ impl WorthUiHostMechanicsAdapter for WorthUiNativeMechanicsAdapter {
     fn mechanical_host_contract(&self) -> WorthUiHostContract {
         debug_assert_eq!(
             self.profile,
-            crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1
+            crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2
         );
         WorthUiHostContract::native()
     }

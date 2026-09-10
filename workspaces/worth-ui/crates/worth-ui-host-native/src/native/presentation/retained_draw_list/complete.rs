@@ -204,6 +204,15 @@ impl UiNativeRetainedDrawList {
         {
             return Err(UiNativeRetainedDrawListDenial::CommandMismatch);
         }
+        let order = UiNativeRetainedOrder::initial_weighted(source_order.iter().map(|identity| {
+            (
+                *identity,
+                commands
+                    .get(&identity.command())
+                    .expect("complete order membership was validated")
+                    .layer_semantic_order(),
+            )
+        }))?;
         let mut retained = Self {
             physical_coverage: None,
             staged_appearance: None,
@@ -213,7 +222,7 @@ impl UiNativeRetainedDrawList {
             content,
             baseline,
             commands,
-            order: UiNativeRetainedOrder::initial(source_order.iter().copied())?,
+            order,
             order_integrity,
             damage,
             glyph_runs,

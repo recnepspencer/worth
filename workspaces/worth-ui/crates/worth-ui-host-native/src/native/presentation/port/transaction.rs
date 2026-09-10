@@ -231,10 +231,13 @@ fn encode(
 fn raster_vertices(operations: &[UiNativeRasterOperation]) -> Vec<RasterVertex> {
     operations
         .iter()
-        .filter_map(|operation| match *operation {
-            UiNativeRasterOperation::Clear(rect) => Some(rectangle_vertices(rect, [0, 0, 0, 0])),
+        .filter_map(|operation| match operation {
+            UiNativeRasterOperation::Clear(rect) => Some(rectangle_vertices(*rect, [0, 0, 0, 0])),
             UiNativeRasterOperation::FilledRect { rect, source_rgba8 } => {
-                Some(rectangle_vertices(rect, source_rgba8))
+                Some(rectangle_vertices(*rect, *source_rgba8))
+            }
+            UiNativeRasterOperation::Surface(surface) => {
+                Some(rectangle_vertices(surface.rect(), [0, 0, 0, 0]))
             }
             UiNativeRasterOperation::Glyph(_) => None,
         })
@@ -249,7 +252,9 @@ fn glyph_vertices(operations: &[UiNativeRasterOperation], extent: [u32; 2]) -> V
             UiNativeRasterOperation::Glyph(command) => {
                 Some(super::super::text::glyph_vertices(*command, extent))
             }
-            UiNativeRasterOperation::Clear(_) | UiNativeRasterOperation::FilledRect { .. } => None,
+            UiNativeRasterOperation::Clear(_)
+            | UiNativeRasterOperation::FilledRect { .. }
+            | UiNativeRasterOperation::Surface(_) => None,
         })
         .flatten()
         .collect()

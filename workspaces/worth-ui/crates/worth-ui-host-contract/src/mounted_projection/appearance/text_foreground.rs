@@ -28,6 +28,29 @@ pub enum UiMountedTextForegroundAppearanceCompletionDenial {
 
 impl UiMountedTextForegroundAppearanceMechanic {
     #[doc(hidden)]
+    pub fn reattribute_for_runtime_mounting(
+        &self,
+        issuer: crate::UiMountedNodeReceiptIssuer,
+        node_receipt: crate::UiMountedNodeReceiptIdentity,
+    ) -> Option<Self> {
+        (node_receipt.frame() == issuer.frame_identity()
+            && node_receipt.mounted_instance() == self.node_receipt.mounted_instance())
+        .then(|| Self {
+            node_receipt,
+            command: self.command,
+            paint_span: self.paint_span,
+            foreground: self.foreground,
+            opacity: self.opacity,
+            projection: super::UiMountedNodeAppearanceAttribution::from_runtime_mounting(
+                issuer,
+                self.projection.identity(),
+                self.projection.revision(),
+            )
+            .expect("accepted appearance attribution stays nonzero"),
+        })
+    }
+
+    #[doc(hidden)]
     pub fn complete_from_runtime_mounting(
         input: UiMountedTextForegroundAppearanceCompletionInput,
     ) -> Result<Self, UiMountedTextForegroundAppearanceCompletionDenial> {

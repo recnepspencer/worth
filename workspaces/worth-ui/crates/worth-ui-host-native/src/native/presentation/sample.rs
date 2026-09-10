@@ -215,4 +215,4 @@ fn before_effects(denial: UiHostSurfacePresentationDenial) -> UiNativePresentati
 
 #[cfg(test)]
 #[path = "sample_tests.rs"]
-mod tests;
+pub(in crate::native::presentation) mod tests;

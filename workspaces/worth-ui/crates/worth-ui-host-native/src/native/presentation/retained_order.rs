@@ -13,6 +13,7 @@ pub(super) struct UiNativeRetainedOrderSnapshot<Identity> {
 
 struct OriginalOrderEntry<Identity> {
     identity: Identity,
+    weight: u32,
     predecessor: Option<Identity>,
     existed: bool,
     rank: Option<usize>,
@@ -34,14 +35,20 @@ where
     pub(super) fn initial(
         identities: impl IntoIterator<Item = Identity>,
     ) -> Result<Self, UiNativeRetainedOrderDenial> {
+        Self::initial_weighted(identities.into_iter().map(|identity| (identity, 0)))
+    }
+
+    pub(super) fn initial_weighted(
+        identities: impl IntoIterator<Item = (Identity, u32)>,
+    ) -> Result<Self, UiNativeRetainedOrderDenial> {
         let mut order = Self {
             index: UiRetainedOrderIndex::new(usize::from(
                 crate::UiNativeMechanicsCapacities::QUALIFIED.retained_commands,
             )),
         };
         let mut previous = None;
-        for identity in identities {
-            order.insert_after(identity, previous)?;
+        for (identity, weight) in identities {
+            order.insert_after_weighted(identity, previous, weight)?;
             previous = Some(identity);
         }
         Ok(order)
@@ -59,6 +66,15 @@ where
         identity: Identity,
         predecessor: Option<Identity>,
     ) -> Result<(), UiNativeRetainedOrderDenial> {
+        self.place_after_weighted(identity, predecessor, 0)
+    }
+
+    pub(super) fn place_after_weighted(
+        &mut self,
+        identity: Identity,
+        predecessor: Option<Identity>,
+        weight: u32,
+    ) -> Result<(), UiNativeRetainedOrderDenial> {
         if predecessor == Some(identity) {
             return Err(UiNativeRetainedOrderDenial::SelfPredecessor);
         }
@@ -68,7 +84,7 @@ where
         if self.index.contains(identity) {
             self.remove(identity)?;
         }
-        self.insert_after(identity, predecessor)
+        self.insert_after_weighted(identity, predecessor, weight)
     }
 
     pub(super) fn ordered(&self) -> impl ExactSizeIterator<Item = Identity> + '_ {
@@ -77,6 +93,22 @@ where
 
     pub(super) fn contains(&self, identity: Identity) -> bool {
         self.index.contains(identity)
+    }
+
+    pub(super) fn rank(&self, identity: Identity) -> Option<usize> {
+        self.index.rank(identity)
+    }
+
+    pub(super) fn first_with_weight_at_least(&self, minimum: u32) -> Option<Identity> {
+        self.index.first_with_weight_at_least(minimum)
+    }
+
+    pub(super) fn update_weight(&mut self, identity: Identity, weight: u32) -> bool {
+        self.index.update_weight(identity, weight)
+    }
+
+    pub(super) fn len(&self) -> usize {
+        self.index.len()
     }
 
     pub(super) fn take_cost(&self) -> worth_ui_retained_order::UiRetainedOrderCost {
@@ -145,6 +177,7 @@ where
                 .and_then(|value| self.index.identity_at(value));
             entries.push(OriginalOrderEntry {
                 identity,
+                weight: self.index.weight(identity).unwrap_or(0),
                 predecessor,
                 existed: rank.is_some(),
                 rank,
@@ -164,7 +197,7 @@ where
             }
         }
         for entry in snapshot.entries.into_iter().filter(|entry| entry.existed) {
-            self.insert_after(entry.identity, entry.predecessor)?;
+            self.insert_after_weighted(entry.identity, entry.predecessor, entry.weight)?;
         }
         Ok(())
     }
@@ -173,6 +206,15 @@ where
         &mut self,
         identity: Identity,
         predecessor: Option<Identity>,
+    ) -> Result<(), UiNativeRetainedOrderDenial> {
+        self.insert_after_weighted(identity, predecessor, 0)
+    }
+
+    fn insert_after_weighted(
+        &mut self,
+        identity: Identity,
+        predecessor: Option<Identity>,
+        weight: u32,
     ) -> Result<(), UiNativeRetainedOrderDenial> {
         if self.index.contains(identity) {
             return Err(UiNativeRetainedOrderDenial::DuplicateIdentity);
@@ -186,7 +228,7 @@ where
             None => 0,
         };
         self.index
-            .insert_at(rank, identity)
+            .insert_at_weighted(rank, identity, weight)
             .map_err(|denial| match denial {
                 worth_ui_retained_order::UiRetainedOrderDenial::CapacityExceeded => {
                     UiNativeRetainedOrderDenial::CapacityExceeded

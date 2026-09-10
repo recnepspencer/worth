@@ -1,9 +1,11 @@
+use worth_ui::facade::app::UiTextOriginalRange;
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor,
     ComponentFocusSupport, ComponentHitTestContract, ComponentHitTestOrder, ComponentId,
-    ComponentPortalChildContract, ComponentPropSchema, ComponentStateOwnership,
-    ComponentStaticPaintContract, ComponentStaticPaintOrder, SurfaceDescriptor, SurfaceId,
-    SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeTokenId,
+    ComponentPortalChildContract, ComponentPropSchema, ComponentSemanticTextSpanContract,
+    ComponentStateOwnership, ComponentStaticPaintContract, ComponentStaticPaintOrder,
+    SurfaceDescriptor, SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass,
+    ThemeTokenId,
 };
 use worth_ui_platform_pulse::product_world::{
     PlatformPulseMosaicSurface, PlatformPulsePaletteRole, PlatformPulseProductComponent,
@@ -26,13 +28,15 @@ pub(super) fn region(
     allocation: ComponentAllocationMeasurementContract,
     order: u32,
 ) -> ComponentDescriptor {
-    component(identity).with_static_paint(
-        ComponentStaticPaintContract::opaque_fill(
-            fill,
-            ComponentStaticPaintOrder::back_to_front(order),
-        ),
-        allocation,
-    )
+    component(identity)
+        .with_static_paint(
+            ComponentStaticPaintContract::opaque_fill(
+                fill,
+                ComponentStaticPaintOrder::back_to_front(order),
+            ),
+            allocation,
+        )
+        .with_surface_paint_order(order)
 }
 
 pub(super) fn text(
@@ -65,6 +69,41 @@ pub(super) fn text_with_token(
             .semantic_text_contract(foreground, order)
             .expect("Pulse text contract is qualified"),
     )
+}
+
+pub(super) fn text_with_appearance_foreground(
+    identity: PlatformPulseProductComponent,
+    role: PlatformPulseTextRole,
+    foreground: PlatformPulsePaletteRole,
+    source: &str,
+    allocation: ComponentAllocationMeasurementContract,
+    order: u32,
+) -> ComponentDescriptor {
+    let foreground = foreground.token_id();
+    let source_end = u32::try_from(source.len()).expect("Pulse copy fits text range mechanics");
+    let range = UiTextOriginalRange::new(0, source_end).expect("Pulse copy is nonempty");
+    let span = ComponentSemanticTextSpanContract::new(
+        range,
+        foreground.clone(),
+        role.style().qualified_style(),
+    )
+    .expect("Pulse appearance text span is nonempty")
+    .with_appearance_foreground();
+    let contract = role
+        .style()
+        .semantic_text_contract(foreground, order)
+        .expect("Pulse text contract is qualified")
+        .with_scalar_spans([span])
+        .expect("Pulse appearance text span covers the source contiguously");
+    let id = identity.id();
+    ComponentDescriptor::new(
+        ComponentId::new(id).expect("valid Pulse text component id"),
+        ComponentPropSchema::named(format!("{id}.props")),
+        ComponentChildPolicy::text_children(),
+        ComponentStateOwnership::runtime_owned(),
+    )
+    .with_allocation_measurement_contract(allocation)
+    .with_semantic_text(contract)
 }
 
 pub(super) fn interactive_region(

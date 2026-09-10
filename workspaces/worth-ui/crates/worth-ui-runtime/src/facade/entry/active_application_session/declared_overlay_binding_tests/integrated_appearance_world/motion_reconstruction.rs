@@ -184,7 +184,15 @@ pub(super) fn reject_retry_at_nonterminal_sample(
                 .iter()
                 .find(|change| change.command() == *command)
                 .expect("every accepted retained command reaches the host reconstruction boundary");
-            assert_eq!(override_change.opacity().units(), *opacity);
+            // The host receives authored appearance opacity (40_000) composed
+            // with the accepted raw Motion sample. The odd denominator cannot
+            // tie, so adding half before division gives independent nearest rounding.
+            let composed = ((40_000_u64 * u64::from(*opacity) + 32_767) / 65_535) as u16;
+            assert_eq!(
+                override_change.opacity().units(),
+                composed,
+                "physical reconstruction receives once-composed appearance and Motion opacity"
+            );
         }
     }
 

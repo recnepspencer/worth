@@ -17,7 +17,61 @@ pub(super) fn perform_unchanged(
     if state.lifecycle.recovery_required(key) {
         return super::require_owner_reconstruction(state, key);
     }
+    if view.appearance_work().is_some() {
+        return present_appearance_only(state, view, unchanged, key);
+    }
     retain_unchanged(state, view, unchanged, key)
+}
+
+fn present_appearance_only(
+    state: &mut UiNativeHostState,
+    view: &UiMountedFrameConsumptionView<'_>,
+    unchanged: &UiMountedPresentationUnchanged,
+    key: u64,
+) -> UiHostSurfacePresentationOutcome {
+    let defer_initial_observation = super::defer_presentation_initial_observation(state);
+    let Some(device) = state.device.as_ref() else {
+        return super::adapter_declined();
+    };
+    let Some(surface) = state.presentation_surface.as_ref() else {
+        return super::adapter_declined();
+    };
+    let mut graphics = crate::native::UiNativePresentationAccess::new(device, surface);
+    let Some(retained) = state.retained_draw_lists.get_mut(&key) else {
+        return super::malformed();
+    };
+    let result = crate::native::presentation::present_unchanged_appearance::<
+        crate::native::presentation::UiWgpuNativePresentationPort,
+    >(
+        &mut graphics,
+        &mut state.resources,
+        &mut state.physical_signal,
+        &state.text_atlas,
+        state.text_atlas_gpu.as_ref(),
+        view,
+        unchanged,
+        retained,
+        defer_initial_observation,
+        &mut state.lifecycle,
+    );
+    let (cost, painted, observed_pixels, port_crossings, effects) = match result {
+        Ok(presented) => presented.into_parts(),
+        Err(failure) => return super::settle_presentation_failure(state, view, failure),
+    };
+    state.lifecycle.resolve_recovery(key);
+    state.lifecycle.record_presented();
+    let pixels = observed_pixels.unwrap_or_else(|| latest_pixels(state));
+    record_retained_frame(
+        state,
+        view,
+        key,
+        UiNativePresentationWorkKind::Unchanged,
+        None,
+        pixels,
+        cost,
+        port_crossings,
+    );
+    super::completed(state, key, view, cost, painted, effects)
 }
 
 fn retain_unchanged(

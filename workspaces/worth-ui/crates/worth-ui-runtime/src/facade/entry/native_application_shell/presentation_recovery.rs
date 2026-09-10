@@ -140,7 +140,7 @@ impl super::WorthUiNativeApplicationShell {
             .and_then(|publication| publication.bindings().first().copied())
             .ok_or(WorthUiNativePresentationRecoveryDenial::CurrentPublicationUnavailable)?;
         if affected == self.binding && self.pending_surface_reconciliation.is_none() {
-            self.rebind_native_surface_scale(self.scale_factor_milli)
+            self.replace_native_surface_binding(self.scale_factor_milli)
                 .map_err(|()| WorthUiNativePresentationRecoveryDenial::SurfaceRebindUnavailable)?;
         }
         self.settle_pending_native_viewport_measurements()

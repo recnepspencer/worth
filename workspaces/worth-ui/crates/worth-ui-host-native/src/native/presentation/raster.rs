@@ -14,7 +14,6 @@ impl UiNativeRasterBasis {
         }
     }
 
-    #[cfg(any(test, feature = "certification-support"))]
     pub(super) const fn new(extent: [u32; 2], scale_factor: f32) -> Self {
         Self {
             extent,
@@ -224,13 +223,7 @@ fn snap_axis(
 }
 
 pub(super) fn rectangle_vertices(rect: RasterRect, rgba: [u8; 4]) -> [RasterVertex; 6] {
-    let alpha = f32::from(rgba[3]) / 255.0;
-    let color = [
-        linear_channel(rgba[0]) * alpha,
-        linear_channel(rgba[1]) * alpha,
-        linear_channel(rgba[2]) * alpha,
-        alpha,
-    ];
+    let color = premultiplied_linear_color(rgba);
     [
         vertex(rect.left, rect.bottom, color),
         vertex(rect.right, rect.bottom, color),
@@ -238,6 +231,16 @@ pub(super) fn rectangle_vertices(rect: RasterRect, rgba: [u8; 4]) -> [RasterVert
         vertex(rect.left, rect.top, color),
         vertex(rect.right, rect.bottom, color),
         vertex(rect.right, rect.top, color),
+    ]
+}
+
+pub(super) fn premultiplied_linear_color(rgba: [u8; 4]) -> [f32; 4] {
+    let alpha = f32::from(rgba[3]) / 255.0;
+    [
+        linear_channel(rgba[0]) * alpha,
+        linear_channel(rgba[1]) * alpha,
+        linear_channel(rgba[2]) * alpha,
+        alpha,
     ]
 }
 

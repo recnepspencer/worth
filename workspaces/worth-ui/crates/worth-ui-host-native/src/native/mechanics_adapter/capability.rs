@@ -12,11 +12,10 @@ pub(super) fn report() -> worth_ui_host_contract::WorthUiHostCapabilityReport {
         WorthUiHostCapability::IdentityOverlay,
         WorthUiHostCapability::SemanticFocusPlacement,
     ])
+    .with_appearance_profile(crate::native::presentation::appearance::appearance_profile_contract())
 }
 
 #[cfg(feature = "certification-support")]
-pub fn staged_appearance_report() -> worth_ui_host_contract::WorthUiHostCapabilityReport {
-    report().with_appearance_profile(
-        crate::native::presentation::appearance::staged_appearance_profile_contract(),
-    )
+pub fn appearance_report() -> worth_ui_host_contract::WorthUiHostCapabilityReport {
+    report()
 }

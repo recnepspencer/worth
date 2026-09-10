@@ -17,7 +17,7 @@ pub(super) enum PlatformPulsePendingFramePresentation {
 
 impl PlatformPulseApplicationRuntime {
     pub(super) fn present(&mut self) {
-        if self.pending_frame_presentation.is_some() {
+        if self.pending_frame_presentation.is_some() || self.pending_managed_rebind.is_some() {
             return;
         }
         let Some(shell) = self.shell.as_mut() else {
@@ -28,7 +28,7 @@ impl PlatformPulseApplicationRuntime {
         if !first_frame && !viewport_successor && !shell.native_pointer_presentation_pending() {
             return;
         }
-        if first_frame || viewport_successor {
+        if viewport_successor {
             match super::layout::publish_native_layout(shell) {
                 Ok(true) => {}
                 Ok(false) => return,

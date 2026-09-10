@@ -165,7 +165,7 @@ pub(super) fn backdrop(ordinal: u32) -> UiMountedBackdropMechanic {
     backdrop_for_surface(semantic_surface, ordinal)
 }
 
-pub(super) fn backdrop_for_surface(
+pub(in crate::native::presentation) fn backdrop_for_surface(
     semantic_surface: UiSemanticSurfaceIdentity,
     ordinal: u32,
 ) -> UiMountedBackdropMechanic {

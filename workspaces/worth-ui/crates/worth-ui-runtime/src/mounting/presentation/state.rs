@@ -136,12 +136,19 @@ impl UiMountedPresentationAdmission {
         &mut self,
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
     ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
+        let requires_complete = self.candidates.requires_complete_appearance_projection();
+        if requires_complete && self.frame.prepare_appearance_reconstruction().is_err() {
+            return self.frame.deny_appearance_output();
+        }
         let targets = self.frame.appearance_motion_targets(&[]);
         let motion = self.candidates.accepted_appearance_motion(&targets);
         self.frame
             .record_accepted_motion_commands_visited(motion.commands_visited());
-        self.frame
-            .lower_appearance_with_motion(self.attempt, profile, motion)
+        let result = self
+            .frame
+            .lower_appearance_with_motion(self.attempt, profile, motion);
+        self.candidates.bind_appearance_opacity(&self.frame);
+        result
     }
 
     pub(crate) fn lower_appearance_with_overlays(
@@ -149,16 +156,22 @@ impl UiMountedPresentationAdmission {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
     ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
+        let requires_complete = self.candidates.requires_complete_appearance_projection();
+        if requires_complete && self.frame.prepare_appearance_reconstruction().is_err() {
+            return self.frame.deny_appearance_output();
+        }
         let targets = self.frame.appearance_motion_targets(overlays);
         let motion = self.candidates.accepted_appearance_motion(&targets);
         self.frame
             .record_accepted_motion_commands_visited(motion.commands_visited());
-        self.frame.lower_appearance_with_motion_and_overlays(
+        let result = self.frame.lower_appearance_with_motion_and_overlays(
             self.attempt,
             profile,
             motion,
             overlays,
-        )
+        );
+        self.candidates.bind_appearance_opacity(&self.frame);
+        result
     }
 
     pub(crate) fn deny_appearance_output(

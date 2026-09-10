@@ -24,7 +24,7 @@ fn mounted_mosaic_seam_paints_once_with_exterior_radii_at_qualified_scales() {
         declarations,
     );
     let frame = world.prepare_surface(world.surfaces[0]);
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     let output =
         frame.lower_unpublished_appearance_with_profile_for_test(profile.appearance_profile());
     let owner = mounted_surface(&output, world.instances[0]);
@@ -145,7 +145,7 @@ fn current_surface(
     target: UiMountedInstanceIdentity,
 ) -> UiMountedSurfaceAppearanceMechanic {
     let frame = world.prepare_surface(world.surfaces[0]);
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     let output =
         frame.lower_unpublished_appearance_with_profile_for_test(profile.appearance_profile());
     mounted_surface(&output, target)

@@ -71,7 +71,7 @@ fn production_sample_plan_transforms_semantic_text_glyphs_with_portal_opacity() 
     );
     let plan = build_plan(
         UiNativeRasterBasis::new([96, 64], 1.0),
-        &retained,
+        &mut retained,
         replay,
         0,
         &atlas,
@@ -82,7 +82,9 @@ fn production_sample_plan_transforms_semantic_text_glyphs_with_portal_opacity() 
         .iter()
         .find_map(|operation| match operation {
             UiNativeRasterOperation::Glyph(glyph) => Some(*glyph),
-            UiNativeRasterOperation::Clear(_) | UiNativeRasterOperation::FilledRect { .. } => None,
+            UiNativeRasterOperation::Clear(_)
+            | UiNativeRasterOperation::FilledRect { .. }
+            | UiNativeRasterOperation::Surface(_) => None,
         })
         .expect("sample replay produces a native glyph operation");
 
@@ -111,7 +113,7 @@ fn production_sample_plan_transforms_semantic_text_glyphs_with_portal_opacity() 
         [[34.0, 24.0, 4.0, 4.0]],
         "collapse clears the sampled predecessor, not its base image"
     );
-    let collapsed_plan = build_plan(basis, &retained, replay, 0, &atlas).unwrap();
+    let collapsed_plan = build_plan(basis, &mut retained, replay, 0, &atlas).unwrap();
     assert!(collapsed_plan
         .operations
         .iter()
@@ -128,7 +130,7 @@ fn production_sample_plan_transforms_semantic_text_glyphs_with_portal_opacity() 
     retained
         .refresh_physical_sample(&collapsed, &mut undo, basis, &mut retry)
         .unwrap();
-    let retry_plan = build_plan(basis, &retained, retry, 0, &atlas).unwrap();
+    let retry_plan = build_plan(basis, &mut retained, retry, 0, &atlas).unwrap();
     assert_eq!(retry_plan.operations.len(), collapsed_plan.operations.len());
     for (retry, original) in retry_plan
         .operations
@@ -160,7 +162,7 @@ fn production_sample_plan_transforms_semantic_text_glyphs_with_portal_opacity() 
     retained.rollback_sample(undo).unwrap();
 }
 
-fn semantic_text(
+pub(in crate::native::presentation) fn semantic_text(
     world: &DrawListWorld,
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
 ) -> (UiMountedPaintCommand, UiGlyphRunView, UiGlyphRasterKey) {

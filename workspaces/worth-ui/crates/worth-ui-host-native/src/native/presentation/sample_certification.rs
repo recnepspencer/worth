@@ -96,7 +96,7 @@ pub fn certify_portal_sample_replay(
         .into_boxed_slice();
     let plan = super::retained_raster::build_plan(
         basis,
-        &retained,
+        &mut retained,
         replay,
         0,
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
@@ -120,6 +120,7 @@ pub fn certify_portal_sample_replay(
             }
             UiNativeRasterOperation::Clear(_)
             | UiNativeRasterOperation::FilledRect { .. }
+            | UiNativeRasterOperation::Surface(_)
             | UiNativeRasterOperation::Glyph(_) => {}
         }
     }

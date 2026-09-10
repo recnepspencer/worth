@@ -4,7 +4,6 @@ use super::{
 };
 use crate::native::presentation::appearance::text_foreground::UiNativeTextForegroundFinalizationDenial as Denial;
 use crate::native::presentation::text::UiNativeGlyphCommand;
-use crate::native::text_atlas::UiNativeTextAtlas;
 use worth_ui_host_contract::UiMountedSemanticTextMechanic;
 
 impl UiNativeAppearanceRetained {
@@ -12,7 +11,6 @@ impl UiNativeAppearanceRetained {
         &self,
         command: &UiMountedSemanticTextMechanic,
         glyphs: &mut [UiNativeGlyphCommand],
-        atlas: &UiNativeTextAtlas,
     ) -> Result<(), Denial> {
         for span in command.foregrounds() {
             let identity = UiNativeAppearanceCommandIdentity::TextForeground {
@@ -32,7 +30,6 @@ impl UiNativeAppearanceRetained {
             else {
                 return Err(Denial::CandidateAttribution);
             };
-            foreground.validate_images(atlas)?;
             foreground.apply_paint(command, glyphs)?;
         }
         Ok(())

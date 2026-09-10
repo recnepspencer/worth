@@ -80,21 +80,6 @@ impl super::UiPreparedMountedFrame {
         assert!(owner.unpublished_appearance().unwrap().is_some());
     }
 
-    pub(crate) fn verify_unpublished_reconstruction_needs_current_projection(&self) {
-        let mut owner = self.candidate.owner.clone_for_appearance_output_test();
-        let predecessors = owner.appearance().physical_node_receipts_for_test();
-        assert!(!predecessors.is_empty());
-        let presentation =
-            worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
-        owner.lower_appearance(presentation, self.manifest.surfaces(), None);
-        assert_eq!(owner.unpublished_appearance().unwrap_err(),
-            &crate::mounting::projection::UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable);
-        assert_eq!(
-            owner.appearance().physical_node_receipts_for_test(),
-            predecessors
-        );
-    }
-
     pub(crate) fn verify_unpublished_reconstruction_denial_and_retry(&self) {
         self.verify_unpublished_denial_and_retry(
             worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction,

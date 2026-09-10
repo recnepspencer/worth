@@ -57,6 +57,26 @@ impl UiNativeMountedRegionLayoutInput {
 }
 
 impl WorthUiNativeApplicationShell {
+    pub(crate) fn native_program_layout_required(&self) -> bool {
+        let viewport_changed = self.native_layout_viewport().is_some_and(|viewport| {
+            self.session
+                .mounted
+                .current_surface_viewport(self.surface)
+                .is_none_or(|(_, current)| current != viewport)
+        });
+        viewport_changed
+            || self
+                .mounted_rows
+                .iter()
+                .filter_map(|row| row.mounted)
+                .any(|instance| {
+                    !self
+                        .session
+                        .mounted
+                        .has_current_occurrence_geometry(instance)
+                })
+    }
+
     /// Return the admitted component contracts paired with their exact mounted
     /// occurrences. These are immutable inputs; the application remains the
     /// owner of the resulting layout.

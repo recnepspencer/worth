@@ -115,8 +115,8 @@ impl UiNativePlatformProfile {
         if width > 16_384 || height > 16_384 {
             return Err(UiNativePlatformPreparationDenial::WindowExtentCapacityExceeded);
         }
-        if worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1.as_str()
-            != "worth-ui-windows-dx12-v1"
+        if worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2.as_str()
+            != "worth-ui-windows-dx12-v2"
         {
             return Err(UiNativePlatformPreparationDenial::QualifiedProfileMismatch);
         }

@@ -89,6 +89,16 @@ impl ComponentSemanticTextContract {
         })
     }
 
+    pub fn with_scalar_spans(
+        mut self,
+        scalar_spans: impl IntoIterator<Item = ComponentSemanticTextSpanContract>,
+    ) -> Result<Self, ComponentSemanticTextContractDenial> {
+        let scalar_spans = scalar_spans.into_iter().collect::<Vec<_>>();
+        validate_spans(&scalar_spans)?;
+        self.scalar_spans = scalar_spans.into_boxed_slice();
+        Ok(self)
+    }
+
     pub fn theme_token(&self) -> &ThemeTokenId {
         &self.theme_token
     }
@@ -238,6 +248,42 @@ mod tests {
             ComponentSemanticTextContract::qualified_with_line_height(token, 1, style, 36_000)
                 .unwrap();
         assert_eq!(contract.line_height_millipoints(), Some(36_000));
+    }
+
+    #[test]
+    fn qualified_contract_can_adopt_canonical_spans_without_losing_typography() {
+        let token = ThemeTokenId::new("theme.text").unwrap();
+        let constraints = worth_ui_text::UiTextParagraphConstraints::new(
+            worth_ui_text::UiTextParagraphConstraintsInput {
+                language: std::sync::Arc::from("und"),
+                base_direction: worth_ui_text::UiTextBaseDirection::Auto,
+                wrap: worth_ui_text::UiTextWrap::UnicodeWord,
+                alignment: worth_ui_text::UiTextAlignment::Start,
+                overflow: worth_ui_text::UiTextOverflow::Clip,
+                font_size_millipoints: 28_000,
+                width_millipoints: 320_000,
+                line_height_millipoints: 36_000,
+                letter_spacing_millipoints: 0,
+                word_spacing_millipoints: 0,
+                tab_interval_millipoints: 112_000,
+                maximum_lines: 1,
+            },
+        )
+        .unwrap();
+        let style = worth_ui_text::UiTextStyle::from_paragraph_constraints(&constraints);
+        let adopted = ComponentSemanticTextContract::qualified_with_line_height(
+            token.clone(),
+            1,
+            style.clone(),
+            36_000,
+        )
+        .unwrap()
+        .with_scalar_spans([span(0, 4, &token).with_appearance_foreground()])
+        .unwrap();
+
+        assert_eq!(adopted.style(), Some(&style));
+        assert_eq!(adopted.line_height_millipoints(), Some(36_000));
+        assert!(adopted.scalar_spans()[0].uses_appearance_foreground());
     }
 
     fn span(start: u32, end: u32, token: &ThemeTokenId) -> ComponentSemanticTextSpanContract {

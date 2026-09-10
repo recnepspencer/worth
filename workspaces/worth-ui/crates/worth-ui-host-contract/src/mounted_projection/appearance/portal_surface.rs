@@ -11,6 +11,20 @@ pub enum UiMountedPortalSurfaceAppearanceCompletionDenial {
 
 impl UiMountedPortalSurfaceAppearanceMechanic {
     #[doc(hidden)]
+    pub fn reattribute_for_runtime_mounting(
+        &self,
+        issuer: crate::UiMountedNodeReceiptIssuer,
+        node_receipt: crate::UiMountedNodeReceiptIdentity,
+    ) -> Option<Self> {
+        Some(Self {
+            portal_instance: self.portal_instance,
+            surface: self
+                .surface
+                .reattribute_for_runtime_mounting(issuer, node_receipt)?,
+        })
+    }
+
+    #[doc(hidden)]
     pub fn complete_from_runtime_mounting(
         portal_instance: crate::UiMountedInstanceIdentity,
         surface: super::UiMountedSurfaceAppearanceMechanic,

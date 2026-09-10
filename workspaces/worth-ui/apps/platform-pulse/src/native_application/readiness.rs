@@ -29,7 +29,10 @@ impl PlatformPulseApplicationRuntime {
     }
 
     fn advance_native_product_turn(&mut self) {
-        if self.pending_managed_rebind.is_some() || self.pending_frame_presentation.is_some() {
+        if !self.startup_ready
+            || self.pending_managed_rebind.is_some()
+            || self.pending_frame_presentation.is_some()
+        {
             return;
         }
         let mut shell = self.take_runtime_shell();
@@ -48,6 +51,12 @@ impl PlatformPulseApplicationRuntime {
             | intent::PlatformPulseIntentProductCycleOutcome::AwaitingExternal { .. } => {}
             intent::PlatformPulseIntentProductCycleOutcome::Interrupted { .. } => return,
         }
+        if self.terminal_error.is_some()
+            || self.pending_managed_rebind.is_some()
+            || self.pending_frame_presentation.is_some()
+        {
+            return;
+        }
         self.poll_source();
         self.present();
         self.advance_visual_identity();
@@ -56,6 +65,7 @@ impl PlatformPulseApplicationRuntime {
     fn advance_after_visual_readiness(&mut self) {
         self.advance_visual_identity();
         if product_turn_admitted_after_visual_readiness(
+            self.startup_ready,
             self.terminal_error.is_some(),
             self.pending_managed_rebind.is_some(),
             self.pending_frame_presentation.is_some(),
@@ -167,8 +177,34 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
                             return Ok((self.take_runtime_shell(), directive));
                         }
                     }
+                    let layout = super::layout::publish_native_layout(
+                        self.shell
+                            .as_mut()
+                            .expect("startup retains the activated application shell"),
+                    );
+                    match layout {
+                        Ok(true) => {}
+                        Ok(false) => self.fail(
+                            super::PlatformPulseTerminalError::FrameExecution(
+                                "native-layout-viewport-unavailable".to_owned(),
+                            ),
+                            Ok(()),
+                        ),
+                        Err(detail) => self.fail(
+                            super::PlatformPulseTerminalError::FrameExecution(detail),
+                            Ok(()),
+                        ),
+                    }
+                    if self.terminal_error.is_some() {
+                        let directive = self.native_runtime_directive();
+                        return Ok((self.take_runtime_shell(), directive));
+                    }
                     self.publish_initial_projection();
+                    if self.terminal_error.is_none() {
+                        self.startup_ready = true;
+                    }
                     self.advance_visual_identity();
+                    self.advance_native_product_turn();
                 }
             }
         } else if owner_ordinal == 4 {
@@ -216,8 +252,10 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         worth_ui_native_platform::UiNativeApplicationRuntimeProgressStopped,
     > {
         self.shell = Some(application);
-        self.present();
-        self.advance_visual_identity();
+        if self.startup_ready {
+            self.present();
+            self.advance_visual_identity();
+        }
         let directive = self.native_runtime_directive();
         Ok((self.take_runtime_shell(), directive))
     }
@@ -233,8 +271,10 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         worth_ui_native_platform::UiNativeApplicationRuntimeProgressStopped,
     > {
         self.shell = Some(application);
-        self.present();
-        self.advance_visual_identity();
+        if self.startup_ready {
+            self.present();
+            self.advance_visual_identity();
+        }
         let directive = self.native_runtime_directive();
         Ok((self.take_runtime_shell(), directive))
     }
@@ -274,12 +314,14 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
 }
 
 const fn product_turn_admitted_after_visual_readiness(
+    startup_ready: bool,
     terminal: bool,
     managed_rebind_pending: bool,
     frame_presentation_pending: bool,
     visual_rebind_receipt_retained: bool,
 ) -> bool {
-    !terminal
+    startup_ready
+        && !terminal
         && !managed_rebind_pending
         && !frame_presentation_pending
         && !visual_rebind_receipt_retained
@@ -290,20 +332,23 @@ mod tests {
     #[test]
     fn visual_settlement_wakes_ordinary_product_progress_without_bypassing_blockers() {
         assert!(
-            super::product_turn_admitted_after_visual_readiness(false, false, false, false),
+            super::product_turn_admitted_after_visual_readiness(true, false, false, false, false),
             "visual retirement releases the receipt and wakes ordinary product progress"
         );
         assert!(!super::product_turn_admitted_after_visual_readiness(
-            true, false, false, false
+            false, false, false, false, false
         ));
         assert!(!super::product_turn_admitted_after_visual_readiness(
-            false, true, false, false
+            true, true, false, false, false
         ));
         assert!(!super::product_turn_admitted_after_visual_readiness(
-            false, false, true, false
+            true, false, true, false, false
+        ));
+        assert!(!super::product_turn_admitted_after_visual_readiness(
+            true, false, false, true, false
         ));
         assert!(
-            !super::product_turn_admitted_after_visual_readiness(false, false, false, true),
+            !super::product_turn_admitted_after_visual_readiness(true, false, false, false, true),
             "successor capture and comparison retain the receipt and cannot wake product early"
         );
     }

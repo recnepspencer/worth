@@ -48,7 +48,8 @@ pub(super) fn same_physical_output(
             UiMountedAppearanceMechanic::TextForeground(left),
             UiMountedAppearanceMechanic::TextForeground(right),
         ) => {
-            left.paint_span() == right.paint_span()
+            left.command() == right.command()
+                && left.paint_span() == right.paint_span()
                 && left.foreground() == right.foreground()
                 && left.opacity() == right.opacity()
         }

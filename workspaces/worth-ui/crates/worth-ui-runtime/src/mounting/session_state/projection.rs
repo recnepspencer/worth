@@ -132,23 +132,6 @@ impl WorthUiMountedSessionState {
             .map(|view| view.basis().clone())
     }
 
-    pub(crate) fn current_surface_viewport(
-        &self,
-        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> Option<(
-        crate::mounting::UiMountedLayoutRevision,
-        worth_ui_host_contract::UiMountedCanonicalBox,
-    )> {
-        let binding = self
-            .identity
-            .projection_surface(surface)?
-            .0
-            .binding_generation();
-        let (geometry_binding, revision, viewport) =
-            self.occurrence_geometry.surface_viewport(surface)?;
-        (geometry_binding == binding).then_some((revision, viewport))
-    }
-
     pub(crate) fn current_region_extent(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,

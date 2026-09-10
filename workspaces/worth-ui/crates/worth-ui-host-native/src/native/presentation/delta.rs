@@ -62,7 +62,11 @@ pub(crate) fn present_delta<Port: UiNativePresentationPort>(
         .text_raster_work()
         .map(|work| work.glyph_runs())
         .unwrap_or_default();
-    let (plan, undo, effects) = prepare_delta_plan(basis, delta, glyph_runs, atlas, retained)?;
+    let (plan, undo, effects) = if view.appearance_work().is_some() {
+        prepare_delta_plan_with_appearance(basis, delta, glyph_runs, atlas, view, retained)?
+    } else {
+        prepare_delta_plan(basis, delta, glyph_runs, atlas, retained)?
+    };
     if plan.operations.is_empty() && !plan.clear_retained_target {
         return Ok(UiNativeDeltaPresentation {
             cost: plan.cost,
@@ -102,6 +106,142 @@ pub(crate) fn present_delta<Port: UiNativePresentationPort>(
             ),
         ),
     )
+}
+
+fn prepare_delta_plan_with_appearance(
+    basis: UiNativeRasterBasis,
+    delta: &worth_ui_host_contract::UiMountedPresentationDelta,
+    glyph_runs: &[worth_ui_host_contract::UiGlyphRunView],
+    atlas: &crate::native::text_atlas::UiNativeTextAtlas,
+    view: &UiMountedFrameConsumptionView<'_>,
+    retained: &mut UiNativeRetainedDrawList,
+) -> Result<
+    (
+        UiNativePresentationPortPlan,
+        UiNativeRetainedDeltaUndo,
+        super::UiNativePresentationEffects,
+    ),
+    UiNativePresentationFailure,
+> {
+    let work = view
+        .appearance_work()
+        .ok_or_else(|| before_effects(UiHostSurfacePresentationDenial::MalformedProjection))?;
+    let (mut replay, mut undo) = retained
+        .stage_delta(delta, glyph_runs)
+        .map_err(|_| before_effects(UiHostSurfacePresentationDenial::MalformedProjection))?;
+    let effects = super::UiNativePresentationEffects::new(
+        !delta.changes().is_empty() || !delta.order().is_empty() || !delta.damage().is_empty(),
+        replay.identity_overlay_effect,
+    );
+    let staged = (|| {
+        retained.refresh_physical_delta(delta, &mut undo, basis, atlas, &mut replay)?;
+        for fragment in work.fragments() {
+            let candidates =
+                changed_text_foregrounds(fragment, view, atlas, basis.extent(), retained)?;
+            if fragment.work().changes().iter().any(is_text_change) {
+                retained.stage_text_coverage_fragment_after_delta(
+                    delta,
+                    fragment,
+                    view.attempt(),
+                    candidates,
+                    atlas,
+                    &mut undo,
+                )?;
+            }
+            for staged in retained.stage_nontext_appearance_fragment(fragment)? {
+                undo.retain_appearance_command(staged);
+            }
+        }
+        let overlay = work
+            .fragments()
+            .first()
+            .ok_or(super::retained_draw_list::UiNativeRetainedDrawListDenial::CommandMismatch)?
+            .work()
+            .successor()
+            .overlay_order();
+        undo.retain_appearance_command(retained.stage_appearance_overlay(overlay)?);
+        let samples = retained.stage_appearance_sample_overrides(work.sample_overrides())?;
+        undo.retain_appearance_samples(samples);
+        replay.staged_appearance_regions = retained.prepare_appearance_replay()?;
+        build_plan(basis, retained, replay, delta.nodes().len(), atlas)
+            .map_err(|_| super::retained_draw_list::UiNativeRetainedDrawListDenial::CommandMismatch)
+    })();
+    match staged {
+        Ok(plan) => Ok((plan, undo, effects)),
+        Err(_) => {
+            retained
+                .rollback_delta(undo)
+                .expect("appearance delta refusal must preserve retained state");
+            Err(before_effects(
+                UiHostSurfacePresentationDenial::MalformedProjection,
+            ))
+        }
+    }
+}
+
+pub(super) fn is_text_change(
+    change: &worth_ui_host_contract::UiMountedAppearanceMechanicChange,
+) -> bool {
+    use worth_ui_host_contract::{
+        UiMountedAppearanceMechanic as Mechanic, UiMountedAppearanceMechanicChange as Change,
+        UiMountedAppearanceMechanicIdentity as Identity,
+    };
+    matches!(
+        change,
+        Change::Insert(Mechanic::TextForeground(_))
+            | Change::Replace {
+                successor: Mechanic::TextForeground(_),
+                ..
+            }
+            | Change::Remove(Identity::TextForeground { .. })
+    )
+}
+
+pub(super) fn changed_text_foregrounds(
+    fragment: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
+    view: &UiMountedFrameConsumptionView<'_>,
+    atlas: &crate::native::text_atlas::UiNativeTextAtlas,
+    extent: [u32; 2],
+    retained: &UiNativeRetainedDrawList,
+) -> Result<
+    Vec<crate::native::presentation::appearance::text_foreground::UiNativeFinalizedTextForeground>,
+    super::retained_draw_list::UiNativeRetainedDrawListDenial,
+> {
+    use worth_ui_host_contract::{
+        UiMountedAppearanceMechanic as Mechanic, UiMountedAppearanceMechanicChange as Change,
+    };
+    fragment
+        .work()
+        .changes()
+        .iter()
+        .filter_map(|change| match change {
+            Change::Insert(Mechanic::TextForeground(value))
+            | Change::Replace {
+                successor: Mechanic::TextForeground(value),
+                ..
+            } => Some(value),
+            _ => None,
+        })
+        .map(|mechanic| {
+            let finalized = crate::native::presentation::appearance::text_foreground::UiNativeTextForegroundJoin::admit(
+                fragment, view, mechanic,
+            )
+            .and_then(|join| join.finalize(atlas, extent))
+            .map(|(foreground, _)| foreground);
+            match finalized {
+                Ok(foreground) => Ok(foreground),
+                Err(
+                    crate::native::presentation::appearance::text_foreground::UiNativeTextForegroundFinalizationDenial::MissingRasterWork
+                    | crate::native::presentation::appearance::text_foreground::UiNativeTextForegroundFinalizationDenial::UnauthenticatedDemand,
+                ) => retained
+                    .inherit_text_foreground_replacement(fragment, view, mechanic, atlas)
+                    .map_err(|denial| denial),
+                Err(_) => {
+                    Err(super::retained_draw_list::UiNativeRetainedDrawListDenial::CommandMismatch)
+                }
+            }
+        })
+        .collect()
 }
 
 pub(super) fn prepare_delta_plan(

@@ -1,11 +1,9 @@
-use std::rc::Rc;
-
-use crate::runtime::appearance::{UiAppearanceInvalidationBatch, UiAppearanceProjectionAttempt};
-
 use super::super::UiMountedAppearanceProjectionSelection;
 use super::appearance_state_membership::{
     self, UiMountedAppearanceStateEntry, UiMountedAppearanceStateMembers,
 };
+use crate::runtime::appearance::{UiAppearanceInvalidationBatch, UiAppearanceProjectionAttempt};
+use std::rc::Rc;
 
 pub(crate) const APPEARANCE_STATE_CAPACITY: usize = 4_096;
 
@@ -44,6 +42,7 @@ pub(crate) struct UiMountedAppearanceFrameState {
     batch: Option<UiAppearanceInvalidationBatch>,
     capacity_error: Option<UiAppearanceStateCapacityExceeded>,
     reconstruction_nodes: Option<Vec<super::UiMountedAppearanceNodeInputContext>>,
+    reconstruction_complete: bool,
     reconstruct_overlays: bool,
     input_refresh_nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
     selection: Rc<UiMountedAppearanceProjectionSelection>,
@@ -69,6 +68,7 @@ impl Default for UiMountedAppearanceFrameState {
             batch: None,
             capacity_error: None,
             reconstruction_nodes: None,
+            reconstruction_complete: false,
             reconstruct_overlays: false,
             input_refresh_nodes: Vec::new(),
             selection: Rc::new(UiMountedAppearanceProjectionSelection::empty()),
@@ -82,6 +82,25 @@ impl Default for UiMountedAppearanceFrameState {
 }
 
 impl UiMountedAppearanceFrameState {
+    pub(crate) fn raw_opacity_for_instance(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Option<worth_ui_host_contract::UiMountedAppearanceOpacity> {
+        self.members
+            .retained_projection_for_instance(instance)
+            .map(super::super::appearance::resolved_opacity)
+    }
+
+    pub(crate) fn requires_epoch_transition(
+        &self,
+        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> bool {
+        self.epoch
+            .as_ref()
+            .is_none_or(|epoch| epoch.session != session || epoch.generation != *generation)
+    }
+
     pub(in crate::mounting::projection) fn matches_geometry_input(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -95,6 +114,12 @@ impl UiMountedAppearanceFrameState {
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> bool {
         self.members.contains_instance(instance)
+    }
+
+    pub(in crate::mounting) fn unresolved_epoch_instances(
+        &self,
+    ) -> Vec<worth_ui_host_contract::UiMountedInstanceIdentity> {
+        self.members.physical_only_instances()
     }
 
     pub(in crate::mounting) fn after_surface_deregistration(
@@ -150,6 +175,7 @@ impl UiMountedAppearanceFrameState {
             batch: None,
             capacity_error: None,
             reconstruction_nodes: None,
+            reconstruction_complete: false,
             reconstruct_overlays: false,
             input_refresh_nodes: Vec::new(),
             selection,
@@ -188,6 +214,16 @@ impl UiMountedAppearanceFrameState {
         nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
     ) {
         self.reconstruction_nodes = Some(nodes);
+        self.reconstruction_complete = true;
+        self.reconstruct_overlays = true;
+    }
+
+    pub(crate) fn prepare_surface_reconstruction(
+        &mut self,
+        nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
+    ) {
+        self.reconstruction_nodes = Some(nodes);
+        self.reconstruction_complete = false;
         self.reconstruct_overlays = true;
     }
 
@@ -225,16 +261,16 @@ impl UiMountedAppearanceFrameState {
         &mut self,
         session: crate::facade::WorthUiActiveApplicationSessionIdentity,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-        graph: crate::graph::UiGraphAuthority<'_>,
+        attached_instances: &std::collections::BTreeSet<
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+        >,
     ) -> usize {
-        if self
-            .epoch
-            .as_ref()
-            .is_some_and(|epoch| epoch.session == session && epoch.generation == *generation)
-        {
+        if !self.requires_epoch_transition(session, generation) {
             return 0;
         }
-        let (retired, work) = self.members.retire_unattached(graph, &mut self.retirements);
+        let (retired, work) = self
+            .members
+            .retire_unattached(attached_instances, &mut self.retirements);
         self.selection.record_membership_work(work);
         retired
     }

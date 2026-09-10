@@ -34,7 +34,7 @@ pub struct ComponentDescriptor {
     dead_code,
     reason = "Gate 0 freezes component appearance contract denials"
 )]
-pub(crate) enum ComponentAppearanceAspectContractDenial {
+pub enum ComponentAppearanceAspectContractDenial {
     BackdropContractOnComponent,
 }
 
@@ -239,11 +239,7 @@ impl ComponentDescriptor {
         &self.id
     }
 
-    #[allow(
-        dead_code,
-        reason = "Gate 0 stages component aspect support without live appearance"
-    )]
-    pub(crate) fn with_appearance_aspect_contract(
+    pub fn with_appearance_aspect_contract(
         mut self,
         contract: worth_ui_dsl::UiAppearanceAspectContract,
     ) -> Result<Self, ComponentAppearanceAspectContractDenial> {

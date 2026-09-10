@@ -359,6 +359,7 @@ impl CoverageWorld {
                         presentation_work: UiMountedPresentationWorkView::Unchanged(
                             &self.presentation,
                         ),
+                        appearance_work: None,
                         qualified_text: &resolver,
                         text_raster_work: Some(raster),
                     },

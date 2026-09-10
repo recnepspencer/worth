@@ -9,14 +9,14 @@ pub(super) use cost::replay_cost;
 
 pub(super) fn build_plan(
     basis: UiNativeRasterBasis,
-    retained: &UiNativeRetainedDrawList,
+    retained: &mut UiNativeRetainedDrawList,
     mut replay: super::retained_draw_list::UiNativeRetainedReplayPlan,
     node_changes: usize,
     atlas: &crate::native::text_atlas::UiNativeTextAtlas,
 ) -> Result<UiNativePresentationPortPlan, UiHostSurfacePresentationDenial> {
     validate_replay_baseline(replay.baseline_rgba8)?;
     let staged_clears = retained
-        .staged_appearance_clears(&replay.staged_appearance_regions, basis, atlas)
+        .staged_appearance_clears(&replay.staged_appearance_regions, basis)
         .map_err(|_| malformed())?;
     let logical_clears = replay.regions.iter().map(|region| {
         raster_damage_for_basis(region.damage.bounds(), basis).map_err(|_| malformed())
@@ -38,12 +38,43 @@ pub(super) fn build_plan(
         let physical_replay = retained
             .physical_replay_for_damage(basis, clear.physical_bounds(), &mut replay.counters)
             .map_err(|_| malformed())?;
+        if retained.has_appearance() {
+            for operation in retained
+                .appearance_operations_for_damage(
+                    clear,
+                    basis,
+                    &physical_replay,
+                    atlas,
+                    &mut replay.counters,
+                )
+                .map_err(|_| malformed())?
+            {
+                rendered_pixels = rendered_pixels
+                    .checked_add(operation_pixels(&operation))
+                    .ok_or_else(malformed)?;
+                operations.push(operation);
+                replayed_commands = replayed_commands.checked_add(1).ok_or_else(malformed)?;
+            }
+            continue;
+        }
         for identity in &physical_replay {
             let command = retained.command(*identity).ok_or_else(malformed)?;
             let sample = retained.sample_override(*identity);
             let opacity = sample.map_or(1.0, |sample| sample.opacity().factor());
             match command {
                 UiMountedPaintCommand::FilledRect { mechanic, .. } => {
+                    if let Some(UiNativeRasterOperation::Surface(surface)) = retained
+                        .appearance_surface_operation(mechanic.node_receipt(), basis.extent())
+                        .map_err(|_| malformed())?
+                    {
+                        if let Some(surface) = surface.clipped_to(clear, basis.extent()) {
+                            rendered_pixels = add_pixels(rendered_pixels, surface.rect())?;
+                            operations.push(UiNativeRasterOperation::Surface(surface));
+                        }
+                        replayed_commands =
+                            replayed_commands.checked_add(1).ok_or_else(malformed)?;
+                        continue;
+                    }
                     let sampled = super::sample::sampled_command_bounds(command, sample)?;
                     let Some(rect) = raster_damage_for_basis(sampled, basis)
                         .map_err(|_| malformed())?
@@ -58,6 +89,18 @@ pub(super) fn build_plan(
                     });
                 }
                 UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
+                    if let Some(UiNativeRasterOperation::Surface(surface)) = retained
+                        .appearance_portal_surface_operation(mechanic.owner(), basis.extent())
+                        .map_err(|_| malformed())?
+                    {
+                        if let Some(surface) = surface.clipped_to(clear, basis.extent()) {
+                            rendered_pixels = add_pixels(rendered_pixels, surface.rect())?;
+                            operations.push(UiNativeRasterOperation::Surface(surface));
+                        }
+                        replayed_commands =
+                            replayed_commands.checked_add(1).ok_or_else(malformed)?;
+                        continue;
+                    }
                     let sampled = super::sample::sampled_command_bounds(command, sample)?;
                     let Some(rect) = raster_damage_for_basis(sampled, basis)
                         .map_err(|_| malformed())?
@@ -108,6 +151,21 @@ pub(super) fn build_plan(
         operations: operations.into_boxed_slice(),
         cost,
     })
+}
+
+fn operation_pixels(operation: &UiNativeRasterOperation) -> u64 {
+    match operation {
+        UiNativeRasterOperation::Clear(_) => 0,
+        UiNativeRasterOperation::FilledRect { rect, .. } => {
+            u64::from(rect.physical_width) * u64::from(rect.physical_height)
+        }
+        UiNativeRasterOperation::Surface(surface) => {
+            u64::from(surface.rect().physical_width) * u64::from(surface.rect().physical_height)
+        }
+        UiNativeRasterOperation::Glyph(glyph) => {
+            (glyph.target[2].ceil() as u64) * (glyph.target[3].ceil() as u64)
+        }
+    }
 }
 
 fn validate_replay_baseline(

@@ -8,6 +8,9 @@ use super::{
     UiPreparedMountedFrame, UiPreparedMountedFrameAdmission,
 };
 
+#[path = "prepared_frame/appearance_binding.rs"]
+mod appearance_binding;
+
 impl UiPreparedMountedFrame {
     pub(crate) fn set_application_text_publication(
         &mut self,
@@ -300,6 +303,15 @@ impl UiPreparedMountedFrame {
 
     pub(crate) fn appearance_output_available(&self) -> bool {
         self.candidate.owner.unpublished_appearance().is_ok()
+    }
+
+    pub(crate) fn appearance_projection(
+        &self,
+    ) -> Option<&worth_ui_host_contract::UiUnpublishedAppearanceFrameProjection> {
+        self.candidate
+            .owner
+            .unpublished_appearance()
+            .expect("presentation begins only after appearance output admission")
     }
 
     pub fn receipt(&self) -> UiMountedFrameReceipt {

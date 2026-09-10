@@ -18,7 +18,7 @@ use worth_ui_host_contract::{
 #[path = "sample_tests/rendering.rs"]
 mod rendering;
 #[path = "sample_tests/semantic_text.rs"]
-mod semantic_text;
+pub(in crate::native::presentation) mod semantic_text;
 use rendering::render_sample_pixels;
 
 #[test]
@@ -48,7 +48,7 @@ fn sampled_rect_moves_and_applies_alpha_without_mutating_semantic_command() {
         .unwrap();
     let plan = build_plan(
         basis,
-        &retained,
+        &mut retained,
         replay,
         0,
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
@@ -134,7 +134,7 @@ fn offscreen_sample_commits_derived_state_without_native_paint_cost() {
         .unwrap();
     let plan = build_plan(
         basis,
-        &retained,
+        &mut retained,
         replay,
         0,
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
@@ -190,7 +190,7 @@ fn production_sample_plan_moves_clipped_portal_and_renders_expected_pixels() {
         .unwrap();
     let plan = build_plan(
         basis,
-        &retained,
+        &mut retained,
         replay,
         0,
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
@@ -204,7 +204,9 @@ fn production_sample_plan_moves_clipped_portal_and_renders_expected_pixels() {
             UiNativeRasterOperation::FilledRect { rect, source_rgba8 } => {
                 Some((rect.physical_bounds(), *source_rgba8))
             }
-            UiNativeRasterOperation::Clear(_) | UiNativeRasterOperation::Glyph(_) => None,
+            UiNativeRasterOperation::Clear(_)
+            | UiNativeRasterOperation::Glyph(_)
+            | UiNativeRasterOperation::Surface(_) => None,
         });
     assert_eq!(filled, Some(([45.0, 0.0, 10.0, 20.0], [220, 40, 20, 128])));
     assert_eq!(retained.frame(), frame);
@@ -265,7 +267,7 @@ fn sample_with_bounds(
     .unwrap()
 }
 
-fn portal(
+pub(in crate::native::presentation) fn portal(
     world: &DrawListWorld,
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
 ) -> UiMountedPortalOverlayMechanic {

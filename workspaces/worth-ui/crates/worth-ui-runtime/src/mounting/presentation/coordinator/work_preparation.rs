@@ -25,6 +25,7 @@ pub(super) fn issue(
     retained: &UiMountedPresentationCandidates,
     reconstruction_bindings: &std::collections::BTreeSet<UiSurfaceBindingGeneration>,
     authority: &UiMountedHostPresentationAuthority<'_>,
+    presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
 ) -> Result<UiPreparedFramePresentation, UiHostSurfacePresentationDenial> {
     let source = frame.presentation_delta_source();
     let mut surfaces = Vec::with_capacity(prepared.surfaces.len());
@@ -63,6 +64,15 @@ pub(super) fn issue(
             } => candidate.issue_reconstruction(authority.presentation(), &projection, predecessor),
         };
         work.bind_layout_owner(surface.projection_owner());
+        let appearance_sample_overrides =
+            candidate.appearance_motion_overrides(frame.appearance_changed_instances());
+        work.bind_appearance(
+            frame.appearance_projection(),
+            presentation,
+            surface.requirement(),
+            appearance_sample_overrides,
+        )
+        .map_err(|_| UiHostSurfacePresentationDenial::MalformedProjection)?;
         let expected_effects = candidate
             .expected_completion_effects(
                 predecessor,

@@ -1,8 +1,3 @@
-#![allow(
-    dead_code,
-    reason = "Gate 1 retains the native appearance profile for later host qualification"
-)]
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UiNativePlatformProfileIdentity(&'static str);
 
@@ -24,13 +19,11 @@ pub struct UiNativeMechanicsCapacities {
 }
 
 pub const WORTH_UI_NATIVE_PROFILE_MANIFEST: &str =
-    include_str!("../profiles/worth-ui-windows-dx12-v1.toml");
-pub(crate) const WORTH_UI_NATIVE_NEXT_PROFILE_MANIFEST: &str =
     include_str!("../profiles/worth-ui-windows-dx12-v2.toml");
 pub(crate) const QUALIFIED_WHEEL_LINE_LOGICAL_SUBPIXELS: i64 = 40_000;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct UiNativeStagedAppearanceProfile {
+pub(crate) struct UiNativeAppearanceProfile {
     pub(crate) identity: &'static str,
     pub(crate) version: u16,
     pub(crate) scales_milli: &'static [u16; 4],
@@ -47,8 +40,8 @@ pub(crate) struct UiNativeStagedAppearanceProfile {
     pub(crate) primary_pointer: Option<worth_ui_host_contract::UiHostPrimaryPointerKind>,
 }
 
-pub(crate) const STAGED_APPEARANCE_PROFILE: UiNativeStagedAppearanceProfile =
-    UiNativeStagedAppearanceProfile {
+pub(crate) const APPEARANCE_PROFILE: UiNativeAppearanceProfile =
+    UiNativeAppearanceProfile {
         identity: "worth-ui-windows-dx12-v2",
         version: 2,
         scales_milli: &[1_000, 1_250, 1_500, 2_000],
@@ -67,7 +60,7 @@ pub(crate) const STAGED_APPEARANCE_PROFILE: UiNativeStagedAppearanceProfile =
     };
 
 impl UiNativePlatformProfileIdentity {
-    pub const WORTH_UI_WINDOWS_DX12_V1: Self = Self("worth-ui-windows-dx12-v1");
+    pub const WORTH_UI_WINDOWS_DX12_V2: Self = Self("worth-ui-windows-dx12-v2");
 
     pub const fn as_str(self) -> &'static str {
         self.0

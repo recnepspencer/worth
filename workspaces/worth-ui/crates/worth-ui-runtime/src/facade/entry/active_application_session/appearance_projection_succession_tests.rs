@@ -294,7 +294,21 @@ pub(super) fn reconstruct_across_source_generation(
             |_| {},
         )
         .unwrap_or_else(|_| panic!("unpublished reconstruction frame must prepare"));
-    frame.verify_unpublished_reconstruction_needs_current_projection();
+    let physical = frame.lower_unpublished_appearance_for_test();
+    assert_eq!(physical.fragments().len(), 1);
+    let fragment = &physical.fragments()[0];
+    assert!(matches!(fragment.identity(),
+        worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
+            predecessor: Some(receipt), successor: Some(successor),
+        } if receipt == old_receipt && successor != old_receipt));
+    assert_eq!(
+        fragment.work().posture(),
+        worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction
+    );
+    assert!(
+        fragment.work().changes().is_empty(),
+        "same mounted occurrence reissues exact paint across graph identity succession"
+    );
     drop(frame);
 
     // A real observation close queues the successor's canonical initial

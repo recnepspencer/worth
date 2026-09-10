@@ -7,6 +7,24 @@ impl UiPreparedMountedFrame {
         snapshot: Option<&crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Result<(), Denial> {
+        self.stage_pointer_affordance_snapshot(snapshot, mounted, true)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn stage_untrusted_pointer_affordance_for_test(
+        &mut self,
+        snapshot: Option<&crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+    ) -> Result<(), Denial> {
+        self.stage_pointer_affordance_snapshot(snapshot, mounted, false)
+    }
+
+    fn stage_pointer_affordance_snapshot(
+        &mut self,
+        snapshot: Option<&crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        snapshot_is_current: bool,
+    ) -> Result<(), Denial> {
         let mut desired = Vec::new();
         let mut admitted_surfaces = Vec::new();
         let mut work = UiMountedPointerAffordanceWork::default();
@@ -43,14 +61,20 @@ impl UiPreparedMountedFrame {
                 // Candidate membership owns departure, even without new input.
                 let Some(candidate) = candidate else { continue };
                 let denial = || Denial::PointerSnapshotTargetUnavailable(instance);
-                let current = mounted
-                    .current_mounted_identity_basis(instance)
-                    .ok_or_else(denial)?;
-                if candidate.semantic_surface() != projection.surface()
-                    || candidate.incarnation() != current.mount_incarnation()
-                    || !current_observation
-                {
+                if candidate.semantic_surface() != projection.surface() {
                     return Err(denial());
+                }
+                let Some(current) = mounted.current_mounted_identity_basis(instance) else {
+                    continue;
+                };
+                if candidate.incarnation() != current.mount_incarnation() {
+                    continue;
+                }
+                if !current_observation && !snapshot_is_current {
+                    return Err(denial());
+                }
+                if snapshot_is_current && !current_observation {
+                    admitted_surfaces.push(projection.surface());
                 }
                 let family = match projection.family() {
                     crate::declaration::UiPointerAffordance::Default => {

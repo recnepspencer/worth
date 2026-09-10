@@ -223,9 +223,14 @@ fn surface_rebind_preserves_occurrence_bounds_and_rebases_coordinate_ownership()
         )
         .unwrap();
     assert_ne!(rebound.binding_generation(), prior.binding_generation());
+    let replacements = [crate::mounting::UiMountedSurfaceReconciliationBinding::new(
+        prior.binding_generation(),
+        rebound.binding_generation(),
+    )];
     let frame = session
-        .prepare_mounted_frame_with_application_presentation(
+        .prepare_mounted_reconstruction_frame_with_application_presentation(
             crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
+            &replacements,
             |_| {},
         )
         .unwrap_or_else(|_| panic!("rebound occurrence frame prepares"));
@@ -233,13 +238,16 @@ fn surface_rebind_preserves_occurrence_bounds_and_rebases_coordinate_ownership()
         &session, &frame, surface, &expected,
     );
     host.push_native_display_presented();
-    let outcome = session.present_prepared_mounted_frame_internal(
-        frame,
-        worth_ui_host_contract::UiPresentationDeadline::at_tick(200),
-        2,
-    );
+    let outcome = session
+        .present_prepared_mounted_frame_for_reconciliation(
+            frame,
+            &replacements,
+            worth_ui_host_contract::UiPresentationDeadline::at_tick(200),
+            2,
+        )
+        .unwrap();
     match outcome {
-        crate::mounting::UiMountedFrameOutcome::Published(_) => {}
+        crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {}
         crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejection) => {
             panic!(
                 "rebound occurrence admission denied: {:?}",

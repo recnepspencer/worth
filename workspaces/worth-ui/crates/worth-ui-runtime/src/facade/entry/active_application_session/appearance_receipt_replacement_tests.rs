@@ -17,7 +17,7 @@ fn application_replacement_preserves_each_surface_definition_and_uses_successor_
         support::APPEARANCE_TOKEN,
     );
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let mut session = support::legacy_static_paint_appearance_component_builder(&role)
         .register_appearance_theme_bundle(multi_definition_theme_bundle())
         .unwrap()
@@ -116,7 +116,7 @@ fn application_replacement_preserves_updated_typed_theme_value() {
         support::APPEARANCE_TOKEN,
     );
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let mut session = support::legacy_static_paint_appearance_component_builder(&role)
         .register_appearance_theme_bundle(theme_bundle(&[], None))
         .unwrap()
@@ -200,7 +200,7 @@ fn alias_terminal_change_is_denied_before_replacement_publication() {
         support::APPEARANCE_TOKEN,
     );
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let mut session = support::legacy_static_paint_appearance_component_builder(&role)
         .register_appearance_theme_bundle(theme_bundle(&[], None))
         .unwrap()
@@ -239,7 +239,7 @@ fn alias_terminal_change_is_denied_before_replacement_publication() {
         &successor_prepared,
     );
     let themes = alias_terminal_theme_bundle();
-    let profile = worth_ui_host_native::staged_appearance_capability_report()
+    let profile = worth_ui_host_native::appearance_capability_report()
         .appearance_profile()
         .cloned()
         .expect("native staged profile is available");
@@ -302,7 +302,7 @@ fn issue_capability(
 ) -> crate::runtime::appearance::UiThemeCapabilityReceipt {
     let themes = session.capabilities().appearance_themes().unwrap();
     let definition = theme_definition(themes, definition_identity);
-    let profile = worth_ui_host_native::staged_appearance_capability_report()
+    let profile = worth_ui_host_native::appearance_capability_report()
         .appearance_profile()
         .cloned()
         .expect("the staged host fixture must report its appearance profile");

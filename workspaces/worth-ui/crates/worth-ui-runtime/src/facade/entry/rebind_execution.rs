@@ -191,6 +191,31 @@ impl WorthUiActiveApplicationSession {
         crate::runtime::rebind::UiRebindPreparationDenial,
     > {
         let semantic_content = plan.content().clone();
+        let predecessor = self.active_generation_identity();
+        let successor = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+            self.session_identity(),
+            content.successor_authority.generation_identity(),
+        );
+        let generation_succession = crate::facade::prepared_application_authority::
+            WorthUiPreparedApplicationGenerationSuccession::new(
+                predecessor.prepared_generation().clone(),
+                successor.prepared_generation().clone(),
+            );
+        let appearance_succession = self
+            .prepare_appearance_generation_succession(&generation_succession)
+            .map_err(|denial| {
+                match denial {
+                super::UiAppearanceGenerationSuccessionDenial::Theme(denial) => {
+                    crate::runtime::rebind::UiRebindPreparationDenial::AppearanceThemeSuccession(
+                        denial,
+                    )
+                }
+                super::UiAppearanceGenerationSuccessionDenial::Inspection(denial) => {
+                    crate::runtime::rebind::UiRebindPreparationDenial::
+                        AppearanceInspectionSuccession(denial)
+                }
+            }
+            })?;
         let frame_request = self.current_portal_rebind_frame_request();
         let frame = {
             let completion = self.execute_framework_turn(|_| {}).map_err(|_| {
@@ -216,6 +241,7 @@ impl WorthUiActiveApplicationSession {
             self,
             frame,
             content.successor_authority,
+            appearance_succession,
         );
         Ok(crate::runtime::rebind::UiPreparedRebind::content(
             plan,

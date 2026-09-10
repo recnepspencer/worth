@@ -58,7 +58,7 @@ pub(super) fn issue_capability(
     definition: &str,
 ) -> crate::runtime::appearance::UiThemeCapabilityReceipt {
     let themes = session.capabilities().appearance_themes().unwrap();
-    let profile = worth_ui_host_native::staged_appearance_capability_report()
+    let profile = worth_ui_host_native::appearance_capability_report()
         .appearance_profile()
         .cloned()
         .unwrap();

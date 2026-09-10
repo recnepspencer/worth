@@ -103,7 +103,7 @@ pub(in crate::native) struct DrawListWorld {
     pub(in crate::native) content: UiMountedContentGeneration,
     pub(in crate::native) first: UiMountedInstanceIdentity,
     second: UiMountedInstanceIdentity,
-    third: UiMountedInstanceIdentity,
+    pub(in crate::native::presentation) third: UiMountedInstanceIdentity,
     pub(in crate::native) requirement: UiMountedSurfaceBindingRequirement,
 }
 
@@ -137,6 +137,17 @@ impl DrawListWorld {
         x: f32,
         color: UiMountedRgba8,
     ) -> UiMountedFilledRectMechanic {
+        self.rect_at_order(frame, instance, x, color, 0)
+    }
+
+    pub(in crate::native::presentation) fn rect_at_order(
+        &self,
+        frame: UiMountedFrameIdentity,
+        instance: UiMountedInstanceIdentity,
+        x: f32,
+        color: UiMountedRgba8,
+        layer_semantic_order: u32,
+    ) -> UiMountedFilledRectMechanic {
         let bounds = canonical_box(x, 0.0, 32.0, 24.0);
         UiMountedFilledRectMechanic::complete_from_runtime_mounting(
             UiMountedFilledRectCompletionInput {
@@ -155,7 +166,7 @@ impl DrawListWorld {
                 ),
                 bounds,
                 color,
-                layer_semantic_order: 0,
+                layer_semantic_order,
                 clip_bounds: bounds,
             },
         )

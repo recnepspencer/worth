@@ -94,10 +94,25 @@ pub(super) fn initial_operations(
     atlas: &crate::native::text_atlas::UiNativeTextAtlas,
     initial: &ValidatedInitial,
 ) -> Result<Vec<UiNativeRasterOperation>, UiNativePresentationFailure> {
+    if retained.has_appearance() {
+        return retained
+            .complete_appearance_operations(
+                super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
+                atlas,
+            )
+            .map_err(|_| before_effects_malformed());
+    }
     let mut operations = Vec::new();
     for command in &initial.commands {
         match command {
             UiMountedPaintCommand::FilledRect { mechanic, .. } => {
+                if let Some(operation) = retained
+                    .appearance_surface_operation(mechanic.node_receipt(), graphics.extent())
+                    .map_err(|_| before_effects_malformed())?
+                {
+                    operations.push(operation);
+                    continue;
+                }
                 let rect =
                     raster_rect(*mechanic, graphics).map_err(|_| before_effects_malformed())?;
                 operations.push(UiNativeRasterOperation::FilledRect {
@@ -106,6 +121,13 @@ pub(super) fn initial_operations(
                 });
             }
             UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
+                if let Some(operation) = retained
+                    .appearance_portal_surface_operation(mechanic.owner(), graphics.extent())
+                    .map_err(|_| before_effects_malformed())?
+                {
+                    operations.push(operation);
+                    continue;
+                }
                 let rect = super::raster::raster_portal_overlay(*mechanic, graphics)
                     .map_err(|_| before_effects_malformed())?;
                 operations.push(UiNativeRasterOperation::FilledRect {

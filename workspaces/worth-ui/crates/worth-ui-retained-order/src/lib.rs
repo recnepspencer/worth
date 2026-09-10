@@ -47,12 +47,33 @@ where
         self.index.insert_at(rank, identity)
     }
 
+    pub fn insert_at_weighted(
+        &mut self,
+        rank: usize,
+        identity: Identity,
+        weight: u32,
+    ) -> Result<(), UiRetainedOrderDenial> {
+        self.index.insert_at_weighted(rank, identity, weight)
+    }
+
     pub fn remove(&mut self, identity: Identity) -> bool {
         self.index.remove(identity)
     }
 
     pub fn rank(&self, identity: Identity) -> Option<usize> {
         self.index.rank(identity)
+    }
+
+    pub fn weight(&self, identity: Identity) -> Option<u32> {
+        self.index.weight(identity)
+    }
+
+    pub fn update_weight(&mut self, identity: Identity, weight: u32) -> bool {
+        self.index.update_weight(identity, weight)
+    }
+
+    pub fn first_with_weight_at_least(&self, minimum: u32) -> Option<Identity> {
+        self.index.first_with_weight_at_least(minimum)
     }
 
     pub fn identity_at(&self, rank: usize) -> Option<Identity> {

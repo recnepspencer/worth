@@ -18,6 +18,7 @@ impl UiNativeApplicationProgramProgress {
                 if !self.apply_staged_frame_changes(shell, predecessor_index)? {
                     return Ok(());
                 }
+                layout::complete_program_layout(shell)?;
                 shell.prepare_frame().map_err(|_| ())?
             }
         };
@@ -25,6 +26,7 @@ impl UiNativeApplicationProgramProgress {
             self.staged_superseding_predecessor = Some(predecessor);
             return Ok(());
         }
+        layout::complete_program_layout(shell)?;
         let successor = shell
             .prepare_superseding_frame(&predecessor)
             .map_err(|_| ())?;
@@ -95,7 +97,9 @@ impl UiNativeApplicationProgramProgress {
             Some(predecessor) => {
                 shell.present_prepared_superseding_frame(frame, predecessor, u64::MAX, tick)
             }
-            None => shell.present_prepared_frame(frame, u64::MAX, tick),
+            None => shell
+                .present_prepared_frame(frame, u64::MAX, tick)
+                .map_err(|_| ())?,
         };
         let successor = predecessor.is_some();
         let progress = self.retain_or_attribute(

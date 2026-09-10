@@ -83,7 +83,7 @@ impl UiNativeApplicationPreparation {
         debug_assert_eq!(binding.preparation_identity(), preparation_identity);
         debug_assert_eq!(
             binding.profile(),
-            worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1
+            worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2
         );
         let builder = UiNativeBuilderState::MissingProfile(WorthUi::app());
         Self {
@@ -345,7 +345,7 @@ impl UiPreparedNativeApplication {
     ) {
         debug_assert_eq!(
             self.binding.profile(),
-            worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1
+            worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2
         );
         let mut application = self.application.bind_qualified_native(host);
         application.install_presentation_async_owner(self.presentation_async);

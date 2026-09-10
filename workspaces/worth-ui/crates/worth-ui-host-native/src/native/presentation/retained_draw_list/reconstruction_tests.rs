@@ -136,8 +136,9 @@ fn cold_reconstruction_installs_and_rasterizes_accepted_motion_override() {
     retained
         .initialize_physical_coverage(basis, &atlas)
         .unwrap();
-    let plan = crate::native::presentation::reconstruction::build_plan(basis, &atlas, &retained)
-        .unwrap_or_else(|_| panic!("accepted reconstruction sample rasterizes"));
+    let plan =
+        crate::native::presentation::reconstruction::build_plan(basis, &atlas, &mut retained)
+            .unwrap_or_else(|_| panic!("accepted reconstruction sample rasterizes"));
     assert!(plan.operations.iter().any(|operation| matches!(
         operation,
         crate::native::presentation::UiNativeRasterOperation::FilledRect {

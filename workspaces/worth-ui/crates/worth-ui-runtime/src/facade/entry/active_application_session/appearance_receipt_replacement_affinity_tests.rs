@@ -8,7 +8,7 @@ fn stale_predecessor_typed_values_deny_replacement_before_publication() {
         support::APPEARANCE_TOKEN,
     );
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let mut session = support::legacy_static_paint_appearance_component_builder(&role)
         .register_appearance_theme_bundle(multi_definition_theme_bundle())
         .unwrap()
@@ -64,7 +64,7 @@ fn stale_predecessor_typed_values_deny_replacement_before_publication() {
         .capabilities()
         .appearance_themes()
         .expect("stale typed fixture has frozen themes");
-    let profile = worth_ui_host_native::staged_appearance_capability_report()
+    let profile = worth_ui_host_native::appearance_capability_report()
         .appearance_profile()
         .cloned()
         .expect("native staged profile is available");

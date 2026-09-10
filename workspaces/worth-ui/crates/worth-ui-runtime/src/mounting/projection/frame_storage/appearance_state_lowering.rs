@@ -62,9 +62,9 @@ impl UiMountedAppearanceFrameState {
                 .unwrap_or(UiAppearanceInspectionDenial::MountLowering)
         };
         let retained_keys = if self.reconstruction_nodes.is_some() {
-            let (keys, work) = self.members.retained_keys_for_reconstruction();
+            let (keys, work) = self.members.keys_for_reconstruction();
             self.selection.record_membership_work(work);
-            keys.unwrap_or_default()
+            keys
         } else {
             Vec::new()
         };
@@ -97,7 +97,7 @@ impl UiMountedAppearanceFrameState {
         records.extend(
             retained_keys
                 .iter()
-                .filter_map(|key| self.members.retained_entry(key))
+                .filter_map(|key| self.members.retained_entry_for_local_node(key))
                 .map(|entry| denial_record(entry.context.clone(), denial_for(&entry.context))),
         );
         records
@@ -124,7 +124,14 @@ impl UiMountedAppearanceFrameState {
         self.overlay_work.clear();
         if let Some(nodes) = self.reconstruction_nodes.take() {
             self.order = Default::default();
-            return self.lower_reconstruction(presentation, geometry, portal_instances, &nodes);
+            let complete = std::mem::take(&mut self.reconstruction_complete);
+            return self.lower_reconstruction(
+                presentation,
+                geometry,
+                portal_instances,
+                &nodes,
+                complete,
+            );
         }
         let mut records = self.lower_pending(
             presentation,
@@ -319,7 +326,10 @@ impl UiMountedAppearanceFrameState {
         }
     }
 
-    fn restore_physical_predecessor(&mut self, predecessor: UiMountedAppearanceStatePredecessor) {
+    pub(super) fn restore_physical_predecessor(
+        &mut self,
+        predecessor: UiMountedAppearanceStatePredecessor,
+    ) {
         let (result, work) = self.members.restore_predecessor(predecessor);
         self.selection.record_membership_work(work);
         result.expect("appearance predecessor retains its exact mounted identity");

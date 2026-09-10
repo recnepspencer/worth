@@ -27,7 +27,7 @@ fn qualified_asset_license_and_manifests_have_exact_digests() {
     );
     assert_eq!(
         sha256(WORTH_UI_NATIVE_PROFILE_MANIFEST.as_bytes()),
-        "fe4a8b504bc8b86e20f304437479cb913b724a044c92a43e94602a7b49beb867"
+        "c069627e9f2bc79cdb5d4275c76846d4d9778c6d04c8a40df24a69580db92d85"
     );
 }
 
@@ -221,7 +221,9 @@ const TEXT_INTEGER_FIELDS: &[(&str, i64)] = &[
 const TEXT_BOOL_FIELDS: &[(&str, bool)] = &[("subpixel", false)];
 
 const NATIVE_STRING_FIELDS: &[(&str, &str)] = &[
-    ("identity", "worth-ui-windows-dx12-v1"),
+    ("identity", "worth-ui-windows-dx12-v2"),
+    ("profile_stage", "current"),
+    ("live_emission", "enabled"),
     ("platform", "windows-11-x86_64"),
     ("desktop", "composition-enabled"),
     ("event_backend", "winit-0.30.13"),
@@ -250,6 +252,13 @@ const NATIVE_STRING_FIELDS: &[(&str, &str)] = &[
     ("shader_output", "premultiplied-rgb-and-alpha"),
     ("blend", "src-One;dst-OneMinusSrcAlpha;op-Add"),
     ("filled_rect_antialiasing", "none"),
+    ("appearance_surface_pipeline", "rounded-fill-inward-border"),
+    ("appearance_outline_pipeline", "outside-ring-full-fringe"),
+    (
+        "appearance_antialiasing",
+        "analytic-signed-distance-pixel-center",
+    ),
+    ("appearance_qualified_scales", "1.0;1.25;1.5;2.0"),
     ("text_antialiasing", "qualified-grayscale-coverage"),
     ("coordinate_rounding", "min-floor;max-ceil;half-open"),
     ("baseline_rgba", "0;0;0;0"),
@@ -292,9 +301,15 @@ const NATIVE_STRING_FIELDS: &[(&str, &str)] = &[
 
 const NATIVE_INTEGER_FIELDS: &[(&str, i64)] = &[
     ("sample_count", 1),
+    ("appearance_anti_alias_fringe_physical_pixels", 1),
     ("windows", 1),
     ("surfaces", 1),
     ("retained_commands", 4_096),
+    ("surface_commands", 2_048),
+    ("outline_commands", 1_024),
+    ("backdrop_commands", 512),
+    ("overlay_order_commands", 4_096),
+    ("pointer_affordance_commands", 64),
     ("rectangle_commands", 2_048),
     ("text_commands", 2_048),
     ("damage_regions", 4_096),

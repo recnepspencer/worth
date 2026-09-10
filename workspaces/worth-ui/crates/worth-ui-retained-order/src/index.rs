@@ -7,6 +7,8 @@ use crate::cost::CostTracker;
 
 #[path = "index/ordered.rs"]
 mod ordered;
+#[path = "index/weight.rs"]
+mod weight;
 
 pub(crate) use ordered::Ordered;
 
@@ -22,6 +24,8 @@ pub(crate) struct BoundedOrderIndex<Identity> {
 
 struct Node<Identity> {
     identity: Option<Identity>,
+    weight: u32,
+    subtree_max_weight: u32,
     left: Link,
     right: Link,
     parent: Link,
@@ -60,6 +64,15 @@ where
         rank: usize,
         identity: Identity,
     ) -> Result<(), crate::UiRetainedOrderDenial> {
+        self.insert_at_weighted(rank, identity, 0)
+    }
+
+    pub(crate) fn insert_at_weighted(
+        &mut self,
+        rank: usize,
+        identity: Identity,
+        weight: u32,
+    ) -> Result<(), crate::UiRetainedOrderDenial> {
         if self.len() >= self.capacity {
             return Err(crate::UiRetainedOrderDenial::CapacityExceeded);
         }
@@ -69,7 +82,7 @@ where
         if self.contains(identity) {
             return Err(crate::UiRetainedOrderDenial::DuplicateIdentity);
         }
-        let node = self.allocate(identity);
+        let node = self.allocate(identity, weight);
         self.root = Some(self.insert_node(self.root, node, rank));
         self.set_parent(self.root, None);
         self.identities.insert(identity, node);
@@ -134,18 +147,20 @@ where
             .take(self.len(), self.nodes.len(), self.high_water_entries)
     }
 
-    fn allocate(&mut self, identity: Identity) -> usize {
+    fn allocate(&mut self, identity: Identity, weight: u32) -> usize {
         if let Some(index) = self.free.pop() {
-            self.nodes[index] = Node::new(identity);
+            self.nodes[index] = Node::new(identity, weight);
             index
         } else {
-            self.nodes.push(Node::new(identity));
+            self.nodes.push(Node::new(identity, weight));
             self.nodes.len() - 1
         }
     }
 
     fn release(&mut self, index: usize) {
         self.nodes[index].identity = None;
+        self.nodes[index].weight = 0;
+        self.nodes[index].subtree_max_weight = 0;
         self.nodes[index].left = None;
         self.nodes[index].right = None;
         self.nodes[index].parent = None;
@@ -214,6 +229,7 @@ where
                     .identity
                     .expect("an active successor has an identity");
                 self.nodes[root].identity = Some(moved);
+                self.nodes[root].weight = self.nodes[successor].weight;
                 let (new_right, removal) = self.remove_at(right, 0);
                 self.nodes[root].right = new_right;
                 self.set_parent(new_right, Some(root));
@@ -319,6 +335,10 @@ where
             .max(self.link_height(self.nodes[node].right));
         self.nodes[node].size =
             1 + self.link_size(self.nodes[node].left) + self.link_size(self.nodes[node].right);
+        self.nodes[node].subtree_max_weight = self.nodes[node]
+            .weight
+            .max(self.link_max_weight(self.nodes[node].left))
+            .max(self.link_max_weight(self.nodes[node].right));
     }
 
     fn balance(&self, node: usize) -> i32 {
@@ -334,6 +354,11 @@ where
         link.map(|node| self.nodes[node].size).unwrap_or(0)
     }
 
+    fn link_max_weight(&self, link: Link) -> u32 {
+        link.map(|node| self.nodes[node].subtree_max_weight)
+            .unwrap_or(0)
+    }
+
     fn set_parent(&mut self, link: Link, parent: Link) {
         if let Some(node) = link {
             self.nodes[node].parent = parent;
@@ -342,9 +367,11 @@ where
 }
 
 impl<Identity> Node<Identity> {
-    fn new(identity: Identity) -> Self {
+    fn new(identity: Identity, weight: u32) -> Self {
         Self {
             identity: Some(identity),
+            weight,
+            subtree_max_weight: weight,
             left: None,
             right: None,
             parent: None,

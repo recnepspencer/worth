@@ -13,7 +13,7 @@ fn initial_binding_uses_explicit_default_and_current_surface_authority() {
         .presentation
         .active_appearance_theme_binding(surface)
         .expect("surface creation materializes the prepared admission");
-    let expected_profile = worth_ui_host_native::staged_appearance_capability_report()
+    let expected_profile = worth_ui_host_native::appearance_capability_report()
         .appearance_profile()
         .cloned()
         .expect("staged host reports its appearance profile");

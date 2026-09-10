@@ -108,7 +108,7 @@ fn unrelated_mosaic_mount_replacement_does_not_revoke_a_retained_consumer() {
         capabilities.capabilities(),
     );
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
     let mut session = builder()
         .with_candidate_submission(submission)

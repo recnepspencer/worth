@@ -58,6 +58,7 @@ pub(crate) enum ExecutableFirstFrameFailure {
     ClientCaptureSizeMismatch,
     LivenessHoldTooShort(Duration),
     NativeColor(NativeColorFailure),
+    Appearance(super::FirstFrameAppearanceFailure),
 }
 
 impl fmt::Display for ExecutableFirstFrameFailure {
@@ -96,6 +97,7 @@ impl fmt::Display for ExecutableFirstFrameFailure {
                 duration.as_millis()
             ),
             Self::NativeColor(failure) => write!(formatter, "native color: {failure}"),
+            Self::Appearance(failure) => write!(formatter, "appearance: {failure}"),
         }
     }
 }
@@ -116,6 +118,8 @@ pub(crate) fn adjudicate_first_frame(
     require_stable_liveness(liveness)?;
     let color = adjudicate_native_color(&pixels, ExpectedNativeColor::Blue)
         .map_err(ExecutableFirstFrameFailure::NativeColor)?;
+    super::adjudicate_first_frame_appearance(&pixels)
+        .map_err(ExecutableFirstFrameFailure::Appearance)?;
     Ok(ExecutableFirstFrameEvidence {
         process_started: causal.process_started,
         pending_issued,

@@ -45,7 +45,7 @@ fn shared_replay_rejects_unconsumed_appearance_and_nontransparent_baseline() {
             counters: Default::default(),
             identity_overlay_effect: false,
         };
-        let result = build_plan(basis, &retained, replay, 0, &atlas);
+        let result = build_plan(basis, &mut retained, replay, 0, &atlas);
         if baseline == [0; 4] && !staged {
             assert!(result.unwrap().operations.is_empty());
         } else {

@@ -38,6 +38,7 @@ pub(crate) mod surface_basis;
 mod surface_failure;
 pub(crate) mod text;
 mod transaction_state;
+mod unchanged;
 
 use initial_validation::{initial_operations, validate_initial};
 #[cfg(test)]
@@ -58,6 +59,7 @@ pub(crate) use completed_effects::UiNativePresentationEffects;
 pub(crate) use delta::{present_delta, UiNativeDeltaPresentation};
 pub(crate) use pending_settlement::{
     UiNativePendingDeltaSettlement, UiNativePendingSurfaceSettlement,
+    UiNativePendingUnchangedSettlement,
 };
 pub(crate) use pending_wgpu_readback::{UiNativePendingWgpuObligation, UiNativeWgpuReadbackPoll};
 pub(crate) use port::{
@@ -95,6 +97,7 @@ pub(crate) use transaction_state::{
     reserve_presentation_owners, settle_port_result, UiNativePendingExternalObligation,
     UiNativePendingPresentationCompletion,
 };
+pub(crate) use unchanged::present_unchanged_appearance;
 
 pub(crate) const GPU_WAIT_DEADLINE: std::time::Duration = std::time::Duration::from_millis(5_000);
 
@@ -150,6 +153,15 @@ pub(crate) fn present_initial<Port: UiNativePresentationPort>(
                 UiHostSurfacePresentationDenial::MalformedProjection,
             )
         })?;
+    if view.appearance_work().is_some() {
+        retained
+            .initialize_appearance(view, atlas, graphics.extent())
+            .map_err(|_| {
+                UiNativePresentationFailure::BeforeEffects(
+                    UiHostSurfacePresentationDenial::MalformedProjection,
+                )
+            })?;
+    }
     let initial = validate_initial(view).map_err(UiNativePresentationFailure::BeforeEffects)?;
     let mut operations = initial_operations(&retained, graphics, atlas, &initial)?;
     retained
@@ -305,6 +317,10 @@ fn initial_presentation_cost(
         let [width, height] = match operation {
             UiNativeRasterOperation::Clear(rect)
             | UiNativeRasterOperation::FilledRect { rect, .. } => {
+                [rect.physical_width, rect.physical_height]
+            }
+            UiNativeRasterOperation::Surface(surface) => {
+                let rect = surface.rect();
                 [rect.physical_width, rect.physical_height]
             }
             UiNativeRasterOperation::Glyph(command) => [

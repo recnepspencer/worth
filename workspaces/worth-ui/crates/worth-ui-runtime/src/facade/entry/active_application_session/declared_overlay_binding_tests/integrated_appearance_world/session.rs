@@ -50,7 +50,7 @@ impl World {
                 snapshot.capabilities(),
             );
         let host = ScriptedPresentationHost::native_display();
-        host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+        host.set_capabilities(worth_ui_host_native::appearance_capability_report());
         let observer = host.clone();
         let mut session = builder(seam, multi_region_owner).with_candidate_submission(submission).freeze().map(|app| {
             let mut app = crate::facade::entry::WorthUiCertificationApplicationTransition::activate_test_host(app, host);

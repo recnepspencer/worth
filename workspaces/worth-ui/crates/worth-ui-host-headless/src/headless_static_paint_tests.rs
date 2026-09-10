@@ -111,6 +111,7 @@ fn translate(
         UiMountedFrameConsumptionInput {
             qualified_text: &(),
             text_raster_work: None,
+            appearance_work: None,
             authority: std::rc::Rc::new(()),
             host_session_identity: 13,
             protocol,

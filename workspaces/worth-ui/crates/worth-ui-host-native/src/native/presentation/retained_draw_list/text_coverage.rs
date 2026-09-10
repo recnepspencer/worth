@@ -10,16 +10,52 @@ use crate::native::presentation::appearance::{
 use crate::native::text_atlas::UiNativeTextAtlas;
 use worth_ui_host_contract::{UiGlyphRunView, UiMountedPresentationDelta};
 
+#[path = "text_coverage/staging.rs"]
+mod staging;
+use staging::{same_successor_affinity, stage_text_coverage_changes, validate_replacement_set};
+
 impl UiNativeRetainedDrawList {
+    pub(in crate::native::presentation) fn inherit_text_foreground_replacement(
+        &self,
+        fragment: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
+        view: &worth_ui_host_contract::UiMountedFrameConsumptionView<'_>,
+        mechanic: &worth_ui_host_contract::UiMountedTextForegroundAppearanceMechanic,
+        atlas: &UiNativeTextAtlas,
+    ) -> Result<UiNativeFinalizedTextForeground, Denial> {
+        let identity = UiNativeAppearanceCommandIdentity::TextForeground {
+            target: mechanic.node_receipt().mounted_instance(),
+            command: mechanic
+                .command()
+                .semantic_text_identity_parts()
+                .ok_or(Denial::CommandMismatch)?,
+            span_digest: mechanic.paint_span().digest(),
+        };
+        let (_, appearance) = self
+            .staged_appearance
+            .as_ref()
+            .ok_or(Denial::CommandMismatch)?;
+        let key = appearance
+            .key_for_identity(&identity)
+            .ok_or(Denial::CommandMismatch)?;
+        let crate::native::presentation::appearance::UiNativeAppearanceCommand::TextForeground(
+            foreground,
+        ) = appearance.command(key).ok_or(Denial::CommandMismatch)?
+        else {
+            return Err(Denial::CommandMismatch);
+        };
+        foreground
+            .inherit_paint_replacement(mechanic, fragment, view, atlas)
+            .map_err(|_| Denial::CommandMismatch)
+    }
+
     pub(in crate::native::presentation) fn apply_text_paint(
         &self,
         command: &worth_ui_host_contract::UiMountedSemanticTextMechanic,
         glyphs: &mut [crate::native::presentation::text::UiNativeGlyphCommand],
-        atlas: &UiNativeTextAtlas,
     ) -> Result<(), Denial> {
         if let Some((_, appearance)) = &self.staged_appearance {
             appearance
-                .apply_text_paint(command, glyphs, atlas)
+                .apply_text_paint(command, glyphs)
                 .map_err(|_| Denial::CommandMismatch)?;
         }
         Ok(())
@@ -76,9 +112,9 @@ impl UiNativeRetainedDrawList {
         if self.staged_appearance.is_none() {
             return Err(Denial::CommandMismatch);
         }
-        let changes = validate_replacement_set(fragment, delta, attempt, &candidates)?;
+        let changes = validate_replacement_set(fragment, delta.affinity(), attempt, &candidates)?;
         for candidate in &candidates {
-            if candidate.affinity() != delta.affinity()
+            if !same_successor_affinity(candidate.affinity(), delta.affinity())
                 || candidate.presentation_attempt() != attempt
             {
                 return Err(Denial::AffinityMismatch);
@@ -139,7 +175,122 @@ impl UiNativeRetainedDrawList {
         Ok((replay, undo))
     }
 
-    fn validate_text_coverage(
+    pub(crate) fn stage_text_coverage_fragment_after_delta(
+        &mut self,
+        delta: &UiMountedPresentationDelta,
+        fragment: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        candidates: Vec<UiNativeFinalizedTextForeground>,
+        atlas: &UiNativeTextAtlas,
+        undo: &mut UiNativeRetainedDeltaUndo,
+    ) -> Result<(), Denial> {
+        self.stage_text_coverage_fragment(
+            delta.affinity(),
+            fragment,
+            attempt,
+            candidates,
+            atlas,
+            undo,
+        )
+    }
+
+    pub(in crate::native::presentation) fn stage_text_coverage_fragment_after_unchanged(
+        &mut self,
+        unchanged: &worth_ui_host_contract::UiMountedPresentationUnchanged,
+        fragment: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        candidates: Vec<UiNativeFinalizedTextForeground>,
+        atlas: &UiNativeTextAtlas,
+        undo: &mut super::UiNativeRetainedUnchangedUndo,
+    ) -> Result<(), Denial> {
+        let mut staged = Vec::new();
+        self.stage_text_coverage_fragment_commands(
+            unchanged.affinity(),
+            fragment,
+            attempt,
+            candidates,
+            atlas,
+            &mut staged,
+        )?;
+        for command in staged {
+            Self::retain_unchanged_appearance(undo, command);
+        }
+        Ok(())
+    }
+
+    fn stage_text_coverage_fragment(
+        &mut self,
+        affinity: worth_ui_host_contract::UiMountedPresentationAffinity,
+        fragment: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        candidates: Vec<UiNativeFinalizedTextForeground>,
+        atlas: &UiNativeTextAtlas,
+        undo: &mut UiNativeRetainedDeltaUndo,
+    ) -> Result<(), Denial> {
+        let mut staged = Vec::new();
+        self.stage_text_coverage_fragment_commands(
+            affinity,
+            fragment,
+            attempt,
+            candidates,
+            atlas,
+            &mut staged,
+        )?;
+        for text in staged {
+            undo.retain_text_coverage(text);
+        }
+        Ok(())
+    }
+
+    fn stage_text_coverage_fragment_commands(
+        &mut self,
+        affinity: worth_ui_host_contract::UiMountedPresentationAffinity,
+        fragment: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        candidates: Vec<UiNativeFinalizedTextForeground>,
+        atlas: &UiNativeTextAtlas,
+        staged: &mut Vec<crate::native::presentation::appearance::UiNativeTextCoverageUndo>,
+    ) -> Result<(), Denial> {
+        let changes = validate_replacement_set(fragment, affinity, attempt, &candidates)?;
+        for candidate in &candidates {
+            if !same_successor_affinity(candidate.affinity(), affinity)
+                || candidate.presentation_attempt() != attempt
+            {
+                return Err(Denial::AffinityMismatch);
+            }
+            candidate
+                .validate_images(atlas)
+                .map_err(|_| Denial::CommandMismatch)?;
+        }
+        staged.extend(stage_text_coverage_changes(
+            &mut self
+                .staged_appearance
+                .as_mut()
+                .ok_or(Denial::CommandMismatch)?
+                .1,
+            fragment,
+            &candidates,
+            &changes,
+            atlas,
+        )?);
+        Ok(())
+    }
+
+    pub(crate) fn prepare_appearance_replay(
+        &mut self,
+    ) -> Result<
+        Box<[crate::native::presentation::appearance::UiNativeAppearanceReplayRegion]>,
+        Denial,
+    > {
+        self.staged_appearance
+            .as_mut()
+            .ok_or(Denial::CommandMismatch)?
+            .1
+            .prepare_replay()
+            .map_err(|_| Denial::CommandMismatch)
+    }
+
+    pub(super) fn validate_text_coverage(
         &self,
         candidate: &UiNativeFinalizedTextForeground,
     ) -> Result<(), Denial> {
@@ -175,177 +326,4 @@ impl UiNativeRetainedDrawList {
         }
         Ok(())
     }
-}
-
-#[derive(Default)]
-struct TextCoverageChanges {
-    inserts: std::collections::HashSet<worth_ui_host_contract::UiMountedAppearanceMechanicIdentity>,
-    replacements: Vec<worth_ui_host_contract::UiMountedAppearanceMechanicIdentity>,
-    removals: Vec<worth_ui_host_contract::UiMountedAppearanceMechanicIdentity>,
-}
-
-fn validate_replacement_set(
-    fragment: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
-    delta: &UiMountedPresentationDelta,
-    attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-    candidates: &[UiNativeFinalizedTextForeground],
-) -> Result<TextCoverageChanges, Denial> {
-    use worth_ui_host_contract::{
-        UiMountedAppearanceMechanic as Mechanic, UiMountedAppearanceMechanicChange as Change,
-        UiMountedAppearanceMechanicIdentity as Identity,
-    };
-    if fragment.presentation_affinity() != delta.affinity()
-        || fragment.work().successor().overlay_order().presentation() != attempt
-    {
-        return Err(Denial::AffinityMismatch);
-    }
-    let mut expected = std::collections::HashSet::new();
-    let mut text_changes = TextCoverageChanges::default();
-    for change in fragment.work().changes() {
-        match change {
-            Change::Insert(Mechanic::TextForeground(value)) => {
-                let identity = text_identity(value);
-                if !expected.insert(identity.clone()) || !text_changes.inserts.insert(identity) {
-                    return Err(Denial::CommandMismatch);
-                }
-            }
-            Change::Replace {
-                predecessor,
-                successor: Mechanic::TextForeground(value),
-            } => {
-                let identity = text_identity(value);
-                if predecessor != &identity
-                    || !expected.insert(identity.clone())
-                    || text_changes.replacements.contains(&identity)
-                {
-                    return Err(Denial::CommandMismatch);
-                }
-                text_changes.replacements.push(identity);
-            }
-            Change::Remove(identity @ Identity::TextForeground { .. }) => {
-                text_changes.removals.push(identity.clone());
-            }
-            _ => {}
-        }
-    }
-    if expected.is_empty() && text_changes.removals.is_empty() {
-        return Err(Denial::CommandMismatch);
-    }
-    for candidate in candidates {
-        if candidate.binding() != fragment.surface_binding() {
-            return Err(Denial::AffinityMismatch);
-        }
-        if !candidate.matches_candidates(fragment) {
-            return Err(Denial::CommandMismatch);
-        }
-        if !expected.remove(&text_identity(candidate.mechanic())) {
-            return Err(Denial::CommandMismatch);
-        }
-    }
-    if !expected.is_empty() {
-        return Err(Denial::CommandMismatch);
-    }
-    Ok(text_changes)
-}
-
-fn stage_text_coverage_changes(
-    appearance: &mut UiNativeAppearanceRetained,
-    fragment: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
-    candidates: &[UiNativeFinalizedTextForeground],
-    changes: &TextCoverageChanges,
-    atlas: &UiNativeTextAtlas,
-) -> Result<Vec<crate::native::presentation::appearance::UiNativeTextCoverageUndo>, Denial> {
-    use worth_ui_host_contract::UiMountedAppearanceMechanic as Mechanic;
-    let mut undo = Vec::new();
-    let staging = (|| {
-        for identity in &changes.removals {
-            let native = native_text_identity(identity).ok_or(Denial::CommandMismatch)?;
-            let key = appearance
-                .key_for_identity(&native)
-                .ok_or(Denial::CommandMismatch)?;
-            undo.push(
-                appearance
-                    .stage_text_remove(key)
-                    .map_err(|_| Denial::CommandMismatch)?,
-            );
-        }
-        for identity in &changes.replacements {
-            let candidate = candidate_for(candidates, identity)?;
-            undo.push(
-                appearance
-                    .stage_text_replace(candidate.clone(), atlas)
-                    .map_err(|_| Denial::CommandMismatch)?,
-            );
-        }
-        let mut predecessor = None;
-        for mechanic in fragment.work().successor().mechanics() {
-            let Mechanic::TextForeground(value) = mechanic else {
-                continue;
-            };
-            let identity = text_identity(value);
-            if changes.inserts.contains(&identity) {
-                let candidate = candidate_for(candidates, &identity)?;
-                let (key, insertion) = appearance
-                    .stage_text_insert(candidate.clone(), atlas, predecessor)
-                    .map_err(|_| Denial::CommandMismatch)?;
-                undo.push(insertion);
-                predecessor = Some(key);
-            } else {
-                predecessor = appearance.key_for_identity(
-                    &native_text_identity(&identity).ok_or(Denial::CommandMismatch)?,
-                );
-                if predecessor.is_none() {
-                    return Err(Denial::CommandMismatch);
-                }
-            }
-        }
-        Ok(())
-    })();
-    if let Err(denial) = staging {
-        for staged in undo.drain(..).rev() {
-            appearance
-                .rollback_text(staged)
-                .expect("partial text coverage staging must restore its predecessor");
-        }
-        return Err(denial);
-    }
-    Ok(undo)
-}
-
-fn candidate_for<'a>(
-    candidates: &'a [UiNativeFinalizedTextForeground],
-    identity: &worth_ui_host_contract::UiMountedAppearanceMechanicIdentity,
-) -> Result<&'a UiNativeFinalizedTextForeground, Denial> {
-    candidates
-        .iter()
-        .find(|candidate| text_identity(candidate.mechanic()) == *identity)
-        .ok_or(Denial::CommandMismatch)
-}
-
-fn text_identity(
-    value: &worth_ui_host_contract::UiMountedTextForegroundAppearanceMechanic,
-) -> worth_ui_host_contract::UiMountedAppearanceMechanicIdentity {
-    worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::TextForeground {
-        target: value.node_receipt().mounted_instance(),
-        command: value.command(),
-        span: value.paint_span(),
-    }
-}
-
-fn native_text_identity(
-    identity: &worth_ui_host_contract::UiMountedAppearanceMechanicIdentity,
-) -> Option<UiNativeAppearanceCommandIdentity> {
-    let worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::TextForeground {
-        target,
-        command,
-        span,
-    } = identity
-    else {
-        return None;
-    };
-    Some(UiNativeAppearanceCommandIdentity::TextForeground {
-        target: *target,
-        command: command.semantic_text_identity_parts()?,
-        span_digest: span.digest(),
-    })
 }

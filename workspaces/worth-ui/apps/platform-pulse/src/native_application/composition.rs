@@ -84,6 +84,7 @@ impl super::PlatformPulseApplicationRuntime {
         } = composition;
         let runtime = Self {
             initial_source: Some(initial_source),
+            startup_ready: false,
             shell: None,
             source_watch: Some(PlatformPulseSourceWatch::spawn(watcher)),
             query_watch: Some(query_watcher),

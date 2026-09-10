@@ -12,7 +12,6 @@
 
 mod antialiasing;
 mod backdrop_pipeline;
-#[cfg(feature = "certification-support")]
 mod certification_profile;
 mod command;
 mod damage;
@@ -30,10 +29,9 @@ pub(crate) mod text_foreground;
 
 pub(crate) mod cursor;
 
-#[cfg(feature = "certification-support")]
-pub(crate) use certification_profile::staged_appearance_profile_contract;
+pub(crate) use certification_profile::appearance_profile_contract;
 #[cfg(all(test, feature = "certification-support"))]
-pub(crate) use certification_profile::STAGED_APPEARANCE_MECHANICS;
+pub(crate) use certification_profile::APPEARANCE_MECHANICS;
 
 #[cfg(test)]
 mod backdrop_tests;
@@ -42,19 +40,28 @@ mod cursor_tests;
 #[cfg(test)]
 mod geometry_tests;
 #[cfg(test)]
-mod mounted_mechanic_fixtures;
+pub(in crate::native::presentation) mod mounted_mechanic_fixtures;
 #[cfg(test)]
 mod outline_tests;
 #[cfg(test)]
 mod retained_tests;
 #[cfg(test)]
 mod surface_tests;
+#[cfg(test)]
+mod surface_wgpu_tests;
 
 #[cfg(feature = "certification-support")]
 pub(crate) mod text_retention_certification;
 
+pub(crate) use backdrop_pipeline::UiNativeBackdropPipeline;
 pub(crate) use geometry::UiNativeAppearanceScale;
-pub(crate) use retained::{UiNativeAppearanceRetained, UiNativeTextCoverageUndo};
+pub(crate) use outline_pipeline::UiNativeOutlinePipeline;
+pub(crate) use retained::{
+    UiNativeAppearanceCommandUndo, UiNativeAppearanceRetained, UiNativeTextCoverageUndo,
+};
+pub(crate) use surface_pipeline::{
+    UiNativeSurfacePipeline, UiNativeSurfacePrimitive, UiNativeSurfaceRasterOperation,
+};
 
 #[cfg(feature = "certification-support")]
 pub use surface_certification::{
@@ -62,5 +69,8 @@ pub use surface_certification::{
     UiNativeSurfaceSampleCertificationDenial,
 };
 
-pub(crate) use command::{UiNativeAppearanceCommand, UiNativeAppearanceCommandIdentity};
+pub(crate) use command::{
+    UiNativeAppearanceCommand, UiNativeAppearanceCommandIdentity, UiNativeAppearanceCommandKey,
+};
+pub(crate) use damage::UiNativeAppearanceDamageRect;
 pub(crate) use replay::UiNativeAppearanceReplayRegion;

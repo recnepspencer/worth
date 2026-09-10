@@ -94,10 +94,10 @@ impl UiHostProtocolVersion {
 }
 
 impl UiHostProtocolContract {
-    const COMPATIBLE_FLOOR: u16 = 6;
-    const CURRENT: u16 = 6;
-    const CURRENT_FRAME_SCHEMA: u16 = 5;
-    const CURRENT_PRESENTATION_SCHEMA: u16 = 5;
+    const COMPATIBLE_FLOOR: u16 = 7;
+    const CURRENT: u16 = 7;
+    const CURRENT_FRAME_SCHEMA: u16 = 6;
+    const CURRENT_PRESENTATION_SCHEMA: u16 = 6;
     const CURRENT_OBSERVATION_SCHEMA: u16 = 7;
     const CURRENT_MEASUREMENT_SCHEMA: u16 = 5;
     const CURRENT_SOLICITED_EFFECT_SCHEMA: u16 = 1;

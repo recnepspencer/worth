@@ -4,6 +4,7 @@ mod inspection;
 mod interaction;
 mod layout_reconstruction;
 mod motion_sampling;
+mod occurrence_projection;
 mod projection;
 mod publication;
 mod raster_cache_reconstruction;
@@ -66,6 +67,10 @@ impl WorthUiMountedSessionState {
 
     pub(crate) fn has_active_presentation_attempt(&self) -> bool {
         self.presentation.has_active_attempt()
+    }
+
+    pub(crate) fn observation_basis_admission_ready(&self) -> bool {
+        self.retention.observation_basis_admission_ready()
     }
 
     pub(crate) fn place_semantic_focus(

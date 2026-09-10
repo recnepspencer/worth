@@ -85,6 +85,10 @@ pub enum WorthUiNativeApplicationShellLaunchDenial {
 }
 
 impl WorthUiNativeApplicationShell {
+    pub(crate) fn native_observation_admission_ready(&self) -> bool {
+        self.session.mounted.observation_basis_admission_ready()
+    }
+
     pub(crate) fn admit_native_observation_batches(
         &mut self,
         reachability: worth_ui_host_native::UiNativeInputReachability,
@@ -111,6 +115,13 @@ impl WorthUiNativeApplicationShell {
         if self.pending_surface_reconciliation.is_some() {
             return Err(());
         }
+        if self.scale_factor_milli == scale_factor_milli {
+            return Ok(());
+        }
+        self.replace_native_surface_binding(scale_factor_milli)
+    }
+
+    fn replace_native_surface_binding(&mut self, scale_factor_milli: u32) -> Result<(), ()> {
         let affected = self.binding;
         let scale_changed = self.scale_factor_milli != scale_factor_milli;
         let profile = UiSurfaceBindingProfile::new(
@@ -264,14 +275,25 @@ impl WorthUiNativeApplicationShell {
         frame: crate::mounting::UiPreparedMountedFrame,
         deadline_tick: u64,
         now_tick: u64,
-    ) -> UiMountedFrameOutcome {
-        let outcome = self.session.present_prepared_mounted_frame_internal(
-            frame,
-            UiPresentationDeadline::at_tick(deadline_tick),
-            now_tick,
-        );
+    ) -> Result<UiMountedFrameOutcome, ()> {
+        let outcome = if let Some(replacement) = self.pending_surface_reconciliation {
+            self.session
+                .present_prepared_mounted_frame_for_reconciliation(
+                    frame,
+                    &[replacement],
+                    UiPresentationDeadline::at_tick(deadline_tick),
+                    now_tick,
+                )
+                .map_err(|_| ())?
+        } else {
+            self.session.present_prepared_mounted_frame_internal(
+                frame,
+                UiPresentationDeadline::at_tick(deadline_tick),
+                now_tick,
+            )
+        };
         self.settle_surface_reconciliation(&outcome);
-        outcome
+        Ok(outcome)
     }
 
     pub(crate) fn present_prepared_superseding_frame(

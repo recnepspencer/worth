@@ -1,102 +1,12 @@
 use crate::native::UiNativePresentationAccess;
+use wgpu::util::DeviceExt;
 
-const RETAINED_TO_SURFACE_SHADER: &str = r#"
-@group(0) @binding(0) var retained: texture_2d<f32>;
-
-@vertex
-fn vs_main(@builtin(vertex_index) index: u32) -> @builtin(position) vec4<f32> {
-    var positions = array<vec2<f32>, 3>(
-        vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0)
-    );
-    return vec4<f32>(positions[index], 0.0, 1.0);
-}
-
-@fragment
-fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
-    return textureLoad(retained, vec2<i32>(position.xy), 0);
-}
-"#;
-
-const RASTER_SHADER: &str = r#"
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) color: vec4<f32>,
+#[path = "pipeline/shaders.rs"]
+mod shaders;
+use shaders::{
+    ALPHA_GLYPH_SHADER, ANALYTIC_SURFACE_SHADER, COLOR_GLYPH_SHADER, RASTER_SHADER,
+    RETAINED_TO_SURFACE_SHADER,
 };
-
-@vertex
-fn vs_main(
-    @location(0) position: vec2<f32>,
-    @location(1) color: vec4<f32>,
-) -> VertexOutput {
-    var output: VertexOutput;
-    output.position = vec4<f32>(position, 0.0, 1.0);
-    output.color = color;
-    return output;
-}
-
-@fragment
-fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    return input.color;
-}
-"#;
-
-const ALPHA_GLYPH_SHADER: &str = r#"
-@group(0) @binding(0) var atlas_page: texture_2d<f32>;
-@group(0) @binding(1) var atlas_sampler: sampler;
-
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) texture_uv: vec2<f32>,
-    @location(1) color: vec4<f32>,
-};
-
-@vertex
-fn vs_main(
-    @location(0) position: vec2<f32>,
-    @location(1) texture_uv: vec2<f32>,
-    @location(2) color: vec4<f32>,
-) -> VertexOutput {
-    var output: VertexOutput;
-    output.position = vec4<f32>(position, 0.0, 1.0);
-    output.texture_uv = texture_uv;
-    output.color = color;
-    return output;
-}
-
-@fragment
-fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    let coverage = textureSample(atlas_page, atlas_sampler, input.texture_uv).r;
-    let alpha = input.color.a * coverage;
-    return vec4<f32>(input.color.rgb * alpha, alpha);
-}
-"#;
-
-const COLOR_GLYPH_SHADER: &str = r#"
-@group(0) @binding(0) var atlas_page: texture_2d<f32>;
-@group(0) @binding(1) var atlas_sampler: sampler;
-
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) texture_uv: vec2<f32>,
-};
-
-@vertex
-fn vs_main(
-    @location(0) position: vec2<f32>,
-    @location(1) texture_uv: vec2<f32>,
-    @location(2) _foreground: vec4<f32>,
-) -> VertexOutput {
-    var output: VertexOutput;
-    output.position = vec4<f32>(position, 0.0, 1.0);
-    output.texture_uv = texture_uv;
-    return output;
-}
-
-@fragment
-fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(atlas_page, atlas_sampler, input.texture_uv);
-}
-"#;
 
 const RASTER_ATTRIBUTES: [wgpu::VertexAttribute; 2] =
     wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4];
@@ -106,6 +16,7 @@ const GLYPH_ATTRIBUTES: [wgpu::VertexAttribute; 3] =
 pub(super) struct UiNativePresentationPipelines {
     filled: wgpu::RenderPipeline,
     clearing: wgpu::RenderPipeline,
+    surface: wgpu::RenderPipeline,
     alpha: wgpu::RenderPipeline,
     color: wgpu::RenderPipeline,
     sampler: wgpu::Sampler,
@@ -141,6 +52,17 @@ pub(super) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
         &shader,
         wgpu::TextureFormat::Rgba8UnormSrgb,
         Some(wgpu::BlendState::REPLACE),
+        &buffers,
+    );
+    let surface_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("worth-ui-analytic-surface"),
+        source: wgpu::ShaderSource::Wgsl(ANALYTIC_SURFACE_SHADER.into()),
+    });
+    let surface = pipeline_with_blend(
+        device,
+        &surface_shader,
+        wgpu::TextureFormat::Rgba8UnormSrgb,
+        Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &buffers,
     );
     let glyph_buffers = [wgpu::VertexBufferLayout {
@@ -181,6 +103,7 @@ pub(super) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     UiNativePresentationPipelines {
         filled: blended,
         clearing: replacing,
+        surface,
         alpha,
         color,
         sampler,
@@ -232,6 +155,28 @@ pub(super) fn draw_presentation_operations(
     pipelines: &UiNativePresentationPipelines,
     clear_target: bool,
 ) {
+    let surface_bind_groups = operations
+        .iter()
+        .map(|operation| match operation {
+            super::UiNativeRasterOperation::Surface(surface) => {
+                let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("worth-ui-analytic-surface-data"),
+                    contents: &surface.storage_bytes(),
+                    usage: wgpu::BufferUsages::STORAGE,
+                });
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("worth-ui-analytic-surface-bind-group"),
+                    layout: &pipelines.surface.get_bind_group_layout(0),
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: buffer.as_entire_binding(),
+                    }],
+                });
+                Some((buffer, bind_group))
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
     let glyph_bind_groups = operations
         .iter()
         .map(|operation| match operation {
@@ -261,7 +206,8 @@ pub(super) fn draw_presentation_operations(
                 }))
             }
             super::UiNativeRasterOperation::Clear(_)
-            | super::UiNativeRasterOperation::FilledRect { .. } => None,
+            | super::UiNativeRasterOperation::FilledRect { .. }
+            | super::UiNativeRasterOperation::Surface(_) => None,
         })
         .collect::<Vec<_>>();
     let attachments = [Some(wgpu::RenderPassColorAttachment {
@@ -299,6 +245,23 @@ pub(super) fn draw_presentation_operations(
                 );
                 let start = u32::try_from(raster_index * 6)
                     .expect("profile-bounded raster vertices fit u32");
+                pass.draw(start..start + 6, 0..1);
+                raster_index += 1;
+            }
+            super::UiNativeRasterOperation::Surface(_) => {
+                let buffer = raster_vertex_buffer.expect("surface operation retains vertices");
+                pass.set_vertex_buffer(0, buffer.slice(..));
+                pass.set_pipeline(&pipelines.surface);
+                pass.set_bind_group(
+                    0,
+                    &surface_bind_groups[operation_index]
+                        .as_ref()
+                        .expect("surface operation retains one bind group")
+                        .1,
+                    &[],
+                );
+                let start = u32::try_from(raster_index * 6)
+                    .expect("profile-bounded surface vertices fit u32");
                 pass.draw(start..start + 6, 0..1);
                 raster_index += 1;
             }

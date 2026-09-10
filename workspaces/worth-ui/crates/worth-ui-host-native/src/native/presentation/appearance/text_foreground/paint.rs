@@ -1,7 +1,10 @@
 //! Match retained physical paint to the current ordinary text command.
 use super::{UiNativeFinalizedTextForeground, UiNativeTextForegroundFinalizationDenial as Denial};
 use crate::native::presentation::text::UiNativeGlyphCommand;
-use worth_ui_host_contract::{UiMountedPaintCommandIdentity, UiMountedSemanticTextMechanic};
+use worth_ui_host_contract::{
+    UiGlyphRasterSource, UiMountedPaintCommandIdentity, UiMountedRgba8,
+    UiMountedSemanticTextMechanic,
+};
 
 impl UiNativeFinalizedTextForeground {
     pub(crate) fn qualified_candidates(&self) -> &[UiMountedSemanticTextMechanic] {
@@ -37,28 +40,30 @@ impl UiNativeFinalizedTextForeground {
         glyphs: &mut [UiNativeGlyphCommand],
     ) -> Result<(), Denial> {
         self.validate_command(command)?;
-        let identity = UiMountedPaintCommandIdentity::semantic_text(command);
-        let mut expected = self
+        let expected = self
             .glyphs
             .iter()
-            .filter(|glyph| glyph.run.mechanic() == identity);
+            .filter(|glyph| glyph.run.paint_span() == self.mechanic.paint_span())
+            .count();
+        let [red, green, blue, alpha] = self.mechanic.foreground().straight_srgba();
+        let foreground = UiMountedRgba8::new(red, green, blue, alpha);
+        let opacity = f32::from(self.mechanic.opacity().units()) / f32::from(u16::MAX);
+        let mut applied = 0;
         for actual in glyphs
             .iter_mut()
             .filter(|glyph| glyph.run.paint_span() == self.mechanic.paint_span())
         {
-            let witness = expected.next().ok_or(Denial::CandidateAttribution)?;
-            if actual.run != witness.run
-                || actual.target != witness.target
-                || actual.atlas_kind != witness.atlas_kind
-                || actual.atlas_page != witness.atlas_page
-                || actual.texture_uv != witness.texture_uv
-            {
-                return Err(Denial::CandidateAttribution);
+            if matches!(
+                actual.run.raster_key().source(),
+                UiGlyphRasterSource::ColorOutline | UiGlyphRasterSource::ColorBitmap
+            ) {
+                return Err(Denial::IntrinsicColor);
             }
-            actual.foreground = witness.foreground;
-            actual.opacity = witness.opacity;
+            actual.foreground = foreground;
+            actual.opacity = opacity;
+            applied += 1;
         }
-        if expected.next().is_some() {
+        if applied != expected {
             return Err(Denial::CandidateAttribution);
         }
         Ok(())
@@ -75,23 +80,15 @@ fn same_text_projection(
         && left.surface() == right.surface()
         && left.binding() == right.binding()
         && left.mounted_instance() == right.mounted_instance()
-        && left.allocation_basis() == right.allocation_basis()
         && left.bounds() == right.bounds()
         && left.clip_bounds() == right.clip_bounds()
         && left.origin_x() == right.origin_x()
         && left.origin_y() == right.origin_y()
         && left.text() == right.text()
-        && left.qualified_layout_identity() == right.qualified_layout_identity()
-        && left.qualified_layout_request() == right.qualified_layout_request()
-        && left.qualified_layout_profile() == right.qualified_layout_profile()
-        && left.qualified_layout_fonts() == right.qualified_layout_fonts()
-        && left.qualified_layout_scale() == right.qualified_layout_scale()
         && left.qualified_layout_width() == right.qualified_layout_width()
         && left.slot() == right.slot()
         && left.collection_row() == right.collection_row()
         && left.foregrounds() == right.foregrounds()
         && left.profile() == right.profile()
         && left.layer_semantic_order() == right.layer_semantic_order()
-        && left.capability_generation() == right.capability_generation()
-        && left.capability_profile_digest() == right.capability_profile_digest()
 }

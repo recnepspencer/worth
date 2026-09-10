@@ -1,3 +1,4 @@
+mod appearance_work;
 mod assembly;
 mod identity;
 mod presentation;
@@ -10,6 +11,9 @@ mod surface_stop;
 #[cfg(test)]
 mod presentation_work_tests;
 
+pub use appearance_work::{
+    UiMountedAppearancePresentationWork, UiMountedAppearancePresentationWorkDenial,
+};
 pub use assembly::{
     UiMountedFrameCanonicalCore, UiMountedFrameIntegrity, UiMountedFrameManifest,
     UiMountedLaneParticipation, UiMountedSurfaceBindingRequirement, UiRequiredLaneContribution,

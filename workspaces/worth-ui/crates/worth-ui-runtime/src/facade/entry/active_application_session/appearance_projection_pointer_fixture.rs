@@ -21,7 +21,7 @@ pub(super) fn session_with_declarations(
     crate::certification_support::ScriptedPresentationHost,
 ) {
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
     let (_, _, world_profile) =
         crate::evidence::measurement::projection::fact_test_support::display_field_projection_context(

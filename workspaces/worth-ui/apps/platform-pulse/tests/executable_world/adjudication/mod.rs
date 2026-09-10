@@ -1,4 +1,6 @@
 #[cfg(target_os = "windows")]
+mod appearance_pixels;
+#[cfg(target_os = "windows")]
 mod content_fingerprint;
 #[cfg(target_os = "windows")]
 mod identity_trace;
@@ -34,6 +36,10 @@ mod visual_overlay_pixels;
 #[cfg(target_os = "windows")]
 mod wrapping_text_pixels;
 
+#[cfg(target_os = "windows")]
+pub(crate) use appearance_pixels::{
+    adjudicate_first_frame_appearance, FirstFrameAppearanceFailure,
+};
 #[cfg(target_os = "windows")]
 pub(crate) use content_fingerprint::content_fingerprint;
 #[cfg(target_os = "windows")]

@@ -239,11 +239,11 @@ mod tests {
         assert_eq!(
             first.appearance_profile(),
             Some(&first_profile),
-            "the report reader exposes the staged profile without reconstructing it"
+            "the report reader exposes the current profile without reconstructing it"
         );
         assert_eq!(
             first_profile.posture(),
-            UiHostAppearanceProfilePosture::StagedNonCurrent
+            UiHostAppearanceProfilePosture::Current
         );
         assert_ne!(
             absent.profile_identity_digest(),

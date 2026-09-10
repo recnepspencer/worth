@@ -59,6 +59,7 @@ pub struct UiMountedFrameConsumptionView<'frame> {
     deadline: UiPresentationDeadline,
     requirement: crate::UiMountedSurfaceBindingRequirement,
     presentation_work: super::presentation_work::UiMountedPresentationWorkView<'frame>,
+    appearance_work: Option<&'frame crate::UiMountedAppearancePresentationWork>,
     qualified_text: &'frame dyn crate::UiMountedQualifiedTextResolver,
     text_raster_work: Option<&'frame UiMountedTextRasterWork<'frame>>,
 }
@@ -74,6 +75,7 @@ pub struct UiMountedFrameConsumptionInput<'frame> {
     pub deadline: UiPresentationDeadline,
     pub requirement: crate::UiMountedSurfaceBindingRequirement,
     pub presentation_work: super::presentation_work::UiMountedPresentationWorkView<'frame>,
+    pub appearance_work: Option<&'frame crate::UiMountedAppearancePresentationWork>,
     pub qualified_text: &'frame dyn crate::UiMountedQualifiedTextResolver,
     pub text_raster_work: Option<&'frame UiMountedTextRasterWork<'frame>>,
 }
@@ -130,6 +132,7 @@ impl<'frame> UiMountedFrameConsumptionView<'frame> {
             deadline: input.deadline,
             requirement: input.requirement,
             presentation_work: input.presentation_work,
+            appearance_work: input.appearance_work,
             qualified_text: input.qualified_text,
             text_raster_work: input.text_raster_work,
         }
@@ -178,6 +181,10 @@ impl<'frame> UiMountedFrameConsumptionView<'frame> {
         &self,
     ) -> super::presentation_work::UiMountedPresentationWorkView<'frame> {
         self.presentation_work
+    }
+
+    pub fn appearance_work(&self) -> Option<&crate::UiMountedAppearancePresentationWork> {
+        self.appearance_work
     }
 
     pub fn qualified_text_layout(

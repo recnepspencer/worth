@@ -17,6 +17,7 @@ impl UiMountedAppearanceFrameState {
             worth_ui_host_contract::UiMountedInstanceIdentity,
         >,
         nodes: &[super::super::UiMountedAppearanceNodeInputContext],
+        complete: bool,
     ) -> Result<Vec<UiAppearanceInspectionRecord>, UiMountedAppearanceOutputDenial> {
         let mut node_by_identity =
             HashMap::with_capacity(nodes.len().min(super::APPEARANCE_STATE_CAPACITY));
@@ -25,24 +26,89 @@ impl UiMountedAppearanceFrameState {
                 .iter()
                 .map(|node| (appearance_state_membership::local_node_key(node), node)),
         );
-        let (keys, work) = self.members.retained_keys_for_reconstruction();
+        let node_by_instance = nodes
+            .iter()
+            .map(|node| (node.mounted_instance, node))
+            .collect::<HashMap<_, _>>();
+        let (mut keys, work) = self.members.keys_for_reconstruction();
         self.selection.record_membership_work(work);
+        if !complete {
+            keys.retain(|key| {
+                node_by_instance
+                    .get(&key.mounted_instance)
+                    .is_some_and(|node| node.semantic_surface == key.surface)
+            });
+        }
         // Capture retained entries before pending attempts become retained, so
         // freshly resolved nodes are reconstructed exactly once below.
-        let keys = keys?;
         let mut records = self.lower_pending(
             presentation,
             geometry,
             portal_instances,
             AppearanceLoweringPosture::Reconstruction,
         )?;
+        // A denied semantic refresh restores its accepted physical predecessor.
+        // Cold reconstruction must still reissue that paint in this same pass.
+        let (restored_physical, work) = self.members.physical_only_keys_for_reconstruction();
+        self.selection.record_membership_work(work);
+        keys.extend(restored_physical.into_iter().filter(|key| {
+            complete
+                || node_by_instance
+                    .get(&key.mounted_instance)
+                    .is_some_and(|node| node.semantic_surface == key.surface)
+        }));
+        keys.sort();
+        keys.dedup();
         for key in keys {
-            let (membership, work) = self.members.remove(key.local_node());
+            let (membership, work) = self.members.remove(&key);
             self.selection.record_membership_work(work);
+            if let Some(UiMountedAppearanceStateMembership::PhysicalOnly(mut physical)) = membership
+            {
+                let node = node_by_instance
+                    .get(&key.mounted_instance)
+                    .copied()
+                    .filter(|node| {
+                        node.semantic_surface == key.surface && node.incarnation == key.incarnation
+                    });
+                let Some(node) = node else {
+                    self.restore_physical_predecessor(
+                        super::super::appearance_state_predecessor::UiMountedAppearanceStatePredecessor::PhysicalOnly(physical),
+                    );
+                    return Err(UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable);
+                };
+                let predecessor = physical.sidecar.current_node_receipt();
+                let work = match physical.sidecar.reconstruct_physical(
+                    node.issuer(),
+                    node.node_receipt,
+                    presentation,
+                ) {
+                    Ok(work) => work,
+                    Err(_) => {
+                        self.restore_physical_predecessor(
+                            super::super::appearance_state_predecessor::UiMountedAppearanceStatePredecessor::PhysicalOnly(physical),
+                        );
+                        return Err(UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable);
+                    }
+                };
+                physical.key = appearance_state_membership::local_node_key(node);
+                self.node_work.push(
+                    super::super::appearance_output::UiMountedAppearanceNodeWork {
+                        predecessor,
+                        successor: Some(node.node_receipt),
+                        work,
+                    },
+                );
+                self.restore_physical_predecessor(
+                    super::super::appearance_state_predecessor::UiMountedAppearanceStatePredecessor::PhysicalOnly(
+                        physical,
+                    ),
+                );
+                continue;
+            }
             let Some(UiMountedAppearanceStateMembership::Retained(mut entry)) = membership else {
                 continue;
             };
-            let Some(node) = node_by_identity.get(key.local_node()).copied() else {
+            let Some(node) = node_by_identity.get(&key).copied() else {
                 records.push(denial_record(
                     entry.context.clone(),
                     UiAppearanceInspectionDenial::Basis,

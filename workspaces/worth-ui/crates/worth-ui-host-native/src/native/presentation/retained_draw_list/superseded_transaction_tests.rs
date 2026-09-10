@@ -252,6 +252,7 @@ fn physical_basis(
             deadline: UiPresentationDeadline::at_tick(20),
             requirement: world.requirement,
             presentation_work: UiMountedPresentationWorkView::Initial(initial),
+            appearance_work: None,
             qualified_text: &(),
             text_raster_work: None,
         });

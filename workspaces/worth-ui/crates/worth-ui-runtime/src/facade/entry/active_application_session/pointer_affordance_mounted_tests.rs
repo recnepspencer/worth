@@ -253,7 +253,7 @@ fn mounted_pointer_candidates_preserve_retry_and_reject_expired_snapshots() {
     );
     let mut fresh = prepare(&mut session);
     assert_eq!(
-        fresh.stage_pointer_affordance(Some(&stale), &session.mounted),
+        fresh.stage_untrusted_pointer_affordance_for_test(Some(&stale), &session.mounted),
         Err(
             crate::mounting::UiMountedFramePreparationDenial::PointerSnapshotTargetUnavailable(
                 target

@@ -157,7 +157,7 @@ fn mounted_output_surface(
     instance: worth_ui_host_contract::UiMountedInstanceIdentity,
 ) -> worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic {
     let frame = world.prepare_surface(world.surfaces[0]);
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     let output =
         frame.lower_unpublished_appearance_with_profile_for_test(profile.appearance_profile());
     mounted_surface(&output, instance)

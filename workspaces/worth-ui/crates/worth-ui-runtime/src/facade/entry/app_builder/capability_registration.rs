@@ -34,8 +34,7 @@ impl<ChangeProfileState, IntentWiringState>
         Ok(self)
     }
 
-    #[cfg(any(test, feature = "certification-support"))]
-    pub(crate) fn register_appearance_theme_bundle(
+    pub fn register_appearance_theme_bundle(
         mut self,
         bundle: crate::capability::FrozenAppearanceThemeCapabilities,
     ) -> Result<Self, crate::capability::FrozenAppearanceThemeCapabilitiesDenial> {

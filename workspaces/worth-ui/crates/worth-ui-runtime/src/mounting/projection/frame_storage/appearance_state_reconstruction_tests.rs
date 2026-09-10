@@ -163,6 +163,9 @@ fn reconstruction_uses_successor_receipt_and_retained_projection_facts() {
     let _ = session.shutdown();
 }
 
+#[path = "appearance_state_reconstruction_tests/physical_only.rs"]
+mod physical_only;
+
 #[test]
 fn reconstruction_matches_reversed_nodes_and_denies_missing_nodes_without_erasing_facts() {
     let (session, binding, _target, vector, theme) =

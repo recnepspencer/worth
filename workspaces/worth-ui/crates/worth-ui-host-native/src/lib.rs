@@ -8,7 +8,7 @@ mod qualification;
 mod text_profile;
 
 #[cfg(feature = "certification-support")]
-pub use native::staged_appearance_capability_report;
+pub use native::appearance_capability_report;
 #[cfg(feature = "certification-support")]
 pub use native::{
     certify_client_close_with_queued_readiness, UiNativeQueuedReadinessCloseCertification,

@@ -49,6 +49,14 @@ pub(crate) enum PlatformPulseObservationPublicationDenial {
 }
 
 impl PlatformPulseObservationPublisher {
+    pub(crate) fn appearance_preparation_failure(
+        &self,
+    ) -> Result<(), PlatformPulseObservationPublicationDenial> {
+        self.with_publication(|publication| {
+            publication.project(|stream| stream.project_appearance_preparation_failure())
+        })
+    }
+
     pub(crate) fn start() -> Result<Self, PlatformPulseObservationPublicationDenial> {
         let (stream, started) = PlatformPulseLifecycleObservationStream::start();
         let mut publication = PlatformPulseObservationPublication {

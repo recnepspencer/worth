@@ -1,6 +1,5 @@
 use worth_ui_host_contract::{
-    UiHostSurfacePresentationMode, UiHostSurfacePresentationOutcome, UiMountedFrameConsumptionView,
-    UiMountedPresentationWorkView, UiMountedSurfacePresentationCompletion,
+    UiHostSurfacePresentationOutcome, UiMountedFrameConsumptionView, UiMountedPresentationWorkView,
 };
 
 use crate::native::{
@@ -21,8 +20,12 @@ pub(super) use pending_completion::{complete_pending, owns_completion, stop_pend
 mod failure;
 pub(super) use failure::{adapter_declined, mark_presentation_indeterminate};
 
+#[path = "presentation/completion.rs"]
+mod completion;
 #[path = "presentation/epoch.rs"]
 mod epoch;
+use completion::completed;
+#[cfg(test)]
 use epoch::presentation_epoch;
 use failure::{before_effects_declined, before_effects_malformed, malformed};
 
@@ -98,16 +101,25 @@ fn perform_reconstruction(
     view: &UiMountedFrameConsumptionView<'_>,
 ) -> UiHostSurfacePresentationOutcome {
     let key = view.binding().diagnostic_value();
-    let Some(recovery) = state.lifecycle.take_recovery(key) else {
-        return require_owner_reconstruction(state, key);
+    let recovery = if state.lifecycle.recovery_required(key) {
+        let Some(recovery) = state.lifecycle.take_recovery(key) else {
+            return require_owner_reconstruction(state, key);
+        };
+        Some(recovery)
+    } else {
+        None
     };
     let defer_initial_observation = defer_presentation_initial_observation(state);
     let Some(device) = state.device.as_ref() else {
-        state.lifecycle.restore_recovery(recovery);
+        if let Some(recovery) = recovery {
+            state.lifecycle.restore_recovery(recovery);
+        }
         return adapter_declined();
     };
     let Some(surface) = state.presentation_surface.as_ref() else {
-        state.lifecycle.restore_recovery(recovery);
+        if let Some(recovery) = recovery {
+            state.lifecycle.restore_recovery(recovery);
+        }
         return adapter_declined();
     };
     let mut graphics = crate::native::UiNativePresentationAccess::new(device, surface);
@@ -129,7 +141,9 @@ fn perform_reconstruction(
             recovery,
             successor_cause,
         }) => {
-            state.lifecycle.restore_recovery(recovery);
+            if let Some(recovery) = recovery {
+                state.lifecycle.restore_recovery(recovery);
+            }
             if let Some(cause) = successor_cause {
                 state.lifecycle.require_recovery(key, cause);
             }
@@ -152,7 +166,9 @@ fn perform_reconstruction(
         retained.identity_overlay_active(),
     );
     state.retained_draw_lists.insert(key, retained);
-    let _current_recovery = state.lifecycle.settle_recovery(recovery);
+    if let Some(recovery) = recovery {
+        let _current_recovery = state.lifecycle.settle_recovery(recovery);
+    }
     state.lifecycle.record_presented();
     retained_frame::record_retained_frame(
         state,
@@ -303,41 +319,6 @@ fn require_owner_reconstruction(
     UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
         worth_ui_host_contract::UiHostSurfacePresentationDenial::ReconstructionRequired,
     )
-}
-
-fn completed(
-    state: &mut UiNativeHostState,
-    key: u64,
-    view: &UiMountedFrameConsumptionView<'_>,
-    cost: worth_ui_host_contract::UiHostPresentationCostReport,
-    painted: bool,
-    effects: crate::native::presentation::UiNativePresentationEffects,
-) -> UiHostSurfacePresentationOutcome {
-    let Some(epoch) = presentation_epoch(state, key, view.attempt().diagnostic_value(), painted)
-    else {
-        return malformed();
-    };
-    let outcome =
-        UiHostSurfacePresentationOutcome::Presented(UiMountedSurfacePresentationCompletion::new(
-            UiHostSurfacePresentationMode::NativeDisplay,
-            epoch,
-            effects.completion(),
-            cost,
-        ));
-    let _input_settlement = state.lifecycle.record_completed_presentation(
-        view.protocol(),
-        view.host_session_identity(),
-        worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-            view.requirement().host_surface(),
-            view.frame(),
-            view.binding(),
-            epoch,
-        ),
-    );
-    crate::native::capture::record_completed_view(state, view, epoch);
-    #[cfg(feature = "certification-support")]
-    state.apply_completed_qualified_derived_state_loss(key);
-    outcome
 }
 
 fn settle_presentation_failure(

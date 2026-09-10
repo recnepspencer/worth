@@ -52,21 +52,20 @@ pub use command_projection::{
     CommandProjectionReadinessDisplayPolicy, CommandProjectionShortcutVisibility,
     CommandProjectionSurface, FrozenCommandProjectionCapabilities, FrozenCommandProjectionEntry,
 };
-pub(crate) use component::{
-    ComponentAcceptedRegistrationProof, ComponentAppearanceAspectContractDenial, ComponentRegistry,
-};
+pub(crate) use component::{ComponentAcceptedRegistrationProof, ComponentRegistry};
 pub use component::{
     ComponentAccessibilitySupport, ComponentAllocationMeasurementContract,
-    ComponentCanvasSpatialContract, ComponentChildPolicy, ComponentDescriptor,
-    ComponentExecutionLane, ComponentFocusContainerPolicy, ComponentFocusNavigationAxis,
-    ComponentFocusSupport, ComponentHitTestClipContract, ComponentHitTestContract,
-    ComponentHitTestInset, ComponentHitTestOrder, ComponentPortalChildContract,
-    ComponentPropSchema, ComponentRealtimeOverlayContract, ComponentRealtimeOverlayContractDenial,
-    ComponentRealtimeOverlayContractDenialReason, ComponentRealtimeOverlayPriority,
-    ComponentSemanticTextContract, ComponentSemanticTextContractDenial,
-    ComponentSemanticTextSpanContract, ComponentStateOwnership, ComponentStaticPaintContract,
-    ComponentStaticPaintOrder, ComponentViewportAxisPlacement, ComponentViewportInset,
-    ComponentViewportRegion, FrozenComponentCapabilities,
+    ComponentAppearanceAspectContractDenial, ComponentCanvasSpatialContract, ComponentChildPolicy,
+    ComponentDescriptor, ComponentExecutionLane, ComponentFocusContainerPolicy,
+    ComponentFocusNavigationAxis, ComponentFocusSupport, ComponentHitTestClipContract,
+    ComponentHitTestContract, ComponentHitTestInset, ComponentHitTestOrder,
+    ComponentPortalChildContract, ComponentPropSchema, ComponentRealtimeOverlayContract,
+    ComponentRealtimeOverlayContractDenial, ComponentRealtimeOverlayContractDenialReason,
+    ComponentRealtimeOverlayPriority, ComponentSemanticTextContract,
+    ComponentSemanticTextContractDenial, ComponentSemanticTextSpanContract,
+    ComponentStateOwnership, ComponentStaticPaintContract, ComponentStaticPaintOrder,
+    ComponentViewportAxisPlacement, ComponentViewportInset, ComponentViewportRegion,
+    FrozenComponentCapabilities,
 };
 pub(crate) use family_names::{
     APPEARANCE_ROLE_FAMILY_NAME, APPEARANCE_THEME_FAMILY_NAME, COMMAND_FAMILY_NAME,
@@ -185,9 +184,9 @@ pub use task_presentation::{
 pub(crate) use task_presentation::{
     TaskPresentationAcceptedRegistrationProof, TaskPresentationRegistry,
 };
-pub(crate) use theme::{
-    AppearanceThemeAcceptedRegistrationProof, FrozenAppearanceThemeCapabilities,
-    FrozenAppearanceThemeCapabilitiesDenial, ThemeRegistry, UiThemeDefinition,
+pub(crate) use theme::{AppearanceThemeAcceptedRegistrationProof, ThemeRegistry};
+pub use theme::{
+    FrozenAppearanceThemeCapabilities, FrozenAppearanceThemeCapabilitiesDenial, UiThemeDefinition,
     UiThemeDefinitionDenial, UiThemeDefinitionIdentity, UiThemeSlotCatalog,
     UiThemeSlotCatalogDenial, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
     UiThemeSlotSuccessorCompatibility,

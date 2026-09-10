@@ -158,6 +158,15 @@ fn plan_owner_branch(
     if depth == super::request::UI_SCROLL_CHAIN_DEPTH_LIMIT {
         return Err(UiScrollOwnershipResolutionDenial::ChainDepthExceeded);
     }
+    if let Some(owner) = owner_for_layout(
+        graph_node,
+        surface,
+        repeated_instance_digest,
+        plan_index,
+        meaning,
+    )? {
+        return Ok(vec![owner]);
+    }
     let mut child_branch = Vec::new();
     if let Some(range_identity) = meaning.child_range_identity() {
         let (_, range) = plan
@@ -187,17 +196,6 @@ fn plan_owner_branch(
             admit_child_owner_branch(graph_node, &mut child_branch, candidate)?;
         }
     }
-    let Some(owner) = owner_for_layout(
-        graph_node,
-        surface,
-        repeated_instance_digest,
-        plan_index,
-        meaning,
-    )?
-    else {
-        return Ok(child_branch);
-    };
-    child_branch.push(owner);
     Ok(child_branch)
 }
 

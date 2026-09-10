@@ -98,6 +98,34 @@ pub enum UiMountedSurfaceAppearanceCompletionDenial {
 
 impl UiMountedSurfaceAppearanceMechanic {
     #[doc(hidden)]
+    pub fn reattribute_for_runtime_mounting(
+        &self,
+        issuer: crate::UiMountedNodeReceiptIssuer,
+        node_receipt: crate::UiMountedNodeReceiptIdentity,
+    ) -> Option<Self> {
+        (node_receipt.frame() == issuer.frame_identity()
+            && node_receipt.mounted_instance() == self.node_receipt.mounted_instance())
+        .then(|| Self {
+            node_receipt,
+            bounds: self.bounds,
+            clip: self.clip,
+            surface_paint_order: self.surface_paint_order,
+            visual_bounds: self.visual_bounds,
+            radii: self.radii,
+            border_edges: self.border_edges,
+            border_omissions: self.border_omissions.clone(),
+            paint: self.paint.clone(),
+            opacity: self.opacity,
+            projection: super::UiMountedNodeAppearanceAttribution::from_runtime_mounting(
+                issuer,
+                self.projection.identity(),
+                self.projection.revision(),
+            )
+            .expect("accepted appearance attribution stays nonzero"),
+        })
+    }
+
+    #[doc(hidden)]
     pub fn complete_from_runtime_mounting(
         input: UiMountedSurfaceAppearanceCompletionInput,
     ) -> Result<Self, UiMountedSurfaceAppearanceCompletionDenial> {

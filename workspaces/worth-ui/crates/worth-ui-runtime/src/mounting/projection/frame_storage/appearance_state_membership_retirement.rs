@@ -26,10 +26,11 @@ impl UiMountedAppearanceStateMembers {
 
     pub(in crate::mounting::projection::frame_storage) fn retire_unattached(
         &mut self,
-        graph: crate::graph::UiGraphAuthority<'_>,
+        attached_instances: &std::collections::BTreeSet<
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+        >,
         retirements: &mut UiMountedAppearanceRetirements,
     ) -> (usize, UiMountedAppearanceMembershipWork) {
-        let snapshot = graph.snapshot();
         let mut work = UiMountedAppearanceMembershipWork::default();
         let detached = self
             .primary
@@ -37,11 +38,7 @@ impl UiMountedAppearanceStateMembers {
             .filter_map(|(key, _)| {
                 work.add_traversal(1);
                 work.add_lookup(1);
-                let attached = snapshot
-                    .core_indexes()
-                    .node_identity()
-                    .node(snapshot.nodes(), key.graph_node)
-                    .is_some_and(|node| node.appearance_role_attachment().is_some());
+                let attached = attached_instances.contains(&key.mounted_instance);
                 (!attached).then_some(key.mounted_instance)
             })
             .collect::<Vec<_>>();
@@ -65,6 +62,7 @@ impl UiMountedAppearanceStateMembers {
             .collect::<Vec<_>>();
         self.primary = UiPersistentOrdMap::default();
         self.reverse = UiPersistentOrdMap::default();
+        self.physical_only.clear();
         self.pending_keys.clear();
         for predecessor in physical {
             let (inserted, mutation) = self.insert_membership(

@@ -11,7 +11,7 @@ const TOKEN: &str = "theme.pointer.hover";
 pub(crate) fn source_backed_hover_consumer_app_with_host(
     host: crate::certification_support::ScriptedPresentationHost,
 ) -> crate::facade::WorthUiApp {
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let role = hover_background_role();
     let snapshot = hover_component_builder(&role)
         .freeze()

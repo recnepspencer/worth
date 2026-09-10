@@ -18,7 +18,7 @@ fn partial_shared_edge_omits_only_the_losing_interval_in_both_hosts() {
         .complete_surface_geometry(batch)
         .unwrap();
     let frame = world.prepare_surface(world.surfaces[0]);
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     let output =
         frame.lower_unpublished_appearance_with_profile_for_test(profile.appearance_profile());
     let owner = mounted_surface(&output, world.instances[0]);
@@ -45,7 +45,7 @@ fn changed_partial_seam_emits_replacement_damage_and_new_host_coverage() {
         declarations,
     );
     let initial = world.prepare_surface(world.surfaces[0]);
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     let before_output =
         initial.lower_unpublished_appearance_with_profile_for_test(profile.appearance_profile());
     let before = mounted_surface(&before_output, world.instances[1]);

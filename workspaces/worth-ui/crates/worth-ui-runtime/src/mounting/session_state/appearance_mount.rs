@@ -16,7 +16,8 @@ impl WorthUiMountedSessionState {
                     .current_projection()
                     .map(|frame| frame.semantic_projection())
             });
-        self.identity
+        let mut instances = self
+            .identity
             .projection_change_snapshot()
             .changed_instances()
             .filter(|instance| match previous {
@@ -29,6 +30,10 @@ impl WorthUiMountedSessionState {
                     .appearance_predecessor()
                     .is_some_and(|appearance| appearance.contains_instance(*instance)),
             })
-            .collect()
+            .collect::<std::collections::BTreeSet<_>>();
+        if let Some(appearance) = self.identity.appearance_predecessor() {
+            instances.extend(appearance.unresolved_epoch_instances());
+        }
+        instances.into_iter().collect()
     }
 }

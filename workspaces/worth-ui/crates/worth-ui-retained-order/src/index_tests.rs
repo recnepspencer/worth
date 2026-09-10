@@ -73,6 +73,36 @@ fn capacity_denial_preserves_sequence_and_cost_state() {
     assert_eq!(cost.rotations(), 0);
 }
 
+#[test]
+fn weighted_successor_search_follows_sequence_order_across_updates() {
+    let mut index = BoundedOrderIndex::new(8);
+    let mut model = vec![(10_u64, 8_u32), (11, 2), (12, 9), (13, 4)];
+    for (rank, (identity, weight)) in model.iter().copied().enumerate() {
+        index.insert_at_weighted(rank, identity, weight).unwrap();
+    }
+    assert_weighted_search(&index, &model);
+
+    assert!(index.update_weight(11, 12));
+    model[1].1 = 12;
+    assert!(index.remove(10));
+    model.remove(0);
+    index.insert_at_weighted(2, 14, 7).unwrap();
+    model.insert(2, (14, 7));
+    assert_weighted_search(&index, &model);
+}
+
+fn assert_weighted_search(index: &BoundedOrderIndex<u64>, model: &[(u64, u32)]) {
+    for minimum in 0..=13 {
+        assert_eq!(
+            index.first_with_weight_at_least(minimum),
+            model
+                .iter()
+                .find(|(_, weight)| *weight >= minimum)
+                .map(|(identity, _)| *identity)
+        );
+    }
+}
+
 fn assert_model(index: &BoundedOrderIndex<u64>, model: &[u64]) {
     assert_eq!(index.ordered().collect::<Vec<_>>(), model);
     for (rank, identity) in model.iter().copied().enumerate() {

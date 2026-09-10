@@ -285,7 +285,7 @@ impl<'state> UiMountedFrameAssembler<'state> {
             .projection
             .finish(self.state, self.presentation_predecessor)
             .map_err(UiMountedFramePreparationDenial::Projection)?;
-        if let Some(replacements) = replacements {
+        let manifest = if let Some(replacements) = replacements {
             let views = self
                 .state
                 .resolve_reconciliation_bindings(replacements)
@@ -297,11 +297,29 @@ impl<'state> UiMountedFrameAssembler<'state> {
             candidate
                 .prepare_surface_reconstruction(&views)
                 .map_err(UiMountedFramePreparationDenial::Projection)?;
-        }
+            let requirements = self
+                .manifest
+                .surfaces()
+                .iter()
+                .map(|requirement| {
+                    views
+                        .iter()
+                        .find(|(affected, _)| requirement.binding() == *affected)
+                        .map(|(_, replacement)| super::binding_requirement(*replacement))
+                        .unwrap_or(*requirement)
+                })
+                .collect();
+            worth_ui_host_contract::UiMountedFrameManifest::new(
+                requirements,
+                self.manifest.lane_contributions().to_vec(),
+            )
+        } else {
+            self.manifest
+        };
         UiPreparedMountedFrame::admit(UiPreparedMountedFrameAdmission {
             candidate,
             generation: self.generation,
-            manifest: self.manifest,
+            manifest,
             graph_world: self.graph_world,
             allocation_truth_revision: self.allocation_truth_revision,
             trace_source: self.trace_source,

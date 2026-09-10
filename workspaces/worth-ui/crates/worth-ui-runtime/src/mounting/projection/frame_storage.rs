@@ -7,6 +7,7 @@ use super::UiMountedProjectionDenial;
 
 mod appearance_frame;
 mod appearance_geometry;
+mod appearance_reconstruction;
 #[cfg(test)]
 mod appearance_suppression_tests;
 pub(super) use appearance_geometry::UiMountedAppearanceGeometry;

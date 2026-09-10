@@ -14,6 +14,8 @@ mod retirement;
 
 mod observation;
 
+#[path = "appearance_state_membership/reconstruction.rs"]
+mod reconstruction;
 type Mutation<T> = (
     Result<T, super::UiMountedAppearanceStateMutationDenial>,
     UiMountedAppearanceMembershipWork,
@@ -27,6 +29,7 @@ pub(super) struct UiMountedAppearanceStateMembers {
         worth_ui_host_contract::UiMountedInstanceIdentity,
         UiMountedAppearanceLocalNodeKey,
     >,
+    physical_only: std::collections::BTreeSet<worth_ui_host_contract::UiMountedInstanceIdentity>,
     pending_keys: Vec<UiMountedAppearanceLocalNodeKey>,
 }
 
@@ -85,6 +88,17 @@ impl Default for UiMountedAppearanceStateMembers {
 }
 
 impl UiMountedAppearanceStateMembers {
+    pub(super) fn retained_projection_for_instance(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Option<&crate::runtime::appearance::UiAppearanceProjection> {
+        let key = self.reverse.get(&instance)?;
+        match self.primary.get(key)? {
+            UiMountedAppearanceStateMembership::Retained(entry) => Some(&entry.projection),
+            _ => None,
+        }
+    }
+
     pub(super) fn contains_instance(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -92,10 +106,17 @@ impl UiMountedAppearanceStateMembers {
         self.reverse.get_with_probes(&instance).0.is_some()
     }
 
+    pub(super) fn physical_only_instances(
+        &self,
+    ) -> Vec<worth_ui_host_contract::UiMountedInstanceIdentity> {
+        self.physical_only.iter().copied().collect()
+    }
+
     pub(super) fn new() -> Self {
         Self {
             primary: UiPersistentOrdMap::default(),
             reverse: UiPersistentOrdMap::default(),
+            physical_only: std::collections::BTreeSet::new(),
             pending_keys: Vec::new(),
         }
     }
@@ -104,6 +125,7 @@ impl UiMountedAppearanceStateMembers {
         Self {
             primary: self.primary.clone(),
             reverse: self.reverse.clone(),
+            physical_only: self.physical_only.clone(),
             pending_keys: Vec::new(),
         }
     }
@@ -221,6 +243,12 @@ impl UiMountedAppearanceStateMembers {
         let (removed, primary_work) = self.primary.remove_with_work(key);
         debug_assert!(removed);
         work.add_mutation(primary_work);
+        if matches!(
+            membership,
+            UiMountedAppearanceStateMembership::PhysicalOnly(_)
+        ) {
+            self.physical_only.remove(&key.mounted_instance);
+        }
         let (reverse_key, reverse_probes) = self.reverse.get_with_probes(&key.mounted_instance);
         work.add_lookup(reverse_probes);
         if reverse_key.is_some_and(|existing| existing == key) {
@@ -279,6 +307,18 @@ impl UiMountedAppearanceStateMembers {
         let old = existing.cloned();
         let primary_work = self.primary.insert_with_work(key.clone(), membership);
         work.add_mutation(primary_work);
+        if matches!(
+            old,
+            Some(UiMountedAppearanceStateMembership::PhysicalOnly(_))
+        ) {
+            self.physical_only.remove(&key.mounted_instance);
+        }
+        if matches!(
+            self.primary.get(&key),
+            Some(UiMountedAppearanceStateMembership::PhysicalOnly(_))
+        ) {
+            self.physical_only.insert(key.mounted_instance);
+        }
         if reverse_key.is_none() {
             let reverse_work = self.reverse.insert_with_work(key.mounted_instance, key);
             work.add_mutation(reverse_work);
@@ -309,45 +349,6 @@ impl UiMountedAppearanceStateMembers {
             Some(UiMountedAppearanceStateMembership::Retained(entry)) => Some(entry),
             _ => None,
         }
-    }
-
-    pub(super) fn retained_keys_for_reconstruction(
-        &self,
-    ) -> (
-        Result<
-            Vec<UiMountedAppearanceStateKey>,
-            super::appearance_output::UiMountedAppearanceOutputDenial,
-        >,
-        UiMountedAppearanceMembershipWork,
-    ) {
-        let mut work = UiMountedAppearanceMembershipWork::default();
-        work.add_traversal(self.primary.len());
-        let mut unavailable = false;
-        let mut keys = self
-            .primary
-            .iter()
-            .filter_map(|(local_key, membership)| match membership {
-                UiMountedAppearanceStateMembership::Retained(entry) => Some(entry.key.clone()),
-                UiMountedAppearanceStateMembership::PhysicalOnly(_) => {
-                    unavailable = true;
-                    None
-                }
-                UiMountedAppearanceStateMembership::Reserved
-                | UiMountedAppearanceStateMembership::Staged { .. } => {
-                    let _ = local_key;
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-        keys.sort_by(|left, right| left.local_node().cmp(right.local_node()));
-        (
-            if unavailable {
-                Err(super::appearance_output::UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable)
-            } else {
-                Ok(keys)
-            },
-            work,
-        )
     }
 }
 

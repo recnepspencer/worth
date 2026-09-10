@@ -24,6 +24,9 @@ pub(super) struct PlatformPulseControlPointManifest {
     portal_primary_label_region: [u32; 4],
     schema_stable_control_region: [u32; 4],
     schema_posture_region: [u32; 4],
+    brand_region: [u32; 4],
+    query_card_region: [u32; 4],
+    query_card_radius: u32,
     blue_rgba: [u8; 4],
     green_rgba: [u8; 4],
     canvas_rgba: [u8; 4],
@@ -31,6 +34,7 @@ pub(super) struct PlatformPulseControlPointManifest {
     overlay_rgba: [u8; 4],
     portal_overlay_rgba: [u8; 4],
     raised_surface_rgba: [u8; 4],
+    structural_rule_rgba: [u8; 4],
     principal_accent_rgba: [u8; 4],
     primary_text_rgba: [u8; 4],
     secondary_text_rgba: [u8; 4],
@@ -108,6 +112,9 @@ pub(super) fn checked_in(
             manifest.schema_posture_region,
             manifest.logical_client_extent,
         )
+        && valid_region(manifest.brand_region, manifest.logical_client_extent)
+        && valid_region(manifest.query_card_region, manifest.logical_client_extent)
+        && manifest.query_card_radius > 0
         && manifest.blue_rgba[3] == 255
         && manifest.green_rgba[3] == 255
         && manifest.canvas_rgba[3] == 255
@@ -115,6 +122,7 @@ pub(super) fn checked_in(
         && manifest.overlay_rgba[3] == 255
         && manifest.portal_overlay_rgba[3] > 0
         && manifest.raised_surface_rgba[3] == 255
+        && manifest.structural_rule_rgba[3] == 255
         && manifest.principal_accent_rgba[3] == 255
         && manifest.primary_text_rgba[3] == 255
         && manifest.secondary_text_rgba[3] == 255
@@ -174,6 +182,9 @@ accessors!(
     portal_primary_label_region: [u32; 4],
     schema_stable_control_region: [u32; 4],
     schema_posture_region: [u32; 4],
+    brand_region: [u32; 4],
+    query_card_region: [u32; 4],
+    query_card_radius: u32,
     blue_rgba: [u8; 4],
     green_rgba: [u8; 4],
     canvas_rgba: [u8; 4],
@@ -181,6 +192,7 @@ accessors!(
     overlay_rgba: [u8; 4],
     portal_overlay_rgba: [u8; 4],
     raised_surface_rgba: [u8; 4],
+    structural_rule_rgba: [u8; 4],
     principal_accent_rgba: [u8; 4],
     primary_text_rgba: [u8; 4],
     secondary_text_rgba: [u8; 4],

@@ -30,9 +30,11 @@ pub(crate) struct WorthUiMountedContentRebindIndeterminate<'session> {
 
 enum WorthUiMountedContentPublication {
     RetainedGeneration,
-    AuthoredSuccessor(
-        crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
-    ),
+    AuthoredSuccessor {
+        authority:
+            crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
+        appearance_succession: super::UiPreparedAppearanceGenerationSuccession,
+    },
 }
 
 pub(crate) struct WorthUiMountedContentPublicationReceipt {
@@ -78,11 +80,15 @@ impl<'session> WorthUiPreparedMountedContentRebind<'session> {
         session: &'session mut WorthUiActiveApplicationSession,
         frame: crate::mounting::UiPreparedMountedFrame,
         successor: crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
+        appearance_succession: super::UiPreparedAppearanceGenerationSuccession,
     ) -> Self {
         Self {
             session,
             frame,
-            publication: WorthUiMountedContentPublication::AuthoredSuccessor(successor),
+            publication: WorthUiMountedContentPublication::AuthoredSuccessor {
+                authority: successor,
+                appearance_succession,
+            },
         }
     }
 
@@ -273,8 +279,12 @@ fn finish<'session>(
         crate::mounting::UiMountedFrameOutcome::Published(receipt) => {
             let authored_generations = match publication {
                 WorthUiMountedContentPublication::RetainedGeneration => None,
-                WorthUiMountedContentPublication::AuthoredSuccessor(successor) => {
-                    let generations = session.application.commit_evidence_only_rebind(successor);
+                WorthUiMountedContentPublication::AuthoredSuccessor {
+                    authority,
+                    appearance_succession,
+                } => {
+                    let generations = session.application.commit_evidence_only_rebind(authority);
+                    session.commit_appearance_generation_succession(appearance_succession);
                     Some(generations)
                 }
             };

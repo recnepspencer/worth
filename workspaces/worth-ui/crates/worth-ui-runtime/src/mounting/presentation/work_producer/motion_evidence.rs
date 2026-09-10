@@ -74,6 +74,35 @@ impl UiPreparedCommandMotionAcceptance {
 }
 
 impl UiMountedPresentationState {
+    pub(in crate::mounting::presentation) fn appearance_motion_overrides(
+        &self,
+        instances: &[worth_ui_host_contract::UiMountedInstanceIdentity],
+    ) -> Vec<worth_ui_host_contract::UiMountedPresentationSampleChange> {
+        instances
+            .iter()
+            .flat_map(|instance| self.command_identities_for_instance(*instance))
+            .filter_map(|identity| {
+                let sample = self.motion_for_command(identity)??;
+                let command = self.command_option(identity)?;
+                let transform = super::motion_sample::sample_transform(
+                    sample,
+                    command.clip_bounds().coordinate_space(),
+                )
+                .ok()?;
+                Some(
+                    worth_ui_host_contract::UiMountedPresentationSampleChange::from_runtime_sampling(
+                        identity,
+                        transform,
+                        super::super::compose_opacity(
+                            self.appearance_opacity_for_command(identity),
+                            sample.opacity_units(),
+                        ),
+                    ),
+                )
+            })
+            .collect()
+    }
+
     pub(super) fn prepare_command_motion_update(
         &self,
         command: UiMountedPaintCommandIdentity,
@@ -168,7 +197,7 @@ impl UiMountedPresentationState {
                 )
                 .expect("accepted Motion geometry remains valid for an equivalent command");
                 let opacity = super::super::compose_opacity(
-                    worth_ui_host_contract::UiMountedAppearanceOpacity::ONE,
+                    self.appearance_opacity_for_command(identity),
                     sample.opacity_units(),
                 );
                 Some(

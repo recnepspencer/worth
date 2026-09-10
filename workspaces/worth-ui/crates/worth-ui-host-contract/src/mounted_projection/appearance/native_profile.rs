@@ -35,7 +35,7 @@ impl UiHostAppearanceMechanicFamily {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHostAppearanceProfilePosture {
-    StagedNonCurrent,
+    Current,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -78,7 +78,7 @@ impl UiHostAppearanceProfileContract {
             return Err(UiHostAppearanceProfileDenial::MissingRequiredMechanic);
         }
         Ok(Self {
-            posture: UiHostAppearanceProfilePosture::StagedNonCurrent,
+            posture: UiHostAppearanceProfilePosture::Current,
             identity,
             version,
             mechanics: mechanics.into_boxed_slice(),
@@ -110,7 +110,7 @@ impl UiHostAppearanceProfileContract {
 
     pub(crate) fn append_canonical_encoding(&self, digest: &mut WorthUiHostCapabilityDigest) {
         digest.update_byte(match self.posture {
-            UiHostAppearanceProfilePosture::StagedNonCurrent => 1,
+            UiHostAppearanceProfilePosture::Current => 1,
         });
         digest.update_text(self.identity.as_bytes());
         digest.update_u16(self.version);

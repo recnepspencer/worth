@@ -147,7 +147,7 @@ fn retained_commands_preserve_backdrop_and_overlay_order_without_flattening() {
             .unwrap();
         let order_key = retained
             .insert(
-                UiNativeAppearanceCommand::OverlayOrder(order),
+                UiNativeAppearanceCommand::OverlayOrder(order.clone()),
                 Some(first_key),
             )
             .unwrap();
@@ -162,6 +162,38 @@ fn retained_commands_preserve_backdrop_and_overlay_order_without_flattening() {
             &[first_key, order_key, second_key]
         );
         assert_eq!(
+            retained.ordered_render_keys().unwrap().as_ref(),
+            &[first_key, second_key],
+            "issued overlay order, rather than insertion adjacency, owns paint order"
+        );
+        retained.take_damage();
+        retained
+            .replace(UiNativeAppearanceCommand::OverlayOrder(order))
+            .unwrap();
+        assert!(
+            retained.take_damage().is_empty(),
+            "unchanged overlay order cannot widen a local appearance update"
+        );
+        let reversed = UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
+            surface,
+            UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
+            2,
+            2,
+            [
+                UiOverlayParticipantIdentity::Backdrop(second.identity().clone()),
+                UiOverlayParticipantIdentity::Backdrop(first.identity().clone()),
+            ],
+        )
+        .unwrap();
+        retained
+            .replace(UiNativeAppearanceCommand::OverlayOrder(reversed))
+            .unwrap();
+        assert_eq!(
+            retained.ordered_render_keys().unwrap().as_ref(),
+            &[second_key, first_key],
+            "an order-only successor changes overlapping paint order"
+        );
+        assert_eq!(
             retained.command(order_key).unwrap().family(),
             UiNativeAppearanceCommandFamily::OverlayOrder
         );
@@ -173,7 +205,11 @@ fn retained_commands_preserve_backdrop_and_overlay_order_without_flattening() {
                 bottom: 40,
             })
             .unwrap();
-        assert_eq!(replay.as_ref(), &[first_key, second_key]);
+        assert_eq!(
+            replay.as_ref(),
+            &[second_key, first_key],
+            "damage replay uses the same issued overlay order as complete rendering"
+        );
         let counters = retained.counters();
         assert_eq!(counters.full_scan_commands, 0);
         assert!(counters.damage_queries > 0);

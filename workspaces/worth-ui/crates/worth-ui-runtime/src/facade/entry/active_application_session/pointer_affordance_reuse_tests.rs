@@ -152,7 +152,7 @@ fn mounted_pointer_departure_does_not_reauthorize_old_observation() {
         )
         .unwrap_or_else(|_| panic!("empty pointer successor must prepare"));
     assert_eq!(
-        successor.stage_pointer_affordance(Some(&admitted), &session.mounted),
+        successor.stage_untrusted_pointer_affordance_for_test(Some(&admitted), &session.mounted),
         Err(
             crate::mounting::UiMountedFramePreparationDenial::PointerSnapshotTargetUnavailable(
                 target

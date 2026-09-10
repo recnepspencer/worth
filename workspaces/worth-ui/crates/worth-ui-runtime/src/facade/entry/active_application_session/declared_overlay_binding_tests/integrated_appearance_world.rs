@@ -27,7 +27,7 @@ use worth_ui_host_contract::*;
 fn shared_authored_world_preserves_surface_outline_and_original_range_text() {
     let mut world = World::launch();
     let frame = world.prepare();
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     let output =
         frame.lower_unpublished_appearance_with_profile_for_test(profile.appearance_profile());
     assert_eq!(output.fragments().len(), 4);
@@ -164,7 +164,7 @@ fn disjoint_mounted_region_neighborhood_suppresses_child_appearance() {
         Some(crate::mounting::UiMountedAppearanceClip::Suppressed),
         "the child and parent region occurrences complete to disjoint ancestor clips",
     );
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     let output =
         frame.lower_unpublished_appearance_with_profile_for_test(profile.appearance_profile());
     assert!(output

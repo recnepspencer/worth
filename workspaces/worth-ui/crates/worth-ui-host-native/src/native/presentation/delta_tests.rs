@@ -208,6 +208,7 @@ fn fractional_damage_replays_unchanged_solids_sharing_only_physical_edge_pixels(
                 (rect.physical_bounds(), *source_rgba8)
             }
             UiNativeRasterOperation::Glyph(_) => panic!("solid-only world"),
+            UiNativeRasterOperation::Surface(_) => panic!("legacy solid-only world"),
         })
         .collect::<Vec<_>>();
     assert_eq!(

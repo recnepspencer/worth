@@ -130,6 +130,7 @@ impl WorthUiMountedSessionState {
         self.ensure_identity_mutation_available()?;
         let requires_reconciliation = self.presentation.binding_requires_reconciliation(binding);
         let required_by_current = self.identity.current_requires_binding(binding);
+        let current_requirement = self.identity.current_binding_requirement(binding);
         let has_published_predecessor = self.identity.publication_receipt().is_some();
         let preserve_published_frame = has_published_predecessor
             && (preserve_for_rebind || requires_reconciliation || !required_by_current);
@@ -140,6 +141,11 @@ impl WorthUiMountedSessionState {
         self.presentation
             .host_truth_mut()
             .deregister_surface(host.effect_port(), candidate.request())?;
+        if preserve_for_rebind && has_published_predecessor && required_by_current {
+            self.presentation.host_truth_mut().block_presentation(
+                current_requirement.expect("a current binding has its exact surface requirement"),
+            );
+        }
         self.presentation.commit_surface_deregistration(
             binding,
             text_pin_candidate,

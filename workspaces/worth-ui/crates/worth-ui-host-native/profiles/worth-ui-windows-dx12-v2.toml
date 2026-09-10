@@ -1,6 +1,6 @@
 identity = "worth-ui-windows-dx12-v2"
-profile_stage = "qualification-only-non-current"
-live_emission = "disabled"
+profile_stage = "current"
+live_emission = "enabled"
 platform = "windows-11-x86_64"
 desktop = "composition-enabled"
 event_backend = "winit-0.30.13"

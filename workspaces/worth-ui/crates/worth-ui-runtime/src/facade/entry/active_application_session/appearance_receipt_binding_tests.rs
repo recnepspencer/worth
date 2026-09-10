@@ -134,7 +134,7 @@ fn evidence_only_rebind_materializes_first_appearance_binding() {
         .presentation
         .active_appearance_theme_binding(surface)
         .expect("first surface creation materializes the carried admission");
-    let expected_profile = worth_ui_host_native::staged_appearance_capability_report()
+    let expected_profile = worth_ui_host_native::appearance_capability_report()
         .appearance_profile()
         .cloned()
         .expect("staged native profile is retained");
@@ -266,7 +266,7 @@ fn theme_capable_unbound_session(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::WorthUiActiveApplicationSession {
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     theme_capable_application(role, host)
         .launch()
         .expect("theme-capable fixture should launch")

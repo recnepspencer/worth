@@ -174,6 +174,9 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
                 return Err(());
             }
             let shell = self.shell.as_mut().ok_or(())?;
+            if !shell.native_observation_admission_ready() {
+                return Ok(self.next_directive());
+            }
             let settlement = shell.admit_native_observation_batches(grant.reachability());
             let (applied, duplicate, quarantined, denied) = settlement.counts();
             for (total, observed) in self.observation_ingress_counts[..4].iter_mut().zip([

@@ -150,6 +150,30 @@ pub(super) struct UiMountedAppearanceFact {
 }
 
 impl UiMountedAppearanceFact {
+    pub(super) fn reattribute_node(
+        &self,
+        issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
+        node_receipt: UiMountedNodeReceiptIdentity,
+    ) -> Option<Self> {
+        let projection = self.projection?;
+        Some(Self {
+            identity: self.identity.clone(),
+            semantic_surface: self.semantic_surface,
+            node_receipt: Some(node_receipt),
+            projection: Some(UiMountedNodeAppearanceAttribution::from_runtime_mounting(
+                issuer,
+                projection.identity(),
+                projection.revision(),
+            )?),
+            backdrop_attribution: None,
+            semantic_digest: self.semantic_digest,
+            mechanic: self
+                .mechanic
+                .reattribute_node_for_runtime_mounting(issuer, node_receipt)?,
+            damage: self.damage.clone(),
+        })
+    }
+
     pub(super) fn node(
         semantic_surface: UiSemanticSurfaceIdentity,
         node_receipt: UiMountedNodeReceiptIdentity,
@@ -252,6 +276,20 @@ pub(crate) struct UiMountedAppearanceFacts {
 }
 
 impl UiMountedAppearanceFacts {
+    pub(super) fn reattribute_node(
+        &self,
+        frame: UiMountedAppearanceFrame,
+        issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
+        node_receipt: UiMountedNodeReceiptIdentity,
+    ) -> Option<Self> {
+        let records = self
+            .records
+            .iter()
+            .map(|record| record.reattribute_node(issuer, node_receipt))
+            .collect::<Option<Vec<_>>>()?;
+        Some(Self::new(frame, records, self.geometry_inputs.clone()))
+    }
+
     pub(super) fn new(
         frame: UiMountedAppearanceFrame,
         records: Vec<UiMountedAppearanceFact>,

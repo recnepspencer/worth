@@ -167,6 +167,7 @@ fn deliver_at(
     let delivered_event_count = match kind {
         NativeInputProbeKind::Pointer => {
             prime_pointer_motion(window, (screen_x, screen_y))?;
+            super::pointer_visual_settlement::await_client_stability(observed)?;
             super::pointer_target::require_before_effect(window, (screen_x, screen_y))?;
             let delivered = winsafe::SendInput(&[
                 HwKbMouse::Mouse(MOUSEINPUT {

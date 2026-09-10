@@ -6,6 +6,8 @@ use super::physical_recovery_tracker::{
 use super::program_reconstruction::{is_text_atlas_deferred, retry_text_atlas_deferred};
 use crate::facade::WorthUiNativeApplicationShell;
 
+#[path = "program_progress/layout.rs"]
+mod layout;
 #[path = "program_progress/physical_progress.rs"]
 mod physical_progress;
 #[path = "program_progress/pointer_refresh.rs"]
@@ -223,6 +225,7 @@ impl UiNativeApplicationProgramProgress {
             } else if program_frame > self.next_change_frame {
                 return Err(());
             }
+            layout::complete_program_layout(shell)?;
             let tick = self.next_present_tick;
             self.next_present_tick = self.next_present_tick.checked_add(1).ok_or(())?;
             let reconstruction = self.runtime_qualification.reconstruction_required();

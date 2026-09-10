@@ -63,6 +63,30 @@ pub(super) fn resolve(
     Ok(style)
 }
 
+pub(in crate::mounting::projection) fn resolved_opacity(
+    projection: &crate::runtime::appearance::UiAppearanceProjection,
+) -> worth_ui_host_contract::UiMountedAppearanceOpacity {
+    projection
+        .aspects()
+        .iter()
+        .find_map(|aspect| {
+            (aspect.support() == crate::runtime::appearance::UiAppearanceSupportPosture::Supported)
+                .then(|| match (aspect.aspect(), aspect.value()) {
+                    (
+                        worth_ui_dsl::UiAppearanceAspect::Opacity,
+                        worth_ui_dsl::UiThemeValue::Opacity(opacity),
+                    ) => Some(
+                        worth_ui_host_contract::UiMountedAppearanceOpacity::from_units(
+                            opacity.units(),
+                        ),
+                    ),
+                    _ => None,
+                })
+                .flatten()
+        })
+        .unwrap_or(worth_ui_host_contract::UiMountedAppearanceOpacity::ONE)
+}
+
 fn resolved_border(
     stroke: worth_ui_dsl::UiThemeSolidStroke,
 ) -> Result<

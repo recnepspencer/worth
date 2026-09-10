@@ -137,13 +137,17 @@ pub(super) fn verify(
         .find(|binding| binding.semantic_surface_identity() == surface)
         .copied()
         .unwrap();
-    session
+    let replacement = session
         .rebind_host_surface(
             rebound.binding_generation(),
             rebound.presentation_mode(),
             rebound.profile(),
         )
         .unwrap();
+    let replacements = [crate::mounting::UiMountedSurfaceReconciliationBinding::new(
+        rebound.binding_generation(),
+        replacement.binding_generation(),
+    )];
     assert_eq!(
         session
             .begin_mounted_layout()
@@ -183,19 +187,23 @@ pub(super) fn verify(
     assert_eq!(single_receipt.region_index_rows(), 2);
     assert_eq!(single_receipt.region_lookup_steps(), 5);
     let frame = session
-        .prepare_mounted_frame_with_application_presentation(
+        .prepare_mounted_reconstruction_frame_with_application_presentation(
             crate::mounting::UiMountedFrameRequest::exact_surfaces(vec![surface]),
+            &replacements,
             |_| {},
         )
         .unwrap_or_else(|_| panic!("surviving region prepares after binding repair"));
     host.push_native_display_presented();
     assert!(matches!(
-        session.present_prepared_mounted_frame_internal(
-            frame,
-            worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
-            2
-        ),
-        crate::mounting::UiMountedFrameOutcome::Published(_)
+        session
+            .present_prepared_mounted_frame_for_reconciliation(
+                frame,
+                &replacements,
+                worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
+                2
+            )
+            .unwrap(),
+        crate::mounting::UiMountedFrameOutcome::Reconciled(_)
     ));
     let output = session
         .mounted

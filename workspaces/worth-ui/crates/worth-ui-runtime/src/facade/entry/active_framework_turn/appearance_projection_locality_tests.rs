@@ -117,7 +117,7 @@ fn run_case(retained_count: usize) -> LocalityCase {
     let static_token =
         crate::capability::ThemeTokenId::new(support::LEGACY_STATIC_PAINT_TOKEN).unwrap();
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let host_observer = host.clone();
     let builder = support::legacy_static_paint_appearance_component_builder(&role_a)
         .register_component(support::static_paint_component(

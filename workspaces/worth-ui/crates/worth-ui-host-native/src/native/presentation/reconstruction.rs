@@ -8,13 +8,13 @@ pub(crate) struct UiNativeColdReconstruction {
     retained: UiNativeRetainedDrawList,
     pixels: [[u8; 4]; 2],
     port_crossings: u8,
-    recovery: crate::native::UiNativeRecoveryRequirement,
+    recovery: Option<crate::native::UiNativeRecoveryRequirement>,
 }
 
 pub(crate) enum UiNativeReconstructionFailure {
     BeforeEffects {
         denial: UiHostSurfacePresentationDenial,
-        recovery: crate::native::UiNativeRecoveryRequirement,
+        recovery: Option<crate::native::UiNativeRecoveryRequirement>,
         successor_cause: Option<crate::native::UiNativeRecoveryCause>,
     },
     Pending(super::UiNativePendingPresentation),
@@ -28,7 +28,7 @@ impl UiNativeColdReconstruction {
         UiNativeRetainedDrawList,
         [[u8; 4]; 2],
         u8,
-        crate::native::UiNativeRecoveryRequirement,
+        Option<crate::native::UiNativeRecoveryRequirement>,
     ) {
         let Self {
             cost,
@@ -48,7 +48,7 @@ pub(crate) fn present_cold_reconstruction<Port: UiNativePresentationPort>(
     atlas: &crate::native::text_atlas::UiNativeTextAtlas,
     atlas_gpu: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
     view: &UiMountedFrameConsumptionView<'_>,
-    recovery: crate::native::UiNativeRecoveryRequirement,
+    recovery: Option<crate::native::UiNativeRecoveryRequirement>,
     defer_initial_observation: bool,
     lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
 ) -> Result<UiNativeColdReconstruction, UiNativeReconstructionFailure> {
@@ -63,6 +63,13 @@ pub(crate) fn present_cold_reconstruction<Port: UiNativePresentationPort>(
         Ok(retained) => retained,
         Err(_) => return Err(before_effects(malformed_denial(), recovery, None)),
     };
+    if view.appearance_work().is_some()
+        && retained
+            .initialize_appearance(view, atlas, graphics.extent())
+            .is_err()
+    {
+        return Err(before_effects(malformed_denial(), recovery, None));
+    }
     if retained
         .initialize_physical_coverage(
             super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
@@ -75,7 +82,7 @@ pub(crate) fn present_cold_reconstruction<Port: UiNativePresentationPort>(
     let plan = match build_plan(
         super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
         atlas,
-        &retained,
+        &mut retained,
     ) {
         Ok(plan) => plan,
         Err(failure) => {
@@ -140,18 +147,39 @@ use super::{
 pub(super) fn build_plan(
     basis: UiNativeRasterBasis,
     atlas: &crate::native::text_atlas::UiNativeTextAtlas,
-    retained: &UiNativeRetainedDrawList,
+    retained: &mut UiNativeRetainedDrawList,
 ) -> Result<UiNativePresentationPortPlan, UiNativePresentationFailure> {
     let commands = retained
         .reconstruction_commands()
         .map_err(|_| malformed())?;
-    let mut operations = Vec::with_capacity(commands.len());
+    let mut operations = if retained.has_appearance() {
+        retained
+            .complete_appearance_operations(basis, atlas)
+            .map_err(|_| malformed())?
+    } else {
+        Vec::with_capacity(commands.len())
+    };
     let mut rendered_pixels = 0_u64;
-    for command in commands {
+    for operation in &operations {
+        rendered_pixels = rendered_pixels
+            .checked_add(operation_pixels(operation))
+            .ok_or_else(malformed)?;
+    }
+    for command in commands.iter().filter(|_| !retained.has_appearance()) {
         let sample = retained.sample_override(command.identity());
         let opacity = sample.map_or(1.0, |sample| sample.opacity().factor());
         match command {
             UiMountedPaintCommand::FilledRect { mechanic, .. } => {
+                if let Some(operation) = retained
+                    .appearance_surface_operation(mechanic.node_receipt(), basis.extent())
+                    .map_err(|_| malformed())?
+                {
+                    rendered_pixels = rendered_pixels
+                        .checked_add(operation_pixels(&operation))
+                        .ok_or_else(malformed)?;
+                    operations.push(operation);
+                    continue;
+                }
                 let Some(bounds) =
                     super::retained_draw_list::sampled_visible_bounds(command, sample)
                         .map_err(|_| malformed())?
@@ -174,6 +202,16 @@ pub(super) fn build_plan(
                 });
             }
             UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
+                if let Some(operation) = retained
+                    .appearance_portal_surface_operation(mechanic.owner(), basis.extent())
+                    .map_err(|_| malformed())?
+                {
+                    rendered_pixels = rendered_pixels
+                        .checked_add(operation_pixels(&operation))
+                        .ok_or_else(malformed)?;
+                    operations.push(operation);
+                    continue;
+                }
                 let Some(bounds) =
                     super::retained_draw_list::sampled_visible_bounds(command, sample)
                         .map_err(|_| malformed())?
@@ -244,6 +282,22 @@ pub(super) fn build_plan(
     })
 }
 
+fn operation_pixels(operation: &UiNativeRasterOperation) -> u64 {
+    match operation {
+        UiNativeRasterOperation::Surface(surface) => {
+            let rect = surface.rect();
+            u64::from(rect.physical_width) * u64::from(rect.physical_height)
+        }
+        UiNativeRasterOperation::FilledRect { rect, .. } => {
+            u64::from(rect.physical_width) * u64::from(rect.physical_height)
+        }
+        UiNativeRasterOperation::Glyph(glyph) => {
+            (glyph.target[2].ceil() as u64) * (glyph.target[3].ceil() as u64)
+        }
+        UiNativeRasterOperation::Clear(_) => 0,
+    }
+}
+
 fn malformed() -> UiNativePresentationFailure {
     UiNativePresentationFailure::BeforeEffects(malformed_denial())
 }
@@ -269,7 +323,7 @@ fn presentation_before_effects(
 
 const fn before_effects(
     denial: UiHostSurfacePresentationDenial,
-    recovery: crate::native::UiNativeRecoveryRequirement,
+    recovery: Option<crate::native::UiNativeRecoveryRequirement>,
     successor_cause: Option<crate::native::UiNativeRecoveryCause>,
 ) -> UiNativeReconstructionFailure {
     UiNativeReconstructionFailure::BeforeEffects {

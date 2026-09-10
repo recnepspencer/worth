@@ -95,6 +95,24 @@ pub(super) enum CandidateOrigin {
 }
 
 impl UiPreparedFrameCandidates {
+    pub(in crate::mounting) fn bind_appearance_opacity(
+        &mut self,
+        frame: &crate::mounting::UiPreparedMountedFrame,
+    ) {
+        for surface in &mut self.surfaces {
+            surface.state.bind_appearance_opacity(frame);
+        }
+    }
+
+    pub(in crate::mounting) fn requires_complete_appearance_projection(&self) -> bool {
+        self.surfaces.iter().any(|surface| {
+            matches!(
+                surface.origin,
+                CandidateOrigin::Initial | CandidateOrigin::Reconstruction { .. }
+            )
+        })
+    }
+
     #[cfg(test)]
     pub(in crate::mounting::presentation) fn from_single_state_for_test(
         state: UiMountedPresentationState,

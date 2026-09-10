@@ -40,6 +40,10 @@ impl UiMountedFrameRetentionCoordinator {
         self.prepare(admitted.into_frame(), false, None)
     }
 
+    pub(crate) fn observation_basis_admission_ready(&self) -> bool {
+        self.authority.borrow().reservations.is_empty()
+    }
+
     pub(crate) fn prepare_superseding_publication(
         &mut self,
         admitted: super::super::UiAuthorityAdmittedMountedFrame,

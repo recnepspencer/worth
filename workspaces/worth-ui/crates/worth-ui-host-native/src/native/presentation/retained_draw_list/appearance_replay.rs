@@ -5,15 +5,21 @@ use crate::native::presentation::{
     raster::{raster_physical_bounds, UiNativeRasterBasis},
     RasterRect,
 };
-use crate::native::text_atlas::UiNativeTextAtlas;
 use worth_ui_host_contract::UiMountedPaintCommand;
 
 impl UiNativeRetainedDrawList {
+    pub(in crate::native::presentation) fn appearance_only_replay_plan(
+        &mut self,
+    ) -> Result<super::UiNativeRetainedReplayPlan, Denial> {
+        let mut replay = self.replay_plan(&[], 0, 0)?;
+        replay.staged_appearance_regions = self.prepare_appearance_replay()?;
+        Ok(replay)
+    }
+
     pub(in crate::native::presentation) fn staged_appearance_clears(
         &self,
         regions: &[UiNativeAppearanceReplayRegion],
         basis: UiNativeRasterBasis,
-        atlas: &UiNativeTextAtlas,
     ) -> Result<Vec<RasterRect>, Denial> {
         if regions.is_empty() {
             return Ok(Vec::new());
@@ -30,14 +36,12 @@ impl UiNativeRetainedDrawList {
             // Every surviving appearance participant must have its ordinary
             // command. Otherwise clearing could silently erase unrepresented text.
             for key in &region.replay {
-                let Some(UiNativeAppearanceCommand::TextForeground(foreground)) =
-                    appearance.command(*key)
-                else {
+                let Some(command) = appearance.command(*key) else {
                     return Err(Denial::CommandMismatch);
                 };
-                foreground
-                    .validate_images(atlas)
-                    .map_err(|_| Denial::CommandMismatch)?;
+                let UiNativeAppearanceCommand::TextForeground(foreground) = command else {
+                    continue;
+                };
                 for identity in foreground.candidate_commands() {
                     let Some(UiMountedPaintCommand::SemanticText { mechanic, .. }) =
                         self.command(identity)

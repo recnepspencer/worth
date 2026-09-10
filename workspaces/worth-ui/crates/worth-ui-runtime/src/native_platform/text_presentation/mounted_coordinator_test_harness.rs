@@ -155,6 +155,7 @@ fn consumption_view<'work>(
         deadline: UiPresentationDeadline::at_tick(100),
         requirement,
         presentation_work: work,
+        appearance_work: None,
         qualified_text: &(),
         text_raster_work,
     })

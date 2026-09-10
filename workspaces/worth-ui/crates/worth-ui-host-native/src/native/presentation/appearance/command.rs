@@ -1,8 +1,7 @@
 use worth_ui_host_contract::{
-    UiMountedBackdropMechanic, UiMountedNodeReceiptIdentity, UiMountedOutlineAppearanceMechanic,
-    UiMountedOverlayOrderMechanic, UiMountedPointerAffordanceMechanic,
-    UiMountedPortalSurfaceAppearanceMechanic, UiMountedSurfaceAppearanceMechanic,
-    UiPointerAffordanceFamily,
+    UiMountedBackdropMechanic, UiMountedOutlineAppearanceMechanic, UiMountedOverlayOrderMechanic,
+    UiMountedPointerAffordanceMechanic, UiMountedPortalSurfaceAppearanceMechanic,
+    UiMountedSurfaceAppearanceMechanic,
 };
 
 use super::backdrop_pipeline::UiNativeBackdropPipeline;
@@ -37,9 +36,9 @@ pub(crate) enum UiNativeAppearanceCommandFamily {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) enum UiNativeAppearanceCommandIdentity {
-    Surface(UiMountedNodeReceiptIdentity),
+    Surface(worth_ui_host_contract::UiMountedInstanceIdentity),
     PortalSurface(worth_ui_host_contract::UiMountedInstanceIdentity),
-    Outline(UiMountedNodeReceiptIdentity),
+    Outline(worth_ui_host_contract::UiMountedInstanceIdentity),
     TextForeground {
         target: worth_ui_host_contract::UiMountedInstanceIdentity,
         command: (u16, Option<[u8; 32]>),
@@ -51,13 +50,11 @@ pub(crate) enum UiNativeAppearanceCommandIdentity {
     },
     OverlayOrder {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
     },
     PointerAffordance {
         pointer: worth_ui_host_contract::UiHostPointerIdentity,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         target: worth_ui_host_contract::UiMountedInstanceIdentity,
-        family: u8,
     },
 }
 
@@ -87,15 +84,15 @@ impl UiNativeAppearanceCommand {
 
     pub(crate) fn identity(&self) -> UiNativeAppearanceCommandIdentity {
         match self {
-            Self::Surface(mechanic) => {
-                UiNativeAppearanceCommandIdentity::Surface(mechanic.node_receipt())
-            }
+            Self::Surface(mechanic) => UiNativeAppearanceCommandIdentity::Surface(
+                mechanic.node_receipt().mounted_instance(),
+            ),
             Self::PortalSurface(mechanic) => {
                 UiNativeAppearanceCommandIdentity::PortalSurface(mechanic.portal_instance())
             }
-            Self::Outline(mechanic) => {
-                UiNativeAppearanceCommandIdentity::Outline(mechanic.node_receipt())
-            }
+            Self::Outline(mechanic) => UiNativeAppearanceCommandIdentity::Outline(
+                mechanic.node_receipt().mounted_instance(),
+            ),
             Self::TextForeground(mechanic) => UiNativeAppearanceCommandIdentity::TextForeground {
                 target: mechanic.mechanic().node_receipt().mounted_instance(),
                 command: mechanic
@@ -111,14 +108,12 @@ impl UiNativeAppearanceCommand {
             },
             Self::OverlayOrder(mechanic) => UiNativeAppearanceCommandIdentity::OverlayOrder {
                 surface: mechanic.semantic_surface(),
-                presentation: mechanic.presentation(),
             },
             Self::PointerAffordance(mechanic) => {
                 UiNativeAppearanceCommandIdentity::PointerAffordance {
                     pointer: mechanic.pointer(),
                     surface: mechanic.surface(),
                     target: mechanic.target(),
-                    family: pointer_family_code(mechanic.family()),
                 }
             }
         }
@@ -158,12 +153,5 @@ impl UiNativeAppearanceCommand {
             self,
             Self::Surface(_) | Self::PortalSurface(_) | Self::Outline(_) | Self::Backdrop(_)
         )
-    }
-}
-
-fn pointer_family_code(family: UiPointerAffordanceFamily) -> u8 {
-    match family {
-        UiPointerAffordanceFamily::Default => 0,
-        UiPointerAffordanceFamily::Activation => 1,
     }
 }

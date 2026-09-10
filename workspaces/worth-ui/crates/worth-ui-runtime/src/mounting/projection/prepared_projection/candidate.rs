@@ -148,6 +148,19 @@ impl UiProjectedMountedFrameCandidate {
         Ok(())
     }
 
+    pub(in crate::mounting) fn prepare_appearance_reconstruction(
+        &mut self,
+    ) -> Result<(), UiMountedProjectionDenial> {
+        self.owner.prepare_appearance_reconstruction()
+    }
+
+    pub(in crate::mounting) fn prepare_appearance_reconstruction_for(
+        &mut self,
+        bindings: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
+    ) -> Result<(), UiMountedProjectionDenial> {
+        self.owner.prepare_appearance_reconstruction_for(bindings)
+    }
+
     pub(in crate::mounting) fn appearance_state_capacity_error(
         &self,
     ) -> Option<super::super::frame_storage::UiAppearanceStateCapacityExceeded> {

@@ -43,6 +43,7 @@ enum PlatformPulsePendingManagedRebind {
 
 pub(crate) struct PlatformPulseApplicationRuntime {
     initial_source: Option<WorthUiSourcePackageRevision>,
+    startup_ready: bool,
     shell: Option<WorthUiNativeApplicationShell>,
     source_watch: Option<PlatformPulseSourceWatch>,
     query_watch: Option<crate::query_source::PlatformPulseExternalValueWatch>,
@@ -194,5 +195,6 @@ pub(crate) fn publish_preparation_failure(
         | PlatformPulsePreparationDenial::IntentProvider(_) => {
             publisher.intent_preparation_failure()
         }
+        PlatformPulsePreparationDenial::Appearance(_) => publisher.appearance_preparation_failure(),
     }
 }

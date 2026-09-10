@@ -147,10 +147,10 @@ pub struct UiMountedSemanticTextTable {
 }
 
 impl UiMountedTextSchemaVersion {
-    pub const REQUIRED_MOUNTED_FRAME_REVISION: u16 = 5;
+    pub const REQUIRED_MOUNTED_FRAME_REVISION: u16 = 6;
 
     pub const fn current() -> Self {
-        Self(3)
+        Self(4)
     }
 
     pub const fn revision(self) -> u16 {

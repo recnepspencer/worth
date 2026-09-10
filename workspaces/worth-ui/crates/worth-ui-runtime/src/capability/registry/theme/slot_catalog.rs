@@ -1,19 +1,19 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiThemeSlotDisclosure {
+pub enum UiThemeSlotDisclosure {
     Public,
     InspectionOnly,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiThemeSlotSuccessorCompatibility {
+pub enum UiThemeSlotSuccessorCompatibility {
     ExactMeaning,
     KindPreserving,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiThemeSlotDeclaration {
+pub struct UiThemeSlotDeclaration {
     identity: crate::capability::ThemeTokenId,
     family: crate::capability::ThemeTokenFamily,
     kind: worth_ui_dsl::UiThemeValueKind,
@@ -24,13 +24,13 @@ pub(crate) struct UiThemeSlotDeclaration {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiThemeSlotCatalog {
+pub struct UiThemeSlotCatalog {
     revision: u64,
     slots: std::sync::Arc<BTreeMap<crate::capability::ThemeTokenId, UiThemeSlotDeclaration>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum UiThemeSlotCatalogDenial {
+pub enum UiThemeSlotCatalogDenial {
     Empty,
     ZeroRevision,
     UnknownFamily(crate::capability::ThemeTokenId),
@@ -44,7 +44,7 @@ pub(crate) enum UiThemeSlotCatalogDenial {
 }
 
 impl UiThemeSlotDeclaration {
-    pub(crate) fn new(
+    pub fn new(
         identity: crate::capability::ThemeTokenId,
         family: crate::capability::ThemeTokenFamily,
         kind: worth_ui_dsl::UiThemeValueKind,
@@ -64,34 +64,34 @@ impl UiThemeSlotDeclaration {
         }
     }
 
-    pub(crate) fn identity(&self) -> &crate::capability::ThemeTokenId {
+    pub fn identity(&self) -> &crate::capability::ThemeTokenId {
         &self.identity
     }
-    pub(crate) const fn kind(&self) -> worth_ui_dsl::UiThemeValueKind {
+    pub const fn kind(&self) -> worth_ui_dsl::UiThemeValueKind {
         self.kind
     }
-    pub(crate) fn family(&self) -> &crate::capability::ThemeTokenFamily {
+    pub fn family(&self) -> &crate::capability::ThemeTokenFamily {
         &self.family
     }
-    pub(crate) const fn source_owner(&self) -> &crate::capability::ThemeTokenSource {
+    pub const fn source_owner(&self) -> &crate::capability::ThemeTokenSource {
         &self.source_owner
     }
-    pub(crate) const fn disclosure(&self) -> UiThemeSlotDisclosure {
+    pub const fn disclosure(&self) -> UiThemeSlotDisclosure {
         self.disclosure
     }
-    pub(crate) const fn successor_compatibility(&self) -> UiThemeSlotSuccessorCompatibility {
+    pub const fn successor_compatibility(&self) -> UiThemeSlotSuccessorCompatibility {
         self.successor_compatibility
     }
-    pub(crate) fn alias_target(&self) -> Option<&crate::capability::ThemeTokenId> {
+    pub fn alias_target(&self) -> Option<&crate::capability::ThemeTokenId> {
         self.alias_target.as_ref()
     }
 }
 
 impl UiThemeSlotCatalog {
-    pub(crate) const CAPACITY: usize = 4_096;
-    pub(crate) const MAX_ALIAS_DEPTH: usize = 16;
+    pub const CAPACITY: usize = 4_096;
+    pub const MAX_ALIAS_DEPTH: usize = 16;
 
-    pub(crate) fn admit(
+    pub fn admit(
         revision: u64,
         declarations: impl IntoIterator<Item = UiThemeSlotDeclaration>,
     ) -> Result<Self, UiThemeSlotCatalogDenial> {
@@ -136,21 +136,21 @@ impl UiThemeSlotCatalog {
         })
     }
 
-    pub(crate) const fn revision(&self) -> u64 {
+    pub const fn revision(&self) -> u64 {
         self.revision
     }
-    pub(crate) fn slots(&self) -> impl ExactSizeIterator<Item = &UiThemeSlotDeclaration> {
+    pub fn slots(&self) -> impl ExactSizeIterator<Item = &UiThemeSlotDeclaration> {
         self.slots.values()
     }
 
-    pub(crate) fn get(
+    pub fn get(
         &self,
         identity: &crate::capability::ThemeTokenId,
     ) -> Option<&UiThemeSlotDeclaration> {
         self.slots.get(identity)
     }
 
-    pub(crate) fn resolved_target(
+    pub fn resolved_target(
         &self,
         identity: &crate::capability::ThemeTokenId,
     ) -> Option<&crate::capability::ThemeTokenId> {

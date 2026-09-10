@@ -3,6 +3,9 @@ use worth_ui_host_contract::{
     UiMountedSurfaceBorderSide, UiMountedSurfacePaint,
 };
 
+#[path = "surface_pipeline/raster_operation.rs"]
+mod raster_operation;
+
 use super::antialiasing::{
     coverage_from_signed_distance, rounded_signed_distance, UiNativeAnalyticCoverage,
 };
@@ -11,6 +14,7 @@ use super::geometry::{
     physical_length, physical_radii, UiNativeAppearanceScale, UiNativeGeometryDenial,
     UiNativePhysicalPixelRect, UiNativePhysicalRect,
 };
+use crate::native::presentation::{raster::raster_physical_bounds, RasterRect};
 
 /// The shader source is staged for the later publisher; no current wgpu
 /// pipeline references it.
@@ -60,6 +64,12 @@ struct UiNativeSurfaceBorderOmission {
 }
 
 pub(crate) struct UiNativeSurfacePipeline;
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct UiNativeSurfaceRasterOperation {
+    rect: RasterRect,
+    storage: Box<[f32]>,
+}
 
 impl UiNativeSurfacePipeline {
     pub(crate) fn prepare(
@@ -118,9 +128,109 @@ impl UiNativeSurfacePipeline {
                 .into_boxed_slice(),
         })
     }
+
+    pub(crate) fn prepare_outline(
+        outline: &super::outline_pipeline::UiNativeOutlinePrimitive,
+    ) -> UiNativeSurfacePrimitive {
+        UiNativeSurfacePrimitive {
+            allocation: outline.outer(),
+            clip: outline.clip(),
+            radii: outline.outer_radii(),
+            border_width: outline.width(),
+            paint_kind: UiNativeSurfacePaintKind::Border,
+            fill_color: None,
+            border_color: Some(outline.color()),
+            opacity: outline.opacity(),
+            border_edges: UiMountedSurfaceBorderEdges::ALL,
+            border_omissions: Box::new([]),
+        }
+    }
 }
 
 impl UiNativeSurfacePrimitive {
+    pub(crate) fn raster_operation(
+        &self,
+        extent: [u32; 2],
+    ) -> Result<Option<UiNativeSurfaceRasterOperation>, UiNativeGeometryDenial> {
+        let bounds = self.visual_bounds();
+        let left = bounds
+            .left
+            .max(self.clip.left)
+            .clamp(0, i64::from(extent[0]));
+        let top = bounds.top.max(self.clip.top).clamp(0, i64::from(extent[1]));
+        let right = bounds
+            .right
+            .min(self.clip.right)
+            .clamp(0, i64::from(extent[0]));
+        let bottom = bounds
+            .bottom
+            .min(self.clip.bottom)
+            .clamp(0, i64::from(extent[1]));
+        if left >= right || top >= bottom {
+            return Ok(None);
+        }
+        let physical = [
+            u32::try_from(left).map_err(|_| UiNativeGeometryDenial::CoordinateOverflow)?,
+            u32::try_from(top).map_err(|_| UiNativeGeometryDenial::CoordinateOverflow)?,
+            u32::try_from(right).map_err(|_| UiNativeGeometryDenial::CoordinateOverflow)?,
+            u32::try_from(bottom).map_err(|_| UiNativeGeometryDenial::CoordinateOverflow)?,
+        ];
+        let rect = raster_physical_bounds(physical, extent)
+            .ok_or(UiNativeGeometryDenial::CoordinateOverflow)?;
+        Ok(Some(UiNativeSurfaceRasterOperation {
+            rect,
+            storage: self.raster_storage(),
+        }))
+    }
+
+    pub(super) fn raster_storage(&self) -> Box<[f32]> {
+        let mut storage = Vec::with_capacity(28 + self.border_omissions.len() * 4);
+        storage.extend(self.allocation_edges_pixels());
+        storage.extend([
+            self.clip.left as f32,
+            self.clip.top as f32,
+            self.clip.right as f32,
+            self.clip.bottom as f32,
+        ]);
+        storage.extend(self.radii.map(micros_to_pixels));
+        storage.extend(color_vector(self.fill_color));
+        storage.extend(color_vector(self.border_color));
+        storage.extend([
+            micros_to_pixels(self.border_width),
+            f32::from(self.opacity) / f32::from(u16::MAX),
+            match self.paint_kind {
+                UiNativeSurfacePaintKind::Fill => 1.0,
+                UiNativeSurfacePaintKind::Border => 2.0,
+                UiNativeSurfacePaintKind::FillAndBorder => 3.0,
+            },
+            f32::from(border_edge_bits(self.border_edges)),
+        ]);
+        storage.extend([self.border_omissions.len() as f32, 0.0, 0.0, 0.0]);
+        storage.extend(self.border_omissions.iter().flat_map(|omission| {
+            [
+                match omission.side {
+                    UiMountedSurfaceBorderSide::Top => 0.0,
+                    UiMountedSurfaceBorderSide::Right => 1.0,
+                    UiMountedSurfaceBorderSide::Bottom => 2.0,
+                    UiMountedSurfaceBorderSide::Left => 3.0,
+                },
+                micros_to_pixels(omission.start),
+                micros_to_pixels(omission.end),
+                0.0,
+            ]
+        }));
+        storage.into_boxed_slice()
+    }
+
+    fn allocation_edges_pixels(&self) -> [f32; 4] {
+        [
+            micros_to_pixels(self.allocation.left),
+            micros_to_pixels(self.allocation.top),
+            micros_to_pixels(self.allocation.right),
+            micros_to_pixels(self.allocation.bottom),
+        ]
+    }
+
     pub(crate) fn allocation(&self) -> UiNativePhysicalRect {
         self.allocation
     }
@@ -198,14 +308,33 @@ impl UiNativeSurfacePrimitive {
     fn border_edge_enabled(&self, pixel_x: i64, pixel_y: i64) -> bool {
         let [x, y] = super::geometry::pixel_center(pixel_x, pixel_y)
             .expect("qualified physical pixel coordinates fit the surface sample basis");
-        (y < self.allocation.top + self.border_width
-            && self.side_enabled(UiMountedSurfaceBorderSide::Top, x - self.allocation.left))
-            || (x >= self.allocation.right - self.border_width
-                && self.side_enabled(UiMountedSurfaceBorderSide::Right, y - self.allocation.top))
-            || (y >= self.allocation.bottom - self.border_width
-                && self.side_enabled(UiMountedSurfaceBorderSide::Bottom, x - self.allocation.left))
-            || (x < self.allocation.left + self.border_width
-                && self.side_enabled(UiMountedSurfaceBorderSide::Left, y - self.allocation.top))
+        let candidates = [
+            (
+                y - self.allocation.top,
+                UiMountedSurfaceBorderSide::Top,
+                x - self.allocation.left,
+            ),
+            (
+                self.allocation.right - x,
+                UiMountedSurfaceBorderSide::Right,
+                y - self.allocation.top,
+            ),
+            (
+                self.allocation.bottom - y,
+                UiMountedSurfaceBorderSide::Bottom,
+                x - self.allocation.left,
+            ),
+            (
+                x - self.allocation.left,
+                UiMountedSurfaceBorderSide::Left,
+                y - self.allocation.top,
+            ),
+        ];
+        let (_, side, offset) = candidates
+            .into_iter()
+            .min_by_key(|(distance, _, _)| *distance)
+            .expect("a surface always has four allocation edges");
+        self.side_enabled(side, offset)
     }
 
     fn side_enabled(&self, side: UiMountedSurfaceBorderSide, offset: i64) -> bool {
@@ -220,6 +349,24 @@ impl UiNativeSurfacePrimitive {
                 omission.side == side && omission.start <= offset && offset < omission.end
             })
     }
+}
+
+fn micros_to_pixels(value: i64) -> f32 {
+    value as f32 / super::geometry::PHYSICAL_MICROS_PER_PIXEL as f32
+}
+
+fn color_vector(color: Option<UiMountedAppearanceColor>) -> [f32; 4] {
+    let Some(color) = color else {
+        return [0.0; 4];
+    };
+    crate::native::presentation::raster::premultiplied_linear_color(color.straight_srgba())
+}
+
+const fn border_edge_bits(edges: UiMountedSurfaceBorderEdges) -> u8 {
+    (if edges.top() { 1 } else { 0 })
+        | (if edges.right() { 2 } else { 0 })
+        | (if edges.bottom() { 4 } else { 0 })
+        | (if edges.left() { 8 } else { 0 })
 }
 
 #[cfg(test)]

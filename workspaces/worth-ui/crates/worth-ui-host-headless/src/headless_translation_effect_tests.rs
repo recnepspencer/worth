@@ -39,6 +39,7 @@ fn headless_translation_records_motion_metadata_without_synthesizing_a_host_mech
         UiMountedFrameConsumptionInput {
             qualified_text: &(),
             text_raster_work: None,
+            appearance_work: None,
             authority: std::rc::Rc::new(()),
             host_session_identity: 13,
             protocol,

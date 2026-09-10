@@ -88,7 +88,7 @@ fn order_only_text_damage_preserves_sampled_coverage_and_opacity_on_retry() {
             "order consumes sampled current, never base"
         );
         assert_eq!(retained.sample_override(id), Some(change));
-        let plan = build_plan(basis, &retained, replay, 0, &atlas).unwrap();
+        let plan = build_plan(basis, &mut retained, replay, 0, &atlas).unwrap();
         let glyphs = plan
             .operations
             .iter()

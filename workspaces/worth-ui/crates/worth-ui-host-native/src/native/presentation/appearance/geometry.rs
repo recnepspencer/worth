@@ -34,7 +34,7 @@ pub(crate) struct UiNativePhysicalPixelRect {
 
 impl UiNativeAppearanceScale {
     pub(crate) fn qualified(milli: u16) -> Result<Self, UiNativeGeometryDenial> {
-        if crate::native_profile::STAGED_APPEARANCE_PROFILE
+        if crate::native_profile::APPEARANCE_PROFILE
             .scales_milli
             .contains(&milli)
         {
@@ -49,7 +49,7 @@ impl UiNativeAppearanceScale {
     }
 
     pub(crate) fn qualified_set() -> impl ExactSizeIterator<Item = Self> {
-        crate::native_profile::STAGED_APPEARANCE_PROFILE
+        crate::native_profile::APPEARANCE_PROFILE
             .scales_milli
             .iter()
             .copied()

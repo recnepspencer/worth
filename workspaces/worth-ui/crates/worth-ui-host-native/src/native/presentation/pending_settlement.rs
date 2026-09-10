@@ -4,10 +4,11 @@ use super::UiNativeRetainedDrawList;
 pub(crate) enum UiNativePendingSurfaceSettlement {
     Initial(Box<UiNativeRetainedDrawList>),
     Delta(UiNativePendingDeltaSettlement),
+    Unchanged(UiNativePendingUnchangedSettlement),
     Sample(super::retained_draw_list::UiNativeRetainedSampleUndo),
     Reconstruction {
         retained: Box<UiNativeRetainedDrawList>,
-        recovery: crate::native::UiNativeRecoveryRequirement,
+        recovery: Option<crate::native::UiNativeRecoveryRequirement>,
     },
     SupersededDeltaResolved,
 }
@@ -15,6 +16,24 @@ pub(crate) enum UiNativePendingSurfaceSettlement {
 pub(crate) struct UiNativePendingDeltaSettlement {
     rollback_lineage: Vec<UiNativeRetainedDeltaUndo>,
     effects: super::UiNativePresentationEffects,
+}
+
+pub(crate) struct UiNativePendingUnchangedSettlement {
+    undo: super::retained_draw_list::UiNativeRetainedUnchangedUndo,
+    effects: super::UiNativePresentationEffects,
+}
+
+impl UiNativePendingUnchangedSettlement {
+    pub(super) fn new(
+        undo: super::retained_draw_list::UiNativeRetainedUnchangedUndo,
+        effects: super::UiNativePresentationEffects,
+    ) -> Self {
+        Self { undo, effects }
+    }
+
+    fn rollback(self, retained: &mut UiNativeRetainedDrawList) -> Result<(), ()> {
+        retained.rollback_unchanged(self.undo).map_err(|_| ())
+    }
 }
 
 impl UiNativePendingDeltaSettlement {
@@ -47,6 +66,7 @@ impl UiNativePendingSurfaceSettlement {
         match self {
             Self::Initial(_) => crate::native::UiNativePresentationWorkKind::Initial,
             Self::Delta(_) => crate::native::UiNativePresentationWorkKind::Delta,
+            Self::Unchanged(_) => crate::native::UiNativePresentationWorkKind::Unchanged,
             Self::Sample(_) => crate::native::UiNativePresentationWorkKind::Sample,
             Self::Reconstruction { .. } => {
                 crate::native::UiNativePresentationWorkKind::Reconstruction
@@ -73,6 +93,7 @@ impl UiNativePendingSurfaceSettlement {
         match self {
             Self::Initial(_)
             | Self::Delta(_)
+            | Self::Unchanged(_)
             | Self::Sample(_)
             | Self::Reconstruction { .. }
             | Self::SupersededDeltaResolved => {}
@@ -91,6 +112,19 @@ impl UiNativePendingSurfaceSettlement {
                     .retained_draw_lists
                     .get_mut(&key)
                     .is_some_and(|retained| lineage.rollback(retained).is_ok());
+                if !restored {
+                    state.retained_draw_lists.remove(&key);
+                    state.lifecycle.require_recovery(
+                        key,
+                        crate::native::UiNativeRecoveryCause::PresentationIndeterminate,
+                    );
+                }
+            }
+            Self::Unchanged(settlement) => {
+                let restored = state
+                    .retained_draw_lists
+                    .get_mut(&key)
+                    .is_some_and(|retained| settlement.rollback(retained).is_ok());
                 if !restored {
                     state.retained_draw_lists.remove(&key);
                     state.lifecycle.require_recovery(
@@ -135,6 +169,13 @@ impl UiNativePendingSurfaceSettlement {
                         .expect("pending delta rollback must restore exact predecessor truth");
                 }
             }
+            Self::Unchanged(settlement) => {
+                if let Some(retained) = state.retained_draw_lists.get_mut(&key) {
+                    settlement
+                        .rollback(retained)
+                        .expect("pending unchanged appearance rollback must restore exact predecessor truth");
+                }
+            }
             Self::Sample(undo) => {
                 if let Some(retained) = state.retained_draw_lists.get_mut(&key) {
                     retained
@@ -164,6 +205,7 @@ impl UiNativePendingSurfaceSettlement {
                 super::UiNativePresentationEffects::new(true, retained.identity_overlay_active())
             }
             Self::Delta(delta) => delta.effects,
+            Self::Unchanged(unchanged) => unchanged.effects,
             Self::Sample(_) => super::UiNativePresentationEffects::new(true, false),
             Self::SupersededDeltaResolved => super::UiNativePresentationEffects::default(),
         };
@@ -174,12 +216,17 @@ impl UiNativePendingSurfaceSettlement {
                 true
             }
             Self::Reconstruction { retained, recovery } => {
-                debug_assert_eq!(recovery.binding(), key);
+                debug_assert!(recovery
+                    .as_ref()
+                    .is_none_or(|recovery| recovery.binding() == key));
                 state.retained_draw_lists.insert(key, *retained);
-                let _current_recovery = state.lifecycle.settle_recovery(recovery);
+                if let Some(recovery) = recovery {
+                    let _current_recovery = state.lifecycle.settle_recovery(recovery);
+                }
                 false
             }
             Self::Delta(_) => true,
+            Self::Unchanged(_) => true,
             Self::Sample(_) => true,
             Self::SupersededDeltaResolved => return None,
         };

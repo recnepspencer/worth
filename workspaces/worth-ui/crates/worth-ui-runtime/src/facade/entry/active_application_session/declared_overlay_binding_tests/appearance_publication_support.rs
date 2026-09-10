@@ -171,7 +171,7 @@ fn appearance_overlay_session_with_component_role_and_region(
         capability_app.capabilities(),
     );
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
     let session = builder()
         .with_candidate_submission(submission)

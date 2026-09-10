@@ -97,21 +97,6 @@ impl PlatformPulseApplicationRuntime {
             ));
             return;
         }
-        if let Some(stop) = ingress.interaction_stops().first() {
-            let detail = match stop {
-                worth_ui::facade::app::WorthUiNativeInteractionIngressStop::Quarantined(stop) => {
-                    format!(
-                        "native interaction ingress quarantined: {:?}",
-                        stop.quarantine()
-                    )
-                }
-                worth_ui::facade::app::WorthUiNativeInteractionIngressStop::Denied(stop) => {
-                    format!("native interaction ingress denied: {:?}", stop.denial())
-                }
-            };
-            self.fail_intent_settlement(detail);
-            return;
-        }
         for transition in ingress.into_transitions() {
             let Some(prepared) = self.prepare_ingress_intent_posture(transition) else {
                 if self.terminal_error.is_some() {
@@ -173,9 +158,10 @@ impl PlatformPulseApplicationRuntime {
                     }
                 }
                 let Some(posture) = posture else {
-                    self.fail_intent_settlement(
-                        "native intent stopped without a publishable posture",
-                    );
+                    self.fail_intent_settlement(format!(
+                        "native intent stopped without a publishable posture: {}",
+                        native_intent_stop_kind(&stop)
+                    ));
                     return None;
                 };
                 let Some(observation) = stopped_posture_observation(posture.kind()) else {
@@ -325,6 +311,18 @@ impl PlatformPulseApplicationRuntime {
             super::super::PlatformPulseTerminalError::IntentPosturePublication(denial),
             observation,
         );
+    }
+}
+
+fn native_intent_stop_kind(stop: &WorthUiNativeIntentStop) -> &'static str {
+    match stop {
+        WorthUiNativeIntentStop::Route(_) => "route",
+        WorthUiNativeIntentStop::Payload(_) => "payload",
+        WorthUiNativeIntentStop::Admission(_) => "admission",
+        WorthUiNativeIntentStop::Confirmation(_) => "confirmation",
+        WorthUiNativeIntentStop::Dispatch(_) => "dispatch",
+        WorthUiNativeIntentStop::PostureIdentityExhausted => "posture-identity-exhausted",
+        WorthUiNativeIntentStop::DefinitionNotSelected => "definition-not-selected",
     }
 }
 

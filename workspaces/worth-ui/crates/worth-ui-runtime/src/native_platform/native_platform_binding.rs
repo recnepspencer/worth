@@ -9,7 +9,7 @@ impl UiNativePlatformBindingGrant {
     pub(super) const fn issue(preparation_identity: u64) -> Self {
         Self {
             profile:
-                worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1,
+                worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2,
             preparation_identity,
         }
     }

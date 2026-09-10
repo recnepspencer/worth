@@ -1,4 +1,16 @@
+appearance role platform.pulse.appearance.root applies_to platform.pulse.component.seed {
+  background use token(theme.platform_pulse.palette.canvas)
+}
+appearance role platform.pulse.appearance.brand applies_to platform.pulse.component.brand {
+  foreground use token(theme.platform_pulse.principal_accent)
+}
+appearance role platform.pulse.appearance.query_card applies_to platform.pulse.component.query_card {
+  background use token(theme.platform_pulse.raised_surface)
+  border use token(theme.platform_pulse.border.query_card)
+  radius use token(theme.platform_pulse.radius.query_card)
+}
 component platform.pulse.component.seed {
+  appearance { role platform.pulse.appearance.root }
   region platform.pulse.mosaic.region.viewport {
     sizing platform.pulse.mosaic.sizing.viewport;
     region platform.pulse.mosaic.region.masthead {
@@ -20,7 +32,9 @@ component platform.pulse.component.seed {
   }
 }
 component platform.pulse.component.masthead_border {}
-component platform.pulse.component.brand {}
+component platform.pulse.component.brand {
+  appearance { role platform.pulse.appearance.brand }
+}
 component platform.pulse.component.runtime_badge {}
 component platform.pulse.component.evidence_border {}
 component platform.pulse.component.evidence_rail {}
@@ -37,7 +51,9 @@ component platform.pulse.component.lower_shelf_divider {}
 component platform.pulse.component.service_eyebrow {}
 component platform.pulse.component.service_title {}
 component platform.pulse.component.service_body {}
-component platform.pulse.component.query_card {}
+component platform.pulse.component.query_card {
+  appearance { role platform.pulse.appearance.query_card }
+}
 component platform.pulse.component.query_card_border {}
 component platform.pulse.component.query_label {}
 component platform.pulse.component.native_card {}

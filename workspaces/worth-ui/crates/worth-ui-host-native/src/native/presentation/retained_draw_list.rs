@@ -33,7 +33,17 @@ mod physical_replay_certification;
 mod text_transition_certification;
 #[cfg(feature = "certification-support")]
 pub use foreground_replay_certification::UiNativeTextReplayOperation;
+#[path = "retained_draw_list/appearance_delta.rs"]
+mod appearance_delta;
+#[path = "retained_draw_list/appearance_raster.rs"]
+mod appearance_raster;
 mod appearance_replay;
+#[path = "retained_draw_list/appearance_state.rs"]
+mod appearance_state;
+#[path = "retained_draw_list/raster_command.rs"]
+mod raster_command;
+#[path = "retained_draw_list/render_order.rs"]
+mod render_order;
 #[path = "retained_draw_list/replay.rs"]
 mod replay;
 #[path = "retained_draw_list/sample_transaction.rs"]
@@ -47,6 +57,7 @@ mod text_raster;
 
 pub(super) use delta_transaction::UiNativeRetainedDeltaUndo;
 pub(super) use denial::UiNativeRetainedDrawListDenial;
+pub(super) use lifecycle::UiNativeRetainedUnchangedUndo;
 pub(super) use sample_transaction::sampled_visible_bounds;
 pub(super) use sample_transaction::UiNativeRetainedSampleUndo;
 

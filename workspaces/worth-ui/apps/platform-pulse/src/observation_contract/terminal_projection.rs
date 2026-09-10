@@ -22,6 +22,15 @@ use super::projection::{
 };
 
 impl PlatformPulseLifecycleObservationStream {
+    pub fn project_appearance_preparation_failure(
+        &mut self,
+    ) -> Result<
+        PlatformPulseLifecycleObservationEnvelope,
+        PlatformPulseLifecycleObservationProjectionDenial,
+    > {
+        self.project_terminal(PlatformPulseTerminalFailureFamily::ApplicationPreparation)
+    }
+
     pub fn project_intent_preparation_failure(
         &mut self,
     ) -> Result<

@@ -27,11 +27,7 @@ pub(crate) use registration::{
     RegistrationDependency, RegistrationValidationReport,
 };
 pub use registry::AppearanceRoleRegistrationDenial;
-#[allow(
-    unused_imports,
-    reason = "Gate 0 retains the component appearance denial contract"
-)]
-pub(crate) use registry::ComponentAppearanceAspectContractDenial;
+pub use registry::ComponentAppearanceAspectContractDenial;
 #[allow(
     unused_imports,
     reason = "Gate 0 exposes frozen Mosaic seam ownership vocabulary"
@@ -115,17 +111,12 @@ pub use registry::{
     VisibleStateBindingDeclaration, WorthUiQueryViewRegistration, WorthUiViewBindingIdentity,
     UI_INTENT_PAYLOAD_FIELD_LIMIT, UI_INTENT_PAYLOAD_TEXT_BYTE_LIMIT,
 };
-#[allow(
-    unused_imports,
-    reason = "Gate 0 retains non-current theme registry contracts"
-)]
 pub(crate) use registry::{
     AppearanceRoleAcceptedRegistrationProof, AppearanceRoleRegistry,
     AppearanceThemeAcceptedRegistrationProof, CommandAcceptedRegistrationProof,
     CommandProjectionAcceptedRegistrationProof, CommandProjectionRegistry, CommandRegistry,
-    ComponentAcceptedRegistrationProof, ComponentRegistry, FrozenAppearanceThemeCapabilities,
-    FrozenAppearanceThemeCapabilitiesDenial, IconAcceptedRegistrationProof, IconRegistry,
-    IntentDefinitionAcceptedRegistrationProof, IntentDefinitionRegistry,
+    ComponentAcceptedRegistrationProof, ComponentRegistry, IconAcceptedRegistrationProof,
+    IconRegistry, IntentDefinitionAcceptedRegistrationProof, IntentDefinitionRegistry,
     MosaicPlacementAcceptedRegistrationProof, MosaicPlacementRegistry,
     MosaicRegionAcceptedRegistrationProof, MosaicRegionRegistry,
     MosaicSeamPaintAcceptedRegistrationProof, MosaicSizingAcceptedRegistrationProof,
@@ -137,18 +128,25 @@ pub(crate) use registry::{
     SurfaceRegistry, TaskPresentationAcceptedRegistrationProof, TaskPresentationRegistry,
     ThemeRegistry, ThemeTokenAcceptedRegistrationProof, ThemeTokenRegistry, UiIntentDefinitionSlot,
     UiIntentProjectedValue, UiIntentSemanticDigest, UiRuntimeServiceFamily,
-    UiRuntimeServiceSupport, UiRuntimeServiceSupportPosture, UiThemeDefinition,
-    UiThemeDefinitionDenial, UiThemeDefinitionIdentity, UiThemeSlotCatalog,
-    UiThemeSlotCatalogDenial, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
-    UiThemeSlotSuccessorCompatibility, ViewBindingAcceptedRegistrationProof, ViewBindingRegistry,
-    APPEARANCE_ROLE_FAMILY_NAME, APPEARANCE_THEME_FAMILY_NAME, COMMAND_FAMILY_NAME,
-    COMMAND_PROJECTION_FAMILY_NAME, COMPONENT_FAMILY_NAME, ICON_FAMILY_NAME,
+    UiRuntimeServiceSupport, UiRuntimeServiceSupportPosture, ViewBindingAcceptedRegistrationProof,
+    ViewBindingRegistry, APPEARANCE_ROLE_FAMILY_NAME, APPEARANCE_THEME_FAMILY_NAME,
+    COMMAND_FAMILY_NAME, COMMAND_PROJECTION_FAMILY_NAME, COMPONENT_FAMILY_NAME, ICON_FAMILY_NAME,
     INTENT_DEFINITION_FAMILY_NAME, MOSAIC_PLACEMENT_POLICY_FAMILY_NAME,
     MOSAIC_REGION_KIND_FAMILY_NAME, MOSAIC_SEAM_PAINT_FAMILY_NAME,
     MOSAIC_SIZING_CONTRACT_FAMILY_NAME, MOSAIC_STATE_SLOT_FAMILY_NAME,
     NATIVE_CAPABILITY_FAMILY_NAME, PLUGIN_SLOT_FAMILY_NAME, RUNTIME_OUTCOME_PROJECTION_FAMILY_NAME,
     SETTING_FAMILY_NAME, SURFACE_FAMILY_NAME, TASK_PRESENTATION_FAMILY_NAME,
     THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
+};
+#[allow(
+    unused_imports,
+    reason = "Gate 0 retains non-current theme registry contracts"
+)]
+pub use registry::{
+    FrozenAppearanceThemeCapabilities, FrozenAppearanceThemeCapabilitiesDenial, UiThemeDefinition,
+    UiThemeDefinitionDenial, UiThemeDefinitionIdentity, UiThemeSlotCatalog,
+    UiThemeSlotCatalogDenial, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
+    UiThemeSlotSuccessorCompatibility,
 };
 pub use snapshot::{
     CapabilitySnapshot, CapabilitySnapshotDigest, CapabilitySnapshotIndex, FrozenCapabilityFamily,

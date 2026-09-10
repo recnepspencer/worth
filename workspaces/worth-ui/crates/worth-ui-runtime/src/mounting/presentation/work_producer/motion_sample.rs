@@ -57,12 +57,6 @@ impl UiMountedPresentationState {
             if identities.is_empty() {
                 return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
             }
-            // Static paint has the identity appearance factor until the atomic
-            // appearance cutover. Preserve the sampler's canonical units here.
-            let opacity = super::super::compose_opacity(
-                worth_ui_host_contract::UiMountedAppearanceOpacity::ONE,
-                sample.opacity_units(),
-            );
             for identity in identities {
                 if !selected.insert(identity) {
                     return Err(UiMountedMotionSampleWorkDenial::AmbiguousTargetCommands);
@@ -72,6 +66,10 @@ impl UiMountedPresentationState {
                     .ok_or(UiMountedMotionSampleWorkDenial::UnknownTargetCommands)?;
                 let transform =
                     sample_transform(*sample, command.clip_bounds().coordinate_space())?;
+                let opacity = super::super::compose_opacity(
+                    self.appearance_opacity_for_command(identity),
+                    sample.opacity_units(),
+                );
                 changes.push(UiMountedPresentationSampleChange::from_runtime_sampling(
                     identity, transform, opacity,
                 ));

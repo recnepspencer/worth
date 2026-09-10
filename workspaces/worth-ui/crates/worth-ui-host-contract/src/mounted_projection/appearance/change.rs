@@ -34,6 +34,29 @@ pub enum UiMountedAppearanceMechanic {
 
 impl UiMountedAppearanceMechanic {
     #[doc(hidden)]
+    pub fn reattribute_node_for_runtime_mounting(
+        &self,
+        issuer: crate::UiMountedNodeReceiptIssuer,
+        node_receipt: crate::UiMountedNodeReceiptIdentity,
+    ) -> Option<Self> {
+        match self {
+            Self::Surface(mechanic) => mechanic
+                .reattribute_for_runtime_mounting(issuer, node_receipt)
+                .map(Self::Surface),
+            Self::PortalSurface(mechanic) => mechanic
+                .reattribute_for_runtime_mounting(issuer, node_receipt)
+                .map(Self::PortalSurface),
+            Self::Outline(mechanic) => mechanic
+                .reattribute_for_runtime_mounting(issuer, node_receipt)
+                .map(Self::Outline),
+            Self::TextForeground(mechanic) => mechanic
+                .reattribute_for_runtime_mounting(issuer, node_receipt)
+                .map(Self::TextForeground),
+            Self::Pointer(_) | Self::Backdrop(_) => None,
+        }
+    }
+
+    #[doc(hidden)]
     pub fn identity(&self) -> UiMountedAppearanceMechanicIdentity {
         match self {
             Self::Surface(mechanic) => UiMountedAppearanceMechanicIdentity::Surface(

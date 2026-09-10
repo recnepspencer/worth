@@ -16,6 +16,9 @@ pub enum UiNativeTextReplayOperation {
         bounds: [f32; 4],
         color: [u8; 4],
     },
+    AnalyticSurface {
+        bounds: [f32; 4],
+    },
     Glyph {
         run: UiGlyphRunView,
         bounds: [f32; 4],
@@ -40,7 +43,7 @@ impl UiNativeRetainedDrawList {
             .ok_or(Denial::CommandMismatch)?
             .basis;
         retained.initialize_text_coverage(vec![foreground.clone()], atlas)?;
-        let plan = super::super::reconstruction::build_plan(basis, atlas, &retained)
+        let plan = super::super::reconstruction::build_plan(basis, atlas, &mut retained)
             .map_err(|_| Denial::CommandMismatch)?;
         Ok(observe_plan(&plan, extent))
     }
@@ -76,8 +79,9 @@ impl UiNativeRetainedDrawList {
             .map_err(|_| Denial::CommandMismatch)?;
         let mut replay = retained.replay_plan(&[], 0, 0)?;
         replay.staged_appearance_regions = regions;
-        let plan = super::super::retained_raster::build_plan(basis, &retained, replay, 0, atlas)
-            .map_err(|_| Denial::CommandMismatch)?;
+        let plan =
+            super::super::retained_raster::build_plan(basis, &mut retained, replay, 0, atlas)
+                .map_err(|_| Denial::CommandMismatch)?;
         Ok(observe_plan(&plan, extent))
     }
 }
@@ -97,6 +101,11 @@ pub(super) fn observe_plan(
                 UiNativeTextReplayOperation::Solid {
                     bounds: rect.physical_bounds(),
                     color: *source_rgba8,
+                }
+            }
+            UiNativeRasterOperation::Surface(surface) => {
+                UiNativeTextReplayOperation::AnalyticSurface {
+                    bounds: surface.rect().physical_bounds(),
                 }
             }
             UiNativeRasterOperation::Glyph(glyph) => UiNativeTextReplayOperation::Glyph {

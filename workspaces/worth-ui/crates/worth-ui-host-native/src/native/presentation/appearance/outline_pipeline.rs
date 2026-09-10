@@ -76,6 +76,30 @@ impl UiNativeOutlinePipeline {
 }
 
 impl UiNativeOutlinePrimitive {
+    pub(super) const fn outer(&self) -> UiNativePhysicalRect {
+        self.outer
+    }
+
+    pub(super) const fn clip(&self) -> UiNativePhysicalPixelRect {
+        self.clip
+    }
+
+    pub(super) const fn outer_radii(&self) -> [i64; 4] {
+        self.outer_radii
+    }
+
+    pub(super) const fn width(&self) -> i64 {
+        self.inner.left - self.outer.left
+    }
+
+    pub(super) const fn color(&self) -> UiMountedAppearanceColor {
+        self.color
+    }
+
+    pub(super) const fn opacity(&self) -> u16 {
+        self.opacity
+    }
+
     pub(crate) fn allocation(&self) -> UiNativePhysicalRect {
         self.allocation
     }

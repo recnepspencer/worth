@@ -198,7 +198,7 @@ fn native_input_reaches_the_mechanics_drain_boundary_with_its_presentation_basis
     let state = std::rc::Rc::new(std::cell::RefCell::new(UiNativeHostState::new()));
     let adapter = super::WorthUiNativeMechanicsAdapter::from_preparation(
         std::rc::Rc::clone(&state),
-        crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1,
+        crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2,
     );
     let protocol = match UiHostProtocolContract::current().negotiate() {
         UiHostProtocolNegotiation::Compatible(agreement) => agreement,

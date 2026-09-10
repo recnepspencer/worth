@@ -20,6 +20,7 @@ mod portal_geometry;
 mod reconstruction;
 mod resolved_node_source;
 mod style;
+pub(in crate::mounting::projection) use style::resolved_opacity;
 mod surface;
 mod text_foreground;
 mod text_geometry;
@@ -145,6 +146,77 @@ pub(crate) struct UiMountedAppearanceSidecar {
 }
 
 impl UiMountedAppearanceSidecar {
+    pub(crate) fn reconstruct_physical(
+        &mut self,
+        issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
+        node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    ) -> Result<worth_ui_host_contract::UiMountedAppearanceWork, UiMountedAppearanceLoweringDenial>
+    {
+        let current = self
+            .current
+            .as_ref()
+            .ok_or(UiMountedAppearanceLoweringDenial::WorkConstruction)?;
+        let mechanics = current
+            .records()
+            .iter()
+            .map(|record| {
+                record
+                    .mechanic()
+                    .reattribute_node_for_runtime_mounting(issuer, node_receipt)
+                    .ok_or(UiMountedAppearanceLoweringDenial::WorkConstruction)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let prior_order = current.frame().overlay_order();
+        let overlay_order = worth_ui_host_contract::UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
+            current.frame().semantic_surface(),
+            presentation,
+            prior_order.portal_revision(),
+            prior_order.backdrop_revision(),
+            prior_order.bottom_to_top().iter().cloned(),
+        )
+        .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)?;
+        let successor = worth_ui_host_contract::UiMountedAppearanceFrame::from_runtime_mounting(
+            issuer.frame_identity(),
+            current.frame().semantic_surface(),
+            mechanics,
+            overlay_order,
+        )
+        .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)?;
+        let predecessor_manifest =
+            worth_ui_host_contract::UiMountedAppearancePredecessorManifest::from_runtime_mounting(
+                current
+                    .records()
+                    .iter()
+                    .map(|record| record.identity().clone()),
+                prior_order.bottom_to_top().iter().cloned(),
+            )
+            .ok_or(UiMountedAppearanceLoweringDenial::WorkConstruction)?;
+        let successor_facts = current
+            .reattribute_node(successor.clone(), issuer, node_receipt)
+            .ok_or(UiMountedAppearanceLoweringDenial::WorkConstruction)?;
+        let work = worth_ui_host_contract::UiMountedAppearanceWork::from_runtime_mounting(
+            worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction,
+            Some(current.frame().frame()),
+            Some(predecessor_manifest),
+            successor,
+            [],
+            [],
+            false,
+        )
+        .ok_or(UiMountedAppearanceLoweringDenial::WorkConstruction)?;
+        let summary = UiMountedAppearanceDeltaSummary {
+            semantic_facts_changed: 0,
+            mechanics_changed: false,
+            output_suppressed: false,
+            order_changed: false,
+        };
+        self.counters.observe(&work, summary);
+        self.last_delta = Some(summary);
+        self.current = Some(successor_facts);
+        Ok(work)
+    }
+
     pub(in crate::mounting::projection) fn matches_geometry_input(
         &self,
         input: &UiMountedAppearanceGeometryInput,

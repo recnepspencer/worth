@@ -37,7 +37,9 @@ mod mosaic;
 mod presentation;
 
 use mosaic::register_mosaic;
-use presentation::{register_structure, register_theme_tokens, visual_inspection_policy};
+use presentation::{
+    register_appearance, register_structure, register_theme_tokens, visual_inspection_policy,
+};
 
 pub(crate) struct PreparedPlatformPulseComposition {
     pub(crate) builder:
@@ -64,6 +66,7 @@ pub(crate) enum PlatformPulsePreparationDenial {
     IntentFact(UiIntentApplicationFactRegistrationError),
     IntentDefinition(UiIntentDefinitionRegistrationError),
     IntentProvider(UiIntentExecutionBindingPreparationDenial),
+    Appearance(presentation::PlatformPulseAppearanceRegistrationDenial),
 }
 
 pub(crate) fn prepare_composition(
@@ -172,6 +175,7 @@ impl std::fmt::Display for PlatformPulsePreparationDenial {
             Self::IntentFact(denial) => write!(formatter, "intent fact: {denial:?}"),
             Self::IntentDefinition(denial) => write!(formatter, "intent definition: {denial:?}"),
             Self::IntentProvider(denial) => write!(formatter, "intent provider: {denial:?}"),
+            Self::Appearance(denial) => write!(formatter, "appearance: {denial:?}"),
         }
     }
 }
@@ -189,7 +193,8 @@ fn builder(
         WorthUi::app()
             .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse()),
     ));
-    let builder = register_theme_tokens(builder)
+    let builder = register_appearance(register_theme_tokens(builder))
+        .map_err(PlatformPulsePreparationDenial::Appearance)?
         .register_intent_boolean_fact(platform_pulse_close_portal_mutability_fact(), true)
         .map_err(PlatformPulsePreparationDenial::IntentFact)?
         .register_intent_boolean_fact(platform_pulse_close_portal_readiness_fact(), true)

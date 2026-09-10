@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiThemeDefinition {
+pub struct UiThemeDefinition {
     identity: super::UiThemeDefinitionIdentity,
     revision: u64,
     catalog_basis: super::UiThemeSlotCatalog,
@@ -9,7 +9,7 @@ pub(crate) struct UiThemeDefinition {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum UiThemeDefinitionDenial {
+pub enum UiThemeDefinitionDenial {
     ZeroRevision,
     MissingSlot(crate::capability::ThemeTokenId),
     UnknownSlot(crate::capability::ThemeTokenId),
@@ -23,7 +23,7 @@ pub(crate) enum UiThemeDefinitionDenial {
 }
 
 impl UiThemeDefinition {
-    pub(crate) fn admit(
+    pub fn admit(
         identity: super::UiThemeDefinitionIdentity,
         revision: u64,
         catalog: &super::UiThemeSlotCatalog,
@@ -62,25 +62,25 @@ impl UiThemeDefinition {
         })
     }
 
-    pub(crate) fn identity(&self) -> &super::UiThemeDefinitionIdentity {
+    pub fn identity(&self) -> &super::UiThemeDefinitionIdentity {
         &self.identity
     }
-    pub(crate) const fn revision(&self) -> u64 {
+    pub const fn revision(&self) -> u64 {
         self.revision
     }
-    pub(crate) const fn catalog_revision(&self) -> u64 {
+    pub const fn catalog_revision(&self) -> u64 {
         self.catalog_basis.revision()
     }
-    pub(crate) const fn catalog_basis(&self) -> &super::UiThemeSlotCatalog {
+    pub const fn catalog_basis(&self) -> &super::UiThemeSlotCatalog {
         &self.catalog_basis
     }
-    pub(crate) fn value(
+    pub fn value(
         &self,
         slot: &crate::capability::ThemeTokenId,
     ) -> Option<worth_ui_dsl::UiThemeValue> {
         self.values.get(slot).copied()
     }
-    pub(crate) fn values(
+    pub fn values(
         &self,
     ) -> impl ExactSizeIterator<
         Item = (
@@ -91,7 +91,7 @@ impl UiThemeDefinition {
         self.values.iter()
     }
 
-    pub(crate) fn admit_successor(&self, successor: Self) -> Result<Self, UiThemeDefinitionDenial> {
+    pub fn admit_successor(&self, successor: Self) -> Result<Self, UiThemeDefinitionDenial> {
         if successor.identity != self.identity {
             return Err(UiThemeDefinitionDenial::ForeignSuccessorIdentity);
         }

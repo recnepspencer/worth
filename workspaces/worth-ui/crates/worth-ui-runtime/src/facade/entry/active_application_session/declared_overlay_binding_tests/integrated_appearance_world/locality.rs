@@ -69,7 +69,7 @@ fn selected(
     let cost = frame.appearance_selection_cost_report();
     assert_eq!(cost.selected_instance_count(), expected.len());
     assert_eq!(cost.index_entries_touched(), expected.len());
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     let output =
         frame.lower_unpublished_appearance_with_profile_for_test(profile.appearance_profile());
     let mut observed = Vec::new();

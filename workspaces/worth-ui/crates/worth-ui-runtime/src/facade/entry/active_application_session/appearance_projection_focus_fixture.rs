@@ -53,7 +53,7 @@ fn session_with_services(
     crate::certification_support::ScriptedPresentationHost,
 ) {
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
     let requires_text_presentation = text.is_some();
     let with_services = |builder: crate::facade::entry::WorthUiApplicationBuilder| {

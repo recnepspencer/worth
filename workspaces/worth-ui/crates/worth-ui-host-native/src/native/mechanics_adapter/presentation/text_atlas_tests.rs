@@ -78,6 +78,7 @@ pub(crate) fn inert_view() -> UiMountedFrameConsumptionView<'static> {
             deadline: UiPresentationDeadline::at_tick(10),
             requirement,
             presentation_work: UiMountedPresentationWorkView::Unchanged(unchanged),
+            appearance_work: None,
             qualified_text: &(),
             text_raster_work: None,
         });

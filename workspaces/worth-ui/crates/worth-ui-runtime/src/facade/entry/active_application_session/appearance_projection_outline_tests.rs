@@ -10,7 +10,7 @@ fn outline_damage_uses_the_bound_surfaces_qualified_device_scale() {
 fn run_outline_case(scale: u32) {
     let role = outline_role();
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    let profile = worth_ui_host_native::staged_appearance_capability_report();
+    let profile = worth_ui_host_native::appearance_capability_report();
     host.set_capabilities(profile.clone());
     let observer = host.clone();
     let mut session = support::single_aspect_appearance_component_builder(

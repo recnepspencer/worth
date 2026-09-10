@@ -18,7 +18,7 @@ impl UiNativeRetainedDrawList {
         ),
         Denial,
     > {
-        let retained =
+        let mut retained =
             Self::from_text_view_for_certification(commands, order, view, extent, atlas)?;
         let basis = retained
             .physical_coverage
@@ -34,8 +34,9 @@ impl UiNativeRetainedDrawList {
             &mut Default::default(),
         )?;
         let replay = retained.replay_plan(&[damage], 0, 0)?;
-        let plan = super::super::retained_raster::build_plan(basis, &retained, replay, 0, atlas)
-            .map_err(|_| Denial::CommandMismatch)?;
+        let plan =
+            super::super::retained_raster::build_plan(basis, &mut retained, replay, 0, atlas)
+                .map_err(|_| Denial::CommandMismatch)?;
         let draws = plan
             .operations
             .iter()
@@ -47,6 +48,7 @@ impl UiNativeRetainedDrawList {
                     Some(None)
                 }
                 crate::native::presentation::UiNativeRasterOperation::Clear(_) => None,
+                crate::native::presentation::UiNativeRasterOperation::Surface(_) => Some(None),
             })
             .collect();
         Ok((selected, draws))

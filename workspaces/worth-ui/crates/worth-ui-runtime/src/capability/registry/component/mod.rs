@@ -25,7 +25,7 @@ mod frozen_component_capabilities;
 pub(crate) use component_accepted_registration_proof::ComponentAcceptedRegistrationProof;
 pub use component_allocation_measurement_contract::ComponentAllocationMeasurementContract;
 pub use component_child_policy::ComponentChildPolicy;
-pub(crate) use component_descriptor::ComponentAppearanceAspectContractDenial;
+pub use component_descriptor::ComponentAppearanceAspectContractDenial;
 pub use component_descriptor::ComponentDescriptor;
 pub use component_hit_test_clip_contract::ComponentHitTestClipContract;
 pub use component_hit_test_contract::ComponentHitTestContract;

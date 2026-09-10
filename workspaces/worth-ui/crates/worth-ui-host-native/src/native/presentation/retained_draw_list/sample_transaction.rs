@@ -20,7 +20,72 @@ pub(crate) struct UiNativeRetainedSampleUndo {
     )>,
 }
 
+pub(crate) struct UiNativeAppearanceSampleUndo {
+    overrides: Vec<(
+        UiMountedPaintCommandIdentity,
+        Option<UiMountedPresentationSampleChange>,
+    )>,
+}
+
 impl UiNativeRetainedDrawList {
+    pub(crate) fn stage_appearance_sample_overrides(
+        &mut self,
+        changes: &[UiMountedPresentationSampleChange],
+    ) -> Result<UiNativeAppearanceSampleUndo, UiNativeRetainedDrawListDenial> {
+        let unique = changes
+            .iter()
+            .map(|change| change.command())
+            .collect::<HashSet<_>>();
+        if unique.len() != changes.len()
+            || changes
+                .iter()
+                .any(|change| !self.commands.contains(&change.command()))
+        {
+            return Err(UiNativeRetainedDrawListDenial::CommandMismatch);
+        }
+        let undo = UiNativeAppearanceSampleUndo {
+            overrides: changes
+                .iter()
+                .map(|change| {
+                    (
+                        change.command(),
+                        self.sample_overrides.get(&change.command()).copied(),
+                    )
+                })
+                .collect(),
+        };
+        for (applied, change) in changes.iter().enumerate() {
+            let command = self
+                .commands
+                .get(&change.command())
+                .ok_or(UiNativeRetainedDrawListDenial::CommandMismatch)?;
+            let old = sampled_visible_bounds(
+                command,
+                self.sample_overrides.get(&change.command()).copied(),
+            )?;
+            let new = sampled_visible_bounds(command, Some(*change))?;
+            if let Err(denial) = update_damage(&mut self.damage, change.command(), old, new) {
+                self.rollback_appearance_sample_overrides(UiNativeAppearanceSampleUndo {
+                    overrides: undo.overrides[..applied].to_vec(),
+                })
+                .expect("already-refreshed appearance samples roll back exactly");
+                return Err(denial);
+            }
+            self.sample_overrides.insert(change.command(), *change);
+        }
+        Ok(undo)
+    }
+
+    pub(crate) fn rollback_appearance_sample_overrides(
+        &mut self,
+        undo: UiNativeAppearanceSampleUndo,
+    ) -> Result<(), UiNativeRetainedDrawListDenial> {
+        self.rollback_sample(UiNativeRetainedSampleUndo {
+            physical_coverage: Vec::new(),
+            overrides: undo.overrides,
+        })
+    }
+
     pub(super) fn retire_sample_overrides_for_semantic_delta(
         &mut self,
         identities: &[UiMountedPaintCommandIdentity],

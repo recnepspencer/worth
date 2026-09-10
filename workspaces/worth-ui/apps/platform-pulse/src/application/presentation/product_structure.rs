@@ -1,14 +1,14 @@
 use worth_ui::facade::app::{
     UiChangeProfileInstalled, UiIntentWiringSatisfied, WorthUiApplicationBuilder,
 };
+use worth_ui::facade::appearance::{UiAppearanceAspect, UiAppearanceAspectContract};
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentHitTestContract, ComponentHitTestOrder,
     ComponentStaticPaintContract, ComponentStaticPaintOrder, ComponentViewportAxisPlacement,
-    SurfaceKind, SurfacePlacementClass, SurfaceStateClass,
 };
 use worth_ui_platform_pulse::product_world::{
     PlatformPulseCompositionExtent, PlatformPulseCompositionLayout, PlatformPulseLogicalRect,
-    PlatformPulseMosaicSurface, PlatformPulsePaletteRole, PlatformPulseProductComponent,
+    PlatformPulsePaletteRole, PlatformPulseProductComponent, PlatformPulseStaticCopy,
     PlatformPulseTextRole,
 };
 
@@ -16,9 +16,12 @@ use super::product_structure_geometry::{fixed_end, fixed_start, stretch, viewpor
 
 #[path = "product_structure/descriptor.rs"]
 mod descriptor;
+#[path = "product_structure/surfaces.rs"]
+mod surfaces;
 use descriptor::{
     component, interactive_region, portal_interactive_region, portal_occupying_region,
-    portal_region, portal_text, region, surface, text, text_with_token, token_id,
+    portal_region, portal_text, region, text, text_with_appearance_foreground, text_with_token,
+    token_id,
 };
 
 pub(in crate::application) fn register_structure(
@@ -34,7 +37,7 @@ pub(in crate::application) fn register_structure(
     let query_action = viewport_rect(fixed_end(48, 232), fixed_start(176, 104));
     let query_action_text = viewport_rect(fixed_end(72, 184), fixed_start(220, 48));
     let root_allocation = ComponentAllocationMeasurementContract::fill_viewport();
-    builder
+    let builder = builder
         .register_component(
             component(PlatformPulseProductComponent::Root)
                 .with_static_paint(
@@ -44,6 +47,12 @@ pub(in crate::application) fn register_structure(
                     ),
                     root_allocation,
                 )
+                .with_surface_paint_order(0)
+                .with_appearance_aspect_contract(
+                    UiAppearanceAspectContract::component([UiAppearanceAspect::Background], [])
+                        .expect("Pulse root appearance contract is valid"),
+                )
+                .expect("Pulse root accepts a component appearance contract")
                 .with_hit_test(ComponentHitTestContract::allocation_bounds(
                     ComponentHitTestOrder::front_to_back(3),
                     root_allocation,
@@ -58,13 +67,21 @@ pub(in crate::application) fn register_structure(
             ),
             1,
         ))
-        .register_component(text(
-            PlatformPulseProductComponent::Brand,
-            PlatformPulseTextRole::Masthead,
-            PlatformPulsePaletteRole::PrimaryText,
-            PlatformPulseLogicalRect::new(40, 42, 200, 20).allocation(),
-            6,
-        ))
+        .register_component(
+            text_with_appearance_foreground(
+                PlatformPulseProductComponent::Brand,
+                PlatformPulseTextRole::Masthead,
+                PlatformPulsePaletteRole::PrimaryText,
+                PlatformPulseStaticCopy::ALL[0].text(),
+                PlatformPulseLogicalRect::new(40, 42, 200, 20).allocation(),
+                6,
+            )
+            .with_appearance_aspect_contract(
+                UiAppearanceAspectContract::component([UiAppearanceAspect::Foreground], [])
+                    .expect("Pulse brand appearance contract is valid"),
+            )
+            .expect("Pulse brand accepts a component appearance contract"),
+        )
         .register_component(text(
             PlatformPulseProductComponent::RuntimeBadge,
             PlatformPulseTextRole::Meta,
@@ -260,18 +277,33 @@ pub(in crate::application) fn register_structure(
             PlatformPulseLogicalRect::new(154, 258, 88, 20).allocation(),
             7,
         ))
-        .register_component(region(
-            PlatformPulseProductComponent::QueryCardBorder,
-            PlatformPulsePaletteRole::StructuralRule.token_id(),
-            viewport_rect(fixed_end(23, 282), fixed_start(103, 202)),
-            1,
-        ))
-        .register_component(region(
-            PlatformPulseProductComponent::QueryCard,
-            PlatformPulsePaletteRole::RaisedSurface.token_id(),
-            viewport_rect(fixed_end(24, 280), fixed_start(104, 200)),
-            2,
-        ))
+        .register_component(
+            component(PlatformPulseProductComponent::QueryCardBorder)
+                .with_allocation_measurement_contract(viewport_rect(
+                    fixed_end(23, 282),
+                    fixed_start(103, 202),
+                )),
+        )
+        .register_component(
+            region(
+                PlatformPulseProductComponent::QueryCard,
+                PlatformPulsePaletteRole::RaisedSurface.token_id(),
+                viewport_rect(fixed_end(24, 280), fixed_start(104, 200)),
+                2,
+            )
+            .with_appearance_aspect_contract(
+                UiAppearanceAspectContract::component(
+                    [
+                        UiAppearanceAspect::Background,
+                        UiAppearanceAspect::Border,
+                        UiAppearanceAspect::Radius,
+                    ],
+                    [],
+                )
+                .expect("Pulse query card appearance contract is valid"),
+            )
+            .expect("Pulse query card accepts a component appearance contract"),
+        )
         .register_component(text(
             PlatformPulseProductComponent::QueryLabel,
             PlatformPulseTextRole::Section,
@@ -348,33 +380,6 @@ pub(in crate::application) fn register_structure(
             PlatformPulsePaletteRole::PrimaryText,
             viewport_rect(stretch(40, 40), fixed_end(28, 16)),
             6,
-        ))
-        .register_surface(surface(
-            PlatformPulseMosaicSurface::Main,
-            SurfaceKind::primary_content(),
-            PlatformPulseProductComponent::Root,
-            SurfacePlacementClass::primary_region(),
-            SurfaceStateClass::ephemeral(),
-        ))
-        .register_surface(surface(
-            PlatformPulseMosaicSurface::Evidence,
-            SurfaceKind::auxiliary_content(),
-            PlatformPulseProductComponent::EvidenceRail,
-            SurfacePlacementClass::auxiliary_region(),
-            SurfaceStateClass::restorable(),
-        ))
-        .register_surface(surface(
-            PlatformPulseMosaicSurface::Service,
-            SurfaceKind::primary_content(),
-            PlatformPulseProductComponent::ServiceStage,
-            SurfacePlacementClass::primary_region(),
-            SurfaceStateClass::restorable(),
-        ))
-        .register_surface(surface(
-            PlatformPulseMosaicSurface::Status,
-            SurfaceKind::status_content(),
-            PlatformPulseProductComponent::StatusBand,
-            SurfacePlacementClass::status_region(),
-            SurfaceStateClass::ephemeral(),
-        ))
+        ));
+    surfaces::register(builder)
 }

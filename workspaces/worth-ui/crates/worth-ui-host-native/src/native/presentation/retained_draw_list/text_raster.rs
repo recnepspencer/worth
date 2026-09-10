@@ -21,7 +21,7 @@ impl UiNativeRetainedDrawList {
         let mut glyphs = plan_glyph_commands(self.glyph_runs(identity), atlas, basis.extent())
             .map_err(|_| Denial::CommandMismatch)?;
         // Match original immutable image evidence before any sampled geometry.
-        self.apply_text_paint(mechanic, &mut glyphs, atlas)?;
+        self.apply_text_paint(mechanic, &mut glyphs)?;
         let sample = self.sample_override(identity);
         if let Some(sample) = sample {
             for glyph in glyphs.iter_mut() {

@@ -135,6 +135,66 @@ mod tests {
     use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host_and_viewport_allocation;
 
     #[test]
+    fn same_scale_readiness_preserves_binding_and_leaves_real_rebind_available() {
+        let host = ScriptedPresentationHost::native_display();
+        let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host)
+            .launch_native_surface()
+            .expect("native viewport shell should launch");
+        let initial_binding = shell.binding;
+
+        shell
+            .rebind_native_surface_scale(1_000)
+            .expect("equal scale should already be ready");
+
+        assert_eq!(shell.binding, initial_binding);
+        assert!(shell.pending_surface_reconciliation.is_none());
+        shell
+            .rebind_native_surface_scale(2_000)
+            .expect("equal-scale readiness must leave a real scale successor available");
+        assert_ne!(shell.binding, initial_binding);
+        assert!(shell.pending_surface_reconciliation.is_some());
+    }
+
+    #[test]
+    fn prepared_frame_uses_the_reconciliation_lane_after_scale_rebind() {
+        let host = ScriptedPresentationHost::native_display();
+        let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
+            .launch_native_surface()
+            .expect("native viewport shell should launch");
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
+        host.push_native_display_presented();
+        let Ok(crate::mounting::UiMountedFrameOutcome::Published(_)) = shell.present_frame(1, 0)
+        else {
+            panic!("baseline frame should publish before scale reconciliation");
+        };
+        shell
+            .rebind_native_surface_scale(2_000)
+            .expect("new scale should establish a replacement binding");
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
+        let Ok(frame) = shell.prepare_frame() else {
+            panic!("replacement binding should prepare a reconciliation frame");
+        };
+        host.push_native_display_presented();
+
+        let outcome = shell
+            .present_prepared_frame(frame, u64::MAX, 2)
+            .expect("prepared reconciliation frame should use its matching lane");
+
+        match outcome {
+            crate::mounting::UiMountedFrameOutcome::Reconciled(_)
+            | crate::mounting::UiMountedFrameOutcome::Published(_)
+            | crate::mounting::UiMountedFrameOutcome::Unchanged(_) => {}
+            crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejection) => {
+                panic!("reconciliation admission denied: {:?}", rejection.denial())
+            }
+            _ => panic!("prepared reconciliation did not settle"),
+        }
+        assert!(shell.pending_surface_reconciliation.is_none());
+    }
+
+    #[test]
     fn same_physical_extent_with_new_scale_and_binding_remeasures_before_projection() {
         let host = ScriptedPresentationHost::native_display();
         let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())

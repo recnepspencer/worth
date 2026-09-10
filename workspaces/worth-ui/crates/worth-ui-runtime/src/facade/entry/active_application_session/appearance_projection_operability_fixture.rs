@@ -219,7 +219,7 @@ pub(super) fn session_with_source(
     crate::certification_support::ScriptedPresentationHost,
 ) {
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
     let capabilities = builder(role).freeze().unwrap();
     let launch = crate::runtime::tests::source_ingress_boundary_test_support::lower_rust_submission(

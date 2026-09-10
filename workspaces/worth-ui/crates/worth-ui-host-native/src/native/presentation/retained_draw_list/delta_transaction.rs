@@ -1,5 +1,6 @@
 use worth_ui_host_contract::{
-    UiMountedPaintCommand, UiMountedPaintCommandIdentity, UiMountedPresentationDelta,
+    UiMountedPaintCommand, UiMountedPaintCommandIdentity, UiMountedPaintOrderIdentity,
+    UiMountedPresentationDelta,
 };
 
 use super::mutation::visible_bounds;
@@ -28,6 +29,7 @@ pub(crate) struct UiNativeRetainedDeltaUndo {
         UiMountedPaintCommandIdentity,
         Option<worth_ui_host_contract::UiMountedPresentationSampleChange>,
     )>,
+    appearance_sample_overrides: Vec<super::sample_transaction::UiNativeAppearanceSampleUndo>,
 }
 
 impl UiNativeRetainedDrawList {
@@ -60,9 +62,14 @@ impl UiNativeRetainedDrawList {
                 .copied()
                 .map(|identity| (identity, self.glyph_runs.get(&identity).cloned()))
                 .collect(),
-            order: self
-                .order
-                .snapshot(delta.order().iter().map(|edit| edit.identity())),
+            order: self.order.snapshot(
+                delta.order().iter().map(|edit| edit.identity()).chain(
+                    changed_identities
+                        .iter()
+                        .copied()
+                        .map(UiMountedPaintOrderIdentity::for_command),
+                ),
+            ),
             order_integrity: self.order_integrity,
             regions: self.regions.clone(),
             identity_overlay: self.identity_overlay,
@@ -72,6 +79,7 @@ impl UiNativeRetainedDrawList {
                 .copied()
                 .map(|identity| (identity, self.sample_overrides.get(&identity).copied()))
                 .collect(),
+            appearance_sample_overrides: Vec::new(),
         };
         self.retire_sample_overrides_for_semantic_delta(&changed_identities)?;
         if let Err(error) = self
@@ -152,6 +160,9 @@ impl UiNativeRetainedDrawList {
         &mut self,
         undo: UiNativeRetainedDeltaUndo,
     ) -> Result<(), UiNativeRetainedDrawListDenial> {
+        for sample in undo.appearance_sample_overrides.into_iter().rev() {
+            self.rollback_appearance_sample_overrides(sample)?;
+        }
         self.restore_physical_coverage(undo.physical_coverage)?;
         if !undo.text_coverage.is_empty() {
             let appearance = self
@@ -246,9 +257,23 @@ pub(super) fn changed_identities(
 }
 
 impl UiNativeRetainedDeltaUndo {
+    pub(in crate::native::presentation) fn retain_appearance_samples(
+        &mut self,
+        undo: super::sample_transaction::UiNativeAppearanceSampleUndo,
+    ) {
+        self.appearance_sample_overrides.push(undo);
+    }
+
     pub(super) fn retain_text_coverage(
         &mut self,
         undo: crate::native::presentation::appearance::UiNativeTextCoverageUndo,
+    ) {
+        self.text_coverage.push(undo);
+    }
+
+    pub(in crate::native::presentation) fn retain_appearance_command(
+        &mut self,
+        undo: crate::native::presentation::appearance::UiNativeAppearanceCommandUndo,
     ) {
         self.text_coverage.push(undo);
     }

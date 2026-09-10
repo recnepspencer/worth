@@ -1,12 +1,12 @@
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct FrozenAppearanceThemeCapabilities {
+pub struct FrozenAppearanceThemeCapabilities {
     catalog: super::UiThemeSlotCatalog,
     initial_definition: super::UiThemeDefinitionIdentity,
     definitions: Box<[super::UiThemeDefinition]>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum FrozenAppearanceThemeCapabilitiesDenial {
+pub enum FrozenAppearanceThemeCapabilitiesDenial {
     EmptyDefinitions,
     DuplicateDefinition,
     CatalogBasisMismatch,
@@ -16,8 +16,8 @@ pub(crate) enum FrozenAppearanceThemeCapabilitiesDenial {
 }
 
 impl FrozenAppearanceThemeCapabilities {
-    pub(crate) const DEFINITION_CAPACITY: usize = 32;
-    pub(crate) fn admit(
+    pub const DEFINITION_CAPACITY: usize = 32;
+    pub fn admit(
         catalog: super::UiThemeSlotCatalog,
         initial_definition: super::UiThemeDefinitionIdentity,
         mut definitions: Vec<super::UiThemeDefinition>,
@@ -54,16 +54,16 @@ impl FrozenAppearanceThemeCapabilities {
         })
     }
 
-    pub(crate) const fn catalog(&self) -> &super::UiThemeSlotCatalog {
+    pub const fn catalog(&self) -> &super::UiThemeSlotCatalog {
         &self.catalog
     }
-    pub(crate) fn definitions(&self) -> &[super::UiThemeDefinition] {
+    pub fn definitions(&self) -> &[super::UiThemeDefinition] {
         &self.definitions
     }
-    pub(crate) fn initial_definition_identity(&self) -> &super::UiThemeDefinitionIdentity {
+    pub fn initial_definition_identity(&self) -> &super::UiThemeDefinitionIdentity {
         &self.initial_definition
     }
-    pub(crate) fn get(
+    pub fn get(
         &self,
         identity: &super::UiThemeDefinitionIdentity,
     ) -> Option<&super::UiThemeDefinition> {
@@ -72,7 +72,7 @@ impl FrozenAppearanceThemeCapabilities {
             .ok()
             .map(|index| &self.definitions[index])
     }
-    pub(crate) fn digest_basis(&self) -> u64 {
+    pub fn digest_basis(&self) -> u64 {
         let catalog = self
             .catalog
             .slots()

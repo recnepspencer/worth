@@ -158,7 +158,7 @@ fn mounted_two_surface_session(
     crate::certification_support::ScriptedPresentationHost,
 ) {
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    host.set_capabilities(worth_ui_host_native::staged_appearance_capability_report());
+    host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
     let mut session = support::appearance_component_builder(role)
         .register_appearance_theme_bundle(appearance_theme_test_support::bundle())

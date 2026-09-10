@@ -70,8 +70,14 @@ impl UiNativeTextForegroundJoin {
         mechanic: &UiMountedTextForegroundAppearanceMechanic,
     ) -> Result<Self, UiNativeTextForegroundFinalizationDenial> {
         use UiNativeTextForegroundFinalizationDenial as Denial;
+        let fragment_affinity = fragment.presentation_affinity();
+        let presentation_affinity = view.presentation_work().affinity();
         if fragment.surface_binding() != view.requirement()
-            || fragment.presentation_affinity() != view.presentation_work().affinity()
+            || fragment_affinity.successor() != presentation_affinity.successor()
+            || fragment_affinity.surface() != presentation_affinity.surface()
+            || fragment_affinity.binding() != presentation_affinity.binding()
+            || fragment_affinity.content() != presentation_affinity.content()
+            || fragment_affinity.baseline() != presentation_affinity.baseline()
             || fragment.work().successor().overlay_order().presentation() != view.attempt()
             || fragment.surface_binding().capability_generation() != view.capability_generation()
             || fragment.surface_binding().capability_profile_digest()
@@ -181,7 +187,7 @@ impl UiNativeTextForegroundJoin {
                 UiNativeGlyphCommandDenial::GeometryOverflow => Denial::Geometry,
             })?;
         let mut coverage = UiNativeAppearanceDamage::new(usize::from(
-            crate::native_profile::STAGED_APPEARANCE_PROFILE.damage_regions,
+            crate::native_profile::APPEARANCE_PROFILE.damage_regions,
         ));
         let [red, green, blue, alpha] = self.mechanic.foreground().straight_srgba();
         let foreground = UiMountedRgba8::new(red, green, blue, alpha);
@@ -230,6 +236,68 @@ impl UiNativeTextForegroundJoin {
 }
 
 impl UiNativeFinalizedTextForeground {
+    pub(crate) fn inherit_paint_replacement(
+        &self,
+        mechanic: &UiMountedTextForegroundAppearanceMechanic,
+        fragment: &UiUnpublishedAppearanceFragment,
+        view: &UiMountedFrameConsumptionView<'_>,
+        atlas: &UiNativeTextAtlas,
+    ) -> Result<Self, UiNativeTextForegroundFinalizationDenial> {
+        use UiNativeTextForegroundFinalizationDenial as Denial;
+        if mechanic.node_receipt().mounted_instance()
+            != self.mechanic.node_receipt().mounted_instance()
+            || mechanic.command() != self.mechanic.command()
+            || mechanic.paint_span() != self.mechanic.paint_span()
+            || fragment.surface_binding() != view.requirement()
+            || fragment.presentation_affinity().successor()
+                != view.presentation_work().affinity().successor()
+            || fragment.presentation_affinity().surface()
+                != view.presentation_work().affinity().surface()
+            || fragment.presentation_affinity().binding()
+                != view.presentation_work().affinity().binding()
+            || fragment.presentation_affinity().content()
+                != view.presentation_work().affinity().content()
+            || fragment.presentation_affinity().baseline()
+                != view.presentation_work().affinity().baseline()
+        {
+            return Err(Denial::CandidateAttribution);
+        }
+        let candidates = fragment
+            .text_candidates()
+            .iter()
+            .filter(|candidate| consumes_foreground(candidate, mechanic))
+            .cloned()
+            .collect::<Vec<_>>();
+        if candidates.len() != self.candidates.len()
+            || candidates
+                .iter()
+                .zip(self.candidates.iter())
+                .any(|(current, _)| self.validate_command(current).is_err())
+        {
+            return Err(Denial::CandidateAttribution);
+        }
+        let [red, green, blue, alpha] = mechanic.foreground().straight_srgba();
+        let foreground = UiMountedRgba8::new(red, green, blue, alpha);
+        let opacity = f32::from(mechanic.opacity().units()) / f32::from(u16::MAX);
+        let mut glyphs = self.glyphs.clone();
+        for glyph in glyphs.iter_mut() {
+            glyph.foreground = foreground;
+            glyph.opacity = opacity;
+        }
+        Ok(Self {
+            mechanic: mechanic.clone(),
+            binding: fragment.surface_binding(),
+            affinity: fragment.presentation_affinity(),
+            attempt: view.attempt(),
+            coverage: self.coverage.clone(),
+            images: atlas
+                .observe_images()
+                .map_err(|_| Denial::AtlasImageBasis)?,
+            candidates: candidates.into_boxed_slice(),
+            glyphs,
+        })
+    }
+
     #[cfg(feature = "certification-support")]
     pub(crate) fn glyph_vertex_colors(&self, extent: [u32; 2]) -> Box<[[f32; 4]]> {
         self.glyphs()

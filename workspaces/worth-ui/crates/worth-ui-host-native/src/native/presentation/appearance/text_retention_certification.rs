@@ -24,13 +24,23 @@ pub(crate) fn certify_retention(
     let scale = UiNativeAppearanceScale::qualified(1_000)
         .map_err(|_| UiNativeTextRetentionCertificationDenial::Scale)?;
     let mut retained = UiNativeAppearanceRetained::new(scale);
+    let successor_command = successor
+        .candidate_commands()
+        .next()
+        .ok_or(UiNativeTextRetentionCertificationDenial::Identity)?;
     let (_, inserted) = retained
         .stage_text_insert(successor.clone(), atlas, None)
         .map_err(|_| UiNativeTextRetentionCertificationDenial::Insert)?;
     retained
         .rollback_text(inserted)
         .map_err(|_| UiNativeTextRetentionCertificationDenial::Insert)?;
-    if !retained.ordered_keys().is_empty() || !retained.take_damage().is_empty() {
+    if !retained.ordered_keys().is_empty()
+        || !retained.take_damage().is_empty()
+        || !retained
+            .ordered_motion_keys([], [successor_command])
+            .map_err(|_| UiNativeTextRetentionCertificationDenial::Insert)?
+            .is_empty()
+    {
         return Err(UiNativeTextRetentionCertificationDenial::Insert);
     }
     // Historical coverage is seeded from real finalized payloads. It does not
@@ -73,9 +83,13 @@ pub(crate) fn certify_retention(
     retained
         .rollback_text(removed)
         .map_err(|_| UiNativeTextRetentionCertificationDenial::Remove)?;
+    let restored_motion = retained
+        .ordered_motion_keys([], [successor_command])
+        .map_err(|_| UiNativeTextRetentionCertificationDenial::Remove)?;
     if retained.command(key) != previous.as_ref()
         || retained.ordered_keys().as_ref() != [key, other]
         || !retained.take_damage().is_empty()
+        || !restored_motion.contains(&key)
     {
         return Err(UiNativeTextRetentionCertificationDenial::Remove);
     }

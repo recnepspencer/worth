@@ -11,6 +11,9 @@ mod sample_override;
 #[path = "delta_transaction_tests/identity_replacement.rs"]
 mod identity_replacement;
 
+#[path = "delta_transaction_tests/semantic_weight_rollback.rs"]
+mod semantic_weight_rollback;
+
 struct UnsettledPresentation;
 
 impl UiNativePendingExternalObligation for UnsettledPresentation {

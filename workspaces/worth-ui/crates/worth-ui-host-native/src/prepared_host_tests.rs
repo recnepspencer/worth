@@ -50,7 +50,7 @@ fn prepared_mechanics_delegates_retained_observation_drain() {
     let prepared = WorthUiPreparedNativeMechanics {
         adapter: WorthUiNativeMechanicsAdapter::from_preparation(
             Rc::clone(&state),
-            crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1,
+            crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2,
         ),
     };
     let protocol = match UiHostProtocolContract::current().negotiate() {

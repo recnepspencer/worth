@@ -224,6 +224,7 @@ fn view<'work>(
         UiMountedFrameConsumptionInput {
             qualified_text: text,
             text_raster_work: None,
+            appearance_work: None,
             authority: std::rc::Rc::new(()),
             host_session_identity: 13,
             protocol,

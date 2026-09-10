@@ -1,3 +1,4 @@
+mod appearance;
 mod product_structure;
 mod product_structure_geometry;
 
@@ -14,6 +15,8 @@ use worth_ui::facade::inspection::{
 };
 use worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_MAXIMUM_PIXEL_BYTES;
 
+pub(super) use appearance::register as register_appearance;
+pub(super) use appearance::PlatformPulseAppearanceRegistrationDenial;
 pub(super) use product_structure::register_structure;
 
 const FILL_TOKEN: &str = "theme.platform_pulse.fill";
