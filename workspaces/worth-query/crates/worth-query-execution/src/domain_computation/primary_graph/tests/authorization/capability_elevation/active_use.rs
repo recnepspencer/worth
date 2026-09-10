@@ -15,7 +15,7 @@ fn approved_receipt_rejects_another_elevation_and_a_narrowed_amount() {
 
     for input in [wrong_elevation, narrowed_amount] {
         let denial = world
-            .application
+            .selected_product()
             .admit_approved_elevation_access(&approved, &principal, &capability, input, &request)
             .err()
             .expect("active use must remain inside the exact requested upper bound");
@@ -35,7 +35,7 @@ fn approved_receipt_from_another_runtime_cannot_open_active_use() {
     let capability = super::installed_capability(&world);
 
     let denial = world
-        .application
+        .selected_product()
         .admit_approved_elevation_access(
             &foreign,
             &principal,
@@ -61,7 +61,7 @@ fn approved_touch_elevation_cannot_authorize_a_disbursement_request() {
     disbursement.action = CapabilityAction::Disburse;
 
     let denial = world
-        .application
+        .selected_product()
         .admit_approved_elevation_access(&approved, &principal, &capability, disbursement, &request)
         .err()
         .expect("the touch upper bound must reject a disbursement before operation authority");

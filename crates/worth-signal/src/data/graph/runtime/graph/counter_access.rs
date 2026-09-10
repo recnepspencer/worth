@@ -25,13 +25,6 @@ impl SignalGraph {
         self.invalidation_performed_work.snapshot()
     }
 
-    pub(crate) fn record_invalidation_performed_work(
-        &self,
-        binding: crate::data::proof::invalidation::progression::InvalidationWorkBindingAxes,
-    ) {
-        self.invalidation_performed_work.record(binding);
-    }
-
     pub(crate) const fn invalidation_performed_counter_state(
         &self,
     ) -> &InvalidationPerformedCounterState {

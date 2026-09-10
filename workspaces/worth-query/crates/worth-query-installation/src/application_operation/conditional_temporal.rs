@@ -186,7 +186,7 @@ where
 
     #[doc(hidden)]
     pub fn observe_clock_for_runtime(
-        &mut self,
+        &self,
     ) -> Result<
         crate::domain_operation::WorthQueryNamedClockObservation<Clock>,
         crate::domain_operation::WorthQueryNamedClockFailure,

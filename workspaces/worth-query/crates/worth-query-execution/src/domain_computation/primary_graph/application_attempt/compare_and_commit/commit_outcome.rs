@@ -1,6 +1,57 @@
 //! Compare-and-commit outcome and denial taxonomy.
 
-use super::{super::WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationCommitDeferred};
+use super::WorthQueryApplicationCommitDeferred;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationNoEffectCause {
+    OwnerDeniedBeforeEffect,
+    CorrespondenceRebindRequired,
+    ReferenceGenerationExhausted,
+    CapacityExhausted,
+    OwnerUnavailable,
+    PreEffectFailure,
+}
+
+#[derive(Debug)]
+pub struct WorthQueryApplicationNoEffect {
+    terminal: worth_runtime_world::facade::NoEffectCompositePublication,
+}
+
+impl WorthQueryApplicationNoEffect {
+    pub(in crate::domain_computation::primary_graph) fn from_world(
+        terminal: worth_runtime_world::facade::NoEffectCompositePublication,
+    ) -> Self {
+        Self { terminal }
+    }
+
+    pub fn cause(&self) -> WorthQueryApplicationNoEffectCause {
+        use worth_runtime_world::facade::NoEffectCause as Cause;
+        match self.terminal.cause() {
+            Cause::OwnerDeniedBeforeEffect => {
+                WorthQueryApplicationNoEffectCause::OwnerDeniedBeforeEffect
+            }
+            Cause::CorrespondenceRebindRequired => {
+                WorthQueryApplicationNoEffectCause::CorrespondenceRebindRequired
+            }
+            Cause::ReferenceGenerationExhausted => {
+                WorthQueryApplicationNoEffectCause::ReferenceGenerationExhausted
+            }
+            Cause::CapacityExhausted => WorthQueryApplicationNoEffectCause::CapacityExhausted,
+            Cause::OwnerUnavailable => WorthQueryApplicationNoEffectCause::OwnerUnavailable,
+            Cause::PreEffectFailure => WorthQueryApplicationNoEffectCause::PreEffectFailure,
+            Cause::StaleExpectedProductHead
+            | Cause::CancelledBeforeEffect
+            | Cause::DeadlineBeforeEffect => {
+                unreachable!("stale, cancellation, and deadline have dedicated Query outcomes")
+            }
+        }
+    }
+}
+
+mod settlement_deferred;
+pub use settlement_deferred::{
+    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationStaleAttempt {
@@ -20,6 +71,7 @@ impl WorthQueryApplicationStaleAttempt {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
     ProviderRejected,
+    ProductBasisStale,
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
     },
@@ -79,6 +131,15 @@ impl WorthQueryApplicationCommitDenial {
     ) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
+            stage,
+        }
+    }
+
+    pub(in super::super) const fn product_basis_stale(
+        stage: WorthQueryApplicationCommitDenialStage,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProductBasisStale,
             stage,
         }
     }
@@ -204,6 +265,9 @@ impl WorthQueryApplicationCommitDenial {
 
 #[derive(Debug)]
 pub enum WorthQueryApplicationCommitOutcome {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(WorthQueryApplicationNoEffect),
     Committed(super::WorthQueryApplicationCommitReceipt),
     AlreadyCommitted(super::WorthQueryApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
@@ -216,115 +280,14 @@ pub enum WorthQueryApplicationCommitOutcome {
     Indeterminate(WorthQueryApplicationUnresolvedCommitEvidence),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationSettlementNextAction {
-    RecoverDeferredApplicationSettlement,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationSettlementDeferred {
-    stage: crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage,
-    detail: String,
-    counters:
-        crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters,
-    settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
-    publication_failure_stage:
-        Option<crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage>,
-    publication_failure_detail: Option<String>,
-    publication_failure_counters: Option<
-        crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters,
-    >,
-    idempotency_binding: WorthQueryApplicationIdempotencyBinding,
-    branch: worth_relational::facade::history::BranchId,
-}
-
-impl WorthQueryApplicationSettlementDeferred {
-    pub(in crate::domain_computation::primary_graph) fn from_provider_session(
-        deferred: crate::domain_computation::provider_session::WorthQueryProviderSessionSettlementDeferred,
-        idempotency_binding: WorthQueryApplicationIdempotencyBinding,
-        branch: worth_relational::facade::history::BranchId,
-    ) -> Self {
-        let publication_failure = deferred.publication_failure();
-        Self {
-            stage: deferred.stage(),
-            detail: deferred.detail().to_owned(),
-            counters: deferred.counters(),
-            settlement: deferred.settlement().clone(),
-            publication_failure_stage: publication_failure.map(|failure| failure.stage()),
-            publication_failure_detail: publication_failure
-                .map(|failure| failure.detail().to_owned()),
-            publication_failure_counters: publication_failure.map(|failure| failure.counters()),
-            idempotency_binding,
-            branch,
+impl WorthQueryApplicationCommitOutcome {
+    /// Requires a committed application result while returning every other
+    /// typed terminal with its recovery custody intact.
+    pub fn require_committed(self) -> Result<super::WorthQueryApplicationCommitReceipt, Self> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => Ok(receipt),
+            other => Err(other),
         }
-    }
-
-    pub const fn stage(
-        &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage {
-        self.stage
-    }
-
-    pub fn detail(&self) -> &str {
-        &self.detail
-    }
-
-    pub const fn counters(
-        &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters
-    {
-        self.counters
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn settlement(
-        &self,
-    ) -> &worth_relational::facade::publication::DeferredPublicationSettlement {
-        &self.settlement
-    }
-
-    pub const fn publication_failure_stage(
-        &self,
-    ) -> Option<crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage>
-    {
-        self.publication_failure_stage
-    }
-
-    pub fn publication_failure_detail(&self) -> Option<&str> {
-        self.publication_failure_detail.as_deref()
-    }
-
-    pub const fn publication_failure_counters(
-        &self,
-    ) -> Option<
-        crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters,
-    > {
-        self.publication_failure_counters
-    }
-
-    pub const fn next_action(&self) -> WorthQueryApplicationSettlementNextAction {
-        WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement
-    }
-
-    pub fn commit_id(&self) -> worth_relational::facade::history::CommitId {
-        self.settlement.commit().commit_id
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn requires_idempotency_readmission(
-        &self,
-    ) -> bool {
-        self.publication_failure_detail.is_some()
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn idempotency_binding(
-        &self,
-    ) -> WorthQueryApplicationIdempotencyBinding {
-        self.idempotency_binding
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn branch(
-        &self,
-    ) -> &worth_relational::facade::history::BranchId {
-        &self.branch
     }
 }
 

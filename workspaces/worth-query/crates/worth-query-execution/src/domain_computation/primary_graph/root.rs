@@ -6,6 +6,7 @@ use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexKind
 use worth_relational::facade::runtime::RelationalRuntime;
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
 #[cfg(test)]
 mod test_inspection;
@@ -21,11 +22,7 @@ pub struct WorthQueryPrimaryGraph {
     relational_runtime_instance_id: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
     pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
-    runtime: Arc<Mutex<RelationalRuntime>>,
-    bridge_source:
-        Arc<Mutex<Option<worth_relational::facade::bridge::RuntimeBridgeRelationalSource>>>,
-    bridge_head:
-        Arc<Mutex<Option<worth_relational::facade::bridge::RelationalBridgeBranchHeadLease>>>,
+    source_owner: WorthQueryRelationalSourceOwner,
     aggregate_projections: Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
@@ -95,21 +92,14 @@ impl WorthQueryPrimaryGraph {
             branch_scoped: false,
         });
         aftermath_causality.key_index_id = installed.index_id;
-        let runtime = Arc::new(Mutex::new(runtime));
-        let bridge_source =
-            worth_relational::facade::bridge::RuntimeBridgeRelationalSource::for_shared_graph_role(
-                Arc::clone(&runtime),
-                "primary",
-            )
+        let source_owner = WorthQueryRelationalSourceOwner::new(runtime, "primary")
             .expect("the installed primary graph role is canonical");
         Self {
             runtime_authority,
             relational_runtime_instance_id,
             binding_identity,
             layout: Arc::new(layout),
-            runtime,
-            bridge_source: Arc::new(Mutex::new(Some(bridge_source))),
-            bridge_head: Arc::new(Mutex::new(None)),
+            source_owner,
             aggregate_projections: Arc::new(Mutex::new(
                 super::aggregate_projection::WorthQueryAggregateProjections::default(),
             )),
@@ -121,17 +111,13 @@ impl WorthQueryPrimaryGraph {
         &mut self,
         role: worth_foundational::facade::TruthPartitionRole,
     ) {
-        let bridge_source = worth_relational::facade::bridge::RuntimeBridgeRelationalSource::for_shared_graph_partition(
-            Arc::clone(&self.runtime),
-            "primary",
-            worth_relational::facade::identity::PartitionId::main(),
-            role.clone(),
-        )
-        .expect("the installed primary graph partition role is canonical");
-        *self
-            .bridge_source
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(bridge_source);
+        self.source_owner
+            .bind_truth_partition(
+                "primary",
+                worth_relational::facade::identity::PartitionId::main(),
+                role.clone(),
+            )
+            .expect("the installed primary graph partition role is canonical");
         self.truth_partition_role = Some(role);
     }
 
@@ -180,9 +166,7 @@ impl WorthQueryPrimaryGraph {
             .collect::<Vec<_>>()
             .into();
         WorthQueryPrimaryGraphIntegrationHandle {
-            runtime: Arc::clone(&self.runtime),
-            bridge_source: Arc::clone(&self.bridge_source),
-            bridge_head: Arc::clone(&self.bridge_head),
+            source_owner: self.source_owner.clone(),
             layout: Arc::clone(&self.layout),
             primary_index_ids,
             aggregate_projections: Arc::clone(&self.aggregate_projections),
@@ -214,11 +198,7 @@ impl std::fmt::Debug for WorthQueryPrimaryGraph {
 #[doc(hidden)]
 #[derive(Clone)]
 pub struct WorthQueryPrimaryGraphIntegrationHandle {
-    pub(super) runtime: Arc<Mutex<RelationalRuntime>>,
-    bridge_source:
-        Arc<Mutex<Option<worth_relational::facade::bridge::RuntimeBridgeRelationalSource>>>,
-    bridge_head:
-        Arc<Mutex<Option<worth_relational::facade::bridge::RelationalBridgeBranchHeadLease>>>,
+    pub(super) source_owner: WorthQueryRelationalSourceOwner,
     pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
     pub(super) primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
     pub(super) aggregate_projections:
@@ -229,33 +209,29 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
 impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
-        let runtime = self
-            .runtime
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        read(&runtime)
+        self.source_owner.with_runtime(read)
     }
 
     pub(crate) fn with_runtime_mut<T>(
         &self,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
     ) -> T {
-        let mut runtime = self
-            .runtime
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        mutate(&mut runtime)
+        self.source_owner.with_runtime_mut(mutate)
+    }
+
+    pub(crate) fn with_runtime_mut_unwind_isolated<T>(
+        &self,
+        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
+    ) -> T {
+        self.source_owner.with_runtime_mut_unwind_isolated(mutate)
     }
 
     pub(in crate::domain_computation) fn with_query_runtime_mut<T>(
         &self,
         read: impl FnOnce(&mut RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
     ) -> T {
-        let mut runtime = self
-            .runtime
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        read(&mut runtime, &self.layout)
+        self.source_owner
+            .with_runtime_mut(|runtime| read(runtime, &self.layout))
     }
 
     /// Retains the shared relational source for a host-owned runtime Bridge
@@ -266,14 +242,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     pub fn relational_bridge_source(
         &self,
     ) -> worth_relational::facade::bridge::RuntimeBridgeRelationalSource {
-        let installed = self
-            .bridge_source
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        installed
-            .as_ref()
-            .expect("the primary graph Bridge source is installed eagerly")
-            .clone()
+        self.source_owner.bridge_source()
     }
 
     #[doc(hidden)]
@@ -281,12 +250,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         &self,
         branch: &worth_runtime_bridge::facade::TruthBranchIdentity,
     ) -> Option<worth_runtime_bridge::facade::TruthSnapshotIdentity> {
-        self.bridge_head
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .as_ref()
-            .filter(|head| head.branch_identity() == branch)
-            .map(|head| head.snapshot_identity().clone())
+        self.source_owner.current_truth_snapshot(branch)
     }
 
     pub(crate) fn bind_current_truth_head(
@@ -296,23 +260,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         worth_runtime_bridge::facade::TruthSnapshotIdentity,
         worth_relational::facade::branch::RelationalBranchBasisDenial,
     > {
-        let basis = self.with_runtime(|runtime| {
-            let identity = runtime.branch_identity(branch).map_err(|_| {
-                worth_relational::facade::branch::RelationalBranchBasisDenial::UnknownBranch(
-                    branch.clone(),
-                )
-            })?;
-            runtime.observe_branch(&identity).map(|(_, basis)| basis)
-        })?;
-        let source = self.relational_bridge_source();
-        let head = source.bind_branch_head_basis_for_bridge(&basis)?;
-        let snapshot = head.snapshot_identity().clone();
-        let mut installed = self
-            .bridge_head
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        *installed = Some(head);
-        Ok(snapshot)
+        self.source_owner.bind_current_truth_head(branch)
     }
 
     pub(crate) fn bind_truth_head_basis_in_runtime(
@@ -323,15 +271,21 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         worth_runtime_bridge::facade::TruthSnapshotIdentity,
         worth_relational::facade::branch::RelationalBranchBasisDenial,
     > {
-        let source = self.relational_bridge_source();
-        let head = source.bind_branch_head_basis_for_bridge_in_runtime(runtime, basis)?;
-        let snapshot = head.snapshot_identity().clone();
-        let mut installed = self
-            .bridge_head
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        *installed = Some(head);
-        Ok(snapshot)
+        self.source_owner
+            .bind_truth_head_basis_in_runtime(runtime, basis)
+    }
+
+    /// Admits product installation without exposing a mutation route that could
+    /// bypass this primary graph's required index maintenance.
+    #[doc(hidden)]
+    pub fn prepare_product_source(
+        &self,
+        branch: &worth_relational::facade::branch::RelationalBranchIdentity,
+    ) -> Result<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductRelationalInstallation,
+        worth_relational::facade::branch::RelationalBranchBasisDenial,
+    >{
+        self.source_owner.prepare_product_source(branch)
     }
 
     pub(crate) const fn truth_partition_role(

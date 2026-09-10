@@ -27,8 +27,12 @@ fn declaration_order_converges_to_one_installed_operation_meaning() {
 
     let direct_domain = direct.domain(GeometryDomain).unwrap();
     let reversed_domain = reversed.domain(GeometryDomain).unwrap();
-    let direct_world = direct.observe_operating_world().unwrap();
-    let reversed_world = reversed.observe_operating_world().unwrap();
+    let direct_world = direct
+        .observe_operating_world(direct.current_world())
+        .unwrap();
+    let reversed_world = reversed
+        .observe_operating_world(reversed.current_world())
+        .unwrap();
     let direct_operation = direct_world
         .family(ReadFamily)
         .bind(&direct_domain, ReadVertex)
@@ -133,7 +137,9 @@ fn rebuilt_execution_index_preserves_operation_authority_and_exact_shape() {
     assert_eq!(report.operation_required_domain_count(), 0);
 
     let installed_domain = world.domain(GeometryDomain).unwrap();
-    let operating_world = world.observe_operating_world().unwrap();
+    let operating_world = world
+        .observe_operating_world(world.current_world())
+        .unwrap();
     let operation = operating_world
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -158,7 +164,9 @@ fn one_field_semantic_drift_rejects_the_package_atomically() {
 fn marker_lookalike_misses_one_index_without_later_work() {
     let world = workspace("operation-marker-lookalike", false).unwrap();
     let domain = world.domain(GeometryDomain).unwrap();
-    let operating_world = world.observe_operating_world().unwrap();
+    let operating_world = world
+        .observe_operating_world(world.current_world())
+        .unwrap();
     let denial = match operating_world
         .family(ReadFamily)
         .bind(&domain, ReadVertexLookalike)
@@ -185,7 +193,9 @@ fn foreign_domain_authority_denies_before_operation_lookup() {
     let owner = workspace("operation-owner", false).unwrap();
     let foreign = workspace("operation-foreign", false).unwrap();
     let foreign_domain = foreign.domain(GeometryDomain).unwrap();
-    let operating_world = owner.observe_operating_world().unwrap();
+    let operating_world = owner
+        .observe_operating_world(owner.current_world())
+        .unwrap();
     let denial = match operating_world
         .family(ReadFamily)
         .bind(&foreign_domain, ReadVertex)

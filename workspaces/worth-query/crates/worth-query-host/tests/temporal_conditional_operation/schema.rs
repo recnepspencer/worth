@@ -7,9 +7,20 @@ use worth_query_host::facade::declaration::application_query::{
 use worth_query_host::facade::{declaration, primary_graph};
 use worth_query_host::facade::{
     worth_query_application_query, worth_query_application_schema, worth_query_aspect,
-    worth_query_entity, worth_query_field, worth_query_operation, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding,
-    worth_query_relation,
+    worth_query_effect, worth_query_entity, worth_query_field, worth_query_operation,
+    worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_portable_type, worth_query_principal_binding, worth_query_relation,
+};
+
+const SCALED_AMENDMENT_DECISION_FACT_BUDGET: usize = 128;
+const SCALED_AMENDMENT_PROJECTION_WORK_BUDGET: usize = 256;
+
+#[path = "schema/live_intent_query.rs"]
+mod live_intent_query;
+#[allow(unused_imports)]
+pub use live_intent_query::{
+    temporal_intent_live_query_definition, IntentLiveQueryParameters, IntentLiveQueryResult,
+    TemporalIntentLiveCause, TemporalIntentLiveQuery,
 };
 
 worth_query_application_schema! {
@@ -38,7 +49,10 @@ worth_query_application_schema! {
                 .field(TemporalIntent::reference(), IntentEffectField::reference())
                 .field(UnrelatedRecord::reference(), UnrelatedValueField::reference())
                 .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
+                .relation(IntentLiveTarget::reference(), TemporalIntent::reference(), TemporalIntent::reference())
                 .principal_binding(TemporalPrincipalBinding::reference())
+                .effect(TemporalAmendmentEffect::reference())
+                .effect(TemporalExecutionEffect::reference())
                 .operation(
                     ExecuteTemporal::reference()
                         .definition()
@@ -53,6 +67,24 @@ worth_query_application_schema! {
                         .no_aftermath()
                         .finish(),
                 )
+                .operation(
+                    AmendTemporalAndPublishDefinition::reference()
+                        .definition()
+                        .external_effect(
+                            TemporalAmendmentEffect::reference(),
+                            worth_query_host::facade::domain::WorthQueryExternalEffectCorrelationFamily::new(
+                                "temporal-amendment",
+                            )
+                            .unwrap(),
+                        )
+                        .no_aftermath()
+                        .finish(),
+                )
+                .operation(RevokeTemporalPrincipal::reference().definition().no_external_effect().no_aftermath().finish())
+                .operation_decision_fact_budget(RevokeTemporalPrincipal::reference(), 1)
+                .operation_projection_work_budget(RevokeTemporalPrincipal::reference(), 3)
+                .operation_read_field(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
+                .operation_write(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
                 .operation_decision_fact_budget(ExecuteTemporal::reference(), 4)
                 .operation_projection_work_budget(ExecuteTemporal::reference(), 16)
                 .operation_read_field(ExecuteTemporal::reference(), IntentIdentityField::reference())
@@ -62,8 +94,15 @@ worth_query_application_schema! {
                 .operation_write(ExecuteTemporal::reference(), IntentRevisionField::reference())
                 .operation_write(ExecuteTemporal::reference(), IntentLifecycleField::reference())
                 .operation_write(ExecuteTemporal::reference(), IntentEffectField::reference())
-                .operation_decision_fact_budget(AmendTemporal::reference(), 5)
-                .operation_projection_work_budget(AmendTemporal::reference(), 12)
+                .operation_emit(ExecuteTemporal::reference(), TemporalExecutionEffect::reference())
+                .operation_decision_fact_budget(
+                    AmendTemporal::reference(),
+                    SCALED_AMENDMENT_DECISION_FACT_BUDGET,
+                )
+                .operation_projection_work_budget(
+                    AmendTemporal::reference(),
+                    SCALED_AMENDMENT_PROJECTION_WORK_BUDGET,
+                )
                 .operation_read_field(AmendTemporal::reference(), IntentRevisionField::reference())
                 .operation_read_field(AmendTemporal::reference(), IntentLifecycleField::reference())
                 .operation_read_field(AmendTemporal::reference(), IntentGateField::reference())
@@ -74,7 +113,21 @@ worth_query_application_schema! {
                 .operation_write(AmendTemporal::reference(), IntentGateField::reference())
                 .operation_write(AmendTemporal::reference(), IntentDueField::reference())
                 .operation_write(AmendTemporal::reference(), IntentInputField::reference())
+                .operation_decision_fact_budget(AmendTemporalAndPublishDefinition::reference(), 5)
+                .operation_projection_work_budget(AmendTemporalAndPublishDefinition::reference(), 12)
+                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentRevisionField::reference())
+                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentLifecycleField::reference())
+                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentGateField::reference())
+                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentDueField::reference())
+                .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentInputField::reference())
+                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentRevisionField::reference())
+                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentLifecycleField::reference())
+                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentGateField::reference())
+                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentDueField::reference())
+                .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentInputField::reference())
+                .operation_emit(AmendTemporalAndPublishDefinition::reference(), TemporalAmendmentEffect::reference())
                 .application_query(temporal_intent_query_definition())
+                .application_query(temporal_intent_live_query_definition())
         }
     }
 }
@@ -99,6 +152,7 @@ worth_query_field!(pub IntentGateField in TemporalHostSchema, TemporalIntent, In
 worth_query_field!(pub IntentEffectField in TemporalHostSchema, TemporalIntent, IntentFacts: String, read_write, equality);
 worth_query_field!(pub UnrelatedValueField in TemporalHostSchema, UnrelatedRecord, UnrelatedFacts: u64, read_only, equality);
 worth_query_relation!(pub MappingTarget in TemporalHostSchema, ExternalMapping => Principal);
+worth_query_relation!(pub IntentLiveTarget in TemporalHostSchema, TemporalIntent => TemporalIntent);
 worth_query_principal_binding!(
     pub TemporalPrincipalBinding in TemporalHostSchema,
     mapping ExternalMapping {
@@ -126,9 +180,58 @@ worth_query_portable_type!(AmendTemporalInput => "worth.query.test.host.temporal
 worth_query_operation!(pub ExecuteTemporal(TemporalInput) in TemporalHostSchema);
 worth_query_operation_reads!(ExecuteTemporal => [IntentIdentityField, IntentRevisionField, IntentLifecycleField, IntentEffectField]);
 worth_query_operation_writes!(ExecuteTemporal => [IntentRevisionField, IntentLifecycleField, IntentEffectField]);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TemporalExecutionNotice {
+    pub identity: String,
+}
+worth_query_portable_type!(TemporalExecutionNotice => "worth.query.test.host.temporal.execution_notice.v1");
+
+impl declaration::application_schema::ApplicationEffectPayload for TemporalExecutionNotice {
+    fn retained_bytes(&self) -> u64 {
+        u64::try_from(self.identity.len()).unwrap_or(u64::MAX)
+    }
+}
+
+worth_query_effect!(pub TemporalExecutionEffect(TemporalExecutionNotice) in TemporalHostSchema);
+worth_query_operation_emits!(ExecuteTemporal => [TemporalExecutionEffect]);
 worth_query_operation!(pub AmendTemporal(AmendTemporalInput) in TemporalHostSchema);
-worth_query_operation_reads!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
+worth_query_operation_reads!(AmendTemporal => [IntentIdentityField, IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
 worth_query_operation_writes!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
+worth_query_operation!(pub AmendTemporalAndPublishDefinition(AmendTemporalInput) in TemporalHostSchema);
+worth_query_operation_reads!(AmendTemporalAndPublishDefinition => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
+worth_query_operation_writes!(AmendTemporalAndPublishDefinition => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
+worth_query_operation_emits!(AmendTemporalAndPublishDefinition => [TemporalAmendmentEffect]);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TemporalAmendmentNotice(pub String);
+worth_query_portable_type!(TemporalAmendmentNotice => "worth.query.test.host.temporal.amendment_notice.v1");
+
+impl declaration::application_schema::ApplicationEffectPayload for TemporalAmendmentNotice {
+    fn retained_bytes(&self) -> u64 {
+        u64::try_from(self.0.len()).unwrap_or(u64::MAX)
+    }
+}
+
+impl declaration::application_schema::ApplicationExternalEffectPayload for TemporalAmendmentNotice {
+    const PROTOCOL: declaration::application_schema::ApplicationExternalEffectProtocol =
+        declaration::application_schema::ApplicationExternalEffectProtocol::new(
+            worth_foundational::facade::BoundaryProtocolIdentity::new(
+                "worth.query.test.temporal-amendment",
+            ),
+            worth_foundational::facade::BoundaryProtocolVersion::new(1),
+        );
+    const MAX_EXTERNAL_BYTES: u64 = 128;
+
+    fn external_effect_bytes(&self) -> Vec<u8> {
+        self.0.as_bytes().to_vec()
+    }
+}
+
+worth_query_effect!(pub TemporalAmendmentEffect(TemporalAmendmentNotice) in TemporalHostSchema);
+worth_query_operation!(pub RevokeTemporalPrincipal(TemporalInput) in TemporalHostSchema);
+worth_query_operation_reads!(RevokeTemporalPrincipal => [MappingStatusField]);
+worth_query_operation_writes!(RevokeTemporalPrincipal => [MappingStatusField]);
 pub struct IntentQueryParameters;
 pub struct IntentIdentitySlot;
 pub struct IntentRevisionSlot;

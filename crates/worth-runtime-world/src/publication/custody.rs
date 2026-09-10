@@ -3,13 +3,16 @@
 //! The catalog holds the record. A phase holds the one caller capability;
 //! losing that capability exposes the existing effects without owner calls.
 
+mod conditional_definition;
 mod creation;
+pub(crate) use conditional_definition::ConditionalDefinitionAttemptCustody;
 #[cfg(test)]
 mod creation_rehearsal;
 mod head;
 mod lease;
 mod materialization;
 mod movement;
+pub(crate) use movement::AttemptProductMovementFailure;
 mod operation;
 mod record;
 mod resources;
@@ -75,6 +78,15 @@ impl ActiveAttemptCustody {
 
     pub(crate) fn progress(&self) -> Arc<CompositeAttemptProgress> {
         self.record.progress()
+    }
+
+    pub(crate) fn unpublished_recovery_handle(
+        &self,
+    ) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.slot
+            .as_ref()
+            .expect("a prepared attempt retains its recovery reservation")
+            .recovery_handle(self.record.identity())
     }
 }
 

@@ -133,21 +133,25 @@ where
             .bind_preconditions(admission.mutation_preconditions().identity())
             .bind_governed_input(admission.governed_input_identity())
             .bind_governed_proposal(admission.governed_proposal_identity());
-        let serialization = self.primary_provider.serialize_application_commit();
+        let product = admission
+            .graph_work()
+            .mutation_product()
+            .ok_or_else(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission)?
+            .publication_binding();
+        let commit_lane = self
+            .primary_provider
+            .application_branch_commit_lane(product.observation());
+        let coordination = commit_lane.enter();
         let proof = self
-            .authorize_idempotency_inspection(admission, &serialization)
+            .authorize_idempotency_inspection(admission, &coordination)
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let resolution = proof
             .govern((), |()| {
-                self.primary_provider.resolve_idempotency_binding(
-                    binding,
-                    admission.graph_work().branch().relational(),
-                )
+                self.primary_provider
+                    .resolve_idempotency_binding_at_product(binding, &product)
             })
-            .map_err(|()| {
-                WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
-                    WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation()),
-                )
+            .map_err(|(_, denial)| {
+                WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)
             })?;
         match resolution {
             Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
@@ -178,6 +182,9 @@ where
                     read_for,
                     WorthQueryApplicationIdempotencyResolution::IntentDrift,
                 ))
+            }
+            Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
+                Err(WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())
             }
             Err(denial) => {
                 Err(WorthQueryApplicationIdempotencyResolutionDenial::from_provider(denial))

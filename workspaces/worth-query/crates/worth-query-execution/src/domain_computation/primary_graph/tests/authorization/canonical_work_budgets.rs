@@ -17,6 +17,8 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -26,6 +28,8 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_owned(),
@@ -50,7 +54,7 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
         .expect_fact(AccountStatus::reference(), "open".to_owned())
         .expect_fact(AccountStatus::reference(), "open".to_owned());
     assert_precondition_rejected(
-        world.application.authorize_operation(
+        world.selected_product().authorize_operation(
             &principal,
             &account,
             &operation,
@@ -65,7 +69,7 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
         TypedMutationPreconditions::new().expect_fact(AccountStatus::reference(), oversized_value);
     assert_precondition_rejected(
         world
-            .application
+            .selected_product()
             .authorize_operation(&principal, &account, &operation, oversized, &request),
         "canonical material beyond the installed byte ceiling must be denied",
     );

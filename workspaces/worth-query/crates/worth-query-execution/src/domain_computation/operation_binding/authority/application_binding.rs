@@ -36,6 +36,7 @@ pub(crate) struct WorthQueryApplicationOperationBindingInput<'a> {
     pub(crate) schema_binding:
         &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(crate) snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
+    pub(crate) product: &'a crate::basis::WorthQueryProductBranchLease,
 }
 
 impl WorthQueryExecutionBoundOperationAuthority {
@@ -86,6 +87,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
             application_operation_slot: Some(input.operation_slot),
             application_schema_binding: Some(input.schema_binding.clone()),
             application_snapshot: Some(input.snapshot.clone()),
+            application_product_observation: Some(input.product.observation().clone()),
         }
     }
 }

@@ -1,6 +1,6 @@
 //! Scripted test implementation of the production provider fault port.
 
-use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
 
 use super::super::provider::fault_port::{
     WorthQueryPrimaryGraphFault, WorthQueryPrimaryGraphFaultPort,
@@ -8,8 +8,9 @@ use super::super::provider::fault_port::{
 
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct PrimaryGraphFaultController {
-    scheduled: AtomicU8,
+    scheduled: AtomicU16,
     failed_post_commit_snapshot_consumptions: AtomicUsize,
+    panicked_pending_publication_consumptions: AtomicUsize,
 }
 
 impl PrimaryGraphFaultController {
@@ -50,10 +51,23 @@ impl PrimaryGraphFaultController {
         self.schedule(WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot);
     }
 
+    pub(in crate::domain_computation::primary_graph) fn panic_next_pending_application_publication(
+        &self,
+    ) {
+        self.schedule(WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication);
+    }
+
     pub(in crate::domain_computation::primary_graph) fn failed_post_commit_snapshot_consumption_count(
         &self,
     ) -> usize {
         self.failed_post_commit_snapshot_consumptions
+            .load(Ordering::Acquire)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn panicked_pending_publication_consumption_count(
+        &self,
+    ) -> usize {
+        self.panicked_pending_publication_consumptions
             .load(Ordering::Acquire)
     }
 
@@ -83,6 +97,13 @@ impl WorthQueryPrimaryGraphFaultPort for PrimaryGraphFaultController {
                         self.failed_post_commit_snapshot_consumptions
                             .fetch_add(1, Ordering::AcqRel);
                     }
+                    if matches!(
+                        fault,
+                        WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication
+                    ) {
+                        self.panicked_pending_publication_consumptions
+                            .fetch_add(1, Ordering::AcqRel);
+                    }
                     return true;
                 }
                 Err(observed) => scheduled = observed,
@@ -91,7 +112,7 @@ impl WorthQueryPrimaryGraphFaultPort for PrimaryGraphFaultController {
     }
 }
 
-const fn mask(fault: WorthQueryPrimaryGraphFault) -> u8 {
+const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
     match fault {
         WorthQueryPrimaryGraphFault::LostCommitResponse => 1 << 0,
         WorthQueryPrimaryGraphFault::RejectedSessionPreparation => 1 << 1,
@@ -101,5 +122,6 @@ const fn mask(fault: WorthQueryPrimaryGraphFault) -> u8 {
         WorthQueryPrimaryGraphFault::RelationalInvariantViolation => 1 << 5,
         WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot => 1 << 7,
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
+        WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
     }
 }

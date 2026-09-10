@@ -5,7 +5,7 @@ fn completed_workflow_closure_retains_declared_and_realized_roles_at_exact_d_cos
     let mut workspace = mutation_workflow_workspace("dependency-impact-workflow").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let trace = workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(MutationFamily)
         .bind(&installed, WorkflowMutation)

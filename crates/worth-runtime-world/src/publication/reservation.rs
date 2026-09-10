@@ -58,6 +58,12 @@ impl std::fmt::Debug for ReservedCompositePublicationAttempt {
 }
 
 impl ReservedCompositePublicationAttempt {
+    pub(crate) fn reserve_conditional_definition_custody(
+        &mut self,
+    ) -> std::sync::Arc<super::ConditionalDefinitionAttemptCustody> {
+        self.custody.reserve_conditional_definition_custody()
+    }
+
     pub(crate) fn new(
         identity: CompositePublicationAttemptIdentity,
         expected_head: ProductBranchObservation,
@@ -114,6 +120,12 @@ impl ReservedCompositePublicationAttempt {
 
     pub fn progress(&self) -> &CompositeAttemptProgress {
         &self.progress
+    }
+
+    pub(crate) fn unpublished_recovery_handle(
+        &self,
+    ) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.custody.unpublished_recovery_handle()
     }
 
     pub(crate) fn record_progress(&mut self, progress: &CompositeAttemptProgress) {

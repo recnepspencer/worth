@@ -2,8 +2,8 @@
 
 pub use worth_query_declaration::facade::{
     application_aftermath, application_capability, application_query, application_schema,
-    authentication, authoring, binding, canonicalization, collection, diagnostics, identity,
-    identity_authority, schema_view, typed, validation, view_declaration,
+    authentication, authoring, binding, branch, canonicalization, collection, diagnostics,
+    identity, identity_authority, schema_view, typed, validation, view_declaration,
 };
 pub use worth_query_declaration::{
     worth_query_ability, worth_query_application_query, worth_query_application_schema,

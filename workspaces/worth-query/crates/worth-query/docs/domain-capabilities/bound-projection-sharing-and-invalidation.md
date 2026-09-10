@@ -33,7 +33,7 @@ The ordinary surface is in `worth_query::facade::domain`:
   `replacement_with(...)`, `rebind_with(...)`, and
   `execution_sharing_with(...)` for distinct pair-bound decisions
 - `settled.into_lifecycle().promote(&mut workspace)`
-- `live.refresh(...)` or `live.refresh_owner_delivery(...)`
+- `live.refresh(...)`
 - `live.replacement_witness_for(...)` followed by
   `live.replace_with(...)`
 - `live.rebind_witness_for(...)` followed by `live.rebind_with(...)`
@@ -43,8 +43,6 @@ The ordinary surface is in `worth_query::facade::domain`:
 - `live.into_managed_lease(&mut workspace)` for one consumer
 - `live.share_with(candidate, &mut workspace)` for two compatible consumers
 - `lease.drain(&mut workspace)` for ordinary managed delivery
-- `lease.drain_conditional_owner_delivery(receipt, &mut workspace)` for an
-  admitted Runtime Bridge owner delivery
 - `lease.consumer_invalidation_delta(delivery)`
 - `lease.admit_consumer_invalidation_delta(delta, &workspace)`
 - `admitted.attach_consumer_authored_consequence(&workspace, disposition, action)`
@@ -315,9 +313,6 @@ Also inspect:
 - `delta.impact()` and `delta.affected_native_keys()`
 - `delta.disposition()`, `delta.cause()`, `delta.locality()`, and
   `delta.continuation()`
-- `delta.conditional_decision()` for the current Signal result; use the
-  semantic projection when comparing the declaration, outcome, reuse posture,
-  and realized observations
 - `delta.foundational_projection()` for cross-crate semantic scope
 - `delta.semantic_projection().canonical_bytes()` for authority-free semantic
   convergence inspection; counters remain separate work evidence

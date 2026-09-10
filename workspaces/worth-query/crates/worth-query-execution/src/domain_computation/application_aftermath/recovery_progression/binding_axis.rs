@@ -86,18 +86,8 @@ impl WorthQueryRecoveryBindingCurrentTruth {
     }
 
     #[cfg(test)]
-    pub(crate) fn axis_probe(
-        parts: super::super::recovery_handle::WorthQueryRecoveryHandleBindingAxisProbe,
-    ) -> Self {
-        Self {
-            schema_identity: parts.schema_identity,
-            branch: parts.branch,
-            application_binding_generation: parts.application_binding_generation,
-            installed_operation: parts.installed_operation,
-            governed_input_identity: parts.retained_governed_input_identity,
-            principal_scope: parts.principal_scope,
-            installed_aftermath: *parts.installed_aftermath.identity().digest().bytes(),
-        }
+    pub(crate) fn axis_probe(binding: &WorthQueryRecoveryHandleBinding) -> Self {
+        Self::from_handle_binding(binding)
     }
 }
 

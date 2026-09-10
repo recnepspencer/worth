@@ -83,6 +83,8 @@ pub(super) fn context(live: bool) -> ElevatedQueryContext {
     let committer = super::super::approval_transition::authenticated(&world, "carol", &request);
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -104,21 +106,6 @@ pub(super) fn context(live: bool) -> ElevatedQueryContext {
         account,
         query,
     }
-}
-
-pub(super) fn historical_basis(
-    context: &ElevatedQueryContext,
-) -> crate::domain_computation::primary_graph::WorthQueryApplicationHistoricalBasis<
-    IdentityExecutionSchema,
-> {
-    context
-        .world
-        .application
-        .admit_application_historical_basis(
-            crate::domain_computation::primary_graph::WorthQueryApplicationHistoricalRead::current_for_test(&context.world.application),
-            &context.request,
-        )
-        .unwrap()
 }
 
 pub(super) fn assert_resources_released(world: &AuthorizationWorld) {

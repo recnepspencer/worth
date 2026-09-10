@@ -17,12 +17,18 @@ use crate::retention::{
 /// resource lease may take them out while calling an owner, then restores them.
 #[derive(Debug)]
 pub(crate) struct ActiveAttemptResources {
+    pub(super) conditional_definition: Option<Arc<super::ConditionalDefinitionAttemptCustody>>,
     pub(crate) product_comparison_costs:
         Option<crate::publication::CompositePublicationCostCounters>,
     pub(super) commit_identity: CompositeCommitIdentity,
     pub(super) commit: Option<Arc<CompositeRuntimeWorldCommit>>,
     pub(super) history_custody: ActiveHistoryCustody,
     pub(super) pins: ActivePinCustody,
+    pub(super) successor_observation_capacity:
+        Option<crate::retention::ReservedObservationCapacity>,
+    pub(super) successor_observation_pins: Option<ReservedComponentPinPairCapacity>,
+    pub(super) prepared_successor_observation:
+        Option<crate::branch::observation::PreparedProductBranchObservation>,
     pub(super) history_pins: Option<crate::retention::HistoryRetentionObligation>,
     pub(super) pin_denial: Option<RetentionObligationDenial>,
     pub(super) product_head: Option<crate::branch::ProductBranchHeadProtection>,
@@ -51,6 +57,12 @@ pub(super) enum ActivePinCustody {
 }
 
 impl ActiveAttemptResources {
+    pub(crate) fn retains_signal_definition(&self) -> bool {
+        self.conditional_definition
+            .as_ref()
+            .is_some_and(|custody| custody.retains_definition())
+    }
+
     /// Abandonment retains the exact custody already held; inspection does not
     /// acquire pins or retag their dependency class.
     pub(crate) fn retention_posture(&self) -> crate::recovery::ProductUnpublishedRetentionPosture {
@@ -100,7 +112,8 @@ impl ActiveAttemptResources {
 
     pub(crate) fn live_obligations(&self) -> crate::recovery::ProductUnpublishedLiveObligations {
         let counts = crate::recovery::ProductUnpublishedLiveObligations::from_custody(
-            2 + 2 * usize::from(self.history_pins.is_some()),
+            2 + 2 * usize::from(self.history_pins.is_some())
+                + 2 * usize::from(self.prepared_successor_observation.is_some()),
             self.holds_history_obligation(),
         );
         match self.creation.as_ref().and_then(|c| c.observation.as_ref()) {

@@ -58,6 +58,13 @@ pub(super) fn progress_invariant_candidate<'run>(
                             ),
                         )
                     }
+                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProductBasisStale => {
+                        WorthQueryProviderProgressionOutcome::Denied(
+                            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::product_basis_stale(
+                                DenialStage::InvariantExecution,
+                            ),
+                        )
+                    }
                     _ => progression_denied(DenialStage::InvariantExecution),
                 });
         }

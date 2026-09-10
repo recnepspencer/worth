@@ -22,9 +22,6 @@ pub struct WorthUiNativeApplicationShutdownReceipt {
     query_close_complete: bool,
     query_transitions: Box<[worth_ui_query_binding::WorthUiPresentationTransitionObservation]>,
     query_transition_trace_complete: bool,
-    query_semantic_frontiers:
-        Box<[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation]>,
-    query_semantic_frontier_trace_complete: bool,
     text_presentation_work:
         Box<[crate::native_platform::text_presentation::UiNativeTextPresentationWorkObservation]>,
     text_presentation_work_trace_complete: bool,
@@ -106,14 +103,6 @@ impl WorthUiNativeApplicationShell {
             query_transition_trace_complete: runtime
                 .mounted_presentation()
                 .query_transition_trace_complete(),
-            query_semantic_frontiers: runtime
-                .mounted_presentation()
-                .query_semantic_frontiers()
-                .to_vec()
-                .into_boxed_slice(),
-            query_semantic_frontier_trace_complete: runtime
-                .mounted_presentation()
-                .query_semantic_frontier_trace_complete(),
             text_presentation_work: runtime
                 .mounted_presentation()
                 .text_presentation_work()
@@ -211,23 +200,11 @@ impl WorthUiNativeApplicationShutdownReceipt {
         self.query_transition_trace_complete
     }
 
-    pub fn query_semantic_frontiers(
-        &self,
-    ) -> &[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation] {
-        &self.query_semantic_frontiers
-    }
-
-    pub const fn query_semantic_frontier_trace_complete(&self) -> bool {
-        self.query_semantic_frontier_trace_complete
-    }
-
     pub(crate) fn into_query_close_observation(self) -> UiNativeApplicationQueryCloseObservation {
         UiNativeApplicationQueryCloseObservation::from_runtime(
             super::query_close::UiNativeApplicationQueryCloseInput {
                 closed_resources: self.closed_query_resources,
                 transitions: self.query_transitions,
-                semantic_frontiers: self.query_semantic_frontiers,
-                semantic_frontier_trace_complete: self.query_semantic_frontier_trace_complete,
                 text_work: self.text_presentation_work,
                 text_work_trace_complete: self.text_presentation_work_trace_complete,
                 authored_mounted_instances: self.authored_mounted_instances,
@@ -270,8 +247,6 @@ impl WorthUiNativeApplicationShutdownReceipt {
             query_close: Box::new(super::query_close::UiNativeApplicationQueryCloseInput {
                 closed_resources: self.closed_query_resources,
                 transitions: self.query_transitions,
-                semantic_frontiers: self.query_semantic_frontiers,
-                semantic_frontier_trace_complete: self.query_semantic_frontier_trace_complete,
                 text_work: self.text_presentation_work,
                 text_work_trace_complete: self.text_presentation_work_trace_complete,
                 authored_mounted_instances: self.authored_mounted_instances,
@@ -296,10 +271,6 @@ impl WorthUiNativeApplicationCleanup {
                         receipt.transitions().to_vec().into_boxed_slice();
                     self.query_close.transition_trace_complete =
                         receipt.transition_trace_complete();
-                    self.query_close.semantic_frontiers =
-                        receipt.settled_frontiers().to_vec().into_boxed_slice();
-                    self.query_close.semantic_frontier_trace_complete =
-                        receipt.settled_frontier_trace_complete();
                 }
                 Err(cleanup) => {
                     self.presentation_async_cleanup = Some(cleanup);

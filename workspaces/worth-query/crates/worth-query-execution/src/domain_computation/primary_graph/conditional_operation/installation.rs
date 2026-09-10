@@ -17,32 +17,14 @@ use super::reconstruction_authority::{
     WorthQueryTemporalPrincipalSource, WorthQueryTemporalReconstructionAccess,
 };
 
+mod clock_handle;
+pub(in crate::domain_computation::primary_graph) use clock_handle::ConditionalClockLease;
+pub use clock_handle::WorthQueryConditionalClockHandle;
 mod denial;
 pub use denial::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
-
-pub struct WorthQueryConditionalClockHandle<Schema, Node, Clock> {
-    binding_identity: Arc<str>,
-    binding_canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
-    pub(super) lease: Arc<ConditionalClockLease>,
-    marker: PhantomData<fn() -> (Schema, Node, Clock)>,
-}
-
-pub(in crate::domain_computation::primary_graph) struct ConditionalClockLease;
-
-impl<Schema, Node, Clock> WorthQueryConditionalClockHandle<Schema, Node, Clock> {
-    pub fn binding_identity(&self) -> &str {
-        &self.binding_identity
-    }
-
-    pub const fn binding_canonical_work(
-        &self,
-    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence {
-        self.binding_canonical_work
-    }
-}
 
 pub struct WorthQueryConditionalApplicationRuntimeInstallation<Schema> {
     publication: ApplicationRuntimePublication<Schema>,
@@ -196,7 +178,7 @@ where
         Scope: 'static,
         Projector: WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>,
         PrincipalIdentity: TypedApplicationIdentityValue + 'static,
-        ScopeValue: TypedApplicationValue + Clone + Send + 'static,
+        ScopeValue: TypedApplicationValue + Clone + Send + Sync + 'static,
         ScopeWrite: WritePosture + 'static,
         ScopeUnit: ApplicationFieldUnit + 'static,
         PrincipalBinding: 'static,
@@ -235,7 +217,7 @@ where
         LifecycleAspect: 'static,
         LifecycleField:
             OperationReads<ApplicationOperation> + OperationWrites<ApplicationOperation> + 'static,
-        LifecycleValue: TypedApplicationReadableValue + Clone + Send + 'static,
+        LifecycleValue: TypedApplicationReadableValue + Clone + Send + Sync + 'static,
         LifecycleWrite: WritableCapability + 'static,
         LifecycleEquality: 'static,
         LifecycleUnit: ApplicationFieldUnit + 'static,
@@ -282,6 +264,13 @@ where
         }
         let binding_canonical_work = identity.canonical_work();
         let lease = Arc::new(ConditionalClockLease);
+        let node_authority = Arc::from(
+            binding
+                .clocked_node()
+                .provider()
+                .node()
+                .authority_identity(),
+        );
         self.bindings.push(Box::new(
             super::pending_binding::PendingTemporalOperation::new(
                 Arc::clone(&identity),
@@ -293,6 +282,8 @@ where
         ));
         Ok(WorthQueryConditionalClockHandle {
             binding_identity: support_identity,
+            binding_identity_digest: *identity.digest().bytes(),
+            node_authority,
             binding_canonical_work,
             lease,
             marker: PhantomData,
@@ -369,9 +360,10 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryPendingConditio
 
     fn install(
         self: Box<Self>,
-        bridge: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
+        bridge: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
         affinity: &super::publication::ConditionalRuntimeAffinity,
+        authoritative_commit_cursor: u64,
     ) -> Result<
         Box<dyn super::lifecycle::WorthQueryInstalledConditionalOperation<Schema>>,
         WorthQueryConditionalRuntimeInstallationDenial,

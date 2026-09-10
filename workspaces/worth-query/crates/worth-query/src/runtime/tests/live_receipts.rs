@@ -8,8 +8,7 @@ use worth_runtime_bridge::facade::{
 
 #[test]
 fn runtime_write_denies_when_signal_routing_receipt_drifts_from_write_receipt() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -52,8 +51,7 @@ fn runtime_write_denies_when_signal_routing_receipt_drifts_from_write_receipt() 
 
 #[test]
 fn runtime_write_denies_authority_less_receipt_at_signal_routing_boundary() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -89,8 +87,7 @@ fn runtime_write_denies_authority_less_receipt_at_signal_routing_boundary() {
 
 #[test]
 fn runtime_batch_write_denies_when_signal_routing_batch_width_drifts_from_receipts() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -145,8 +142,7 @@ fn runtime_batch_write_denies_when_signal_routing_batch_width_drifts_from_receip
 
 #[test]
 fn runtime_live_read_receipt_retains_materialized_remask_posture() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

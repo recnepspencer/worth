@@ -15,7 +15,7 @@ pub(in crate::domain_computation::authorization) use observation::WorthQueryCapa
 
 struct WorthQueryCapabilityRefresh<'refresh> {
     session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    branch: &'refresh worth_relational::facade::history::BranchId,
+    product: &'refresh crate::basis::WorthQueryProductObservationLease,
     installed: &'refresh super::capability_registry::WorthQueryInstalledCapabilityPlan,
     sample: super::WorthQueryRuntimeTimeSample,
 }
@@ -34,11 +34,13 @@ where
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
         graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        self.refresh_capability_authorization(
-            authorization,
-            graph_work.identity(),
-            graph_work.branch().relational(),
-        )
+        let product = graph_work.product().ok_or_else(|| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                "retained capability authorization",
+            )
+        })?;
+        self.refresh_capability_authorization(authorization, graph_work.identity(), product)
     }
 
     pub(super) fn refresh_admitted_capability_authorization<Operation, Input, Scope>(
@@ -64,8 +66,17 @@ where
             return Ok(false);
         }
         let session_identity = admission.graph_work_session_identity();
-        let branch = admission.graph_work_branch().clone();
         let operation = admission.operation().to_owned();
+        let product = admission
+            .graph_work()
+            .mutation_product()
+            .map(crate::basis::WorthQueryProductBranchLease::retained_clone)
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    &operation,
+                )
+            })?;
         let authorization = admission.authorization_mut().ok_or_else(|| {
             denial(
                 WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
@@ -86,7 +97,11 @@ where
                     "retained capability authorization",
                 )
             })?;
-        self.refresh_capability_authorization(capability, session_identity, &branch)?;
+        self.refresh_capability_authorization(
+            capability,
+            session_identity,
+            product.read_lease_ref(),
+        )?;
         Ok(true)
     }
 
@@ -94,13 +109,13 @@ where
         &self,
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-        branch: &worth_relational::facade::history::BranchId,
+        product: &crate::basis::WorthQueryProductObservationLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let refresh = self.prepare_capability_refresh(
             authorization.request(),
             authorization.capability_authority_identity(),
             session_identity,
-            branch,
+            product,
             WorthQueryCapabilityRefreshTime::Fresh,
         )?;
         let observed = self.observe_active_capability_refresh(authorization, &refresh)?;
@@ -113,7 +128,7 @@ where
         request: &WorthQueryRetainedCapabilityRequest,
         authority_identity: &str,
         session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-        branch: &'refresh worth_relational::facade::history::BranchId,
+        product: &'refresh crate::basis::WorthQueryProductObservationLease,
         time: WorthQueryCapabilityRefreshTime<'_>,
     ) -> Result<WorthQueryCapabilityRefresh<'refresh>, WorthQueryOperationAuthorizationDenial> {
         let installed = self.installed_capability_plan(request)?;
@@ -136,7 +151,7 @@ where
         };
         Ok(WorthQueryCapabilityRefresh {
             session,
-            branch,
+            product,
             installed,
             sample,
         })
@@ -156,21 +171,23 @@ where
                 refresh.installed.contract().name(),
             )
         })?;
-        let observed = graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = crate::domain_computation::primary_graph::open_current_branch_snapshot(
-                runtime,
-                refresh.branch,
-            )
+        let security = self
+            .admit_product_security_basis(refresh.product)
             .map_err(|denial| {
-                super::exact_basis_snapshot_denial(denial, refresh.installed.contract().name())
+                super::denial::product_security_basis_denial(
+                    denial,
+                    refresh.installed.contract().name(),
+                )
             })?;
+        let observed = graph.integration_handle().with_runtime_mut(|runtime| {
+            let snapshot = security.snapshot_handle();
             let result = self
-                .validate_active_capability_currentness(runtime, &snapshot, authorization, refresh)
+                .validate_active_capability_currentness(runtime, snapshot, authorization, refresh)
                 .and_then(|()| {
                     WorthQueryCapabilityRevalidationObservation::new(
                         refresh.session,
                         runtime,
-                        &snapshot,
+                        snapshot,
                         self.authorization.bridge(),
                         refresh.installed,
                         authorization.request(),
@@ -181,7 +198,6 @@ where
                         Some(authorization.decision()),
                     )
                 });
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             result
         })?;
         Ok(observed)
@@ -194,7 +210,7 @@ where
         authorization: &WorthQueryRetainedCapabilityAuthorization,
         refresh: &WorthQueryCapabilityRefresh<'_>,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        if snapshot.branch_id() != refresh.branch {
+        if snapshot.branch_id() != refresh.product.relational_basis().identity().branch_id() {
             return Err(inconsistent_refresh(refresh));
         }
         if !authorization
@@ -260,7 +276,7 @@ where
             supporting.request(),
             supporting.capability_authority_identity(),
             primary.session,
-            primary.branch,
+            primary.product,
             WorthQueryCapabilityRefreshTime::ReuseWhenTimelineMatches(&primary.sample),
         )?;
         let observed = self.observe_supporting_capability_refresh(supporting, &refresh)?;
@@ -287,18 +303,20 @@ where
                 refresh.installed.contract().name(),
             )
         })?;
-        graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = crate::domain_computation::primary_graph::open_current_branch_snapshot(
-                runtime,
-                refresh.branch,
-            )
+        let security = self
+            .admit_product_security_basis(refresh.product)
             .map_err(|denial| {
-                super::exact_basis_snapshot_denial(denial, refresh.installed.contract().name())
+                super::denial::product_security_basis_denial(
+                    denial,
+                    refresh.installed.contract().name(),
+                )
             })?;
+        graph.integration_handle().with_runtime_mut(|runtime| {
+            let snapshot = security.snapshot_handle();
             let result = WorthQueryCapabilityRevalidationObservation::new(
                 refresh.session,
                 runtime,
-                &snapshot,
+                snapshot,
                 self.authorization.bridge(),
                 refresh.installed,
                 supporting.request(),
@@ -309,7 +327,6 @@ where
                 supporting.grant(),
                 Some(supporting.decision()),
             );
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             result
         })
     }

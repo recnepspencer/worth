@@ -1,6 +1,6 @@
 use worth_runtime_bridge::facade::{
-    BridgeAdmittedTruthCommitIdentity, BridgeAdmittedTruthSnapshotIdentity, BridgeIdentityEvidence,
-    RelationalBridgeSnapshotIdentityParts, TruthCommitIdentity, TruthSnapshotIdentity,
+    BridgeIdentityEvidence, RelationalBridgeSnapshotIdentityParts, TruthCommitIdentity,
+    TruthSnapshotIdentity,
 };
 
 use crate::evidence_identity::{
@@ -48,22 +48,6 @@ impl WorthQueryCommitIdentity {
         Self::from_bridge_commit_projection(TruthCommitIdentity::from_relational_commit_id(
             commit_id,
         ))
-    }
-
-    pub(crate) fn from_admitted_bridge_commit_identity(
-        admitted: &BridgeAdmittedTruthCommitIdentity,
-    ) -> Self {
-        let boundary = admitted.bridge_trust_boundary();
-        let authority = admit_foundational_authority_identity(
-            Arc::clone(boundary.value()),
-            query_receipt_admission_authority(),
-        );
-        Self {
-            inner: WorthQueryCommitIdentityInner::RelationalBridge {
-                bridge_identity: admitted.projection().clone(),
-            },
-            _authority: Some(authority),
-        }
     }
 
     pub(crate) fn from_runtime_receipt_commit(commit_id: u64) -> Self {
@@ -159,25 +143,6 @@ impl WorthQuerySnapshotIdentity {
                 parts,
             },
             _authority: None,
-        })
-    }
-
-    pub(crate) fn from_admitted_bridge_snapshot_identity(
-        admitted: &BridgeAdmittedTruthSnapshotIdentity,
-    ) -> Option<Self> {
-        let bridge_identity = admitted.projection().clone();
-        let parts = bridge_identity.relational_snapshot_parts()?;
-        let boundary = admitted.bridge_trust_boundary();
-        let authority = admit_foundational_authority_identity(
-            Arc::clone(boundary.value()),
-            query_runtime_backend_authority(),
-        );
-        Some(Self {
-            inner: WorthQuerySnapshotIdentityInner::RelationalBridge {
-                bridge_identity,
-                parts,
-            },
-            _authority: Some(authority),
         })
     }
 

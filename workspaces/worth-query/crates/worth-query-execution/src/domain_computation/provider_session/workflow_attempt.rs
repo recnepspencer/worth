@@ -63,13 +63,6 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
         self.reserved.resources().operation()
     }
 
-    /// Legacy operational integration retained until the Phase 19 audience-
-    /// facade cutover. Possession of this session does not mint managed-run
-    /// admission, terminal, cleanup, or recovery authority.
-    pub fn provider_session(&self) -> &WorthQueryExecutionProviderSession {
-        &self.provider_session
-    }
-
     pub(in crate::domain_computation) fn provider_session_for_managed_run(
         &self,
         _owner: &crate::domain_computation::managed_run::WorthQueryWorkflowRunTransitionPermit,
@@ -89,9 +82,8 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
         self.reserved.reservation_count()
     }
 
-    /// Legacy workflow-artifact integration retained until Phase 19 removes
-    /// the monolith progression. This authority is not a managed-run proof.
-    pub fn bind_workflow_artifacts(
+    #[doc(hidden)]
+    pub fn begin_managed_workflow_artifacts(
         &self,
     ) -> Result<
         crate::domain_computation::artifact_owner::WorthQueryWorkflowArtifactAuthority,
@@ -150,18 +142,6 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
             )?;
         run.active_registry = Some(Arc::downgrade(&authority.registry()));
         Ok(authority)
-    }
-
-    /// Legacy stage integration retained until the Phase 19 cutover. The
-    /// returned evidence cannot substitute for managed-run admission.
-    pub fn stage_resources_and_evidence(
-        &self,
-        stage_identity: &str,
-    ) -> Option<(
-        Arc<WorthQueryAdmittedExecutionResourcePlan>,
-        WorthQueryExecutionResourceAttemptEvidence,
-    )> {
-        self.stage_resources_and_evidence_owned(stage_identity)
     }
 
     pub(in crate::domain_computation) fn stage_resources_and_evidence_for_managed_run(

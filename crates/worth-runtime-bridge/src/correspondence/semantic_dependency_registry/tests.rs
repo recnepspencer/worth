@@ -150,15 +150,10 @@ fn generation_maximum_missing_rebuild_and_graph_rebind_are_coherent() {
     );
     assert!(registry.rebuild_has_exact_parity());
 
-    let rebound = registry
-        .rebind_to_graph(&graph)
-        .expect("authoritative registrations rebind to their graph");
-    assert!(rebound.rebuild_has_exact_parity());
-
     registry.destroy_derived_indexes();
     assert!(!registry.rebuild_has_exact_parity());
     let rebuilt = registry
-        .rebind_to_graph(&graph)
+        .reconstruct_derived_indexes()
         .expect("destroyed derived indexes rebuild from authority");
     assert!(rebuilt.rebuild_has_exact_parity());
     assert_eq!(

@@ -30,6 +30,23 @@ where
     fn semantic_contract(&self) -> Self::SemanticContract {
         self.provider.semantic_contract()
     }
+
+    fn retained_heap_bytes(
+        &self,
+        semantic_contract: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        let nested = self.provider.retained_heap_bytes(semantic_contract)?;
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::try_from_parts(
+            [
+                worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::arc_allocation_bytes(self.provider.as_ref()),
+                nested.provider_state_bytes(),
+            ],
+            [nested.semantic_contract_state_bytes()],
+        )
+    }
 }
 
 impl<D: 'static, O: 'static, F: 'static, P> BridgeConditionalComputeProvider

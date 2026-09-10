@@ -26,3 +26,6 @@ mod adversarial;
 
 #[path = "signal_owner_services/compiler.rs"]
 mod compiler;
+
+#[path = "signal_owner_services/conditional_nested_reuse.rs"]
+mod conditional_nested_reuse;

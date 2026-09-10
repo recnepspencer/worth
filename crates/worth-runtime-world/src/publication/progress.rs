@@ -262,7 +262,9 @@ impl CompositeAttemptProgress {
         &self.relational
     }
 
-    pub(crate) fn relational_requires_settlement(&self) -> bool {
+    /// Whether the retained Relational evidence still requires owner settlement.
+    /// This describes progress; recovery admission remains with the owning catalog.
+    pub fn relational_requires_settlement(&self) -> bool {
         self.relational.requires_settlement()
     }
 

@@ -26,9 +26,7 @@ use crate::domain_computation::execution_runtime::{
 };
 use crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
-    WorthQueryApplicationPrincipalKey, WorthQueryApplicationRelationSeed,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 worth_query_entity!(pub AggregateExternalMapping in AggregateSchema);
@@ -187,16 +185,25 @@ impl AggregateWorld {
     pub(super) fn observe_bounded(&self, maximum_work: usize) -> BoundedAggregateObservation {
         let denial = Cell::new(None);
         let work = Cell::new(WorthQueryInvariantProjectionWork::default());
-        let completed = self.authority.project_bounded(maximum_work, |reader| {
-            let result = reader.summarize_exclusive_incoming(
-                AggregateContribution::reference(),
-                SourceAmount::reference(),
-                &self.target,
-            );
-            denial.set(result.as_ref().err().map(|error| error.kind()));
-            work.set(reader.work);
-            result
-        });
+        let selected = self
+            ._runtime
+            .select_product_branch(self._runtime.product_runtime().default_branch())
+            .expect("aggregate product basis");
+        let product = selected.product().publication_binding();
+        let completed = self.authority.project_bounded(
+            maximum_work,
+            product.observation().basis().relational_basis().clone(),
+            |reader| {
+                let result = reader.summarize_exclusive_incoming(
+                    AggregateContribution::reference(),
+                    SourceAmount::reference(),
+                    &self.target,
+                );
+                denial.set(result.as_ref().err().map(|error| error.kind()));
+                work.set(reader.work);
+                result
+            },
+        );
         BoundedAggregateObservation {
             exhausted: completed.is_err(),
             denial: denial.get(),
@@ -285,7 +292,7 @@ impl AggregateWorld {
             .bind_application_schema(AggregateSchema::declaration().expect("schema redeclares"))
             .expect("aggregate schema binds");
         let mut bootstrap = authority
-            .prepare_primary_graph(&runtime, &installed)
+            .prepare_primary_graph(&runtime, &installed, crate::domain_computation::execution_runtime::product_world::test_product_world_resources())
             .expect("primary graph prepares");
         let binding = installed
             .principal_binding(AggregateIdentityBinding::reference())
@@ -306,8 +313,10 @@ impl AggregateWorld {
             .expect("aggregate principal binds");
         bind_world(&mut bootstrap, values, ambiguous);
         let projection = bootstrap.retain_invariant_projection_authority();
+        let budget =
+            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development();
         let runtime = bootstrap
-            .publish_application_runtime(runtime, authority, installed)
+            .publish_application_runtime(runtime, authority, installed, budget)
             .expect("primary graph publishes");
         let target = projection
             .project(|reader| {
@@ -326,65 +335,6 @@ impl AggregateWorld {
     }
 }
 
-fn bind_world(
-    bootstrap: &mut crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap<
-        AggregateSchema,
-    >,
-    values: Vec<Option<i64>>,
-    ambiguous: bool,
-) {
-    bind_target(bootstrap, "target");
-    if ambiguous {
-        bind_target(bootstrap, "other-target");
-    }
-    for (ordinal, value) in values.into_iter().enumerate() {
-        let source = format!("source-{ordinal}");
-        let mut seed =
-            WorthQueryApplicationEntitySeed::new(AggregateSource::reference(), entity_key(&source))
-                .field(SourceIdentity::reference(), source.clone());
-        if let Some(value) = value {
-            seed = seed.field(SourceAmount::reference(), value);
-        }
-        bootstrap.bind_entity(seed).expect("source binds");
-        bind_contribution(bootstrap, &source, "target", ordinal);
-    }
-    if ambiguous {
-        bind_contribution(bootstrap, "source-0", "other-target", 99);
-    }
-}
-
-fn bind_target(
-    bootstrap: &mut crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap<
-        AggregateSchema,
-    >,
-    target: &str,
-) {
-    bootstrap
-        .bind_entity(
-            WorthQueryApplicationEntitySeed::new(AggregateTarget::reference(), entity_key(target))
-                .field(TargetIdentity::reference(), target.to_owned()),
-        )
-        .expect("target binds");
-}
-
-fn bind_contribution(
-    bootstrap: &mut crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap<
-        AggregateSchema,
-    >,
-    source: &str,
-    target: &str,
-    ordinal: usize,
-) {
-    bootstrap
-        .bind_relation(WorthQueryApplicationRelationSeed::new(
-            AggregateContribution::reference(),
-            format!("contribution-{ordinal}"),
-            entity_key(source),
-            entity_key(target),
-        ))
-        .expect("contribution binds");
-}
-
-fn entity_key<Schema, Entity>(value: &str) -> WorthQueryApplicationEntityKey<Schema, Entity> {
-    WorthQueryApplicationEntityKey::new(value).expect("fixture entity key is non-empty")
-}
+#[path = "world/population.rs"]
+mod population;
+use population::bind_world;

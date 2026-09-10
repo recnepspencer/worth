@@ -27,6 +27,7 @@ where
     {
         Ok(Self {
             storage: PersistentOrdMapStorage::Exclusive(BTreeMap::deserialize(deserializer)?),
+            retained_charge: None,
         })
     }
 }

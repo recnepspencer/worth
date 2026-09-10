@@ -62,6 +62,7 @@ pub(super) fn bind_source_records<
         IdentityUnit,
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    product: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<
     BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
     WorthQueryConditionalRuntimeInstallationDenial,
@@ -72,6 +73,9 @@ where
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
 {
+    let selected = runtime
+        .on_product(product.retained_clone())
+        .map_err(super::product_denial)?;
     candidates
         .into_iter()
         .map(|(identity, candidate)| {
@@ -84,7 +88,7 @@ where
                         ),
                     )
                 })?;
-            let record = runtime
+            let record = selected
                 .resolve_entity(
                     identity_field,
                     value,

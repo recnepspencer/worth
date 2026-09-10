@@ -208,6 +208,8 @@ pub struct BridgeCorrespondenceDeliveryReceipt {
     counters: CorrespondenceDeliveryCounters,
     truth_change: super::BridgeDeliveredTruthChange,
     prepared_signal: Option<super::BridgePreparedScopedSignalInvalidation>,
+    conditional_transition:
+        Option<worth_signal::facade::branch::SignalConditionalSuccessorTransition>,
 }
 
 impl BridgeCorrespondenceDeliveryReceipt {
@@ -220,7 +222,22 @@ impl BridgeCorrespondenceDeliveryReceipt {
             counters,
             truth_change: super::BridgeDeliveredTruthChange::new(change_set),
             prepared_signal,
+            conditional_transition: None,
         }
+    }
+
+    pub(crate) fn with_conditional_transition(
+        mut self,
+        transition: worth_signal::facade::branch::SignalConditionalSuccessorTransition,
+    ) -> Self {
+        self.conditional_transition = Some(transition);
+        self
+    }
+
+    pub(crate) const fn conditional_transition(
+        &self,
+    ) -> Option<&worth_signal::facade::branch::SignalConditionalSuccessorTransition> {
+        self.conditional_transition.as_ref()
     }
 
     pub const fn counters(&self) -> CorrespondenceDeliveryCounters {

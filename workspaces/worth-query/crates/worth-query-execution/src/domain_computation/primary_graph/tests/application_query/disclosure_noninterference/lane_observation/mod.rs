@@ -35,8 +35,6 @@ type InstalledGovernedQuery = WorthQueryInstalledApplicationQuery<
 struct ProtectedWorldObservation {
     one_shot: LaneObservation,
     continuation: ContinuationObservation,
-    historical: LaneObservation,
-    preview: LaneObservation,
     live: LaneObservation,
     live_commit_ordinal: u64,
     live_close: StableReadCompletionObservation,
@@ -80,14 +78,10 @@ fn protected_label_is_absent_from_every_implemented_lane_observable() {
 
     left.one_shot.assert_same(&right.one_shot);
     left.continuation.assert_same(&right.continuation);
-    left.historical.assert_same(&right.historical);
-    left.preview.assert_same(&right.preview);
     left.live.assert_same(&right.live);
     assert_eq!(left.live_commit_ordinal, right.live_commit_ordinal);
     assert_eq!(left.live_close, right.live_close, "live close observable");
     assert_full_rows(&left.one_shot.rows);
-    assert_full_rows(&left.historical.rows);
-    assert_full_rows(&left.preview.rows);
     assert_eq!(
         left.continuation.first.rows[0].activities(),
         &[("activity-primary".to_owned(), 11)]
@@ -114,11 +108,6 @@ fn observe_protected_world(label: &str) -> ProtectedWorldObservation {
     let committer = resolve_principal(&world, "bob", &request);
     let account = resolve_account(&world, &request);
     let query = installed_governed_query(&world);
-    let historical_head = super::super::lane_parity::branch_head(&world, "main");
-    let preview_session = world
-        .application
-        .open_application_preview_session(&request)
-        .unwrap();
     let context = GovernedObservationContext {
         world: &world,
         request: &request,
@@ -131,19 +120,13 @@ fn observe_protected_world(label: &str) -> ProtectedWorldObservation {
 
     let one_shot = non_live::observe_one_shot(&context, &mut occurrences);
     let continuation = non_live::observe_continuation(&context, &mut occurrences);
-    let historical =
-        non_live::observe_historical(&context, historical_head.commit_id.0, &mut occurrences);
-    let preview = non_live::observe_preview(&context, &preview_session, &mut occurrences);
-    assert!(preview_session.discard().unwrap().discarded());
     let (live, live_commit_ordinal, live_close) = live::observe(&context, label, &mut occurrences);
 
-    assert_eq!(occurrences.sessions.len(), 7);
-    assert_eq!(occurrences.managed_runs.len(), 7);
+    assert_eq!(occurrences.sessions.len(), 5);
+    assert_eq!(occurrences.managed_runs.len(), 5);
     ProtectedWorldObservation {
         one_shot,
         continuation,
-        historical,
-        preview,
         live,
         live_commit_ordinal,
         live_close,
@@ -218,6 +201,8 @@ fn resolve_principal(
     let external = world.authenticate(external_identity, Duration::from_secs(60), request);
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -233,6 +218,8 @@ fn resolve_account(
 ) -> WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account> {
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),

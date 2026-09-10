@@ -10,7 +10,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::{
-    application_resource_request, primary_relational_branch_id, WorthQueryApplicationSnapshotLease,
+    application_resource_request, WorthQueryApplicationSnapshotLease,
     WorthQueryApplicationSnapshotLeaseDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::domain_computation::provider_session::{
@@ -21,6 +21,7 @@ use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthoriza
 
 pub(super) fn start_operation_graph_work<Schema, Operation, Input>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     resource_binding_identity: &str,
     principal: EntityId,
@@ -38,7 +39,7 @@ where
     let lease = WorthQueryApplicationSnapshotLease::acquire(
         graph.integration_handle(),
         graph.retain_layout(),
-        &primary_relational_branch_id(),
+        product,
     )
     .map_err(|denial| snapshot_lease_denial(denial, operation.operation()))?;
     let intent = if operation
@@ -86,6 +87,7 @@ where
 
 pub(super) fn start_capability_graph_work<Schema, Operation, Input>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
     principal: EntityId,
     access: WorthQueryGraphWorkAccessContextAffinity,
@@ -102,7 +104,7 @@ where
     let lease = WorthQueryApplicationSnapshotLease::acquire(
         graph.integration_handle(),
         graph.retain_layout(),
-        &primary_relational_branch_id(),
+        product,
     )
     .map_err(|denial| snapshot_lease_denial(denial, operation.operation()))?;
     let mutating = operation.graph_obligations().rows().iter().any(|row| {
@@ -152,9 +154,14 @@ where
     let installed_capability = capability_graph_work
         .capability_access_context()
         .ok_or_else(|| graph_work_denial(operation.operation()))?;
+    let product = capability_graph_work
+        .mutation_product()
+        .map(crate::basis::WorthQueryProductBranchLease::retained_clone)
+        .ok_or_else(|| graph_work_denial(operation.operation()))?;
     drop(capability_graph_work);
     start_operation_graph_work(
         runtime,
+        product,
         operation,
         resource_binding_identity,
         principal,
@@ -179,12 +186,6 @@ fn snapshot_lease_denial(
         } => WorthQueryOperationAuthorizationDenialKind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        WorthQueryApplicationSnapshotLeaseDenial::RetentionCapacityExhausted => {
-            WorthQueryOperationAuthorizationDenialKind::RetentionCapacityExhausted
-        }
-        WorthQueryApplicationSnapshotLeaseDenial::RetentionIdentityExhausted => {
-            WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted
-        }
         WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted => {
             WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted
         }

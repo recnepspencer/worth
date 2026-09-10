@@ -15,7 +15,7 @@ fn projection_capability_does_not_widen_the_installed_decision_manifest() {
         .installed_operation(MultiTouchOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,

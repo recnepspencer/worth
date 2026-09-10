@@ -5,6 +5,12 @@ use super::IndexedSubscriptionMembership;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct ForkConsumerMemberships(Arc<[IndexedSubscriptionMembership]>);
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) enum ForkConsumerMembershipChange {
+    Removed,
+    Replaced(ForkConsumerMemberships),
+}
+
 impl ForkConsumerMemberships {
     pub(super) fn from_owned(memberships: Vec<IndexedSubscriptionMembership>) -> Self {
         Self(memberships.into())
@@ -18,3 +24,4 @@ impl ForkConsumerMemberships {
         self.0.to_vec()
     }
 }
+mod retained_charge;

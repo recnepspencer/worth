@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 use super::WorthQueryCapabilityOperationProgression;
 
 mod precondition_binding;
+pub(in crate::domain_computation) use precondition_binding::admit_capability_access;
 pub use precondition_binding::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use precondition_binding::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use precondition_binding::WorthQueryOperationAdmissionIdentity;
@@ -39,6 +40,7 @@ pub(in crate::domain_computation::authorization::operation_progression) struct V
     Scope,
 > {
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &'a crate::basis::WorthQueryProductBranchLease,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -55,6 +57,7 @@ pub(super) fn validate_conventional_operation<
     Scope,
 >(
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &'a crate::basis::WorthQueryProductBranchLease,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -89,6 +92,7 @@ where
     )?;
     Ok(ValidatedConventionalOperation {
         runtime,
+        product,
         principal,
         scope,
         operation,

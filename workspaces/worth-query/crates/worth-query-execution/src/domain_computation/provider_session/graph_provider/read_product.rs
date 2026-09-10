@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use super::call_identity::WorthQueryGraphCallAuthorityIdentity;
-use super::{WorthQueryGraphProviderCall, WorthQueryGraphReadMaterial, WorthQueryGraphReadRow};
+use super::materialization::{WorthQueryGraphReadMaterialization, WorthQueryGraphReadRows};
+use super::WorthQueryGraphProviderCall;
 
 #[derive(Debug, PartialEq)]
 pub struct WorthQueryExecutionGraphReadProduct {
@@ -12,24 +13,24 @@ pub struct WorthQueryExecutionGraphReadProduct {
     canonical_query_digest: Arc<str>,
     basis_identity: Arc<str>,
     snapshot_identity: Arc<str>,
-    rows: Box<[WorthQueryGraphReadRow]>,
+    materialization: WorthQueryGraphReadMaterialization,
 }
 
 impl WorthQueryExecutionGraphReadProduct {
-    pub(super) fn seal(
+    pub(super) fn seal_materialization(
         call: &WorthQueryGraphProviderCall,
-        material: WorthQueryGraphReadMaterial,
+        materialization: WorthQueryGraphReadMaterialization,
     ) -> Self {
-        let rows = material.into_rows().into_boxed_slice();
+        let call_identity = call.call_identity_arc();
         Self {
             authority_identity: call.authority_identity(),
-            identity: Arc::from(call.call_identity()),
-            call_identity: Arc::from(call.call_identity()),
-            provider_session_identity: Arc::from(call.provider_session_identity()),
-            canonical_query_digest: Arc::from(call.canonical_query_digest()),
-            basis_identity: Arc::from(call.basis_identity()),
-            snapshot_identity: Arc::from(call.snapshot_identity()),
-            rows,
+            identity: Arc::clone(&call_identity),
+            call_identity,
+            provider_session_identity: call.provider_session_identity_arc(),
+            canonical_query_digest: call.canonical_query_digest_arc(),
+            basis_identity: call.basis_identity_arc(),
+            snapshot_identity: call.snapshot_identity_arc(),
+            materialization,
         }
     }
 
@@ -57,11 +58,15 @@ impl WorthQueryExecutionGraphReadProduct {
         &self.snapshot_identity
     }
 
-    pub fn rows(&self) -> &[WorthQueryGraphReadRow] {
-        &self.rows
+    pub fn rows(&self) -> WorthQueryGraphReadRows<'_> {
+        self.materialization.rows()
     }
 
-    pub(super) fn authority_identity(&self) -> WorthQueryGraphCallAuthorityIdentity {
-        self.authority_identity
+    pub const fn row_count(&self) -> usize {
+        self.materialization.row_count()
+    }
+
+    pub const fn retained_bytes(&self) -> usize {
+        self.materialization.retained_bytes()
     }
 }

@@ -25,7 +25,7 @@ pub(in crate::tests::phase1_api) const HOT_SEMANTIC_FINALIZE_SOURCE: &str = conc
 pub(in crate::tests::phase1_api) const HOT_EFFECT_SOURCE: &str = concat!(
     include_str!("../../../data/graph/runtime/effect.rs"),
     include_str!("../../../data/graph/runtime/effect/admission.rs"),
-    include_str!("../../../data/graph/runtime/effect/application.rs"),
+    include_str!("../../../data/graph/runtime/effect/output_commit/snapshot_preparation.rs"),
     include_str!("../../../data/graph/runtime/effect/batching.rs"),
     include_str!("../../../data/graph/runtime/effect/evidence.rs"),
     include_str!("../../../data/graph/runtime/effect/vocabulary.rs"),

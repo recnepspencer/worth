@@ -68,6 +68,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
             return None;
         }
         let mutation_work = self.provider.mutation_work()?.clone();
+        let performed_product_change = self.provider.take_fresh_product_change()?;
         Some(WorthQueryApplicationCommitReceipt {
             authoritative_provider_session: self
                 .provider
@@ -77,6 +78,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
             outcome_identity: self.provider.application_outcome_identity(),
             provider_runtime_instance_id: self.provider.runtime_instance_id(),
             commit: self.provider.commit_reference().clone(),
+            committed_product_publication: self.provider.committed_product_publication().clone(),
             basis_descriptor: self.provider.basis_descriptor().clone(),
             changed_record_count: self.provider.changed_record_count(),
             emitted_effect_count: self.provider.emitted_effect_count(),
@@ -94,6 +96,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
             retained_preimage: self.retained_preimage,
             aftermath_causality: self.aftermath_causality,
             expected_retry_session: None,
+            performed_product_change: Some(performed_product_change),
         })
     }
 }

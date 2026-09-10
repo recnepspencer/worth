@@ -2,8 +2,8 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationPrincipalBindingRef, ApplicationSchema,
 };
 use worth_query_execution::facade::integration::{
-    prepare_primary_graph_with_relational_runtime, publish_primary_graph,
-    retain_primary_graph_integration_handle,
+    prepare_primary_graph_product_bridge, prepare_primary_graph_with_relational_runtime,
+    publish_primary_graph, retain_primary_graph_integration_handle,
 };
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraphBootstrap,
@@ -117,7 +117,13 @@ pub(super) trait PendingPrimaryGraphInstallation {
         execution_runtime: &mut worth_query_execution::facade::runtime::WorthQueryExecutionRuntime,
         installation_authority: &worth_query_execution::facade::runtime::WorthQueryExecutionInstallationAuthority,
         backend: &mut dyn WorthQueryRuntimeBackend,
-    ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryRuntimeError>;
+        product_world_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
+    ) -> Result<PendingPrimaryGraphInstallationOutcome, WorthQueryRuntimeError>;
+}
+
+pub(super) struct PendingPrimaryGraphInstallationOutcome {
+    pub(super) publication: WorthQueryPrimaryGraphPublication,
+    pub(super) product_bridge: worth_runtime_bridge::facade::RuntimeBridge,
 }
 
 struct TypedPrimaryGraphInstallation<Schema, Configure> {
@@ -139,7 +145,8 @@ where
         execution_runtime: &mut worth_query_execution::facade::runtime::WorthQueryExecutionRuntime,
         installation_authority: &worth_query_execution::facade::runtime::WorthQueryExecutionInstallationAuthority,
         backend: &mut dyn WorthQueryRuntimeBackend,
-    ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryRuntimeError> {
+        product_world_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
+    ) -> Result<PendingPrimaryGraphInstallationOutcome, WorthQueryRuntimeError> {
         let declaration = Schema::declaration().map_err(|denial| {
             primary_graph_runtime_error("primary_graph_schema_declaration", format!("{denial:?}"))
         })?;
@@ -160,6 +167,7 @@ where
             execution_runtime,
             &installed_schema,
             transferred.into_runtime(),
+            product_world_resources,
         )
         .map_err(|denial| {
             primary_graph_runtime_error(
@@ -191,10 +199,20 @@ where
                     "published primary graph did not retain an integration handle",
                 )
             })?;
+        let product_bridge = prepare_primary_graph_product_bridge(&installed_schema, &integration)
+            .map_err(|denial| {
+                primary_graph_runtime_error(
+                    "primary_graph_product_bridge",
+                    format!("{:?}: {}", denial.kind(), denial.subject()),
+                )
+            })?;
         backend
             .attach_primary_graph_runtime(WorthQueryPrimaryGraphBackendHandle::new(integration))
             .map_err(WorthQueryRuntimeError::Workspace)?;
-        Ok(publication)
+        Ok(PendingPrimaryGraphInstallationOutcome {
+            publication,
+            product_bridge,
+        })
     }
 }
 

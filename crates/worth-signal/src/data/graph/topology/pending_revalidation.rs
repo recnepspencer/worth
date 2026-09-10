@@ -2,6 +2,17 @@ use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::SignalGraph;
 use crate::data::handle::NodeId;
 
+mod index_publication;
+mod publication_work;
+mod retained_publication;
+pub(crate) use index_publication::PreparedPendingRevalidationIndex;
+pub(crate) use retained_publication::PreparedRetainedPendingRevalidationIndex;
+mod resolution_preparation;
+pub(crate) use resolution_preparation::{
+    PendingRevalidationNodeProjection, PendingRevalidationPreparationDenial,
+    PreparedPendingRevalidationResolution,
+};
+
 impl SignalGraph {
     pub(in crate::data::graph) fn replace_pending_revalidation_waiters(
         &mut self,
@@ -88,3 +99,21 @@ impl SignalGraph {
 
 #[cfg(test)]
 mod tests;
+
+impl SignalGraph {
+    /// Installs an already discovered outcome. No waiter traversal occurs here.
+    /// The enclosing packet must reserve storage before its first publication.
+    pub(crate) fn publish_pending_revalidation_resolution(
+        &mut self,
+        prepared: PreparedPendingRevalidationResolution,
+    ) -> Result<(), SignalError> {
+        let (nodes, index) = prepared.split_node_changes();
+        for (node, projected) in nodes {
+            self.publish_node_revalidation_resolution(node, projected)?;
+        }
+        index.publish(self);
+        Ok(())
+    }
+}
+
+pub(crate) mod preparation_work;

@@ -1,3 +1,12 @@
+use super::preparation_work;
+use crate::data::graph::subscription_candidates;
+use crate::logic::evaluation::EvaluationWork;
+mod publication;
+pub(crate) use publication::{
+    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedDirectCauseStores,
+    PreparedRetainedDirectCauseStores,
+};
+
 use crate::data::aspect::AspectMask;
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
@@ -5,7 +14,6 @@ use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::data::proof::invalidation::binding::ResolvedDependencyCause;
 use crate::data::proof::invalidation::output_commit::ProducedAspectDelta;
-use crate::data::telemetry::InvalidationPerformedCounter;
 
 use super::{changed_scopes_for_edge, reconcile_edge_cause, CauseAdmissionContext};
 
@@ -14,39 +22,14 @@ pub(crate) struct PreparedDirectCauseAdmission {
     producer: NodeId,
     commit: Option<ProducedAspectDelta>,
     replacements: Vec<PreparedConsumerCauseSet>,
-    resolved_consumers: Vec<NodeId>,
     counter_deltas: PreparedDirectCounterDeltas,
-}
-
-impl PreparedDirectCauseAdmission {
-    pub(crate) fn suppressed_downstream_count(&self) -> u64 {
-        if self.commit.is_none() {
-            return self.resolved_consumers.len() as u64;
-        }
-        self.replacements
-            .iter()
-            .filter(|replacement| replacement.causes.is_empty())
-            .count() as u64
-    }
-
-    pub(crate) fn validate_packet(
-        &self,
-        producer: NodeId,
-        delta: Option<&ProducedAspectDelta>,
-    ) -> Result<(), SignalError> {
-        if self.producer != producer || self.commit.as_ref() != delta {
-            return Err(SignalError::internal(
-                "prepared direct causes do not match their output commit",
-            ));
-        }
-        Ok(())
-    }
 }
 
 #[derive(Debug)]
 struct PreparedConsumerCauseSet {
     consumer: NodeId,
-    causes: Vec<ResolvedDependencyCause>,
+    causes: crate::data::graph::storage::invalidation_causes::NormalizedCauseSet,
+    cache: crate::data::graph::storage::PreparedInvalidationCache,
 }
 
 enum DirectCandidateAdmission {
@@ -85,29 +68,34 @@ impl SignalGraph {
         &mut self,
         delta: &ProducedAspectDelta,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
+        work: &mut EvaluationWork<'_>,
     ) -> Result<PreparedDirectCauseAdmission, SignalError> {
         let mut subscribers = Vec::new();
         let mut counter_deltas = PreparedDirectCounterDeltas {
             source_deltas: 1,
             ..Default::default()
         };
+        work.reserve(Some(delta.changes.as_slice().len()))?;
         for change in delta.changes.as_slice() {
-            let query =
-                self.query_reverse_subscriptions(delta.producer, change, delta.scope_precision)?;
+            let query = self.query_reverse_subscriptions(
+                delta.producer,
+                change,
+                delta.scope_precision,
+                work,
+            )?;
             counter_deltas.bucket_probes += query.bucket_probes;
             counter_deltas.candidates_returned += query.candidates.len() as u64;
             let candidate_count = query.candidates.len() as u64;
             self.with_telemetry(|telemetry| {
                 telemetry.invalidation.direct_subscriber_candidates_examined += candidate_count;
             });
-            subscribers.extend(query.candidates);
+            subscription_candidates::append(&mut subscribers, query.candidates, work)?;
         }
-        subscribers.sort_unstable();
-        subscribers.dedup();
+        subscription_candidates::normalize(&mut subscribers, work)?;
+        work.reserve(subscribers.len().checked_mul(2))?;
         let mut replacements = Vec::with_capacity(subscribers.len());
-        let resolved_consumers = self.pending_revalidation_waiters(delta.producer)?;
         for &consumer in &subscribers {
-            match self.prepare_consumer_cause_set(consumer, delta, comparator_resolver)? {
+            match self.prepare_consumer_cause_set(consumer, delta, comparator_resolver, work)? {
                 DirectCandidateAdmission::Admitted(replacement, counters) => {
                     counter_deltas.merge(counters);
                     replacements.push(replacement);
@@ -126,11 +114,11 @@ impl SignalGraph {
                 }
             }
         }
+        preparation_work::admit_delta_copy(delta, work)?;
         Ok(PreparedDirectCauseAdmission {
             producer: delta.producer,
             commit: Some(delta.clone()),
             replacements,
-            resolved_consumers,
             counter_deltas,
         })
     }
@@ -143,7 +131,6 @@ impl SignalGraph {
             producer,
             commit: None,
             replacements: Vec::new(),
-            resolved_consumers: self.pending_revalidation_waiters(producer)?,
             counter_deltas: Default::default(),
         })
     }
@@ -153,33 +140,43 @@ impl SignalGraph {
         consumer: NodeId,
         delta: &ProducedAspectDelta,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
+        work: &mut EvaluationWork<'_>,
     ) -> Result<DirectCandidateAdmission, SignalError> {
-        let relevant = self
-            .current_runtime_dependencies_of(consumer)?
-            .iter()
-            .filter(|edge| {
-                edge.source() == delta.producer
-                    && delta
-                        .changes
-                        .as_slice()
-                        .iter()
-                        .any(|change| change.aspect == edge.aspect())
-            })
-            .cloned()
-            .collect::<Vec<_>>();
+        let edges = self.current_runtime_dependencies_of(consumer)?;
+        // Two filtering passes and each admitted edge's change lookup.
+        work.reserve(
+            delta
+                .changes
+                .as_slice()
+                .len()
+                .checked_add(1)
+                .and_then(|n| n.checked_mul(edges.len()))
+                .and_then(|n| n.checked_mul(3)),
+        )?;
+        let relevant = edges.iter().filter(|edge| {
+            edge.source() == delta.producer
+                && delta
+                    .changes
+                    .as_slice()
+                    .iter()
+                    .any(|change| change.aspect == edge.aspect())
+        });
         let mut counters = PreparedDirectCounterDeltas {
-            edges_examined: relevant.len() as u64,
+            edges_examined: relevant.clone().count() as u64,
             ..Default::default()
         };
-        if relevant.is_empty() {
+        if counters.edges_examined == 0 {
             return Ok(DirectCandidateAdmission::CausalityRejected(counters));
         }
         let snapshot = self.get_dep_snapshot(consumer)?;
         let revision = self.dependency_revision(consumer)?;
         let graph_instance = self.runtime_instance_id();
         let config = self.node_eval_config(consumer)?;
+        work.reserve(Some(1))?;
         let policy = comparator_resolver.policy_for_node(consumer, config.comparator.as_ref());
-        let mut causes = self.pending_causes(consumer)?.to_vec();
+        let pending = self.pending_causes(consumer)?;
+        preparation_work::admit_causes_copy(pending, work)?;
+        let mut causes = pending.to_vec();
         let mut affected = false;
         let mut contract_rejected = false;
 
@@ -192,13 +189,26 @@ impl SignalGraph {
             else {
                 continue;
             };
-            let Some(changed_scopes) = changed_scopes_for_edge(change, edge.scope_ref()) else {
+            let Some(changed_scopes) = changed_scopes_for_edge(change, edge.scope_ref(), work)?
+            else {
                 counters.scope_rejections += 1;
                 continue;
             };
             let changed_aspect = AspectMask::from_aspect(change.aspect);
             let contract = self.get_contract(consumer)?;
-            if !contract.cares_about_change(changed_aspect, changed_scopes.as_slice()) {
+            work.reserve(
+                preparation_work::scope_comparison(edge.scope_ref()).and_then(|cost| {
+                    cost.checked_mul(
+                        contract
+                            .projection
+                            .consumes_partitions
+                            .as_ref()
+                            .map_or(0, Vec::len)
+                            .checked_add(2)?,
+                    )
+                }),
+            )?;
+            if !contract.cares_about_change(changed_aspect, changed_scopes) {
                 contract_rejected = true;
                 if contract.cares_about_change(changed_aspect, &[]) {
                     counters.scope_rejections += 1;
@@ -208,6 +218,10 @@ impl SignalGraph {
                 continue;
             }
             affected = true;
+            work.reserve(
+                preparation_work::scope_comparison(edge.scope_ref())
+                    .and_then(|cost| cost.checked_mul(snapshot.entries().len())),
+            )?;
             let Some(cached_version) = snapshot
                 .entries()
                 .iter()
@@ -220,6 +234,7 @@ impl SignalGraph {
             else {
                 continue;
             };
+            work.reserve(Some(1))?;
             let meaningful = policy.has_meaningful_change(
                 change.aspect,
                 cached_version,
@@ -241,16 +256,27 @@ impl SignalGraph {
                     output_commit_ordinal: delta.output_commit_ordinal,
                 },
                 edge.aspect(),
-                edge.scope_ref().cloned(),
+                edge.scope_ref(),
                 cached_version,
                 change.committed_version,
                 changed_scopes,
                 meaningful,
-            );
+                work,
+            )?;
         }
         Ok(if affected {
+            let causes =
+                crate::data::graph::storage::invalidation_causes::NormalizedCauseSet::prepare(
+                    causes, work,
+                )?;
             DirectCandidateAdmission::Admitted(
-                PreparedConsumerCauseSet { consumer, causes },
+                PreparedConsumerCauseSet {
+                    consumer,
+                    cache: crate::data::graph::storage::PreparedInvalidationCache::from_causes(
+                        &causes, work,
+                    )?,
+                    causes,
+                },
                 counters,
             )
         } else if contract_rejected {
@@ -258,79 +284,5 @@ impl SignalGraph {
         } else {
             DirectCandidateAdmission::CausalityRejected(counters)
         })
-    }
-
-    pub(crate) fn publish_direct_output_causes(
-        &mut self,
-        prepared: PreparedDirectCauseAdmission,
-    ) -> Result<(), SignalError> {
-        let PreparedDirectCauseAdmission {
-            producer,
-            commit,
-            replacements,
-            resolved_consumers,
-            counter_deltas,
-        } = prepared;
-        for replacement in replacements {
-            let preserves_direct_dirty_obligation = self
-                .node_direct_invalidation_basis(replacement.consumer)?
-                .is_some();
-            if preserves_direct_dirty_obligation {
-                continue;
-            }
-            let has_causes = !replacement.causes.is_empty();
-            if let Some(delta) = commit.as_ref() {
-                self.replace_prepared_pending_causes(
-                    replacement.consumer,
-                    replacement.causes,
-                    delta,
-                )?;
-            } else {
-                self.replace_pending_causes(replacement.consumer, replacement.causes)?;
-            }
-            let state = if has_causes {
-                crate::data::node::NodeState::Dirty
-            } else {
-                crate::data::node::NodeState::MaybeStale
-            };
-            self.set_node_state(replacement.consumer, state)?;
-        }
-        for consumer in resolved_consumers {
-            self.resolve_node_pending_revalidation(consumer, producer)?;
-        }
-        let performed = self.invalidation_performed_counter_state();
-        performed.add(
-            InvalidationPerformedCounter::SourceOutputDeltasConsumed,
-            counter_deltas.source_deltas,
-        );
-        performed.add(
-            InvalidationPerformedCounter::DirectSubscriberEdgesExamined,
-            counter_deltas.edges_examined,
-        );
-        performed.add(
-            InvalidationPerformedCounter::ReverseIndexBucketProbes,
-            counter_deltas.bucket_probes,
-        );
-        performed.add(
-            InvalidationPerformedCounter::ReverseIndexCandidatesReturned,
-            counter_deltas.candidates_returned,
-        );
-        performed.add(
-            InvalidationPerformedCounter::CandidatesRejectedByAspectContract,
-            counter_deltas.aspect_contract_rejections,
-        );
-        performed.add(
-            InvalidationPerformedCounter::CandidatesRejectedByScope,
-            counter_deltas.scope_rejections,
-        );
-        performed.add(
-            InvalidationPerformedCounter::CandidatesRejectedByComparator,
-            counter_deltas.comparator_rejections,
-        );
-        performed.add(
-            InvalidationPerformedCounter::DirectSettlementsProduced,
-            counter_deltas.settlements,
-        );
-        Ok(())
     }
 }

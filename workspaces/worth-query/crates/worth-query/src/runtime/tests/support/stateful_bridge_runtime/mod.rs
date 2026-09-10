@@ -24,33 +24,25 @@ pub(crate) struct StatefulBridgeMergeProbe {
 
 impl StatefulBridgeMergeProbe {
     pub(crate) fn main_entity_count(&self) -> usize {
-        let mut state = self.state.borrow_mut();
-        let runtime = state
-            .relational_runtime
-            .as_mut()
-            .expect("merge probe requires its Relational owner");
-        let snapshot =
-            crate::harness::fixtures::effect_authorities::exact_branch_snapshot(runtime, "main");
-        let read = runtime
-            .read_truth()
-            .read_snapshot(&snapshot)
-            .expect("merge probe reads the exact target branch snapshot");
-        read.entities().len()
+        self.state
+            .borrow()
+            .relational_source
+            .with_runtime_mut(|runtime| {
+                let snapshot = crate::harness::fixtures::effect_authorities::exact_branch_snapshot(
+                    runtime, "main",
+                );
+                let read = runtime
+                    .read_truth()
+                    .read_snapshot(&snapshot)
+                    .expect("merge probe reads the exact target branch snapshot");
+                read.entities().len()
+            })
     }
 }
 
 pub(in crate::runtime::tests) fn custom_backend_without_primary_graph_transfer_builder(
 ) -> WorthQueryRuntimeBuilder {
-    let state = Rc::new(RefCell::new(StatefulBridgeState::new(
-        ["Task".to_string()].into_iter().collect(),
-    )));
-    WorthQueryRuntime::builder()
-        .backend(StatefulBridgeRuntimeBackend::new(
-            state,
-            graph_test_support_profile(),
-        ))
-        .aspect_contracts(stateful_bridge_aspect_contracts())
-        .expect("stateful bridge aspect contracts should admit")
+    stateful_bridge_builder(["Task"], graph_test_support_profile(), test_product_root())
 }
 
 pub(crate) fn stateful_bridge_task_runtime() -> WorthQueryRuntime {
@@ -63,16 +55,7 @@ pub(in crate::runtime::tests) fn stateful_bridge_task_runtime_with_domain<D>(
 where
     D: crate::application::WorthQueryDomainEntryMarker + 'static,
 {
-    let state = Rc::new(RefCell::new(StatefulBridgeState::new(
-        ["Task".to_string()].into_iter().collect(),
-    )));
-    WorthQueryRuntime::builder()
-        .backend(StatefulBridgeRuntimeBackend::new(
-            state,
-            graph_test_support_profile(),
-        ))
-        .aspect_contracts(stateful_bridge_aspect_contracts())
-        .expect("stateful bridge aspect contracts should admit")
+    stateful_bridge_builder(["Task"], graph_test_support_profile(), test_product_root())
         .domain_package(package)
         .expect("test domain package should admit")
         .build()
@@ -113,17 +96,24 @@ fn stateful_bridge_task_runtime_with_merge_posture(
         relational.fail_next_durable_append_for_test();
     }
     let installed_collections = ["Task".to_string()].into_iter().collect();
-    let state = Rc::new(RefCell::new(
-        StatefulBridgeState::new(installed_collections).with_relational_runtime(relational),
-    ));
+    let product = test_product_root_with_runtime(relational);
+    let state = Rc::new(RefCell::new(StatefulBridgeState::new(
+        installed_collections,
+        product.bridge.clone(),
+        product.source,
+    )));
     let probe = StatefulBridgeMergeProbe {
         state: Rc::clone(&state),
     };
-    let runtime = WorthQueryRuntime::builder()
+    let runtime = WorthQueryRuntime::builder(test_product_world_resources())
         .backend(StatefulBridgeRuntimeBackend::new(
             state,
             graph_test_support_profile(),
         ))
+        .installed_product_bridge(
+            product.bridge,
+            WorthQueryConditionalExecutionResources::development(),
+        )
         .aspect_contracts(stateful_bridge_aspect_contracts())
         .expect("stateful bridge aspect contracts should admit")
         .build()
@@ -132,20 +122,13 @@ fn stateful_bridge_task_runtime_with_merge_posture(
 }
 
 pub(crate) fn stateful_bridge_task_runtime_without_writeback() -> WorthQueryRuntime {
-    let installed_collections = ["Task".to_string()].into_iter().collect::<BTreeSet<_>>();
-    let state = Rc::new(RefCell::new(StatefulBridgeState::with_bridge(
-        installed_collections,
-        super::test_bridge_without_writeback_authority(),
-    )));
-    WorthQueryRuntime::builder()
-        .backend(StatefulBridgeRuntimeBackend::new(
-            state,
-            graph_test_support_profile(),
-        ))
-        .aspect_contracts(stateful_bridge_aspect_contracts())
-        .expect("stateful bridge aspect contracts should admit")
-        .build()
-        .expect("stateful bridge runtime without writeback should build")
+    stateful_bridge_builder(
+        ["Task"],
+        graph_test_support_profile(),
+        test_product_root_without_writeback(),
+    )
+    .build()
+    .expect("stateful bridge runtime without writeback should build")
 }
 
 pub(crate) fn stateful_bridge_task_issue_runtime() -> WorthQueryRuntime {
@@ -188,19 +171,33 @@ fn stateful_bridge_runtime_via_custom_backend(
     collections: impl IntoIterator<Item = &'static str>,
     support_profile: WorthQueryRuntimeSupportProfile,
 ) -> WorthQueryRuntime {
+    stateful_bridge_builder(collections, support_profile, test_product_root())
+        .build()
+        .expect("stateful bridge-backed runtime should build")
+}
+
+fn stateful_bridge_builder(
+    collections: impl IntoIterator<Item = &'static str>,
+    support_profile: WorthQueryRuntimeSupportProfile,
+    product: TestProductRoot,
+) -> WorthQueryRuntimeBuilder {
     let installed_collections = collections
         .into_iter()
         .map(str::to_string)
         .collect::<BTreeSet<_>>();
     let state = Rc::new(RefCell::new(StatefulBridgeState::new(
-        installed_collections.clone(),
+        installed_collections,
+        product.bridge.clone(),
+        product.source,
     )));
-    WorthQueryRuntime::builder()
+    WorthQueryRuntime::builder(test_product_world_resources())
         .backend(StatefulBridgeRuntimeBackend::new(state, support_profile))
+        .installed_product_bridge(
+            product.bridge,
+            WorthQueryConditionalExecutionResources::development(),
+        )
         .aspect_contracts(stateful_bridge_aspect_contracts())
         .expect("stateful bridge aspect contracts should admit")
-        .build()
-        .expect("stateful bridge-backed runtime should build")
 }
 
 pub(in crate::runtime::tests) fn graph_test_support_profile() -> WorthQueryRuntimeSupportProfile {

@@ -1,10 +1,11 @@
 use crate::view_shape_live::ViewShapePatchEnvelope;
 use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
+use worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner;
 use worth_relational::facade::identity::{EntityId, KindId};
-use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::BridgeMutationAuthorityBundle;
 
 mod atomic_batch;
+mod commit_batch;
 mod commit_snapshot_closeout;
 mod entity_native_replacement;
 #[cfg(test)]
@@ -382,7 +383,7 @@ pub enum WorthQueryWorkspaceErrorKind {
 }
 
 pub struct WorthQueryMemoryWorkspace {
-    runtime: RelationalRuntime,
+    runtime: WorthQueryRelationalSourceOwner,
     kind_id: KindId,
     kind_name: String,
     aspects: Vec<WorthQueryAspect>,

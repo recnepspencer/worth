@@ -1,8 +1,11 @@
+use crate::data::persistent_ord_map::PersistentOrdMap;
 use std::collections::BTreeMap;
 
 use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId};
 
 use super::DiagnosticsState;
+
+pub(super) const BOOTSTRAP_BRANCH_NAME: &str = "main";
 
 impl DiagnosticsState {
     pub fn bootstrap_defaults(&mut self) {
@@ -11,7 +14,9 @@ impl DiagnosticsState {
                 SignalBranchId(0),
                 SignalBranchHandle {
                     id: SignalBranchId(0),
-                    name: "main".to_string(),
+                    // Boxed str fixes the retained extent to the name length;
+                    // into_string transfers that exact allocation unchanged.
+                    name: Box::<str>::from(BOOTSTRAP_BRANCH_NAME).into_string(),
                     parent_branch_id: None,
                     head_snapshot_id: None,
                 },
@@ -19,7 +24,7 @@ impl DiagnosticsState {
         }
     }
 
-    pub fn branch_catalog(&self) -> &BTreeMap<SignalBranchId, SignalBranchHandle> {
+    pub fn branch_catalog(&self) -> &PersistentOrdMap<SignalBranchId, SignalBranchHandle> {
         &self.branch_catalog
     }
 
@@ -58,7 +63,10 @@ impl DiagnosticsState {
         branch_catalog: &BTreeMap<SignalBranchId, SignalBranchHandle>,
         active_branch: SignalBranchId,
     ) {
-        self.branch_catalog.clone_from(branch_catalog);
+        self.branch_catalog = branch_catalog
+            .iter()
+            .map(|(id, handle)| (*id, handle.clone()))
+            .collect();
         self.active_branch = active_branch;
     }
 

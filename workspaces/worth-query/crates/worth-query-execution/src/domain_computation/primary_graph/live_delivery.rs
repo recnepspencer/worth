@@ -9,5 +9,6 @@ pub(in crate::domain_computation::primary_graph) use controls::{
     WorthQueryLiveDeliveryControlDenial, WorthQueryLiveDeliveryControls,
 };
 pub(super) use source::{
-    WorthQueryLiveCommitBatch, WorthQueryLiveDeliverySource, WorthQueryLiveSourcePoll,
+    WorthQueryLiveCommitBatchCell, WorthQueryLiveDeliverySource,
+    WorthQueryLivePublicationReservation, WorthQueryLiveSourcePoll, WorthQueryLiveSubscription,
 };

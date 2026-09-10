@@ -26,6 +26,8 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
     facts: Vec<WorthQueryApplicationObservedFact>,
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
+    conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
@@ -72,6 +74,9 @@ pub(super) fn prepare_provider_attempt(
     expected_emission_retained_bytes: u64,
     emission_retained_bytes_ceiling: u64,
     preimage_demand: Option<InstalledPreImageDemand>,
+    conditional_definition: Option<
+        crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
+    >,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(&facts, &effects);
     for effect in effects {
@@ -86,6 +91,7 @@ pub(super) fn prepare_provider_attempt(
         facts,
         effects: completed,
         preimage_demand,
+        conditional_definition,
     })
 }
 

@@ -27,6 +27,17 @@ pub(crate) fn admit_installed_basis(
     ))
 }
 
+pub(crate) fn admit_baseline(
+    runtime: &RuntimeBridge,
+    signal_graph_instance_id: u64,
+) -> AdmittedRuntimeWorldCorrespondenceBasis {
+    AdmittedRuntimeWorldCorrespondenceBasis::baseline(
+        runtime,
+        signal_graph_instance_id,
+        AuthorityWitness::from_authority_marker(BridgeRuntimeWorldAdmissionAuthorityMarker::seal()),
+    )
+}
+
 pub(crate) fn compare_current_basis(
     runtime: &RuntimeBridge,
     admitted: &AdmittedRuntimeWorldCorrespondenceBasis,
@@ -34,12 +45,15 @@ pub(crate) fn compare_current_basis(
 ) -> Result<(), RuntimeWorldCorrespondenceAdmissionDenial> {
     let actual_runtime_key = admitted.basis().bridge_runtime_key;
     require_bridge_runtime_affinity(runtime, actual_runtime_key)?;
-    require_current_source_installation(
-        runtime,
-        admitted.dependency(),
-        admitted.source_installation_generation(),
-        inspection,
-    )
+    match admitted.dependency() {
+        Some(dependency) => require_current_source_installation(
+            runtime,
+            dependency,
+            admitted.source_installation_generation(),
+            inspection,
+        ),
+        None => Ok(()),
+    }
 }
 
 fn require_bridge_runtime_affinity(

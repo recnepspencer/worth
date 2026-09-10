@@ -153,13 +153,14 @@ fn stale_installation_and_unsupported_basis_stop_before_lifecycle_work() {
         .workspace("projection-lifecycle-wrong-basis")
         .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
+    let branch = workspace
+        .branches()
+        .fork(workspace.current_world())
+        .components(|components| components.reuse_exact_relational_basis().fork_signal())
+        .create()
+        .unwrap();
     let denial = match workspace
-        .observe_branch_operating_world(
-            worth_query::facade::installed::WorthQueryBranchHeadIdentity::new(
-                "branch:projection-lifecycle",
-            )
-            .unwrap(),
-        )
+        .observe_operating_world(branch)
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -226,7 +227,7 @@ fn unsupported_live_support_denies_before_conditional_or_planning_work() {
 fn settle(workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace) -> SettledProjection {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -254,7 +255,7 @@ fn settle_native(
 ) -> (SettledProjection, domain::WorthQueryNativeAccessKey) {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)

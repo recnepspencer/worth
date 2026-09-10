@@ -69,9 +69,10 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
     assert_eq!(publication.commit_id(), commit);
     assert_eq!(publication.graph_role(), "model");
     assert!(publication.runtime_instance_id() > 0);
-    assert!(publication
-        .adapter_identity()
-        .contains(&format!("runtime={}", publication.runtime_instance_id())));
+    assert_eq!(
+        publication.adapter_semantic_identity(),
+        "worth-relational-bridge-adapter-v1"
+    );
     assert!(publication
         .source_basis()
         .contains(&format!("commit={}", commit.0)));
@@ -86,8 +87,8 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
     );
     assert_eq!(provenance.graph_role(), publication.graph_role());
     assert_eq!(
-        provenance.adapter_identity(),
-        publication.adapter_identity()
+        provenance.adapter_semantic_identity(),
+        publication.adapter_semantic_identity()
     );
     assert_eq!(provenance.source_basis(), publication.source_basis());
 }

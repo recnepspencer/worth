@@ -14,6 +14,8 @@ use worth_query_installation::facade::{
     APPLICATION_EXECUTION_PROVIDER_FAMILY, APPLICATION_EXECUTION_SAFE_POINT_FAMILY,
 };
 
+pub(super) const UNPUBLISHED_IDEMPOTENCY_CAPACITY: usize = 64;
+
 pub(super) struct WorthQueryPrimaryGraphResourceSupport {
     graph: WorthQueryExecutionResourceSupport,
     snapshot:
@@ -21,10 +23,10 @@ pub(super) struct WorthQueryPrimaryGraphResourceSupport {
 }
 
 impl WorthQueryPrimaryGraphResourceSupport {
-    pub(super) fn install() -> Self {
-        let executor = component_support("executor");
-        let graph = component_support("graph");
-        let commit = component_support("commit");
+    pub(super) fn install(maximum_concurrent_graph_work: std::num::NonZeroUsize) -> Self {
+        let (executor, _) = component_support("executor", maximum_concurrent_graph_work);
+        let (graph, _) = component_support("graph", maximum_concurrent_graph_work);
+        let (commit, _) = component_support("commit", maximum_concurrent_graph_work);
         let snapshot =
             worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot::new(
                 executor,
@@ -48,8 +50,21 @@ impl WorthQueryPrimaryGraphResourceSupport {
     }
 }
 
-fn component_support(component: &str) -> WorthQueryExecutionResourceSupport {
-    WorthQueryExecutionResourceSupport::new(
+fn component_support(
+    component: &str,
+    maximum_concurrent_graph_work: std::num::NonZeroUsize,
+) -> (
+    WorthQueryExecutionResourceSupport,
+    Arc<WorthQueryFixedExecutionCapacity>,
+) {
+    let capacity = Arc::new(
+        WorthQueryFixedExecutionCapacity::new(
+            format!("primary-relational-provider:{component}"),
+            maximum_concurrent_graph_work.get(),
+        )
+        .expect("static primary provider capacity is valid"),
+    );
+    let support = WorthQueryExecutionResourceSupport::new(
         WorthQueryExecutionProviderFamily::new(APPLICATION_EXECUTION_PROVIDER_FAMILY)
             .expect("static provider family is canonical"),
         WorthQueryExecutionAccessProductFamily::new(APPLICATION_EXECUTION_ACCESS_PRODUCT_FAMILY)
@@ -65,12 +80,7 @@ fn component_support(component: &str) -> WorthQueryExecutionResourceSupport {
             WorthQueryCancellationSafePointFamily::new(APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
                 .expect("static safe-point family is canonical"),
         ),
-        Arc::new(
-            WorthQueryFixedExecutionCapacity::new(
-                format!("primary-relational-provider:{component}"),
-                64,
-            )
-            .expect("static primary provider capacity is valid"),
-        ),
-    )
+        capacity.clone(),
+    );
+    (support, capacity)
 }

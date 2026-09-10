@@ -1,163 +1,142 @@
 //! A performed re-dispatch remains affine to its exact recovery handle.
 
-use worth_foundational::facade::{
-    BoundaryProtocolIdentity, BoundaryProtocolVersion, CanonicalDigestId,
-};
-use worth_query_declaration::facade::application_schema::ApplicationExternalEffectProtocol;
-use worth_query_installation::facade::{
-    ApplicationSchemaBindingIdentity, InstalledExternalEffectContract,
-};
-use worth_relational::facade::history::BranchId;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
-use super::{WorthQueryExternalRedispatchMint, WorthQueryPerformedExternalRedispatchSeal};
-use crate::domain_computation::application_aftermath::aftermath_schema_fixture as fixture;
+use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+
 use crate::domain_computation::application_aftermath::external_effect::{
-    derive_external_effect_correlation_identity, dispatch_external_effect,
-    ExternalEffectCorrelationBasis, WorthQueryDispatchOutboxRecord,
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
     WorthQueryExternalTransportOutcome,
 };
 use crate::domain_computation::application_aftermath::recovery_handle::{
-    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
-    WorthQueryRecoveryHandleBindingAxisProbe, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBindingAxisProbe,
+    WorthQueryRecoveryHandleDenialKind,
 };
 use crate::domain_computation::application_aftermath::recovery_progression::{
     safe_retry_recovery_handle, WorthQueryPerformedExternalRedispatch,
     WorthQueryRecoveryEffectAuthority,
 };
-use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 use crate::domain_computation::primary_graph::{
-    commit_observe_and_admit_fixture, WorthQueryApplicationIdempotencyBinding,
+    recoverable_application_world,
+    tests::{
+        application_attempt::{authenticated_principal, resolved_account},
+        fixture::{
+            live_scope, Account, AuthorizationWorld, ExactStatusRetentionInput,
+            ExactStatusRetentionOperation, IdentityExecutionSchema,
+        },
+    },
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationCommitReceipt,
 };
 
-struct CompletingTransport;
+type RecoveryAdmission = WorthQueryAdmittedApplicationOperation<
+    IdentityExecutionSchema,
+    ExactStatusRetentionOperation,
+    ExactStatusRetentionInput,
+    Account,
+>;
+
+struct CompletingTransport(AtomicUsize);
 
 impl WorthQueryExternalEffectTransport for CompletingTransport {
     fn dispatch(
         &self,
         _request: WorthQueryExternalDispatchRequest<'_>,
     ) -> WorthQueryExternalTransportOutcome {
+        self.0.fetch_add(1, Ordering::AcqRel);
         WorthQueryExternalTransportOutcome::Completed
     }
 }
 
-fn outbox_for(operation_slot: &str) -> WorthQueryDispatchOutboxRecord {
-    let correlation = derive_external_effect_correlation_identity(ExternalEffectCorrelationBasis {
-        correlation_family:
-            worth_query_installation::facade::WorthQueryExternalEffectCorrelationFamily::new(
-                "estate-death-notice-rail",
-            )
-            .unwrap(),
-        operation_slot,
-        operation_version: 1,
-        outcome_identity: 1,
-        idempotency_key: &[0x55; 32],
-        branch: "2",
-    })
-    .expect("fixture correlation basis derives");
-    WorthQueryDispatchOutboxRecord::from_installed_contract(
-        correlation,
-        &InstalledExternalEffectContract::Declared {
-            correlation_family:
-                worth_query_installation::facade::WorthQueryExternalEffectCorrelationFamily::new(
-                    "estate-death-notice-rail",
-                )
-                .unwrap(),
-            effect: "notify-death-effect".to_owned(),
-            rust_payload_type: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::declared(
-                "worth.query.test.notify-death-payload.v1",
-            ),
-            protocol: ApplicationExternalEffectProtocol::new(
-                BoundaryProtocolIdentity::new("test.notify-death-payload"),
-                BoundaryProtocolVersion::new(1),
-            ),
-            maximum_payload_bytes: 1_024,
-        },
-        vec![0xAB; 8],
-        1,
-    )
-    .expect("the fixture contract declares an external effect")
-}
-
-fn probe_handle(outbox: Option<WorthQueryDispatchOutboxRecord>) -> WorthQueryRecoveryHandle {
-    let schema = ApplicationSchemaBindingIdentity::from_installed_parts(
-        7,
-        3,
-        CanonicalDigestId::new([0x11; 32]),
-        CanonicalDigestId::new([0x22; 32]),
-    );
-    let principal_scope = WorthQueryOperationScopeBinding::axis_probe_scope(
-        42,
-        schema,
-        "safe-retry-affinity",
-        1,
-        10,
-        1,
-        2,
-        20,
-        1,
-    );
-    let record_ref = outbox.as_ref().map(|_| {
-        worth_relational::facade::transactions::RecordRef::Entity(
-            worth_relational::facade::identity::EntityId::new(
-                worth_relational::facade::identity::PartitionId::main(),
-                77,
-                1,
-            ),
+fn real_handle(
+    seed: u8,
+    label: &str,
+) -> (
+    AuthorizationWorld,
+    WorthQueryApplicationCommitReceipt,
+    WorthQueryRecoveryHandle,
+    RecoveryAdmission,
+) {
+    let (world, receipt) = recoverable_application_world(seed, label);
+    let handle = world
+        .application
+        .mint_recovery_handle(&receipt)
+        .expect("the production receipt admits a recovery handle");
+    let request = live_scope();
+    let principal = authenticated_principal(&world, &request);
+    let account = resolved_account(&world, label, &request);
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(ExactStatusRetentionOperation::reference())
+        .unwrap();
+    let admission = world
+        .selected_product()
+        .authorize_operation(
+            &principal,
+            &account,
+            &operation,
+            TypedMutationPreconditions::new(),
+            &request,
         )
-    });
-    WorthQueryRecoveryHandle::axis_probe(WorthQueryRecoveryHandleBinding::axis_probe(
-        WorthQueryRecoveryHandleBindingAxisProbe {
-            runtime_instance_id: 7,
-            schema_identity: [0x33; 32],
-            branch: BranchId("2".to_owned()),
-            application_binding_generation: 3,
-            installed_operation: [0x44; 32],
-            attempt_commit_id: 10,
-            mutation_work: None,
-            retained_preimage: None,
-            retained_governed_input_identity: None,
-            principal_scope,
-            idempotency: WorthQueryApplicationIdempotencyBinding::new([0x55; 32], [0x56; 32]),
-            provider_posture: None,
-            dispatch_outbox: outbox,
-            dispatch_outbox_record_ref: record_ref,
-            installed_aftermath: fixture::notify_death(),
-            expires_at_unix_ms: Some(u64::MAX),
-        },
-    ))
+        .expect("the committed product admits the current recovery operation");
+    (world, receipt, handle, admission)
 }
 
-fn authority(handle: &WorthQueryRecoveryHandle) -> WorthQueryRecoveryEffectAuthority {
-    WorthQueryRecoveryEffectAuthority::mint(handle.runtime_authority(), handle.authority_identity())
+fn authority(
+    world: &AuthorizationWorld,
+    handle: &WorthQueryRecoveryHandle,
+    admission: &RecoveryAdmission,
+) -> WorthQueryRecoveryEffectAuthority {
+    world
+        .application
+        .admit_recovery_effect_authority(handle, admission)
+        .expect("current operation truth admits recovery effect authority")
 }
 
 fn performed_redispatch(
+    world: &AuthorizationWorld,
     handle: &WorthQueryRecoveryHandle,
+    authority: &WorthQueryRecoveryEffectAuthority,
+    admission: &RecoveryAdmission,
 ) -> WorthQueryPerformedExternalRedispatch {
-    let outbox = handle.binding().dispatch_outbox().unwrap();
-    let admitted = commit_observe_and_admit_fixture(outbox).0;
-    let dispatch = dispatch_external_effect(&CompletingTransport, admitted)
-        .expect("production dispatch classifies the completing transport outcome");
-    WorthQueryPerformedExternalRedispatch::record(WorthQueryPerformedExternalRedispatchSeal::new(
-        WorthQueryExternalRedispatchMint::witness(),
-        handle.authority_identity(),
-        dispatch,
-    ))
+    world
+        .application
+        .redispatch_admitted_external_effect(handle, authority, admission)
+        .expect("the public redispatch route performs the exact bound outbox")
 }
 
 #[test]
 fn redispatch_performed_for_handle_a_cannot_safe_retry_handle_b() {
-    let outbox_a = outbox_for("notify-death-a");
-    let outbox_b = outbox_for("notify-death-b");
+    let (world_a, receipt_a, handle_a, admission_a) = real_handle(211, "notify-death-a");
+    let (world_b, receipt_b, handle_b, admission_b) = real_handle(212, "notify-death-b");
     assert_ne!(
-        outbox_a.correlation().bytes(),
-        outbox_b.correlation().bytes()
+        receipt_a.dispatch_outbox().unwrap().correlation(),
+        receipt_b.dispatch_outbox().unwrap().correlation()
     );
-    let handle_a = probe_handle(Some(outbox_a));
-    let handle_b = probe_handle(Some(outbox_b));
-    let authority_b = authority(&handle_b);
-    let redispatch_a = performed_redispatch(&handle_a);
+    let transport_a = Arc::new(CompletingTransport(AtomicUsize::new(0)));
+    world_a
+        .application
+        .install_external_effect_transport(transport_a.clone())
+        .unwrap();
+    let transport_b = Arc::new(CompletingTransport(AtomicUsize::new(0)));
+    world_b
+        .application
+        .install_external_effect_transport(transport_b)
+        .unwrap();
+    let authority_a = authority(&world_a, &handle_a, &admission_a);
+    let authority_b = authority(&world_b, &handle_b, &admission_b);
+    let redispatch_a = performed_redispatch(&world_a, &handle_a, &authority_a, &admission_a);
+    assert_eq!(transport_a.0.load(Ordering::Acquire), 1);
+    assert_eq!(
+        handle_a.binding().committed_product_publication(),
+        receipt_a.committed_product_publication(),
+        "the public route starts from the recovery handle's exact performed World terminal",
+    );
+    assert_eq!(
+        redispatch_a.dispatch().correlation(),
+        receipt_a.dispatch_outbox().unwrap().correlation(),
+    );
 
     let denied = safe_retry_recovery_handle(handle_b, &authority_b, redispatch_a)
         .expect_err("a proof performed for handle A cannot retire handle B");
@@ -166,19 +145,30 @@ fn redispatch_performed_for_handle_a_cannot_safe_retry_handle_b() {
         WorthQueryRecoveryHandleDenialKind::CorrelationMismatch
     );
 
-    let authority_a = authority(&handle_a);
-    let redispatch_a = performed_redispatch(&handle_a);
+    let redispatch_a = performed_redispatch(&world_a, &handle_a, &authority_a, &admission_a);
     safe_retry_recovery_handle(handle_a, &authority_a, redispatch_a)
         .expect("the exact handle admits its own performed re-dispatch");
 }
 
 #[test]
 fn safe_retry_denies_when_the_handle_carries_no_co_committed_outbox() {
-    let source = probe_handle(Some(outbox_for("notify-death-a")));
-    let redispatch = performed_redispatch(&source);
+    let (world, _receipt, source, admission) = real_handle(213, "notify-death-source");
+    world
+        .application
+        .install_external_effect_transport(Arc::new(CompletingTransport(AtomicUsize::new(0))))
+        .unwrap();
+    let source_authority = authority(&world, &source, &admission);
+    let redispatch = performed_redispatch(&world, &source, &source_authority, &admission);
     drop(source);
-    let outboxless = probe_handle(None);
-    let authority = authority(&outboxless);
+    let outboxless = WorthQueryRecoveryHandle::axis_probe(
+        WorthQueryRecoveryHandleBindingAxisProbe::real()
+            .without_dispatch_outbox()
+            .finish(),
+    );
+    let authority = WorthQueryRecoveryEffectAuthority::mint(
+        outboxless.runtime_authority(),
+        outboxless.authority_identity(),
+    );
     let denied = safe_retry_recovery_handle(outboxless, &authority, redispatch)
         .expect_err("no bound outbox means no proof can match");
     assert_eq!(

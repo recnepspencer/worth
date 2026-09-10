@@ -67,7 +67,7 @@ fn primary_and_separate_mutation_requires_declared_compensation() {
     let uncompensated = runtime(Arc::clone(&contacts), "mixed-uncompensated");
     let installed = uncompensated.domain(GeometryDomain).unwrap();
     let denial = match uncompensated
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(uncompensated.current_world())
         .unwrap()
         .family(MutationFamily)
         .bind(&installed, WorkflowMutation)

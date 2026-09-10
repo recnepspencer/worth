@@ -19,6 +19,7 @@ pub struct WorthQueryGraphProviderStepRetainedEvidence {
     provider_allocation_count: u64,
     provider_bytes: u64,
     projection_bytes: u64,
+    output_bytes: u64,
     artifact_bytes: u64,
     total_bytes: u64,
 }
@@ -37,6 +38,7 @@ impl WorthQueryGraphProviderStepRetainedEvidence {
             provider_allocation_count: provider_memory.retained_allocation_count(),
             provider_bytes,
             projection_bytes,
+            output_bytes: 0,
             artifact_bytes,
             total_bytes: provider_bytes
                 .saturating_add(projection_bytes)
@@ -64,6 +66,10 @@ impl WorthQueryGraphProviderStepRetainedEvidence {
         self.artifact_bytes
     }
 
+    pub const fn output_bytes(self) -> u64 {
+        self.output_bytes
+    }
+
     pub const fn total_bytes(self) -> u64 {
         self.total_bytes
     }
@@ -77,6 +83,28 @@ impl WorthQueryGraphProviderStepRetainedEvidence {
         };
         self.projection_bytes = projection_bytes;
         self.total_bytes = total_bytes;
+        true
+    }
+
+    pub(crate) fn retain_prior_output_bytes(&mut self, retained_bytes: u64) {
+        self.output_bytes = self.output_bytes.saturating_add(retained_bytes);
+        self.total_bytes = self.total_bytes.saturating_add(retained_bytes);
+    }
+
+    pub(crate) fn transfer_projection_to_output(
+        &mut self,
+        projection_bytes: u64,
+        additional_bytes: u64,
+    ) -> bool {
+        let Some(remaining_projection) = self.projection_bytes.checked_sub(projection_bytes) else {
+            return false;
+        };
+        self.projection_bytes = remaining_projection;
+        self.output_bytes = self
+            .output_bytes
+            .saturating_add(projection_bytes)
+            .saturating_add(additional_bytes);
+        self.total_bytes = self.total_bytes.saturating_add(additional_bytes);
         true
     }
 }

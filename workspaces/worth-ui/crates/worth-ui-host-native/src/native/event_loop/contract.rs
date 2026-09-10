@@ -23,11 +23,8 @@ pub use client_derived_state::{
 pub use client_resources::UiNativeClientResourceObservation;
 pub use client_shutdown::mounted_identity::UiNativeClientAuthoredMountedInstanceObservation;
 pub use client_shutdown::{
-    UiNativeClientConditionalOutcome, UiNativeClientObservationIngressObservation,
+    UiNativeClientObservationIngressObservation,
     UiNativeClientPresentationMechanicIdentityObservation,
-    UiNativeClientPresentationSemanticChange,
-    UiNativeClientPresentationSemanticFrontierObservation,
-    UiNativeClientPresentationSemanticSubscriberObservation,
     UiNativeClientPresentationTransitionKind, UiNativeClientPresentationTransitionObservation,
     UiNativeClientShutdownAttemptDisposition, UiNativeClientShutdownAttemptObservation,
     UiNativeClientShutdownObservation, UiNativeClientTextPresentationWorkObservation,

@@ -12,8 +12,7 @@ use super::capability_delegation_mutation::{field, update_grant_field};
 use super::capability_progression::time;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryControls, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryOperationAuthorizationDenialKind, WorthQueryPrincipalResolutionMode,
 };
 
 #[test]
@@ -38,6 +37,8 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
         .expect("the narrowed chain is current at the first trusted sample");
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -52,12 +53,12 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
 
-    let Err(denial) = world.application.admit_governed_application_query(
+    let Err(denial) = world.selected_product().admit_governed_application_query(
         &query,
         &access,
         capability,
         ApplicationQueryParameterSet::<GovernedAccountOmissionQuery>::new(),
-        WorthQueryApplicationQueryControls::current_one_shot(
+        crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
             NonZeroUsize::new(1).unwrap(),
             NonZeroUsize::new(256).unwrap(),
             &request,

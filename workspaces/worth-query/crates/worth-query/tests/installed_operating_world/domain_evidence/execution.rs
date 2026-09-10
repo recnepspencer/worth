@@ -25,7 +25,7 @@ pub(super) fn admitted_receipt_with_governance(
 fn execute_receipt(mut workspace: runtime::WorthQueryWorkspace) -> OwnedExecutionReceipt {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(EvidenceFamily)
         .bind(&installed, EvidenceRead)
@@ -92,7 +92,7 @@ pub(super) fn denied_execution(
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(EvidenceFamily)
         .bind(&installed, EvidenceRead)
@@ -127,7 +127,7 @@ pub(super) fn settled_honest_execution(
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(EvidenceFamily)
         .bind(&installed, EvidenceRead)

@@ -5,6 +5,9 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
 
+#[cfg(test)]
+mod cancellation_tests;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRequestInterruption {
     Cancelled,
@@ -14,7 +17,7 @@ pub enum WorthQueryRequestInterruption {
 #[derive(Default)]
 struct CancellationState {
     cancelled: AtomicBool,
-    waiters: Mutex<Vec<Waker>>,
+    waiters: Mutex<Vec<(std::sync::Weak<()>, Waker)>>,
 }
 
 #[derive(Clone, Default)]
@@ -45,7 +48,7 @@ impl WorthQueryCancellationSource {
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             std::mem::take(&mut *waiters)
         };
-        for waiter in waiters {
+        for (_, waiter) in waiters {
             waiter.wake();
         }
     }
@@ -62,12 +65,16 @@ impl WorthQueryCancellationToken {
     }
 
     pub fn cancelled(&self) -> WorthQueryCancellationFuture<'_> {
-        WorthQueryCancellationFuture { token: self }
+        WorthQueryCancellationFuture {
+            token: self,
+            registration: Arc::new(()),
+        }
     }
 }
 
 pub struct WorthQueryCancellationFuture<'a> {
     token: &'a WorthQueryCancellationToken,
+    registration: Arc<()>,
 }
 
 impl Future for WorthQueryCancellationFuture<'_> {
@@ -86,13 +93,25 @@ impl Future for WorthQueryCancellationFuture<'_> {
         if self.token.is_cancelled() {
             return Poll::Ready(());
         }
-        if !waiters
-            .iter()
-            .any(|waiter| waiter.will_wake(context.waker()))
-        {
-            waiters.push(context.waker().clone());
+        let identity = Arc::downgrade(&self.registration);
+        if let Some((_, waiter)) = waiters.iter_mut().find(|(key, _)| key.ptr_eq(&identity)) {
+            waiter.clone_from(context.waker());
+        } else {
+            waiters.push((identity, context.waker().clone()));
         }
         Poll::Pending
+    }
+}
+
+impl Drop for WorthQueryCancellationFuture<'_> {
+    fn drop(&mut self) {
+        let identity = Arc::downgrade(&self.registration);
+        self.token
+            .state
+            .waiters
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retain(|(key, _)| !key.ptr_eq(&identity));
     }
 }
 

@@ -183,12 +183,12 @@ fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
         &world.application,
         progress_application_commit(&world.application, victim),
     );
-    assert!(matches!(
+    crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
         victim,
-        WorthQueryApplicationCommitOutcome::Stale(_)
-    ));
+        "the interleaved victim bound to the product before the winner",
+    );
     assert_only_peer_remains(&world, baseline, both_attempts);
-    finish_peer(&world, peer, baseline, PeerExpectation::Stale);
+    finish_peer(&world, peer, baseline, PeerExpectation::ProductBasisStale);
 }
 
 #[test]
@@ -219,10 +219,10 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
         &world.application,
         progress_application_commit(&world.application, victim),
     );
-    assert!(matches!(
-        victim,
-        WorthQueryApplicationCommitOutcome::Cancelled
-    ));
+    assert!(
+        matches!(victim, WorthQueryApplicationCommitOutcome::Cancelled),
+        "cancelled victim must remain cancelled, got {victim:?}"
+    );
     assert_only_peer_remains(&world, baseline, both_attempts);
     finish_peer(&world, peer, baseline, PeerExpectation::Committed);
 }
@@ -315,8 +315,11 @@ fn finish_peer(
                 WorthQueryApplicationCommitTerminalKind::Recovered
             );
         }
-        (PeerExpectation::Stale, WorthQueryApplicationCommitOutcome::Stale(stale)) => {
-            assert!(stale.stale_fact_count() > 0);
+        (PeerExpectation::ProductBasisStale, outcome) => {
+            crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
+                outcome,
+                "the interleaved peer bound to the product before the winner",
+            );
         }
         (expected, actual) => panic!("peer must reach {expected:?}, got {actual:?}"),
     }
@@ -328,7 +331,7 @@ fn finish_peer(
 enum PeerExpectation {
     Committed,
     AlreadyCommitted,
-    Stale,
+    ProductBasisStale,
 }
 
 fn start(

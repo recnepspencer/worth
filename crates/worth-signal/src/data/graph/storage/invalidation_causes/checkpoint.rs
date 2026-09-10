@@ -57,9 +57,10 @@ impl<'de> Deserialize<'de> for CanonicalCauseSetStore {
             published_output_commits: wire.published_output_commits.into_iter().collect(),
             occupied_set_count: 0,
             output_commit_reference_counts: Default::default(),
+            retained_custody: None,
             deserialized_quarantine,
             #[cfg(test)]
-            published_order_probe: crate::data::persistent_vector::PersistentVector::new(),
+            published_order_probe: Vec::new(),
             #[cfg(test)]
             last_compaction_slot_visits: 0,
         };

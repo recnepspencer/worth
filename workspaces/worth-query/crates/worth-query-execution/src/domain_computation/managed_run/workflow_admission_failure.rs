@@ -5,6 +5,7 @@ use crate::domain_computation::WorthQueryWorkflowExecutionResourceAttempt;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedWorkflowRunAdmissionFailureKind {
     QueryAuthority,
+    ProductBasisMismatch,
     RelationalBasis,
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
@@ -44,6 +45,12 @@ impl WorthQueryManagedWorkflowRunAdmissionFailure {
 
     pub fn into_resource_attempt(self) -> WorthQueryWorkflowExecutionResourceAttempt {
         self.resource_attempt
+    }
+
+    pub fn release(
+        self,
+    ) -> crate::domain_computation::WorthQueryWorkflowExecutionAttemptReleaseReceipt {
+        self.resource_attempt.release()
     }
 }
 

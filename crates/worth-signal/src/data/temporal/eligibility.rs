@@ -1,3 +1,5 @@
+mod retained_charge;
+
 use serde::{Deserialize, Serialize};
 
 use super::{ClockDomain, ClockTick, TemporalCondition, TemporalWakeId, WakeOrdinal};

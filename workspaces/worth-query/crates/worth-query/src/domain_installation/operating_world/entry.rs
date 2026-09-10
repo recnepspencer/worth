@@ -17,16 +17,26 @@ pub(crate) struct WorthQueryOperatingWorldEntry<L: BasisOperationLane> {
 pub enum WorthQueryOperatingWorldEntryDenial {
     Intent(BasisIntentDenial),
     Admission(DeniedBasisCapability),
+    Product {
+        kind: WorthQueryOperatingWorldProductDenial,
+        basis_eligibility: BasisEligibilityCounters,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryOperatingWorldProductDenial {
+    Admission(worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperatingWorldEntryDenialKind {
     Intent(BasisIntentDenialKind),
     Admission(DeniedBasisCapabilityKind),
+    Product(WorthQueryOperatingWorldProductDenial),
 }
 
 impl WorthQueryOperatingWorldEntry<ObservationLaneWitness> {
-    pub(crate) fn observe_current() -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
+    pub(crate) fn observe_installed_root() -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
         let path = basis_lifecycle()
             .current_head()
             .for_observation()
@@ -39,11 +49,15 @@ impl WorthQueryOperatingWorldEntry<ObservationLaneWitness> {
         })
     }
 
-    pub(crate) fn observe_branch(
-        branch_identity: &super::WorthQueryBranchHeadIdentity,
+    pub(crate) fn observe_product_component(
+        product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
+        Self::observe_branch_name(&product.relational_basis_descriptor().branch_id().0)
+    }
+
+    fn observe_branch_name(branch: &str) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
         let path = basis_lifecycle()
-            .branch_head(branch_identity.as_str(), true)
+            .branch_head(branch, true)
             .for_observation()
             .map_err(WorthQueryOperatingWorldEntryDenial::Intent)?;
         let admitted = path
@@ -56,14 +70,18 @@ impl WorthQueryOperatingWorldEntry<ObservationLaneWitness> {
 }
 
 impl WorthQueryOperatingWorldEntry<MutationPreparationLaneWitness> {
-    pub(crate) fn prepare_current_mutation() -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
+    pub(crate) fn prepare_installed_root_mutation(
+    ) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
         Self::prepare_mutation(basis_lifecycle().current_head())
     }
 
-    pub(crate) fn prepare_branch_mutation(
-        branch_identity: &super::WorthQueryBranchHeadIdentity,
+    pub(crate) fn prepare_product_component(
+        product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
-        Self::prepare_mutation(basis_lifecycle().branch_head(branch_identity.as_str(), true))
+        Self::prepare_mutation(
+            basis_lifecycle()
+                .branch_head(&product.relational_basis_descriptor().branch_id().0, true),
+        )
     }
 
     fn prepare_mutation(
@@ -85,6 +103,13 @@ impl<L: BasisOperationLane> WorthQueryOperatingWorldEntry<L> {
 }
 
 impl WorthQueryOperatingWorldEntryDenial {
+    pub(crate) fn product(kind: WorthQueryOperatingWorldProductDenial) -> Self {
+        Self::Product {
+            kind,
+            basis_eligibility: BasisEligibilityCounters::default(),
+        }
+    }
+
     pub fn kind(&self) -> WorthQueryOperatingWorldEntryDenialKind {
         match self {
             Self::Intent(denial) => {
@@ -93,6 +118,7 @@ impl WorthQueryOperatingWorldEntryDenial {
             Self::Admission(denial) => {
                 WorthQueryOperatingWorldEntryDenialKind::Admission(denial.denial_kind())
             }
+            Self::Product { kind, .. } => WorthQueryOperatingWorldEntryDenialKind::Product(*kind),
         }
     }
 
@@ -100,6 +126,9 @@ impl WorthQueryOperatingWorldEntryDenial {
         match self {
             Self::Intent(denial) => denial.counters(),
             Self::Admission(denial) => denial.counters(),
+            Self::Product {
+                basis_eligibility, ..
+            } => basis_eligibility,
         }
     }
 }

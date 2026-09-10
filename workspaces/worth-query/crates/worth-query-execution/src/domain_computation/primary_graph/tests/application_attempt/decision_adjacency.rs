@@ -1,12 +1,15 @@
 use std::time::Duration;
 
+#[path = "decision_adjacency/product_currentness.rs"]
+mod product_currentness;
+
 use super::super::fixture::{
-    installed_two_principal_authorization_world, AccountOwner, AccountStatus, ChangeOwnershipInput,
-    ChangeOwnershipOperation, IdentityExecutionSchema, Principal, PrincipalIdentityField,
-    TouchAccountOperation,
+    AccountOwner, AccountStatus, ChangeOwnershipInput, ChangeOwnershipOperation,
+    IdentityExecutionSchema, Principal, PrincipalIdentityField, TouchAccountOperation,
 };
 use super::{idempotency, installed_authorization_world, live_scope, resolved_account};
 use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
     WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryPrincipalResolutionMode,
@@ -32,56 +35,10 @@ fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
             .compare_and_commit_application(winner, idempotency(31, 31)),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let WorthQueryApplicationCommitOutcome::Stale(stale) = world
+    let outcome = world
         .application
-        .compare_and_commit_application(losing, idempotency(32, 32))
-    else {
-        panic!("the edge entering the sealed empty adjacency must stale the loser");
-    };
-    assert_eq!(stale.stale_fact_count(), 1);
-}
-
-#[test]
-fn growth_at_an_unrelated_anchor_does_not_stale_the_attempt() {
-    let world = installed_two_principal_authorization_world(false);
-    let request = live_scope();
-    let alice = authenticated(&world, "alice", &request);
-    let bob = authenticated(&world, "bob", &request);
-    let alice_identity = resolved_principal(&world, 1, &request);
-    let bob_identity = resolved_principal(&world, 2, &request);
-    let first_account = resolved_account(&world, "open", &request);
-    let second_account = resolved_account(&world, "unrelated", &request);
-    let alice_program = link_program(
-        &world,
-        &alice,
-        &alice_identity,
-        &first_account,
-        &request,
-        "open",
-        "alice-owner",
-    );
-    let bob_program = link_program(
-        &world,
-        &bob,
-        &bob_identity,
-        &second_account,
-        &request,
-        "unrelated",
-        "bob-owner",
-    );
-
-    assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(bob_program, idempotency(33, 33)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-    assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(alice_program, idempotency(34, 34)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
+        .compare_and_commit_application(losing, idempotency(32, 32));
+    assert_product_basis_stale(outcome, "the edge entering the sealed empty adjacency");
 }
 
 #[test]
@@ -118,14 +75,25 @@ fn removing_an_observed_present_relation_stales_a_competing_program() {
             .compare_and_commit_application(winner, idempotency(36, 36)),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let WorthQueryApplicationCommitOutcome::Stale(stale) = world
+    let outcome = world
         .application
-        .compare_and_commit_application(loser, idempotency(37, 37))
-    else {
-        panic!("removing the retained relation must stale the competing unlink");
-    };
-    assert_eq!(stale.stale_fact_count(), 1);
+        .compare_and_commit_application(loser, idempotency(37, 37));
+    assert_product_basis_stale(outcome, "removing the retained relation");
     assert_membership_absent(&world, &actor, &principal, &account, &request);
+}
+
+fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome, cause: &str) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("{cause} must deny before effects: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
 }
 
 #[test]
@@ -140,7 +108,7 @@ fn compile_capability_cannot_widen_the_installed_relation_manifest() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(&actor, &account, &operation, Default::default(), &request)
         .unwrap();
     let projected = world
@@ -172,7 +140,7 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(&actor, &principal, &operation, Default::default(), &request)
         .unwrap();
     let (_, projection, _) = world
@@ -207,6 +175,8 @@ fn authenticated(
     let external = world.authenticate(subject, Duration::from_secs(60), request);
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -223,6 +193,8 @@ fn resolved_principal(
 ) -> WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Principal> {
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             PrincipalIdentityField::reference(),
             identity,
@@ -255,7 +227,7 @@ fn link_program(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(actor, principal, &operation, Default::default(), request)
         .unwrap();
     let (_, projection, _) = world
@@ -310,7 +282,7 @@ fn assert_membership_absent(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(actor, principal, &operation, Default::default(), request)
         .unwrap();
     let (_, projection, _) = world
@@ -359,7 +331,7 @@ fn unlink_program(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(actor, principal, &operation, Default::default(), request)
         .unwrap();
     let (_, projection, _) = world

@@ -21,7 +21,7 @@ fn required_domain_is_resolved_and_retained_by_the_bound_capability() {
     assert_eq!(rebuild.operation_required_domain_count(), 1);
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -40,7 +40,7 @@ fn missing_required_domain_denies_before_graph_or_execution_work() {
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let denial = match workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -63,13 +63,13 @@ fn one_root_mints_equivalent_non_detachable_bound_authority() {
     let workspace = workspace("operating-world", false).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let first = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)
         .unwrap();
     let second = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)
@@ -88,7 +88,7 @@ fn foreign_domain_denies_before_graph_binding_or_provider_contact() {
     let foreign = workspace("operating-world-foreign", false).unwrap();
     let foreign_domain = foreign.domain(GeometryDomain).unwrap();
     let denial = match owner
-        .observe_operating_world()
+        .observe_operating_world(owner.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&foreign_domain, ReadVertex)
@@ -132,7 +132,7 @@ fn read_only_operation_does_not_claim_or_contact_adapter_commit_authority() {
         2
     );
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, FederatedRead)
@@ -202,7 +202,7 @@ fn independent_equal_role_providers_deny_before_provider_contact() {
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let denial = match workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, FederatedRead)
@@ -254,7 +254,7 @@ fn separately_committed_graphs_deny_without_domain_aftermath_compensation() {
     // (the retired caller-authored domain installer is closed). Separate-commit
     // mutation therefore fails closed until that honest path exists.
     let denial = match workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, FederatedRead)
@@ -290,7 +290,7 @@ fn same_role_lookalike_cannot_replace_the_exact_attached_graph_marker() {
         .unwrap();
     let installed_domain = result.domain(GeometryDomain).unwrap();
     let denial = match result
-        .observe_operating_world()
+        .observe_operating_world(result.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, FederatedRead)

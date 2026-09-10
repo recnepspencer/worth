@@ -27,6 +27,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     precondition_identity: Option<[u8; 32]>,
     governed_input_identity: Option<[u8; 32]>,
     governed_proposal_identity: Option<[u8; 32]>,
+    conditional_definition_identity: Option<[u8; 32]>,
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
@@ -39,6 +40,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             precondition_identity: None,
             governed_input_identity: None,
             governed_proposal_identity: None,
+            conditional_definition_identity: None,
         }
     }
 
@@ -61,6 +63,11 @@ impl WorthQueryApplicationIdempotencyBinding {
         append_identity_slot(&mut encoded, "precondition", self.precondition_identity);
         append_identity_slot(&mut encoded, "input", self.governed_input_identity);
         append_identity_slot(&mut encoded, "proposal", self.governed_proposal_identity);
+        append_identity_slot(
+            &mut encoded,
+            "conditional-definition",
+            self.conditional_definition_identity,
+        );
         encoded
     }
 
@@ -76,6 +83,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             precondition_identity: self.precondition_identity,
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: self.conditional_definition_identity,
         }
     }
 
@@ -109,6 +117,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             precondition_identity: self.precondition_identity,
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: self.conditional_definition_identity,
         }
     }
 
@@ -127,6 +136,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             },
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: self.conditional_definition_identity,
         }
     }
 
@@ -145,6 +155,7 @@ impl WorthQueryApplicationIdempotencyBinding {
                 None => None,
             },
             governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: self.conditional_definition_identity,
         }
     }
 
@@ -160,6 +171,26 @@ impl WorthQueryApplicationIdempotencyBinding {
             precondition_identity: self.precondition_identity,
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: match governed_proposal_identity {
+                Some(identity) => Some(*identity),
+                None => None,
+            },
+            conditional_definition_identity: self.conditional_definition_identity,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn bind_conditional_definition(
+        self,
+        identity: Option<&[u8; 32]>,
+    ) -> Self {
+        Self {
+            key_identity: self.key_identity,
+            intent_identity: self.intent_identity,
+            operation_identity: self.operation_identity,
+            operation_scope_identity: self.operation_scope_identity,
+            precondition_identity: self.precondition_identity,
+            governed_input_identity: self.governed_input_identity,
+            governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: match identity {
                 Some(identity) => Some(*identity),
                 None => None,
             },

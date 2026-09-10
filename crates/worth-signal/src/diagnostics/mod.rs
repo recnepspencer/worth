@@ -44,7 +44,7 @@ pub use failure::{
 };
 pub use flow::{
     ApplySummary, ChangeInputSummary, FlowCauseSample, FlowSummary, InvalidationSummary,
-    PlanningSummary, PrecomputeSummary, RollbackSummary,
+    PlanningSummary, PrecomputeSummary, RetainedFlowSummaryView, RollbackSummary,
 };
 pub use history::{
     inspect_execution, inspect_flow, inspect_graph, inspect_plan, inspect_report,
@@ -68,6 +68,6 @@ pub use replay::{
 };
 pub use summary::{
     EvaluationPlanSummary, ExecutionHistoryNodeSummary, ExecutionHistorySummary,
-    ExecutionReportSummary, ExplanationSummary, GraphSummary, TemporalCostContractSummary,
-    TemporalDiagnosticsSummary, TemporalPerformanceFailureMode,
+    ExecutionReportSummary, ExplanationSummary, GraphSummary, RetainedExecutionHistoryView,
+    TemporalCostContractSummary, TemporalDiagnosticsSummary, TemporalPerformanceFailureMode,
 };

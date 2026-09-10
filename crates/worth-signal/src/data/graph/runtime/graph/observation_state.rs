@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use super::PerformedWorkBuffer;
 use crate::data::handle::NodeId;
 use crate::data::output::PartitionInterner;
-use crate::data::proof::invalidation::progression::InvalidationWorkBindingAxes;
 use crate::data::telemetry::RuntimeTelemetry;
 use crate::diagnostics::state::DiagnosticsState;
 use crate::logic::transaction::{
@@ -41,15 +41,32 @@ pub(crate) struct RuntimeObservation {
 #[derive(Debug)]
 pub(crate) struct ObservationCaptureCleanup {
     counters: Arc<[AtomicU64; 24]>,
-    bindings: Arc<Mutex<Vec<InvalidationWorkBindingAxes>>>,
+    bindings: Arc<Mutex<PerformedWorkBuffer>>,
     completed_execution_boundaries: Arc<AtomicU64>,
     last_completion: Arc<AtomicU64>,
+    storage_custody:
+        Option<Arc<crate::data::retained_storage::SignalConditionalRetentionReservation>>,
 }
 
 impl ObservationCaptureCleanup {
+    pub(crate) fn initial_heap_charge() -> Result<
+        crate::data::retained_storage::RetainedStorageCharge,
+        crate::data::retained_storage::RetainedStoragePreparationDenial,
+    > {
+        crate::data::retained_storage::arc_allocation_charge::<Self>()
+    }
+
+    pub(crate) fn with_storage_custody(
+        mut self,
+        custody: Option<Arc<crate::data::retained_storage::SignalConditionalRetentionReservation>>,
+    ) -> Self {
+        self.storage_custody = custody;
+        self
+    }
+
     pub(crate) fn new(
         counters: Arc<[AtomicU64; 24]>,
-        bindings: Arc<Mutex<Vec<InvalidationWorkBindingAxes>>>,
+        bindings: Arc<Mutex<PerformedWorkBuffer>>,
         completed_execution_boundaries: Arc<AtomicU64>,
         last_completion: Arc<AtomicU64>,
     ) -> Self {
@@ -58,6 +75,7 @@ impl ObservationCaptureCleanup {
             bindings,
             completed_execution_boundaries,
             last_completion,
+            storage_custody: None,
         }
     }
 }

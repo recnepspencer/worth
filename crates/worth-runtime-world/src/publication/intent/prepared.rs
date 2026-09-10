@@ -53,6 +53,13 @@ impl PreparedCompositePublicationWithoutSignal {
         self.attempt.expected_head()
     }
 
+    /// The non-authorizing identity of the recovery slot already reserved for
+    /// this attempt. It permits exact lifecycle correlation only; it cannot
+    /// execute, publish, inspect, or clean up the prepared attempt.
+    pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.attempt.unpublished_recovery_handle()
+    }
+
     pub fn cancel(self) -> NoEffectCompositePublication {
         self.attempt.cancel()
     }
@@ -71,8 +78,19 @@ pub struct PreparedCompositePublicationWithSignal {
 }
 
 impl PreparedCompositePublicationWithSignal {
+    pub(crate) fn reserve_conditional_definition_custody(
+        &mut self,
+    ) -> std::sync::Arc<crate::publication::ConditionalDefinitionAttemptCustody> {
+        self.attempt.reserve_conditional_definition_custody()
+    }
+
     pub fn expected_head(&self) -> &ProductBranchObservation {
         self.attempt.expected_head()
+    }
+
+    /// The non-authorizing recovery identity reserved with this attempt.
+    pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.attempt.unpublished_recovery_handle()
     }
 
     /// Read-only view of the sealed reservation. Reading a plan cannot move

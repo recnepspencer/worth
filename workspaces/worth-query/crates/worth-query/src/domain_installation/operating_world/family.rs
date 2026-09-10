@@ -58,8 +58,7 @@ impl<'view, 'runtime, F, L: BasisOperationLane>
             graph_binding_lookups: operation.lookup_counters().graph_binding_lookups,
             ..WorthQueryOperationBindingCounters::default()
         };
-        let (conditional_nodes, conditional_families) =
-            admit_bound_conditionals(self.world, &operation, &mut counters)?;
+        let conditional_nodes = admit_bound_conditionals(self.world, &operation, &mut counters)?;
         admit_basis_execution::<D, O, F, L>(self.world, &operation, counters)?;
         let mut graphs = bind_graph_authorities(self.world, &operation, &mut counters)?;
         let mut required_domains = bind_required_domains::<D, O, F, L>(self.world, &mut counters)?;
@@ -90,7 +89,6 @@ impl<'view, 'runtime, F, L: BasisOperationLane>
             &graphs,
             commit_posture,
             &conditional_nodes,
-            &conditional_families,
             WorthQueryInstalledRuntimeProviders {
                 direct: executor.as_ref(),
                 workflow_graph: operation.workflow_graph().cloned(),
@@ -165,20 +163,15 @@ fn admit_bound_conditionals<D: 'static, O: 'static, F: 'static, L: BasisOperatio
     operation: &crate::domain_installation::WorthQueryInstalledDomainOperation<D, O, F>,
     counters: &mut WorthQueryOperationBindingCounters,
 ) -> Result<
-    (
-        Vec<std::sync::Arc<crate::domain_installation::WorthQueryInstalledConditionalNode>>,
-        Vec<crate::domain_installation::WorthQueryInstalledConditionalInstanceFamily>,
-    ),
+    Vec<std::sync::Arc<crate::domain_installation::WorthQueryInstalledConditionalNode>>,
     WorthQueryOperationBindingDenial,
 > {
     counters.conditional_lowering_lookups += 1;
     let conditional_nodes = world.runtime.conditional_nodes::<D, O, F>();
-    let conditional_families = world.runtime.conditional_instance_families::<D, O, F>();
-    counters.conditional_lowerings_retained = conditional_nodes.len() + conditional_families.len();
+    counters.conditional_lowerings_retained = conditional_nodes.len();
     let admission = admit_conditional_inventory(
         operation.definition(),
         &conditional_nodes,
-        &conditional_families,
         ConditionalInventoryOwner {
             runtime_authority: operation.domain_authority().runtime_authority().as_u64(),
             installation_generation: operation.installation_generation().ordinal(),
@@ -187,7 +180,7 @@ fn admit_bound_conditionals<D: 'static, O: 'static, F: 'static, L: BasisOperatio
     );
     let kind = match admission {
         ConditionalInventoryAdmission::Admitted => {
-            return Ok((conditional_nodes, conditional_families));
+            return Ok(conditional_nodes);
         }
         ConditionalInventoryAdmission::Missing => {
             WorthQueryOperationBindingDenialKind::ConditionalLoweringNotInstalled
@@ -214,7 +207,8 @@ fn admit_basis_execution<D, O, F, L: BasisOperationLane>(
             == crate::domain_installation::WorthQueryOperationGraphParticipation::PrimaryLogicalGraph
     });
     if requires_primary_read
-        && world.basis.normalized().family() != crate::basis_lifecycle::BasisFamily::CurrentHead
+        && world.basis.lane().normalized().family()
+            != crate::basis_lifecycle::BasisFamily::CurrentHead
     {
         return Err(WorthQueryOperationBindingDenial::new(
             WorthQueryOperationBindingDenialKind::BasisExecutionUnsupported,
@@ -328,7 +322,8 @@ fn bind_execution_authority<D, O, F, L: BasisOperationLane>(
         .bind_domain_operation(
             world.runtime.query_execution_installation_authority(),
             operation.operation_authority(),
-            &world.basis,
+            world.basis.lane(),
+            world.basis.product(),
             &graphs
                 .iter()
                 .map(|binding| binding.record.installation_authority.as_ref())

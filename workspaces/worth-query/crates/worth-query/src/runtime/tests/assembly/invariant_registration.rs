@@ -109,7 +109,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingCatalogWriteAuthority 
 
 #[test]
 fn query_builder_register_invariant_lowers_custom_rule_into_relational_runtime() {
-    let mut runtime = complete_backend_from_parts_builder()
+    let mut runtime = complete_query_owned_backend_from_parts_builder()
         .register_invariant(CertificationBoundaryViolationRule)
         .expect("custom query invariant registration should succeed")
         .write_authority(InspectingInvariantWriteAuthority)
@@ -139,7 +139,7 @@ fn query_builder_invariant_catalog_lowers_into_relational_runtime_config() {
         )],
     };
 
-    let mut runtime = complete_backend_from_parts_builder()
+    let mut runtime = complete_query_owned_backend_from_parts_builder()
         .invariant_catalog(expected_catalog.clone())
         .write_authority(InspectingCatalogWriteAuthority {
             expected_catalog: expected_catalog.clone(),
@@ -161,7 +161,7 @@ fn query_builder_invariant_catalog_lowers_into_relational_runtime_config() {
 
 #[test]
 fn query_builder_rejects_explicit_relational_runtime_when_query_owned_invariants_are_queued() {
-    let error = match WorthQueryRuntime::builder()
+    let error = match WorthQueryRuntime::builder(test_product_world_resources())
         .register_invariant(CertificationBoundaryViolationRule)
         .expect("custom query invariant registration should succeed")
         .relational_runtime(RelationalRuntimeApi::builder().build())
@@ -200,7 +200,7 @@ fn query_builder_rejects_explicit_backend_when_query_owned_invariants_are_queued
     )
     .expect("explicit backend should build for invariant-lane conflict test");
 
-    let error = match WorthQueryRuntime::builder()
+    let error = match WorthQueryRuntime::builder(test_product_world_resources())
         .register_invariant(CertificationBoundaryViolationRule)
         .expect("custom query invariant registration should succeed")
         .backend(explicit_backend)
@@ -241,7 +241,7 @@ fn query_builder_accepts_proof_lane_invariant_registration_artifact() {
         ready,
     ));
 
-    let mut runtime = complete_backend_from_parts_builder()
+    let mut runtime = complete_query_owned_backend_from_parts_builder()
         .invariant_registration_artifact(artifact)
         .write_authority(InspectingCatalogWriteAuthority {
             expected_catalog: InvariantCatalog {
@@ -299,7 +299,7 @@ fn query_builder_canonicalizes_and_deduplicates_merged_invariant_catalog_sources
         ],
     };
 
-    let mut runtime = complete_backend_from_parts_builder()
+    let mut runtime = complete_query_owned_backend_from_parts_builder()
         .invariant_catalog(InvariantCatalog {
             registrations: vec![InvariantRegistration::commit_boundary_blocking(
                 InvariantRule::MaxMergedIntents(9),

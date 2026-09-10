@@ -116,7 +116,7 @@ pub(crate) fn projection_runtime_builder(
     source: SharedSourceState,
     bridge: worth_runtime_bridge::facade::RuntimeBridge,
 ) -> Result<runtime::WorthQueryRuntimeBuilder, WorthUiScalarProjectionInstallationError> {
-    let builder = runtime::WorthQueryRuntime::builder()
+    let builder = runtime::WorthQueryRuntime::builder(product_world_resources())
         .domain_package(crate::worth_ui_domain_package())
         .map_err(|error| WorthUiScalarProjectionInstallationError::DomainPackage(Box::new(error)))?
         .domain_package(crate::presentation_async::worth_ui_presentation_async_domain_package())
@@ -132,9 +132,42 @@ pub(crate) fn projection_runtime_builder(
         .map_err(|error| {
         WorthUiScalarProjectionInstallationError::AspectContract(Box::new(error))
     })?;
-    Ok(projection_consumer_support(
-        configure_product_projection_backend(builder, bridge, source),
-    ))
+    let builder = configure_product_projection_backend(builder, bridge, source)
+        .map_err(WorthUiScalarProjectionInstallationError::SourceLifecycle)?;
+    Ok(projection_consumer_support(builder))
+}
+
+fn product_world_resources() -> runtime::WorthQueryProductWorldResources {
+    runtime::WorthQueryProductWorldResources::install(
+        runtime::RuntimeWorldBudgetInstallation {
+            branches: runtime::RuntimeWorldBranchBudgetInstallation {
+                live_product_branches: 128,
+            },
+            history: runtime::RuntimeWorldHistoryBudgetInstallation {
+                retained_composite_commits: 1_024,
+                history_metadata_bytes: 16 * 1024 * 1024,
+            },
+            observations: runtime::RuntimeWorldObservationBudgetInstallation {
+                active_observations: 512,
+            },
+            publication: runtime::RuntimeWorldPublicationBudgetInstallation {
+                active_publication_attempts: 128,
+            },
+            recovery: runtime::RuntimeWorldRecoveryBudgetInstallation {
+                retained_product_unpublished_records: 128,
+                retained_partial_metadata_bytes: 16 * 1024 * 1024,
+            },
+            retention: runtime::RuntimeWorldRetentionBudgetInstallation {
+                unique_exact_component_pins: 1_024,
+                in_flight_pin_acquisition_reservations: 256,
+            },
+            custody: runtime::RuntimeWorldCustodyBudgetInstallation {
+                owner_created_component_custody_records: 256,
+            },
+        },
+        runtime::WorthQueryProductWorldClock::start(),
+    )
+    .expect("the UI Product World resources are valid")
 }
 
 fn projection_consumer_support(

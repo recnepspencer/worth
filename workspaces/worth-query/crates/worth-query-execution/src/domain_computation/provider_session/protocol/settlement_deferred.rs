@@ -9,15 +9,6 @@ pub struct WorthQueryProviderSessionSettlementDeferred {
     detail: String,
     counters: WorthQueryProviderSessionProtocolCounters,
     settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
-    publication_failure: Option<WorthQueryPerformedPublicationFailure>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPerformedPublicationFailure {
-    kind: super::WorthQueryProviderSessionDenialKind,
-    stage: WorthQueryProviderSessionProtocolStage,
-    detail: String,
-    counters: WorthQueryProviderSessionProtocolCounters,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -47,7 +38,6 @@ impl WorthQueryProviderSessionSettlementDeferred {
             detail: detail.into(),
             counters: WorthQueryProviderSessionProtocolCounters::default(),
             settlement,
-            publication_failure: None,
         }
     }
 
@@ -69,23 +59,6 @@ impl WorthQueryProviderSessionSettlementDeferred {
         &self.settlement
     }
 
-    pub fn publication_failure(&self) -> Option<&WorthQueryPerformedPublicationFailure> {
-        self.publication_failure.as_ref()
-    }
-
-    pub(in crate::domain_computation) fn with_publication_failure(
-        mut self,
-        failure: &WorthQueryProviderSessionFailure,
-    ) -> Self {
-        self.publication_failure = Some(WorthQueryPerformedPublicationFailure {
-            kind: failure.kind(),
-            stage: failure.stage(),
-            detail: failure.detail().to_owned(),
-            counters: failure.counters(),
-        });
-        self
-    }
-
     pub(in crate::domain_computation) fn at_stage(
         mut self,
         stage: WorthQueryProviderSessionProtocolStage,
@@ -94,24 +67,6 @@ impl WorthQueryProviderSessionSettlementDeferred {
         self.stage = stage;
         self.counters = counters;
         self
-    }
-}
-
-impl WorthQueryPerformedPublicationFailure {
-    pub const fn kind(&self) -> super::WorthQueryProviderSessionDenialKind {
-        self.kind
-    }
-
-    pub const fn stage(&self) -> WorthQueryProviderSessionProtocolStage {
-        self.stage
-    }
-
-    pub fn detail(&self) -> &str {
-        &self.detail
-    }
-
-    pub const fn counters(&self) -> WorthQueryProviderSessionProtocolCounters {
-        self.counters
     }
 }
 
@@ -157,6 +112,9 @@ impl WorthQueryProviderSessionCommitDeferred {
 
 #[derive(Debug)]
 pub enum WorthQueryProviderSessionCommitStop {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     Denied(WorthQueryProviderSessionFailure),
     Deferred(WorthQueryProviderSessionCommitDeferred),
     ControlStopped(super::WorthQueryProviderSessionCommitControlStopped),

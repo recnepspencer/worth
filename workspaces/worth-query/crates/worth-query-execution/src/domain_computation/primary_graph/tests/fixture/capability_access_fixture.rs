@@ -32,7 +32,7 @@ pub(in crate::domain_computation::primary_graph) fn admit_touch_account_capabili
             CapabilityTouchOperation::reference(),
         )
         .unwrap();
-    world.application.admit_capability_access(
+    world.selected_product().admit_capability_access(
         principal,
         &capability,
         CapabilityTouchInput {

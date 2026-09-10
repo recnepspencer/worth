@@ -284,6 +284,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn into_lease(
         mut self,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease {
         let basis = self
             .basis
@@ -298,17 +299,19 @@ where
             Arc::clone(&self.layout),
             basis,
             snapshot,
+            product,
         )
     }
 
     pub(in crate::domain_computation::primary_graph) fn into_lease_and_realized_scope(
         mut self,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> (
         super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         WorthQueryRealizedProjectionScope,
     ) {
         let realized_scope = std::mem::take(&mut self.realized_scope);
-        (self.into_lease(), realized_scope)
+        (self.into_lease(product), realized_scope)
     }
 
     fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {

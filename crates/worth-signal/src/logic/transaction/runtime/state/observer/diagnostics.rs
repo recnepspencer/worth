@@ -10,7 +10,7 @@ use crate::diagnostics::summary::{
     ExecutionHistorySummary, GraphSummary, TemporalDiagnosticsSummary,
 };
 use crate::diagnostics::{
-    FailureSummary, FlowSummary, ReplayView, RollbackDiagnostic, SynthesizedReplaySlice,
+    FailureSummary, ReplayView, RetainedFlowSummaryView, RollbackDiagnostic, SynthesizedReplaySlice,
 };
 use crate::logic::explain::{explain_with_policy_resolver, NodeExplanation};
 use crate::logic::transaction::ObservationBoundarySummary;
@@ -171,7 +171,7 @@ where
         self.graph().inspect_execution()
     }
 
-    pub fn latest_flow_diagnostics(&self) -> Option<&'a FlowSummary> {
+    pub fn latest_flow_diagnostics(&self) -> Option<RetainedFlowSummaryView<'a>> {
         self.graph().latest_flow_diagnostics()
     }
 
@@ -194,7 +194,7 @@ where
 
     pub fn recent_execution_history_diagnostics(
         &self,
-    ) -> &'a std::collections::VecDeque<ExecutionHistorySummary> {
+    ) -> crate::diagnostics::summary::RetainedExecutionHistoryView<'a> {
         self.graph().recent_execution_history_diagnostics()
     }
 

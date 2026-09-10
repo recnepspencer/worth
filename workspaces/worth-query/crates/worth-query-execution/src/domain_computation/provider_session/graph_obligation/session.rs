@@ -47,6 +47,7 @@ impl WorthQueryGraphWorkAccessContextAffinity {
 enum WorthQueryGraphWorkBasis {
     Query {
         identity: WorthQueryApplicationBasisIdentity,
+        product: crate::basis::WorthQueryProductObservationLease,
         port: WorthQueryGraphReadOwnerPort,
     },
     Mutation(Option<WorthQueryApplicationSnapshotLease>),
@@ -88,11 +89,21 @@ impl WorthQueryManagedGraphWorkSession {
         principal: EntityId,
         access: WorthQueryGraphWorkAccessContextAffinity,
         basis: &WorthQueryApplicationBasisIdentity,
+        product: crate::basis::WorthQueryProductObservationLease,
         provider: &str,
         port: WorthQueryGraphReadOwnerPort,
     ) -> Result<Self, WorthQueryManagedGraphWorkSessionStartDenial> {
         let branch = WorthQueryGraphWorkBranchAffinity::from_query_basis(basis);
-        if !branch.admits_query_basis(basis) {
+        let selected_product = match basis.selection() {
+            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(identity) => identity,
+            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Relational => {
+                return Err(WorthQueryManagedGraphWorkSessionStartDenial::BasisBranchMismatch);
+            }
+        };
+        let carried_product = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+            product.observation(),
+        );
+        if !branch.admits_query_basis(basis) || selected_product != &carried_product {
             return Err(WorthQueryManagedGraphWorkSessionStartDenial::BasisBranchMismatch);
         }
         Self::start(
@@ -106,6 +117,7 @@ impl WorthQueryManagedGraphWorkSession {
             branch,
             WorthQueryGraphWorkBasis::Query {
                 identity: basis.clone(),
+                product,
                 port,
             },
             provider,
@@ -241,6 +253,33 @@ impl WorthQueryManagedGraphWorkSession {
         match &mut self.basis {
             WorthQueryGraphWorkBasis::Query { .. } => None,
             WorthQueryGraphWorkBasis::Mutation(lease) => lease.take(),
+        }
+    }
+
+    pub(in crate::domain_computation) fn mutation_lease(
+        &self,
+    ) -> Option<&WorthQueryApplicationSnapshotLease> {
+        match &self.basis {
+            WorthQueryGraphWorkBasis::Query { .. } => None,
+            WorthQueryGraphWorkBasis::Mutation(lease) => lease.as_ref(),
+        }
+    }
+
+    pub(in crate::domain_computation) fn mutation_product(
+        &self,
+    ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
+        self.mutation_lease()
+            .map(WorthQueryApplicationSnapshotLease::product)
+    }
+
+    pub(in crate::domain_computation) fn product(
+        &self,
+    ) -> Option<&crate::basis::WorthQueryProductObservationLease> {
+        match &self.basis {
+            WorthQueryGraphWorkBasis::Query { product, .. } => Some(product),
+            WorthQueryGraphWorkBasis::Mutation(lease) => {
+                lease.as_ref().map(|lease| lease.product().read_lease_ref())
+            }
         }
     }
 

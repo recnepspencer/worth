@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 use crate::data::handle::NodeId;
 use crate::data::output::CanonicalChangedRegions;
 use crate::data::reuse::{ReuseBoundaryContext, ReuseCertificationRecord};

@@ -1,5 +1,8 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeConditionalDenialKind {
+    ConditionalRetentionCapacity,
+    ConditionalRetentionClosed,
+    ConditionalRetentionQuarantined,
     ForeignSignalGraph,
     CorrespondenceAdmission,
     EmptyCorrespondenceSet,
@@ -31,9 +34,19 @@ pub enum BridgeConditionalDenialKind {
     DependencyOrdinalMismatch,
     SnapshotMismatch,
     SnapshotAdmission,
+    MissingSourceObservation,
+    SourcePostureMismatch,
     AttemptMismatch,
     ManagedWakeMismatch,
+    ManagedClockQuarantined,
     SignalExecution,
+    ConditionalTransitionChainIncomplete,
+    ConditionalTransitionChainMismatch,
+    ConditionalPredecessorNotExecuted,
+    ConditionalEvaluationBusy,
+    ConditionalEvaluationPoisoned,
+    ConditionalEvaluationUnwindPending,
+    ConditionalEvaluationAdmissionCapacity,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

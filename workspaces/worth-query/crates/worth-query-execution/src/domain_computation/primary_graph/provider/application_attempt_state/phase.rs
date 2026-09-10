@@ -182,15 +182,15 @@ impl WorthQueryApplicationAttemptState {
         self.phase.is_commit_ready()
     }
 
-    pub(super) fn take_commit_prepared(
+    pub(super) fn take_commit_parts(
         self,
-    ) -> Option<super::WorthQueryPreparedProviderApplicationAttempt> {
+    ) -> Option<(
+        super::super::WorthQueryPrimaryGraphApplicationAttempt,
+        worth_relational::facade::mvcc::ValidatedRelationalProposal,
+        WorthQueryPrimaryMutationWorkCounters,
+    )> {
         let (candidate, work) = self.phase.take_commit_ready()?;
-        Some(super::WorthQueryPreparedProviderApplicationAttempt {
-            attempt: self.attempt,
-            candidate,
-            work,
-        })
+        Some((self.attempt, candidate, work))
     }
 
     pub(super) fn discard_overlay(

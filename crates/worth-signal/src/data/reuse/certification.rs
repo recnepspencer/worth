@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 use crate::data::reuse::basis::{ReuseCrossing, ReuseOrigin, ReuseSource, ReuseStrategy};
 use crate::data::reuse::context::ReuseBoundaryAuthority;
 use crate::data::reuse::contract::ArtifactSemanticBoundary;

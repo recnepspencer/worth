@@ -14,6 +14,7 @@ mod resource_observation;
 mod runtime_observation;
 mod runtime_state;
 mod temporal;
+pub(crate) use temporal::TemporalRuntimeState;
 
 pub(crate) use crate::observation::session::admit as admit_signal_observation_request;
 pub(crate) use crate::observation::session::{
@@ -35,9 +36,9 @@ pub use branching::{
     ValidatedBranchTargetedTransactionRequest, SIGNAL_BRANCH_BASIS_SCHEMA_VERSION,
 };
 pub(crate) use branching::{
-    BranchState, SignalOwnerMetadataCloseBatch, SignalOwnerMetadataState, SignalOwnerPartition,
-    SignalOwnerRetirementCleanup, SignalOwnerSnapshotReservationDenial, SnapshotBranchState,
-    SnapshotStatePacket,
+    BranchState, SignalCanonicalCallerUnwind, SignalOwnerMetadataCloseBatch,
+    SignalOwnerMetadataState, SignalOwnerPartition, SignalOwnerRetirementCleanup,
+    SignalOwnerSnapshotReservationDenial, SnapshotBranchState, SnapshotStatePacket,
 };
 pub use builder::SignalRuntimeBuilder;
 pub use canonical_merge_guidance::{PlannedRuntimeMerge, RuntimeMerge};
@@ -158,4 +159,3 @@ pub use runtime_observation::{
     ObservationRegistrySummary, ObservationTrigger, ObservedNodeSet, ObserverId,
 };
 pub use runtime_state::SignalRuntime;
-pub(in crate::logic::transaction::runtime) use temporal::TemporalRuntimeState;

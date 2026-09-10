@@ -6,15 +6,15 @@ use crate::domain_computation::WorthQueryProposedFact;
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryObservedApplicationFactBasis
 {
     fact: WorthQueryPrimaryGraphApplicationDecisionFact,
-    branch: worth_relational::facade::history::BranchId,
+    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
 }
 
 impl WorthQueryObservedApplicationFactBasis {
     pub(super) const fn new(
         fact: WorthQueryPrimaryGraphApplicationDecisionFact,
-        branch: worth_relational::facade::history::BranchId,
+        product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     ) -> Self {
-        Self { fact, branch }
+        Self { fact, product }
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn remains_equal_in(
@@ -22,10 +22,11 @@ impl WorthQueryObservedApplicationFactBasis {
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial>
     {
-        let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(
+        let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
             runtime,
-            &self.branch,
-        )?;
+            self.product.observation().basis().relational_basis(),
+        )
+        .map_err(crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::from)?;
         let fresh = self.fact.remains_equal_in(runtime, &snapshot);
         crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         Ok(fresh)
@@ -34,15 +35,15 @@ impl WorthQueryObservedApplicationFactBasis {
 
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryApplicationIdempotencyBasis {
     binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
-    branch: worth_relational::facade::history::BranchId,
+    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
 }
 
 impl WorthQueryApplicationIdempotencyBasis {
     pub(super) const fn new(
         binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
-        branch: worth_relational::facade::history::BranchId,
+        product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     ) -> Self {
-        Self { binding, branch }
+        Self { binding, product }
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn resolve(
@@ -52,7 +53,7 @@ impl WorthQueryApplicationIdempotencyBasis {
         super::super::WorthQueryProviderIdempotencyResolution,
         super::super::WorthQueryProviderIdempotencyResolutionDenial,
     > {
-        provider.resolve_idempotency_binding(self.binding, &self.branch)
+        provider.resolve_idempotency_binding_at_product(self.binding, &self.product)
     }
 }
 

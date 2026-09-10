@@ -12,6 +12,11 @@ use worth_foundational::{ExecutionObjectiveProfile, ObservationActivationProfile
 /// diagnostics module only consumes its retention projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignalRuntimePolicy {
+    /// Required on decoded requests; presets choose an explicit finite limit.
+    pub maximum_waiter_resolution_visits: usize,
+    pub maximum_upstream_dependency_visits: usize,
+    pub conditional_evaluation_budget: super::SignalConditionalEvaluationBudget,
+    pub conditional_temporal_budget: super::SignalConditionalTemporalBudget,
     pub tier: DiagnosticsTier,
     #[serde(default = "default_execution_objective")]
     pub execution_objective: ExecutionObjectiveProfile,

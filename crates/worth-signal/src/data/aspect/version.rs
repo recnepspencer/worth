@@ -1,4 +1,11 @@
+mod clone_work;
+mod evaluation;
+mod evaluation_projection;
+mod evaluation_work;
 use std::collections::BTreeMap;
+
+mod lookup;
+mod retained_charge;
 
 use serde::{Deserialize, Serialize};
 
@@ -168,27 +175,12 @@ impl PartitionVersionOverrides {
     }
 
     pub fn apply_evaluation(&mut self, version: AspectVersion, changed_regions: &[ChangedRegion]) {
-        if changed_regions.is_empty() {
-            return;
-        }
-        for region in changed_regions {
-            self.partitions.insert(region.partition.clone(), version);
-            if let Some(detail) = region.detail.as_ref() {
-                self.details.insert(
-                    PartitionSubscription::partition_and_detail(
-                        region.partition.clone(),
-                        detail.clone(),
-                    ),
-                    version,
-                );
-            } else {
-                for (scope, scoped_version) in &mut self.details {
-                    if scope.partition == region.partition {
-                        *scoped_version = version;
-                    }
-                }
-            }
-        }
+        evaluation::apply(
+            &mut self.partitions,
+            &mut self.details,
+            version,
+            changed_regions,
+        );
     }
 
     pub fn has_overrides(&self) -> bool {
@@ -247,27 +239,12 @@ impl PartitionVersionMap {
 
     pub fn apply_evaluation(&mut self, version: AspectVersion, changed_regions: &[ChangedRegion]) {
         self.global = version;
-        if changed_regions.is_empty() {
-            return;
-        }
-        for region in changed_regions {
-            self.partitions.insert(region.partition.clone(), version);
-            if let Some(detail) = region.detail.as_ref() {
-                self.details.insert(
-                    PartitionSubscription::partition_and_detail(
-                        region.partition.clone(),
-                        detail.clone(),
-                    ),
-                    version,
-                );
-            } else {
-                for (scope, scoped_version) in &mut self.details {
-                    if scope.partition == region.partition {
-                        *scoped_version = version;
-                    }
-                }
-            }
-        }
+        evaluation::apply(
+            &mut self.partitions,
+            &mut self.details,
+            version,
+            changed_regions,
+        );
     }
 
     /// Apply one producer-local aspect change without projecting that aspect's

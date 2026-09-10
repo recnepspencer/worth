@@ -247,6 +247,12 @@ impl<Schema, Operation, Input, Scope>
         Ok(())
     }
 
+    pub(in crate::domain_computation) fn publication_request(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        &self.request_scope
+    }
+
     /// Stable identity of the authenticated runtime, installed operation,
     /// principal, and typed scope. It intentionally excludes snapshot identity
     /// so an equivalent authorized retry can retain one idempotency intent.

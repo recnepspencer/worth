@@ -47,8 +47,10 @@ impl WorthQueryRuntime {
         )
     }
 
-    pub fn builder() -> WorthQueryRuntimeBuilder {
-        WorthQueryRuntimeBuilder::new()
+    pub fn builder(
+        product_world_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
+    ) -> WorthQueryRuntimeBuilder {
+        WorthQueryRuntimeBuilder::new(product_world_resources)
     }
 
     pub fn workspace(

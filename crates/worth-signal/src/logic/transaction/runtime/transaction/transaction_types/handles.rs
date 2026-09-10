@@ -40,6 +40,9 @@ where
     pub(in crate::logic::transaction::runtime) branch_head_generation: &'a mut u64,
     pub(in crate::logic::transaction::runtime) branch_restore_snapshot_id:
         &'a mut Option<crate::state::SignalSnapshotId>,
+    pub(crate) conditional_operation_scope: Option<
+        crate::branch::owner_services::conditional_execution::SignalConditionalOperationScopeBinding,
+    >,
     pub(in crate::logic::transaction::runtime) scratch: TransactionScratch<D, I, E>,
     pub(in crate::logic::transaction::runtime) rollback_packets: TransactionRollbackPacketSet<T>,
     pub(in crate::logic::transaction::runtime) poisoned: bool,

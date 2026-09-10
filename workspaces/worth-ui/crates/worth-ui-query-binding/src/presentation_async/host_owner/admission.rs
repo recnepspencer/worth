@@ -150,19 +150,21 @@ impl WorthUiPresentationAsyncOwner {
             basis,
             retention,
         } = plan;
-        let revision = self.next_truth_revision;
-        self.next_truth_revision = revision
-            .checked_add(1)
-            .ok_or(WorthUiPresentationPendingAdmissionDenial::TruthRevisionExhausted)?;
         let receipt_nonce = self
             .next_receipt_nonce
             .checked_add(1)
             .ok_or(WorthUiPresentationPendingAdmissionDenial::TruthRevisionExhausted)?;
-        let admission = match self.registry.admit_retained(
+        let declaration = super::super::WorthUiPresentationAsyncDeclaration::declare(&basis)
+            .map_err(|_| {
+                WorthUiPresentationPendingAdmissionDenial::Runtime(
+                    WorthUiPresentationAdmissionStop::RuntimeAdmission,
+                )
+            })?;
+        let admission = match WorthUiPresentationRuntimeAdmission::admit_in_workspace(
             &mut self.workspace,
-            basis,
-            &retention.transition,
-            truth_basis(revision),
+            declaration,
+            &self.owned_async_source,
+            self.product.as_ref(),
         ) {
             Ok(admission) => admission,
             Err(denial) => match denial.into_cleanup_required() {
@@ -301,12 +303,8 @@ fn pending_from_runtime_admission(
             lineage: plan.lineage,
             transition: plan.transition,
             admission,
-            pending_publication_index: 0,
-            pending_performed: None,
-            pending_frontiers: Vec::new(),
             supersession_query_admitted: false,
             supersession_posture_observed: false,
-            supersession_semantic_retired: false,
             predecessor_supersession_complete: false,
             settlement: PresentationSettlementProgress::default(),
             rejection: PresentationRejectionProgress::default(),
@@ -324,9 +322,6 @@ fn runtime_cleanup_stop(
         super::super::runtime_bridge::WorthUiPresentationRuntimeCleanupDenial::Query(_) => {
             WorthUiPresentationRuntimeCleanupStop::Query
         }
-        super::super::runtime_bridge::WorthUiPresentationRuntimeCleanupDenial::Semantic(_) => {
-            WorthUiPresentationRuntimeCleanupStop::Semantic
-        }
     }
 }
 
@@ -335,22 +330,8 @@ fn cleanup_stop(
 ) -> WorthUiPresentationRuntimeCleanupStop {
     match denial {
         WorthUiPresentationSettlementDenial::RuntimeCleanup(stop) => *stop,
-        WorthUiPresentationSettlementDenial::Progress(
-            WorthUiPresentationSettlementStop::SemanticExecution
-            | WorthUiPresentationSettlementStop::SemanticRetirement,
-        ) => WorthUiPresentationRuntimeCleanupStop::Semantic,
         _ => WorthUiPresentationRuntimeCleanupStop::Query,
     }
-}
-
-fn truth_basis(revision: u64) -> BridgeAsyncRequestTruthViewBasis {
-    BridgeAsyncRequestTruthViewBasis::authoritative(
-        TruthBranchIdentity::from_relational_branch_id("worth-ui-mounted-presentation"),
-        TruthCommitIdentity::from_relational_commit_id(revision),
-        TruthSnapshotIdentity::from_relational_snapshot(
-            RelationalBridgeSnapshotIdentityParts::new(0x5755_4950, revision),
-        ),
-    )
 }
 
 fn map_transition_denial(

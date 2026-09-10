@@ -1,8 +1,7 @@
 use super::support::*;
 
 fn branch_intent_runtime(attempted: std::rc::Rc<std::cell::Cell<usize>>) -> WorthQueryRuntime {
-    WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -158,8 +157,7 @@ fn derive_only_branch_intent_denies_before_authoritative_execution() {
 #[test]
 fn branch_local_intent_requires_intent_support_for_branch_lane() {
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

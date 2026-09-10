@@ -16,7 +16,7 @@ use super::admission::BridgeRuntimeWorldAdmissionAuthorityMarker;
 #[derive(Debug, Clone)]
 pub struct AdmittedRuntimeWorldCorrespondenceBasis {
     basis: BridgeCorrespondenceBasis,
-    dependency: BridgeSemanticDependencyCandidate,
+    dependency: Option<BridgeSemanticDependencyCandidate>,
     admission_identity: BridgeCorrespondenceAdmissionIdentity,
     _authority: Arc<AuthorityWitness<BridgeRuntimeWorldAdmissionAuthorityMarker>>,
 }
@@ -36,8 +36,35 @@ impl AdmittedRuntimeWorldCorrespondenceBasis {
     ) -> Self {
         Self {
             basis: installed.basis().clone(),
-            dependency: installed.dependency().clone(),
+            dependency: Some(installed.dependency().clone()),
             admission_identity: installed.admission_identity().clone(),
+            _authority: Arc::new(authority),
+        }
+    }
+
+    pub(crate) fn baseline(
+        runtime: &crate::facade::RuntimeBridge,
+        signal_graph_instance_id: u64,
+        authority: AuthorityWitness<BridgeRuntimeWorldAdmissionAuthorityMarker>,
+    ) -> Self {
+        let stable = Arc::<str>::from("bridge-runtime-baseline");
+        Self {
+            basis: BridgeCorrespondenceBasis {
+                source_installation_identity: stable.clone(),
+                source_basis: stable.clone(),
+                source_runtime_authority: runtime.signal_runtime_key,
+                source_installation_generation: 0,
+                source_authority_binding_identity: stable.clone(),
+                declared_graph_role: stable.clone(),
+                graph_participation_identity: stable.clone(),
+                graph_adapter_identity: stable,
+                authoritative_source_profile: runtime.authoritative_source_profile.clone(),
+                bridge_runtime_key: runtime.signal_runtime_key,
+                signal_graph_instance_id,
+                signal_partitions: Vec::new(),
+            },
+            dependency: None,
+            admission_identity: BridgeCorrespondenceAdmissionIdentity::issue(),
             _authority: Arc::new(authority),
         }
     }
@@ -62,7 +89,7 @@ impl AdmittedRuntimeWorldCorrespondenceBasis {
         self.basis.signal_graph_instance_id
     }
 
-    pub(crate) fn dependency(&self) -> &BridgeSemanticDependencyCandidate {
-        &self.dependency
+    pub(crate) fn dependency(&self) -> Option<&BridgeSemanticDependencyCandidate> {
+        self.dependency.as_ref()
     }
 }

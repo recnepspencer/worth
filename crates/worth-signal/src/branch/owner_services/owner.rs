@@ -27,6 +27,7 @@ mod retirement_batch_execution;
 mod retirement_batch_planning;
 mod retirement_planning;
 pub(super) mod retirement_reservation;
+mod root;
 use super::lifecycle_state::{SignalOwnerCloseCoordinator, SignalOwnerCloseDenial};
 #[cfg(test)]
 mod managed_reference_replacement_tests;
@@ -41,6 +42,8 @@ pub enum SignalOwnerServiceIssuanceDenial {
     ManagedQueueStateConfigured { bound_queue_count: u32 },
     LiveBranchCapacityExhausted { maximum_live_branches: usize },
     RetirementReceiptCapacityExhausted { maximum_retained_receipts: usize },
+    ConditionalRetentionBudgetMismatch,
+    DefinitionPublicationAlreadyIssued,
 }
 
 /// Sole strong owner state retained by a sealed, non-cloneable runtime root.
@@ -57,115 +60,16 @@ where
     registry: Arc<SignalBranchRegistry<SignalBranchCellState<D, I, T>>>,
     basis_registry: SignalBranchBasisRegistry,
     retention: SignalBranchRetentionRegistry,
+    pub(in crate::branch::owner_services) conditional_retention:
+        Arc<super::conditional_execution::SignalConditionalRetentionLedger>,
+    pub(in crate::branch::owner_services) conditional_temporal:
+        super::conditional_execution::SignalConditionalTemporalRegistry,
     selected_branch_id: SignalBranchId,
     pub(super) metadata: SignalOwnerMetadata<D, I, T>,
     counters: Arc<SignalOwnerServiceCounters>,
 }
 
-/// Non-cloneable root field. Before sealing it contains no competing owner.
-pub(crate) struct SignalOwnerRoot<D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
-{
-    state: SignalOwnerRootState<D, I, T>,
-}
-
-enum SignalOwnerRootState<D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
-{
-    Unsealed {
-        runtime_instance_id: u64,
-        definition_basis: u64,
-        basis_registry: SignalBranchBasisRegistry,
-    },
-    Sealed(Arc<SignalOwner<D, I, T>>),
-}
-
-impl<D, I, T> SignalOwnerRoot<D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
-{
-    pub(crate) fn new(
-        runtime_instance_id: u64,
-        definition_basis: u64,
-        basis_registry: SignalBranchBasisRegistry,
-    ) -> Self {
-        Self {
-            state: SignalOwnerRootState::Unsealed {
-                runtime_instance_id,
-                definition_basis,
-                basis_registry,
-            },
-        }
-    }
-
-    pub(crate) fn is_sealed(&self) -> bool {
-        matches!(self.state, SignalOwnerRootState::Sealed(_))
-    }
-
-    pub(crate) fn seal(&mut self, partition: SignalOwnerPartition<D, I, T>) {
-        let (runtime_instance_id, definition_basis, basis_registry) = match &self.state {
-            SignalOwnerRootState::Unsealed {
-                runtime_instance_id,
-                definition_basis,
-                basis_registry,
-            } => (
-                *runtime_instance_id,
-                *definition_basis,
-                basis_registry.clone(),
-            ),
-            SignalOwnerRootState::Sealed(_) => {
-                panic!("Signal owner root cannot consume a second canonical partition")
-            }
-        };
-        let owner = SignalOwner::from_partition(
-            runtime_instance_id,
-            definition_basis,
-            partition,
-            basis_registry,
-        );
-        self.state = SignalOwnerRootState::Sealed(owner);
-    }
-
-    pub(crate) fn downgrade_owner(
-        &self,
-    ) -> Result<Weak<SignalOwner<D, I, T>>, SignalOwnerUnavailable> {
-        match &self.state {
-            SignalOwnerRootState::Unsealed { .. } => Err(SignalOwnerUnavailable),
-            SignalOwnerRootState::Sealed(owner) => Ok(Arc::downgrade(owner)),
-        }
-    }
-
-    #[cfg(feature = "test-operation-control")]
-    pub(crate) fn operation_control(
-        &self,
-    ) -> Result<super::operation_control::SignalOwnerOperationControl, SignalOwnerUnavailable> {
-        match &self.state {
-            SignalOwnerRootState::Unsealed { .. } => Err(SignalOwnerUnavailable),
-            SignalOwnerRootState::Sealed(owner) => Ok(owner.operation_control()),
-        }
-    }
-}
-
-impl<D, I, T> Drop for SignalOwnerRoot<D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
-{
-    fn drop(&mut self) {
-        if let SignalOwnerRootState::Sealed(owner) = &self.state {
-            let _ = owner.request_close();
-        }
-    }
-}
+pub(crate) use root::SignalOwnerRoot;
 
 impl<D, I, T> SignalOwner<D, I, T>
 where
@@ -178,6 +82,8 @@ where
         definition_basis: u64,
         partition: SignalOwnerPartition<D, I, T>,
         basis_registry: SignalBranchBasisRegistry,
+        conditional_budget: crate::runtime_policy::SignalConditionalEvaluationBudget,
+        temporal_budget: crate::runtime_policy::SignalConditionalTemporalBudget,
     ) -> Arc<Self> {
         let (metadata, next_branch_id, retention, selected_branch_id, cells) =
             partition.into_parts();
@@ -201,8 +107,18 @@ where
             next_branch_id: AtomicU64::new(next_branch_id),
             lifecycle,
             registry,
+            conditional_temporal:
+                super::conditional_execution::SignalConditionalTemporalRegistry::new(
+                    runtime_instance_id,
+                    lifecycle_identity,
+                ),
             basis_registry,
             retention,
+            conditional_retention:
+                super::conditional_execution::SignalConditionalRetentionLedger::new(
+                    conditional_budget,
+                    temporal_budget,
+                ),
             selected_branch_id,
             metadata: SignalOwnerMetadata::new(metadata, runtime_instance_id, lifecycle_identity),
             counters,
@@ -210,7 +126,8 @@ where
         let admission = owner
             .admit()
             .expect("a newly sealed Signal owner admits its canonical cells");
-        for (handle, state, head_generation, restore_snapshot_id) in cells {
+        for (handle, mut state, head_generation, restore_snapshot_id) in cells {
+            state.seal_definition_custody(definition_basis);
             let branch_id = handle.id;
             let cell = owner
                 .registry
@@ -289,6 +206,7 @@ where
         self.lifecycle
             .begin_explicit_close(self.runtime_instance_id)?;
         self.retention.close_owner();
+        self.conditional_retention.close();
         loop {
             self.finish_owner_close_cleanup();
             if self.lifecycle_observation() == super::SignalOwnerLifecycleObservation::Closed {
@@ -301,6 +219,7 @@ where
     fn request_close(&self) -> Result<(), SignalOwnerCloseDenial> {
         self.lifecycle.request_close(self.runtime_instance_id)?;
         self.retention.close_owner();
+        self.conditional_retention.close();
         self.finish_owner_close_cleanup();
         Ok(())
     }

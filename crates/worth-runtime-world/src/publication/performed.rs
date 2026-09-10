@@ -110,6 +110,11 @@ pub struct ConsumedCompositePublication {
     delivery: PublicationDeliveryClaim,
 }
 impl ConsumedCompositePublication {
+    pub fn take_successor_observation(
+        &mut self,
+    ) -> Option<crate::branch::ProductBranchObservation> {
+        self.delivery.take_successor_observation()
+    }
     pub fn old_product_head(&self) -> &ProductBranchReferenceSnapshot {
         self.facts().movement.before()
     }

@@ -167,7 +167,7 @@ fn no_demand_mutation_work(
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -263,48 +263,28 @@ fn grow_unrelated_accounts(world: &super::super::fixture::AuthorizationWorld, co
     );
     let status = locator(status_ref.entity(), status_ref.aspect(), status_ref.field());
     let label = locator(label_ref.entity(), label_ref.aspect(), label_ref.field());
-    graph.with_runtime_mut(|runtime| {
-        let batch = (0..count).fold(
-            WorkerIntentBatch::new("unrelated-mutation-scale-population"),
-            |batch, ordinal| {
-                let key = format!("unrelated-scale-{ordinal}");
-                let fields = AspectFieldPatch::from(BTreeMap::from([
-                    (identity.clone(), key.clone().into_foundational_value()),
-                    (
-                        status.clone(),
-                        "unrelated".to_owned().into_foundational_value(),
-                    ),
-                    (
-                        label.clone(),
-                        "population".to_owned().into_foundational_value(),
-                    ),
-                ]));
-                batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                    partition_id: worth_relational::facade::identity::PartitionId::main(),
-                    kind_id: kind,
-                    client_key: worth_relational::facade::symbols::ClientKey::raw(key),
-                    fields,
-                })))
-            },
-        );
-        let mut transaction = {
-            let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-            runtime
-                .begin_branch_transaction(
-                    &transaction_validation_input,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("owner-admitted transaction context")
-        };
-        transaction
-            .push_batch(batch)
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction
-            .commit(runtime)
-            .expect("unrelated population commits");
-        super::super::fixture::release_test_commit_snapshot(runtime, &committed);
-        graph.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    let batch = (0..count).fold(
+        WorkerIntentBatch::new("unrelated-mutation-scale-population"),
+        |batch, ordinal| {
+            let key = format!("unrelated-scale-{ordinal}");
+            let fields = AspectFieldPatch::from(BTreeMap::from([
+                (identity.clone(), key.clone().into_foundational_value()),
+                (
+                    status.clone(),
+                    "unrelated".to_owned().into_foundational_value(),
+                ),
+                (
+                    label.clone(),
+                    "population".to_owned().into_foundational_value(),
+                ),
+            ]));
+            batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                partition_id: worth_relational::facade::identity::PartitionId::main(),
+                kind_id: kind,
+                client_key: worth_relational::facade::symbols::ClientKey::raw(key),
+                fields,
+            })))
+        },
+    );
+    super::super::fixture::publish_relational_mutation(world, batch);
 }

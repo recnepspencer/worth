@@ -7,6 +7,7 @@ mod direct_admission_failure;
 mod direct_graph_chunk;
 mod direct_graph_execution;
 mod direct_graph_execution_start;
+mod direct_graph_terminalization;
 mod direct_terminal;
 mod direct_yield;
 mod direct_yield_cleanup;

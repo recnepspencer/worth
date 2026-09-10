@@ -25,7 +25,7 @@ fn asynchronous_strategy_and_live_capacity_shortfall_defer_with_distinct_causes(
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -69,7 +69,7 @@ fn asynchronous_strategy_and_live_capacity_shortfall_defer_with_distinct_causes(
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -119,7 +119,7 @@ fn named_degradation_is_explicit_and_cannot_satisfy_exact_support_silently() {
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -194,7 +194,7 @@ fn provider_access_allocator_and_safe_point_mismatches_never_fallback() {
         .unwrap();
         let installed_domain = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
-            .observe_operating_world()
+            .observe_operating_world(workspace.current_world())
             .unwrap()
             .family(ReadFamily)
             .bind(&installed_domain, ReadVertex)
@@ -236,7 +236,7 @@ fn provider_access_allocator_and_safe_point_mismatches_never_fallback() {
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -289,7 +289,7 @@ fn workflow_operation_and_stage_support_snapshots_include_only_causal_graph_role
         conditional_workflow_workspace("resource-stage-local-support", conditional).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let admitted = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)

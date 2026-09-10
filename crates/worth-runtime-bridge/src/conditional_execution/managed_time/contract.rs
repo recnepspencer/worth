@@ -1,3 +1,5 @@
+pub(super) const MAXIMUM_IDENTITY_BYTES: usize = 512;
+
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -8,12 +10,14 @@ use worth_signal::facade::{TemporalWakeId, WakeOrdinal};
 #[derive(Debug)]
 pub(super) struct BridgeManagedClockLease {
     live: AtomicBool,
+    _reservation: super::super::retention::BridgeRetentionReservation,
 }
 
 impl BridgeManagedClockLease {
-    pub(super) fn issue() -> Self {
+    pub(super) fn issue(reservation: super::super::retention::BridgeRetentionReservation) -> Self {
         Self {
             live: AtomicBool::new(true),
+            _reservation: reservation,
         }
     }
 
@@ -28,8 +32,8 @@ impl BridgeManagedClockLease {
 
 /// Exact Bridge-owned clock binding. It is move-only and cannot schedule work.
 pub struct BridgeManagedClockBinding {
-    pub(super) bridge_runtime_key: u64,
-    pub(super) binding_identity: Arc<str>,
+    pub(in crate::conditional_execution) bridge_runtime_key: u64,
+    pub(in crate::conditional_execution) binding_identity: Arc<str>,
     pub(super) source_identity: Arc<str>,
     pub(super) timeline_identity: Arc<str>,
     pub(super) lease: Arc<BridgeManagedClockLease>,
@@ -126,6 +130,9 @@ pub struct BridgeManagedDueWake {
     pub(in crate::conditional_execution) signal_wake_id: TemporalWakeId,
     pub(super) scheduled_ordinal: WakeOrdinal,
     pub(super) ready_ordinal: WakeOrdinal,
+    pub(in crate::conditional_execution) observation_baselines:
+        Arc<super::super::observation_retention::BridgeObservationBaselines>,
+    pub(super) _reservation: Arc<super::super::retention::BridgeRetentionReservation>,
 }
 
 impl BridgeManagedDueWake {
@@ -169,7 +176,7 @@ impl BridgeManagedDueWake {
 }
 
 pub struct BridgeManagedDueWakeBatch {
-    pub(super) wakes: Vec<BridgeManagedDueWake>,
+    pub(super) wakes: super::BridgeManagedDueWakeBuffer,
     pub(super) due_work_remaining: bool,
     pub(super) frontier_width_before: u64,
     pub(super) frontier_width_after: u64,
@@ -180,7 +187,7 @@ impl BridgeManagedDueWakeBatch {
         &self.wakes
     }
 
-    pub fn into_wakes(self) -> Vec<BridgeManagedDueWake> {
+    pub fn into_wakes(self) -> super::BridgeManagedDueWakeBuffer {
         self.wakes
     }
 
@@ -242,9 +249,11 @@ pub enum BridgeManagedTemporalDenialKind {
     ForeignClockSource,
     ForeignClockTimeline,
     IntentCapacityExhausted,
+    RetentionCapacityExhausted,
+    RetentionQuarantined,
+    LaneQuarantined,
     IntentRevisionConflict,
     SignalTemporalFailure,
-    MissingIntentAssociation,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -254,7 +263,10 @@ pub struct BridgeManagedTemporalDenial {
 }
 
 impl BridgeManagedTemporalDenial {
-    pub(super) fn new(kind: BridgeManagedTemporalDenialKind, detail: impl Into<String>) -> Self {
+    pub(in crate::conditional_execution) fn new(
+        kind: BridgeManagedTemporalDenialKind,
+        detail: impl Into<String>,
+    ) -> Self {
         Self {
             kind,
             detail: detail.into(),
@@ -303,7 +315,7 @@ pub(super) fn validate_identity(
     role: &str,
 ) -> Result<(), BridgeManagedTemporalDenial> {
     if identity.is_empty()
-        || identity.len() > 512
+        || identity.len() > MAXIMUM_IDENTITY_BYTES
         || identity.trim() != identity
         || identity.chars().any(char::is_whitespace)
     {

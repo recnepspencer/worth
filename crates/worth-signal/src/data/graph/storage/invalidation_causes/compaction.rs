@@ -2,6 +2,7 @@ use std::num::NonZeroU32;
 
 use super::{CanonicalCauseSetStore, PendingCauseSetId};
 use crate::data::error::SignalError;
+use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::data::proof::invalidation::binding::ResolvedDependencyCause;
 
@@ -9,6 +10,23 @@ pub(super) struct CauseSetHandleRemap {
     pub(super) consumer: NodeId,
     pub(super) previous: PendingCauseSetId,
     pub(super) current: PendingCauseSetId,
+}
+
+impl SignalGraph {
+    /// Explicit reconstruction may remap every occupied consumer. Ordinary
+    /// publication retains reusable free slots and must never call this lane.
+    pub(crate) fn compact_cause_set_storage(&mut self) -> Result<(), SignalError> {
+        let remaps = self.cause_sets.rebuild_occupied_generation()?;
+        for remap in remaps {
+            if self.node_pending_cause_set_id(remap.consumer)? != remap.previous {
+                return Err(SignalError::invalid_input(
+                    "canonical cause-set handle does not match its consumer",
+                ));
+            }
+            self.set_node_pending_cause_set_id(remap.consumer, remap.current)?;
+        }
+        Ok(())
+    }
 }
 
 impl CanonicalCauseSetStore {
@@ -59,10 +77,6 @@ impl CanonicalCauseSetStore {
         Ok(remaps)
     }
 
-    pub(crate) fn should_compact(&self) -> bool {
-        self.sets.len().saturating_sub(self.occupied_set_count) > self.occupied_set_count
-    }
-
     pub(super) fn normalize_slot_metadata(&mut self) {
         if self.slot_generations.len() < self.sets.len() {
             let missing = self.sets.len() - self.slot_generations.len();
@@ -79,7 +93,7 @@ impl CanonicalCauseSetStore {
             .copied()
             .collect::<Vec<_>>();
         for ordinal in stale {
-            self.published_output_commits.remove(&ordinal);
+            self.published_output_commits.remove_discard(&ordinal);
         }
     }
 
@@ -97,19 +111,6 @@ impl CanonicalCauseSetStore {
         self.prune_unreferenced_output_commits();
     }
 
-    pub(super) fn add_output_commit_references(&mut self, set_index: usize) {
-        let ordinals = self.sets[set_index]
-            .iter()
-            .map(|cause| cause.binding_axes.output_commit_ordinal.0)
-            .collect::<Vec<_>>();
-        for ordinal in ordinals {
-            *self
-                .output_commit_reference_counts
-                .entry(ordinal)
-                .or_default() += 1;
-        }
-    }
-
     pub(super) fn add_output_commit_references_from(&mut self, causes: &[ResolvedDependencyCause]) {
         for cause in causes {
             *self
@@ -119,11 +120,8 @@ impl CanonicalCauseSetStore {
         }
     }
 
-    pub(super) fn remove_output_commit_references_from(
-        &mut self,
-        causes: &[ResolvedDependencyCause],
-    ) {
-        for cause in causes {
+    pub(super) fn remove_output_commit_references_at(&mut self, index: usize) {
+        for cause in &self.sets[index] {
             let ordinal = cause.binding_axes.output_commit_ordinal.0;
             let count = self
                 .output_commit_reference_counts
@@ -131,8 +129,8 @@ impl CanonicalCauseSetStore {
                 .expect("stored cause commit ordinal must be reference-counted");
             *count -= 1;
             if *count == 0 {
-                self.output_commit_reference_counts.remove(&ordinal);
-                self.published_output_commits.remove(&ordinal);
+                self.output_commit_reference_counts.remove_discard(&ordinal);
+                self.published_output_commits.remove_discard(&ordinal);
             }
         }
     }

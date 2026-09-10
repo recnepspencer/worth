@@ -1,7 +1,11 @@
 mod aggregate_projection;
+pub use crate::domain_computation::{
+    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
+    WorthQueryProductUnpublishedRecovery,
+};
 mod application_attempt;
 mod application_branch;
-mod application_query;
+pub(crate) mod application_query;
 mod application_runtime;
 mod authenticated_principal;
 mod authentication_clock;
@@ -14,7 +18,6 @@ mod entity_key;
 mod entity_resolution;
 mod entity_resolution_denial;
 mod exact_basis_access;
-pub(in crate::domain_computation) use exact_basis_access::open_current_branch_snapshot;
 mod freshness;
 mod granular_invalidation;
 mod index_currency;
@@ -23,9 +26,25 @@ mod initial_schema_denial;
 mod invariant_projection;
 mod live_delivery;
 mod managed_bridge;
+pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod observations;
 mod ordinary_read;
 mod principal_key;
+pub(crate) mod product_activation;
+mod product_operation;
+pub use product_operation::{
+    WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedChange,
+    WorthQueryApplicationConditionalDefinitionAdmissionDenial,
+    WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
+    WorthQueryApplicationProductBranchCleanupFailure,
+    WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
+    WorthQueryAppliedProductTransaction, WorthQueryConditionalDefinitionPublicationDenial,
+    WorthQueryConditionalDefinitionPublicationOutcome,
+    WorthQueryPerformedConditionalDefinitionPublication, WorthQueryProductEntry,
+    WorthQueryProductHistory, WorthQueryProductHistoryEntry, WorthQueryProductQueryControls,
+    WorthQueryProductTransaction, WorthQueryProductTransactionCommitError,
+    WorthQuerySelectedProductOperation,
+};
 mod provider;
 mod resolution;
 mod resolution_denial;
@@ -67,14 +86,15 @@ pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;
 pub(in crate::domain_computation) use provider::WorthQueryAftermathCausalityReadDenial;
+pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
 pub use application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
-    WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationNoEffectCause,
     WorthQueryApplicationCommitOutcomeIdentity,
-    WorthQueryApplicationCommitPublicationExternalEffect,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationSettlementDeferred,
     WorthQueryApplicationSettlementNextAction,
@@ -84,6 +104,7 @@ pub use application_attempt::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationReadAttempt,
     WorthQueryApplicationStaleAttempt, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCommittedProductPublication,
     WorthQueryApprovedElevation, WorthQueryCapabilityRevocationProgram,
     WorthQueryCompleteApplicationReadSet, WorthQueryDelegationActivationProgram,
     WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
@@ -103,40 +124,35 @@ pub use application_query::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationAuthorizationWorkEvidence,
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
+    WorthQueryApplicationBasisSelectionIdentity,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseReceipt,
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
     WorthQueryApplicationContinuationPageResult, WorthQueryApplicationDisclosed,
     WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,
     WorthQueryApplicationDisclosureOutcomeIdentity, WorthQueryApplicationDisclosureReceipt,
-    WorthQueryApplicationDisclosureReceiptPosture, WorthQueryApplicationHistoricalBasis,
-    WorthQueryApplicationHistoricalBasisReleaseReceipt, WorthQueryApplicationHistoricalRead,
-    WorthQueryApplicationHistoricalResult, WorthQueryApplicationLiveCauseDenialKind,
+    WorthQueryApplicationDisclosureReceiptPosture, WorthQueryApplicationLiveCauseDenialKind,
     WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveControlDenial,
     WorthQueryApplicationLiveControls, WorthQueryApplicationLiveLease,
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
     WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
     WorthQueryApplicationLiveUpdate, WorthQueryApplicationOmission,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
-    WorthQueryApplicationOneShotResult, WorthQueryApplicationPinnedBasis,
-    WorthQueryApplicationPinnedBasisDenial, WorthQueryApplicationPinnedBasisDenialKind,
-    WorthQueryApplicationPinnedBasisReleaseReceipt, WorthQueryApplicationPreviewBasis,
-    WorthQueryApplicationPreviewBasisReleaseReceipt, WorthQueryApplicationPreviewResult,
-    WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewSessionDenial,
-    WorthQueryApplicationPreviewSessionDenialKind,
-    WorthQueryApplicationPreviewSessionDiscardReceipt, WorthQueryApplicationPreviewSessionIdentity,
-    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
+    WorthQueryApplicationOneShotResult, WorthQueryApplicationProjection,
+    WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
     WorthQueryApplicationProjectionRows, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryAdmissionDenial,
     WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryBasisPosture,
     WorthQueryApplicationQueryConsistency, WorthQueryApplicationQueryContinuation,
-    WorthQueryApplicationQueryControls, WorthQueryApplicationQueryFreshness,
+    WorthQueryApplicationQueryFreshness,
     WorthQueryApplicationQueryOmissionPosture, WorthQueryApplicationQueryResumeControls,
     WorthQueryApplicationQueryWorkEvidence, WorthQueryApplicationResultBufferEvidence,
     WorthQueryApplicationResultBufferObservation, WorthQueryApplicationResultBufferObserver,
-    WorthQueryBoundedLaneDenial, WorthQueryBoundedLaneDenialKind,
     WorthQueryPrimaryGraphApplicationReadinessSnapshot,
 };
+#[cfg(test)]
+pub(crate) use application_query::WorthQueryApplicationHistoricalRead;
+pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDispatchAttemptOrdinal;
 pub use application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
@@ -144,6 +160,10 @@ pub use authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,
 };
 pub use bootstrap::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphPublication};
+pub use crate::basis::{
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
+    WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease,
+};
 pub use conditional_operation::{
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalClockHandle,
@@ -220,8 +240,11 @@ pub use principal_key::{
     WorthQueryApplicationPrincipalKey, WorthQueryApplicationPrincipalKeyDenial,
 };
 #[cfg(test)]
-use provider::commit_and_observe_fixture;
-pub(in crate::domain_computation) use provider::WorthQueryApplicationCommitSerialization;
+pub(in crate::domain_computation) use tests::recoverable_commit_support::{
+    committed_recoverable_application, recoverable_application_world,
+    two_recoverable_application_commits,
+};
+pub(in crate::domain_computation) use provider::WorthQueryApplicationBranchCommitCoordination;
 pub(in crate::domain_computation) use provider::WorthQueryCommittedDispatchOutboxBinding;
 #[cfg(test)]
 pub(in crate::domain_computation) use provider::{

@@ -119,9 +119,14 @@ impl RealReferenceFixture {
             ._signal_runtime
             .owner_component_services()
             .expect("real Signal owner issues its sealed services again");
+        let signal_definition_publication = self
+            ._signal_runtime
+            .runtime_world_definition_publication_port()
+            .expect("real Signal owner dedicates publication to its World");
         RuntimeWorldOwnerInputs::new(
             relational,
             signal,
+            signal_definition_publication,
             self._correspondence_port.clone(),
             budgets,
             clock,

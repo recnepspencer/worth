@@ -86,7 +86,8 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             ));
         };
         let admission = self
-            .artifact_authority
+            .managed_run()
+            .artifacts()
             .input_validation_admission(stage.identity())?;
         handle.validate_input(&admission)
     }

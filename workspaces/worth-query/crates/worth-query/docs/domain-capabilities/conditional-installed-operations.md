@@ -273,7 +273,12 @@ Bridge and Signal types never appear in the host manifest or source.
 
 ```rust
 let mut publication = graph
-    .conditional_application_runtime_installation(runtime, authority, schema)?;
+    .conditional_application_runtime_installation(
+        runtime,
+        authority,
+        schema,
+        conditional_evaluation_budget,
+    )?;
 let clock = publication.bind_temporal_operation(
     installed_temporal_binding,
     operation_execution,
@@ -390,7 +395,7 @@ Inspect:
   `installation_canonical_work()`, and provenance `canonical_work()` when
   auditing the cold-binding, runtime-binding, and fresh-admission seams
 - `inspect_conditional_runtime()` before and after lifecycle transitions
-- `reinstall_conditional_runtime()` receipts with separate reconstructed
+- `reinstall_conditional_runtime(product_branch)` receipts with separate reconstructed
   binding/intent counts and structural query work: examined candidates,
   projected records, projected fields, and total work units
 - `conditional_runtime_lifecycle_probe()` retained outside the application

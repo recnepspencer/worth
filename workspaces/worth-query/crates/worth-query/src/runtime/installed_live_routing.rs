@@ -1,26 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-mod conditional_delivery;
-mod controlled_fault;
-mod owner_delivery_queue;
 mod target_index;
 
 use super::{WorthQueryLiveArtifactTarget, WorthQueryRuntime};
-use owner_delivery_queue::WorthQueryInstalledOwnerDeliveryQueue;
-
-pub(crate) use conditional_delivery::{
-    WorthQueryAdmittedStagedOwnerDelivery, WorthQueryClassifiedOwnerDeliveryEmissionError,
-};
 pub(crate) use target_index::{
     WorthQueryInstalledTargetSelection, WorthQueryInstalledTargetSelectionWork,
 };
 
-type InstalledOperationKey = (std::any::TypeId, std::any::TypeId, std::any::TypeId);
-
-struct WorthQueryInstalledOwnerDeliveryRoute {
-    operation: InstalledOperationKey,
+struct WorthQueryInstalledLiveRoute {
     impact_classifier: crate::domain_installation::WorthQueryInstalledLiveImpactClassifier,
-    owner_deliveries: WorthQueryInstalledOwnerDeliveryQueue,
 }
 
 pub(super) enum WorthQueryInstalledLiveMutationClassification {
@@ -46,9 +34,8 @@ impl WorthQueryInstalledLiveMutationClassification {
 
 #[derive(Default)]
 pub(super) struct WorthQueryInstalledLiveRoutes {
-    routes: BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryInstalledOwnerDeliveryRoute>,
+    routes: BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryInstalledLiveRoute>,
     target_index: target_index::WorthQueryInstalledLiveTargetIndex,
-    injected_classified_emission_failures: usize,
 }
 
 impl WorthQueryInstalledLiveRoutes {
@@ -82,12 +69,11 @@ impl WorthQueryInstalledLiveRoutes {
 }
 
 impl WorthQueryRuntime {
-    pub(crate) fn register_installed_live_route<D: 'static, O: 'static, F: 'static>(
+    pub(crate) fn register_installed_live_route(
         &mut self,
         target: WorthQueryLiveArtifactTarget,
         closure: &crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure,
     ) {
-        let operation = operation_key::<D, O, F>();
         self.unregister_installed_live_route(&target);
         let impact_classifier =
             crate::domain_installation::WorthQueryInstalledLiveImpactClassifier::from_closure(
@@ -103,18 +89,12 @@ impl WorthQueryRuntime {
             .to_owned();
         self.installed_live_routes.target_index.register(
             target.clone(),
-            operation,
             target_collection,
             impact_classifier.routing_selector(),
         );
-        self.installed_live_routes.routes.insert(
-            target,
-            WorthQueryInstalledOwnerDeliveryRoute {
-                operation,
-                impact_classifier,
-                owner_deliveries: WorthQueryInstalledOwnerDeliveryQueue::default(),
-            },
-        );
+        self.installed_live_routes
+            .routes
+            .insert(target, WorthQueryInstalledLiveRoute { impact_classifier });
     }
 
     pub(crate) fn unregister_installed_live_route(
@@ -126,12 +106,4 @@ impl WorthQueryRuntime {
         }
         self.installed_live_routes.target_index.unregister(target);
     }
-}
-
-fn operation_key<D: 'static, O: 'static, F: 'static>() -> InstalledOperationKey {
-    (
-        std::any::TypeId::of::<D>(),
-        std::any::TypeId::of::<O>(),
-        std::any::TypeId::of::<F>(),
-    )
 }

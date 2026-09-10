@@ -1,8 +1,7 @@
 use worth_foundational::facade::{
-    AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision, AspectEvolutionPolicy,
-    AspectIdentity, AspectKey, AspectMask, AuthoritativeAspectChangeKind, FieldDeclaration,
-    FieldKey, FieldRequirement, ProjectionMask, ScalarAspectType, StructAspectShape,
-    TruthPartitionRole,
+    AbsenceLaw, AspectContract, AspectContractRevision, AspectEvolutionPolicy, AspectIdentity,
+    AspectKey, AspectMask, FieldDeclaration, FieldKey, FieldRequirement, ProjectionMask,
+    ScalarAspectType, StructAspectShape,
 };
 use worth_query::facade::domain;
 use worth_query_decl::facade::{
@@ -69,7 +68,6 @@ pub(crate) fn presentation_async_definition() -> domain::WorthQueryDomainOperati
     WorthUiPresentationAsyncOperation,
     WorthUiPresentationAsyncOperationFamily,
 > {
-    let dependencies = dependencies();
     domain::WorthQueryDomainOperationDefinition::new(
         domain::WorthQueryDomainOperationIdentity::new("presentation-async", 1),
         domain::WorthQueryDomainOperationSemanticClosure {
@@ -84,7 +82,7 @@ pub(crate) fn presentation_async_definition() -> domain::WorthQueryDomainOperati
             required_domains: Vec::new(),
             workflow: domain::WorthQueryOperationWorkflowContract::NotRequired,
             evidence: domain::WorthQueryDomainEvidenceContract::not_required(),
-            conditional_nodes: vec![conditional_node(&dependencies)],
+            conditional_nodes: Vec::new(),
             graph_reads: domain::WorthQueryOperationGraphReadContract::DeclaredDomain {
                 roles: vec![domain::WorthQueryDomainOperationGraphReadRole {
                     role: "presentation".into(),
@@ -134,68 +132,6 @@ pub(crate) fn presentation_async_definition() -> domain::WorthQueryDomainOperati
             },
         },
     )
-}
-
-fn dependencies() -> Vec<domain::WorthQuerySemanticTruthDependency> {
-    presentation_aspect_contracts()
-        .into_iter()
-        .zip(FIELDS)
-        .map(|(contract, (_, field, partition, _))| {
-            domain::WorthQuerySemanticTruthDependency::new(
-                domain::WorthQueryConditionalGraphReadRole::new("presentation")
-                    .expect("static graph role must admit"),
-                contract,
-                AspectMask::<ProjectionMask>::whole_aspect(),
-                AspectBinding::EntityField {
-                    field: FieldKey::new(field).expect("static presentation field must admit"),
-                },
-                domain::WorthQuerySemanticLocality::SourcePartition(
-                    TruthPartitionRole::new(partition)
-                        .expect("static presentation partition must admit"),
-                ),
-                [
-                    AuthoritativeAspectChangeKind::FieldSet,
-                    AuthoritativeAspectChangeKind::FieldClear,
-                ],
-            )
-            .expect("static presentation dependency must admit")
-        })
-        .collect()
-}
-
-fn conditional_node(
-    dependencies: &[domain::WorthQuerySemanticTruthDependency],
-) -> domain::WorthQueryPortableConditionalNodeDeclaration {
-    domain::WorthQueryPortableConditionalNodeDeclaration::declare(
-        "presentation-currentness",
-        domain::WorthQueryConditionalNodeRole::Computed,
-    )
-    .dependencies(dependencies.to_vec())
-    .outputs([domain::WorthQueryConditionalNodeOutput::OperationOutput {
-        projection_role: domain::WorthQueryOperationProjectionRole::new("presentation")
-            .expect("static projection role must admit"),
-    }])
-    .required_context([
-        domain::WorthQueryConditionalNodeContext::Basis,
-        domain::WorthQueryConditionalNodeContext::Snapshot,
-    ])
-    .evaluation(
-        domain::WorthQueryConditionalEvaluationCondition::aspect_filtered(dependencies.to_vec())
-            .expect("presentation dependency filter must admit"),
-        domain::WorthQueryConditionalTrigger::DependencyChange,
-    )
-    .comparison(
-        domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
-        domain::WorthQueryOutputEquivalenceRequirement::ExactCanonicalValue,
-    )
-    .artifact_policy(
-        domain::WorthQueryArtifactReuseEquivalence::DependencyAndOutputEquivalent,
-        domain::WorthQueryMaintenancePosture::LazyUntilObserved,
-        domain::WorthQueryArtifactPosture::ReusableWhenEquivalent,
-    )
-    .output_relationship(domain::WorthQueryOutputRelationship::ContributesToOperationOutput)
-    .finish()
-    .expect("static presentation conditional node must admit")
 }
 
 fn contract(aspect: &str, field: &str, identity: u64) -> AspectContract {
@@ -268,13 +204,13 @@ fn support_requirements() -> domain::WorthQueryOperationSupportRequirements {
         recovery: domain::WorthQuerySupportRequirement::Required,
         inspection: domain::WorthQuerySupportRequirement::NotRequired,
         projection_consumption: domain::WorthQuerySupportRequirement::Required,
-        dependency_impact: domain::WorthQuerySupportRequirement::Required,
+        dependency_impact: domain::WorthQuerySupportRequirement::NotRequired,
         sharing: domain::WorthQuerySupportRequirement::Required,
-        invalidation: domain::WorthQuerySupportRequirement::Required,
+        invalidation: domain::WorthQuerySupportRequirement::NotRequired,
         collection_delivery: domain::WorthQuerySupportRequirement::NotRequired,
-        conditional_evaluation: domain::WorthQuerySupportRequirement::Required,
-        conditional_comparator: domain::WorthQuerySupportRequirement::Required,
-        conditional_trigger: domain::WorthQuerySupportRequirement::Required,
+        conditional_evaluation: domain::WorthQuerySupportRequirement::NotRequired,
+        conditional_comparator: domain::WorthQuerySupportRequirement::NotRequired,
+        conditional_trigger: domain::WorthQuerySupportRequirement::NotRequired,
         conditional_temporal_or_on_demand: domain::WorthQuerySupportRequirement::NotRequired,
     }
 }

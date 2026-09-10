@@ -1,10 +1,10 @@
 use worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
-    WorthQueryRecoveryDurabilityPosture, WorthQueryRecoveryInspectionView,
+    WorthQueryApplicationCommitReceipt, WorthQueryRecoveryDurabilityPosture,
+    WorthQueryRecoveryInspectionView,
 };
 
-use super::external_effect::{publish_external_effect, publish_external_effect_source};
+use super::external_effect::publish_external_effect;
 use super::outcome::publish_posture;
 use super::{
     WorthQueryPublishedApplicationAftermath, WorthQueryPublishedCanonicalWork,
@@ -27,15 +27,6 @@ pub fn publish_application_aftermath(
     WorthQueryPublishedApplicationAftermath::new(
         receipt.published_aftermath_posture().map(publish_posture),
         publish_external_effect(receipt),
-    )
-}
-
-pub(crate) fn publish_application_aftermath_source(
-    source: &WorthQueryApplicationCommitPublicationSource,
-) -> WorthQueryPublishedApplicationAftermath {
-    WorthQueryPublishedApplicationAftermath::new(
-        source.aftermath_posture().map(publish_posture),
-        publish_external_effect_source(source.external_effect()),
     )
 }
 

@@ -58,6 +58,7 @@ where
         Ok(SignalBranchAdvanceOutcome::owner_issued(
             advanced_basis,
             transaction,
+            None,
         ))
     }
 

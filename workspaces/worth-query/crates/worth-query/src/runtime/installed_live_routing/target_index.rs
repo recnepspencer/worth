@@ -2,15 +2,10 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::memory_workspace::{WorthQueryMutationDelta, WorthQueryMutationKind};
 
-use super::{InstalledOperationKey, WorthQueryLiveArtifactTarget};
+use super::WorthQueryLiveArtifactTarget;
 
 type AspectKey = worth_foundational::facade::AspectKey;
 type CollectionAspectKey = (String, AspectKey);
-type ConditionalKey = (
-    InstalledOperationKey,
-    worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-);
-
 #[derive(Default)]
 pub(super) struct WorthQueryInstalledLiveTargetIndex {
     all: BTreeMap<String, BTreeSet<WorthQueryLiveArtifactTarget>>,
@@ -25,11 +20,9 @@ pub(super) struct WorthQueryInstalledLiveTargetIndex {
             WorthQueryLiveArtifactTarget,
         >,
     >,
-    by_conditional_node: BTreeMap<ConditionalKey, BTreeSet<WorthQueryLiveArtifactTarget>>,
     selectors: BTreeMap<
         WorthQueryLiveArtifactTarget,
         (
-            InstalledOperationKey,
             String,
             crate::domain_installation::WorthQueryInstalledLiveRoutingSelector,
         ),
@@ -40,7 +33,6 @@ impl WorthQueryInstalledLiveTargetIndex {
     pub(super) fn register(
         &mut self,
         target: WorthQueryLiveArtifactTarget,
-        operation: InstalledOperationKey,
         collection: String,
         selector: crate::domain_installation::WorthQueryInstalledLiveRoutingSelector,
     ) {
@@ -85,18 +77,11 @@ impl WorthQueryInstalledLiveTargetIndex {
                 .or_default()
                 .insert(path, target.clone());
         }
-        for location in &selector.conditional_locations {
-            self.by_conditional_node
-                .entry((operation, location.clone()))
-                .or_default()
-                .insert(target.clone());
-        }
-        self.selectors
-            .insert(target, (operation, collection, selector));
+        self.selectors.insert(target, (collection, selector));
     }
 
     pub(super) fn unregister(&mut self, target: &WorthQueryLiveArtifactTarget) {
-        let Some((operation, collection, selector)) = self.selectors.remove(target) else {
+        let Some((collection, selector)) = self.selectors.remove(target) else {
             return;
         };
         remove_target(&mut self.all, &collection, target);
@@ -122,13 +107,6 @@ impl WorthQueryInstalledLiveTargetIndex {
             }
         }
         self.by_field.retain(|_, index| !index.is_empty());
-        for location in selector.conditional_locations {
-            remove_target(
-                &mut self.by_conditional_node,
-                &(operation, location),
-                target,
-            );
-        }
     }
 
     pub(super) fn affected_targets(
@@ -172,14 +150,6 @@ impl WorthQueryInstalledLiveTargetIndex {
             }
         }
         selection(targets, work)
-    }
-
-    pub(super) fn conditional_targets(
-        &self,
-        operation: InstalledOperationKey,
-        location: &worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-    ) -> Option<&BTreeSet<WorthQueryLiveArtifactTarget>> {
-        self.by_conditional_node.get(&(operation, location.clone()))
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::branch::{OwnerCreatedComponentCustodyRecord, OwnerRetirementWork};
+use crate::branch::OwnerRetirementWork;
 use crate::recovery::{
     ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle, RecoveryCleanupOutcome,
     RecoveryContinuationContract,
@@ -88,26 +88,48 @@ where
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Option<Vec<OwnerRetirementWork>> {
+        let work = self.reserve_recovery_retirement_work(handle).ok()?;
         let released = self.state.recovery.cleanup_record(handle, None).ok()?;
-        Some(self.drain_released_occurrence(&released))
+        Some(self.drain_released_occurrence(&released, work))
     }
 
     /// Drain the custody charged to the occurrence a released record named.
     /// A record that named no occurrence was a publication: it charged no
     /// custody, and there is nothing to drain.
+    fn reserve_recovery_retirement_work(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Result<Vec<OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial> {
+        let record = self.state.recovery.inspect_record(handle)?;
+        let destination = record
+            .destination()
+            .map(|(branch, incarnation)| (branch.clone(), incarnation));
+        let work = match destination {
+            Some((branch, incarnation)) => self
+                .state
+                .custody
+                .reserve_retirement_work(&branch, incarnation)
+                .map_err(|()| {
+                    crate::recovery::RuntimeWorldRecoveryDenial::OutputCapacityExhausted
+                })?,
+            None => Vec::new(),
+        };
+        drop(record);
+        Ok(work)
+    }
+
     fn drain_released_occurrence(
         &self,
         released: &RecoveryCleanupOutcome,
+        mut work: Vec<OwnerRetirementWork>,
     ) -> Vec<OwnerRetirementWork> {
         let Some((branch, incarnation)) = released.destination() else {
-            return Vec::new();
+            return work;
         };
         self.state
             .custody
-            .take_for_incarnation(branch, incarnation)
-            .into_iter()
-            .map(OwnerCreatedComponentCustodyRecord::into_retirement_work)
-            .collect()
+            .drain_retirement_work_into(branch, incarnation, &mut work);
+        work
     }
 }
 
@@ -134,15 +156,30 @@ where
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
-    ) -> Result<Vec<OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial> {
+    ) -> Result<
+        crate::recovery::ProductUnpublishedCleanup,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
+        let work = self.reserve_recovery_retirement_work(handle)?;
+        let mut unpublished_history_candidates = Vec::new();
+        unpublished_history_candidates
+            .try_reserve_exact(1)
+            .map_err(|_| crate::recovery::RuntimeWorldRecoveryDenial::OutputCapacityExhausted)?;
         let released = self
             .state
             .recovery
             .cleanup_record(handle, Some((self.state.clock.now(), minimum_age_ticks)))?;
-        Ok(self.drain_released_occurrence(&released))
+        if let Some(commit) = released.unpublished_commit() {
+            unpublished_history_candidates.push(commit.clone());
+        }
+        let owner_retirement_work = self.drain_released_occurrence(&released, work);
+        Ok(crate::recovery::ProductUnpublishedCleanup::new(
+            unpublished_history_candidates,
+            owner_retirement_work,
+        ))
     }
     fn continue_effects(
         &self,

@@ -10,6 +10,7 @@ publish = false
 allocation-probes = []
 test-durability-faults = ["worth-relational/test-durability-faults"]
 test-primary-graph-faults = []
+test-world-operation-control = ["worth-runtime-world/test-operation-control"]
 
 [dependencies]
 sha2 = "0.10"
@@ -17,6 +18,7 @@ worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 worth-signal = { path = "../../../../crates/worth-signal" }
 worth-query-admission = { path = "../worth-query-admission" }
 worth-query-declaration = { path = "../worth-query-declaration" }

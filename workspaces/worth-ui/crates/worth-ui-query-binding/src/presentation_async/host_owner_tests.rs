@@ -9,7 +9,7 @@ mod completion;
 pub(super) use completion::native_paint_completion;
 
 #[test]
-fn host_owner_drives_all_eight_causes_from_one_retained_presentation_lineage() {
+fn host_owner_reuses_one_presealed_source_across_successive_presentations() {
     let mut owner = installed_owner();
     let sequence = presentation_sequence();
     let graph = owner
@@ -19,85 +19,36 @@ fn host_owner_drives_all_eight_causes_from_one_retained_presentation_lineage() {
         .signal_graph_instance();
 
     let baseline = owner.admit_pending(sequence.baseline).unwrap();
-    assert_eq!(
-        published_changes(&baseline.frontiers),
-        [
-            WorthUiPresentationSemanticChange::Content,
-            WorthUiPresentationSemanticChange::Width,
-            WorthUiPresentationSemanticChange::PaintValue,
-            WorthUiPresentationSemanticChange::PaintBoundary,
-            WorthUiPresentationSemanticChange::Dpi,
-            WorthUiPresentationSemanticChange::Currentness,
-        ]
-    );
-    assert_frontiers_performed(&baseline.frontiers);
-    assert!(baseline.frontiers.iter().any(|proof| {
-        proof.outcomes.iter().any(|outcome| {
-            *outcome
-                == worth_query::facade::domain::WorthQueryConditionalOutcomeClass::ComputedRevertedClean
-        })
-    }), "an owner-accepted semantic cause with equal output must stop at Query's comparator");
-    let presented = owner
+    assert_eq!(baseline.observation().signal_graph_instance(), graph);
+    owner
         .admit_presented(&baseline, &native_paint_completion(1))
         .unwrap();
-    assert_eq!(
-        published_changes(&presented.frontiers),
-        [
-            WorthUiPresentationSemanticChange::Content,
-            WorthUiPresentationSemanticChange::Width,
-            WorthUiPresentationSemanticChange::PaintValue,
-            WorthUiPresentationSemanticChange::PaintBoundary,
-            WorthUiPresentationSemanticChange::Dpi,
-            WorthUiPresentationSemanticChange::Currentness,
-            WorthUiPresentationSemanticChange::UploadCompletion,
-        ]
-    );
 
     let successor = owner.admit_pending(sequence.successor).unwrap();
     assert_eq!(successor.observation().signal_graph_instance(), graph);
-    assert_eq!(
-        published_changes(&successor.frontiers),
-        [WorthUiPresentationSemanticChange::Currentness]
-    );
     let presented = owner
         .admit_presented(&successor, &native_paint_completion(2))
         .unwrap();
     assert_eq!(
-        published_changes(&presented.frontiers),
-        [
-            WorthUiPresentationSemanticChange::Currentness,
-            WorthUiPresentationSemanticChange::PinRelease,
-        ]
+        presented.observation().posture(),
+        WorthUiPresentationAsyncPosture::Current
     );
-    assert_frontiers_performed(&presented.frontiers);
     let retired = owner.workspace.owned_async_runtime_topology().unwrap();
     assert_eq!(
         retired.installed_conditional_nodes(),
-        1,
-        "the superseded presentation node must be retired"
+        0,
+        "presentation async lifecycle must not install ambient conditional nodes"
     );
     assert_eq!(
         retired.installed_async_declarations(),
         1,
-        "only the current presentation may retain its async source"
+        "one presealed source declaration serves every presentation request"
     );
     assert_eq!(
         retired.active_signal_nodes(),
         retired.installed_conditional_nodes() + retired.installed_async_declarations(),
-        "the retained graph must contain no template or superseded source nodes"
+        "the retained graph must contain no dynamic or superseded source nodes"
     );
-}
-
-fn published_changes(
-    proofs: &[WorthUiPresentationSemanticFrontierObservation],
-) -> Vec<WorthUiPresentationSemanticChange> {
-    proofs.iter().map(|proof| proof.change).collect()
-}
-
-fn assert_frontiers_performed(proofs: &[WorthUiPresentationSemanticFrontierObservation]) {
-    assert!(proofs
-        .iter()
-        .all(|proof| !proof.outcomes.is_empty() && proof.outcomes.len() == proof.performed.len()));
 }
 
 pub(super) struct PresentationSequence {

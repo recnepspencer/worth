@@ -20,6 +20,7 @@ pub(super) struct WorthQueryCommittedApplicationPublicationSeal {
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
+    product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
 }
 
 pub(super) struct WorthQueryPublishedApplicationCommit {
@@ -45,13 +46,15 @@ fn publish_retained(
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
     let WorthQueryCommittedApplicationSession {
-        attempt,
+        mut attempt,
         branch,
         before,
         next_basis,
         committed,
+        product_publication,
         ..
     } = committed;
+    let recovery_reservation = attempt.take_publication_recovery_reservation();
     let changed_record_count = committed.patch().len();
     let runtime_instance_id = committed.snapshot.runtime_instance_id();
     let emitted_effect_count = attempt.emitted_effect_count();
@@ -64,10 +67,12 @@ fn publish_retained(
         outcome_identity,
         basis_descriptor,
         evidence,
+        product_publication,
     };
     let application = WorthQueryPrimaryGraphCommittedApplication::from_publication(seal);
     provider.install_and_publish_application(
         runtime,
+        recovery_reservation,
         WorthQueryPendingApplicationPublication::new(
             attempt,
             branch,

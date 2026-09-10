@@ -114,19 +114,19 @@ impl WorthQueryApplicationEmission {
         self.external_payload.as_ref()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn cloned_payload<Schema, Effect, Payload>(
+    pub(in crate::domain_computation::primary_graph) fn payload_ref<Schema, Effect, Payload>(
         &self,
         effect: &worth_query_declaration::facade::application_schema::ApplicationEffectRef<
             Schema,
             Effect,
             Payload,
         >,
-    ) -> Option<Payload>
+    ) -> Option<&Payload>
     where
-        Payload: ApplicationEffectPayload + Clone,
+        Payload: ApplicationEffectPayload,
     {
         (self.effect == effect.name())
-            .then(|| self.payload.downcast_ref::<Payload>().cloned())
+            .then(|| self.payload.downcast_ref::<Payload>())
             .flatten()
     }
 
@@ -289,6 +289,8 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) emission_retained_bytes_ceiling:
         u64,
+    pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
 }
 
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
@@ -305,4 +307,26 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) keys: BTreeSet<(KindId, String)>,
     pub(super) emission_retained_bytes: u64,
     pub(super) emission_retained_bytes_ceiling: u64,
+    pub(super) conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    pub(in crate::domain_computation::primary_graph) fn belongs_to_application(
+        &self,
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    ) -> bool {
+        self.read_set
+            .admission
+            .belongs_to(runtime_authority, binding_identity)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn product_branch(
+        &self,
+    ) -> crate::basis::WorthQueryProductBranch {
+        self.read_set.lease.product().product_branch()
+    }
 }

@@ -21,6 +21,7 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
         world.retained_bytes,
         world.retained_bytes,
         None,
+        None,
     )
     .expect("complete mixed effect basis should lower");
 
@@ -36,6 +37,7 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
         world.alternate_effects,
         world.retained_bytes,
         world.retained_bytes,
+        None,
         None,
     )
     .expect("complete mixed effect basis should lower");
@@ -76,7 +78,7 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
             relation_id: second_relation,
         },
     ];
-    let prepared = prepare_provider_attempt(Vec::new(), facts, effects, 0, 0, None)
+    let prepared = prepare_provider_attempt(Vec::new(), facts, effects, 0, 0, None, None)
         .expect("both relation deletes are authorized by the observed adjacency");
 
     assert_eq!(prepared.effects.expected_steps().len(), 1);

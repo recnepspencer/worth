@@ -20,12 +20,15 @@ pub struct WorthQueryGranularInvalidationInstallation {
     integration: super::super::WorthQueryPrimaryGraphIntegrationHandle,
     runtime_seal: Arc<GranularInvalidationRuntimeSeal>,
     generation: u64,
+    product_root:
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot,
 }
 
 impl WorthQueryGranularInvalidationInstallation {
     pub(in crate::domain_computation::primary_graph) fn new(
         binding_identity: ApplicationSchemaBindingIdentity,
         integration: super::super::WorthQueryPrimaryGraphIntegrationHandle,
+        product_root: crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot,
     ) -> Self {
         Self {
             binding_identity,
@@ -34,6 +37,7 @@ impl WorthQueryGranularInvalidationInstallation {
                 generation: AtomicU64::new(1),
             }),
             generation: 1,
+            product_root,
         }
     }
 
@@ -48,6 +52,16 @@ impl WorthQueryGranularInvalidationInstallation {
         &self,
     ) -> super::super::WorthQueryPrimaryGraphIntegrationHandle {
         self.integration.clone()
+    }
+
+    /// Retains Query's opaque operation handle to the application's exact
+    /// World and sealed Bridge composition.
+    #[doc(hidden)]
+    pub fn retain_product_shared_root(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot
+    {
+        self.product_root.clone()
     }
 
     /// Returns whether this installation minted the execution-owned batch.
@@ -90,6 +104,7 @@ impl WorthQueryGranularInvalidationInstallation {
             integration: self.integration.clone(),
             runtime_seal: Arc::clone(&self.runtime_seal),
             generation: self.runtime_seal.generation.load(Ordering::Acquire),
+            product_root: self.product_root.clone(),
         }
     }
 

@@ -233,7 +233,11 @@ impl ProjectionHarness {
             .principal_binding(BankPrincipalBinding::reference())
             .unwrap();
         let mut graph = authority
-            .prepare_primary_graph(&runtime, &installed_schema)
+            .prepare_primary_graph(
+                &runtime,
+                &installed_schema,
+                crate::identity_runtime::product_world_resources::bank_product_world_resources(),
+            )
             .unwrap();
         for principal in snapshot.principals() {
             let identity = WorthQueryExternalPrincipalIdentity::new(

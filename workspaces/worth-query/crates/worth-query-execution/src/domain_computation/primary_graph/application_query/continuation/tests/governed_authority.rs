@@ -11,9 +11,8 @@ use crate::domain_computation::primary_graph::{
         GovernedLiveAccountActivityResult, IdentityExecutionSchema, Principal,
     },
     WorthQueryApplicationEntityIdentity, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryControls,
-    WorthQueryApplicationQueryResumeControls, WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryResumeControls,
+    WorthQueryAuthenticatedPrincipal, WorthQueryPrincipalResolutionMode,
 };
 
 type GovernedContinuation = WorthQueryApplicationQueryContinuation<
@@ -98,6 +97,8 @@ fn context() -> (
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -107,6 +108,8 @@ fn context() -> (
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -138,13 +141,13 @@ fn issue(
     let capability = admit_touch_account_capability(world, principal, request).unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(principal, account);
     let plan = world
-        .application
-        .admit_governed_application_query(
+        .selected_product()
+        .admit_governed_application_query_continuation(
             query,
             &access,
             capability,
             governed_live_account_parameters("account-1"),
-            WorthQueryApplicationQueryControls::current_continuation_page(
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
                 NonZeroUsize::new(10_000).unwrap(),
                 request,

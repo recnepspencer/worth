@@ -4,18 +4,20 @@ mod tests {
     use worth_query_admission::facade::authenticated_principal::{
         WorthQueryCancellationSource, WorthQueryRequestScope,
     };
-    use worth_relational::facade::history::CommitId;
     use worth_runtime_bridge::facade::{
         BridgeExecutionBasisLifecycleObserver, BridgeExecutionBasisLifecycleSignalStatus,
     };
 
-    use crate::domain_computation::primary_graph::tests::fixture::{
-        installed_authorization_world, live_account_parameters, Account, AccountIdentity,
-        AccountSummaryParameters, Activity, AuthorizationWorld, IdentityExecutionSchema,
-        LiveAccountActivityCause, LiveAccountActivityQuery, LiveAccountActivityResult, Principal,
+    use crate::domain_computation::primary_graph::tests::{
+        fixture::{
+            installed_authorization_world, live_account_parameters, Account, AccountIdentity,
+            AccountSummaryParameters, Activity, AuthorizationWorld, IdentityExecutionSchema,
+            LiveAccountActivityCause, LiveAccountActivityQuery, LiveAccountActivityResult,
+            Principal,
+        },
+        live_delivery_support::commit_live_activity_with_identity,
     };
     use crate::domain_computation::primary_graph::{
-        application_attempt::WorthQueryAdmittedApplicationEmissionBatch,
         WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveControls,
         WorthQueryApplicationLiveLease, WorthQueryApplicationLiveOutcome,
         WorthQueryAuthenticatedPrincipal, WorthQueryPrincipalResolutionMode,
@@ -47,6 +49,8 @@ mod tests {
             let external = world.authenticate("alice", Duration::from_secs(60), &request);
             let principal = world
                 .application
+                .select_product_branch(world.application.product_runtime().default_branch())
+                .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
                     &world.binding,
                     external,
@@ -82,6 +86,8 @@ mod tests {
             let account = self
                 .world
                 .application
+                .select_product_branch(self.world.application.product_runtime().default_branch())
+                .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     AccountIdentity::reference(),
                     "account-1".to_owned(),
@@ -90,7 +96,7 @@ mod tests {
                 )
                 .unwrap();
             self.world
-                .application
+                .selected_product()
                 .open_application_query_live::<
                     LiveAccountActivityQuery,
                     AccountSummaryParameters,
@@ -125,17 +131,26 @@ mod tests {
         }
 
         fn overflow_source(&self) {
-            for ordinal in 1..=65 {
+            for ordinal in 1..=65_u8 {
+                commit_live_activity_with_identity(
+                    &self.world,
+                    &self.principal,
+                    &self.request,
+                    &format!("overflow-{ordinal}"),
+                    ordinal,
+                    ordinal,
+                );
+            }
+        }
+
+        fn assert_source_released(&self) {
+            assert_eq!(
                 self.world
                     .application
                     .primary_provider
-                    .live_delivery
-                    .publish(
-                        CommitId(ordinal),
-                        WorthQueryAdmittedApplicationEmissionBatch::admit(Vec::new(), 0).unwrap(),
-                    )
-                    .unwrap();
-            }
+                    .active_application_commit_causality_partitions(),
+                0
+            );
         }
     }
 
@@ -162,6 +177,7 @@ mod tests {
             &bridge,
             BridgeExecutionBasisLifecycleSignalStatus::Fulfilled,
         );
+        context.assert_source_released();
     }
 
     #[test]
@@ -183,6 +199,8 @@ mod tests {
             &bridge,
             BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
         );
+        drop(lease);
+        context.assert_source_released();
 
         let deadline_context = LiveContext::new(
             crate::domain_computation::primary_graph::tests::fixture::live_scope(),
@@ -201,6 +219,8 @@ mod tests {
             &deadline_bridge,
             BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
         );
+        drop(deadline_lease);
+        deadline_context.assert_source_released();
     }
 
     #[test]
@@ -219,6 +239,8 @@ mod tests {
             &closed_bridge,
             BridgeExecutionBasisLifecycleSignalStatus::Fulfilled,
         );
+        drop(closed);
+        closed_context.assert_source_released();
 
         let overflow_context = LiveContext::new(
             crate::domain_computation::primary_graph::tests::fixture::live_scope(),
@@ -234,6 +256,8 @@ mod tests {
             &overflow_bridge,
             BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
         );
+        drop(overflow);
+        overflow_context.assert_source_released();
 
         let abandoned_context = LiveContext::new(
             crate::domain_computation::primary_graph::tests::fixture::live_scope(),
@@ -245,6 +269,7 @@ mod tests {
             &abandoned_bridge,
             BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
         );
+        abandoned_context.assert_source_released();
     }
 
     fn observer(lease: &TestLiveLease<'_, '_>) -> BridgeExecutionBasisLifecycleObserver {

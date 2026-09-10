@@ -39,6 +39,7 @@ struct ReservationContext<'a> {
     cancellation: &'a RuntimeWorldCancellationToken,
     deadline: Option<RuntimeWorldInstant>,
     operation: RuntimeWorldOperationReservation,
+    successor_observation_requested: bool,
 }
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -54,6 +55,7 @@ where
         plan: LoweredOwnerComponentPlan,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
+        successor_observation_requested: bool,
     ) -> Result<ReservedCompositePublicationAttempt, NoEffectCompositePublication> {
         let expected_head = plan.expected().expected().clone();
         self.validate_reservation_preconditions(&plan, &expected_head, cancellation, deadline)
@@ -75,6 +77,7 @@ where
             cancellation,
             deadline,
             operation,
+            successor_observation_requested,
         })
     }
 
@@ -88,6 +91,7 @@ where
             cancellation,
             deadline,
             operation,
+            successor_observation_requested,
         } = context;
         if let Some(denied) = self.reservation_denial(&expected_head, cancellation, deadline) {
             return Err(denied);
@@ -103,6 +107,7 @@ where
             &expected_head,
             &identities.commit_identity,
             Some(&identities.attempt_identity),
+            successor_observation_requested,
         )
         .map_err(|cause| NoEffectCompositePublication::new(cause, Some(expected_head.clone())))?;
         if let Some(denied) = self.reservation_denial(&expected_head, cancellation, deadline) {
@@ -302,7 +307,8 @@ where
         S: crate::publication::CompositePublicationStage,
     {
         let current = self.admit_publication_source(&expected)?;
-        let (component_intent, prepared_candidate) = intent.into_parts();
+        let (component_intent, prepared_candidate, successor_observation_requested) =
+            intent.into_parts();
         let resolved = match ResolvedExpectedProductHead::from_current(
             component_intent,
             expected.clone(),
@@ -318,7 +324,13 @@ where
             }
         };
         let plan = lower_component_plans(resolved, prepared_candidate)?;
-        let attempt = RuntimeWorldOwnerRoot::reserve(self, plan, cancellation, deadline)?;
+        let attempt = RuntimeWorldOwnerRoot::reserve(
+            self,
+            plan,
+            cancellation,
+            deadline,
+            successor_observation_requested,
+        )?;
         Ok(S::seal(attempt))
     }
 

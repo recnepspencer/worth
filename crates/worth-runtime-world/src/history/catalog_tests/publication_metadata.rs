@@ -66,7 +66,7 @@ fn publication_envelope_is_charged_before_effects_and_released_with_its_entry() 
         .unwrap()
         .is_none());
     let (head, delivery) = capacity
-        .try_install_publication(child.clone(), owner.history_pins(child))
+        .try_install_publication(child.clone(), owner.history_pins(child), None)
         .unwrap();
     assert_eq!(
         catalog.metadata_ledger().installed_resident(),

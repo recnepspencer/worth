@@ -15,8 +15,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDisclosed, WorthQueryApplicationDisclosureDecisionFact,
     WorthQueryApplicationDisclosureOutcome, WorthQueryApplicationDisclosureReceiptPosture,
     WorthQueryApplicationOneShotResult, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryControls, WorthQueryApplicationQueryOmissionPosture,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationQueryOmissionPosture, WorthQueryPrincipalResolutionMode,
 };
 
 type GovernedResult =
@@ -116,6 +115,8 @@ fn execute(world: &AuthorizationWorld) -> ConsumerObservation {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -125,6 +126,8 @@ fn execute(world: &AuthorizationWorld) -> ConsumerObservation {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -143,13 +146,13 @@ fn execute(world: &AuthorizationWorld) -> ConsumerObservation {
     let capability_branch = capability.graph_work_branch().clone();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_governed_application_query(
             &query,
             &access,
             capability,
             ApplicationQueryParameterSet::<GovernedAccountOmissionQuery>::new(),
-            WorthQueryApplicationQueryControls::current_one_shot(
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
                 NonZeroUsize::new(256).unwrap(),
                 &request,

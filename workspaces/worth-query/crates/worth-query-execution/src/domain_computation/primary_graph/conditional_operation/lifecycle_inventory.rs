@@ -53,6 +53,7 @@ impl WorthQueryConditionalRuntimeLifecycleProbe {
             self.bridge.live_provider_count(),
             live_count(&self.leases),
             live_count(&self.attempts),
+            0,
             self.bridge.live_signal_graph_count(),
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
         )
@@ -77,5 +78,6 @@ pub(super) fn retained_resource_counts(
             .iter()
             .filter(|wake| wake.application_attempted)
             .count(),
+        direct_deliveries: 0,
     }
 }

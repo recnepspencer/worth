@@ -33,6 +33,9 @@ pub struct WorthQueryClosedProviderSessionDisposition {
 
 #[derive(Debug)]
 pub enum WorthQuerySessionCommitOrAbortOutcome {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     Committed(WorthQueryClosedProviderSessionDisposition),
     Aborted(WorthQueryClosedProviderSessionDisposition),
     CommitDeferred(super::WorthQueryProviderSessionCommitDeferred),
@@ -46,10 +49,13 @@ impl WorthQuerySessionCommitOrAbortOutcome {
     pub fn recovery_posture(&self) -> WorthQueryProviderSessionRecoveryPosture {
         match self {
             Self::Committed(_)
+            | Self::ProductStale(_)
+            | Self::NoEffect(_)
             | Self::Aborted(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_) => WorthQueryProviderSessionRecoveryPosture::Closed,
             Self::CommitSettlementDeferred(_)
+            | Self::ProductUnpublished(_)
             | Self::CommitRecoveryRequired(_)
             | Self::AbortRecoveryRequired(_) => {
                 WorthQueryProviderSessionRecoveryPosture::RecoveryRequired
@@ -63,6 +69,9 @@ impl WorthQuerySessionCommitOrAbortOutcome {
                 Some(failure)
             }
             Self::Committed(_)
+            | Self::ProductStale(_)
+            | Self::NoEffect(_)
+            | Self::ProductUnpublished(_)
             | Self::Aborted(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_)
@@ -74,6 +83,9 @@ impl WorthQuerySessionCommitOrAbortOutcome {
         match self {
             Self::CommitSettlementDeferred(deferred) => Some(deferred),
             Self::Committed(_)
+            | Self::ProductStale(_)
+            | Self::NoEffect(_)
+            | Self::ProductUnpublished(_)
             | Self::Aborted(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_)

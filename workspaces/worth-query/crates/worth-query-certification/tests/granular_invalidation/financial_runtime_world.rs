@@ -24,7 +24,6 @@ pub fn assert_financial_host_curve_delivery() {
 
     let mut world = host::FinancialCourtroomWorld::publish_curve();
     let baseline = world
-        .application
         .conditional_clock(&world.curve_clock)
         .unwrap()
         .observe();
@@ -36,7 +35,6 @@ pub fn assert_financial_host_curve_delivery() {
     world.curve_gate.release();
     world.curve_clock_control.push(2, 11);
     let observed = world
-        .application
         .conditional_clock(&world.curve_clock)
         .unwrap()
         .observe();
@@ -114,20 +112,14 @@ pub fn assert_sibling_curve_record_does_no_query_work() {
     let mut host = host::FinancialCourtroomWorld::publish_curve();
     let mut sibling = query::build_sibling_curve_record(&host);
     assert!(matches!(
-        host.application
-            .conditional_clock(&host.curve_clock)
-            .unwrap()
-            .observe(),
+        host.conditional_clock(&host.curve_clock).unwrap().observe(),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
     ));
     host.amend_curve(2, 4_260, 5_100);
     host.curve_gate.release();
     host.curve_clock_control.push(2, 11);
-    let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .application
-        .conditional_clock(&host.curve_clock)
-        .unwrap()
-        .observe()
+    let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) =
+        host.conditional_clock(&host.curve_clock).unwrap().observe()
     else {
         panic!("the 5y curve change must be observed")
     };
@@ -159,11 +151,7 @@ pub fn assert_financial_curve_query_patch() {
 
     let mut host = host::FinancialCourtroomWorld::publish_curve();
     let mut query = query::build_curve(&host);
-    let baseline = host
-        .application
-        .conditional_clock(&host.curve_clock)
-        .unwrap()
-        .observe();
+    let baseline = host.conditional_clock(&host.curve_clock).unwrap().observe();
     assert!(matches!(
         baseline,
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
@@ -171,11 +159,8 @@ pub fn assert_financial_curve_query_patch() {
     host.amend_curve(2, 4_260, 5_100);
     host.curve_gate.release();
     host.curve_clock_control.push(2, 11);
-    let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .application
-        .conditional_clock(&host.curve_clock)
-        .unwrap()
-        .observe()
+    let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) =
+        host.conditional_clock(&host.curve_clock).unwrap().observe()
     else {
         panic!("the financial curve release must be accepted")
     };
@@ -217,11 +202,8 @@ pub fn assert_suppressed_quote_has_no_query_patch() {
     let mut host = host::FinancialCourtroomWorld::publish_quote();
     let mut query = query::build_quote(&host);
     host.quote_gate.release();
-    let WorthQueryConditionalClockObservationOutcome::Accepted(_) = host
-        .application
-        .conditional_clock(&host.quote_clock)
-        .unwrap()
-        .observe()
+    let WorthQueryConditionalClockObservationOutcome::Accepted(_) =
+        host.conditional_clock(&host.quote_clock).unwrap().observe()
     else {
         panic!("the quote baseline must commit its producer output")
     };
@@ -232,11 +214,8 @@ pub fn assert_suppressed_quote_has_no_query_patch() {
 
     host.amend_quote(2, 102, 5_120);
     host.quote_clock_control.push(2, 11);
-    let WorthQueryConditionalClockObservationOutcome::Accepted(mut small) = host
-        .application
-        .conditional_clock(&host.quote_clock)
-        .unwrap()
-        .observe()
+    let WorthQueryConditionalClockObservationOutcome::Accepted(mut small) =
+        host.conditional_clock(&host.quote_clock).unwrap().observe()
     else {
         panic!("the small quote move must be observed")
     };
@@ -256,11 +235,7 @@ pub fn assert_suppressed_quote_has_no_query_patch() {
 
     host.amend_quote(3, 110, 5_120);
     host.quote_clock_control.push(3, 12);
-    let large_observation = host
-        .application
-        .conditional_clock(&host.quote_clock)
-        .unwrap()
-        .observe();
+    let large_observation = host.conditional_clock(&host.quote_clock).unwrap().observe();
     let mut large = match large_observation {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         WorthQueryConditionalClockObservationOutcome::Duplicate(_) => {

@@ -19,7 +19,7 @@ fn provisional_discard_consumes_only_an_effect_free_provisional_trace() {
     let mut workspace = provisional_workflow_workspace("provisional-discard").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let trace = workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(ProvisionalDiscardFamily)
         .bind(&installed, ProvisionalWorkflow)

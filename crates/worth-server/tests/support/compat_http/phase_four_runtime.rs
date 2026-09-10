@@ -54,19 +54,21 @@ impl WorthServerQueryWorkspaceProvider for StreamingDatasetWorkspaceProvider {
             .request_context()
             .workspace_target()
             .workspace_id();
-        let mut workspace = WorthQueryRuntime::builder()
-            .backend(StreamingDatasetRuntimeBackend::new(
-                self.row_count,
-                self.payload_width,
-            ))
-            .build()
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
-            })?
-            .workspace(workspace_id)
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
-            })?;
+        let mut workspace = WorthQueryRuntime::builder(
+            worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+        )
+        .backend(StreamingDatasetRuntimeBackend::new(
+            self.row_count,
+            self.payload_width,
+        ))
+        .build()
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
+        })?
+        .workspace(workspace_id)
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
+        })?;
         install_requested_named_read(&mut workspace, request)?;
         Ok(workspace)
     }

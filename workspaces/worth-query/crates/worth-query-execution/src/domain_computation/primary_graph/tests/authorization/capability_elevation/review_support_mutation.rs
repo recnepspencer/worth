@@ -22,6 +22,8 @@ pub(super) fn complete_review_out_of_band(
 ) {
     let review = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),
@@ -41,47 +43,30 @@ pub(super) fn complete_review_out_of_band(
         .relation(CapabilityReviewer::reference().name())
         .unwrap()
         .kind;
-    let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let fields = AspectFieldPatch::from(BTreeMap::from([(
-            locator,
-            CapabilityReviewStatus::Completed.into_foundational_value(),
-        )]));
-        let main_identity = runtime.main_branch_identity();
-        let basis = runtime
-            .admit_branch_basis(&main_identity)
-            .expect("main branch binding");
-        let mut transaction = runtime
-            .begin_branch_transaction(
-                &basis,
-                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-            )
-            .expect("owner-admitted transaction context");
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("complete-review-out-of-band")
-                    .push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                        UpdateEntityFieldsIntent {
-                            entity_id: review.entity_id(),
-                            fields,
-                        },
-                    )))
-                    .push(MutationIntent::Create(CreateIntent::Relation(
-                        RelationSpec {
-                            partition_id: PartitionId::main(),
-                            kind_id: relation_kind,
-                            client_key: ClientKey::raw("out-of-band-reviewer"),
-                            source: EntityReference::Existing(reviewer),
-                            target: EntityReference::Existing(review.entity_id()),
-                            fields: AspectFieldPatch::default(),
-                        },
-                    ))),
-            )
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        super::super::super::fixture::release_test_commit_snapshot(runtime, &committed);
-        handle.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    let fields = AspectFieldPatch::from(BTreeMap::from([(
+        locator,
+        CapabilityReviewStatus::Completed.into_foundational_value(),
+    )]));
+    super::super::super::fixture::publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new("complete-review-out-of-band")
+            .push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+                UpdateEntityFieldsIntent {
+                    entity_id: review.entity_id(),
+                    fields,
+                },
+            )))
+            .push(MutationIntent::Create(CreateIntent::Relation(
+                RelationSpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: relation_kind,
+                    client_key: ClientKey::raw("out-of-band-reviewer"),
+                    source: EntityReference::Existing(reviewer),
+                    target: EntityReference::Existing(review.entity_id()),
+                    fields: AspectFieldPatch::default(),
+                },
+            ))),
+    );
 }
 
 pub(super) fn replace_support_grantor_with_custodian(
@@ -90,6 +75,8 @@ pub(super) fn replace_support_grantor_with_custodian(
 ) {
     let grant = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityIdentity::reference(),
             "capability-1".to_owned(),
@@ -109,9 +96,9 @@ pub(super) fn replace_support_grantor_with_custodian(
         .unwrap()
         .kind;
     let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_current_main_snapshot(runtime)
-            .expect("primary branch has a current snapshot");
+    let selected = world.selected_product();
+    let grantor = handle.with_runtime_mut(|runtime| {
+        let snapshot = selected.application_basis().snapshot_handle();
         let grantor = runtime
             .read_truth()
             .visible_relations_of_kind(grantor_kind, snapshot.version_id())
@@ -119,39 +106,25 @@ pub(super) fn replace_support_grantor_with_custodian(
             .find(|record| record.source == principal && record.target == grant.entity_id())
             .expect("the request support has one current grantor path")
             .relation_id;
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        let main_identity = runtime.main_branch_identity();
-        let basis = runtime
-            .admit_branch_basis(&main_identity)
-            .expect("main branch binding");
-        let mut transaction = runtime
-            .begin_branch_transaction(
-                &basis,
-                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-            )
-            .expect("owner-admitted transaction context");
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("replace-elevation-support-policy-path")
-                    .push(MutationIntent::Relation(RelationMutationIntent::Delete(
-                        DeleteRelationIntent {
-                            relation_id: grantor,
-                        },
-                    )))
-                    .push(MutationIntent::Create(CreateIntent::Relation(
-                        RelationSpec {
-                            partition_id: PartitionId::main(),
-                            kind_id: custodian_kind,
-                            client_key: ClientKey::raw("capability-1-custodian"),
-                            source: EntityReference::Existing(principal),
-                            target: EntityReference::Existing(grant.entity_id()),
-                            fields: AspectFieldPatch::default(),
-                        },
-                    ))),
-            )
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        super::super::super::fixture::release_test_commit_snapshot(runtime, &committed);
-        handle.ensure_primary_indexes_current(runtime).unwrap();
+        grantor
     });
+    super::super::super::fixture::publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new("replace-elevation-support-policy-path")
+            .push(MutationIntent::Relation(RelationMutationIntent::Delete(
+                DeleteRelationIntent {
+                    relation_id: grantor,
+                },
+            )))
+            .push(MutationIntent::Create(CreateIntent::Relation(
+                RelationSpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: custodian_kind,
+                    client_key: ClientKey::raw("capability-1-custodian"),
+                    source: EntityReference::Existing(principal),
+                    target: EntityReference::Existing(grant.entity_id()),
+                    fields: AspectFieldPatch::default(),
+                },
+            ))),
+    );
 }

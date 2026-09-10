@@ -28,7 +28,7 @@ fn failed_conditional_compute_retains_exact_lower_runtime_work() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -69,6 +69,16 @@ impl domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 
     fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
         crate::suite::installed_operation_fixture::execution_resource_support()

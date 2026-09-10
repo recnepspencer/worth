@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::runtime_policy::SignalRuntimePolicy;
 use crate::state::{
@@ -57,24 +58,34 @@ impl DiagnosticsState {
         artifact_retention: SnapshotArtifactRetentionPolicy,
     ) -> SignalSnapshotDiagnostics {
         SignalSnapshotDiagnostics {
-            latest_flow: self.latest_flow.clone(),
-            latest_failure: self.latest_failure.clone(),
-            latest_rollback: self.latest_rollback.clone(),
-            latest_observation: self.latest_observation.clone(),
-            recent_history: self.recent_history.clone(),
-            replay_frames: self.replay_events.clone(),
+            latest_flow: self.latest_flow().map(|flow| flow.to_owned_summary()),
+            latest_failure: self.latest_failure.as_deref().cloned(),
+            latest_rollback: self.latest_rollback.as_deref().cloned(),
+            latest_observation: self.latest_observation.as_deref().cloned(),
+            recent_history: self.recent_history.iter().cloned().collect(),
+            replay_frames: self.replay_events.iter().cloned().collect(),
             explanation_facts: if artifact_retention.retains_explanation_facts() {
-                self.explanation_facts.clone()
+                self.explanation_facts
+                    .iter()
+                    .map(|(node, fact)| (*node, fact.clone()))
+                    .collect()
             } else {
                 BTreeMap::new()
             },
             provenance_facts: if artifact_retention.retains_provenance_facts() {
-                self.provenance_facts.clone()
+                self.provenance_facts
+                    .iter()
+                    .map(|(node, fact)| (*node, fact.clone()))
+                    .collect()
             } else {
                 BTreeMap::new()
             },
-            lineage_records: self.lineage_records.clone(),
-            branch_catalog: self.branch_catalog.clone(),
+            lineage_records: self.lineage_records.iter().cloned().collect(),
+            branch_catalog: self
+                .branch_catalog
+                .iter()
+                .map(|(id, handle)| (*id, handle.clone()))
+                .collect(),
             active_branch: self.active_branch,
             next_replay_cursor: self.next_replay_cursor,
             next_snapshot_id: self.next_snapshot_id,
@@ -86,16 +97,16 @@ impl DiagnosticsState {
     }
 
     pub fn restore_snapshot_payload(&mut self, payload: SignalSnapshotDiagnostics) {
-        self.latest_flow = payload.latest_flow;
-        self.latest_failure = payload.latest_failure;
-        self.latest_rollback = payload.latest_rollback;
-        self.latest_observation = payload.latest_observation;
-        self.recent_history = payload.recent_history;
-        self.replay_events = payload.replay_frames;
-        self.explanation_facts = payload.explanation_facts;
-        self.provenance_facts = payload.provenance_facts;
-        self.lineage_records = payload.lineage_records;
-        self.branch_catalog = payload.branch_catalog;
+        self.latest_flow = payload.latest_flow.map(Into::into);
+        self.latest_failure = payload.latest_failure.map(Arc::new);
+        self.latest_rollback = payload.latest_rollback.map(Arc::new);
+        self.latest_observation = payload.latest_observation.map(Arc::new);
+        self.recent_history = payload.recent_history.into_iter().collect();
+        self.replay_events = payload.replay_frames.into_iter().collect();
+        self.explanation_facts = payload.explanation_facts.into_iter().collect();
+        self.provenance_facts = payload.provenance_facts.into_iter().collect();
+        self.lineage_records = payload.lineage_records.into_iter().collect();
+        self.branch_catalog = payload.branch_catalog.into_iter().collect();
         self.active_branch = payload.active_branch;
         self.next_replay_cursor = payload.next_replay_cursor;
         self.next_snapshot_id = payload.next_snapshot_id;

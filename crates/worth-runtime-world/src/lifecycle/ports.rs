@@ -97,6 +97,29 @@ pub(crate) trait RuntimeWorldObservationService:
         &self,
         branch: &ProductBranchIdentity,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
+
+    fn observe_product_branch_occurrence(
+        &self,
+        occurrence: crate::identity::ProductBranchIncarnation,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
+
+    fn trace_product_branch_ancestry(
+        &self,
+        occurrence: crate::identity::ProductBranchIncarnation,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<crate::branch::ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial>;
+
+    fn continue_product_branch_ancestry(
+        &self,
+        previous: &crate::branch::ProductBranchHistoryTraversal,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<crate::branch::ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial>;
+
+    fn observe_product_branch_history_entry(
+        &self,
+        history: &crate::branch::ProductBranchHistoryTraversal,
+        index: usize,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
 }
 
 /// Shared internal seam for product-reference creation and retirement. The
@@ -178,6 +201,30 @@ pub(crate) trait RuntimeWorldOwnerExecutionService {
                 Self::SignalTransactionKey,
             >,
         ) -> Result<(), SignalError>;
+
+    fn execute_conditional_definition_with_signal<F, H>(
+        &self,
+        prepared: PreparedCompositePublicationWithSignal,
+        publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
+        runtime_ctx: &mut Self::SignalContext,
+        cancellation: &RuntimeWorldCancellationToken,
+        apply: F,
+        admit_activation: H,
+    ) -> OwnerExecutionOutcome
+    where
+        F: FnOnce(
+            &mut SignalTransaction<
+                '_,
+                Self::SignalDefinition,
+                Self::SignalIdentity,
+                Self::SignalEvent,
+                Self::SignalContext,
+                Self::SignalTransactionKey,
+            >,
+        ) -> Result<(), SignalError>,
+        H: FnOnce(
+            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
+        ) -> Result<(), SignalError>;
 }
 
 #[cfg(test)]
@@ -203,7 +250,10 @@ pub(crate) trait RuntimeWorldRecoveryService:
         &self,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
-    ) -> Result<Vec<crate::branch::OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial>;
+    ) -> Result<
+        crate::recovery::ProductUnpublishedCleanup,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    >;
 
     fn continue_effects(
         &self,

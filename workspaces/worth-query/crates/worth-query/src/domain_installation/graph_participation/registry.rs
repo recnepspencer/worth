@@ -276,7 +276,6 @@ impl WorthQueryPendingGraphParticipations {
                     installation_authority,
                     definition,
                     runtime_authority: runtime_authority.as_u64(),
-                    provider: Arc::clone(&registration.provider),
                     resource_support: registration.resource_support.clone(),
                     commit_authority: registration
                         .commit_marker
@@ -297,7 +296,6 @@ pub(crate) struct WorthQueryInstalledGraphParticipationRecord {
         Arc<worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority>,
     pub definition: ErasedGraphParticipationDefinition,
     pub runtime_authority: u64,
-    pub provider: Arc<WorthQueryGraphProviderAnchor>,
     pub resource_support: crate::domain_installation::WorthQueryExecutionResourceSupport,
     pub commit_authority: Option<Arc<WorthQueryInstalledGraphCommitAuthority>>,
 }

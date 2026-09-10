@@ -187,7 +187,10 @@ fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
         .application
         .application_attempt_work()
         .since(before_control);
-    assert_eq!(control.retained_resolutions, 2);
+    assert_eq!(
+        control.retained_resolutions, 3,
+        "an unseen commit checks idempotency before registration, after registration, and under commit authority"
+    );
     assert_eq!(control.managed_bridge_plans, 1);
     assert_eq!(control.provider_session_readmissions, 1);
     assert_eq!(control.provider_session_preparations, 1);

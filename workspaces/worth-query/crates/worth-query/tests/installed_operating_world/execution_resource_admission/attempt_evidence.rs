@@ -25,13 +25,13 @@ fn changed_request_mints_a_new_plan_and_session_without_mutating_prior_admission
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let first_bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
         .unwrap();
     let second_bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -72,12 +72,12 @@ fn changed_request_mints_a_new_plan_and_session_without_mutating_prior_admission
         second.resources().envelope_identity()
     );
     assert_ne!(
-        first.provider_session().identity(),
-        second.provider_session().identity()
+        first.provider_session_identity(),
+        second.provider_session_identity()
     );
     assert_ne!(
-        first.provider_session().attempt_identity(),
-        second.provider_session().attempt_identity()
+        first.provider_session_attempt_identity(),
+        second.provider_session_attempt_identity()
     );
     assert_eq!(
         first
@@ -98,15 +98,12 @@ fn changed_request_mints_a_new_plan_and_session_without_mutating_prior_admission
 
     let first_plan_identity = first.resources().identity().to_owned();
     let first_request_identity = first.resources().request_identity().to_owned();
-    let first_session_identity = first.provider_session().identity().to_owned();
-    let first_attempt_identity = first.provider_session().attempt_identity().to_owned();
+    let first_session_identity = first.provider_session_identity().to_owned();
+    let first_attempt_identity = first.provider_session_attempt_identity().to_owned();
     let executed = first.execute(&mut workspace).unwrap();
     let evidence = executed.receipt().execution_resources();
     assert_eq!(executed.resources().identity(), first_plan_identity);
-    assert_eq!(
-        executed.provider_session().identity(),
-        first_session_identity
-    );
+    assert_eq!(executed.provider_session_identity(), first_session_identity);
     assert_eq!(evidence.admission_identity(), first_plan_identity);
     assert_eq!(evidence.request_identity(), first_request_identity);
     assert_eq!(evidence.provider_session_identity(), first_session_identity);
@@ -126,14 +123,14 @@ fn workflow_stage_receipts_retain_stage_local_plans_and_one_attempt_session() {
     let mut workspace = workflow_workspace("resource-workflow-attempt-evidence").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let admitted = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
         .unwrap()
         .admit_workflow_resources(execution_resource_request(), &workspace)
         .unwrap();
-    let session_identity = admitted.provider_session().identity().to_owned();
+    let session_identity = admitted.provider_session_identity().to_owned();
     let run = admitted.start_workflow(&mut workspace).unwrap();
     assert_eq!(
         run.operation_resource_evidence()

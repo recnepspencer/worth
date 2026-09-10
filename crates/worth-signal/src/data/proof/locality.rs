@@ -8,6 +8,8 @@ use crate::data::output::{CanonicalChangedRegions, PartitionSubscription};
 
 use super::{CanonicalForm, SummaryForm};
 
+mod retained_charge;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct DedupedNodeBatch {
     nodes: Arc<Vec<NodeId>>,
@@ -118,6 +120,15 @@ impl SortedSourceBatch {
 pub struct PartitionScopeSet(SmallVec<[PartitionSubscription; 8]>);
 
 impl PartitionScopeSet {
+    /// Accept a canonical sequence without re-sorting it. Validate at the
+    /// value owner; callers cannot use an unchecked canonicality assertion.
+    pub(crate) fn from_canonical_scopes(scopes: Vec<PartitionSubscription>) -> Option<Self> {
+        scopes
+            .windows(2)
+            .all(|pair| pair[0] < pair[1])
+            .then(|| Self(SmallVec::from_vec(scopes)))
+    }
+
     pub fn new(scopes: impl IntoIterator<Item = PartitionSubscription>) -> Self {
         let mut scopes = SmallVec::<[PartitionSubscription; 8]>::from_iter(scopes);
         if scopes.len() > 1 {

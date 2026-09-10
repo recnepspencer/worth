@@ -15,6 +15,7 @@ use super::WorthQueryManagedTruthReadRequest;
 pub(in crate::domain_computation) struct WorthQueryManagedLowerExecutionBasis {
     pub bridge: BridgeBoundExecutionBasis,
     pub relational: WorthQueryManagedRelationalObservation,
+    pub product_observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
 }
 
 pub(in crate::domain_computation) struct WorthQueryManagedLowerBinding<'a> {
@@ -69,7 +70,8 @@ pub(in crate::domain_computation) fn admit_managed_lower_execution_basis(
             ),
         });
     }
-    let (descriptor, packet, replay, diagnostics, delivery) = request.into_parts();
+    let (descriptor, packet, replay, diagnostics, delivery, product_observation) =
+        request.into_parts();
     let branch = worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id(
         descriptor.branch_id().0.clone(),
     );
@@ -118,6 +120,7 @@ pub(in crate::domain_computation) fn admit_managed_lower_execution_basis(
     Ok(WorthQueryManagedLowerExecutionBasis {
         bridge: bridge_basis,
         relational: relational_basis,
+        product_observation,
     })
 }
 

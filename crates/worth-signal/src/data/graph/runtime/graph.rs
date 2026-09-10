@@ -9,7 +9,7 @@ use crate::data::bitset::DenseBitset;
 use crate::data::error::SignalError;
 use crate::data::graph::storage::invalidation_causes::CanonicalCauseSetStore;
 use crate::data::handle::NodeId;
-use crate::data::node::{NodeColdData, NodeHotData, NodeWarmData};
+use crate::data::node::{NodeColdData, NodeDefinitionData, NodeHotData, NodeWarmData};
 use crate::logic::transaction::SignalObservationSessionState;
 use crate::schema::data::SignalSchemaRegistry;
 
@@ -29,6 +29,10 @@ mod counter_access;
 mod deserialization_shape_tests;
 #[cfg(test)]
 mod direct_invalidation_basis_tests;
+#[cfg(test)]
+mod evaluation_partition_tests;
+mod lineage_publication;
+mod node_arena_wire;
 mod observation_state;
 mod performed_counter_state;
 mod performed_work_state;
@@ -40,12 +44,26 @@ mod reconstruction_counters;
 #[cfg(test)]
 #[path = "graph/replacement_test_observation.rs"]
 mod replacement_test_observation;
+mod retained_node_edit;
+mod retained_node_mutation;
+pub(crate) use retained_node_edit::{
+    PreparedRetainedNodeEdit, RetainedNodeEditOutcome, RetainedNodeEditPreparation,
+};
+pub(in crate::data::graph) use retained_node_mutation::{
+    map_accounting as map_node_edit_accounting, map_edit as map_node_edit,
+    map_retention as map_node_edit_retention,
+};
+#[cfg(test)]
+mod retained_node_edit_tests;
 mod scheduling_state;
 mod scratch_lease;
 mod topology_state;
 mod traversal_state;
 
-pub(crate) use crate::logic::invalidation::causality::PreparedDirectCauseAdmission;
+pub(crate) use crate::logic::invalidation::causality::{
+    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedDirectCauseStores,
+    PreparedRetainedDirectCauseStores,
+};
 pub(crate) use branch_mutations::{BranchMutationNodeImage, BranchMutationRecord};
 pub use branch_mutations::{
     BranchStructuralDelta, DependencySnapshotStructuralDelta, DependencyTopologyDelta,
@@ -53,7 +71,10 @@ pub use branch_mutations::{
 };
 pub(crate) use observation_state::{ObservationCaptureCleanup, RuntimeObservation};
 pub(crate) use performed_counter_state::InvalidationPerformedCounterState;
-pub(crate) use performed_work_state::PerformedWorkCaptureState;
+pub(crate) use performed_work_state::{
+    PerformedTargetSnapshot, PerformedWorkBuffer, PerformedWorkCaptureState,
+    PreparedPerformedWorkCapture,
+};
 pub(crate) use persistent_fork::SignalGraphForkWork;
 #[cfg(test)]
 pub(crate) use persistent_fork::SignalGraphPersistentIdentity;
@@ -65,11 +86,13 @@ pub(crate) use reconstruction_counters::ReconstructionCounters;
 pub(crate) use replacement_test_observation::{
     SignalGraphCloneLocalObservation, SignalGraphRetainedObservation,
 };
-pub(crate) use topology_state::EdgeTopology;
+pub(crate) use topology_state::{EdgeTopology, RetainedTopologyIndexDenial};
 pub(crate) use traversal_state::TraversalResources;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub(crate) struct NodeArena {
+    pub(in crate::data::graph) definitions:
+        crate::data::persistent_paged_vector::PersistentPagedVector<NodeDefinitionData>,
     pub(in crate::data::graph) nodes:
         crate::data::persistent_paged_vector::PersistentPagedVector<Slot>,
     pub(in crate::data::graph) hot:
@@ -78,12 +101,19 @@ pub(crate) struct NodeArena {
         crate::data::persistent_paged_vector::PersistentPagedVector<NodeWarmData>,
     pub(in crate::data::graph) cold:
         crate::data::persistent_paged_vector::PersistentPagedVector<Option<Box<NodeColdData>>>,
+    pub(in crate::data::graph) retained_node_ledger:
+        Option<std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionLedger>>,
+    pub(in crate::data::graph) retained_node_custody: Option<
+        std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionReservation>,
+    >,
     pub(in crate::data::graph) free_list: crate::data::persistent_vector::PersistentVector<u32>,
-    #[serde(skip, default)]
     pub(in crate::data::graph) free_slots: DenseBitset,
     pub(in crate::data::graph) active_nodes: u32,
-    #[serde(default)]
     pub(in crate::data::graph) compaction: CompactionState,
+    // Drop custody only after every retained payload owned by this root.
+    pub(in crate::data::graph) retained_seed_custody: Option<
+        std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionReservation>,
+    >,
 }
 
 impl NodeArena {
@@ -92,23 +122,28 @@ impl NodeArena {
         E: serde::de::Error,
     {
         let nodes = self.nodes.len();
+        let definitions = self.definitions.len();
         let hot = self.hot.len();
         let warm = self.warm.len();
         let cold = self.cold.len();
-        if nodes == hot && nodes == warm && nodes == cold {
+        if nodes == definitions && nodes == hot && nodes == warm && nodes == cold {
             return Ok(());
         }
         Err(E::custom(format!(
-            "signal graph arena lane lengths must match: nodes={nodes}, hot={hot}, warm={warm}, cold={cold}"
+            "signal graph arena lane lengths must match: nodes={nodes}, definitions={definitions}, hot={hot}, warm={warm}, cold={cold}"
         )))
     }
 
     fn fork_persistent(&mut self) -> Self {
         Self {
+            definitions: self.definitions.fork_persistent(),
             nodes: self.nodes.fork_persistent(),
             hot: self.hot.fork_persistent(),
             warm: self.warm.fork_persistent(),
             cold: self.cold.fork_persistent(),
+            retained_node_ledger: self.retained_node_ledger.clone(),
+            retained_node_custody: self.retained_node_custody.clone(),
+            retained_seed_custody: self.retained_seed_custody.clone(),
             free_list: self.free_list.fork_persistent(),
             free_slots: self.free_slots.fork_persistent(),
             active_nodes: self.active_nodes,
@@ -118,10 +153,16 @@ impl NodeArena {
 
     fn operational_clone(&self) -> Self {
         Self {
+            definitions: self.definitions.operational_clone(),
             nodes: self.nodes.operational_clone(),
             hot: self.hot.operational_clone(),
             warm: self.warm.operational_clone(),
             cold: self.cold.operational_clone(),
+            // Materialized reconstruction owns new allocations; it cannot
+            // retain the source roots' conditional storage reservation.
+            retained_node_ledger: None,
+            retained_node_custody: None,
+            retained_seed_custody: None,
             free_list: self.free_list.operational_clone(),
             free_slots: self.free_slots.operational_clone(),
             active_nodes: self.active_nodes,
@@ -131,7 +172,8 @@ impl NodeArena {
 
     #[cfg(test)]
     fn shares_storage_with(&self, other: &Self) -> bool {
-        self.nodes.shares_storage_with(&other.nodes)
+        self.definitions.shares_storage_with(&other.definitions)
+            && self.nodes.shares_storage_with(&other.nodes)
             && self.hot.shares_storage_with(&other.hot)
             && self.warm.shares_storage_with(&other.warm)
             && self.cold.shares_storage_with(&other.cold)
@@ -166,8 +208,14 @@ pub struct SignalGraph {
     #[serde(skip, default)]
     pub(crate) aspect_lowering_owner: Option<SignalAspectLoweringOwner>,
     #[serde(skip, default)]
-    pub(crate) conditional_dependency_versions:
-        crate::data::persistent_ord_map::PersistentOrdMap<NodeId, Vec<u64>>,
+    pub(crate) conditional_dependency_versions: crate::data::persistent_ord_map::PersistentOrdMap<
+        NodeId,
+        crate::data::conditional_execution::SignalConditionalVersionObservation,
+    >,
+    #[serde(skip, default)]
+    pub(crate) conditional_dependency_versions_custody: Option<
+        std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionReservation>,
+    >,
     #[serde(skip, default)]
     pub(crate) authorization_policy_identities:
         crate::data::persistent_ord_set::PersistentOrdSet<[u8; 32]>,
@@ -216,6 +264,7 @@ impl<'de> Deserialize<'de> for SignalGraph {
             schema_registry: std::sync::Arc::new(SignalSchemaRegistry::default()),
             aspect_lowering_owner: None,
             conditional_dependency_versions: Default::default(),
+            conditional_dependency_versions_custody: None,
             authorization_policy_identities: crate::data::persistent_ord_set::PersistentOrdSet::new(
             ),
             invalidation_readiness_epoch: 0,
@@ -231,6 +280,7 @@ impl<'de> Deserialize<'de> for SignalGraph {
 }
 
 /// Weak liveness observation of one concrete Signal graph owner.
+#[derive(Clone)]
 pub struct SignalGraphLifecycleProbe(std::sync::Weak<()>);
 
 impl SignalGraphLifecycleProbe {

@@ -69,6 +69,7 @@ impl<Schema, Operation, Input, Scope>
             effects,
             emission_retained_bytes,
             emission_retained_bytes_ceiling,
+            conditional_definition: None,
         };
         validate_elevation_approval_program(&program)?;
         Ok(WorthQueryElevationApprovalProgram { program })

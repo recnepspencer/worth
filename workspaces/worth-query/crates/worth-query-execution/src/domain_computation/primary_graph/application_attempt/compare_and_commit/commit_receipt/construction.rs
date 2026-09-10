@@ -36,8 +36,8 @@ impl WorthQueryApplicationCommitReceipt {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn from_stale_equivalent(
-        permit: super::super::super::provider_execution::WorthQueryStaleEquivalentCommitReceiptPermit,
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn from_registered_equivalent(
+        permit: super::super::super::provider_execution::WorthQueryRegisteredEquivalentCommitReceiptPermit,
         projection: WorthQueryCommittedReceiptProjection,
         precondition_comparison: WorthQueryMutationPreconditionComparisonEvidence,
         canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
@@ -91,6 +91,7 @@ impl WorthQueryApplicationCommitReceipt {
             outcome_identity: provider.application_outcome_identity(),
             provider_runtime_instance_id: provider.runtime_instance_id(),
             commit: provider.commit_reference().clone(),
+            committed_product_publication: provider.committed_product_publication().clone(),
             basis_descriptor: provider.basis_descriptor().clone(),
             changed_record_count: provider.changed_record_count(),
             emitted_effect_count: provider.emitted_effect_count(),
@@ -105,6 +106,7 @@ impl WorthQueryApplicationCommitReceipt {
             retained_preimage,
             aftermath_causality: None,
             expected_retry_session,
+            performed_product_change: None,
         }
     }
 

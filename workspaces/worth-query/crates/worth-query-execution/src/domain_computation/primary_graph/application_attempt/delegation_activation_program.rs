@@ -48,6 +48,7 @@ impl<Schema, Operation, Input, Scope>
             effects,
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling,
+            conditional_definition: None,
         };
         validate_delegation_activation_program(&program)?;
         Ok(WorthQueryDelegationActivationProgram { program })

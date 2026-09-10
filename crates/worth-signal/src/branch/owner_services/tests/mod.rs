@@ -5,6 +5,7 @@ mod cancellation;
 mod cell_posture_outcomes;
 mod cell_progress;
 mod close_cleanup;
+mod definition_custody;
 mod exact_cell_contracts;
 mod exact_retirement_contracts;
 mod fork_contracts;

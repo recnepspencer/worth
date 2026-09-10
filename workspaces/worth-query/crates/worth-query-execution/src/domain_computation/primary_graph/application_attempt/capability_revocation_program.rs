@@ -62,6 +62,7 @@ impl<Schema, Operation, Input, Scope>
                 effects: vec![effect],
                 emission_retained_bytes: 0,
                 emission_retained_bytes_ceiling,
+                conditional_definition: None,
             },
         })
     }

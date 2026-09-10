@@ -1,5 +1,7 @@
 //! The single authoritative Relational commit transition.
 
+mod precommit_snapshot;
+mod product_publication;
 mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::WorthQueryPrimaryGraphCommittedApplication;
 
@@ -25,156 +27,98 @@ pub(super) struct WorthQueryCommittedApplicationSession {
     before: worth_relational::facade::snapshots::SnapshotHandle,
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     committed: worth_relational::facade::transactions::CommitResult,
-}
-
-pub(super) struct WorthQueryPerformedApplicationSession {
-    committed: WorthQueryCommittedApplicationSession,
-    settlement_deferred:
-        Option<crate::domain_computation::WorthQueryProviderSessionSettlementDeferred>,
+    product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
 }
 
 pub(super) fn commit(
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
     mint: super::WorthQueryCommitProgressionMint,
 ) -> Result<
-    WorthQueryPerformedApplicationSession,
+    WorthQueryCommittedApplicationSession,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let WorthQueryPreparedApplicationCommit {
-        attempt,
+        mut attempt,
         candidate,
         work,
         branch,
         retained_preimage,
         preimage_retention_work,
+        _completion,
     } = prepared;
     let _ = mint;
-    let before =
-        crate::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(
-            runtime, &branch,
+    let product = attempt.affinity().product_publication().clone();
+    let before = precommit_snapshot::WorthQueryPrecommitSnapshot::acquire(
+        provider.graph.clone(),
+        product.observation().basis().relational_basis(),
+    )
+    .map_err(|denial| {
+        snapshot_admission_failure(
+            WorthQueryProviderSessionProtocolStage::Commit,
+            denial.into(),
+            "application publication could not retain its exact pre-commit basis",
         )
-        .map_err(|denial| {
-            snapshot_admission_failure(
-                WorthQueryProviderSessionProtocolStage::Commit,
-                denial,
-                "application branch has no current pre-commit snapshot",
-            )
-        })
-        .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
-    let candidate = match runtime.prepare_validated_proposal(candidate) {
-        Ok(candidate) => candidate,
-        Err(error) => return Err(transaction_commit_stop(runtime, &before, error)),
-    };
-    let performed = match runtime.publication_port().compare_and_publish(candidate) {
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
-            performed
-        }
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Stale(_) => {
-            return Err(
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
-                    reject_before_movement(
-                        runtime,
-                        &before,
-                        "Relational application publication lost a same-branch race",
-                    ),
-                ),
-            );
-        }
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Denied(_) => {
-            return Err(
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
-                    reject_before_movement(
-                        runtime,
-                        &before,
-                        "Relational owner denied application publication",
-                    ),
-                ),
-            );
-        }
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Interrupted(event) => {
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
-            return Err(
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::ControlStopped(
-                    interruption_control_stopped(event),
-                ),
-            );
-        }
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Deferred(deferred) => {
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
-            return Err(
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-                    publication_deferred(deferred),
-                ),
-            );
-        }
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Failed(_) => {
-            return Err(
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
-                    reject_before_movement(
-                        runtime,
-                        &before,
-                        "Relational application publication failed before movement",
-                    ),
-                ),
-            );
-        }
-    };
-    let next_basis = performed.next_basis().clone();
-    let (committed, settlement_deferred) = match runtime.settle_performed_publication(performed) {
-        Ok(committed) => (committed, None),
-        Err(error) => {
-            let Some(settlement) = error.deferred_settlement().cloned() else {
-                crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
-                return Err(
-                    crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
-                        recovery_failure(
-                            "Relational application movement requires durability recovery",
-                        ),
-                    ),
-                );
-            };
-            (
-                settlement.performed_result().clone(),
-                Some(
-                    crate::domain_computation::WorthQueryProviderSessionSettlementDeferred::new(
-                        "Relational application movement requires durability settlement repair",
-                        settlement,
-                    ),
-                ),
-            )
-        }
-    };
-    Ok(WorthQueryPerformedApplicationSession {
-        committed: WorthQueryCommittedApplicationSession {
-            attempt,
-            work,
-            retained_preimage,
-            preimage_retention_work,
-            branch,
-            before,
-            next_basis,
-            committed,
-        },
-        settlement_deferred,
+    })
+    .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
+    let candidate = provider
+        .graph
+        .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
+        .map_err(transaction_commit_stop)?;
+    let performed = product_publication::publish(provider, &mut attempt, candidate)?;
+    let performed = performed.publication;
+    let next_basis = performed
+        .publication()
+        .commit()
+        .basis()
+        .relational_basis()
+        .clone();
+    let committed = performed
+        .publication()
+        .component_results()
+        .relational_commit_result()
+        .expect("World performed a prepared Relational application candidate")
+        .clone();
+    Ok(WorthQueryCommittedApplicationSession {
+        attempt,
+        work,
+        retained_preimage,
+        preimage_retention_work,
+        branch,
+        before: before.into_publication(),
+        next_basis,
+        committed,
+        product_publication: performed,
     })
 }
 
-impl WorthQueryPerformedApplicationSession {
-    pub(super) const fn committed(&self) -> &WorthQueryCommittedApplicationSession {
-        &self.committed
-    }
-
-    pub(super) fn into_parts(
-        self,
-    ) -> (
-        WorthQueryCommittedApplicationSession,
-        Option<crate::domain_computation::WorthQueryProviderSessionSettlementDeferred>,
-    ) {
-        (self.committed, self.settlement_deferred)
+fn world_no_effect(
+    no_effect: worth_runtime_world::facade::NoEffectCompositePublication,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::{
+        WorthQueryProviderSessionCommitControlStopped, WorthQueryProviderSessionCommitStop as Stop,
+        WorthQueryProviderSessionControlStopKind,
+    };
+    use worth_runtime_world::facade::NoEffectCause;
+    match no_effect.cause() {
+        NoEffectCause::StaleExpectedProductHead => Stop::ProductStale(
+            crate::domain_computation::WorthQueryProductStaleApplication::new(no_effect),
+        ),
+        NoEffectCause::CancelledBeforeEffect => {
+            Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(
+                WorthQueryProviderSessionControlStopKind::Cancelled,
+                "World publication cancelled before effect",
+            ))
+        }
+        NoEffectCause::DeadlineBeforeEffect => {
+            Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(
+                WorthQueryProviderSessionControlStopKind::TimedOut,
+                "World publication deadline elapsed before effect",
+            ))
+        }
+        _ => Stop::NoEffect(no_effect),
     }
 }
-
 impl WorthQueryCommittedApplicationSession {
     pub(super) const fn attempt(&self) -> &WorthQueryPrimaryGraphApplicationAttempt {
         &self.attempt
@@ -216,28 +160,10 @@ fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
     provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)
 }
 
-fn reject_before_movement(
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
-    before: &worth_relational::facade::snapshots::SnapshotHandle,
-    detail: &'static str,
-) -> WorthQueryProviderSessionFailure {
-    crate::relational_snapshot_release::release_query_snapshot(runtime, before);
-    failure(detail)
-}
-
-fn recovery_failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
-    failure(detail).with_recovery_posture(
-        crate::domain_computation::WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
-    )
-}
-
 fn transaction_commit_stop(
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
-    before: &worth_relational::facade::snapshots::SnapshotHandle,
     error: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use worth_relational::facade::mvcc::TransactionCommitError as Error;
-    crate::relational_snapshot_release::release_query_snapshot(runtime, before);
     match error {
         Error::Interrupted { interruption, .. } => {
             crate::domain_computation::WorthQueryProviderSessionCommitStop::ControlStopped(

@@ -49,6 +49,8 @@ struct WorthQueryWorkflowAdvanceDenialEvidence {
     executed_effects: Vec<WorthQueryWorkflowEffectEvidence>,
     graph_receipts: Vec<WorthQueryBoundGraphExecutionReceipt>,
     completed_stage_receipts: Vec<WorthQueryWorkflowStageReceipt>,
+    managed_cleanup:
+        Option<worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupOutcome>,
 }
 
 impl WorthQueryWorkflowAdvanceDenial {
@@ -63,6 +65,7 @@ impl WorthQueryWorkflowAdvanceDenial {
                 executed_effects: Vec::new(),
                 graph_receipts: Vec::new(),
                 completed_stage_receipts: Vec::new(),
+                managed_cleanup: None,
             }),
         }
     }
@@ -79,6 +82,7 @@ impl WorthQueryWorkflowAdvanceDenial {
                 executed_effects,
                 graph_receipts: Vec::new(),
                 completed_stage_receipts: Vec::new(),
+                managed_cleanup: None,
             }),
         }
     }
@@ -101,6 +105,24 @@ impl WorthQueryWorkflowAdvanceDenial {
 
     pub fn completed_stage_receipts(&self) -> &[WorthQueryWorkflowStageReceipt] {
         &self.evidence.completed_stage_receipts
+    }
+
+    pub fn take_managed_cleanup(
+        &mut self,
+    ) -> Option<worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupOutcome> {
+        self.evidence.managed_cleanup.take()
+    }
+
+    pub(super) fn has_managed_cleanup(&self) -> bool {
+        self.evidence.managed_cleanup.is_some()
+    }
+
+    pub(super) fn with_managed_cleanup(
+        mut self,
+        cleanup: worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupOutcome,
+    ) -> Self {
+        self.evidence.managed_cleanup = Some(cleanup);
+        self
     }
 
     pub(super) fn with_graph_receipts(

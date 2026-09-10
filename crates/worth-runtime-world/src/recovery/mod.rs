@@ -4,6 +4,7 @@ mod continuation;
 mod product_unpublished;
 mod progress;
 
+pub use cleanup::ProductUnpublishedCleanup;
 pub use continuation::{ProductUnpublishedNextAction, RecoveryContinuationContract};
 pub use product_unpublished::{
     ProductUnpublishedCause, ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle,

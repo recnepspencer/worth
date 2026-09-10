@@ -4,8 +4,7 @@ mod material;
 use material::{ApplicationInvariantCandidateMaterial, ApplicationInvariantSemanticMaterial};
 
 use super::invariant_execution_failure::{
-    map_branch_basis_failure, map_exact_basis_failure, map_transaction_admission_failure,
-    map_transaction_staging_failure, map_validation_failure,
+    map_transaction_admission_failure, map_transaction_staging_failure, map_validation_failure,
 };
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::{
@@ -147,6 +146,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
         branch: &worth_relational::facade::history::BranchId,
+        product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
         application_touches: &worth_query_installation::facade::WorthQueryOperationTouchContract,
         aftermath_causality: Option<
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
@@ -171,27 +171,24 @@ impl WorthQueryPrimaryGraphProvider {
         } else {
             batch
         };
+        let basis = product.observation().basis().relational_basis();
+        if basis.identity().branch_id() != branch {
+            return Err(owner_failure());
+        }
         let candidate = self.graph.with_runtime_mut(|runtime| {
             if let Some(pending) = aftermath_causality {
-                let current =
-                    crate::domain_computation::primary_graph::exact_basis_access::current_branch_head(
-                        runtime, branch,
-                    )
-                    .map_err(map_exact_basis_failure)?
+                let observed_parent = basis
+                    .observation()
+                    .commit_receipt()
+                    .cloned()
                     .ok_or_else(aftermath_failure)?;
-                if pending.parent() != &current {
+                if pending.parent() != &observed_parent {
                     return Err(aftermath_failure());
                 }
             }
-            let identity = runtime
-                .branch_identity(branch)
-                .map_err(|_| owner_failure())?;
-            let options = runtime
-                .admit_branch_basis(&identity)
-                .map_err(map_branch_basis_failure)?;
             let mut transaction = runtime
                 .begin_branch_transaction(
-                    &options,
+                    basis,
                     worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
                 )
                 .map_err(map_transaction_admission_failure)?;
@@ -215,6 +212,7 @@ impl WorthQueryPrimaryGraphProvider {
         let candidate = self.validate_relational_candidate(
             material.batch,
             &material.branch,
+            &material.product,
             &material.application_touches,
             material.aftermath_causality.as_ref(),
         )?;

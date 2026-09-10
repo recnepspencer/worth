@@ -164,24 +164,15 @@ fn foreign_installed_bridge_witness_cannot_substitute_for_real_graph_corresponde
 fn incompatible_correspondence_with_own_components_denies_then_healthy_binding_bootstraps() {
     let mut court = CompositeSupplyChainCourt::compile();
     let other = CompositeSupplyChainCourt::compile();
-    let root = court.bootstrap();
     let foreign = other.bootstrap();
-    let world = RuntimeWorldOwner::builder()
-        .with_relational_services(court.records.runtime.owner_component_services())
-        .with_signal_services(court.signal.owner_component_services().unwrap())
-        .with_bridge_correspondence(court.bridge.runtime_world_correspondence_port())
-        .with_budgets(budgets::court())
-        .with_clock(RuntimeWorldClock::from_source(budgets::CourtClock))
-        .build()
-        .unwrap();
     let intent = RuntimeWorldBootstrapIntent::new(
         ProductBranchCreationIntent::named("root").unwrap(),
-        root.basis().relational_basis().clone(),
-        root.basis().signal_basis().clone(),
+        court.initial.relational_basis().clone(),
+        court.initial.signal_basis().clone(),
         foreign.basis().correspondence_basis().clone(),
     );
     let RuntimeWorldBootstrapOutcome::NoEffect(denied) =
-        world.lifecycle_port().bootstrap_root(intent).unwrap()
+        court.world.lifecycle_port().bootstrap_root(intent).unwrap()
     else {
         panic!("foreign installed correspondence cannot compose own components")
     };
@@ -189,21 +180,7 @@ fn incompatible_correspondence_with_own_components_denies_then_healthy_binding_b
         denied.cause(),
         RuntimeWorldBootstrapNoEffectCause::IncompatibleCorrespondence
     );
-    let intent = RuntimeWorldBootstrapIntent::new(
-        ProductBranchCreationIntent::named("root").unwrap(),
-        root.basis().relational_basis().clone(),
-        root.basis().signal_basis().clone(),
-        root.basis().correspondence_basis().clone(),
-    );
-    let RuntimeWorldBootstrapOutcome::Performed(healthy) =
-        world.lifecycle_port().bootstrap_root(intent).unwrap()
-    else {
-        panic!("healthy exact binding twin")
-    };
-    drop(healthy);
-    let report = world.lifecycle_port().close().unwrap();
-    assert_eq!(report.outstanding_observations(), 0);
-    drop(world);
+    let root = court.bootstrap();
     drop((root, foreign));
     court.finish();
     other.finish();

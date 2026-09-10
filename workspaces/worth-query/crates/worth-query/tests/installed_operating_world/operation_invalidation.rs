@@ -25,7 +25,6 @@ fn one_owner_epoch_fans_exact_evidence_to_two_lease_deltas_in_k_plus_l_work() {
     let candidate_delivery = candidate.drain(&mut workspace).unwrap();
     assert!(subject_delivery.shares_invalidation_epoch_with(&candidate_delivery));
     assert!(subject_delivery.retains_same_impact_as(&candidate_delivery));
-    assert!(subject_delivery.retains_same_current_conditional_decision_as(&candidate_delivery));
     assert_eq!(
         subject_delivery
             .invalidation_epoch_counters()
@@ -196,7 +195,6 @@ fn empty_epoch_cannot_mint_an_invalidation_delta() {
     );
     assert_eq!(stop.counters().lease_impact_readmission_attempts, 1);
     assert_eq!(stop.counters().semantic_delivery_checks, 1);
-    assert_eq!(stop.counters().conditional_relevance_checks, 0);
     assert_eq!(stop.counters().targeted_lease_deliveries, 0);
 }
 

@@ -2,8 +2,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use worth_query_host::facade::{
-    admission, declaration, declaration::application_query::ApplicationQueryParameterSet, domain,
-    primary_graph, runtime,
+    admission, declaration::application_query::ApplicationQueryParameterSet, domain, primary_graph,
+    runtime,
 };
 
 use super::adapters::{
@@ -15,7 +15,18 @@ use super::schema::*;
 
 #[path = "world/amendment.rs"]
 mod amendment;
+#[path = "world/combined_amendment.rs"]
+mod combined_amendment;
+#[path = "world/resources.rs"]
+mod resources;
+#[path = "world/scaled_amendment.rs"]
+mod scaled_amendment;
+#[path = "world/security.rs"]
+mod security;
+#[path = "world/seed.rs"]
+mod seed;
 
+#[allow(dead_code)] // Test targets use different subsets of the shared world fixture.
 pub struct CourtroomWorld {
     pub application: primary_graph::WorthQueryPrimaryGraphApplicationRuntime<TemporalHostSchema>,
     pub clock: primary_graph::WorthQueryConditionalClockHandle<
@@ -34,7 +45,34 @@ pub struct CourtroomWorld {
     amendment_ordinal: u8,
 }
 
+#[allow(dead_code)] // Test targets use different constructors from the shared world fixture.
 impl CourtroomWorld {
+    pub fn reinstall_conditional_runtime(
+        &mut self,
+    ) -> Result<
+        primary_graph::WorthQueryConditionalRuntimeReinstallationReceipt,
+        primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
+    > {
+        let branch = self.application.current_world();
+        self.application.reinstall_conditional_runtime(branch)
+    }
+
+    pub fn conditional_clock(
+        &self,
+    ) -> primary_graph::WorthQueryConditionalClockObservationPort<
+        '_,
+        TemporalHostSchema,
+        TemporalReadyNode,
+        CourtroomClock,
+    > {
+        self.application
+            .on_branch(self.application.current_world())
+            .select()
+            .unwrap()
+            .conditional_clock(&self.clock)
+            .unwrap()
+    }
+
     pub fn publish(gate: &str) -> Self {
         Self::publish_with_unrelated_rows(gate, 0)
     }
@@ -49,28 +87,111 @@ impl CourtroomWorld {
             predicate,
             predicate_panic,
             None,
+            None,
+            None,
+            1,
+            true,
         )
     }
 
     pub fn publish_with_active_snapshot_limit(gate: &str, maximum: usize) -> Self {
         let contacts = ContactCounters::default();
         let (predicate, predicate_panic) = Predicate::controlled(contacts.clone());
-        Self::publish_with_predicate(gate, 0, contacts, predicate, predicate_panic, Some(maximum))
+        Self::publish_with_predicate(
+            gate,
+            0,
+            contacts,
+            predicate,
+            predicate_panic,
+            Some(maximum),
+            None,
+            None,
+            1,
+            true,
+        )
+    }
+
+    pub fn publish_with_world_history_limit(gate: &str, maximum: u64) -> Self {
+        let contacts = ContactCounters::default();
+        let (predicate, predicate_panic) = Predicate::controlled(contacts.clone());
+        Self::publish_with_predicate(
+            gate,
+            0,
+            contacts,
+            predicate,
+            predicate_panic,
+            None,
+            Some(maximum),
+            None,
+            1,
+            true,
+        )
+    }
+
+    #[allow(dead_code)] // Shared by the certification crate's cost targets.
+    pub fn publish_with_graph_work_limit(gate: &str, maximum: usize) -> Self {
+        let contacts = ContactCounters::default();
+        let (predicate, predicate_panic) = Predicate::controlled(contacts.clone());
+        Self::publish_with_predicate(
+            gate,
+            0,
+            contacts,
+            predicate,
+            predicate_panic,
+            None,
+            None,
+            Some(maximum),
+            1,
+            true,
+        )
+    }
+
+    #[allow(dead_code)] // Shared by the certification crate's cost targets.
+    pub fn publish_with_intent_population(gate: &str, intent_row_count: usize) -> Self {
+        let contacts = ContactCounters::default();
+        let (predicate, predicate_panic) = Predicate::controlled(contacts.clone());
+        Self::publish_with_predicate(
+            gate,
+            0,
+            contacts,
+            predicate,
+            predicate_panic,
+            None,
+            None,
+            None,
+            intent_row_count,
+            false,
+        )
     }
 
     pub fn publish_replacement(gate: &str) -> Self {
         let contacts = ContactCounters::default();
         let (predicate, predicate_panic) = ReplacementPredicate::controlled(contacts.clone());
-        Self::publish_with_predicate(gate, 0, contacts, predicate, predicate_panic, None)
+        Self::publish_with_predicate(
+            gate,
+            0,
+            contacts,
+            predicate,
+            predicate_panic,
+            None,
+            None,
+            None,
+            1,
+            true,
+        )
     }
 
-    fn publish_with_predicate<Provider>(
+    pub(super) fn publish_with_predicate<Provider>(
         gate: &str,
         unrelated_row_count: usize,
         contacts: ContactCounters,
         predicate: Provider,
         predicate_panic: PanicController,
         maximum_active_snapshots: Option<usize>,
+        maximum_world_history: Option<u64>,
+        maximum_concurrent_graph_work: Option<usize>,
+        intent_row_count: usize,
+        include_live_relations: bool,
     ) -> Self
     where
         Provider: domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> + 'static,
@@ -88,7 +209,15 @@ impl CourtroomWorld {
         let admitted = domain::WorthQueryInstallationAdmissionProfile::new("host", "courtroom")
             .admit(package)
             .unwrap();
+        let query_resources = runtime::WorthQueryApplicationQueryResourceProfile::bounded(
+            5_120,
+            2_048,
+            usize::MAX,
+            maximum_concurrent_graph_work.unwrap_or(128),
+        )
+        .unwrap();
         let installation = runtime::WorthQueryExecutionRuntimeInstaller::new()
+            .application_query_resources(query_resources)
             .install(
                 domain::WorthQueryInstallationGeneration::initial(),
                 [admitted],
@@ -129,19 +258,43 @@ impl CourtroomWorld {
             )
             .unwrap();
 
-        let mut graph = match maximum_active_snapshots {
-            Some(maximum_active_snapshots) => {
+        let mut graph = match (maximum_active_snapshots, maximum_world_history) {
+            (Some(maximum_active_snapshots), None) => {
                 worth_query_execution::facade::integration::prepare_primary_graph_with_active_snapshot_limit_for_test(
                     &authority,
                     &runtime,
                     &schema,
                     maximum_active_snapshots,
+                    resources::product_world_resources(1_024),
                 )
                 .unwrap()
             }
-            None => authority.prepare_primary_graph(&runtime, &schema).unwrap(),
+            (None, Some(maximum_world_history)) => {
+                authority
+                    .prepare_primary_graph(
+                        &runtime,
+                        &schema,
+                        resources::product_world_resources(maximum_world_history),
+                    )
+                    .unwrap()
+            }
+            (None, None) => authority
+                .prepare_primary_graph(
+                    &runtime,
+                    &schema,
+                    resources::product_world_resources(1_024),
+                )
+                .unwrap(),
+            (Some(_), Some(_)) => panic!("one installation capacity boundary per courtroom"),
         };
-        seed_graph(&mut graph, &principal_binding, gate, unrelated_row_count);
+        seed::seed_graph(
+            &mut graph,
+            &principal_binding,
+            gate,
+            unrelated_row_count,
+            intent_row_count,
+            include_live_relations,
+        );
         let invariant = Arc::new(graph.retain_invariant_projection_authority());
         let (invoker, preconditions_panic) = Invoker::controlled(contacts.clone());
         let execution = primary_graph::WorthQueryTemporalOperationExecution::with_authorization(
@@ -164,7 +317,12 @@ impl CourtroomWorld {
         )
         .unwrap();
         let mut conditional_installation = graph
-            .conditional_application_runtime_installation(runtime, authority, schema)
+            .conditional_application_runtime_installation(
+                runtime,
+                authority,
+                schema,
+                primary_graph::SignalConditionalEvaluationBudget::development(),
+            )
             .unwrap();
         let clock = conditional_installation
             .bind_temporal_operation(conditional, execution, reconstruction)
@@ -185,7 +343,7 @@ impl CourtroomWorld {
     }
 }
 
-fn admit_identity_adapter(
+pub(super) fn admit_identity_adapter(
     schema: &domain::WorthQueryInstalledApplicationSchema<TemporalHostSchema>,
 ) -> admission::authenticated_principal::WorthQueryAdmittedAuthenticationAdapter<
     TemporalHostSchema,
@@ -202,62 +360,6 @@ fn admit_identity_adapter(
         IdentityAdapter,
     )
     .unwrap()
-}
-
-fn seed_graph(
-    graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<TemporalHostSchema>,
-    principal_binding: &domain::WorthQueryInstalledPrincipalBinding<
-        TemporalHostSchema,
-        TemporalPrincipalBinding,
-        ExternalMapping,
-        Principal,
-        u64,
-    >,
-    gate: &str,
-    unrelated_row_count: usize,
-) {
-    graph
-        .bind_principal(
-            principal_binding,
-            primary_graph::WorthQueryApplicationPrincipalKey::new("temporal-host").unwrap(),
-            1_u64,
-            declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                "https://issuer.example",
-                "temporal-host",
-            )
-            .unwrap(),
-            declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
-        )
-        .unwrap();
-    graph
-        .bind_entity(
-            primary_graph::WorthQueryApplicationEntitySeed::new(
-                TemporalIntent::reference(),
-                primary_graph::WorthQueryApplicationEntityKey::new("intent-row-1").unwrap(),
-            )
-            .field(IntentIdentityField::reference(), "intent-1".to_string())
-            .field(IntentRevisionField::reference(), 1_u64)
-            .field(IntentDueField::reference(), 5_u64)
-            .field(IntentLifecycleField::reference(), "active".to_string())
-            .field(IntentInputField::reference(), "payload".to_string())
-            .field(IntentGateField::reference(), gate.to_string())
-            .field(IntentEffectField::reference(), "pending".to_string()),
-        )
-        .unwrap();
-    for ordinal in 0..unrelated_row_count {
-        graph
-            .bind_entity(
-                primary_graph::WorthQueryApplicationEntitySeed::new(
-                    UnrelatedRecord::reference(),
-                    primary_graph::WorthQueryApplicationEntityKey::new(format!(
-                        "unrelated-{ordinal}"
-                    ))
-                    .unwrap(),
-                )
-                .field(UnrelatedValueField::reference(), ordinal as u64),
-            )
-            .unwrap();
-    }
 }
 
 pub fn request_scope() -> admission::authenticated_principal::WorthQueryRequestScope {

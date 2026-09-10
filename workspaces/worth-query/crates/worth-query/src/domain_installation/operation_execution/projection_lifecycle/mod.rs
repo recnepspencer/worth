@@ -12,8 +12,6 @@ mod denial;
 mod lifecycle_basis;
 mod lifecycle_close;
 mod operational_owner;
-mod owner_conditional;
-mod owner_refresh;
 mod promotion;
 mod promotion_outcome;
 mod promotion_preflight;
@@ -27,13 +25,10 @@ mod source;
 pub(in crate::domain_installation::operation_execution) use operational_owner::{
     WorthQueryOperationalProjection, WorthQueryOperationalProjectionProof,
 };
-pub(in crate::domain_installation::operation_execution) use owner_refresh::refresh_owner_delivery;
-pub(crate) use owner_refresh::WorthQueryClassifiedOwnerDeliveryCompletion;
 pub(in crate::domain_installation::operation_execution) use promotion_preflight::{
     admit_projection_promotion_core, WorthQueryProjectionCoreStop,
 };
 pub(crate) use refresh::refresh_granular_source;
-pub(in crate::domain_installation::operation_execution) use refresh::WorthQueryPendingOwnerImpact;
 pub(crate) use source::validate_live_source_authority;
 pub(in crate::domain_installation::operation_execution) use source::WorthQueryProjectionLifecycleSource;
 pub(in crate::domain_installation::operation_execution) use states::WorthQueryLiveProjectionPhase;

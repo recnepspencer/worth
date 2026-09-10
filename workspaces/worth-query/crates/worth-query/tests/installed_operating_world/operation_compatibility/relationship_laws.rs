@@ -43,7 +43,7 @@ fn every_relationship_preserves_query_bound_conditional_drift() {
                 name: "compatibility-relationship-drift-donor",
                 partition: "geometry-drifted-signal",
             },
-            node: declaration,
+            node: declaration.clone(),
             donor_compute: DirectConditionalCompute,
         })
         .unwrap();
@@ -59,14 +59,36 @@ fn every_relationship_preserves_query_bound_conditional_drift() {
     assert_continuity_drift(subject.compatible_basis_with(&candidate).unwrap_err());
     assert_affinity_drift(subject.execution_sharing_with(&candidate).unwrap_err());
 
-    owner.advance_domain_installation_generation().unwrap();
-    let rebound = owner.rebind_domain(prior_domain.rebind_request()).unwrap();
-    owner
-        .replace_conditional_lowerings_from::<GeometryDomain, ReadVertex, ReadFamily>(&donor)
+    let (mut rebound_owner, rebound_donor) =
+        conditional_controlled_workspace_with_donor(ConditionalDonorWorkspaceScenario {
+            owner: ConditionalWorkspacePlacement {
+                name: "compatibility-rebind-drift-owner",
+                partition: "geometry-signal",
+            },
+            donor: ConditionalWorkspacePlacement {
+                name: "compatibility-rebind-drift-donor",
+                partition: "geometry-drifted-signal",
+            },
+            node: declaration,
+            donor_compute: DirectConditionalCompute,
+        })
         .unwrap();
-    let rebound_candidate = bind(&owner, rebound.handle());
+    let rebound_prior_domain = rebound_owner.domain(GeometryDomain).unwrap();
+    let rebound_subject = bind(&rebound_owner, &rebound_prior_domain);
+    rebound_owner
+        .advance_domain_installation_generation()
+        .unwrap();
+    let rebound = rebound_owner
+        .rebind_domain(rebound_prior_domain.rebind_request())
+        .unwrap();
+    rebound_owner
+        .replace_conditional_lowerings_from::<GeometryDomain, ReadVertex, ReadFamily>(
+            &rebound_donor,
+        )
+        .unwrap();
+    let rebound_candidate = bind(&rebound_owner, rebound.handle());
     assert_continuity_drift(
-        subject
+        rebound_subject
             .rebind_with(&rebound_candidate, rebound.receipt().clone())
             .unwrap_err(),
     );
@@ -80,7 +102,7 @@ fn changed_required_domain_authority_requires_its_owner_rebind_receipt() {
     let prior_geometry = controlled.domain(GeometryDomain).unwrap();
     let prior_auxiliary = controlled.domain(AuxiliaryDomain).unwrap();
     let subject = controlled
-        .observe_operating_world()
+        .observe_operating_world(controlled.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&prior_geometry, ReadVertex)
@@ -94,7 +116,7 @@ fn changed_required_domain_authority_requires_its_owner_rebind_receipt() {
         .rebind_domain(prior_auxiliary.rebind_request())
         .unwrap();
     let candidate = controlled
-        .observe_operating_world()
+        .observe_operating_world(controlled.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(geometry.handle(), ReadVertex)

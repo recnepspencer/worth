@@ -55,6 +55,13 @@ impl WorthQueryTestSeedRow {
 }
 
 impl WorthQueryTestSeedReceipt {
+    pub fn relational_record(
+        &self,
+        identity: &str,
+    ) -> Option<worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts> {
+        self.entities.get(identity)?.relational_record_parts()
+    }
+
     pub fn entity(
         &self,
         identity: &str,

@@ -6,7 +6,9 @@ use crate::state::SignalBranchHandle;
 
 impl SignalGraph {
     #[cfg(any(test, doctest))]
-    pub(crate) fn replay_events(&self) -> &std::collections::VecDeque<ReplayEvent> {
+    pub(crate) fn replay_events(
+        &self,
+    ) -> &crate::diagnostics::state::DiagnosticHistory<ReplayEvent> {
         self.observation.diagnostics.replay_events()
     }
 

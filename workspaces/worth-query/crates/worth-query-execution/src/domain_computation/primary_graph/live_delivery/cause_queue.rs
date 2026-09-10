@@ -1,27 +1,34 @@
 use std::collections::VecDeque;
+use std::marker::PhantomData;
+use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationEffectPayload, ApplicationEffectRef,
 };
 use worth_runtime_bridge::facade::BridgeManagedQueueOccupancy;
 
-use super::{WorthQueryLiveCommitBatch, WorthQueryLiveDeliverySource, WorthQueryLiveSourcePoll};
+use super::{
+    WorthQueryLiveCommitBatchCell, WorthQueryLiveDeliverySource, WorthQueryLiveSourcePoll,
+    WorthQueryLiveSubscription,
+};
 use crate::domain_computation::managed_run::WorthQueryManagedLowerExecutionBasis;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCauseQueue<Payload> {
+    subscription: WorthQueryLiveSubscription,
     cursor: u64,
     active_batch: Option<WorthQueryActiveLiveBatch>,
-    pending: VecDeque<WorthQueryBufferedLiveCause<Payload>>,
+    pending: VecDeque<WorthQueryBufferedLiveCause>,
+    _payload: PhantomData<fn() -> Payload>,
 }
 
 struct WorthQueryActiveLiveBatch {
-    batch: WorthQueryLiveCommitBatch,
+    batch: Arc<WorthQueryLiveCommitBatchCell>,
     next_emission: usize,
 }
 
-struct WorthQueryBufferedLiveCause<Payload> {
-    commit_id: worth_relational::facade::history::CommitId,
-    payload: Payload,
+struct WorthQueryBufferedLiveCause {
+    batch: Arc<WorthQueryLiveCommitBatchCell>,
+    emission: usize,
     occupancy: BridgeManagedQueueOccupancy,
 }
 
@@ -35,11 +42,17 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryLiveCauseFillPos
 impl<Payload> WorthQueryLiveCauseQueue<Payload> {
     pub(in crate::domain_computation::primary_graph) fn open(
         source: &WorthQueryLiveDeliverySource,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        capacity: usize,
     ) -> Self {
+        let subscription = source.open(observation);
+        let cursor = subscription.cursor();
         Self {
-            cursor: source.open_cursor(),
+            subscription,
+            cursor,
             active_batch: None,
-            pending: VecDeque::new(),
+            pending: VecDeque::with_capacity(capacity),
+            _payload: PhantomData,
         }
     }
 
@@ -47,12 +60,21 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
         self.pending.len()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn front(
+    pub(in crate::domain_computation::primary_graph) fn front<Schema, Effect>(
         &self,
-    ) -> Option<(worth_relational::facade::history::CommitId, &Payload)> {
-        self.pending
-            .front()
-            .map(|cause| (cause.commit_id, &cause.payload))
+        effect: &ApplicationEffectRef<Schema, Effect, Payload>,
+    ) -> Option<(
+        &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        &crate::basis::WorthQueryProductObservationLease,
+        &Payload,
+    )>
+    where
+        Payload: ApplicationEffectPayload,
+    {
+        let cause = self.pending.front()?;
+        let batch = cause.batch.batch();
+        let payload = batch.emissions.get(cause.emission)?.payload_ref(effect)?;
+        Some((&batch.publication, &batch.product, payload))
     }
 
     pub(in crate::domain_computation::primary_graph) fn acknowledge_front(
@@ -93,7 +115,7 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
 
 impl<Payload> WorthQueryLiveCauseQueue<Payload>
 where
-    Payload: ApplicationEffectPayload + Clone,
+    Payload: ApplicationEffectPayload,
 {
     pub(in crate::domain_computation::primary_graph) fn fill<Schema, Effect>(
         &mut self,
@@ -106,7 +128,7 @@ where
         let mut terminal = WorthQueryLiveCauseFillPosture::Pending;
         while self.pending.len() < capacity {
             if self.active_batch.is_none() {
-                let batch = match source.poll(self.cursor) {
+                let batch = match source.poll(&self.subscription, self.cursor) {
                     WorthQueryLiveSourcePoll::Batch(batch) => batch,
                     WorthQueryLiveSourcePoll::Pending => break,
                     WorthQueryLiveSourcePoll::Overflow { missed } => {
@@ -126,27 +148,33 @@ where
             let active = self
                 .active_batch
                 .as_mut()
-                .expect("a source batch was installed above");
-            let Some(emission) = active.batch.emissions.get(active.next_emission) else {
-                self.cursor = active.batch.sequence.saturating_add(1);
+                .expect("source batch installed above");
+            let batch = active.batch.batch();
+            let Some(emission) = batch.emissions.get(active.next_emission) else {
+                self.cursor = batch
+                    .sequence
+                    .checked_add(1)
+                    .expect("live sequence space is exhausted");
                 self.active_batch = None;
                 continue;
             };
-            active.next_emission = active.next_emission.saturating_add(1);
+            let emission_index = active.next_emission;
+            active.next_emission += 1;
             let Some(payload) = emission
-                .cloned_payload(&effect)
-                .filter(|payload| admits_payload(payload))
+                .payload_ref(&effect)
+                .filter(|value| admits_payload(value))
             else {
                 continue;
             };
+            let _ = payload;
             let admission = match basis.bridge.enqueue_managed_queue(1) {
                 Ok(admission) => admission,
                 Err(_) => return WorthQueryLiveCauseFillPosture::Unavailable,
             };
             let (_, occupancy) = admission.into_parts();
             self.pending.push_back(WorthQueryBufferedLiveCause {
-                commit_id: active.batch.commit_id,
-                payload,
+                batch: Arc::clone(&active.batch),
+                emission: emission_index,
                 occupancy,
             });
         }

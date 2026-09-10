@@ -67,8 +67,16 @@ where
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
+        let basis = self.graph.with_runtime_mut(|runtime| {
+            let identity = runtime.main_branch_identity();
+            runtime
+                .observe_branch(&identity)
+                .map(|(_, basis)| basis)
+                .map_err(super::admission_denial::from_branch_basis_denial)
+        })?;
         self.project_with_work_budget(
             WorthQueryInvariantProjectionWorkBudget::unbounded(),
+            basis,
             projection,
         )
     }
@@ -76,6 +84,7 @@ where
     pub(super) fn project_bounded<Output>(
         &self,
         maximum_work: usize,
+        basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
@@ -85,6 +94,7 @@ where
     > {
         self.project_with_work_budget(
             WorthQueryInvariantProjectionWorkBudget::bounded(maximum_work),
+            basis,
             projection,
         )
     }
@@ -92,6 +102,7 @@ where
     fn project_with_work_budget<Output>(
         &self,
         work_budget: WorthQueryInvariantProjectionWorkBudget,
+        basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
@@ -99,16 +110,11 @@ where
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let (basis, snapshot) = self.graph.with_runtime_mut(|runtime| {
-            let identity = runtime.main_branch_identity();
-            let (_, basis) = runtime
-                .observe_branch(&identity)
-                .map_err(super::admission_denial::from_branch_basis_denial)?;
-            let snapshot = runtime
+        let snapshot = self.graph.with_runtime_mut(|runtime| {
+            runtime
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())
-                .map_err(super::admission_denial::from_snapshot_admission_denial)?;
-            Ok((basis, snapshot))
+                .map_err(super::admission_denial::from_snapshot_admission_denial)
         })?;
         let projected = self.graph.with_runtime_mut(|runtime| {
             catch_unwind(AssertUnwindSafe(|| {

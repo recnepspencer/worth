@@ -1,6 +1,7 @@
 //! Exact Relational truth used to resolve one application entity.
 
 mod freshness;
+mod product;
 mod resolved;
 #[cfg(test)]
 mod tests;
@@ -25,7 +26,7 @@ use worth_relational::facade::indexes::{
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use super::{
     WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind, WorthQueryPrimaryGraph,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+    WorthQueryPrincipalResolutionMode,
 };
 
 #[derive(Clone)]
@@ -159,79 +160,6 @@ impl WorthQueryEntityResolutionTruth<'_> {
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
     ) -> Result<(), WorthQueryEntityResolutionDenial> {
         freshness::validate(self, identity)
-    }
-}
-
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
-        &self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-        scope: &WorthQueryRequestScope,
-        mode: WorthQueryPrincipalResolutionMode,
-    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
-    where
-        Value: TypedApplicationValue,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        admit_request(scope, field.field())?;
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
-            entity_denial(
-                WorthQueryEntityResolutionDenialKind::PrimaryGraphNotInstalled,
-                field.entity(),
-            )
-        })?;
-        let installed = graph.retain_entity_resolution_context();
-        let result = graph.integration_handle().with_runtime_mut(|relational| {
-            let snapshot = super::exact_basis_access::open_current_main_snapshot(relational)
-                .map_err(|basis_denial| {
-                    let kind = match basis_denial {
-                        super::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
-                            maximum_active_snapshots,
-                        } => WorthQueryEntityResolutionDenialKind::ActiveSnapshotCapacityExhausted {
-                            maximum_active_snapshots,
-                        },
-                        super::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
-                            WorthQueryEntityResolutionDenialKind::RetentionCapacityExhausted
-                        }
-                        super::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
-                            WorthQueryEntityResolutionDenialKind::RetentionIdentityExhausted
-                        }
-                        super::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
-                            WorthQueryEntityResolutionDenialKind::SnapshotIdentityExhausted
-                        }
-                        _ => WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth,
-                    };
-                    entity_denial(kind, field.field())
-                })?;
-            let result = installed
-                .at_snapshot(relational, &snapshot, mode)
-                .and_then(|truth| {
-                    truth.resolve(
-                        field.entity(),
-                        field.aspect(),
-                        field.field(),
-                        value.into_foundational_value(),
-                    )
-                });
-            crate::relational_snapshot_release::release_query_snapshot(relational, &snapshot);
-            result
-        })?;
-        admit_request(scope, field.field())?;
-        Ok(result.into_application_identity())
     }
 }
 

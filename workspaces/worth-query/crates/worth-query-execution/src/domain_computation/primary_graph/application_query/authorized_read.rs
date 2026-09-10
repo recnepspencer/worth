@@ -11,7 +11,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 pub(super) enum WorthQueryAuthorizedApplicationReadDenial {
     StalePrincipal,
     StaleScope,
-    StaleBasisScope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind),
+    StaleBasisScope,
     Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
     Read(WorthQueryApplicationReadExecutionDenial),
     Session,
@@ -63,6 +63,13 @@ pub(super) fn execute_authorized_read<
 where
     Schema: ApplicationSchema,
 {
+    let security = application.admit_product_security_basis(plan.basis.product())
+        .map_err(|denial| WorthQueryAuthorizedApplicationReadDenial::Authorization(
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
+                plan.query.name(),
+            ),
+        ))?;
     let basis = plan.basis.identity();
     let entity_resolution = application
         .runtime
@@ -72,41 +79,15 @@ where
     let (read_outcome, proof) = plan
         .graph_work
         .execute_query_read(basis, |runtime, layout| {
-            let current = super::super::exact_basis_access::open_current_main_snapshot(runtime)
-                .map_err(|basis_denial| {
-                    let kind = match basis_denial {
-                        super::super::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
-                            maximum_active_snapshots,
-                        } => crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ActiveSnapshotCapacityExhausted {
-                            maximum_active_snapshots,
-                        },
-                        super::super::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
-                            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::RetentionCapacityExhausted
-                        }
-                        super::super::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
-                            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted
-                        }
-                        super::super::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
-                            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted
-                        }
-                        _ => crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
-                    };
-                    WorthQueryAuthorizedApplicationReadDenial::Authorization(
-                        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                            kind,
-                            "authorized application read",
-                        ),
-                    )
-                })?;
             let authorization_work = validate_current_authorization(
                 application,
                 &entity_resolution,
                 runtime,
-                &current,
+                security.snapshot_handle(),
                 plan,
-            );
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &current);
-            let authorization_work = authorization_work?;
+            )?;
+            let authorization_work =
+                authorization_work.with_execution_security_product_resolution();
             entity_resolution
                 .at_snapshot(
                     runtime,
@@ -114,9 +95,7 @@ where
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .and_then(|truth| truth.validate_entity_freshness(plan.scope))
-                .map_err(|denial| {
-                    WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope(denial.kind())
-                })?;
+                .map_err(|_| WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope)?;
             let output = read(runtime, layout, plan)
                 .map_err(WorthQueryAuthorizedApplicationReadDenial::Read)?;
             Ok((output, authorization_work))

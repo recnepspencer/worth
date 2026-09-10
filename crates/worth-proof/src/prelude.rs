@@ -11,6 +11,8 @@ pub use crate::dx::{
     UnresolvedRecipeDxExt,
 };
 pub use crate::{
-    AuthoritativeFamilyMember, AuthorityMarker, AuthorityWitness, CapabilityMarker,
-    CapabilityWitness, CompositionFamilySymbol, NonEmpty, Pair, Recipe, Unresolved,
+    AdmittedConditionalSourceObservation, AuthoritativeFamilyMember, AuthorityMarker,
+    AuthorityWitness, CapabilityMarker, CapabilityWitness, CompositionFamilySymbol,
+    ConditionalEvaluationSource, ConditionalSourceObservationAuthority,
+    ConditionalSourceObservationOwner, NonEmpty, Pair, Recipe, Unresolved,
 };

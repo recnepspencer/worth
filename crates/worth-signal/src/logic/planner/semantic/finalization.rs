@@ -106,6 +106,7 @@ fn finalize_update(
             after_finalize_image,
             identity.record_id,
             identity.segment_id,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
         )?;
     }
     let task = &stage_tasks[task_index];
@@ -182,6 +183,7 @@ pub(in crate::logic::planner) fn finalize_serial_stage_batch(
                 after_finalize_image,
                 seed.identity.record_id,
                 seed.identity.segment_id,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
             )?;
         }
         let task = &stage_tasks[seed.task_index];

@@ -62,6 +62,7 @@ pub struct WorthQueryApplicationLiveLease<
     scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     parameters: ApplicationQueryParameterSet<Query>,
     controls: WorthQueryApplicationLiveControls,
+    _opening_product: crate::basis::WorthQueryProductBranchLease,
     governance: super::super::disclosure::WorthQueryApplicationQueryGovernance,
     scope_identity: AspectValue,
     basis: Option<WorthQueryManagedLowerExecutionBasis>,
@@ -165,7 +166,7 @@ where
                 WorthQueryApplicationLiveOutcome::Unavailable
             }
         };
-        let Some((commit_id, payload)) = self.queue.front() else {
+        let Some((publication, product, payload)) = self.queue.front(&Binding::effect()) else {
             return match terminal {
                 WorthQueryApplicationLiveOutcome::Overflow(overflow) => {
                     if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
@@ -185,16 +186,30 @@ where
             };
         };
         let target_identity = Binding::target_identity(payload).into_foundational_value();
-        self.project_front(commit_id, target_identity)
+        self.project_front(
+            publication.clone(),
+            product.retained_clone(),
+            target_identity,
+        )
     }
 
     fn project_front(
         &mut self,
-        commit_id: worth_relational::facade::history::CommitId,
+        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        product: crate::basis::WorthQueryProductObservationLease,
         target_identity: AspectValue,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         let access = WorthQueryApplicationQueryAccessContext::new(self.principal, &self.scope);
-        let controls = WorthQueryApplicationQueryControls::current_live(
+        let application_basis = match self
+            .runtime
+            .retain_product_application_basis(product.observation())
+        {
+            Ok(basis) => basis,
+            Err(_) => return WorthQueryApplicationLiveOutcome::Unavailable,
+        };
+        let controls = WorthQueryApplicationQueryControls::product_live(
+            product,
+            application_basis,
             self.controls.maximum_materialized_record_count(),
             self.controls.maximum_work_per_delivery(),
             self.controls.request(),
@@ -246,7 +261,9 @@ where
                     return WorthQueryApplicationLiveOutcome::Unavailable;
                 }
                 WorthQueryApplicationLiveOutcome::Delivered(WorthQueryApplicationLiveUpdate::new(
-                    commit_id, result, receipt,
+                    publication,
+                    result,
+                    receipt,
                 ))
             }
             Err(WorthQueryLiveProjectionFinalizationDenial::BasisRelease) => {
@@ -314,3 +331,9 @@ where
 #[cfg(test)]
 #[path = "lease/delivery_tests.rs"]
 mod delivery_tests;
+#[cfg(test)]
+#[path = "lease/reservation_race_tests.rs"]
+mod reservation_race_tests;
+#[cfg(test)]
+#[path = "lease/sibling_delivery_tests.rs"]
+mod sibling_delivery_tests;

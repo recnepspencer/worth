@@ -5,11 +5,23 @@ use crate::runtime::{
     WorthQueryRuntimeError, WorthQueryUnrefinedLiveShape,
 };
 use crate::session_label::WorthQuerySessionLabel;
+use std::num::NonZeroUsize;
 use worth_foundational::facade::{AspectKey, AspectValue, CanonicalFieldPath, FieldKey};
 
 use super::{in_memory_test_runtime, WorthQueryTestBackendSchema};
 
 mod atomic_setup;
+
+#[test]
+fn in_memory_workspace_exposes_bounded_creation_recovery_and_cleanup_discovery() {
+    let workspace = task_workspace();
+    let page = workspace
+        .branches()
+        .recovery_page(None, NonZeroUsize::new(1).unwrap())
+        .expect("the outer workspace must expose bounded World recovery discovery");
+    assert!(page.rows().is_empty());
+    assert!(workspace.branches().pending_cleanup().is_empty());
+}
 
 #[test]
 fn in_memory_test_runtime_executes_public_insert_and_live_read() {

@@ -5,11 +5,9 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_foundational::facade::CanonicalDigestId;
 use worth_foundational::facade::{
-    BoundaryProtocolCompatibilityWindow, BoundaryProtocolIdentity,
-    BoundaryProtocolUnsupportedVersionPosture, BoundaryProtocolVersion,
+    BoundaryProtocolCompatibilityWindow, BoundaryProtocolUnsupportedVersionPosture,
+    BoundaryProtocolVersion,
 };
-use worth_query_declaration::facade::application_schema::ApplicationExternalEffectProtocol;
-use worth_query_installation::facade::InstalledExternalEffectContract;
 
 mod protocol_stability;
 
@@ -121,8 +119,7 @@ fn unsupported_protocol_version_preserves_exact_external_owner_causality() {
 
 #[test]
 fn distinct_attempt_ordinals_produce_distinct_attempt_identities() {
-    let (first_admitted, second_admitted) =
-        commit_observe_and_admit_twice_fixture(&outbox_record(11));
+    let (first_admitted, second_admitted) = commit_observe_and_admit_twice_fixture(11);
     assert_ne!(
         first_admitted.ordinal_for_test(),
         second_admitted.ordinal_for_test()
@@ -150,9 +147,9 @@ fn distinct_attempt_ordinals_produce_distinct_attempt_identities() {
 #[test]
 fn equal_attempt_ordinals_in_distinct_query_runtimes_cannot_collide() {
     let (first_admitted, first_commit, first_record_ref, first_runtime) =
-        commit_observe_and_admit_fixture(&outbox_record(12));
+        commit_observe_and_admit_fixture(12);
     let (second_admitted, second_commit, second_record_ref, second_runtime) =
-        commit_observe_and_admit_fixture(&outbox_record(12));
+        commit_observe_and_admit_fixture(12);
     assert_eq!(first_commit, second_commit);
     assert_eq!(first_record_ref, second_record_ref);
     assert_ne!(first_runtime, second_runtime);
@@ -184,7 +181,7 @@ fn equal_attempt_ordinals_in_distinct_query_runtimes_cannot_collide() {
 #[test]
 fn identical_values_at_distinct_record_identities_have_distinct_causal_roots() {
     let (first_admitted, second_admitted, first_ref, second_ref) =
-        commit_distinct_records_and_admit_fixture(&outbox_record(13));
+        commit_distinct_records_and_admit_fixture();
     assert_ne!(first_ref, second_ref);
     let first = dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
@@ -243,31 +240,6 @@ fn external_effect_source_rejects_cdc_checkpoint_vocabulary() {
     }
 }
 
-pub(crate) fn outbox_record(outcome_identity: u64) -> WorthQueryDispatchOutboxRecord {
-    WorthQueryDispatchOutboxRecord::from_installed_contract(
-        correlation(outcome_identity),
-        &InstalledExternalEffectContract::Declared {
-            correlation_family:
-                worth_query_installation::facade::WorthQueryExternalEffectCorrelationFamily::new(
-                    "estate-death-notice-rail",
-                )
-                .unwrap(),
-            effect: "notify-death-effect".to_owned(),
-            rust_payload_type: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::declared(
-                "worth.query.test.death-notice.v1",
-            ),
-            protocol: ApplicationExternalEffectProtocol::new(
-                BoundaryProtocolIdentity::new("test.notify-death"),
-                BoundaryProtocolVersion::new(1),
-            ),
-            maximum_payload_bytes: 1_024,
-        },
-        vec![0xAB; 8],
-        outcome_identity,
-    )
-    .unwrap()
-}
-
 fn correlation(outcome_identity: u64) -> ExternalEffectCorrelationIdentity {
     derive_external_effect_correlation_identity(ExternalEffectCorrelationBasis {
         correlation_family:
@@ -294,7 +266,7 @@ fn assert_predecessor(successor: &ExternalEffectPosture, predecessor: &ExternalE
 fn admitted_from_fresh_runtime(
     outcome_identity: u64,
 ) -> crate::domain_computation::primary_graph::WorthQueryAdmittedExternalDispatchAttempt {
-    commit_observe_and_admit_fixture(&outbox_record(outcome_identity)).0
+    commit_observe_and_admit_fixture(outcome_identity as u8).0
 }
 
 #[test]

@@ -1,7 +1,7 @@
 use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::SignalGraph;
 use crate::data::handle::NodeId;
-use crate::data::node::{CheckpointNodeImage, NodeEntry, NodeHotData, NodeState, NodeWarmData};
+use crate::data::node::{CheckpointNodeImage, NodeEntry, NodeState};
 use crate::data::output::PartitionSubscription;
 use crate::data::reuse::ReuseBasis;
 use crate::data::{aspect::AspectVersion, core_profile::StableHashValue, output::ChangedRegion};
@@ -27,6 +27,17 @@ impl SignalGraph {
         self.replace_entry(id, NodeEntry::from_checkpoint_image(image))
     }
 
+    pub(crate) fn node_runtime_artifact_reuse_basis(
+        &self,
+        node: NodeId,
+    ) -> Result<Option<&ReuseBasis>, SignalError> {
+        Ok(self
+            .warm_ref(node)?
+            .runtime_artifact_state
+            .as_ref()
+            .map(|state| &**state.reuse_basis()))
+    }
+
     pub(crate) fn node_runtime_artifact_structural_state(
         &self,
         node: NodeId,
@@ -46,22 +57,30 @@ impl SignalGraph {
         ))
     }
 
+    pub(crate) fn admit_node_aspect_evaluation_work(
+        &self,
+        node: NodeId,
+        changed_regions: &[ChangedRegion],
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    ) -> Result<(), SignalError> {
+        self.warm_ref(node)?
+            .aspect_version_overrides
+            .admit_evaluation_work(changed_regions, work)
+    }
+
     pub(crate) fn apply_node_aspect_version(
         &mut self,
         node: NodeId,
         version: AspectVersion,
         changed_regions: &[ChangedRegion],
     ) -> Result<(), SignalError> {
-        let has_partition_overrides = {
-            let warm = self.warm_mut(node)?;
-            warm.aspect_version_overrides
-                .apply_evaluation(version, changed_regions);
-            warm.aspect_version_overrides.has_overrides()
-        };
-        let hot = self.hot_mut(node)?;
-        hot.aspect_version_header.set_global(version);
-        hot.aspect_version_header
-            .set_has_partition_overrides(has_partition_overrides);
+        self.validate_handle(node)?;
+        let index = node.index() as usize;
+        let hot = self.arena.hot[index]
+            .as_mut()
+            .expect("validated live node retains hot storage");
+        let warm = &mut self.arena.warm[index];
+        super::evaluation_payload::apply_aspect_version(hot, warm, version, changed_regions);
         Ok(())
     }
 
@@ -95,29 +114,24 @@ impl SignalGraph {
         node: NodeId,
         delta: crate::data::trace::ArtifactWriteDelta,
     ) -> Result<bool, SignalError> {
-        self.warm_mut(node)?.runtime_artifact_state = delta.runtime;
-        let retained_present = delta.retained.is_some();
-        if retained_present {
-            self.cold_mut(node)?.retained_artifact = delta.retained;
-        } else if let Some(cold) = self.arena.cold[node.index() as usize].as_mut() {
-            cold.retained_artifact = None;
-        }
-        self.trim_cold_if_empty(node);
-        Ok(retained_present)
+        self.validate_handle(node)?;
+        let index = node.index() as usize;
+        Ok(super::evaluation_payload::apply_artifact_write(
+            &mut self.arena.warm[index],
+            &mut self.arena.cold[index],
+            delta,
+        ))
     }
 
     pub(crate) fn transition_node_clean(&mut self, node: NodeId) -> Result<(), SignalError> {
         self.release_pending_causes(node)?;
-        let hot = self.hot_mut(node)?;
-        hot.state = NodeState::Clean;
-        hot.dirty_aspects = crate::data::aspect::AspectMask::EMPTY;
-        hot.dirty_partition_scope_aspects = crate::data::aspect::AspectMask::EMPTY;
-        hot.pending_cause_set_id =
-            crate::data::graph::storage::invalidation_causes::PendingCauseSetId::EMPTY;
-        let warm = self.warm_mut(node)?;
-        warm.dirty_partition_scope_payload.clear();
-        warm.pending_dependency_revalidation = None;
-        warm.direct_invalidation_basis = None;
+        self.validate_handle(node)?;
+        let index = node.index() as usize;
+        let hot = self.arena.hot[index]
+            .as_mut()
+            .expect("validated live node retains hot storage");
+        let warm = &mut self.arena.warm[index];
+        super::evaluation_payload::transition_clean(hot, warm);
         Ok(())
     }
 
@@ -133,53 +147,19 @@ impl SignalGraph {
         if invalidates_dependency_causes {
             self.release_pending_causes(node)?;
         }
-        {
-            let warm = self.warm_mut(node)?;
-            warm.direct_invalidation_generation = warm
-                .direct_invalidation_generation
-                .checked_add(1)
-                .expect("direct invalidation generation overflow");
-            let generation = warm.direct_invalidation_generation;
-            match warm.direct_invalidation_basis.as_mut() {
-                Some(basis) => basis.merge_seed(generation, aspect, scopes.iter().cloned()),
-                None => {
-                    warm.direct_invalidation_basis = Some(
-                        crate::data::proof::invalidation::source_seed::DirectInvalidationBasis::from_seed(
-                            generation,
-                            aspect,
-                            scopes.iter().cloned(),
-                        ),
-                    );
-                }
-            }
-        }
-        let hot = self.hot_ref(node)?;
-        let was_clean = matches!(hot.state, NodeState::Clean);
-        let already_dirty_for_aspect = !invalidates_dependency_causes
-            && hot
-                .dirty_aspects
-                .contains(crate::data::aspect::AspectMask::from_aspect(aspect));
-        let has_scoped_payload = {
-            let warm = self.warm_mut(node)?;
-            if invalidates_dependency_causes {
-                warm.dirty_partition_scope_payload.clear();
-            }
-            merge_dirty_partition_scopes(warm, aspect, scopes, was_clean, already_dirty_for_aspect)
-        };
-        let hot = self.hot_mut(node)?;
-        if invalidates_dependency_causes {
-            hot.pending_cause_set_id =
-                crate::data::graph::storage::invalidation_causes::PendingCauseSetId::EMPTY;
-            hot.dirty_aspects = crate::data::aspect::AspectMask::EMPTY;
-            hot.dirty_partition_scope_aspects = crate::data::aspect::AspectMask::EMPTY;
-        }
-        hot.state = NodeState::Dirty;
-        hot.dirty_aspects.insert(aspect);
-        if has_scoped_payload {
-            hot.dirty_partition_scope_aspects.insert(aspect);
-        } else {
-            sync_dirty_partition_scope_flag(hot, aspect);
-        }
+        self.validate_handle(node)?;
+        let index = node.index() as usize;
+        let hot = self.arena.hot[index]
+            .as_mut()
+            .expect("validated live node retains hot storage");
+        let warm = &mut self.arena.warm[index];
+        super::evaluation_payload::transition_dirty(
+            hot,
+            warm,
+            aspect,
+            scopes,
+            invalidates_dependency_causes,
+        );
         Ok(())
     }
 
@@ -224,85 +204,4 @@ impl SignalGraph {
         self.replace_pending_revalidation_waiters(node, &previous, &current);
         Ok(())
     }
-
-    pub(crate) fn resolve_node_pending_revalidation(
-        &mut self,
-        node: NodeId,
-        producer: NodeId,
-    ) -> Result<(), SignalError> {
-        let mut resolutions = vec![(node, producer)];
-        while let Some((consumer, resolved_producer)) = resolutions.pop() {
-            self.replace_pending_revalidation_waiters(
-                consumer,
-                std::slice::from_ref(&resolved_producer),
-                &[],
-            );
-            let resolved =
-                self.resolve_node_dependency_revalidation_producer(consumer, resolved_producer)?;
-            let requires_structural_recompute = self
-                .pending_dependency_revalidation(consumer)?
-                .is_some_and(|pending| pending.requires_structural_recompute());
-            let became_stable = resolved
-                && !requires_structural_recompute
-                && matches!(self.get_state(consumer)?, NodeState::MaybeStale)
-                && self.pending_causes(consumer)?.is_empty()
-                && self.node_dirty_aspects(consumer)?.is_empty();
-            if !became_stable {
-                continue;
-            }
-            self.set_node_state(consumer, NodeState::Clean)?;
-            let subscribers = self.pending_revalidation_waiters(consumer)?;
-            resolutions.extend(
-                subscribers
-                    .into_iter()
-                    .map(|subscriber| (subscriber, consumer)),
-            );
-        }
-        Ok(())
-    }
-}
-
-fn merge_dirty_partition_scopes(
-    warm: &mut NodeWarmData,
-    changed_aspect: crate::data::aspect::Aspect,
-    changed_scopes: &[PartitionSubscription],
-    was_clean: bool,
-    already_dirty_for_aspect: bool,
-) -> bool {
-    if changed_scopes.is_empty() {
-        warm.dirty_partition_scope_payload
-            .retain(|(candidate_aspect, _)| *candidate_aspect != changed_aspect);
-        return false;
-    }
-    if !was_clean
-        && already_dirty_for_aspect
-        && warm
-            .dirty_partition_scope_payload
-            .iter()
-            .find(|(candidate_aspect, _)| *candidate_aspect == changed_aspect)
-            .is_none()
-    {
-        return false;
-    }
-    for scope in changed_scopes {
-        if !warm
-            .dirty_partition_scope_payload
-            .iter()
-            .any(|(candidate_aspect, candidate_scope)| {
-                *candidate_aspect == changed_aspect && *candidate_scope == *scope
-            })
-        {
-            warm.dirty_partition_scope_payload
-                .push((changed_aspect, scope.clone()));
-            warm.dirty_partition_scope_payload.sort_unstable();
-        }
-    }
-    true
-}
-
-fn sync_dirty_partition_scope_flag(hot: &mut NodeHotData, aspect: crate::data::aspect::Aspect) {
-    hot.dirty_partition_scope_aspects = crate::data::aspect::AspectMask::from_bits(
-        hot.dirty_partition_scope_aspects.bits()
-            & !crate::data::aspect::AspectMask::from_aspect(aspect).bits(),
-    );
 }

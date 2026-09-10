@@ -58,6 +58,7 @@ impl SignalGraph {
                     .map(|(index, slot)| SignalCheckpointSlot {
                         node: slot.is_occupied().then(|| {
                             NodeEntry::from_storage_parts(
+                                graph.arena.definitions[index].clone(),
                                 graph.arena.hot[index]
                                     .clone()
                                     .expect("occupied slot must retain hot lane"),
@@ -119,71 +120,16 @@ impl SignalGraph {
         let mut graph = Self {
             lifecycle_token: Default::default(),
             instance_id,
-            arena: NodeArena {
-                nodes: authority
-                    .arena
-                    .slots
-                    .iter()
-                    .map(|slot| Slot {
-                        generation: slot.generation,
-                        retired: slot.retired,
-                        occupied: slot.node.is_some(),
-                    })
-                    .collect(),
-                hot: authority
-                    .arena
-                    .slots
-                    .iter()
-                    .cloned()
-                    .map(|slot| {
-                        slot.node.map(|image| {
-                            let (hot, _, _) =
-                                NodeEntry::from_checkpoint_image(image).into_storage_parts();
-                            hot
-                        })
-                    })
-                    .collect(),
-                warm: authority
-                    .arena
-                    .slots
-                    .iter()
-                    .cloned()
-                    .map(|slot| {
-                        slot.node
-                            .map(|image| {
-                                let (_, warm, _) =
-                                    NodeEntry::from_checkpoint_image(image).into_storage_parts();
-                                warm
-                            })
-                            .unwrap_or_default()
-                    })
-                    .collect(),
-                cold: authority
-                    .arena
-                    .slots
-                    .iter()
-                    .cloned()
-                    .map(|slot| {
-                        slot.node.map(|image| {
-                            let (_, _, cold) =
-                                NodeEntry::from_checkpoint_image(image).into_storage_parts();
-                            cold
-                        })
-                    })
-                    .map(|cold| cold.unwrap_or(None))
-                    .collect(),
-                free_list: authority.arena.free_list.iter().copied().collect(),
-                free_slots,
-                active_nodes: authority.arena.active_nodes,
-                compaction: CompactionState::default(),
-            },
+            arena: restore_node_arena(&authority.arena, free_slots),
             topology: EdgeTopology {
                 dependency_snapshots: DependencySnapshotStore::default(),
                 dependency_snapshot_shapes: DependencySnapshotShapeStore::default(),
+                dependency_snapshot_storage_custody: None,
                 dependency_edges: authority.topology.dependency_edges.clone(),
                 subscriber_edges: authority.topology.subscriber_edges.clone(),
                 reverse_subscriptions: Default::default(),
                 pending_revalidation_waiters: Default::default(),
+                pending_revalidation_storage_custody: None,
             },
             cause_sets,
             cause_readmission_required,
@@ -200,6 +146,7 @@ impl SignalGraph {
             schema_registry: std::sync::Arc::new(SignalSchemaRegistry::default()),
             aspect_lowering_owner: None,
             conditional_dependency_versions: Default::default(),
+            conditional_dependency_versions_custody: None,
             authorization_policy_identities: crate::data::persistent_ord_set::PersistentOrdSet::new(
             ),
             invalidation_readiness_epoch: 0,
@@ -362,7 +309,6 @@ impl SignalGraph {
                 previous_shape_handle,
                 &previous,
                 next,
-                &mut shape_store,
             );
             if delta.changed() {
                 entries.push(PendingSnapshotCommit {
@@ -374,4 +320,42 @@ impl SignalGraph {
         }
         Ok(SnapshotBatchCommit::new(PendingSnapshotBatch::new(entries)))
     }
+}
+
+// Decode each node image once; definition and evaluation lanes share one input.
+fn restore_node_arena(authority: &SignalCheckpointArena, free_slots: DenseBitset) -> NodeArena {
+    let mut arena = NodeArena {
+        definitions: Default::default(),
+        nodes: Default::default(),
+        hot: Default::default(),
+        warm: Default::default(),
+        cold: Default::default(),
+        free_list: authority.free_list.iter().copied().collect(),
+        free_slots,
+        active_nodes: authority.active_nodes,
+        compaction: CompactionState::default(),
+        retained_node_ledger: None,
+        retained_node_custody: None,
+        retained_seed_custody: None,
+    };
+    for slot in &authority.slots {
+        arena.nodes.push_back(Slot {
+            generation: slot.generation,
+            retired: slot.retired,
+            occupied: slot.node.is_some(),
+        });
+        let (definition, hot, warm, cold) = match &slot.node {
+            Some(image) => {
+                let (definition, hot, warm, cold) =
+                    NodeEntry::from_checkpoint_image(image.clone()).into_storage_parts();
+                (definition, Some(hot), warm, cold)
+            }
+            None => (Default::default(), None, Default::default(), None),
+        };
+        arena.definitions.push_back(definition);
+        arena.hot.push_back(hot);
+        arena.warm.push_back(warm);
+        arena.cold.push_back(cold);
+    }
+    arena
 }

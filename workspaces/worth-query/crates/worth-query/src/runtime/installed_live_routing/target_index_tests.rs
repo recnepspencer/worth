@@ -1,44 +1,24 @@
 use super::*;
 
 #[test]
-fn relevance_and_conditional_indexes_return_only_exact_installed_targets() {
+fn relevance_index_returns_only_exact_installed_targets() {
     let mut index = WorthQueryInstalledLiveTargetIndex::default();
-    let operation = operation_key();
-    let location = worth_query_installation::facade::WorthQueryConditionalNodeLocation::operation(
-        "indexed-node",
-    )
-    .unwrap();
     for ordinal in 0..64 {
         index.register(
             WorthQueryLiveArtifactTarget::from_view_name(format!("unrelated-{ordinal}")),
-            operation,
             "Vertex".into(),
-            selector("identity", "name", None),
+            selector("identity", "name"),
         );
     }
     let first = WorthQueryLiveArtifactTarget::from_view_name("installed-first");
     let second = WorthQueryLiveArtifactTarget::from_view_name("installed-second");
-    index.register(
-        first.clone(),
-        operation,
-        "Vertex".into(),
-        selector("identity", "id", Some(location.clone())),
-    );
-    index.register(
-        second.clone(),
-        operation,
-        "Vertex".into(),
-        selector("identity", "id", Some(location.clone())),
-    );
+    index.register(first.clone(), "Vertex".into(), selector("identity", "id"));
+    index.register(second.clone(), "Vertex".into(), selector("identity", "id"));
 
     let expected = BTreeSet::from([first, second]);
     assert_eq!(
         index.affected_targets(&mutation("identity")).targets,
         expected
-    );
-    assert_eq!(
-        index.conditional_targets(operation, &location),
-        Some(&expected)
     );
 }
 
@@ -46,13 +26,13 @@ fn relevance_and_conditional_indexes_return_only_exact_installed_targets() {
 fn canonical_parent_path_selects_descendant_dependency_without_sibling_scan() {
     let mut index = WorthQueryInstalledLiveTargetIndex::default();
     let target = WorthQueryLiveArtifactTarget::from_view_name("nested-city");
-    let mut nested = selector("profile", "city", None);
+    let mut nested = selector("profile", "city");
     nested.aspect_routes.clear();
     nested.field_routes.insert((
         worth_foundational::facade::AspectKey::new("profile").unwrap(),
         path(&["address", "city"]),
     ));
-    index.register(target.clone(), operation_key(), "Vertex".into(), nested);
+    index.register(target.clone(), "Vertex".into(), nested);
 
     assert_eq!(
         index.affected_targets(&path_mutation(&["address"])).targets,
@@ -64,18 +44,9 @@ fn canonical_parent_path_selects_descendant_dependency_without_sibling_scan() {
         .is_empty());
 }
 
-fn operation_key() -> InstalledOperationKey {
-    (
-        std::any::TypeId::of::<u8>(),
-        std::any::TypeId::of::<u16>(),
-        std::any::TypeId::of::<u32>(),
-    )
-}
-
 fn selector(
     aspect: &str,
     field: &str,
-    location: Option<worth_query_installation::facade::WorthQueryConditionalNodeLocation>,
 ) -> crate::domain_installation::WorthQueryInstalledLiveRoutingSelector {
     let aspect = worth_foundational::facade::AspectKey::new(aspect).unwrap();
     crate::domain_installation::WorthQueryInstalledLiveRoutingSelector {
@@ -90,7 +61,6 @@ fn selector(
         structural_creation: false,
         broad: false,
         empty_touch: false,
-        conditional_locations: location.into_iter().collect(),
     }
 }
 

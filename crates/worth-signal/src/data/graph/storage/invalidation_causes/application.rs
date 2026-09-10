@@ -7,6 +7,21 @@ use crate::data::proof::invalidation::output_commit::ProducedAspectDelta;
 use crate::data::graph::SignalGraph;
 
 impl SignalGraph {
+    pub(crate) fn begin_retained_cause_store_publication(
+        &self,
+        ledger: &std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionLedger>,
+        maximum: crate::data::retained_storage::RetainedStorageCharge,
+    ) -> Result<super::RetainedCauseStorePublicationDraft, SignalError> {
+        self.cause_sets.begin_retained_publication(ledger, maximum)
+    }
+
+    pub(crate) fn install_retained_cause_store_publication(
+        &mut self,
+        prepared: super::PreparedRetainedCauseStorePublication,
+    ) {
+        prepared.install(&mut self.cause_sets);
+    }
+
     #[cfg(test)]
     #[cfg_attr(not(feature = "parallel"), allow(dead_code))]
     pub(crate) fn published_output_commit_order_for_test(&self) -> Vec<(u64, NodeId)> {
@@ -67,25 +82,30 @@ impl SignalGraph {
         let id = self.cause_sets.replace_set(current, causes)?;
         self.set_node_pending_cause_set_id(node, id)?;
         self.rebuild_dirty_caches_from_pending_causes(node)?;
-        if !self.cause_readmission_required {
-            self.compact_cause_set_storage_if_sparse()?;
-        }
         self.node_pending_cause_set_id(node)
     }
 
-    pub(crate) fn replace_prepared_pending_causes(
+    pub(crate) fn publish_prepared_cause_storage(
         &mut self,
         node: NodeId,
-        causes: Vec<ResolvedDependencyCause>,
-        delta: &ProducedAspectDelta,
+        causes: super::NormalizedCauseSet,
+        delta: Option<&ProducedAspectDelta>,
+        slot: super::PreparedCauseSlot,
     ) -> Result<PendingCauseSetId, SignalError> {
-        self.validate_prepared_pending_causes(node, &causes, delta)?;
+        if let Some(delta) = delta {
+            self.validate_prepared_pending_causes(node, &causes, delta)?;
+        } else {
+            self.validate_pending_causes(node, &causes)?;
+        }
         let current = self.node_pending_cause_set_id(node)?;
-        let id = self.cause_sets.replace_set(current, causes)?;
-        self.set_node_pending_cause_set_id(node, id)?;
-        self.rebuild_dirty_caches_from_pending_causes(node)?;
-        self.compact_cause_set_storage_if_sparse()?;
-        self.node_pending_cause_set_id(node)
+        if current != slot.handle() {
+            return Err(SignalError::invalid_input(
+                "prepared cause handle was not installed by node publication",
+            ));
+        }
+        let id = slot.handle();
+        self.cause_sets.publish_prepared_cause_slot(slot, causes)?;
+        Ok(id)
     }
 
     pub(crate) fn merge_pending_causes(
@@ -111,7 +131,6 @@ impl SignalGraph {
         let id = self.cause_sets.replace_set(current, causes)?;
         self.set_node_pending_cause_set_id(node, id)?;
         self.rebuild_dirty_caches_from_pending_causes(node)?;
-        self.compact_cause_set_storage_if_sparse()?;
         self.node_pending_cause_set_id(node)
     }
 
@@ -157,27 +176,6 @@ impl SignalGraph {
             crate::data::aspect::AspectMask::EMPTY,
             std::iter::empty(),
         )?;
-        self.compact_cause_set_storage_if_sparse()?;
-        Ok(())
-    }
-
-    fn compact_cause_set_storage_if_sparse(&mut self) -> Result<(), SignalError> {
-        if !self.cause_readmission_required && self.cause_sets.should_compact() {
-            self.compact_cause_set_storage()?;
-        }
-        Ok(())
-    }
-
-    pub(crate) fn compact_cause_set_storage(&mut self) -> Result<(), SignalError> {
-        let remaps = self.cause_sets.rebuild_occupied_generation()?;
-        for remap in remaps {
-            if self.node_pending_cause_set_id(remap.consumer)? != remap.previous {
-                return Err(SignalError::invalid_input(
-                    "canonical cause-set handle does not match its consumer",
-                ));
-            }
-            self.set_node_pending_cause_set_id(remap.consumer, remap.current)?;
-        }
         Ok(())
     }
 }

@@ -18,13 +18,13 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage as DenialStage;
 
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryStaleEquivalentCommitReceiptPermit
+pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryRegisteredEquivalentCommitReceiptPermit
 {
     provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
 }
 
-impl WorthQueryStaleEquivalentCommitReceiptPermit {
+impl WorthQueryRegisteredEquivalentCommitReceiptPermit {
     fn mint(
         provider_session: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     ) -> Self {
@@ -77,6 +77,10 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
+    if let Some(outcome) = registered_idempotency_outcome(&staged, authority) {
+        let _ = staged.abort();
+        return WorthQueryProviderReadSetProgression::Terminal(outcome);
+    }
     let receipt = match staged.read_authority().capture_decision_read_set(requests) {
         Ok(receipt) => receipt,
         Err(failure) => {
@@ -142,17 +146,43 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
+    let outcome = registered_idempotency_outcome(&staged, authority).unwrap_or_else(|| {
+        WorthQueryProviderProgressionOutcome::Stale(WorthQueryApplicationStaleAttempt::new(
+            stale_fact_count,
+        ))
+    });
+    let _ = staged.abort();
+    WorthQueryProviderReadSetProgression::Terminal(outcome)
+}
+
+fn registered_idempotency_outcome<Schema, Operation, Input, Scope>(
+    staged: &WorthQuerySessionBoundReadsAndEffects<'_>,
+    authority: &super::WorthQueryApplicationCommitProgressionAuthority<
+        '_,
+        '_,
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+) -> Option<WorthQueryProviderProgressionOutcome>
+where
+    Schema: ApplicationSchema,
+    Input: Clone + Send + Sync + 'static,
+{
     let proof = match authority.authorization.authorize_application_commit(
         authority.application(),
         authority.admission(),
-        authority.serialization(),
+        authority.coordination(),
     ) {
         Ok(proof) => proof,
-        Err(_) => {
-            let _ = staged.abort();
-            return WorthQueryProviderReadSetProgression::Terminal(progression_denied(
-                DenialStage::DecisionReadSet,
-            ));
+        Err(denial) => {
+            return Some(
+                crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::progression_from_authorization_denial(
+                    denial,
+                    DenialStage::DecisionReadSet,
+                ),
+            )
         }
     };
     let provider_session = staged.provider_session_terminal_binding();
@@ -161,13 +191,18 @@ where
             .provider()
             .resolve_application_idempotency(&provider_session)
     });
-    let outcome = match resolution {
-        Err(()) => progression_denied(DenialStage::DecisionReadSet),
+    match resolution {
+        Err(((), denial)) => Some(
+            crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::progression_from_authorization_denial(
+                denial,
+                DenialStage::DecisionReadSet,
+            ),
+        ),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt))) => {
-            match WorthQueryCommittedReceiptProjection::resolve(receipt) {
+            Some(match WorthQueryCommittedReceiptProjection::resolve(receipt) {
                 Ok(projection) => {
-                    let receipt = WorthQueryApplicationCommitReceipt::from_stale_equivalent(
-                        WorthQueryStaleEquivalentCommitReceiptPermit::mint(provider_session),
+                    let receipt = WorthQueryApplicationCommitReceipt::from_registered_equivalent(
+                        WorthQueryRegisteredEquivalentCommitReceiptPermit::mint(provider_session),
                         projection,
                         recover_equivalent_commit_evidence(
                             authority.admission().mutation_preconditions(),
@@ -181,51 +216,48 @@ where
                     WorthQueryProviderProgressionOutcome::AlreadyCommitted(receipt)
                 }
                 Err(_) => progression_denied(DenialStage::Idempotency),
-            }
+            })
         }
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Drift)) => {
-            WorthQueryProviderProgressionOutcome::Denied(
+            Some(WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
-            )
-        }
-        Ok(Ok(WorthQueryProviderIdempotencyResolution::Absent)) => {
-            WorthQueryProviderProgressionOutcome::Stale(WorthQueryApplicationStaleAttempt::new(
-                stale_fact_count,
             ))
         }
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::Unpublished)) => {
+            Some(progression_denied(DenialStage::Idempotency))
+        }
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::Absent)) => None,
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        })) => WorthQueryProviderProgressionOutcome::Denied(
+        })) => Some(WorthQueryProviderProgressionOutcome::Denied(
             WorthQueryApplicationCommitDenial::active_snapshot_capacity_exhausted(
                 DenialStage::Idempotency,
                 maximum_active_snapshots,
             ),
-        ),
+        )),
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable)) => {
-            progression_denied(DenialStage::Idempotency)
+            Some(progression_denied(DenialStage::Idempotency))
         }
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted)) => {
-            WorthQueryProviderProgressionOutcome::Denied(
+            Some(WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
                     DenialStage::Idempotency,
                 ),
-            )
+            ))
         }
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted)) => {
-            WorthQueryProviderProgressionOutcome::Denied(
+            Some(WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::retention_identity_exhausted(
                     DenialStage::Idempotency,
                 ),
-            )
+            ))
         }
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted)) => {
-            WorthQueryProviderProgressionOutcome::Denied(
+            Some(WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::snapshot_identity_exhausted(
                     DenialStage::Idempotency,
                 ),
-            )
+            ))
         }
-    };
-    let _ = staged.abort();
-    WorthQueryProviderReadSetProgression::Terminal(outcome)
+    }
 }

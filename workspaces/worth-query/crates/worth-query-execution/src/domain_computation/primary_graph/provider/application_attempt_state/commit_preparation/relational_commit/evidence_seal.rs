@@ -12,6 +12,8 @@ use crate::domain_computation::primary_graph::provider::{
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommitEvidence {
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
+    idempotency:
+        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
     commit: worth_relational::facade::history::RelationalCommitReceipt,
     mutation_work: WorthQueryPrimaryMutationWorkEvidence,
     retained_preimage:
@@ -40,6 +42,7 @@ pub(super) fn seal(
     );
     WorthQueryPrimaryGraphCommitEvidence {
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
+        idempotency: committed.attempt().idempotency(),
         commit: committed.committed().envelope().commit.clone(),
         mutation_work,
         retained_preimage: committed.retained_preimage().cloned(),
@@ -65,6 +68,13 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding
     {
         &self.provider_session_binding
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn idempotency(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding
+    {
+        self.idempotency
     }
 
     pub(in crate::domain_computation::primary_graph) const fn commit_reference(

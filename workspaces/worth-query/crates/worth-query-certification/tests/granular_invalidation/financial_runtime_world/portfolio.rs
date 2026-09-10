@@ -28,7 +28,6 @@ fn assert_indexed_maintenance_requires_retained_state() {
     host.amend_portfolio_rank(2, 3);
     host.portfolio_clock_control.push(2, 11);
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .application
         .conditional_clock(&host.portfolio_clock)
         .unwrap()
         .observe()
@@ -58,7 +57,7 @@ fn assert_value_patch_round_trip(
     query: &mut query::FinancialQueryWorld,
     binding: &WorthQueryPrimaryRuntimeInvalidationBinding,
 ) {
-    let prior = row_identities(&query);
+    let prior = row_identities(query);
     host.amend_portfolio_value(2, 5_120);
     host.portfolio_clock_control.push(2, 11);
     let performed = perform("value-forward", host, query, binding);
@@ -68,7 +67,7 @@ fn assert_value_patch_round_trip(
         .projection_patch()
         .expect("a value-only change must remain a local field patch");
     assert!(!patch.fields().is_empty());
-    assert_eq!(row_identities(&query), prior);
+    assert_eq!(row_identities(query), prior);
     host.amend_portfolio_value(3, 5_100);
     host.portfolio_clock_control.push(3, 12);
     let reversed = perform("value-reverse", host, query, binding);
@@ -89,7 +88,7 @@ fn assert_membership_removal_and_refill(
     query: &mut query::FinancialQueryWorld,
     binding: &WorthQueryPrimaryRuntimeInvalidationBinding,
 ) {
-    let primary = row_identities(&query)[0].clone();
+    let primary = row_identities(query)[0].clone();
     host.amend_portfolio_desk(4, "credit");
     host.portfolio_clock_control.push(4, 13);
     let performed = perform("membership-removal", host, query, binding);
@@ -122,12 +121,12 @@ fn assert_membership_removal_and_refill(
         "missing group transition in {:?}",
         patch.operations()
     );
-    assert!(!row_identities(&query).contains(&primary));
+    assert!(!row_identities(query).contains(&primary));
     assert_eq!(
         patch.rows(),
         query.collection.as_ref().unwrap().current_rows()
     );
-    assert_matches_fresh(&host, &query);
+    assert_matches_fresh(host, query);
 }
 
 fn assert_membership_reentry(
@@ -149,7 +148,7 @@ fn assert_stable_reorder(
     query: &mut query::FinancialQueryWorld,
     binding: &WorthQueryPrimaryRuntimeInvalidationBinding,
 ) {
-    let prior = row_identities(&query);
+    let prior = row_identities(query);
     let primary = prior[0].clone();
     host.amend_portfolio_rank(6, 3);
     host.portfolio_clock_control.push(6, 15);
@@ -168,8 +167,8 @@ fn assert_stable_reorder(
         "missing stable move in {:?}",
         patch.operations()
     );
-    assert_eq!(row_identities(&query)[1], primary);
-    assert_matches_fresh(&host, &query);
+    assert_eq!(row_identities(query)[1], primary);
+    assert_matches_fresh(host, query);
 }
 
 fn assert_window_boundary_refill(
@@ -177,7 +176,7 @@ fn assert_window_boundary_refill(
     query: &mut query::FinancialQueryWorld,
     binding: &WorthQueryPrimaryRuntimeInvalidationBinding,
 ) {
-    let primary = row_identities(&query)[1].clone();
+    let primary = row_identities(query)[1].clone();
     host.amend_portfolio_rank(7, 100_000);
     host.portfolio_clock_control.push(7, 16);
     let performed = perform("window", host, query, binding);
@@ -191,13 +190,13 @@ fn assert_window_boundary_refill(
         WorthQueryCollectionPatchOperation::Insert { row, .. }
             if row.entity_identity() != &primary
     )));
-    assert!(!row_identities(&query).contains(&primary));
+    assert!(!row_identities(query).contains(&primary));
     assert_eq!(
         patch.rows(),
         query.collection.as_ref().unwrap().current_rows()
     );
     assert!(performed.maintenance_counters().window_rows() <= 5);
-    assert_matches_fresh(&host, &query);
+    assert_matches_fresh(host, query);
 }
 
 fn assert_off_window_value_survives_other_record_refill() {
@@ -235,7 +234,6 @@ fn perform_sibling(
     binding: &WorthQueryPrimaryRuntimeInvalidationBinding,
 ) -> WorthQueryPrimaryGranularMaintenancePerformed {
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .application
         .conditional_clock(&host.sibling_portfolio_clock)
         .unwrap()
         .observe()
@@ -264,12 +262,15 @@ fn world() -> (
     query::FinancialQueryWorld,
     WorthQueryPrimaryRuntimeInvalidationBinding,
 ) {
-    let mut host = FinancialCourtroomWorld::publish_portfolio();
+    let host = FinancialCourtroomWorld::publish_portfolio();
     let query = query::build_portfolio_with_unrelated_rows(&host, 64);
     assert_rank_is_private_maintenance_support(&query);
+    drop(
+        host.conditional_clock(&host.sibling_portfolio_clock)
+            .unwrap(),
+    );
     assert!(matches!(
-        host.application
-            .conditional_clock(&host.portfolio_clock)
+        host.conditional_clock(&host.portfolio_clock)
             .unwrap()
             .observe(),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
@@ -304,7 +305,6 @@ fn perform(
     binding: &WorthQueryPrimaryRuntimeInvalidationBinding,
 ) -> WorthQueryPrimaryGranularMaintenancePerformed {
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .application
         .conditional_clock(&host.portfolio_clock)
         .unwrap()
         .observe()

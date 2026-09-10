@@ -10,8 +10,8 @@ use worth_query_installation::facade::{
 };
 
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryRetainedGovernedInput,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryRetainedGovernedInput,
+    WorthQuerySelectedProductOperation,
 };
 use worth_relational::facade::history::RelationalCommitReceipt;
 
@@ -23,32 +23,28 @@ use super::redo_intent::{WorthQueryProvedUndo, WorthQueryRedoIntent};
 use super::redo_recovery::WorthQueryRedoRecovery;
 use super::{WorthQueryAftermathDerivationFailure, WorthQueryPendingAftermathCausality};
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Derive a redo intent from the exact current Relational branch head.
+    /// Derive a redo intent from this exact retained product occurrence.
     pub fn derive_redo_intent(
         &self,
         proved: &WorthQueryProvedUndo,
     ) -> Result<WorthQueryRedoIntent, WorthQueryAftermathDerivationFailure> {
+        let product_commit = self.product().selected_commit().clone();
+        if &product_commit != proved.undo_product_publication().composite_commit() {
+            return Err(WorthQueryAftermathDerivationFailure::BasisRejected);
+        }
         let head = self
-            .relational_branch_head(&proved.undo_commit().branch_id)
-            .map_err(|denial| match denial {
-                crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted => {
-                    WorthQueryAftermathDerivationFailure::RetentionCapacityExhausted
-                }
-                crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionIdentityExhausted => {
-                    WorthQueryAftermathDerivationFailure::RetentionIdentityExhausted
-                }
-                crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::SnapshotIdentityExhausted => {
-                    WorthQueryAftermathDerivationFailure::SnapshotIdentityExhausted
-                }
-                _ => WorthQueryAftermathDerivationFailure::BasisRejected,
-            })?
-            .filter(|head| head == proved.undo_commit())
+            .product()
+            .relational_basis()
+            .observation()
+            .commit_receipt()
+            .filter(|head| *head == proved.undo_commit())
+            .cloned()
             .ok_or(WorthQueryAftermathDerivationFailure::BasisRejected)?;
-        WorthQueryRedoIntent::derive(proved, head)
+        WorthQueryRedoIntent::derive(proved, product_commit, head)
     }
 
     /// Admit redo against fresh authority and Relational-owned history.
@@ -58,29 +54,28 @@ where
         authority: &WorthQueryRecoveryEffectAuthority,
         intent: &WorthQueryRedoIntent,
     ) -> Result<WorthQueryRedoAdmission, WorthQueryRedoDenial> {
-        // Reading current Relational truth can itself deny (`Stale`). That is a
-        // non-event for the recovery, so it relinquishes rather than dropping
-        // the handle it is holding (Q8.21-L11).
+        // Reading the selected product can itself deny. That is a non-event for
+        // the recovery, so it relinquishes rather than dropping the handle it
+        // is holding (Q8.21-L11).
+        let current_product_commit = self.product().selected_commit().clone();
         let (recovery, (current_head, prior_redo)) = recovery.admit_deriving(|_| {
             let current_head = self
-                .relational_branch_head(&intent.bound_relational_head().branch_id)
-                .map_err(|denial| match denial {
-                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted => {
-                        WorthQueryRedoDenial::retention_capacity_exhausted()
-                    }
-                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionIdentityExhausted => {
-                        WorthQueryRedoDenial::retention_identity_exhausted()
-                    }
-                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::SnapshotIdentityExhausted => {
-                        WorthQueryRedoDenial::snapshot_identity_exhausted()
-                    }
-                    _ => WorthQueryRedoDenial::stale(),
-                })?
+                .product()
+                .relational_basis()
+                .observation()
+                .commit_receipt()
+                .cloned()
                 .ok_or_else(WorthQueryRedoDenial::stale)?;
             let pending =
                 WorthQueryPendingAftermathCausality::redo_of(intent.undo_commit().clone());
             let prior_redo = self
-                .committed_aftermath_causality(&pending)
+                .application()
+                .primary_provider
+                .resolve_aftermath_causality_at_basis(
+                    self.product().relational_basis(),
+                    &pending,
+                    None,
+                )
                 .map_err(|denial| match denial {
                     crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,
@@ -105,7 +100,14 @@ where
                 });
             Ok((current_head, prior_redo))
         })?;
-        admit_redo_against_relational(recovery, authority, intent, &current_head, prior_redo)
+        admit_redo_against_product(
+            recovery,
+            authority,
+            intent,
+            &current_product_commit,
+            &current_head,
+            prior_redo,
+        )
     }
 }
 
@@ -179,10 +181,11 @@ impl WorthQueryRedoAdmission {
 /// Copied-intent is detected by re-deriving from `proved` and comparing
 /// digests. Duplicate redo is detected from the co-committed Query causal fact. Neither
 /// fact is a caller-supplied boolean (R8.43).
-pub(super) fn admit_redo_against_relational(
+pub(super) fn admit_redo_against_product(
     recovery: WorthQueryRedoRecovery,
     authority: &WorthQueryRecoveryEffectAuthority,
     intent: &WorthQueryRedoIntent,
+    current_product_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
     current_head: &RelationalCommitReceipt,
     prior_redo: WorthQueryPriorRedoObservation,
 ) -> Result<WorthQueryRedoAdmission, WorthQueryRedoDenial> {
@@ -215,7 +218,9 @@ pub(super) fn admit_redo_against_relational(
             return Err(WorthQueryRedoDenial::changed_operation_meaning());
         }
         // R8.45 — lane policy, not intent policy.
-        if current_head != intent.bound_relational_head() {
+        if current_product_commit != intent.bound_product_commit()
+            || current_head != intent.bound_relational_head()
+        {
             return Err(WorthQueryRedoDenial::divergence_invalidation());
         }
         Ok(retained_governed_input)
@@ -261,8 +266,12 @@ fn reject_copied_intent(
     intent: &WorthQueryRedoIntent,
     proved: &WorthQueryProvedUndo,
 ) -> Result<(), WorthQueryRedoDenial> {
-    let expected = WorthQueryRedoIntent::derive(proved, intent.bound_relational_head().clone())
-        .map_err(|_| WorthQueryRedoDenial::stale())?;
+    let expected = WorthQueryRedoIntent::derive(
+        proved,
+        intent.bound_product_commit().clone(),
+        intent.bound_relational_head().clone(),
+    )
+    .map_err(|_| WorthQueryRedoDenial::stale())?;
     if expected.identity().digest() != intent.identity().digest() {
         return Err(WorthQueryRedoDenial::copied_intent());
     }
@@ -270,6 +279,7 @@ fn reject_copied_intent(
     // with drifted fields is still a copy/forge.
     if intent.original_operation() != proved.original_operation()
         || intent.undo_commit() != proved.undo_commit()
+        || intent.undo_product_publication() != proved.undo_product_publication()
         || intent.principal_scope_digest() != proved.principal_scope_digest()
         || intent.compatibility_generation() != proved.compatibility_generation()
         || intent.runtime_instance() != proved.runtime_instance()

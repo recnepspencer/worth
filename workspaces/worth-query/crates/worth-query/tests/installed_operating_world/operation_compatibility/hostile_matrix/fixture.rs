@@ -109,7 +109,7 @@ pub(in super::super) fn bind_current(
     installed: &domain::WorthQueryInstalledDomainHandle<GeometryDomain>,
 ) -> BoundRead {
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(installed, CompatibilityNoPrimaryRead)
@@ -120,13 +120,14 @@ pub(in super::super) fn bind_branch(
     workspace: &worth_query::facade::runtime::WorthQueryWorkspace,
     installed: &domain::WorthQueryInstalledDomainHandle<GeometryDomain>,
 ) -> BoundRead {
+    let branch = workspace
+        .branches()
+        .fork(workspace.current_world())
+        .components(|components| components.reuse_exact_relational_basis().fork_signal())
+        .create()
+        .unwrap();
     workspace
-        .observe_branch_operating_world(
-            worth_query::facade::installed::WorthQueryBranchHeadIdentity::new(
-                "compatibility-branch",
-            )
-            .unwrap(),
-        )
+        .observe_operating_world(branch)
         .unwrap()
         .family(ReadFamily)
         .bind(installed, CompatibilityNoPrimaryRead)

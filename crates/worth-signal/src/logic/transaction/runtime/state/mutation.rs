@@ -55,6 +55,7 @@ where
             branch_mutation_ledger,
             branch_head_generation,
             branch_restore_snapshot_id,
+            conditional_operation_scope: None,
             scratch: TransactionScratch::new(),
             rollback_packets: super::super::transaction::TransactionRollbackPacketSet::default(),
             poisoned: false,

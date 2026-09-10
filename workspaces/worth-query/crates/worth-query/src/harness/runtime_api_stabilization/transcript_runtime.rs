@@ -41,23 +41,38 @@ use transcript_authority::TranscriptWriteAuthority;
 use transcript_bridge::transcript_bridge;
 
 pub(super) fn transcript_runtime(produced_aspects: &[&str]) -> WorthQueryRuntime {
-    WorthQueryRuntime::builder()
-        .aspect_contracts(transcript_aspect_contracts(produced_aspects))
-        .expect("transcript aspect contracts should install")
-        .runtime_bridge(transcript_bridge())
-        .schema_adapter(TranscriptSchemaAdapter)
-        .source_adapter(TranscriptSourceAdapter::default())
-        .snapshot_identity(TranscriptSnapshotIdentity)
-        .write_authority(TranscriptWriteAuthority)
-        .signal_sink(TranscriptSignalSink)
-        .subscription_activation(TranscriptSubscriptionActivation)
-        .preview_basis(TranscriptPreviewBasis)
-        .inspector_evidence(TranscriptInspectorEvidence)
-        .intent_authority(TranscriptIntentAuthority)
-        .support_profile(intent_support_profile())
-        .build_backend_from_parts()
-        .build()
-        .expect("transcript runtime backend parts should build")
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .runtime_name("worth-query-transcript-product")
+        .build();
+    let source = worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
+        runtime,
+        "transcript-product",
+    )
+    .expect("transcript Product source should admit");
+    let bridge = transcript_bridge(source.bridge_source());
+    WorthQueryRuntime::builder(
+        crate::consumer_kit::test_backend::in_memory_test_product_world_resources(),
+    )
+    .aspect_contracts(transcript_aspect_contracts(produced_aspects))
+    .expect("transcript aspect contracts should install")
+    .runtime_bridge(bridge)
+    .relational_source_owner(source)
+    .conditional_execution_resources(
+        crate::runtime::WorthQueryConditionalExecutionResources::development(),
+    )
+    .schema_adapter(TranscriptSchemaAdapter)
+    .source_adapter(TranscriptSourceAdapter::default())
+    .snapshot_identity(TranscriptSnapshotIdentity)
+    .write_authority(TranscriptWriteAuthority)
+    .signal_sink(TranscriptSignalSink)
+    .subscription_activation(TranscriptSubscriptionActivation)
+    .preview_basis(TranscriptPreviewBasis)
+    .inspector_evidence(TranscriptInspectorEvidence)
+    .intent_authority(TranscriptIntentAuthority)
+    .support_profile(intent_support_profile())
+    .build_backend_from_parts()
+    .build()
+    .expect("transcript runtime backend parts should build")
 }
 
 fn intent_support_profile() -> WorthQueryRuntimeSupportProfile {

@@ -2,18 +2,7 @@ use super::*;
 
 #[test]
 fn effect_triggered_pending_write_intent_executes_through_intent_authority_once() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .aspect_contracts(stateful_bridge_aspect_contracts())
-        .expect("intent test aspect contracts should install")
-        .runtime_bridge(test_bridge())
-        .schema_adapter(TestSchemaAdapter)
-        .source_adapter(TestSourceAdapter::default())
-        .snapshot_identity(TestSnapshotIdentityAdapter)
-        .write_authority(TestWriteAuthority)
-        .signal_sink(TestSignalSink)
-        .subscription_activation(TestSubscriptionActivation)
-        .preview_basis(TestPreviewBasis)
-        .inspector_evidence(TestInspectorEvidence)
+    let mut runtime = complete_backend_from_parts_builder()
         .intent_authority(TestIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()

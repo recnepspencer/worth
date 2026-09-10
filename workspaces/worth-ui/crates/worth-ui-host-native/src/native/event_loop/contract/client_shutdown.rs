@@ -1,10 +1,8 @@
 pub(super) mod mounted_identity;
 mod observation_ingress;
-mod presentation_semantic_subscriber;
 mod visual_snapshot;
 
 pub use observation_ingress::UiNativeClientObservationIngressObservation;
-pub use presentation_semantic_subscriber::UiNativeClientPresentationSemanticSubscriberObservation;
 pub use visual_snapshot::{
     UiNativeClientVisualCoordinateOrientation, UiNativeClientVisualCoordinateRounding,
     UiNativeClientVisualPixelColorSpace, UiNativeClientVisualSnapshotInput,
@@ -17,8 +15,6 @@ pub struct UiNativeClientShutdownObservation {
     managed_semantic_resources_complete: bool,
     presentation_transitions: Box<[UiNativeClientPresentationTransitionObservation]>,
     presentation_transition_trace_complete: bool,
-    presentation_semantic_frontiers: Box<[UiNativeClientPresentationSemanticFrontierObservation]>,
-    presentation_semantic_frontier_trace_complete: bool,
     text_presentation_work: Box<[UiNativeClientTextPresentationWorkObservation]>,
     text_presentation_work_trace_complete: bool,
     authored_mounted_instances: mounted_identity::Observations,
@@ -71,39 +67,6 @@ impl UiNativeClientShutdownAttemptObservation {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum UiNativeClientPresentationSemanticChange {
-    Content,
-    Width,
-    PaintValue,
-    PaintBoundary,
-    Dpi,
-    UploadCompletion,
-    PinRelease,
-    Currentness,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum UiNativeClientConditionalOutcome {
-    ComputedChanged,
-    ComputedRevertedClean,
-    DependencyUnchanged,
-    Suppressed,
-    DeferredByCondition,
-    DeferredTemporal,
-    DeferredOnDemand,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct UiNativeClientPresentationSemanticFrontierObservation {
-    change: UiNativeClientPresentationSemanticChange,
-    subscribers: Box<[UiNativeClientPresentationSemanticSubscriberObservation]>,
-    source_deliveries: u32,
-    outcomes: Box<[UiNativeClientConditionalOutcome]>,
-    performed_counter_rows: Box<[[u64; 24]]>,
-    scope_rejections: [u64; 4],
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiNativeClientPresentationTransitionKind {
     Pending,
     Superseded,
@@ -134,8 +97,6 @@ impl UiNativeClientShutdownObservation {
             managed_semantic_resources_complete,
             presentation_transitions: Box::new([]),
             presentation_transition_trace_complete: true,
-            presentation_semantic_frontiers: Box::new([]),
-            presentation_semantic_frontier_trace_complete: true,
             text_presentation_work: Box::new([]),
             text_presentation_work_trace_complete: true,
             authored_mounted_instances: Box::new([]),
@@ -154,33 +115,11 @@ impl UiNativeClientShutdownObservation {
         presentation_transitions: Box<[UiNativeClientPresentationTransitionObservation]>,
         presentation_transition_trace_complete: bool,
     ) -> Self {
-        Self::from_client_with_presentation_evidence(
-            managed_semantic_resources_closed,
-            managed_semantic_resources_complete,
-            presentation_transitions,
-            presentation_transition_trace_complete,
-            Box::new([]),
-            true,
-        )
-    }
-
-    pub fn from_client_with_presentation_evidence(
-        managed_semantic_resources_closed: u64,
-        managed_semantic_resources_complete: bool,
-        presentation_transitions: Box<[UiNativeClientPresentationTransitionObservation]>,
-        presentation_transition_trace_complete: bool,
-        presentation_semantic_frontiers: Box<
-            [UiNativeClientPresentationSemanticFrontierObservation],
-        >,
-        presentation_semantic_frontier_trace_complete: bool,
-    ) -> Self {
         Self {
             managed_semantic_resources_closed,
             managed_semantic_resources_complete,
             presentation_transitions,
             presentation_transition_trace_complete,
-            presentation_semantic_frontiers,
-            presentation_semantic_frontier_trace_complete,
             text_presentation_work: Box::new([]),
             text_presentation_work_trace_complete: true,
             authored_mounted_instances: Box::new([]),
@@ -264,16 +203,6 @@ impl UiNativeClientShutdownObservation {
         self.presentation_transition_trace_complete
     }
 
-    pub fn presentation_semantic_frontiers(
-        &self,
-    ) -> &[UiNativeClientPresentationSemanticFrontierObservation] {
-        &self.presentation_semantic_frontiers
-    }
-
-    pub const fn presentation_semantic_frontier_trace_complete(&self) -> bool {
-        self.presentation_semantic_frontier_trace_complete
-    }
-
     pub fn text_presentation_work(&self) -> &[UiNativeClientTextPresentationWorkObservation] {
         &self.text_presentation_work
     }
@@ -313,50 +242,6 @@ impl UiNativeClientShutdownObservation {
             && self.intent_resources_empty
             && self.resources.terminal_mounted_layouts() == 0
             && self.resources.terminal_raster_cache_entries() == 0
-    }
-}
-
-impl UiNativeClientPresentationSemanticFrontierObservation {
-    pub fn reported(
-        change: UiNativeClientPresentationSemanticChange,
-        subscribers: impl IntoIterator<Item = UiNativeClientPresentationSemanticSubscriberObservation>,
-        source_deliveries: u32,
-        outcomes: impl IntoIterator<Item = UiNativeClientConditionalOutcome>,
-        performed_counter_rows: impl IntoIterator<Item = [u64; 24]>,
-        scope_rejections: [u64; 4],
-    ) -> Self {
-        Self {
-            change,
-            subscribers: subscribers.into_iter().collect(),
-            source_deliveries,
-            outcomes: outcomes.into_iter().collect(),
-            performed_counter_rows: performed_counter_rows.into_iter().collect(),
-            scope_rejections,
-        }
-    }
-
-    pub const fn change(&self) -> UiNativeClientPresentationSemanticChange {
-        self.change
-    }
-
-    pub fn outcomes(&self) -> &[UiNativeClientConditionalOutcome] {
-        &self.outcomes
-    }
-
-    pub fn subscribers(&self) -> &[UiNativeClientPresentationSemanticSubscriberObservation] {
-        &self.subscribers
-    }
-
-    pub const fn source_deliveries(&self) -> u32 {
-        self.source_deliveries
-    }
-
-    pub fn performed_counter_rows(&self) -> &[[u64; 24]] {
-        &self.performed_counter_rows
-    }
-
-    pub const fn scope_rejections(&self) -> [u64; 4] {
-        self.scope_rejections
     }
 }
 

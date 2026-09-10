@@ -12,8 +12,8 @@ use worth_relational::facade::transactions::{
 use super::super::application_attempt::{authenticated_principal, idempotency};
 use super::super::fixture::{
     installed_capability_authorization_world, installed_capability_replacement_world, live_scope,
-    AccountLabel, AccountStatus, CapabilityIdentity, CapabilityStatus, CapabilityStatusField,
-    CapabilityTouchOperation,
+    publish_relational_mutation, AccountLabel, AccountStatus, CapabilityIdentity, CapabilityStatus,
+    CapabilityStatusField, CapabilityTouchOperation,
 };
 use super::capability_progression::{
     admitted_capability_access, admitted_capability_operation, admitted_capability_program, time,
@@ -114,6 +114,12 @@ fn future_equivalent_grant_cannot_inherit_an_expired_access_context() {
         time(100),
         time(100),
         time(100),
+        time(100),
+        time(100),
+        time(100),
+        time(100),
+        time(100),
+        time(100),
     ]);
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
@@ -179,11 +185,11 @@ fn unrelated_graph_drift_preserves_current_idempotent_recovery() {
     let committed = commit_first(&world, first, 55);
     change_account_label(&world, "account-2", "independently-updated");
 
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
+    let outcome = world
         .application
-        .compare_and_commit_application(retry, idempotency(55, 55))
-    else {
-        panic!("unrelated drift must preserve lawful idempotent recovery");
+        .compare_and_commit_application(retry, idempotency(55, 55));
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = outcome else {
+        panic!("unrelated drift must preserve lawful idempotent recovery: {outcome:?}");
     };
     assert!(recovered.is_same_authoritative_commit(&committed));
     assert_eq!(
@@ -195,6 +201,15 @@ fn unrelated_graph_drift_preserves_current_idempotent_recovery() {
 fn current_retry_world() -> World {
     let world = installed_capability_authorization_world();
     world.authorization_time.script([
+        time(100),
+        time(100),
+        time(100),
+        time(100),
+        time(100),
+        time(100),
+        time(100),
+        time(100),
+        time(100),
         time(100),
         time(100),
         time(100),
@@ -247,7 +262,7 @@ fn assert_readmission_denial(outcome: WorthQueryApplicationCommitOutcome) {
 fn revoke_grant(world: &World) {
     let request = live_scope();
     let grant = world
-        .application
+        .selected_product()
         .resolve_entity(
             CapabilityIdentity::reference(),
             "capability-1".to_owned(),
@@ -312,7 +327,7 @@ fn change_account_field(
 ) {
     let request = live_scope();
     let account = world
-        .application
+        .selected_product()
         .resolve_entity(
             super::super::fixture::AccountIdentity::reference(),
             key.to_owned(),
@@ -343,28 +358,11 @@ fn update_field(
     value: AspectValue,
     reason: &str,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
-        let fields = AspectFieldPatch::from(BTreeMap::from([(locator, value)]));
-        let mut transaction = {
-            let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-            runtime
-                .begin_branch_transaction(
-                    &transaction_validation_input,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("owner-admitted transaction context")
-        };
-        transaction
-            .push_batch(WorkerIntentBatch::new(reason).push(MutationIntent::Entity(
-                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
-            )))
-            .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        super::super::fixture::release_test_commit_snapshot(runtime, &committed);
-        handle.ensure_primary_indexes_current(runtime).unwrap();
-    });
+    let fields = AspectFieldPatch::from(BTreeMap::from([(locator, value)]));
+    publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new(reason).push(MutationIntent::Entity(
+            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
+        )),
+    );
 }

@@ -161,30 +161,35 @@ fn try_build_primary_query_world_with_dimensions(
         source_installation,
         IntentSourceProjection::new(record, Arc::clone(&observations)),
     );
-    let builder = runtime::WorthQueryRuntime::builder()
-        .primary_runtime_granular_invalidations(installation.clone())
-        .domain_package(domain::package(profile))
-        .expect("the temporal consumer package must admit")
-        .graph_participation(domain::graph_definition())
-        .graph_participation_provider(domain::PrimaryGraph, domain::PrimaryGraphProvider)
-        .runtime_bridge(bridge)
-        .conditional_signal_graph(signal)
-        .conditional_node(
-            TemporalDomain,
-            TemporalDomainOperation,
-            TemporalDomainFamily,
-            domain::PrimaryGraph,
-            query_domain::WorthQueryConditionalNodeLocation::operation(node.identity()).unwrap(),
-            vec![dependency_installation],
-            providers,
-            conditional_compute,
-        )
-        .domain_operation_executor(
-            TemporalDomain,
-            TemporalDomainOperation,
-            TemporalDomainFamily,
-            domain::OperationExecutor(profile),
-        );
+    let builder = runtime::WorthQueryRuntime::builder(
+        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+    )
+    .primary_runtime_granular_invalidations(installation.clone())
+    .domain_package(domain::package(profile))
+    .expect("the temporal consumer package must admit")
+    .graph_participation(domain::graph_definition())
+    .graph_participation_provider(domain::PrimaryGraph, domain::PrimaryGraphProvider)
+    .runtime_bridge(bridge)
+    .conditional_execution_resources(
+        runtime::WorthQueryConditionalExecutionResources::development(),
+    )
+    .conditional_signal_graph(signal)
+    .conditional_node(
+        TemporalDomain,
+        TemporalDomainOperation,
+        TemporalDomainFamily,
+        domain::PrimaryGraph,
+        query_domain::WorthQueryConditionalNodeLocation::operation(node.identity()).unwrap(),
+        vec![dependency_installation],
+        providers,
+        conditional_compute,
+    )
+    .domain_operation_executor(
+        TemporalDomain,
+        TemporalDomainOperation,
+        TemporalDomainFamily,
+        domain::OperationExecutor(profile),
+    );
     let builder = if scale.install_unrelated_query {
         builder
             .domain_package(domain::unrelated_package())
@@ -198,7 +203,7 @@ fn try_build_primary_query_world_with_dimensions(
     } else {
         builder
     };
-    let mut workspace = builder
+    let backend = builder
         .consumer_support_posture(
             query_domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
             query_domain::WorthQueryConsumerSupportPosture::Supported,
@@ -249,9 +254,9 @@ fn try_build_primary_query_world_with_dimensions(
         .subscription_activation(backend::SubscriptionActivation)
         .preview_basis(backend::PreviewBasis)
         .inspector_evidence(backend::InspectorEvidence)
-        .build_backend_from_parts()
-        .build()
-        .map_err(|error| error.to_string())?
+        .build_backend_from_parts();
+    let runtime = backend.build().map_err(|error| error.to_string())?;
+    let mut workspace = runtime
         .workspace("temporal-primary-query")
         .map_err(|error| error.to_string())?;
     if profile == domain::ConsumerProfile::SharedValuePatch {
@@ -260,7 +265,22 @@ fn try_build_primary_query_world_with_dimensions(
     let settled = settle_primary_projection(&mut workspace);
     let live = match settled.into_lifecycle().promote(&mut workspace) {
         query_domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
-        _ => panic!("the temporal primary projection must promote"),
+        query_domain::WorthQueryProjectionPromotionOutcome::Denied(stop)
+        | query_domain::WorthQueryProjectionPromotionOutcome::Deferred(stop)
+        | query_domain::WorthQueryProjectionPromotionOutcome::Failed(stop) => panic!(
+            "the temporal primary projection must promote: {:?}: {}",
+            stop.kind(),
+            stop.detail()
+        ),
+        query_domain::WorthQueryProjectionPromotionOutcome::Stale(_) => {
+            panic!("the temporal primary projection unexpectedly became stale")
+        }
+        query_domain::WorthQueryProjectionPromotionOutcome::RebindRequired(_) => {
+            panic!("the temporal primary projection unexpectedly required rebinding")
+        }
+        query_domain::WorthQueryProjectionPromotionOutcome::AuthorityRevalidationRequired(_) => {
+            panic!("the temporal primary projection unexpectedly required authority revalidation")
+        }
     };
     Ok(PrimaryQueryWorld {
         workspace,
@@ -326,13 +346,14 @@ fn settle_primary_projection(
 > {
     let installed = workspace.domain(TemporalDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(TemporalDomainFamily)
         .bind(&installed, TemporalDomainOperation)
         .unwrap();
     let consumer = bound.consumer_projection_contract().unwrap();
-    let settled = bound
+
+    bound
         .admit_execution_resources((), resource_request(), &*workspace)
         .unwrap()
         .execute(workspace)
@@ -353,8 +374,7 @@ fn settle_primary_projection(
         )
         .unwrap()
         .settle()
-        .unwrap();
-    settled
+        .unwrap()
 }
 
 fn resource_request() -> query_domain::WorthQueryExecutionResourceRequest {

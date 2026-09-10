@@ -7,6 +7,7 @@ use std::time::Instant;
 
 #[path = "operation_admission/capability_admission/mod.rs"]
 mod capability_admission;
+pub(in crate::domain_computation) use capability_admission::admit_capability_access;
 pub use capability_admission::WorthQueryAdmittedApplicationCapabilityAccess;
 pub(in crate::domain_computation::authorization) use capability_admission::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,

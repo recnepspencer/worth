@@ -194,8 +194,48 @@ impl WorthQueryHostPredicateFailure {
 /// The provider returns domain truth only. Query adapts that truth into the
 /// installed Runtime Bridge contract; neither raw Signal eligibility nor wake
 /// authority can cross this boundary.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct WorthQueryHostProviderHeapRetention(u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WorthQueryHostProviderRetentionOverflow;
+
+impl WorthQueryHostProviderHeapRetention {
+    pub const fn none() -> Self {
+        Self(0)
+    }
+
+    pub fn try_from_parts(
+        parts: impl IntoIterator<Item = u64>,
+    ) -> Result<Self, WorthQueryHostProviderRetentionOverflow> {
+        parts
+            .into_iter()
+            .try_fold(0u64, |total, part| {
+                total
+                    .checked_add(part)
+                    .ok_or(WorthQueryHostProviderRetentionOverflow)
+            })
+            .map(Self)
+    }
+
+    pub const fn bytes(self) -> u64 {
+        self.0
+    }
+
+    pub fn arc_allocation_bytes<T: ?Sized>(value: &T) -> u64 {
+        let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+            .extend(std::alloc::Layout::for_value(value))
+            .expect("one live value has a representable Arc allocation layout");
+        layout.pad_to_align().size() as u64
+    }
+}
+
 pub trait WorthQueryHostConditionalPredicateProvider<Node>: Send + Sync + 'static {
     const SEMANTIC_IDENTITY: &'static str;
+
+    fn retained_heap_bytes(
+        &self,
+    ) -> Result<WorthQueryHostProviderHeapRetention, WorthQueryHostProviderRetentionOverflow>;
 
     fn evaluate(
         &self,
@@ -209,6 +249,10 @@ pub trait WorthQueryHostConditionalPredicateProvider<Node>: Send + Sync + 'stati
 pub trait WorthQueryHostConditionalOutputComparatorProvider<Node>: Send + Sync + 'static {
     fn semantic_identity(&self) -> &'static str;
 
+    fn retained_heap_bytes(
+        &self,
+    ) -> Result<WorthQueryHostProviderHeapRetention, WorthQueryHostProviderRetentionOverflow>;
+
     fn has_meaningful_change(
         &self,
         cached: u64,
@@ -221,6 +265,10 @@ pub trait WorthQueryHostConditionalOutputComparatorProvider<Node>: Send + Sync +
 /// may project a stronger semantic version from their installed live state.
 pub trait WorthQueryHostConditionalOutputVersionProvider<Node>: Send + Sync + 'static {
     fn semantic_identity(&self) -> &'static str;
+
+    fn retained_heap_bytes(
+        &self,
+    ) -> Result<WorthQueryHostProviderHeapRetention, WorthQueryHostProviderRetentionOverflow>;
 
     fn output_version(&self, fallback_attempt: u64) -> Result<u64, WorthQueryHostPredicateFailure>;
 }

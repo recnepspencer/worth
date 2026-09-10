@@ -1,6 +1,7 @@
 mod admitted_projection;
 mod denial;
 mod invoker_isolation;
+mod outcome_application;
 mod processing;
 mod provider_commit_deferred;
 mod reentry_counts;
@@ -31,6 +32,9 @@ use super::reconstruction_authority::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) enum WorthQueryTemporalReentryOutcome {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),
     Committed,
     AlreadyCommitted,
     Obsolete,
@@ -47,10 +51,6 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
     SettlementDeferred(
         crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
     ),
-    SettlementSnapshotCapacityBackpressured {
-        deferred: crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
-        maximum_active_snapshots: usize,
-    },
     Indeterminate(String),
 }
 
@@ -125,6 +125,7 @@ pub(super) fn reenter_temporal_operation<
     Clock,
 >(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     access: &WorthQueryTemporalReconstructionAccess<
         Schema,
@@ -209,6 +210,7 @@ where
     let admission_canonical_work = idempotency.canonical_work();
     let result = try_reentry(
         runtime,
+        product,
         operation,
         access,
         execution,
@@ -283,6 +285,7 @@ fn try_reentry<
     Clock,
 >(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     access: &WorthQueryTemporalReconstructionAccess<
         Schema,
@@ -351,9 +354,12 @@ where
     LifecycleUnit: ApplicationFieldUnit,
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
-    let fresh = access.resolve_fresh_operation_access(runtime)?;
+    let selected = runtime
+        .on_product(product.retained_clone())
+        .map_err(|denial| format!("temporal selected product denied: {denial:?}"))?;
+    let fresh = access.resolve_fresh_operation_access(&selected)?;
     let Some(current) = execution.resolve_current_intent(
-        runtime,
+        &selected,
         candidate.record_identity(),
         candidate.revision(),
         &fresh.request,
@@ -362,7 +368,7 @@ where
         return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
     };
     let Some(projected) =
-        execution.admit_current_projection(runtime, operation, candidate, &fresh, &current)?
+        execution.admit_current_projection(&selected, operation, candidate, &fresh, &current)?
     else {
         return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
     };

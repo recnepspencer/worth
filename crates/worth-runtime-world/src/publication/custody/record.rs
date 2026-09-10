@@ -55,17 +55,23 @@ impl ActiveAttemptRecord {
             reserved_commit_capacity,
             reserved_recovery_slot,
             reserved_component_pin_pair,
+            reserved_successor_observation_capacity,
+            reserved_successor_observation_pin_pair,
             reserved_publication_capacity,
             history: _,
             operation,
         } = capacities.into_parts();
         let publication = reserved_commit_capacity.publication_envelope().cloned();
         let resources = ActiveAttemptResources {
+            conditional_definition: None,
             product_comparison_costs: None,
             commit_identity: reserved_commit_identity,
             commit: None,
             history_custody: ActiveHistoryCustody::Reserved(reserved_commit_capacity),
             pins: ActivePinCustody::Reserved(reserved_component_pin_pair),
+            successor_observation_capacity: reserved_successor_observation_capacity,
+            successor_observation_pins: reserved_successor_observation_pin_pair,
+            prepared_successor_observation: None,
             history_pins: None,
             pin_denial: None,
             product_head: None,

@@ -1,3 +1,5 @@
+mod retained_charge;
+
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 

@@ -25,6 +25,7 @@ pub struct WorthQueryManagedProviderWorkEvidence {
     disposed_artifact_count: usize,
     peak_scratch_bytes: usize,
     provider_retained_bytes: usize,
+    output_retained_bytes: usize,
     retained_bytes: usize,
     peak_retained_bytes: usize,
     checkpoint_available: bool,
@@ -55,6 +56,7 @@ pub(super) struct WorthQueryManagedProviderWorkEvidenceParts {
     pub(super) disposed_artifact_count: usize,
     pub(super) peak_scratch_bytes: usize,
     pub(super) provider_retained_bytes: usize,
+    pub(super) output_retained_bytes: usize,
     pub(super) retained_bytes: usize,
     pub(super) peak_retained_bytes: usize,
     pub(super) checkpoint_available: bool,
@@ -87,6 +89,7 @@ impl WorthQueryManagedProviderWorkEvidence {
             disposed_artifact_count: parts.disposed_artifact_count,
             peak_scratch_bytes: parts.peak_scratch_bytes,
             provider_retained_bytes: parts.provider_retained_bytes,
+            output_retained_bytes: parts.output_retained_bytes,
             retained_bytes: parts.retained_bytes,
             peak_retained_bytes: parts.peak_retained_bytes,
             checkpoint_available: parts.checkpoint_available,
@@ -169,6 +172,10 @@ impl WorthQueryManagedProviderWorkEvidence {
 
     pub const fn provider_retained_bytes(&self) -> usize {
         self.provider_retained_bytes
+    }
+
+    pub const fn output_retained_bytes(&self) -> usize {
+        self.output_retained_bytes
     }
 
     pub const fn peak_retained_bytes(&self) -> usize {

@@ -1,3 +1,4 @@
+mod conditional_definition;
 mod emission;
 mod model;
 mod optional_field_authoring;
@@ -89,6 +90,7 @@ impl<Schema, Operation, Input, Scope>
             keys: BTreeSet::new(),
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling,
+            conditional_definition: None,
         }
     }
 }
@@ -271,6 +273,7 @@ impl<Schema, Operation, Input, Scope>
             effects: self.effects,
             emission_retained_bytes: self.emission_retained_bytes,
             emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
+            conditional_definition: self.conditional_definition,
         })
     }
 

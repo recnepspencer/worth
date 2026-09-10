@@ -10,28 +10,50 @@ struct BridgeConditionalSemanticObservationRead {
         worth_foundational::facade::AspectMask<worth_foundational::facade::ProjectionMask>,
 }
 
+#[derive(Clone)]
 pub(super) struct BridgeConditionalSemanticObservationPlan {
     reads: Vec<BridgeConditionalSemanticObservationRead>,
 }
 
 impl BridgeConditionalSemanticObservationPlan {
+    pub(super) fn retained_heap_bytes(
+        &self,
+    ) -> Result<u64, super::retention::BridgeRetentionDenial> {
+        super::retention::array_charge::<BridgeConditionalSemanticObservationRead>(
+            self.reads.capacity(),
+        )
+    }
+
     #[cfg(test)]
     pub(super) fn managed_test_plan() -> Self {
         let contract = crate::snapshot::SnapshotReadContract::scalar(
             worth_foundational::facade::AspectKey::new("balance").unwrap(),
             worth_foundational::facade::ScalarAspectType::UInt64,
         );
+        Self::managed_test_plan_for(
+            contract.aspect_contract().clone(),
+            worth_foundational::facade::AspectMask::new([
+                worth_foundational::facade::CanonicalFieldPath::single(
+                    worth_foundational::facade::FieldKey::new("available").unwrap(),
+                ),
+            ]),
+        )
+    }
+
+    #[cfg(test)]
+    pub(super) fn managed_test_plan_for(
+        contract: worth_foundational::facade::AspectContract,
+        projection_mask: worth_foundational::facade::AspectMask<
+            worth_foundational::facade::ProjectionMask,
+        >,
+    ) -> Self {
         Self {
             reads: vec![BridgeConditionalSemanticObservationRead {
                 ordinal: 0,
                 record: None,
                 managed_record: true,
-                contract: contract.aspect_contract().clone(),
-                projection_mask: worth_foundational::facade::AspectMask::new([
-                    worth_foundational::facade::CanonicalFieldPath::single(
-                        worth_foundational::facade::FieldKey::new("available").unwrap(),
-                    ),
-                ]),
+                contract,
+                projection_mask,
             }],
         }
     }
@@ -61,20 +83,6 @@ impl BridgeConditionalSemanticObservationPlan {
             .map(|read| read.snapshot_request(managed_record))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(crate::snapshot::SnapshotReadPacket::new(reads))
-    }
-
-    pub(super) fn baseline_record(
-        &self,
-        ordinal: usize,
-        managed_record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
-    ) -> Option<crate::relational_identity::RelationalBridgeRecordIdentityParts> {
-        self.reads
-            .iter()
-            .find(|read| read.ordinal == ordinal)
-            .and_then(|read| {
-                read.record
-                    .or(managed_record.filter(|_| read.managed_record))
-            })
     }
 }
 
@@ -114,6 +122,18 @@ pub(super) fn compile_semantic_observation_plan(
     contract: &super::BridgeConditionalContract,
     registrations: &[crate::correspondence::BridgeSemanticCorrespondenceRegistration],
 ) -> Result<Option<BridgeConditionalSemanticObservationPlan>, BridgeConditionalDenial> {
+    compile_semantic_observation_plan_from_dependencies(
+        contract,
+        registrations
+            .iter()
+            .map(crate::correspondence::BridgeSemanticCorrespondenceRegistration::dependency),
+    )
+}
+
+pub(super) fn compile_semantic_observation_plan_from_dependencies<'a>(
+    contract: &super::BridgeConditionalContract,
+    dependencies: impl Iterator<Item = &'a crate::correspondence::BridgeSemanticDependencyCandidate>,
+) -> Result<Option<BridgeConditionalSemanticObservationPlan>, BridgeConditionalDenial> {
     if !matches!(
         contract.condition(),
         super::BridgeConditionalCondition::DeltaThreshold(_)
@@ -123,15 +143,14 @@ pub(super) fn compile_semantic_observation_plan(
         return Ok(None);
     }
     let condition_dependencies = contract.condition_dependency_ordinals();
-    let reads = registrations
-        .iter()
-        .filter(|registration| {
+    let reads = dependencies
+        .filter(|dependency| {
             condition_dependencies.is_empty()
                 || condition_dependencies
                     .iter()
-                    .any(|ordinal| registration.dependency().dependency_ordinal() == *ordinal)
+                    .any(|ordinal| dependency.dependency_ordinal() == *ordinal)
         })
-        .map(|registration| compile_read(registration, contract.condition()))
+        .map(|dependency| compile_read(dependency, contract.condition()))
         .collect::<Result<Vec<_>, _>>()?;
     if reads.is_empty() {
         return Err(BridgeConditionalDenial::new(
@@ -143,10 +162,9 @@ pub(super) fn compile_semantic_observation_plan(
 }
 
 fn compile_read(
-    registration: &crate::correspondence::BridgeSemanticCorrespondenceRegistration,
+    dependency: &crate::correspondence::BridgeSemanticDependencyCandidate,
     condition: &super::BridgeConditionalCondition,
 ) -> Result<BridgeConditionalSemanticObservationRead, BridgeConditionalDenial> {
-    let dependency = registration.dependency();
     let managed_record = matches!(condition, super::BridgeConditionalCondition::TemporalWake)
         || matches!(
             dependency.locality(),
@@ -194,8 +212,6 @@ mod tests {
             second_packet.reads()[0].relational_record_identity_parts(),
             Some(second)
         );
-        assert_eq!(plan.baseline_record(0, Some(first)), Some(first));
-        assert_eq!(plan.baseline_record(0, Some(second)), Some(second));
     }
 
     #[test]

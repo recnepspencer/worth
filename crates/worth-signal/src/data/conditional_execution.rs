@@ -11,6 +11,11 @@ mod execution_proof;
 mod identity;
 mod threshold_resolution;
 
+pub(crate) use contract::{
+    PreparedSignalConditionalContract, SignalConditionalServiceContractBinding,
+};
+pub(crate) use dependency_versions::SignalConditionalVersionObservation;
+
 pub use compatibility::{
     SignalConditionalArtifactReuseClass, SignalConditionalComparatorClass,
     SignalConditionalComparatorPosition, SignalConditionalComparisonWork,
@@ -32,6 +37,8 @@ pub use decision::{
     SignalConditionalDecisionClass, SignalConditionalDecisionCounters,
     SignalConditionalDecisionEvidence,
 };
+pub(crate) use execution::work as conditional_work;
+pub(crate) use execution::SignalConditionalAttemptOutcome;
 pub use execution::{SignalConditionalExecutionFailure, SignalConditionalExecutionRequest};
 pub use identity::{
     SignalConditionalDecisionIdentityKind, SignalConditionalDecisionProjectionIdentity,

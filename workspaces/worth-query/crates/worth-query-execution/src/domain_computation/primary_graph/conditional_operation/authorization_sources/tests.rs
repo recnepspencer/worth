@@ -42,9 +42,10 @@ fn governed_temporal_operation_uses_real_capability_progression() {
         .unwrap();
     let input = admitted_input();
     let authorization = WorthQueryGovernedTemporalOperationAuthorization::new(capability);
+    let selected = world.selected_product();
     let admission = authorization
         .authorize(
-            &world.application,
+            &selected,
             &principal,
             &account,
             &operation,
@@ -83,13 +84,17 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
     let authorization =
         WorthQueryGovernedTemporalQueryAuthorization::new(capability, admitted_input());
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+    let selected = world.selected_product();
+    let (_, product, application_basis) = selected.into_parts();
     let plan = authorization
         .admit(
             &world.application,
             &query,
             &access,
             worth_query_declaration::facade::application_query::ApplicationQueryParameterSet::new(),
-            WorthQueryApplicationQueryControls::current_one_shot(
+            WorthQueryApplicationQueryControls::product_one_shot(
+                product,
+                application_basis,
                 NonZeroUsize::new(1).unwrap(),
                 NonZeroUsize::new(256).unwrap(),
                 &request,

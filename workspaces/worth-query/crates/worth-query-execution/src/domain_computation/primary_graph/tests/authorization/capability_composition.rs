@@ -179,7 +179,7 @@ fn new_prior_actor_denies_final_commit_before_effect_authority() {
 }
 
 #[test]
-fn unrelated_actor_drift_does_not_stale_the_selected_transition() {
+fn unrelated_published_actor_drift_stales_the_selected_product_mutation() {
     let world = installed_composed_capability_world(CapabilityCompositionScenario::Lawful);
     world.authorization_time.script(vec![time(100); 16]);
     let request = live_scope();
@@ -199,12 +199,12 @@ fn unrelated_actor_drift_does_not_stale_the_selected_transition() {
         "other-prior",
     );
 
-    assert!(matches!(
+    super::super::application_attempt::assert_product_basis_stale(
         world
             .application
             .compare_and_commit_application(program, idempotency(76, 76)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
+        "the mutation bound to the older selected product",
+    );
 }
 
 fn admit_composed_access(
@@ -220,9 +220,12 @@ fn admit_composed_access(
             ComposedCapabilityTouchOperation::reference(),
         )
         .unwrap();
-    world
-        .application
-        .admit_capability_access(principal, &capability, composed_input(), request)
+    world.selected_product().admit_capability_access(
+        principal,
+        &capability,
+        composed_input(),
+        request,
+    )
 }
 
 fn assert_stale_at_operation(world: &AuthorizationWorld, access: ComposedAccess) {

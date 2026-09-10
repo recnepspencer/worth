@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::history::ExplicitCommitHistoryProtectionObligation;
@@ -47,7 +47,7 @@ impl Eq for ProductBranchObservation {}
 #[derive(Debug)]
 pub(crate) struct ProductBranchObservationObligation {
     _components: ObservationRetentionObligation,
-    _history: ExplicitCommitHistoryProtectionObligation,
+    history: OnceLock<ExplicitCommitHistoryProtectionObligation>,
 }
 
 impl ProductBranchObservationObligation {
@@ -55,10 +55,38 @@ impl ProductBranchObservationObligation {
         components: ObservationRetentionObligation,
         history: ExplicitCommitHistoryProtectionObligation,
     ) -> Self {
+        let initialized = OnceLock::new();
+        initialized
+            .set(history)
+            .expect("a new observation obligation has no history protection");
         Self {
             _components: components,
-            _history: history,
+            history: initialized,
         }
+    }
+}
+
+/// All heap-backed observation custody prepared before the product reference
+/// moves. Finalization installs the exact successor's history protection and
+/// performs no allocation or owner call inside the branch critical section.
+#[derive(Debug)]
+pub(crate) struct PreparedProductBranchObservation {
+    observation: ProductBranchObservation,
+}
+
+impl PreparedProductBranchObservation {
+    pub(crate) fn finalize(
+        self,
+        history: ExplicitCommitHistoryProtectionObligation,
+    ) -> ProductBranchObservation {
+        assert!(history.matches_commit(self.observation.snapshot.commit()));
+        assert_eq!(history.owner_identity(), self.observation.snapshot.owner());
+        self.observation
+            .obligation
+            .history
+            .set(history)
+            .expect("prepared observation history finalizes exactly once");
+        self.observation
     }
 }
 
@@ -167,9 +195,31 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     /// every shared exact axis of the admitted source basis, so forking it
     /// would silently create a branch from state the caller never observed.
     ForkSourceChanged,
+    /// A bounded history carrier did not contain the requested entry or had no
+    /// owner-issued continuation for this product occurrence.
+    HistoryEntryUnavailable,
 }
 
 impl ProductBranchObservation {
+    pub(crate) fn prepare_successor(
+        snapshot: ProductBranchReferenceSnapshot,
+        components: ObservationRetentionObligation,
+    ) -> PreparedProductBranchObservation {
+        assert!(
+            components.matches_captured_head(snapshot.commit()),
+            "prepared successor observation components must bind its exact head"
+        );
+        PreparedProductBranchObservation {
+            observation: Self {
+                snapshot: Arc::new(snapshot),
+                obligation: Arc::new(ProductBranchObservationObligation {
+                    _components: components,
+                    history: OnceLock::new(),
+                }),
+            },
+        }
+    }
+
     pub(crate) fn owner_issued(
         snapshot: ProductBranchReferenceSnapshot,
         components: ObservationRetentionObligation,

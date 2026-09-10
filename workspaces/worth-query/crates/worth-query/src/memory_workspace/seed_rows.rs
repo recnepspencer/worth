@@ -42,32 +42,10 @@ impl WorthQueryMemoryWorkspace {
                 )))
             },
         );
-        let main_identity = self.runtime.main_branch_identity();
-        let options = self
-            .runtime
-            .admit_branch_basis(&main_identity)
-            .map_err(super::transaction_denial::basis)?;
-        let mut transaction = self
-            .runtime
-            .begin_branch_transaction(
-                &options,
-                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-            )
-            .map_err(super::transaction_denial::admission)?;
-        transaction
-            .push_batch(batch)
-            .map_err(super::transaction_denial::staging)?;
-        let result = transaction
-            .commit(&self.runtime)
-            .map_err(super::transaction_denial::commit)?;
-        let published_snapshot = result.snapshot.clone();
+        let (result, _) = self.commit_batch(batch)?;
         self.next_client_key = next_key;
         let identity =
             WorthQueryCommitIdentity::from_runtime_receipt_commit(result.commit.commit_id.0);
-        super::commit_snapshot_closeout::release_commit_snapshot(
-            &mut self.runtime,
-            &published_snapshot,
-        );
         Ok(identity)
     }
 

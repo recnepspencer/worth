@@ -1,8 +1,6 @@
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use worth_ui_host_native::{
-    UiNativeClientPresentationSemanticChange as SemanticChange,
-    UiNativeClientPresentationSemanticFrontierObservation,
     UiNativeClientTextPresentationWorkObservation, UiNativePhysicalSignalTransitionObservation,
 };
 
@@ -12,7 +10,6 @@ pub(super) fn assemble(
     evidence: &Phase5LocalityEvidence,
     presentation: &worth_ui_host_native::UiNativePresentationObservation,
     completed: usize,
-    expected: &[SemanticChange],
     work: &UiNativeClientTextPresentationWorkObservation,
     physical: &UiNativePhysicalSignalTransitionObservation,
 ) -> Value {
@@ -33,7 +30,6 @@ pub(super) fn assemble(
         "event_loop_thread_matches_launch": receipt.event_loop_thread_matches_launch(),
         "timing_us": timing_row(&timing),
         "query_completed": completed,
-        "semantic_frontiers": semantic_frontier_rows(shutdown, expected),
         "authored_mounted_instances": {
             "count": shutdown.authored_mounted_instances().len(),
             "evidence_digest": digest_json(&json!(shutdown.authored_mounted_instances().iter().map(|row| (
@@ -60,24 +56,6 @@ fn timing_row(timing: &super::super::execution::Phase5LocalityTimingView) -> Val
         "application_completion": timing.application.application_completion_micros,
         "native_run": timing.native_run_micros,
     })
-}
-
-fn semantic_frontier_rows(
-    shutdown: &worth_ui_host_native::UiNativeClientShutdownObservation,
-    expected: &[SemanticChange],
-) -> Vec<Value> {
-    expected
-        .iter()
-        .map(|change| {
-            let frontier = shutdown
-                .presentation_semantic_frontiers()
-                .iter()
-                .rev()
-                .find(|frontier| frontier.change() == *change)
-                .expect("adjudicated semantic frontier remains retained");
-            semantic_frontier_row(frontier)
-        })
-        .collect()
 }
 
 fn atlas_plan_rows(plans: &[worth_ui_host_native::UiNativeTextAtlasPlanObservation]) -> Vec<Value> {
@@ -118,55 +96,6 @@ fn native_row(presentation: &worth_ui_host_native::UiNativePresentationObservati
         "retained_center_rgba8": presentation.retained_center_rgba8(),
         "production_cost": production_cost(presentation.production_cost()),
         "cost": presentation_cost(presentation.cost()),
-    })
-}
-
-fn semantic_frontier_row(
-    frontier: &UiNativeClientPresentationSemanticFrontierObservation,
-) -> Value {
-    let subscribers = frontier
-        .subscribers()
-        .iter()
-        .map(semantic_subscriber_row)
-        .collect::<Vec<_>>();
-    let outcomes = frontier
-        .outcomes()
-        .iter()
-        .map(|outcome| format!("{outcome:?}"))
-        .collect::<Vec<_>>();
-    json!({
-        "change": format!("{:?}", frontier.change()),
-        "source_deliveries": frontier.source_deliveries(),
-        "subscriber_count": subscribers.len(),
-        "subscriber_evidence_digest": digest_json(&json!(subscribers)),
-        "outcome_count": outcomes.len(),
-        "outcome_evidence_digest": digest_json(&json!(outcomes)),
-        "performed_signal_frontier_count": frontier.performed_counter_rows().len(),
-        "performed_signal_frontier_digest": digest_json(&json!(frontier.performed_counter_rows())),
-        "scope_rejections": {
-            "aspect": frontier.scope_rejections()[0],
-            "partition": frontier.scope_rejections()[1],
-            "detail": frontier.scope_rejections()[2],
-            "range": frontier.scope_rejections()[3],
-        },
-    })
-}
-
-fn semantic_subscriber_row(
-    subscriber: &worth_ui_host_native::UiNativeClientPresentationSemanticSubscriberObservation,
-) -> Value {
-    json!({
-        "mounted_instance": subscriber.mounted_instance(), "semantic_slot": subscriber.semantic_slot(),
-        "collection_row": subscriber.collection_row(), "mounted_frame": subscriber.mounted_frame(),
-        "removal": subscriber.removal(), "content_digest": digest_hex(subscriber.content_digest()),
-        "layout_digest": digest_hex(subscriber.layout_digest()),
-        "foreground_digest": digest_hex(subscriber.foreground_digest()),
-        "raster_key_set_digest": digest_hex(subscriber.raster_key_set_digest()),
-        "source_digest": digest_hex(subscriber.source_digest()),
-        "immediate_dependency_digest": digest_hex(subscriber.immediate_dependency_digest()),
-        "attempt": subscriber.attempt(), "semantic_surface": subscriber.semantic_surface(),
-        "host_surface": subscriber.host_surface(), "binding": subscriber.binding(),
-        "host_lineage": subscriber.host_lineage(),
     })
 }
 

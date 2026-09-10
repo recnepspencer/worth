@@ -32,10 +32,6 @@ pub(super) fn invalidation_identity(
     keys: &[WorthQueryInvalidationSemanticAccessKey],
 ) -> WorthQueryEvidenceIdentity {
     let conditional_path = delta.conditional_provenance();
-    let conditional = delta.conditional_decision();
-    let conditional_material = conditional.map(
-        crate::domain_installation::operation_execution::workflow_conditional_trace::conditional_trace_semantic_material,
-    );
     WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ConsumerInvalidationDelta)
         .field_shape(WorthQueryEvidenceTag::new("projection"), "semantic-delta")
         .field_evidence_identity(WorthQueryEvidenceTag::new("impact"), impact.identity())
@@ -99,10 +95,6 @@ pub(super) fn invalidation_identity(
             conditional_path.iter().map(
                 crate::domain_installation::operation_execution::workflow_conditional_trace::conditional_trace_semantic_material,
             ),
-        )
-        .optional_value(
-            WorthQueryEvidenceTag::new("conditional-decision"),
-            conditional_material.as_deref(),
         )
         .seal()
 }

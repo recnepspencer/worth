@@ -40,8 +40,10 @@ impl RuntimeWorldRecoveryPort {
         &self,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
-    ) -> Result<Vec<crate::branch::OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial>
-    {
+    ) -> Result<
+        crate::recovery::ProductUnpublishedCleanup,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
         self.service()?.release_effects(handle, minimum_age_ticks)
     }
     pub fn continue_effects(

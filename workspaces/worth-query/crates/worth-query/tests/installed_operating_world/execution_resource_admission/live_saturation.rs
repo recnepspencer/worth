@@ -26,7 +26,7 @@ fn concurrent_arrivals_saturate_and_drop_releases_capacity() {
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
 
     let first = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -34,7 +34,7 @@ fn concurrent_arrivals_saturate_and_drop_releases_capacity() {
         .admit_execution_resources(ReadExecutionInput::default(), bounded_request(), &workspace)
         .unwrap();
     let second = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -47,7 +47,7 @@ fn concurrent_arrivals_saturate_and_drop_releases_capacity() {
     assert_eq!(second.resources().counters().capacity_reservations, 1);
 
     let third = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -67,7 +67,7 @@ fn concurrent_arrivals_saturate_and_drop_releases_capacity() {
 
     drop(first);
     let replacement = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)

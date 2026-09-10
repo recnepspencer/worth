@@ -3,8 +3,7 @@ use std::collections::{HashMap, HashSet};
 use worth_query::facade::runtime;
 
 use super::{
-    correspondence, WorthUiPresentationAsyncOwner, WorthUiPresentationAsyncRegistry,
-    WorthUiPresentationCorrespondenceIssuer,
+    correspondence, WorthUiPresentationAsyncOwner, WorthUiPresentationCorrespondenceIssuer,
 };
 
 pub struct WorthUiPresentationAsyncHostPlan {
@@ -30,6 +29,8 @@ pub enum WorthUiPresentationAsyncInstallationError {
     Builder(Box<super::super::super::WorthUiScalarProjectionInstallationError>),
     Completion(Box<runtime::WorthQueryHostRuntimeCompletionError>),
     Runtime(Box<runtime::WorthQueryRuntimeError>),
+    OperatingWorld(Box<worth_query::facade::installed::WorthQueryOperatingWorldEntryDenial>),
+    MissingOwnedAsyncSource,
 }
 
 impl WorthUiPresentationAsyncHostPlan {
@@ -82,13 +83,23 @@ impl WorthUiPresentationAsyncHostCompletion {
         let workspace = runtime
             .workspace("worth-ui-mounted-presentation")
             .map_err(|error| WorthUiPresentationAsyncInstallationError::Runtime(Box::new(error)))?;
+        let world = workspace.observe_operating_world().map_err(|error| {
+            WorthUiPresentationAsyncInstallationError::OperatingWorld(Box::new(error))
+        })?;
+        let product = world
+            .retain_product_branch()
+            .map_err(|_| WorthUiPresentationAsyncInstallationError::MissingOwnedAsyncSource)?;
+        drop(world);
+        let owned_async_source =
+            super::super::runtime_bridge::installed_presentation_owned_async_source(&workspace)
+                .ok_or(WorthUiPresentationAsyncInstallationError::MissingOwnedAsyncSource)?;
         let (correspondence_authority, correspondence) =
             correspondence::correspondence_authority_pair();
         let owner = WorthUiPresentationAsyncOwner {
             correspondence_authority,
             workspace,
-            registry: WorthUiPresentationAsyncRegistry::default(),
-            next_truth_revision: 1,
+            product,
+            owned_async_source,
             next_receipt_nonce: 0,
             pending: HashMap::new(),
             settling: HashMap::new(),

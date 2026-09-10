@@ -12,6 +12,7 @@ worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof.workspace = true
 worth-query-execution = { path = "../worth-query-execution" }
 worth-query-installation = { path = "../worth-query-installation" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 
 [dev-dependencies]
 worth-query-admission = { path = "../worth-query-admission" }

@@ -1,9 +1,13 @@
+#[path = "application_attempt/product_races.rs"]
+mod product_races;
+
 use std::time::Duration;
 
 use super::fixture::{
     installed_authorization_world, live_scope, AccountStatus, TouchAccountOperation,
 };
 use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitTerminalKind,
     WorthQueryApplicationIdempotencyBinding, WorthQueryPrincipalResolutionMode,
 };
@@ -21,6 +25,8 @@ mod effect_authority;
 mod emitted_effects;
 #[path = "application_attempt/idempotency_behavior.rs"]
 mod idempotency_behavior;
+#[path = "application_attempt/live_delivery_capacity.rs"]
+mod live_delivery_capacity;
 #[path = "application_attempt/mutation_terminal_lifecycle.rs"]
 mod mutation_terminal_lifecycle;
 #[path = "application_attempt/mutation_work_scale.rs"]
@@ -45,48 +51,30 @@ mod settlement_failures;
 mod terminal_failures;
 #[path = "application_attempt/touched_graph_closure.rs"]
 mod touched_graph_closure;
+#[cfg(feature = "test-world-operation-control")]
+#[path = "application_attempt/unwind_custody.rs"]
+mod unwind_custody;
 
 use program_fixture::{
-    admitted_mutation_free_program, admitted_program, admitted_program_with_emit,
-    admitted_program_with_expected_status,
+    admitted_mutation_free_program, admitted_program, admitted_program_on_selected,
+    admitted_program_with_emit, admitted_program_with_expected_status,
 };
 
-#[test]
-fn same_fact_race_stales_loser_while_unrelated_drift_does_not_conflict() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let unrelated = resolved_account(&world, "unrelated", &request);
-
-    let first = admitted_program(&world, &principal, &account, &request, "first");
-    let losing = admitted_program(&world, &principal, &account, &request, "losing");
-    let unrelated_program =
-        admitted_program(&world, &principal, &unrelated, &request, "unrelated-after");
-
-    let unrelated_outcome = world
-        .application
-        .compare_and_commit_application(unrelated_program, idempotency(1, 1));
-    assert!(
-        matches!(
-            unrelated_outcome,
-            WorthQueryApplicationCommitOutcome::Committed(_)
-        ),
-        "unexpected unrelated outcome: {unrelated_outcome:?}"
-    );
-    assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, idempotency(2, 2)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-    let WorthQueryApplicationCommitOutcome::Stale(stale) = world
-        .application
-        .compare_and_commit_application(losing, idempotency(3, 3))
-    else {
-        panic!("the second same-fact attempt must be stale");
+pub(in crate::domain_computation::primary_graph) fn assert_product_basis_stale(
+    outcome: WorthQueryApplicationCommitOutcome,
+    cause: &str,
+) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("{cause} must deny before effects: {outcome:?}");
     };
-    assert_eq!(stale.stale_fact_count(), 1);
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
 }
 
 #[test]
@@ -126,51 +114,6 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
         .collect::<Vec<_>>();
     assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Executed));
     assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Recovered));
-}
-
-#[test]
-fn concurrent_independent_attempts_both_commit() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let first_account = resolved_account(&world, "open", &request);
-    let second_account = resolved_account(&world, "unrelated", &request);
-    let first = admitted_program(
-        &world,
-        &principal,
-        &first_account,
-        &request,
-        "first-independent",
-    );
-    let second = admitted_program(
-        &world,
-        &principal,
-        &second_account,
-        &request,
-        "second-independent",
-    );
-
-    let (left, right) = std::thread::scope(|scope| {
-        let left = scope.spawn(|| {
-            world
-                .application
-                .compare_and_commit_application(first, idempotency(13, 13))
-        });
-        let right = scope.spawn(|| {
-            world
-                .application
-                .compare_and_commit_application(second, idempotency(14, 14))
-        });
-        (left.join().unwrap(), right.join().unwrap())
-    });
-    assert!(
-        matches!(left, WorthQueryApplicationCommitOutcome::Committed(_)),
-        "first independent outcome: {left:?}"
-    );
-    assert!(
-        matches!(right, WorthQueryApplicationCommitOutcome::Committed(_)),
-        "second independent outcome: {right:?}"
-    );
 }
 
 #[test]
@@ -274,6 +217,37 @@ pub(in crate::domain_computation::primary_graph) fn idempotency(
     WorthQueryApplicationIdempotencyBinding::new([key; 32], [intent; 32])
 }
 
+pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_material(
+    seed: u8,
+) -> (
+    worth_runtime_world::facade::ProductBranchObservation,
+    WorthQueryApplicationIdempotencyBinding,
+    worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+) {
+    let world = installed_authorization_world(true);
+    let request = live_scope();
+    let principal = authenticated_principal(&world, &request);
+    let account = resolved_account(&world, "open", &request);
+    let binding = idempotency(seed, seed);
+    let program = admitted_program(
+        &world,
+        &principal,
+        &account,
+        &request,
+        "bounded-unpublished-material",
+    );
+    world.application.fail_next_durable_append_for_test();
+    let outcome = world
+        .application
+        .compare_and_commit_application(program, binding);
+    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
+        panic!("the real World must issue unpublished recovery material: {outcome:?}")
+    };
+    let observation = partial.expected_product().clone();
+    let handle = partial.into_recovery().record_handle().clone();
+    (observation, binding, handle)
+}
+
 pub(in crate::domain_computation::primary_graph) fn authenticated_principal(
     world: &super::fixture::AuthorizationWorld,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -285,6 +259,8 @@ pub(in crate::domain_computation::primary_graph) fn authenticated_principal(
     let external = world.authenticate("alice", Duration::from_secs(60), request);
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -304,6 +280,8 @@ pub(in crate::domain_computation::primary_graph) fn resolved_account(
 > {
     world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             status.to_string(),

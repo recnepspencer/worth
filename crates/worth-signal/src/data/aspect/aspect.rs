@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 use crate::data::core_profile::AspectMaskBits;
 
 /// Maximum number of independently versioned aspect slots supported per node.

@@ -253,11 +253,9 @@ pub(in crate::domain_computation::primary_graph) type InstalledIdentityBinding =
     >;
 
 pub(in crate::domain_computation::primary_graph) struct IdentityWorld {
-    pub(in crate::domain_computation::primary_graph) runtime: WorthQueryExecutionRuntime,
-    pub(in crate::domain_computation::primary_graph) schema:
-        WorthQueryInstalledApplicationSchema<IdentityExecutionSchema>,
+    pub(in crate::domain_computation::primary_graph) application:
+        WorthQueryPrimaryGraphApplicationRuntime<IdentityExecutionSchema>,
     pub(in crate::domain_computation::primary_graph) binding: InstalledIdentityBinding,
-    pub(in crate::domain_computation::primary_graph) publication: WorthQueryPrimaryGraphPublication,
 }
 
 pub(in crate::domain_computation::primary_graph) fn external_identity(

@@ -1,24 +1,17 @@
 use std::collections::{HashMap, HashSet};
 
-use super::semantic_registry::WorthUiPresentationSemanticQueryObservation;
 use worth_query::facade::runtime;
-use worth_runtime_bridge::facade::{
-    BridgeAsyncRequestTruthViewBasis, RelationalBridgeSnapshotIdentityParts, TruthBranchIdentity,
-    TruthCommitIdentity, TruthSnapshotIdentity,
-};
 
 #[cfg(test)]
 use super::WorthUiPresentationRequestBasis;
 use super::{
     WorthUiPresentationAsyncObservation, WorthUiPresentationAsyncPosture,
-    WorthUiPresentationAsyncRegistry, WorthUiPresentationRuntimeAdmission,
-    WorthUiPresentationSemanticChange,
+    WorthUiPresentationRuntimeAdmission,
 };
 
 mod admission;
 mod admission_recovery;
 mod cancellation;
-mod completion_semantic_changes;
 mod correspondence;
 mod installation;
 mod pending_progress;
@@ -66,8 +59,8 @@ pub use transition_trace::{
 pub struct WorthUiPresentationAsyncOwner {
     correspondence_authority: std::sync::Arc<correspondence::PresentationCorrespondenceAuthority>,
     workspace: runtime::WorthQueryWorkspace,
-    registry: WorthUiPresentationAsyncRegistry,
-    next_truth_revision: u64,
+    product: std::sync::Arc<runtime::WorthQueryProductBranchLease>,
+    owned_async_source: runtime::WorthQueryInstalledOwnedAsyncDeclaration,
     next_receipt_nonce: u64,
     pending: HashMap<PresentationAdmissionKey, PendingPresentationAdmission>,
     settling: HashMap<PresentationAdmissionKey, PendingPresentationAdmission>,
@@ -102,7 +95,6 @@ struct PendingRuntimeCleanup {
 
 struct PendingTerminalClose {
     admission: WorthUiPresentationRuntimeAdmission,
-    semantic_retired: bool,
 }
 
 struct PendingPresentationAdmission {
@@ -110,12 +102,8 @@ struct PendingPresentationAdmission {
     lineage: super::semantic_transition::PresentationLineageKey,
     transition: super::semantic_transition::PresentationSemanticTransition,
     admission: WorthUiPresentationRuntimeAdmission,
-    pending_publication_index: usize,
-    pending_performed: Option<worth_signal::facade::adapters::InvalidationExecutionSummary>,
-    pending_frontiers: Vec<WorthUiPresentationSemanticFrontierObservation>,
     supersession_query_admitted: bool,
     supersession_posture_observed: bool,
-    supersession_semantic_retired: bool,
     predecessor_supersession_complete: bool,
     settlement: PresentationSettlementProgress,
     rejection: PresentationRejectionProgress,
@@ -126,13 +114,10 @@ struct PendingPresentationAdmission {
 
 #[derive(Default)]
 struct PresentationSettlementProgress {
-    publication_index: usize,
-    frontiers: Vec<WorthUiPresentationSemanticFrontierObservation>,
     completion_progress: Option<super::runtime_bridge::WorthUiPresentationCompletionProgress>,
     completion: Option<WorthUiPresentationAsyncObservation>,
     predecessor_observation: Option<WorthUiPresentationAsyncObservation>,
     predecessor_superseded: bool,
-    predecessor_semantic_retired: bool,
     predecessor_query_closed: bool,
 }
 
@@ -140,7 +125,6 @@ struct PresentationSettlementProgress {
 struct PresentationRejectionProgress {
     query_denied: bool,
     query_denial_observed: bool,
-    semantic_retired: bool,
     query_closed: bool,
 }
 
@@ -148,81 +132,6 @@ struct PresentationRejectionProgress {
 struct PresentationAdmissionKey {
     attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
     binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthUiPresentationSemanticFrontierObservation {
-    change: WorthUiPresentationSemanticChange,
-    subscribers: Box<[super::WorthUiPresentationSemanticSubscriberIdentity]>,
-    source_deliveries: u32,
-    outcomes: Box<[worth_query::facade::domain::WorthQueryConditionalOutcomeClass]>,
-    performed: Box<[worth_signal::facade::adapters::InvalidationExecutionSummary]>,
-    scope_rejections: super::WorthUiPresentationScopeRejectionCounters,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthUiPresentationConditionalOutcomeClass {
-    ComputedChanged,
-    ComputedRevertedClean,
-    DependencyUnchanged,
-    Suppressed,
-    DeferredByCondition,
-    DeferredTemporal,
-    DeferredOnDemand,
-}
-
-impl WorthUiPresentationSemanticFrontierObservation {
-    pub const fn change(&self) -> WorthUiPresentationSemanticChange {
-        self.change
-    }
-
-    pub fn outcomes(&self) -> &[worth_query::facade::domain::WorthQueryConditionalOutcomeClass] {
-        &self.outcomes
-    }
-
-    pub fn subscribers(&self) -> &[super::WorthUiPresentationSemanticSubscriberIdentity] {
-        &self.subscribers
-    }
-
-    pub const fn source_deliveries(&self) -> u32 {
-        self.source_deliveries
-    }
-
-    pub fn outcome_classes(
-        &self,
-    ) -> impl Iterator<Item = WorthUiPresentationConditionalOutcomeClass> + '_ {
-        self.outcomes.iter().copied().map(|outcome| match outcome {
-            worth_query::facade::domain::WorthQueryConditionalOutcomeClass::ComputedChanged => {
-                WorthUiPresentationConditionalOutcomeClass::ComputedChanged
-            }
-            worth_query::facade::domain::WorthQueryConditionalOutcomeClass::ComputedRevertedClean => {
-                WorthUiPresentationConditionalOutcomeClass::ComputedRevertedClean
-            }
-            worth_query::facade::domain::WorthQueryConditionalOutcomeClass::DependencyUnchanged => {
-                WorthUiPresentationConditionalOutcomeClass::DependencyUnchanged
-            }
-            worth_query::facade::domain::WorthQueryConditionalOutcomeClass::Suppressed => {
-                WorthUiPresentationConditionalOutcomeClass::Suppressed
-            }
-            worth_query::facade::domain::WorthQueryConditionalOutcomeClass::DeferredByCondition => {
-                WorthUiPresentationConditionalOutcomeClass::DeferredByCondition
-            }
-            worth_query::facade::domain::WorthQueryConditionalOutcomeClass::DeferredTemporal => {
-                WorthUiPresentationConditionalOutcomeClass::DeferredTemporal
-            }
-            worth_query::facade::domain::WorthQueryConditionalOutcomeClass::DeferredOnDemand => {
-                WorthUiPresentationConditionalOutcomeClass::DeferredOnDemand
-            }
-        })
-    }
-
-    pub fn performed(&self) -> &[worth_signal::facade::adapters::InvalidationExecutionSummary] {
-        &self.performed
-    }
-
-    pub const fn scope_rejections(&self) -> super::WorthUiPresentationScopeRejectionCounters {
-        self.scope_rejections
-    }
 }
 
 #[derive(Debug)]
@@ -240,7 +149,7 @@ pub enum WorthUiPresentationPendingAdmissionDenial {
     UnknownRemovedMechanic,
     UnknownReleasedPin,
     Runtime(WorthUiPresentationAdmissionStop),
-    SemanticProgress(
+    AdmissionProgress(
         Box<WorthUiPresentationIncompleteAdmission>,
         WorthUiPresentationAdmissionStop,
     ),
@@ -248,7 +157,6 @@ pub enum WorthUiPresentationPendingAdmissionDenial {
         Box<WorthUiPresentationCleanupRecovery>,
         WorthUiPresentationCleanupProgress,
     ),
-    MissingPerformedFrontier,
     NonPendingPosture,
 }
 
@@ -361,7 +269,7 @@ impl WorthUiPresentationAsyncOwner {
 impl WorthUiPresentationPendingAdmissionDenial {
     pub fn into_recovery_receipt(self) -> Option<WorthUiPresentationAdmissionRecovery> {
         match self {
-            Self::SemanticProgress(receipt, _) => {
+            Self::AdmissionProgress(receipt, _) => {
                 Some(WorthUiPresentationAdmissionRecovery::Incomplete(*receipt))
             }
             Self::CleanupProgress(receipt, _) => {

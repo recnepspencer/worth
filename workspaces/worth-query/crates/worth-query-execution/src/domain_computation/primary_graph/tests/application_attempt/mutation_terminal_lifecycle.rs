@@ -44,12 +44,12 @@ fn stale_terminal() {
             .compare_and_commit_application(winner, idempotency(62, 62)),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    assert!(matches!(
+    super::assert_product_basis_stale(
         world
             .application
             .compare_and_commit_application(stale, idempotency(63, 63)),
-        WorthQueryApplicationCommitOutcome::Stale(_)
-    ));
+        "the serial loser bound to the prior product",
+    );
     assert_baselines(&world, baseline);
 }
 

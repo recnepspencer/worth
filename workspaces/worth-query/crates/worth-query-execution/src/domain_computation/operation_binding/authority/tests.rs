@@ -67,6 +67,7 @@ fn authority(
         application_operation_slot: None,
         application_schema_binding: None,
         application_snapshot: None,
+        application_product_observation: None,
     }
 }
 
@@ -80,6 +81,14 @@ pub(crate) fn direct_authority(
         plan.contract_identity(),
         plan,
     )
+}
+
+pub(crate) fn authority_for_product(
+    mut authority: WorthQueryExecutionBoundOperationAuthority,
+    product: &crate::basis::WorthQueryProductBranchLease,
+) -> WorthQueryExecutionBoundOperationAuthority {
+    authority.application_product_observation = Some(product.observation().clone());
+    authority
 }
 
 pub(crate) fn direct_authority_with_graph(
@@ -238,6 +247,7 @@ pub(crate) fn workflow_authority(
         application_operation_slot: None,
         application_schema_binding: None,
         application_snapshot: None,
+        application_product_observation: None,
     }
 }
 

@@ -10,8 +10,20 @@ mod courtroom_lifecycle;
 mod courtroom_settlement;
 #[path = "temporal_conditional_operation/courtroom_support.rs"]
 mod courtroom_support;
+#[path = "temporal_conditional_operation/product_query_support.rs"]
+mod product_query_support;
+#[path = "temporal_conditional_operation/public_live_route.rs"]
+mod public_live_route;
+#[path = "temporal_conditional_operation/public_product_journey.rs"]
+mod public_product_journey;
 #[path = "temporal_conditional_operation/schema.rs"]
 mod schema;
+#[path = "temporal_conditional_operation/selected_product_lifecycle.rs"]
+mod selected_product_lifecycle;
+#[path = "temporal_conditional_operation/selected_product_reads.rs"]
+mod selected_product_reads;
+#[path = "temporal_conditional_operation/shared_root_progress.rs"]
+mod shared_root_progress;
 #[path = "temporal_conditional_operation/world.rs"]
 mod world;
 
@@ -22,59 +34,69 @@ use worth_query_host::facade::primary_graph;
 #[test]
 fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
     const MAXIMUM_ACTIVE_SNAPSHOTS: usize = 3;
-    let mut world =
+    let world =
         CourtroomWorld::publish_with_active_snapshot_limit("ready", MAXIMUM_ACTIVE_SNAPSHOTS);
     let (_, before) = world.application.relational_snapshot_state_for_test();
-    let pinned = (0..MAXIMUM_ACTIVE_SNAPSHOTS)
+    let branch = world.application.current_world();
+    let selected = world.application.on_branch(branch).select().unwrap();
+    let already_active = world.application.relational_snapshot_state_for_test().0;
+    let pinned = (already_active..MAXIMUM_ACTIVE_SNAPSHOTS)
         .map(|_| {
             world
                 .application
-                .pin_current_application_query_basis(&world::request_scope())
+                .on_branch(branch)
+                .select()
                 .expect("each basis inside the configured limit must be admitted")
         })
         .collect::<Vec<_>>();
+    let retained_after_failed_admission = pinned.len();
     assert_eq!(
         world.application.relational_snapshot_state_for_test().0,
         MAXIMUM_ACTIVE_SNAPSHOTS
     );
 
-    let outcome = world
-        .application
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe();
-    let primary_graph::WorthQueryConditionalClockObservationOutcome::Failed(failure) = outcome
-    else {
-        panic!("capacity exhaustion must be a typed public conditional failure")
+    let denial = match selected.conditional_clock(&world.clock) {
+        Ok(_) => panic!("capacity exhaustion must deny public product admission"),
+        Err(denial) => denial,
     };
     assert_eq!(
-        failure.kind(),
-        primary_graph::WorthQueryConditionalClockObservationFailureKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots: MAXIMUM_ACTIVE_SNAPSHOTS,
-        }
+        denial.kind(),
+        primary_graph::WorthQueryConditionalClockObservationDenialKind::ProductAdmission(
+            primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots: MAXIMUM_ACTIVE_SNAPSHOTS,
+            },
+        )
     );
     assert_eq!(world.contacts.snapshot(), (0, 0, 0, 0));
     assert_eq!(
         world.application.relational_snapshot_state_for_test().0,
-        MAXIMUM_ACTIVE_SNAPSHOTS
+        retained_after_failed_admission,
+        "failed selected-product admission must release its own retained truth"
     );
-
-    for basis in pinned {
-        assert!(basis.release().released());
-    }
+    drop(pinned);
     let (active, after) = world.application.relational_snapshot_state_for_test();
     assert_eq!(active, 0);
     assert_eq!(after, before);
+    let retry = world.conditional_clock().observe();
+    assert!(matches!(
+        retry,
+        primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(_)
+    ));
+    assert_eq!(world.application.relational_snapshot_state_for_test().0, 0);
 }
 
 #[test]
 fn application_readiness_reports_current_query_basis_without_leaking_a_lease() {
     let world = CourtroomWorld::publish("ready");
+    let branch = world.application.current_world();
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
 
     let readiness = world
         .application
+        .on_branch(branch)
+        .select()
+        .expect("the published product should be selectable")
         .inspect_application_readiness()
         .expect("the published application basis should be inspectable");
 
@@ -87,6 +109,9 @@ fn application_readiness_reports_current_query_basis_without_leaking_a_lease() {
         .starts_with("basis:query-primary-graph-v2:"));
     let repeated = world
         .application
+        .on_branch(branch)
+        .select()
+        .expect("the published product should remain selectable")
         .inspect_application_readiness()
         .expect("repeated readiness inspection should remain available");
     assert_eq!(
@@ -114,7 +139,10 @@ fn successor_generation_requires_fresh_typed_rebinding() {
 
     let denial = world
         .application
-        .reinstall_conditional_runtime_for_installation(successor)
+        .reinstall_conditional_runtime_for_installation(
+            successor,
+            world.application.current_world(),
+        )
         .unwrap_err();
 
     assert_eq!(
@@ -128,11 +156,11 @@ fn reconstruction_panic_restores_runtime_owners_for_retry() {
     let mut world = CourtroomWorld::publish("ready");
     world.reconstruction_panic.set(true);
 
-    assert!(world.application.reinstall_conditional_runtime().is_err());
+    assert!(world.reinstall_conditional_runtime().is_err());
 
     world.reconstruction_panic.set(false);
-    assert!(world.application.reinstall_conditional_runtime().is_ok());
-    let receipt = observe(&mut world);
+    assert!(world.reinstall_conditional_runtime().is_ok());
+    let receipt = observe(&world);
     assert_eq!(receipt.committed_operation_count(), 1);
 }
 
@@ -142,13 +170,58 @@ fn host_installs_and_executes_a_due_temporal_application_operation() {
 }
 
 #[test]
-fn temporal_wake_repairs_durable_settlement_before_exact_retirement() {
-    courtroom_settlement::temporal_wake_repairs_durable_settlement_before_exact_retirement();
+fn public_product_journey_publishes_delivers_executes_and_cleans_up() {
+    public_product_journey::publishes_delivers_executes_and_cleans_up();
 }
 
 #[test]
-fn temporal_wake_retries_query_publication_after_settlement_repair() {
-    courtroom_settlement::temporal_wake_retries_query_publication_after_settlement_repair();
+fn public_branch_facade_creates_and_selects_all_component_postures() {
+    public_product_journey::creates_and_selects_all_component_postures();
+}
+
+#[test]
+fn public_world_no_effect_retains_conditional_provenance() {
+    public_live_route::world_no_effect_retains_conditional_provenance();
+}
+
+#[test]
+fn public_live_query_receives_a_real_conditional_world_publication() {
+    public_live_route::live_query_receives_conditional_world_publication();
+}
+
+#[test]
+fn independent_products_advance_and_retain_exact_conditional_definitions() {
+    public_product_journey::independent_products_advance_and_retain_exact_definitions();
+}
+
+#[test]
+fn application_commits_relational_and_signal_in_one_world_publication() {
+    public_product_journey::application_commits_relational_and_signal_in_one_world_publication();
+}
+
+#[test]
+fn selected_sibling_mutation_carries_one_world_occurrence() {
+    public_product_journey::selected_sibling_mutation_carries_one_world_occurrence();
+}
+
+#[test]
+fn shared_component_sibling_cannot_claim_another_product_commit() {
+    public_product_journey::shared_component_sibling_cannot_claim_another_product_commit();
+}
+
+#[test]
+fn shared_component_sibling_revalidates_its_own_security() {
+    public_product_journey::shared_component_sibling_revalidates_its_own_security();
+}
+
+#[test]
+fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() {
+    courtroom_settlement::temporal_wake_settlement_repair_keeps_the_original_product_unpublished();
+}
+
+#[test]
+fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() {
+    courtroom_settlement::temporal_wake_post_performed_index_repair_preserves_its_product_commit();
 }
 
 #[test]

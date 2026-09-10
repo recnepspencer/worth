@@ -140,7 +140,7 @@ fn receipt_only_mutations_release_each_bounded_published_snapshot() {
                 "receipt-capacity",
             ),
             entity_id,
-            native_name_patch(&format!("receipt-{ordinal}")),
+            native_name_patch(format!("receipt-{ordinal}")),
         ))
         .lower()
         .unwrap()
@@ -300,7 +300,7 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
                     branch,
                 ),
                 left,
-                native_name_patch(&format!("left-{ordinal}")),
+                native_name_patch(format!("left-{ordinal}")),
             ))
             .push(raw_mutation_effect_with_binding(
                 runtime_workflow_binding_for_branch(
@@ -308,7 +308,7 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
                     branch,
                 ),
                 right,
-                native_name_patch(&format!("right-{ordinal}")),
+                native_name_patch(format!("right-{ordinal}")),
             ))
             .admit()
             .unwrap()

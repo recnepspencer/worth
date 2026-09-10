@@ -67,9 +67,7 @@ where
                     .settled
                     .semantic_dependency_closure()
                     .expect("settled workflow projection retains its dependency closure");
-                if let Err(error) =
-                    workspace.register_installed_live_route::<D, O, F>(&handle, closure)
-                {
+                if let Err(error) = workspace.register_installed_live_route(&handle, closure) {
                     let detail = error.to_string();
                     let _ = handle.close_with_cause(
                         workspace,

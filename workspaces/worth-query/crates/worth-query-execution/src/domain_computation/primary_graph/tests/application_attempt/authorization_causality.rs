@@ -53,7 +53,7 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
         .installed_operation(MultiTouchOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -108,37 +108,24 @@ fn revoke_account_ownership(
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
         .kind;
-    graph.with_runtime_mut(|runtime| {
-        let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_current_main_snapshot(runtime)
-            .expect("primary branch has a current snapshot");
-        let relation = runtime
+    let selected = world.selected_product();
+    let relation = graph.with_runtime_mut(|runtime| {
+        let snapshot = selected.application_basis().snapshot_handle();
+        runtime
             .read_truth()
             .visible_relations_of_kind(relation_kind, snapshot.version_id())
             .into_iter()
             .find(|record| record.target == account)
             .expect("the admitted account has one ownership edge")
-            .relation_id;
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        let mut transaction = {
-    let transaction_validation_input = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .expect("main branch binding");
-    runtime
-        .begin_branch_transaction(
-            &transaction_validation_input,
-            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-        )
-        .expect("owner-admitted transaction context")
-};
-        transaction.push_batch(WorkerIntentBatch::new("revoke-account-owner").push(
-            MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
-                relation_id: relation,
-            })),
-        )).expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
-        crate::domain_computation::primary_graph::tests::fixture::release_test_commit_snapshot(
-            runtime, &committed,
-        );
-        graph.ensure_primary_indexes_current(runtime).unwrap();
+            .relation_id
     });
+    drop(selected);
+    super::super::fixture::publish_relational_mutation(
+        world,
+        WorkerIntentBatch::new("revoke-account-owner").push(MutationIntent::Relation(
+            RelationMutationIntent::Delete(DeleteRelationIntent {
+                relation_id: relation,
+            }),
+        )),
+    );
 }

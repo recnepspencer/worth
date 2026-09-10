@@ -28,7 +28,7 @@ impl SnapshotDeltaRecord {
         while previous_index < previous_entries.len() && next_index < next_entries.len() {
             let previous_entry = &previous_entries[previous_index];
             let next_entry = &next_entries[next_index];
-            match previous_entry.sort_key().cmp(&next_entry.sort_key()) {
+            match previous_entry.compare_key(next_entry) {
                 std::cmp::Ordering::Less => {
                     changed_entry_count += 1;
                     previous_index += 1;

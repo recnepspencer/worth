@@ -7,18 +7,49 @@ impl WorthQueryWorkspace {
         self.runtime.query_execution_runtime()
     }
 
-    pub(crate) fn operating_world<L: crate::basis_lifecycle::BasisOperationLane>(
+    pub(crate) fn admit_managed_direct_run(
         &self,
-        entry: crate::domain_installation::WorthQueryOperatingWorldEntry<L>,
-    ) -> crate::domain_installation::WorthQueryInstalledOperatingWorld<'_, L> {
-        crate::domain_installation::WorthQueryInstalledOperatingWorld::new(
-            &self.runtime,
-            entry.into_capability(),
-        )
+        operation: &worth_query_execution::facade::runtime::WorthQueryExecutionBoundOperationAuthority,
+        product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+        attempt: worth_query_execution::facade::provider_session::WorthQueryDirectExecutionResourceAttempt,
+    ) -> Result<
+        worth_query_execution::facade::runtime::WorthQueryAdmittedDirectRun,
+        worth_query_execution::facade::runtime::WorthQueryManagedDirectRunAdmissionFailure,
+    > {
+        let request =
+            worth_query_execution::facade::runtime::WorthQueryManagedTruthReadRequest::for_product(
+                product,
+                worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
+            );
+        self.runtime
+            .installed_product
+            .managed_run_admission(&self.runtime.execution_runtime)
+            .admit_direct(operation, attempt, request)
+    }
+
+    pub(crate) fn admit_managed_workflow_run(
+        &self,
+        operation: &worth_query_execution::facade::runtime::WorthQueryExecutionBoundOperationAuthority,
+        product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+        attempt: worth_query_execution::facade::provider_session::WorthQueryWorkflowExecutionResourceAttempt,
+    ) -> Result<
+        worth_query_execution::facade::runtime::WorthQueryAdmittedWorkflowRun,
+        worth_query_execution::facade::runtime::WorthQueryManagedWorkflowRunAdmissionFailure,
+    > {
+        let request =
+            worth_query_execution::facade::runtime::WorthQueryManagedTruthReadRequest::for_product(
+                product,
+                worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
+            );
+        self.runtime
+            .installed_product
+            .managed_run_admission(&self.runtime.execution_runtime)
+            .admit_workflow(operation, attempt, request)
     }
 
     pub fn observe_operating_world(
         &self,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     ) -> Result<
         crate::domain_installation::WorthQueryInstalledOperatingWorld<
             '_,
@@ -26,26 +57,25 @@ impl WorthQueryWorkspace {
         >,
         crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
     > {
-        crate::domain_installation::WorthQueryOperatingWorldEntry::observe_current()
-            .map(|entry| self.operating_world(entry))
-    }
-
-    pub fn observe_branch_operating_world(
-        &self,
-        branch_identity: crate::domain_installation::WorthQueryBranchHeadIdentity,
-    ) -> Result<
-        crate::domain_installation::WorthQueryInstalledOperatingWorld<
-            '_,
-            crate::basis_lifecycle::ObservationLaneWitness,
-        >,
-        crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
-    > {
-        crate::domain_installation::WorthQueryOperatingWorldEntry::observe_branch(&branch_identity)
-            .map(|entry| self.operating_world(entry))
+        let installed = &self.runtime.installed_product;
+        let selects_root = branch == installed.world.root_product_branch();
+        let product = installed
+            .world
+            .integration_admit_product_branch(branch)
+            .map_err(product_admission_denial)?;
+        let entry = if selects_root {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::observe_installed_root()?
+        } else {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::observe_product_component(
+                &product,
+            )?
+        };
+        Ok(self.product_operating_world(entry, product))
     }
 
     pub fn prepare_mutation_operating_world(
         &self,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     ) -> Result<
         crate::domain_installation::WorthQueryInstalledOperatingWorld<
             '_,
@@ -53,24 +83,34 @@ impl WorthQueryWorkspace {
         >,
         crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
     > {
-        crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_current_mutation()
-            .map(|entry| self.operating_world(entry))
+        let installed = &self.runtime.installed_product;
+        let selects_root = branch == installed.world.root_product_branch();
+        let product = installed
+            .world
+            .integration_admit_product_branch(branch)
+            .map_err(product_admission_denial)?;
+        let entry = if selects_root {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_installed_root_mutation()?
+        } else {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_product_component(
+                &product,
+            )?
+        };
+        Ok(self.product_operating_world(entry, product))
     }
 
-    pub fn prepare_branch_mutation_operating_world(
+    fn product_operating_world<L: crate::basis_lifecycle::BasisOperationLane>(
         &self,
-        branch_identity: crate::domain_installation::WorthQueryBranchHeadIdentity,
-    ) -> Result<
-        crate::domain_installation::WorthQueryInstalledOperatingWorld<
-            '_,
-            crate::basis_lifecycle::MutationPreparationLaneWitness,
-        >,
-        crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
-    > {
-        crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_branch_mutation(
-            &branch_identity,
+        entry: crate::domain_installation::WorthQueryOperatingWorldEntry<L>,
+        product: worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+    ) -> crate::domain_installation::WorthQueryInstalledOperatingWorld<'_, L> {
+        crate::domain_installation::WorthQueryInstalledOperatingWorld::new(
+            &self.runtime,
+            crate::domain_installation::WorthQueryOperatingWorldBasis::new(
+                entry.into_capability(),
+                product,
+            ),
         )
-        .map(|entry| self.operating_world(entry))
     }
 
     pub fn graph_participation<G: 'static>(
@@ -140,4 +180,12 @@ impl WorthQueryWorkspace {
         self.runtime
             .replace_domain_installation_with_successor_generation()
     }
+}
+
+fn product_admission_denial(
+    denial: worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+) -> crate::domain_installation::WorthQueryOperatingWorldEntryDenial {
+    crate::domain_installation::WorthQueryOperatingWorldEntryDenial::product(
+        crate::domain_installation::WorthQueryOperatingWorldProductDenial::Admission(denial),
+    )
 }

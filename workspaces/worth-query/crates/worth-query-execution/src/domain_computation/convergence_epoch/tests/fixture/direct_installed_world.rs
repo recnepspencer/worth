@@ -187,7 +187,7 @@ fn direct_admission_fixture_with_provider(
     );
     let basis = admitted_basis();
     let bound = runtime
-        .bind_domain_operation(
+        .bind_standalone_test_domain_operation(
             &installation_authority,
             &operation,
             &basis,
@@ -198,7 +198,7 @@ fn direct_admission_fixture_with_provider(
         )
         .expect("real installed operation must bind to exact graph authority");
     let alternate_basis_operation = runtime
-        .bind_domain_operation(
+        .bind_standalone_test_domain_operation(
             &installation_authority,
             &operation,
             &admitted_alternate_basis(),

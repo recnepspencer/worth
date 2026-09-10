@@ -13,8 +13,7 @@ use worth_query_installation::facade::{
 use worth_runtime_bridge::facade::{
     BridgeConditionalComputeProvider, BridgeConditionalCondition, BridgeConditionalContract,
     BridgeConditionalContractParts, BridgeConditionalLocation, BridgeConditionalProviderSemantics,
-    BridgeConditionalProviderSet, BridgeInstalledConditionalLowering,
-    BridgeOwnedConditionalInstallationRequest, BridgeOwnedSignalRuntime,
+    BridgeConditionalProviderSet, BridgeOwnedConditionalInstallationRequest,
     BridgeSemanticDependencyCandidate, BridgeSemanticDependencyCandidateParts,
     BridgeSemanticLocality,
 };
@@ -26,82 +25,15 @@ use super::installation::{
 };
 use super::predicate_observation::QueryTemporalPredicateProvider;
 
-pub(in crate::domain_computation::primary_graph) struct QueryConditionalComputeContext {
-    pub(in crate::domain_computation::primary_graph) output_version: u64,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct QueryConditionalComputeSemanticContract(Arc<str>);
-
-struct QueryConditionalComputeProvider<Node> {
-    semantics: QueryConditionalComputeSemanticContract,
-    output_version: Option<Arc<dyn WorthQueryHostConditionalOutputVersionProvider<Node>>>,
-}
-
-impl<Node: 'static> BridgeConditionalProviderSemantics for QueryConditionalComputeProvider<Node> {
-    type SemanticContract = QueryConditionalComputeSemanticContract;
-
-    fn semantic_contract(&self) -> Self::SemanticContract {
-        self.semantics.clone()
-    }
-}
-
-impl<Node: 'static> BridgeConditionalComputeProvider for QueryConditionalComputeProvider<Node> {
-    fn compute(
-        &self,
-        context: &mut dyn std::any::Any,
-    ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
-        let context = context
-            .downcast_ref::<QueryConditionalComputeContext>()
-            .ok_or_else(|| {
-                "conditional execution lacked Query's governed re-entry context".to_string()
-            })?;
-        let output_version = self
-            .output_version
-            .as_ref()
-            .map(|provider| provider.output_version(context.output_version))
-            .transpose()
-            .map_err(|failure| failure.detail().to_owned())?
-            .unwrap_or(context.output_version);
-        Ok(worth_signal::facade::NodeEvaluationResult::from_version(
-            worth_signal::facade::AspectVersion::from_updates([(
-                worth_signal::facade::Aspect::new(0),
-                output_version,
-            )]),
-        ))
-    }
-}
-
-struct QueryHostOutputComparator<Node> {
-    identity: Arc<str>,
-    provider: Arc<dyn WorthQueryHostConditionalOutputComparatorProvider<Node>>,
-}
-
-impl<Node: 'static> BridgeConditionalProviderSemantics for QueryHostOutputComparator<Node> {
-    type SemanticContract = Arc<str>;
-
-    fn semantic_contract(&self) -> Self::SemanticContract {
-        Arc::clone(&self.identity)
-    }
-}
-
-impl<Node: 'static> worth_runtime_bridge::facade::BridgeConditionalComparatorProvider
-    for QueryHostOutputComparator<Node>
-{
-    fn has_meaningful_change(
-        &self,
-        _aspect: worth_signal::facade::Aspect,
-        cached: u64,
-        current: u64,
-    ) -> Result<bool, String> {
-        self.provider
-            .has_meaningful_change(cached, current)
-            .map_err(|failure| failure.detail().to_owned())
-    }
-}
+mod providers;
+pub(in crate::domain_computation::primary_graph) use providers::QueryConditionalComputeContext;
+use providers::{
+    QueryConditionalComputeProvider, QueryConditionalComputeSemanticContract,
+    QueryHostOutputComparator,
+};
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn install_temporal_predicate_lowering<
+pub(super) fn prepare_temporal_predicate_installation<
     Schema,
     ApplicationOperation,
     Input,
@@ -136,8 +68,7 @@ pub(super) fn install_temporal_predicate_lowering<
         Projector,
     >,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
-    bridge: &mut BridgeOwnedSignalRuntime,
-) -> Result<Arc<BridgeInstalledConditionalLowering>, WorthQueryConditionalRuntimeInstallationDenial>
+) -> Result<BridgeOwnedConditionalInstallationRequest, WorthQueryConditionalRuntimeInstallationDenial>
 where
     Provider: WorthQueryHostConditionalPredicateProvider<Node>,
     Clock: WorthQueryNamedClock,
@@ -180,14 +111,12 @@ where
         }
         None => providers,
     };
-    bridge
-        .install_owned_conditional(BridgeOwnedConditionalInstallationRequest {
-            contract,
-            location,
-            dependencies,
-            providers,
-        })
-        .map_err(|denial| bridge_denial(format!("{:?}: {}", denial.kind(), denial.detail())))
+    Ok(BridgeOwnedConditionalInstallationRequest {
+        contract,
+        location,
+        dependencies,
+        providers,
+    })
 }
 
 fn validate_output_comparator_identity<Node>(

@@ -1,0 +1,5 @@
+error[E0599]: no method named `take_owned_async_product_source_owner` found for mutable reference `&mut BridgeSealedRuntimeAssembly` in the current scope
+ --> tests/ui/owned_async_product_owner_extraction_removed.rs:4:25
+  |
+4 |     let _owner = bridge.take_owned_async_product_source_owner().unwrap();
+  |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `&mut BridgeSealedRuntimeAssembly`

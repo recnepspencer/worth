@@ -8,6 +8,7 @@ use super::{
     SignalThresholdComparisonDomain, SignalThresholdValueFamily,
 };
 
+mod allocation;
 mod authority;
 
 pub(super) use authority::{
@@ -27,9 +28,18 @@ pub(super) fn decision_projection_basis(
     attempt: u64,
     class: SignalConditionalDecisionClass,
     dependencies: &[SignalConditionalDependencyVersion],
-) -> String {
+    work: &mut crate::data::retained_storage::RetainedStoragePreparation,
+) -> Result<String, crate::data::error::SignalError> {
+    let capacity = allocation::admit(
+        contract,
+        snapshot_identity,
+        execution_identity,
+        dependencies,
+        work,
+    )?;
     let node = contract.node();
-    let mut material = String::from("signal-conditional-decision-v1");
+    let mut material = String::with_capacity(capacity);
+    material.push_str("signal-conditional-decision-v1");
     field(&mut material, "graph", contract.graph_instance_id());
     field(&mut material, "node-index", node.index());
     field(&mut material, "node-generation", node.generation());
@@ -41,6 +51,13 @@ pub(super) fn decision_projection_basis(
     for dependency in dependencies {
         append_dependency(&mut material, dependency);
     }
+    material.push_str(contract.projection_contract());
+    debug_assert!(material.len() <= capacity);
+    Ok(material)
+}
+
+pub(super) fn contract_projection_basis(contract: &InstalledSignalConditionalContract) -> String {
+    let mut material = String::new();
     append_contract(&mut material, contract);
     material
 }
@@ -76,6 +93,8 @@ fn append_dependency(material: &mut String, dependency: &SignalConditionalDepend
 }
 
 fn append_contract(material: &mut String, contract: &InstalledSignalConditionalContract) {
+    field(material, "contract-generation", contract.generation());
+    field(material, "contract-occurrence", contract.occurrence());
     append_installed_condition(material, contract.condition());
     append_semantic_condition(material, contract.semantic_condition());
     field(

@@ -1,12 +1,6 @@
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_installation::facade::{
-    ApplicationSchema, TypedApplicationIdentityValue, WorthQueryInstalledApplicationSchema,
-    WorthQueryInstalledPrincipalBinding,
-};
+use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectTransport;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
@@ -18,15 +12,19 @@ use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource;
 
 use super::provider::WorthQueryPrimaryGraphProvider;
 use super::{
-    authentication_clock::WorthQueryAuthenticationClock, WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrimaryGraphPublication,
-    WorthQueryPrincipalResolutionDenial, WorthQueryPrincipalResolutionMode,
+    authentication_clock::WorthQueryAuthenticationClock, WorthQueryPrimaryGraphBootstrap,
+    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
+    WorthQueryPrimaryGraphPublication,
 };
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
 mod external_dispatch_attempt;
+mod graph_participation;
 pub(in crate::domain_computation::primary_graph) mod installation;
+#[cfg(feature = "test-world-operation-control")]
+mod operation_control;
+#[cfg(feature = "test-world-operation-control")]
+pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
 
 pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
 
@@ -46,6 +44,34 @@ pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExter
 ///     let _ = application.installed_packages();
 /// }
 /// ```
+///
+/// A bare application runtime cannot resolve a principal through an implicit
+/// current product.
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+/// use worth_query_installation::facade::ApplicationSchema;
+///
+/// fn bare_runtime_cannot_resolve_principal<Schema: ApplicationSchema>(
+///     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+/// ) {
+///     let _ = application.resolve_authenticated_principal();
+/// }
+/// ```
+///
+/// A bare application runtime cannot admit an ordinary query through an
+/// implicit current product.
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+/// use worth_query_installation::facade::ApplicationSchema;
+///
+/// fn bare_runtime_cannot_admit_query<Schema: ApplicationSchema>(
+///     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+/// ) {
+///     let _ = application.admit_application_query();
+/// }
+/// ```
 pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation) runtime: WorthQueryExecutionRuntime,
     pub(in crate::domain_computation) installed_schema:
@@ -55,22 +81,22 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation) authorization: WorthQueryInstalledAuthorizationRegistry,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     authentication_clock: WorthQueryAuthenticationClock,
-    pub(super) relational_source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
     pub(super) relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
-    pub(super) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    pub(crate) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    pub(crate) product_runtime:
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+    pub(super) basis_leases:
+        super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
     pub(super) granular_invalidation: super::WorthQueryGranularInvalidationInstallation,
     pub(super) conditional_operations: std::sync::Mutex<
         super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
     >,
-    pub(super) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+    pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     pub(super) primary_graph_authority:
         worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     pub(super) result_buffers:
         super::application_query::resource_lifecycle::WorthQueryApplicationResultBufferRegistry,
-    pub(super) basis_leases:
-        super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
-    pub(super) next_preview_session: AtomicU64,
     pub(super) next_external_dispatch_attempt: AtomicU64,
     pub(super) external_effect_transport:
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
@@ -87,6 +113,7 @@ where
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
+        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         WorthQueryPrimaryGraphInstallationDenial,
@@ -100,6 +127,7 @@ where
                 installed_schema,
                 authorization_clock: WorthQueryRuntimeClock::system(),
                 fault_port: super::provider::fault_port::production_fault_port(),
+                conditional_evaluation_budget,
             },
         )
     }
@@ -113,6 +141,7 @@ where
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
+        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     ) -> Result<
         super::conditional_operation::WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
         super::conditional_operation::WorthQueryConditionalRuntimeInstallationDenial,
@@ -125,6 +154,7 @@ where
                 installed_schema,
                 authorization_clock: WorthQueryRuntimeClock::system(),
                 fault_port: super::provider::fault_port::production_fault_port(),
+                conditional_evaluation_budget,
             },
         )
     }
@@ -139,6 +169,7 @@ where
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
+        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
         source: impl WorthQueryRuntimeTimeSource,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -148,6 +179,7 @@ where
             runtime,
             authority,
             installed_schema,
+            conditional_evaluation_budget,
             source,
             super::provider::fault_port::production_fault_port(),
         )
@@ -158,6 +190,7 @@ where
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
+        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
         source: impl WorthQueryRuntimeTimeSource,
         fault_port: Arc<dyn super::provider::fault_port::WorthQueryPrimaryGraphFaultPort>,
     ) -> Result<
@@ -172,6 +205,7 @@ where
                 installed_schema,
                 authorization_clock: WorthQueryRuntimeClock::from_source(source),
                 fault_port,
+                conditional_evaluation_budget,
             },
         )
     }
@@ -188,6 +222,29 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[cfg(test)]
     pub(crate) fn fix_authentication_time(&mut self, now: std::time::Instant) {
         self.authentication_clock = WorthQueryAuthenticationClock::fixed(now);
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn release_conditional_runtime_resources(
+        &mut self,
+    ) {
+        self.bridge
+            .conditional_lifecycle()
+            .close_conditional_resources();
+        *self
+            .conditional_operations
+            .get_mut()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
+        self.primary_provider.replace_conditional_commit_routes(
+            std::iter::empty(),
+            false,
+            std::iter::empty(),
+        );
+    }
+}
+
+impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn drop(&mut self) {
+        self.release_conditional_runtime_resources();
     }
 }
 
@@ -296,38 +353,6 @@ where
         &self,
     ) -> super::provider::WorthQueryApplicationAttemptWorkSnapshot {
         self.primary_provider.application_attempt_work()
-    }
-
-    pub fn resolve_authenticated_principal<Binding, Mapping, Principal, PrincipalIdentity>(
-        &self,
-        installed_binding: &WorthQueryInstalledPrincipalBinding<
-            Schema,
-            Binding,
-            Mapping,
-            Principal,
-            PrincipalIdentity,
-        >,
-        external: WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        scope: &WorthQueryRequestScope,
-        mode: WorthQueryPrincipalResolutionMode,
-    ) -> Result<
-        WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        WorthQueryPrincipalResolutionDenial,
-    >
-    where
-        PrincipalIdentity: TypedApplicationIdentityValue,
-    {
-        self.runtime
-            .resolve_authenticated_principal(installed_binding, external, scope, mode)
-    }
-
-    pub fn validate_authenticated_principal<Principal, PrincipalIdentity>(
-        &self,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        scope: &WorthQueryRequestScope,
-    ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
-        self.runtime
-            .validate_authenticated_principal(principal, scope)
     }
 
     /// Closes ordinary live delivery without closing the authoritative graph.

@@ -59,6 +59,8 @@ where
         self.state.recovery.snapshot()
     }
     fn retention_snapshot(&self) -> crate::inspection::RuntimeWorldRetentionSnapshot {
-        self.state.retention.snapshot()
+        self.state
+            .retention
+            .snapshot(self.state.publication_capacity.active())
     }
 }

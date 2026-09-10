@@ -6,8 +6,7 @@ mod receipt_identity;
 use super::{
     WorthQueryAdmittedExecutionResourcePlan, WorthQueryBoundExecutionDenial,
     WorthQueryBoundExecutionReceipt, WorthQueryBoundGraphExecutionReceipt,
-    WorthQueryDirectExecutionResourceAttempt, WorthQueryExecutableDomainOperation,
-    WorthQueryExecutionProviderSession, WorthQueryOperationExecutionCounters,
+    WorthQueryExecutableDomainOperation, WorthQueryOperationExecutionCounters,
     WorthQueryOperationExecutionWarning, WorthQueryOperationOutput, WorthQueryTerminalOperation,
 };
 use crate::domain_installation::operation_authority_chain::{
@@ -26,7 +25,8 @@ pub struct WorthQueryExecutedDomainOperation<D, O, F, L: BasisOperationLane, Out
     execution_snapshot: crate::memory_workspace::WorthQuerySnapshotIdentity,
     phase_proof: WorthQueryOperationPhaseProof<WorthQueryExecutedOperationPhase>,
     conditional: Vec<crate::domain_installation::WorthQueryConditionalProvenance>,
-    resource_attempt: WorthQueryDirectExecutionResourceAttempt,
+    resources: WorthQueryAdmittedExecutionResourcePlan,
+    managed_cleanup: worth_query_execution::facade::runtime::WorthQueryDirectRunCleanupReceipt,
 }
 pub type WorthQueryBoundExecutionOutcome<D, O, F, L, Output> = TransitionOutcome<
     WorthQueryExecutedDomainOperation<D, O, F, L, Output>,
@@ -55,10 +55,12 @@ impl<D, O, F, L: BasisOperationLane, Output> WorthQueryExecutedDomainOperation<D
         &self.conditional
     }
     pub fn resources(&self) -> &WorthQueryAdmittedExecutionResourcePlan {
-        self.resource_attempt.resources()
+        &self.resources
     }
-    pub fn provider_session(&self) -> &WorthQueryExecutionProviderSession {
-        self.resource_attempt.provider_session()
+    pub fn provider_session_identity(&self) -> &str {
+        self.managed_cleanup
+            .inspection()
+            .provider_session_identity()
     }
 }
 impl<D, O, F, L: BasisOperationLane, Output> WorthQueryExecutedDomainOperation<D, O, F, L, Output>

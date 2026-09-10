@@ -1,3 +1,5 @@
+mod retained_charge;
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};

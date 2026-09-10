@@ -2,15 +2,38 @@ use super::{
     admitted_program, authenticated_principal, idempotency, installed_authorization_world,
     live_scope, resolved_account,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
-use worth_runtime_bridge::facade::TruthBranchHeadSource;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+    WorthQueryApplicationCommitOutcome,
+};
+use crate::domain_computation::{
+    WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    WorthQueryProductUnpublishedRecoveryReleaseFailure,
+};
+use std::num::NonZeroUsize;
+use worth_runtime_world::facade::{
+    ProductUnpublishedCause, ProductUnpublishedNextAction, RuntimeWorldRecoveryDenial,
+};
 
 #[test]
-fn application_commit_returns_exact_repair_authority_after_performed_append_fault() {
+fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
     let world = installed_authorization_world(true);
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
+    let selected = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
+    let commits = || {
+        world
+            .application
+            .primary_provider
+            .graph
+            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+    };
+    let baseline = commits();
     let program = admitted_program(
         &world,
         &principal,
@@ -19,63 +42,124 @@ fn application_commit_returns_exact_repair_authority_after_performed_append_faul
         "performed-before-durable-fault",
     );
     world.application.fail_next_durable_append_for_test();
-
-    let WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) = world
+    let outcome = world
         .application
-        .compare_and_commit_application(program, idempotency(91, 91))
-    else {
-        panic!("performed application publication must retain unresolved settlement evidence");
+        .compare_and_commit_application(program, idempotency(91, 91));
+    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
+        panic!("owner movement without settled product publication must retain partial custody: {outcome:?}");
     };
+    assert_eq!(partial.cause(), ProductUnpublishedCause::SettlementPending);
+    assert_eq!(partial.owner_effect_count(), 1);
+    assert!(partial.relational_requires_settlement());
     assert_eq!(
-        deferred.next_action(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement
+        partial.expected_product().selected_commit(),
+        selected.selected_commit()
     );
-    let settlement = deferred.settlement().clone();
-    let foreign_world = installed_authorization_world(true);
-    assert!(matches!(
-        foreign_world
-            .application
-            .recover_deferred_application_settlement(&deferred),
-        Err(crate::domain_computation::primary_graph::WorthQueryApplicationSettlementRecoveryError::Durability(
-            worth_relational::facade::publication::DeferredPublicationSettlementError::ForeignRuntime {
-                ..
-            }
-        ))
-    ));
-    let repaired = world
-        .application
-        .recover_deferred_application_settlement(&deferred)
-        .expect("installed application owner completes typed settlement recovery");
-    let repeated = world
-        .application
-        .recover_deferred_application_settlement(&deferred)
-        .expect("installed application settlement recovery is idempotent");
-    assert_eq!(repaired.commit_id, settlement.commit().commit_id);
-    assert_eq!(repeated, repaired);
-
-    let next_account = resolved_account(&world, "performed-before-durable-fault", &request);
-    assert_eq!(next_account.entity_id(), account.entity_id());
-    let later_program = admitted_program(
-        &world,
-        &principal,
-        &next_account,
-        &request,
-        "performed-after-settlement-repair",
-    );
-    assert!(matches!(
+    assert_eq!(commits(), baseline + 1);
+    assert_eq!(
         world
             .application
-            .compare_and_commit_application(later_program, idempotency(92, 92)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
+            .primary_provider
+            .unpublished_idempotency_count(),
+        1,
+        "the unpublished owner result consumes one bounded tombstone",
+    );
+    let recovery = partial.into_recovery();
+    let foreign = installed_authorization_world(true);
+    assert!(matches!(
+        foreign
+            .application
+            .readmit_product_publication_recovery(recovery.record_handle()),
+        Err(RuntimeWorldRecoveryDenial::ForeignHandle)
     ));
+    let failure = world
+        .application
+        .release_product_publication_recovery(recovery, 0)
+        .expect_err("unsettled owner effects must remain recoverable");
+    let WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure) = failure else {
+        panic!("unsettled owner effects cannot become cleanup custody")
+    };
+    assert_eq!(
+        failure.denial(),
+        WorthQueryProductUnpublishedRecoveryReleaseDenial::World(
+            RuntimeWorldRecoveryDenial::SettlementRequired
+        )
+    );
+    let recovery = failure.into_recovery();
+    let held_view = recovery.inspect().unwrap();
+    assert!(matches!(
+        recovery.continue_owner_settlement(),
+        Err(RuntimeWorldRecoveryDenial::CallerCapabilityLive)
+    ));
+    drop(held_view);
+    let actions = recovery.continue_owner_settlement().unwrap();
+    assert!(!actions
+        .actions()
+        .contains(&ProductUnpublishedNextAction::SettleOwnerEffects));
+    assert!(actions
+        .actions()
+        .contains(&ProductUnpublishedNextAction::StartFreshCompositePublication));
+    assert_eq!(recovery.continue_owner_settlement().unwrap(), actions);
+    let settled = recovery.inspect().unwrap();
+    assert!(!settled.relational_requires_settlement());
+    assert_eq!(settled.owner_effect_count(), 1);
+    assert!(settled.live_obligation_count() > 0);
+    drop(settled);
+    let current = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
+    assert_eq!(
+        current.selected_commit(),
+        selected.selected_commit(),
+        "settlement cannot publish product truth"
+    );
+    assert_eq!(
+        commits(),
+        baseline + 1,
+        "settlement must not rerun the application"
+    );
+    let receipt = world
+        .application
+        .release_product_publication_recovery(recovery, 0)
+        .unwrap();
+    assert_eq!(receipt.retired_component_count(), 0);
+    assert!(world
+        .application
+        .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
+        .unwrap()
+        .rows()
+        .is_empty());
+    assert_eq!(
+        world
+            .application
+            .primary_provider
+            .unpublished_idempotency_count(),
+        0,
+        "terminal World cleanup releases the exact tombstone capacity",
+    );
 }
 
 #[test]
-fn idempotent_retry_repairs_settlement_after_the_external_capability_is_dropped() {
+fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_rows() {
     let world = installed_authorization_world(true);
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
+    let selected = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
+    let commits = || {
+        world
+            .application
+            .primary_provider
+            .graph
+            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+    };
+    let baseline = commits();
     let program = admitted_program(
         &world,
         &principal,
@@ -83,7 +167,14 @@ fn idempotent_retry_repairs_settlement_after_the_external_capability_is_dropped(
         &request,
         "drop-then-idempotent-retry",
     );
-    let retry = admitted_program(
+    let retry_before = admitted_program(
+        &world,
+        &principal,
+        &account,
+        &request,
+        "drop-then-idempotent-retry",
+    );
+    let retry_after = admitted_program(
         &world,
         &principal,
         &account,
@@ -91,208 +182,69 @@ fn idempotent_retry_repairs_settlement_after_the_external_capability_is_dropped(
         "drop-then-idempotent-retry",
     );
     world.application.fail_next_durable_append_for_test();
-
-    let WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) = world
+    let outcome = world
         .application
-        .compare_and_commit_application(program, idempotency(96, 96))
-    else {
-        panic!("performed application publication must defer settlement");
+        .compare_and_commit_application(program, idempotency(96, 96));
+    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
+        panic!("durable append failure must retain the unpublished owner occurrence: {outcome:?}");
     };
-    let commit_id = deferred.commit_id();
-    drop(deferred);
-
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
+    drop(partial);
+    let page = world
         .application
-        .compare_and_commit_application(retry, idempotency(96, 96))
-    else {
-        panic!("idempotent retry must repair and recover the performed commit");
+        .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
+        .unwrap();
+    assert!(page.examined() <= 1);
+    let [row] = page.rows() else {
+        panic!("one dropped application partial must remain in World's catalog")
     };
-    assert_eq!(recovered.commit_id(), commit_id);
-
-    let next_account = resolved_account(&world, "drop-then-idempotent-retry", &request);
-    let later = admitted_program(
-        &world,
-        &principal,
-        &next_account,
-        &request,
-        "after-drop-then-retry",
-    );
-    assert!(matches!(
+    let recovery = world
+        .application
+        .readmit_product_publication_recovery(row.handle())
+        .unwrap();
+    assert!(recovery.inspect().unwrap().relational_requires_settlement());
+    assert_idempotency_refuses_unpublished(
         world
             .application
-            .compare_and_commit_application(later, idempotency(97, 97)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-}
-
-#[test]
-fn settlement_authority_survives_index_reconstruction_after_append_fault() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "combined-publication-fault",
+            .compare_and_commit_application(retry_before, idempotency(96, 96)),
     );
-    let retry = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "combined-publication-fault",
+    recovery.continue_owner_settlement().unwrap();
+    assert_idempotency_refuses_unpublished(
+        world
+            .application
+            .compare_and_commit_application(retry_after, idempotency(96, 96)),
     );
-    let truth_before = world
+    let current = world
         .application
-        .primary_provider
-        .graph
-        .current_truth_snapshot(
-            &crate::domain_computation::primary_graph::primary_truth_branch_identity(),
-        )
-        .expect("application publication installs an initial Bridge head");
-    world.application.fail_next_durable_append_for_test();
-    world.faults.fail_next_index_publication();
-
-    let WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) = world
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
+    assert_eq!(current.selected_commit(), selected.selected_commit());
+    assert_eq!(commits(), baseline + 1);
+    let receipt = world
         .application
-        .compare_and_commit_application(program, idempotency(93, 93))
-    else {
-        panic!("index reconstruction must not erase exact settlement authority");
-    };
-    assert!(deferred.publication_failure_detail().is_some());
-    assert_eq!(
-        deferred.next_action(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement
-    );
+        .release_product_publication_recovery(recovery, 0)
+        .unwrap();
+    assert_eq!(receipt.retired_component_count(), 0);
     assert_eq!(
         world
             .application
             .primary_provider
-            .graph
-            .current_truth_snapshot(
-                &crate::domain_computation::primary_graph::primary_truth_branch_identity(),
-            ),
-        Some(truth_before.clone())
+            .unpublished_idempotency_count(),
+        0,
+        "rediscovered cleanup releases the same bounded tombstone",
     );
-    world
-        .application
-        .recover_deferred_application_settlement(&deferred)
-        .expect("application owner completes the preserved settlement and Query publication");
-    assert_ne!(
-        world
-            .application
-            .primary_provider
-            .graph
-            .current_truth_snapshot(
-                &crate::domain_computation::primary_graph::primary_truth_branch_identity(),
-            ),
-        Some(truth_before)
-    );
-    assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(93, 93)),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
-    ));
-    let _committed = resolved_account(&world, "combined-publication-fault", &request);
 }
 
-#[test]
-fn settlement_recovery_preserves_a_later_legal_application_head() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let performed = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "performed-before-intervening-commit",
-    );
-    let performed_retry = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "performed-before-intervening-commit",
-    );
-    world.application.fail_next_durable_append_for_test();
-    world.faults.fail_next_index_publication();
-    let WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) = world
-        .application
-        .compare_and_commit_application(performed, idempotency(94, 94))
-    else {
-        panic!("performed application commit must retain exact settlement recovery");
+pub(super) fn assert_idempotency_refuses_unpublished(outcome: WorthQueryApplicationCommitOutcome) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("owner-local idempotency row without original product publication must remain ineligible: {outcome:?}");
     };
-
-    world
-        .application
-        .primary_provider
-        .graph
-        .with_runtime_mut(|runtime| {
-            runtime.repair_deferred_publication_settlement(deferred.settlement())
-        })
-        .expect("adversarial setup repairs only the durable settlement");
-    world
-        .application
-        .primary_provider
-        .graph
-        .with_runtime_mut(|runtime| {
-            world
-                .application
-                .primary_provider
-                .graph
-                .ensure_primary_indexes_current_for_branch(runtime, deferred.branch())
-        })
-        .expect("adversarial setup reconstructs the former half-published state");
-    let unrelated = resolved_account(&world, "unrelated", &request);
-    let intervening = admitted_program(
-        &world,
-        &principal,
-        &unrelated,
-        &request,
-        "intervening-application-commit",
-    );
-
-    let intervening_outcome = world
-        .application
-        .compare_and_commit_application(intervening, idempotency(95, 95));
-    let intervening_receipt = match intervening_outcome {
-        WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
-        outcome => panic!("intervening application attempt did not commit: {outcome:?}"),
-    };
-
-    world
-        .application
-        .recover_deferred_application_settlement(&deferred)
-        .expect("serialized recovery accepts the performed commit in current ancestry");
-    let bridge_head = world
-        .application
-        .primary_provider
-        .graph
-        .relational_bridge_source()
-        .load_branch_head_patch(
-            &crate::domain_computation::primary_graph::primary_truth_branch_identity(),
-        )
-        .expect("recovery leaves the later application commit bound as Bridge head");
     assert_eq!(
-        bridge_head.commit_identity(),
-        &worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(
-            intervening_receipt.commit_id().0,
-        ),
-        "earlier settlement recovery must not rewind a later legal Bridge head"
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::Idempotency
     );
-    assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(performed_retry, idempotency(94, 94)),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
-    ));
-    let recovered = resolved_account(&world, "performed-before-intervening-commit", &request);
-    assert_eq!(recovered.entity_id(), account.entity_id());
-    let _latest = resolved_account(&world, "intervening-application-commit", &request);
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
+    );
 }

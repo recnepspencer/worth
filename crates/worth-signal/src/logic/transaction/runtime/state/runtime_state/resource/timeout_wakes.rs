@@ -60,15 +60,13 @@ where
                 (deadline, ResourceTimeoutDeadlineAuthority::RuntimeConfig)
             }
             _ => {
-                let Some(timeout_duration) =
-                    timeout_plan.timeout_for_lineage(current_tick, generation_started_tick)
-                else {
-                    return Ok(None);
-                };
-                (
-                    timeout_duration,
-                    ResourceTimeoutDeadlineAuthority::Descriptor,
-                )
+                return Ok(
+                    super::super::super::resource::resolve_descriptor_timeout_plan(
+                        timeout_plan,
+                        current_tick,
+                        generation_started_tick,
+                    ),
+                );
             }
         };
         if !matches!(

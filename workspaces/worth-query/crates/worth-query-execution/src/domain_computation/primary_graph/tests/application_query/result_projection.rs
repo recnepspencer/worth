@@ -13,8 +13,8 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationProjectionDenialKind,
-    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
-    WorthQueryApplicationQueryOmissionPosture, WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryOmissionPosture,
+    WorthQueryPrincipalResolutionMode,
 };
 
 #[test]
@@ -24,6 +24,8 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -33,6 +35,8 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -43,7 +47,7 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
@@ -142,6 +146,8 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -151,6 +157,8 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -160,13 +168,13 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
         .unwrap();
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let controls = WorthQueryApplicationQueryControls::current_one_shot(
+    let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(1).unwrap(),
         NonZeroUsize::new(10_000).unwrap(),
         &request,
     );
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
@@ -194,6 +202,8 @@ fn invented_selector_contract_denies_domain_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -203,6 +213,8 @@ fn invented_selector_contract_denies_domain_projection() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -213,7 +225,7 @@ fn invented_selector_contract_denies_domain_projection() {
     let query = installed_forged_selector_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
@@ -247,6 +259,8 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -256,6 +270,8 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -266,7 +282,7 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,

@@ -49,19 +49,21 @@ impl WorthServerQueryWorkspaceProvider for RemaskWorkspaceProvider {
             .request_context()
             .workspace_target()
             .workspace_id();
-        let mut workspace = WorthQueryRuntime::builder()
-            .backend(RemaskRuntimeBackend::new(
-                self.support_profile.clone(),
-                self.projection.clone(),
-            ))
-            .build()
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
-            })?
-            .workspace(workspace_id)
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
-            })?;
+        let mut workspace = WorthQueryRuntime::builder(
+            worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+        )
+        .backend(RemaskRuntimeBackend::new(
+            self.support_profile.clone(),
+            self.projection.clone(),
+        ))
+        .build()
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
+        })?
+        .workspace(workspace_id)
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
+        })?;
         install_requested_named_read(&mut workspace, request)?;
         Ok(workspace)
     }

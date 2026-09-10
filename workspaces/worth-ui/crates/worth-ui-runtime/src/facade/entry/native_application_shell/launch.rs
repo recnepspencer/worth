@@ -67,14 +67,6 @@ impl WorthUiApp {
                                             .query_transitions()
                                             .to_vec()
                                             .into_boxed_slice(),
-                                        semantic_frontiers: cleanup
-                                            .mounted_presentation()
-                                            .query_semantic_frontiers()
-                                            .to_vec()
-                                            .into_boxed_slice(),
-                                        semantic_frontier_trace_complete: cleanup
-                                            .mounted_presentation()
-                                            .query_semantic_frontier_trace_complete(),
                                         text_work: cleanup
                                             .mounted_presentation()
                                             .text_presentation_work()

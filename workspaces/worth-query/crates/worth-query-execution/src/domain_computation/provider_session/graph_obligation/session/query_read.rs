@@ -28,7 +28,7 @@ impl WorthQueryManagedGraphWorkSession {
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionGraphReadProof), WorthQueryManagedGraphReadDenial> {
-        let WorthQueryGraphWorkBasis::Query { identity, port } = &self.basis else {
+        let WorthQueryGraphWorkBasis::Query { identity, port, .. } = &self.basis else {
             return Err(WorthQueryManagedGraphReadDenial::MutationSession);
         };
         if identity != basis || !self.branch.admits_query_basis(basis) {

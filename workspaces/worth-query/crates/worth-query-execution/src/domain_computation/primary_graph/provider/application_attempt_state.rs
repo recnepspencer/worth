@@ -4,12 +4,17 @@ use crate::domain_computation::{
     WorthQueryProposedFact, WorthQueryProviderSessionAffinityIdentity,
     WorthQueryProviderSessionView, WorthQueryProvisionalEffectStep,
 };
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+};
 
+mod commit_completion;
 mod commit_preparation;
 mod phase;
 mod registration;
 mod retained_basis;
+use commit_completion::WorthQueryPreparedProviderApplicationAttempt;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::commit_prepared_application;
 pub(crate) use commit_preparation::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph) use commit_preparation::{
@@ -33,7 +38,7 @@ use super::{
 struct WorthQueryApplicationAttemptLookupKey(WorthQueryProviderSessionAffinityIdentity);
 
 impl WorthQueryApplicationAttemptLookupKey {
-    const fn from_affinity(
+    fn from_affinity(
         affinity: &super::super::application_attempt::WorthQueryApplicationAttemptAffinity,
     ) -> Self {
         Self(affinity.lookup_identity())
@@ -57,7 +62,13 @@ enum WorthQueryApplicationAttemptEntry {
         terminal:
             crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     },
-    Registered(WorthQueryApplicationAttemptState),
+    Registered {
+        identity: u64,
+        state: WorthQueryApplicationAttemptState,
+    },
+    Committing {
+        identity: u64,
+    },
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptReservation {
@@ -70,12 +81,6 @@ pub(super) struct WorthQueryStagedApplicationAttempt<'attempt> {
     overlay: &'attempt WorthQueryPrimaryGraphOverlay,
 }
 
-pub(super) struct WorthQueryPreparedProviderApplicationAttempt {
-    attempt: WorthQueryPrimaryGraphApplicationAttempt,
-    candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
-    work: WorthQueryPrimaryMutationWorkCounters,
-}
-
 impl WorthQueryPrimaryGraphApplicationAttemptStore {
     pub(super) fn contains_observed_fact(
         &self,
@@ -86,7 +91,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .is_some_and(|attempt| attempt.facts().contains_key(locator))
     }
 
-    pub(super) fn observed_fact_and_branch(
+    pub(super) fn observed_fact_and_product(
         &self,
         session: WorthQueryProviderSessionView<'_>,
         locator: &str,
@@ -94,7 +99,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         let attempt = self.attempt(session)?;
         Some(WorthQueryObservedApplicationFactBasis::new(
             attempt.facts().get(locator)?.clone(),
-            attempt.affinity().branch().clone(),
+            attempt.affinity().product_publication().clone(),
         ))
     }
 
@@ -103,7 +108,9 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         session: &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     ) -> Option<WorthQueryApplicationIdempotencyBasis> {
         let key = WorthQueryApplicationAttemptLookupKey::from_identity(session.affinity_identity());
-        let WorthQueryApplicationAttemptEntry::Registered(state) = self.attempts.get(&key)? else {
+        let WorthQueryApplicationAttemptEntry::Registered { state, .. } =
+            self.attempts.get(&key)?
+        else {
             return None;
         };
         let attempt = state.attempt();
@@ -112,7 +119,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         }
         Some(WorthQueryApplicationIdempotencyBasis::new(
             attempt.idempotency(),
-            attempt.affinity().branch().clone(),
+            attempt.affinity().product_publication().clone(),
         ))
     }
 
@@ -180,9 +187,10 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .is_some_and(WorthQueryApplicationAttemptState::phase_is_commit_ready)
     }
 
-    pub(super) fn take_commit_prepared(
+    fn take_commit_prepared(
         &mut self,
         session: WorthQueryProviderSessionView<'_>,
+        attempts: Arc<Mutex<Self>>,
     ) -> Option<WorthQueryPreparedProviderApplicationAttempt> {
         let key = WorthQueryApplicationAttemptLookupKey::from_identity(session.affinity_identity());
         if !self
@@ -191,14 +199,23 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         {
             return None;
         }
-        let WorthQueryApplicationAttemptEntry::Registered(state) = self
+        let WorthQueryApplicationAttemptEntry::Registered { identity, state } = self
             .attempts
             .remove(&key)
             .expect("commit-ready state exists")
         else {
             unreachable!("commit readiness excludes reservation entries")
         };
-        state.take_commit_prepared()
+        let (attempt, candidate, work) = state
+            .take_commit_parts()
+            .expect("commit-ready state retains its prepared parts");
+        self.attempts.insert(
+            key,
+            WorthQueryApplicationAttemptEntry::Committing { identity },
+        );
+        Some(WorthQueryPreparedProviderApplicationAttempt::new(
+            attempt, candidate, work, attempts, key, identity,
+        ))
     }
 
     pub(super) fn discard_overlay(
@@ -206,11 +223,11 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         evidence: crate::domain_computation::provider_session::WorthQueryProvisionalOverlayEvidenceView<'_>,
     ) -> bool {
         let cleanup = evidence.cleanup_binding();
-        let Some(WorthQueryApplicationAttemptEntry::Registered(state)) =
-            self.attempts
-                .get_mut(&WorthQueryApplicationAttemptLookupKey::from_identity(
-                    cleanup.affinity_identity(),
-                ))
+        let Some(WorthQueryApplicationAttemptEntry::Registered { state, .. }) = self
+            .attempts
+            .get_mut(&WorthQueryApplicationAttemptLookupKey::from_identity(
+                cleanup.affinity_identity(),
+            ))
         else {
             return false;
         };
@@ -223,7 +240,10 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             WorthQueryApplicationAttemptEntry::Reserved { terminal, .. } => {
                 terminal.admits_session_view(session)
             }
-            WorthQueryApplicationAttemptEntry::Registered(state) => state.admits_session(session),
+            WorthQueryApplicationAttemptEntry::Registered { state, .. } => {
+                state.admits_session(session)
+            }
+            WorthQueryApplicationAttemptEntry::Committing { .. } => false,
         });
         if admitted {
             self.attempts.remove(&key);
@@ -236,9 +256,17 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .values()
             .map(|entry| match entry {
                 WorthQueryApplicationAttemptEntry::Reserved { .. } => 1,
-                WorthQueryApplicationAttemptEntry::Registered(state) => state.resource_count(),
+                WorthQueryApplicationAttemptEntry::Registered { state, .. } => {
+                    state.resource_count()
+                }
+                WorthQueryApplicationAttemptEntry::Committing { .. } => 1,
             })
             .sum()
+    }
+
+    #[cfg(feature = "test-world-operation-control")]
+    pub(super) fn active_attempt_count(&self) -> usize {
+        self.attempts.len()
     }
 
     fn attempt(
@@ -253,7 +281,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         &self,
         session: WorthQueryProviderSessionView<'_>,
     ) -> Option<&WorthQueryApplicationAttemptState> {
-        let WorthQueryApplicationAttemptEntry::Registered(state) =
+        let WorthQueryApplicationAttemptEntry::Registered { state, .. } =
             self.attempts
                 .get(&WorthQueryApplicationAttemptLookupKey::from_identity(
                     session.affinity_identity(),
@@ -268,7 +296,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         &mut self,
         session: WorthQueryProviderSessionView<'_>,
     ) -> Option<&mut WorthQueryApplicationAttemptState> {
-        let WorthQueryApplicationAttemptEntry::Registered(state) =
+        let WorthQueryApplicationAttemptEntry::Registered { state, .. } =
             self.attempts
                 .get_mut(&WorthQueryApplicationAttemptLookupKey::from_identity(
                     session.affinity_identity(),
@@ -299,6 +327,13 @@ impl WorthQueryStagedApplicationAttempt<'_> {
 
     pub(super) fn branch(&self) -> &worth_relational::facade::history::BranchId {
         self.attempt.affinity().branch()
+    }
+
+    pub(super) fn product_publication(
+        &self,
+    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding
+    {
+        self.attempt.affinity().product_publication()
     }
 
     pub(super) fn decision_fact_count(&self) -> usize {

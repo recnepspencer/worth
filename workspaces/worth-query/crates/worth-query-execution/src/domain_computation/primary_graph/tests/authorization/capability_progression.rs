@@ -40,9 +40,7 @@ type CapabilityAccess = WorthQueryAdmittedApplicationCapabilityAccess<
 #[test]
 fn current_capability_progresses_through_the_real_application_commit() {
     let world = installed_capability_authorization_world();
-    world
-        .authorization_time
-        .script([time(100), time(100), time(100), time(100)]);
+    world.authorization_time.hold(time(100));
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let (program, evidence) = admitted_capability_program(&world, &principal, &request, "updated");
@@ -105,7 +103,7 @@ fn explicit_purpose_mismatch_preserves_its_exact_explanation_cause() {
 
     let Err(denial) =
         world
-            .application
+            .selected_product()
             .admit_capability_access(&principal, &capability, input, &request)
     else {
         panic!("an explicit purpose mismatch must not mint capability authority")
@@ -135,7 +133,7 @@ fn capability_governed_operation_rejects_conventional_authorization() {
 
     assert!(operation.contracts().authorization().requires_capability());
     assert!(operation.contracts().ability_requirements().is_empty());
-    let Err(denial) = world.application.authorize_operation(
+    let Err(denial) = world.selected_product().authorize_operation(
         &principal,
         &account,
         &operation,
@@ -338,7 +336,7 @@ pub(super) fn admitted_capability_access_with_governed_input(
             CapabilityTouchOperation::reference(),
         )
         .unwrap();
-    world.application.admit_capability_access(
+    world.selected_product().admit_capability_access(
         principal,
         &capability,
         capability_input(caller_time, governed_input_identity),

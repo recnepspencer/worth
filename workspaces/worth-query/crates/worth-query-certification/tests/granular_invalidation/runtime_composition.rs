@@ -103,6 +103,7 @@ pub fn assert_primary_runtime_composition() {
 pub fn assert_head_advance_preserves_admitted_granular_read() {
     let mut world = CourtroomWorld::publish("blocked");
     let mut query = build_primary_query_world(&world);
+    drop(world.conditional_clock());
     world.amend_intent(1, "active", "ready");
     let mut receipt = observe(&mut world);
     let batch = receipt.take_granular_invalidation_batch();
@@ -128,6 +129,7 @@ pub fn assert_granular_receipt_uses_execution_snapshot_basis() {
     let mut world = CourtroomWorld::publish("blocked");
     let mut ambient_snapshot_world = CourtroomWorld::publish("blocked");
     let mut query = build_with_foreign_snapshot_adapter(&world, &ambient_snapshot_world);
+    drop(world.conditional_clock());
     ambient_snapshot_world.amend_intent(8, "active", "ready");
 
     world.amend_intent(1, "active", "ready");
@@ -258,6 +260,7 @@ fn observe_scaled_primary_world(
         &query.live,
         host.application.granular_invalidation_installation(),
     );
+    drop(host.conditional_clock());
     if rejected_bridge_candidates {
         host.supersede_intent(2, 6, "active", "changed", "ready");
     } else {
@@ -290,7 +293,7 @@ fn assert_reinstallation_revokes_captured_delivery() {
     );
     host.amend_intent(1, "active", "ready");
     let mut receipt = observe(&mut host);
-    host.application.reinstall_conditional_runtime().unwrap();
+    host.reinstall_conditional_runtime().unwrap();
     assert!(matches!(
         maintain_primary_runtime_granular_invalidations(
             &query.live,
@@ -308,12 +311,7 @@ fn observe(
 ) -> worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationReceipt<
     crate::adapters::CourtroomClock,
 > {
-    match world
-        .application
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe()
-    {
+    match world.conditional_clock().observe() {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         _ => panic!("the due courtroom observation must be accepted"),
     }

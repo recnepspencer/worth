@@ -4,6 +4,8 @@ mod identity;
 
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::dependency::DependencySnapshotId;
 use crate::data::performance::AuthorityPolicy;

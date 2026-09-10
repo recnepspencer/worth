@@ -69,7 +69,7 @@ impl RuntimeCore {
         self.runtime
             .diagnostics()
             .latest_flow()
-            .cloned()
+            .map(|flow| flow.to_owned_summary())
             .map(|flow| {
                 self.callback_nodes_for_node_ids(
                     flow.change
@@ -137,7 +137,7 @@ impl RuntimeCore {
                                         .chain(flow.cause_samples.iter().map(|sample| sample.node))
                                         .chain(
                                             flow.explanation
-                                                .iter()
+                                                .into_iter()
                                                 .map(|explanation| explanation.node),
                                         )
                                 }),

@@ -12,8 +12,6 @@ pub(crate) struct WorthQueryInstalledLiveRoutingSelector {
     pub(crate) structural_creation: bool,
     pub(crate) broad: bool,
     pub(crate) empty_touch: bool,
-    pub(crate) conditional_locations:
-        BTreeSet<worth_query_installation::facade::WorthQueryConditionalNodeLocation>,
 }
 
 impl WorthQueryInstalledLiveImpactClassifier {
@@ -31,7 +29,6 @@ impl WorthQueryInstalledLiveImpactClassifier {
             structural_creation: !self.structural_roles.is_empty(),
             broad: self.conditional_broad_locality,
             empty_touch: !self.conditional_aspects.is_empty(),
-            conditional_locations: self.conditional_locations.clone(),
         }
     }
 }

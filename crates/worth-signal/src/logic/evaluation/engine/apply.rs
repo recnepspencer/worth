@@ -38,9 +38,10 @@ pub(crate) fn apply_effect_with_policy_and_condition(
     dependency_inputs: Option<EffectDependencyInputs>,
     defer_snapshot_commit: bool,
     previous_artifact_warm: Option<PreviousArtifactWarmSnapshot>,
+    work: &mut super::work::EvaluationWork<'_>,
 ) -> Result<PreparedApplyResult, SignalError> {
     let dependency_inputs =
-        dependency_inputs::resolve_effect_dependency_inputs(graph, node, dependency_inputs)?;
+        dependency_inputs::resolve_effect_dependency_inputs(graph, node, dependency_inputs, work)?;
     let effect = effect_lowering::build_evaluation_effect(
         node,
         result,
@@ -62,6 +63,7 @@ pub(crate) fn apply_effect_with_policy_and_condition(
         output_equivalence,
         comparator_resolver,
         defer_snapshot_commit,
+        work,
     )?;
     Ok(PreparedApplyResult {
         dependency_updates: 0,

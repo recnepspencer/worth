@@ -43,8 +43,12 @@ pub(crate) fn real_denial(scenario: CompositionScenario) -> WorthQueryOperationA
     let request = authentication::request_scope();
     let external =
         authentication::authenticate_external(world.runtime.installed_schema(), &request);
-    let principal = world
+    let selected = world
         .runtime
+        .on_branch(world.runtime.current_world())
+        .select()
+        .expect("the published product branch must remain admitted");
+    let principal = selected
         .resolve_authenticated_principal(
             &world.binding,
             external,
@@ -61,8 +65,7 @@ pub(crate) fn real_denial(scenario: CompositionScenario) -> WorthQueryOperationA
         )
         .unwrap();
 
-    world
-        .runtime
+    selected
         .admit_capability_access(&principal, &capability, PublicationInput, &request)
         .err()
         .unwrap_or_else(|| panic!("{scenario:?} must deny at real capability admission"))

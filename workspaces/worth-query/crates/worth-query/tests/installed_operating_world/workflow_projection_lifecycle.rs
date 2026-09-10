@@ -7,7 +7,9 @@ use worth_query::facade::{domain, foundation};
 
 #[path = "workflow_projection_lifecycle/projection_lifecycle_assertions.rs"]
 mod projection_lifecycle_assertions;
+mod providers;
 use projection_lifecycle_assertions::assert_zero_lifecycle_work;
+pub(super) use providers::{LifecycleWorkflowCompute, RequestedTrigger};
 
 use super::conditional_node_contract::{conditional_node_result, dependency, ManualRefresh};
 use super::installed_operation_fixture::{
@@ -216,7 +218,7 @@ pub(super) fn settle_workflow(
 ) -> (SettledWorkflow, domain::WorthQueryNativeAccessKey) {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)
@@ -352,48 +354,4 @@ pub(super) fn stage_conditional_node(
     .output_relationship(domain::WorthQueryOutputRelationship::IsWorkflowStageOutput)
     .finish()
     .unwrap()
-}
-
-pub(super) struct LifecycleWorkflowCompute(pub(super) Arc<AtomicU64>);
-
-pub(super) struct RequestedTrigger;
-
-impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for RequestedTrigger {
-    type SemanticContract = ();
-
-    fn semantic_contract(&self) -> Self::SemanticContract {}
-}
-
-impl worth_runtime_bridge::facade::BridgeConditionalTriggerProvider for RequestedTrigger {
-    fn requested(&self) -> bool {
-        true
-    }
-}
-
-impl domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, WorkflowRead, ReadFamily>
-    for LifecycleWorkflowCompute
-{
-    type SemanticContract = ();
-
-    fn semantic_contract(&self) -> Self::SemanticContract {}
-
-    fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
-        crate::suite::installed_operation_fixture::execution_resource_support()
-    }
-
-    fn compute(
-        &self,
-        context: &domain::WorthQueryConditionalComputeContext,
-    ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
-        if context.workflow_run_identity().is_none() {
-            return Err("workflow lifecycle condition lost its originating run".into());
-        }
-        let version = self.0.fetch_add(1, Ordering::SeqCst) + 1;
-        Ok(worth_signal::facade::NodeEvaluationResult::from_version(
-            worth_signal::facade::AspectVersion::from_updates([(
-                worth_signal::facade::Aspect::new(0),
-                version,
-            )]),
-        ))
-    }
 }

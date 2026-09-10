@@ -24,8 +24,41 @@ pub(in crate::domain_computation::primary_graph) fn commit_live_activity_with_la
     request: &WorthQueryRequestScope,
     label: &str,
 ) -> WorthQueryApplicationCommitReceipt {
+    commit_live_activity_with_identity(world, principal, request, label, 227, 91)
+}
+
+pub(in crate::domain_computation::primary_graph) fn commit_live_activity_with_identity(
+    world: &AuthorizationWorld,
+    principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
+    request: &WorthQueryRequestScope,
+    label: &str,
+    idempotency_key: u8,
+    request_digest: u8,
+) -> WorthQueryApplicationCommitReceipt {
+    commit_live_activity_on_product(
+        world,
+        world.application.product_runtime().default_branch(),
+        principal,
+        request,
+        label,
+        idempotency_key,
+        request_digest,
+    )
+}
+
+pub(in crate::domain_computation::primary_graph) fn commit_live_activity_on_product(
+    world: &AuthorizationWorld,
+    product: &worth_runtime_world::facade::ProductBranchIdentity,
+    principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
+    request: &WorthQueryRequestScope,
+    label: &str,
+    idempotency_key: u8,
+    request_digest: u8,
+) -> WorthQueryApplicationCommitReceipt {
     let account = world
         .application
+        .select_product_branch(product)
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_owned(),
@@ -33,18 +66,19 @@ pub(in crate::domain_computation::primary_graph) fn commit_live_activity_with_la
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let program = live_activity_program(world, principal, &account, request, label);
+    let program = live_activity_program(world, product, principal, &account, request, label);
     match world.application.compare_and_commit_application(
         program,
-        WorthQueryApplicationIdempotencyBinding::new([227; 32], [91; 32]),
+        WorthQueryApplicationIdempotencyBinding::new([idempotency_key; 32], [request_digest; 32]),
     ) {
         WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
         unexpected => panic!("live activity fixture must commit: {unexpected:?}"),
     }
 }
 
-fn live_activity_program(
+pub(in crate::domain_computation::primary_graph) fn live_activity_program(
     world: &AuthorizationWorld,
+    product: &worth_runtime_world::facade::ProductBranchIdentity,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
     request: &WorthQueryRequestScope,
@@ -62,6 +96,8 @@ fn live_activity_program(
         .unwrap();
     let admission = world
         .application
+        .select_product_branch(product)
+        .expect("the selected live product remains admitted")
         .authorize_operation(principal, account, &operation, Default::default(), request)
         .unwrap();
     let (_, projection, _) = world

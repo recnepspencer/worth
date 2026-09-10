@@ -81,9 +81,13 @@ where
         aftermath_causality,
     } = prepared;
     let snapshot = lease.snapshot();
-    let attempt_basis =
-        WorthQueryApplicationAttemptBasis::capture(application, &admission, snapshot)
-            .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
+    let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
+        application,
+        &admission,
+        snapshot,
+        lease.product(),
+    )
+    .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
     let operation = bind_execution_operation(application, &admission, &lease)?;
     let reserved = admission
         .graph_work_mut()
@@ -93,14 +97,14 @@ where
         .runtime
         .start_reserved_direct_resource_attempt(&operation, reserved)
         .map_err(|_| denied(DenialStage::ResourceAdmission))?;
-    let read_request = WorthQueryManagedTruthReadRequest::new(
-        lease.basis_descriptor().clone(),
+    let read_request = WorthQueryManagedTruthReadRequest::for_product(
+        lease.product(),
         SnapshotReadPacket::new(Vec::new()),
     );
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
     let running = application
         .runtime
-        .managed_run_admission(&request_bridge, &application.relational_source)
+        .managed_run_admission(&request_bridge, &application.product_runtime.source)
         .admit_direct(&operation, attempt, read_request)
         .map_err(|_| denied(DenialStage::ManagedRunAdmission))?
         .start();
@@ -136,15 +140,11 @@ where
         .primary_provider
         .observe_managed_application_bridge_plan();
     let branch = admission.graph_work().branch().truth().clone();
-    let basis = application
-        .relational_source
-        .readmit_branch_basis(lease.basis_descriptor())
-        .map_err(bridge_basis_denied)?;
-    let bridge_observation = application
-        .relational_source
-        .retain_branch_basis_for_bridge(&basis)
-        .map_err(bridge_basis_denied)?;
-    let bridge_snapshot = bridge_observation.snapshot_identity().clone();
+    let bridge_snapshot = lease
+        .product()
+        .bridge_source_observation()
+        .snapshot_identity()
+        .clone();
     application
         .bridge
         .ordinary()
@@ -158,7 +158,6 @@ where
             SnapshotReadPacket::new(Vec::new()),
         )
         .map_err(|_| denied(DenialStage::BridgePlanning))?;
-    drop(bridge_observation);
     let basis = basis_lifecycle()
         .branch_snapshot(
             admission.graph_work_branch().0.clone(),
@@ -189,32 +188,8 @@ where
                 operation_attempt: admission.admission_identity(),
                 schema_binding: admission.binding_identity(),
                 snapshot,
+                product: lease.product(),
             },
         ),
     )
-}
-
-fn bridge_basis_denied(
-    denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
-) -> WorthQueryApplicationCommitOutcome {
-    use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial;
-    let denial = match denial {
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-            WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
-                DenialStage::BridgePlanning,
-            )
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-            WorthQueryApplicationCommitDenial::retention_identity_exhausted(
-                DenialStage::BridgePlanning,
-            )
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-            WorthQueryApplicationCommitDenial::snapshot_identity_exhausted(
-                DenialStage::BridgePlanning,
-            )
-        }
-        _ => return denied(DenialStage::BridgePlanning),
-    };
-    WorthQueryApplicationCommitOutcome::Denied(denial)
 }

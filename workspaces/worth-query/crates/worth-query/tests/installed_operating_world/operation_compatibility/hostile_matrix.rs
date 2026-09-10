@@ -277,7 +277,7 @@ fn bind_read_vertex(
     foundation::ObservationLaneWitness,
 > {
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(installed, ReadVertex)

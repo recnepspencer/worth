@@ -72,35 +72,20 @@ pub(super) fn aftermath_causality_create_intent(
 }
 
 impl WorthQueryPrimaryGraphProvider {
-    fn branch_head(
+    pub(in crate::domain_computation) fn resolve_aftermath_causality_at_basis(
         &self,
-        branch: &worth_relational::facade::history::BranchId,
-    ) -> Result<
-        Option<worth_relational::facade::history::RelationalCommitReceipt>,
-        WorthQueryAftermathCausalityReadDenial,
-    > {
-        self.graph.with_runtime(|runtime| {
-            crate::domain_computation::primary_graph::exact_basis_access::current_branch_head(
-                runtime, branch,
-            )
-            .map_err(aftermath_basis_denial)
-        })
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn resolve_aftermath_causality(
-        &self,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         pending: &WorthQueryPendingAftermathCausality,
         outcome_identity: Option<WorthQueryApplicationCommitOutcomeIdentity>,
     ) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial>
     {
         let layout = self.graph.layout.provider_aftermath_causality().clone();
-        let branch = pending.parent().branch_id.clone();
         self.graph.with_runtime_mut(|runtime| {
             self.graph
-                .ensure_primary_indexes_current_for_branch(runtime, &branch)
+                .ensure_primary_indexes_for_basis(runtime, basis)
                 .map_err(aftermath_index_currency_denial)?;
-            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &branch)
-                .map_err(aftermath_snapshot_denial)?;
+            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
+                .map_err(|denial| aftermath_snapshot_denial(denial.into()))?;
             let resolution = WorthQueryAftermathCausalityRead {
                 runtime,
                 snapshot: &snapshot,
@@ -112,30 +97,6 @@ impl WorthQueryPrimaryGraphProvider {
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             resolution.map_err(Into::into)
         })
-    }
-}
-
-impl<Schema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: worth_query_installation::facade::ApplicationSchema,
-{
-    pub(in crate::domain_computation) fn relational_branch_head(
-        &self,
-        branch: &worth_relational::facade::history::BranchId,
-    ) -> Result<
-        Option<worth_relational::facade::history::RelationalCommitReceipt>,
-        WorthQueryAftermathCausalityReadDenial,
-    > {
-        self.primary_provider.branch_head(branch)
-    }
-
-    pub(in crate::domain_computation) fn committed_aftermath_causality(
-        &self,
-        pending: &WorthQueryPendingAftermathCausality,
-    ) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial>
-    {
-        self.primary_provider
-            .resolve_aftermath_causality(pending, None)
     }
 }
 
@@ -165,23 +126,6 @@ fn aftermath_snapshot_denial(
         } => WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
-            WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted
-        }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
-            WorthQueryAftermathCausalityReadDenial::RetentionIdentityExhausted
-        }
-        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
-            WorthQueryAftermathCausalityReadDenial::SnapshotIdentityExhausted
-        }
-        _ => WorthQueryAftermathCausalityReadDenial::Unavailable,
-    }
-}
-
-fn aftermath_basis_denial(
-    denial: crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial,
-) -> WorthQueryAftermathCausalityReadDenial {
-    match denial {
         crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
             WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted
         }

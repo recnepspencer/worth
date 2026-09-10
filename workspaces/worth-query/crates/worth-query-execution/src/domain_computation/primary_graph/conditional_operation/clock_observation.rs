@@ -3,10 +3,11 @@ use std::marker::PhantomData;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryClockCoordinate};
 
 use super::installation::WorthQueryConditionalClockHandle;
-use super::WorthQueryConditionalOperationRegistry;
+use super::lifecycle::WorthQueryConditionalOperationCell;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod erased;
+mod product_admission;
 pub(in crate::domain_computation::primary_graph) use erased::{
     ErasedClockObservationOutcome, ErasedClockObservationReceipt,
 };
@@ -15,6 +16,7 @@ pub(in crate::domain_computation::primary_graph) use erased::{
 pub enum WorthQueryConditionalClockObservationDenialKind {
     ForeignRuntime,
     BindingNotInstalled,
+    ProductAdmission(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -199,8 +201,9 @@ pub enum WorthQueryConditionalClockObservationOutcome<Clock> {
 }
 
 pub struct WorthQueryConditionalClockObservationPort<'runtime, Schema, Node, Clock> {
-    runtime: &'runtime mut WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    handle: &'runtime WorthQueryConditionalClockHandle<Schema, Node, Clock>,
+    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    operation: WorthQueryConditionalOperationCell<Schema>,
+    truth: super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
     marker: PhantomData<fn() -> (Node, Clock)>,
 }
 
@@ -210,110 +213,28 @@ where
     Schema: ApplicationSchema,
 {
     pub fn observe(&mut self) -> WorthQueryConditionalClockObservationOutcome<Clock> {
-        let identity = self.handle.binding_identity();
-        let truth = match super::signal_decision_reentry::WorthQueryConditionalTruthBasis::acquire(
-            &self.runtime.runtime,
-        ) {
-            Ok(truth) => truth,
-            Err(super::signal_decision_reentry::WorthQueryConditionalTruthBasisDenial::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            }) => {
-                return WorthQueryConditionalClockObservationOutcome::Failed(
-                    WorthQueryConditionalClockObservationFailure {
-                        kind: WorthQueryConditionalClockObservationFailureKind::ActiveSnapshotCapacityExhausted {
-                            maximum_active_snapshots,
-                        },
-                        detail: "conditional clock observation exhausted active snapshot capacity".to_string(),
-                    },
-                );
-            }
-            Err(super::signal_decision_reentry::WorthQueryConditionalTruthBasisDenial::RetentionCapacityExhausted) => {
-                return WorthQueryConditionalClockObservationOutcome::Failed(
-                    WorthQueryConditionalClockObservationFailure {
-                        kind: WorthQueryConditionalClockObservationFailureKind::RetentionCapacityExhausted,
-                        detail: "conditional clock observation exhausted relational retention capacity".to_string(),
-                    },
-                );
-            }
-            Err(super::signal_decision_reentry::WorthQueryConditionalTruthBasisDenial::RetentionIdentityExhausted) => {
-                return WorthQueryConditionalClockObservationOutcome::Failed(
-                    WorthQueryConditionalClockObservationFailure {
-                        kind: WorthQueryConditionalClockObservationFailureKind::RetentionIdentityExhausted,
-                        detail: "conditional clock observation exhausted relational retention identity space".to_string(),
-                    },
-                );
-            }
-            Err(super::signal_decision_reentry::WorthQueryConditionalTruthBasisDenial::SnapshotIdentityExhausted) => {
-                return WorthQueryConditionalClockObservationOutcome::Failed(
-                    WorthQueryConditionalClockObservationFailure {
-                        kind: WorthQueryConditionalClockObservationFailureKind::SnapshotIdentityExhausted,
-                        detail: "conditional clock observation exhausted snapshot identity space".to_string(),
-                    },
-                );
-            }
-            Err(super::signal_decision_reentry::WorthQueryConditionalTruthBasisDenial::RuntimeRejected(detail)) => {
-                return WorthQueryConditionalClockObservationOutcome::Failed(
-                    WorthQueryConditionalClockObservationFailure {
-                        kind: WorthQueryConditionalClockObservationFailureKind::RuntimeRejected,
-                        detail: detail.to_string(),
-                    },
-                );
-            }
-        };
         let granular_invalidation_installation = self.runtime.granular_invalidation_installation();
-        let granular_source_read_basis = truth.granular_source_read_basis();
-        let mut owners = super::runtime_owners::ConditionalRuntimeOwners::take(self.runtime);
-        let outcome = owners.observe_clock(identity, &self.handle.lease, &truth);
-        match outcome {
-            Some(outcome) => outcome.typed(
-                granular_invalidation_installation,
-                Some(granular_source_read_basis),
-            ),
-            None => WorthQueryConditionalClockObservationOutcome::Failed(
-                WorthQueryConditionalClockObservationFailure {
-                    kind: WorthQueryConditionalClockObservationFailureKind::RuntimeRejected,
-                    detail: "conditional clock binding is no longer installed".to_string(),
-                },
-            ),
-        }
-    }
-}
-
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn conditional_clock<'runtime, Node, Clock>(
-        &'runtime mut self,
-        handle: &'runtime WorthQueryConditionalClockHandle<Schema, Node, Clock>,
-    ) -> Result<
-        WorthQueryConditionalClockObservationPort<'runtime, Schema, Node, Clock>,
-        WorthQueryConditionalClockObservationDenial,
-    > {
-        let registry = self
-            .conditional_operations
-            .get_mut()
+        let granular_source_read_basis = self.truth.granular_source_read_basis();
+        let bridge_root = self.runtime.bridge.conditional_operations();
+        let bridge = bridge_root
+            .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        validate_handle(registry, handle)?;
-        Ok(WorthQueryConditionalClockObservationPort {
-            runtime: self,
-            handle,
-            marker: PhantomData,
-        })
-    }
-}
-
-fn validate_handle<Schema, Node, Clock>(
-    registry: &WorthQueryConditionalOperationRegistry<Schema>,
-    handle: &WorthQueryConditionalClockHandle<Schema, Node, Clock>,
-) -> Result<(), WorthQueryConditionalClockObservationDenial> {
-    if registry.contains_clock(handle.binding_identity(), &handle.lease) {
-        Ok(())
-    } else {
-        Err(WorthQueryConditionalClockObservationDenial::new(
-            WorthQueryConditionalClockObservationDenialKind::ForeignRuntime,
-            handle.binding_identity(),
-        ))
+        let outcome = self
+            .operation
+            .observe_clock(&bridge, self.runtime, &self.truth);
+        if outcome.routes_changed {
+            let registry = self
+                .runtime
+                .conditional_operations
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .snapshot();
+            registry.synchronize_commit_routes(self.runtime);
+        }
+        outcome.outcome.typed(
+            granular_invalidation_installation,
+            Some(granular_source_read_basis),
+        )
     }
 }
 

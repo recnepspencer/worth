@@ -52,6 +52,7 @@ mod application_schema_macro;
 #[macro_use]
 mod application_operation_macro;
 mod binding;
+mod branch;
 mod canonicalization;
 mod collection;
 mod diagnostics;

@@ -152,7 +152,7 @@ fn resource_selector_cannot_substitute_for_the_declared_elevation_identity() {
     let mut input = elevated_input(Some("elevation-2"));
     input.substitute_resource_selector = true;
 
-    let Err(denial) = world.application.admit_approved_elevation_access(
+    let Err(denial) = world.selected_product().admit_approved_elevation_access(
         &approved,
         &principal,
         &capability,
@@ -300,7 +300,7 @@ fn admit(
     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial,
 > {
     let capability = installed_capability(world);
-    world.application.admit_approved_elevation_access(
+    world.selected_product().admit_approved_elevation_access(
         approved,
         principal,
         &capability,
@@ -328,7 +328,7 @@ fn admit_raw(
     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial,
 > {
     let capability = installed_capability(world);
-    world.application.admit_capability_access(
+    world.selected_product().admit_capability_access(
         principal,
         &capability,
         elevated_input(elevation),

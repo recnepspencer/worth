@@ -1,3 +1,8 @@
+mod fork_growth;
+mod persistent_fork;
+mod removal;
+mod staging_charge;
+use crate::data::retained_storage::RetainedStorageBacking;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -12,6 +17,16 @@ mod serialization;
 #[path = "persistent_ord_map/traits.rs"]
 mod traits;
 
+#[path = "persistent_ord_map/charge_updates.rs"]
+mod charge_updates;
+#[path = "persistent_ord_map/retained_charge.rs"]
+mod retained_charge;
+#[cfg(test)]
+#[path = "persistent_ord_map/retained_charge_tests.rs"]
+mod retained_charge_tests;
+
+use crate::data::retained_storage::RetainedStorageCharge;
+pub(crate) use charge_updates::{RetainedMapMutationDenial, RetainedMapMutationOutcome};
 use entry_handle::SharedKey;
 use fork_overlay::{base_value_if_live, record_base_readmission, record_base_retirement};
 use iteration::{LiveBaseIter, PersistentOrdMapIter};
@@ -19,7 +34,7 @@ use iteration::{LiveBaseIter, PersistentOrdMapIter};
 enum PersistentOrdMapStorage<K, V> {
     Exclusive(BTreeMap<K, V>),
     ForkShared {
-        base: Arc<BTreeMap<K, V>>,
+        base: Arc<RetainedStorageBacking<BTreeMap<K, V>>>,
         changes: im::OrdMap<SharedKey<K>, Arc<V>>,
         retired_base_intervals: im::OrdMap<SharedKey<K>, SharedKey<K>>,
         len: usize,
@@ -29,12 +44,14 @@ enum PersistentOrdMapStorage<K, V> {
 /// An ordered map with flat ordinary storage and per-key fork overlays.
 pub(crate) struct PersistentOrdMap<K: Clone + Ord, V: Clone> {
     storage: PersistentOrdMapStorage<K, V>,
+    retained_charge: Option<RetainedStorageCharge>,
 }
 
 impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
     pub(crate) fn new() -> Self {
         Self {
             storage: PersistentOrdMapStorage::Exclusive(BTreeMap::new()),
+            retained_charge: crate::data::retained_storage::btree_structure_charge::<K, V>(0).ok(),
         }
     }
 
@@ -47,6 +64,26 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
 
     pub(crate) fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Structural comparisons/navigation in `get`, including both retirement
+    /// searches and its final endpoint comparison. Does not bound generic Ord.
+    pub(crate) fn lookup_steps(&self) -> usize {
+        use crate::data::retained_storage::ordered_lookup_steps as steps;
+        match &self.storage {
+            PersistentOrdMapStorage::Exclusive(values) => steps(values.len()),
+            PersistentOrdMapStorage::ForkShared {
+                base,
+                changes,
+                retired_base_intervals,
+                ..
+            } => {
+                steps(base.len())
+                    + steps(changes.len())
+                    + 2 * steps(retired_base_intervals.len())
+                    + 1
+            }
+        }
     }
 
     pub(crate) fn get<Q>(&self, key: &Q) -> Option<&V>
@@ -68,6 +105,7 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
     }
 
     pub(crate) fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.retained_charge = None;
         match &mut self.storage {
             PersistentOrdMapStorage::Exclusive(values) => values.get_mut(key),
             PersistentOrdMapStorage::ForkShared {
@@ -103,6 +141,7 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
     }
 
     pub(crate) fn insert(&mut self, key: K, value: V) -> Option<V> {
+        self.retained_charge = None;
         match &mut self.storage {
             PersistentOrdMapStorage::Exclusive(values) => values.insert(key, value),
             PersistentOrdMapStorage::ForkShared {
@@ -129,6 +168,7 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
     }
 
     pub(crate) fn remove(&mut self, key: &K) -> Option<V> {
+        self.retained_charge = None;
         match &mut self.storage {
             PersistentOrdMapStorage::Exclusive(values) => values.remove(key),
             PersistentOrdMapStorage::ForkShared {
@@ -154,7 +194,10 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
     }
 
     pub(crate) fn clear(&mut self) {
+        self.retained_charge = None;
         self.storage = PersistentOrdMapStorage::Exclusive(BTreeMap::new());
+        self.retained_charge =
+            crate::data::retained_storage::btree_structure_charge::<K, V>(0).ok();
     }
 
     pub(crate) fn iter(&self) -> PersistentOrdMapIter<'_, K, V> {
@@ -188,29 +231,21 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
     }
 
     pub(crate) fn operational_clone(&self) -> Self {
+        // Empty materialization has the constructor's exact charge, even when
+        // the source retained retired backing. No payload is cloned or measured.
+        if self.is_empty() {
+            return Self::new();
+        }
         match &self.storage {
             PersistentOrdMapStorage::Exclusive(values) => Self {
                 storage: PersistentOrdMapStorage::Exclusive(values.clone()),
+                retained_charge: None,
             },
             PersistentOrdMapStorage::ForkShared { .. } => self
                 .iter()
                 .map(|(key, value)| (key.clone(), value.clone()))
                 .collect(),
         }
-    }
-
-    pub(crate) fn fork_persistent(&mut self) -> Self {
-        if let PersistentOrdMapStorage::Exclusive(values) = &mut self.storage {
-            let base = Arc::new(std::mem::take(values));
-            let len = base.len();
-            self.storage = PersistentOrdMapStorage::ForkShared {
-                base,
-                changes: im::OrdMap::new(),
-                retired_base_intervals: im::OrdMap::new(),
-                len,
-            };
-        }
-        self.fork_storage_identity()
     }
 
     pub(crate) fn ptr_eq(&self, other: &Self) -> bool {
@@ -253,6 +288,7 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
                     retired_base_intervals: retired_base_intervals.clone(),
                     len: *len,
                 },
+                retained_charge: self.retained_charge,
             },
         }
     }
@@ -273,6 +309,7 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
                     retired_base_intervals: retired_base_intervals.clone(),
                     len: *len,
                 },
+                retained_charge: self.retained_charge,
             },
         }
     }

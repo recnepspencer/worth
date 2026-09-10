@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+mod deserialization;
+mod retained_charge;
+
 use crate::data::core_profile::StableHashValue;
 use crate::data::output::{
     ArtifactContinuityToken, MemoizedResultOrigin, OutputChange, OutputIdentity,
@@ -72,7 +75,7 @@ pub struct RuntimeArtifactWarm {
 
 /// Runtime artifact state split into hot operational truth and warm companion
 /// metadata while preserving a flat serialized schema boundary.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
 pub struct RuntimeArtifactState {
     #[serde(flatten)]
     hot: RuntimeArtifactHot,

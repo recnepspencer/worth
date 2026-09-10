@@ -1,3 +1,4 @@
+mod publication_work;
 use serde::{Deserialize, Serialize};
 
 use crate::data::core_profile::StableHashValue;

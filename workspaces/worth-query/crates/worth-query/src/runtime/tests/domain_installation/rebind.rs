@@ -64,6 +64,7 @@ fn generation_turnover_rebinds_to_the_current_runtime_witness() {
     let mut runtime = installed_runtime();
     let prior = runtime.domain(InstalledDomain).unwrap();
     let prior_generation = prior.installation_generation();
+    let source = runtime.domain_installation_registry.retain_portable_index();
     runtime
         .replace_domain_installation_with_successor_generation()
         .unwrap();
@@ -74,6 +75,14 @@ fn generation_turnover_rebinds_to_the_current_runtime_witness() {
         prior.package_identity()
     );
     assert!(rebound.handle().installation_generation() > prior_generation);
+    assert!(std::sync::Arc::ptr_eq(
+        &source,
+        &runtime.domain_installation_registry.retain_portable_index(),
+    ));
+    assert!(std::ptr::eq(
+        source.as_ref(),
+        runtime.execution_runtime.installed_packages(),
+    ));
     assert_ne!(
         rebound.receipt().prior_witness_identity(),
         rebound.receipt().current_witness_identity()

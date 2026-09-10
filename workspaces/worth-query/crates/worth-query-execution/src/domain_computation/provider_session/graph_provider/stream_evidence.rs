@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use super::call_identity::WorthQueryGraphCallAuthorityIdentity;
-use super::{WorthQueryGraphProviderCall, WorthQueryGraphReadMaterial};
+use super::materialization::WorthQueryGraphReadMaterialization;
+use super::{
+    WorthQueryExecutionGraphReadProduct, WorthQueryGraphProviderCall, WorthQueryGraphReadMaterial,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct WorthQueryExecutionGraphReadStreamEvidence {
@@ -14,6 +17,8 @@ pub struct WorthQueryExecutionGraphReadStreamEvidence {
     snapshot_identity: Arc<str>,
     chunk_count: u64,
     row_count: u64,
+    retained_bytes: usize,
+    product: WorthQueryExecutionGraphReadProduct,
 }
 
 impl WorthQueryExecutionGraphReadStreamEvidence {
@@ -49,45 +54,74 @@ impl WorthQueryExecutionGraphReadStreamEvidence {
         self.row_count
     }
 
+    pub const fn retained_bytes(&self) -> usize {
+        self.retained_bytes
+    }
+
+    pub fn product(&self) -> &WorthQueryExecutionGraphReadProduct {
+        &self.product
+    }
+
     pub(super) const fn authority_identity(&self) -> WorthQueryGraphCallAuthorityIdentity {
         self.authority_identity
     }
 }
 
 pub(crate) struct WorthQueryGraphReadStreamAccumulator {
-    chunk_count: u64,
-    row_count: u64,
+    materialization: WorthQueryGraphReadMaterialization,
 }
 
 impl WorthQueryGraphReadStreamAccumulator {
     pub(crate) fn new(_call: &WorthQueryGraphProviderCall) -> Self {
         Self {
-            chunk_count: 0,
-            row_count: 0,
+            materialization: WorthQueryGraphReadMaterialization::default(),
         }
     }
 
-    pub(crate) fn admit_chunk(&mut self, material: &WorthQueryGraphReadMaterial) {
-        self.row_count = self
-            .row_count
-            .saturating_add(u64::try_from(material.rows().len()).unwrap_or(u64::MAX));
-        self.chunk_count = self.chunk_count.saturating_add(1);
+    pub(crate) const fn chunk_node_allocation_bytes() -> usize {
+        WorthQueryGraphReadMaterialization::node_allocation_bytes()
+    }
+
+    pub(crate) const fn stream_allocation_bytes() -> usize {
+        std::mem::size_of::<WorthQueryExecutionGraphReadStreamEvidence>()
+            .saturating_add(std::mem::size_of::<usize>().saturating_mul(2))
+    }
+
+    pub(crate) fn admit_chunk(&mut self, material: WorthQueryGraphReadMaterial) -> usize {
+        self.materialization.push(material)
+    }
+
+    pub(crate) const fn retained_bytes(&self) -> usize {
+        self.materialization.retained_bytes()
     }
 
     pub(crate) fn finish(
         self,
         call: &WorthQueryGraphProviderCall,
     ) -> WorthQueryExecutionGraphReadStreamEvidence {
+        let chunk_count = self.materialization.chunk_count();
+        let row_count = u64::try_from(self.materialization.row_count()).unwrap_or(u64::MAX);
+        let retained_bytes = self
+            .materialization
+            .retained_bytes()
+            .saturating_add(Self::stream_allocation_bytes());
+        let product = WorthQueryExecutionGraphReadProduct::seal_materialization(
+            call,
+            self.materialization.restore_emission_order(),
+        );
+        let call_identity = call.call_identity_arc();
         WorthQueryExecutionGraphReadStreamEvidence {
             authority_identity: call.authority_identity(),
-            identity: Arc::from(call.call_identity()),
-            call_identity: Arc::from(call.call_identity()),
-            provider_session_identity: Arc::from(call.provider_session_identity()),
-            canonical_query_digest: Arc::from(call.canonical_query_digest()),
-            basis_identity: Arc::from(call.basis_identity()),
-            snapshot_identity: Arc::from(call.snapshot_identity()),
-            chunk_count: self.chunk_count,
-            row_count: self.row_count,
+            identity: Arc::clone(&call_identity),
+            call_identity,
+            provider_session_identity: call.provider_session_identity_arc(),
+            canonical_query_digest: call.canonical_query_digest_arc(),
+            basis_identity: call.basis_identity_arc(),
+            snapshot_identity: call.snapshot_identity_arc(),
+            chunk_count,
+            row_count,
+            retained_bytes,
+            product,
         }
     }
 }

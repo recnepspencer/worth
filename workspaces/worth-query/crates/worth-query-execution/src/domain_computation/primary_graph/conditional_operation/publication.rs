@@ -16,23 +16,6 @@ pub(in crate::domain_computation::primary_graph) struct ConditionalRuntimeAffini
 }
 
 impl ConditionalRuntimeAffinity {
-    pub(super) fn for_installation<Schema>(
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        installation: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-    ) -> ConditionalRuntimeAffinity {
-        ConditionalRuntimeAffinity {
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            installation_runtime: installation.runtime_ordinal(),
-            installation_generation: installation.generation().ordinal(),
-            provider_identity: runtime
-                .primary_graph_authority
-                .provider_identity()
-                .to_string(),
-            branch_identity: super::super::application_branch::PRIMARY_APPLICATION_BRANCH
-                .to_string(),
-        }
-    }
-
     pub(super) fn bind(
         &self,
         identity: &super::canonical_identity::WorthQueryTemporalBindingIdentity,
@@ -81,8 +64,9 @@ pub(in crate::domain_computation::primary_graph) fn require_complete_binding_inv
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Schema>(
     bindings: Vec<Box<dyn WorthQueryPendingConditionalOperation<Schema>>>,
-    bridge: &mut super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    bridge: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    authoritative_commit_cursor: u64,
     runtime_authority: u64,
     installation_runtime: u64,
     installation_generation: u64,
@@ -101,7 +85,7 @@ pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Sch
     };
     let mut registry = WorthQueryConditionalOperationRegistry::default();
     for binding in bindings {
-        let installed = binding.install(bridge.conditional_mut(), graph, &affinity)?;
+        let installed = binding.install(bridge, graph, &affinity, authoritative_commit_cursor)?;
         registry.install(installed).map_err(|()| {
             WorthQueryConditionalRuntimeInstallationDenial::new(
                 WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,

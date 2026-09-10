@@ -1,8 +1,12 @@
+use std::sync::Arc;
+
 use super::*;
 use crate::domain_computation::primary_graph::conditional_operation::installation::WorthQueryConditionalRuntimeInstallationDenial;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::{
     WorthQueryNamedClockFailure, WorthQueryNamedClockFailureKind,
 };
+use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
 struct TestSchema;
 
@@ -22,8 +26,29 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero()
     }
 
-    fn matches_clock_lease(&self, lease: &Arc<ConditionalClockLease>) -> bool {
-        Arc::ptr_eq(&self.lease, lease)
+    fn clock_lease(&self) -> Arc<ConditionalClockLease> {
+        Arc::clone(&self.lease)
+    }
+
+    fn operation_anchor(
+        &self,
+    ) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
+        panic!("test operation has no Bridge lowering")
+    }
+
+    fn selected_lowering(
+        &self,
+    ) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
+        panic!("test operation has no selected Bridge lowering")
+    }
+
+    fn select_product_binding(
+        &mut self,
+        _bridge: &BridgeSealedRuntimeAssembly,
+        _runtime: &WorthQueryPrimaryGraphApplicationRuntime<TestSchema>,
+        _truth: &WorthQueryConditionalTruthBasis,
+    ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
+        Ok(())
     }
 
     fn reconstruct(
@@ -35,24 +60,9 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         Ok(())
     }
 
-    fn intent_entity_kind(
-        &self,
-        _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<TestSchema>,
-    ) -> Option<worth_relational::facade::identity::KindId> {
-        None
-    }
-
-    fn refresh_authoritative(
-        &mut self,
-        _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<TestSchema>,
-        _bridge: &mut BridgeOwnedSignalRuntime,
-    ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
-        Ok(())
-    }
-
     fn reconcile_reconstruction(
         &mut self,
-        _bridge: &mut BridgeOwnedSignalRuntime,
+        _bridge: &mut BridgeSealedRuntimeAssembly,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
         Ok(())
     }
@@ -62,9 +72,8 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             TestSchema,
         >,
-        _bridge: &mut BridgeOwnedSignalRuntime,
-        _graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-        _affinity: &super::super::publication::ConditionalRuntimeAffinity,
+        _bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
+        _product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
         WorthQueryPreparedConditionalRuntimeBinding,
         WorthQueryConditionalRuntimeInstallationDenial,
@@ -81,7 +90,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn reconcile_prepared_runtime_reinstallation(
         &self,
-        _bridge: &mut BridgeOwnedSignalRuntime,
+        _bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         _prepared: &mut WorthQueryPreparedConditionalRuntimeBinding,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
         Ok(())
@@ -89,7 +98,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn observe_clock(
         &mut self,
-        _bridge: &mut BridgeOwnedSignalRuntime,
+        _bridge: &BridgeSealedRuntimeAssembly,
         _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
                 TestSchema,
             >,
@@ -133,9 +142,61 @@ fn registry_requires_the_exact_private_installation_lease() {
         }))
         .unwrap();
 
-    assert!(registry.contains_clock("clock-binding", &installed_lease));
-    assert!(!registry.contains_clock("clock-binding", &foreign_lease));
-    assert!(!registry.contains_clock("another-binding", &installed_lease));
+    assert!(registry
+        .admit_clock("clock-binding", &installed_lease)
+        .is_some());
+    assert!(registry
+        .admit_clock("clock-binding", &foreign_lease)
+        .is_none());
+    assert!(registry
+        .admit_clock("another-binding", &installed_lease)
+        .is_none());
+}
+
+#[test]
+fn parked_operation_does_not_hold_registry_lookup_or_another_operation_cell() {
+    let first_lease = Arc::new(ConditionalClockLease);
+    let second_lease = Arc::new(ConditionalClockLease);
+    let mut registry = WorthQueryConditionalOperationRegistry::<TestSchema>::default();
+    for (identity, lease) in [("first", &first_lease), ("second", &second_lease)] {
+        registry
+            .install(Box::new(InstalledClock {
+                identity: identity.to_string(),
+                lease: Arc::clone(lease),
+            }))
+            .unwrap();
+    }
+    let registry = std::sync::Mutex::new(registry);
+    let first = registry
+        .lock()
+        .unwrap()
+        .admit_clock("first", &first_lease)
+        .unwrap();
+    let (parked_tx, parked_rx) = std::sync::mpsc::sync_channel(0);
+    let (release_tx, release_rx) = std::sync::mpsc::sync_channel(0);
+    let (completed_tx, completed_rx) = std::sync::mpsc::sync_channel(1);
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let _active = first.lock_operation();
+            parked_tx.send(()).unwrap();
+            release_rx.recv().unwrap();
+        });
+        parked_rx.recv().unwrap();
+        scope.spawn(|| {
+            let second = registry
+                .lock()
+                .unwrap()
+                .admit_clock("second", &second_lease)
+                .unwrap();
+            let active = second.lock_operation();
+            completed_tx
+                .send(active.binding_identity().to_string())
+                .unwrap();
+        });
+        let completion = completed_rx.recv_timeout(std::time::Duration::from_secs(5));
+        release_tx.send(()).unwrap();
+        assert_eq!(completion.unwrap(), "second");
+    });
 }
 
 #[test]

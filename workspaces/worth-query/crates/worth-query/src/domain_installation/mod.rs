@@ -58,10 +58,8 @@ pub use conditional_execution::*;
 pub use consumer_invalidation::*;
 pub use consumer_support::*;
 pub use consumption_cost::*;
+pub(crate) use dependency_impact::WorthQueryAdmittedLocality;
 pub use dependency_impact::*;
-pub(crate) use dependency_impact::{
-    admit_granular_invalidation_deliveries, WorthQueryAdmittedLocality,
-};
 pub(crate) use operation_authority_chain::{
     mint_operation_phase_proof, operation_phase_basis, WorthQueryInvalidationMaintenancePhase,
     WorthQueryInvalidationPublishedPhase, WorthQueryOperationPhaseProof,

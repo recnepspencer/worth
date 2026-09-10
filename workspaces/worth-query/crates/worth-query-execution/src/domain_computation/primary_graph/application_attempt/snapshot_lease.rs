@@ -4,19 +4,15 @@ use super::super::WorthQueryPrimaryGraphIntegrationHandle;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotLeaseDenial {
-    BranchIdentityUnavailable,
-    BranchObservationUnavailable,
     ForeignRuntime,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     SnapshotIdentityExhausted,
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
 }
 
 pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
     handle: WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: Option<SnapshotHandle>,
-    basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    product: crate::basis::WorthQueryProductBranchLease,
     pub(super) layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
 }
 
@@ -24,24 +20,10 @@ impl WorthQueryApplicationSnapshotLease {
     pub(in crate::domain_computation) fn acquire(
         handle: WorthQueryPrimaryGraphIntegrationHandle,
         layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
-        branch: &worth_relational::facade::history::BranchId,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryApplicationSnapshotLeaseDenial> {
-        let (basis, snapshot) = handle.with_runtime_mut(|runtime| {
-            let identity = runtime.branch_identity(branch).map_err(|_| {
-                WorthQueryApplicationSnapshotLeaseDenial::BranchIdentityUnavailable
-            })?;
-            let (_, basis) = runtime.observe_branch(&identity).map_err(|denial| match denial {
-                worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-                    WorthQueryApplicationSnapshotLeaseDenial::RetentionCapacityExhausted
-                }
-                worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-                    WorthQueryApplicationSnapshotLeaseDenial::RetentionIdentityExhausted
-                }
-                worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-                    WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted
-                }
-                _ => WorthQueryApplicationSnapshotLeaseDenial::BranchObservationUnavailable,
-            })?;
+        let basis = product.relational_basis().clone();
+        let snapshot = handle.with_runtime_mut(|runtime| {
             let snapshot = runtime
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())
@@ -58,12 +40,12 @@ impl WorthQueryApplicationSnapshotLease {
                         WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted
                     }
                 })?;
-            Ok((basis, snapshot))
+            Ok(snapshot)
         })?;
         Ok(Self {
             handle,
             snapshot: Some(snapshot),
-            basis,
+            product,
             layout,
         })
     }
@@ -73,6 +55,7 @@ impl WorthQueryApplicationSnapshotLease {
         layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
         basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         snapshot: SnapshotHandle,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> Self {
         assert_eq!(
             basis.observation().version_id(),
@@ -84,10 +67,15 @@ impl WorthQueryApplicationSnapshotLease {
             snapshot.branch_id(),
             "existing application snapshot and carried basis must share a branch"
         );
+        assert_eq!(
+            basis.descriptor(),
+            product.relational_basis().descriptor(),
+            "existing application snapshot must carry the admitted composite occurrence"
+        );
         Self {
             handle,
             snapshot: Some(snapshot),
-            basis,
+            product,
             layout,
         }
     }
@@ -98,14 +86,14 @@ impl WorthQueryApplicationSnapshotLease {
             .expect("application snapshot lease remains live until consumed")
     }
 
-    pub(in crate::domain_computation) fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
-        &self.handle
+    pub(in crate::domain_computation) fn product(
+        &self,
+    ) -> &crate::basis::WorthQueryProductBranchLease {
+        &self.product
     }
 
-    pub(in crate::domain_computation) fn basis_descriptor(
-        &self,
-    ) -> &worth_relational::facade::branch::RelationalBranchBasisDescriptor {
-        self.basis.descriptor()
+    pub(in crate::domain_computation) fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
+        &self.handle
     }
 
     pub(in crate::domain_computation) fn release(mut self) -> bool {

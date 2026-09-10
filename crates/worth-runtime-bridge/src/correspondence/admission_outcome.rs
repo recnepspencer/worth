@@ -212,6 +212,10 @@ pub enum BridgeCorrespondenceRebindRequired {
     SignalGraphGeneration,
     SignalGraphLoweringOwner,
     AllocationSourceSet,
+    ConditionalBasis,
+    ConditionalDefinitionReadmission,
+    ConditionalDefinitionMismatch,
+    ConditionalTarget,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

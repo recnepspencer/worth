@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 #[path = "identity_runtime/installation.rs"]
 mod installation;
+mod product_world_resources;
 
 use bank_domain::estate::BankEstateWorld;
 use bank_domain::model::BankPrincipalId;

@@ -13,7 +13,7 @@ fn admitted_parallel_frontier_retains_lower_proof_and_converges_with_serial_trac
     let mut workspace = workflow_workspace("workflow-parallel-frontier").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -80,7 +80,7 @@ fn nondeterministic_lowering_cannot_enter_parallel_progression() {
     let mut workspace = nondeterministic_workflow_workspace("workflow-nondeterministic").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)
@@ -138,7 +138,7 @@ fn lower_runtime_parallel_denial_stops_before_frontier_graph_or_executor_work() 
         serial_parallel_provider_workspace("workflow-parallel-lower-denial").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -189,7 +189,7 @@ fn parallel_frontier_accepts_ready_incomparable_stages_with_distinct_predecessor
     let mut workspace = divergent_frontier_workspace("workflow-divergent-frontier").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -244,7 +244,7 @@ fn complete_serial_trace(name: &str) -> String {
     let mut workspace = workflow_workspace(name).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)

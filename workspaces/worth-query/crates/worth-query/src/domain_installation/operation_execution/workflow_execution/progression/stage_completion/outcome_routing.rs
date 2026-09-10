@@ -11,7 +11,7 @@ use super::{
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
     pub(in crate::domain_installation::operation_execution) fn outcome_from_denial(
         mut self,
-        denial: WorthQueryWorkflowAdvanceDenial,
+        mut denial: WorthQueryWorkflowAdvanceDenial,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
         let stale = match denial.kind() {
             WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(
@@ -39,6 +39,12 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         );
         for receipt in self.receipts.iter_mut().rev() {
             receipt.cancel_artifact_output();
+        }
+        self.artifact_registry.close_cancelled();
+        if !denial.has_managed_cleanup() {
+            if let Some(running) = self.managed.take() {
+                denial = denial.with_managed_cleanup(running.abandon().cleanup());
+            }
         }
         let completed_effects = self
             .receipts
