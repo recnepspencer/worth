@@ -178,6 +178,13 @@ The host never receives Relational's raw settlement capability. This recovery
 finishes an already-performed commit and refreshes Query-owned publication; it
 does not rerun the application operation.
 
+The public product workflow also enters through `primary_graph`: obtain the
+managed occurrence with `current_world()`, use `branches()` for explicit
+reuse/fork creation, bounded history or recovery inspection, and cleanup, and
+use `on_branch(branch)` for reads, transactions, conditional delivery, and
+close. These methods accept Query-issued branch occurrences rather than raw
+World or component identities.
+
 Installed application meaning is inspectable without importing an owner crate.
 Through `facade::domain`, use `installed_schema.native_contracts()` for the
 sealed native aspect catalog, and use an installed operation's
@@ -631,9 +638,9 @@ operation.
 When an external effect is declared, the local mutation and dispatch intent
 share one Relational commit. Query dispatches only from that committed fact.
 `Committed` and `AlreadyCommitted` preserve idempotency meaning;
-`PartialEffect` and `Indeterminate` preserve uncertainty rather than flattening
-it. Even an operation with no domain mutation must commit its outbox and
-idempotency fact before an external consequence may escape.
+`ProductUnpublished` and `Indeterminate` preserve uncertainty rather than
+flattening it. Even an operation with no domain mutation must commit its outbox
+and idempotency fact before an external consequence may escape.
 
 `SettlementDeferred` is different from all of those outcomes. It means the
 authoritative branch movement already happened, but durability acknowledgement
@@ -734,6 +741,22 @@ a branch token, a component basis, or a fresh latest observation after
 admission. Importing World directly remains outside the Query audience route.
 See the [Runtime World contract](../../../../../crates/worth-runtime-world/README.md)
 for construction, outcomes, history, retention, and recovery.
+
+Public historical reads start from
+`application.branches().history(branch, maximum)`. A history page retains one
+bounded, branch-occurrence-scoped World ancestry segment. It continues only
+from its protected parent and can select an entry only by asking World to issue
+an exact historical observation. The selected product then uses the same Query
+read path as a current selection. Commit identities and history entries remain
+descriptive; neither can mint an observation or select a component basis.
+
+History continuation and recovery discovery are separate contracts. The live
+history page protects exact commits and their component bases. A
+`RuntimeWorldRecoveryCursor` is only a descriptive position in the bounded
+recovery catalog; it retains no owner effects and grants no cleanup authority.
+`ProductUnpublished` carries the exact recovery route, while pending branch
+cleanup carries the retry authority needed to finish owner retirement. Drop
+retained reads and history pages before expecting branch close to complete.
 
 Currentness checks compare retained dependencies with the owning runtime. They
 do not rebuild authority from a fresh report. Relevant drift returns a typed
@@ -1217,6 +1240,8 @@ Do not:
   external completion;
 - serialize a recovery handle or reuse its opaque wire identity as live
   authority;
+- treat a recovery cursor as retained owner effects, cleanup authority, or a
+  product-history continuation;
 - use `provisional_aftermath` as accepted undo/redo support;
 - treat proposed state as committed truth;
 - treat selected invariants as executed invariants;
@@ -1254,6 +1279,8 @@ Start with the guide that owns the concept you are changing:
 - [Authority-Scoped Effect Execution](./execution/authority-scoped-effect-execution.md)
 - [Application Aftermath, External Effects, And Recovery](./execution/application-aftermath-and-recovery.md)
 - [Branches And Previews](./foundations/branches-and-previews.md)
+- [Ordinary Product Workflow](../../worth-query-certification/examples/ordinary_product_workflow.rs)
+- [Advanced Product Branching](../../worth-query-certification/examples/advanced_product_branching.rs)
 - [Lower-Runtime Capability Routing](./domain-capabilities/lower-runtime-capability-routing.md)
 - [Projection Consumption](./capabilities/projection-consumption.md)
 - [Granular Live Invalidation](./runtime-surfaces/granular-live-invalidation.md)
