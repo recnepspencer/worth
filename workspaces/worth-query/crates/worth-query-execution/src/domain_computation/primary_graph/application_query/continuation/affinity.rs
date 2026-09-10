@@ -20,7 +20,7 @@ pub(super) struct WorthQueryValidatedContinuationAffinity {
     pub(super) index_generation: DerivedIndexGenerationId,
     pub(super) boundary: RelatedEntityOrderingBoundary,
     pub(super) page_ordinal: u64,
-    pub(super) product: crate::basis::WorthQueryProductBranchLease,
+    pub(super) product: crate::basis::WorthQueryProductObservationLease,
 }
 
 pub(super) fn validate_continuation_affinity<Schema, Query, Parameters, QueryResult, Scope>(

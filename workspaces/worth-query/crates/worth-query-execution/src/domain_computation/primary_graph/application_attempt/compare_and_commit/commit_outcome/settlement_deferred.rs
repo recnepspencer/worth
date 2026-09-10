@@ -96,8 +96,12 @@ impl WorthQueryApplicationSettlementDeferred {
         WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement
     }
 
-    pub fn commit_id(&self) -> worth_relational::facade::history::CommitId {
-        self.settlement.commit().commit_id
+    /// Relational owner fact retained for settlement diagnostics. This is not
+    /// a product commit and cannot authorize dispatch or current-state reads.
+    pub fn relational_settlement_commit(
+        &self,
+    ) -> &worth_relational::facade::history::RelationalCommitReceipt {
+        self.settlement.commit()
     }
 
     pub(in crate::domain_computation::primary_graph) const fn requires_idempotency_readmission(

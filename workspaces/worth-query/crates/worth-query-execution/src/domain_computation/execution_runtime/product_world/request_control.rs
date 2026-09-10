@@ -93,12 +93,18 @@ impl WorthQueryProductPublicationBinding {
         &self,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
+        successor_observation_requested: bool,
     ) -> Result<WorthQueryPreparedProductPublication, NoEffectCompositePublication> {
         let control = self.request_control(request);
         let intent = CompositePublicationIntent::without_signal(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .with_prepared_relational_candidate(candidate);
+        let intent = if successor_observation_requested {
+            intent.with_successor_observation()
+        } else {
+            intent
+        };
         let prepared = self.publication().prepare_without_signal(
             self.observation().clone(),
             intent,

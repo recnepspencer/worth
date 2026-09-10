@@ -130,7 +130,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             access,
             parameters,
             WorthQueryApplicationQueryControls::product_continuation(
-                product,
+                product.into_read_lease(),
                 application_basis,
                 controls.maximum_results,
                 controls.maximum_work,
@@ -264,7 +264,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             capability,
             parameters,
             WorthQueryApplicationQueryControls::product_continuation(
-                product,
+                product.into_read_lease(),
                 application_basis,
                 controls.maximum_results,
                 controls.maximum_work,

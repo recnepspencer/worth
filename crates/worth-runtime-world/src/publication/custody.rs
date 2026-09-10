@@ -12,6 +12,7 @@ mod head;
 mod lease;
 mod materialization;
 mod movement;
+pub(crate) use movement::AttemptProductMovementFailure;
 mod operation;
 mod record;
 mod resources;

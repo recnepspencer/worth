@@ -44,8 +44,10 @@ impl WorthQueryApprovedElevation {
         self.approval_commit.emitted_effect_count()
     }
 
-    pub const fn approval_commit_id(&self) -> worth_relational::facade::history::CommitId {
-        self.approval_commit.commit_id()
+    pub const fn approval_product_publication(
+        &self,
+    ) -> &super::WorthQueryCommittedProductPublication {
+        self.approval_commit.committed_product_publication()
     }
 
     pub fn approval_retained_preimage(

@@ -2,19 +2,17 @@
 
 use std::sync::Arc;
 
-use worth_query_installation::facade::PublishedAftermathPosture;
-use worth_relational::facade::history::{BranchId, CommitId};
-
 use crate::domain_computation::application_aftermath::aftermath_schema_fixture as fixture;
 use crate::domain_computation::managed_run::{
     WorthQueryRecoveryHandleRegistry, WorthQueryRecoveryMintClaim,
     WorthQueryRecoveryResourceTerminal,
 };
+use worth_query_installation::facade::PublishedAftermathPosture;
 
 #[test]
 fn concurrent_receipt_claims_register_exactly_one_handle() {
     let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new());
-    let claim = WorthQueryRecoveryMintClaim::new(7, BranchId("main".to_owned()), CommitId(11));
+    let claim = real_claim(7);
     let left_registry = Arc::clone(&registry);
     let left_claim = claim.clone();
     let left = std::thread::spawn(move || left_registry.register_once(left_claim));
@@ -77,7 +75,7 @@ fn only_relinquishment_returns_a_commits_mint_claim() {
         WorthQueryRecoveryResourceTerminal::ForceTerminated,
     ] {
         let registry = WorthQueryRecoveryHandleRegistry::new();
-        let claim = WorthQueryRecoveryMintClaim::new(3, BranchId("main".to_owned()), CommitId(19));
+        let claim = real_claim(3);
         let slot = registry.register_once(claim.clone()).expect("first claim");
         assert!(registry.mark_terminal(slot, retaining));
         registry
@@ -89,7 +87,7 @@ fn only_relinquishment_returns_a_commits_mint_claim() {
     }
 
     let registry = WorthQueryRecoveryHandleRegistry::new();
-    let claim = WorthQueryRecoveryMintClaim::new(3, BranchId("main".to_owned()), CommitId(19));
+    let claim = real_claim(3);
     let first = registry.register_once(claim.clone()).expect("first claim");
     assert!(registry.relinquish(first));
     let second = registry
@@ -111,4 +109,15 @@ fn phase8_world_construction_installs_via_production_derivation() {
         installed.published_posture(),
         PublishedAftermathPosture::Reconcilable
     );
+}
+
+fn real_claim(provider_runtime_instance_id: u64) -> WorthQueryRecoveryMintClaim {
+    let receipt = crate::domain_computation::primary_graph::committed_recoverable_application();
+    WorthQueryRecoveryMintClaim::new(
+        provider_runtime_instance_id,
+        receipt
+            .committed_product_publication()
+            .composite_commit()
+            .clone(),
+    )
 }

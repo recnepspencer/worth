@@ -1,5 +1,5 @@
 use super::{admission_denial, map_index_currency_denial, WorthQueryApplicationQueryBasisCustody};
-use crate::basis::WorthQueryProductBranchLease;
+use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
 
 pub(super) fn admit<Schema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    product: WorthQueryProductBranchLease,
+    product: WorthQueryProductObservationLease,
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     if product.observation().owner_identity() != application.product_runtime.owner.owner_identity()
@@ -46,7 +46,7 @@ pub(super) fn admit<Schema>(
 
 pub(super) fn admit_retained<Schema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    product: WorthQueryProductBranchLease,
+    product: WorthQueryProductObservationLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     if product.observation().owner_identity() != application.product_runtime.owner.owner_identity()
     {

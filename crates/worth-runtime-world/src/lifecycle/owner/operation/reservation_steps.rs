@@ -25,7 +25,13 @@ pub(super) struct ReservedPublicationResources {
     pub(super) reserved_commit_capacity: crate::history::ReservedCompositeCommitCapacity,
     pub(super) reserved_recovery_slot: ReservedProductUnpublishedSlot,
     pub(super) reserved_component_pin_pair: ReservedComponentPinPairCapacity,
+    pub(super) reserved_successor_observation: Option<ReservedSuccessorObservationResources>,
     pub(super) reserved_publication_capacity: ReservedPublicationAttemptCapacity,
+}
+
+pub(super) struct ReservedSuccessorObservationResources {
+    pub(super) capacity: crate::retention::ReservedObservationCapacity,
+    pub(super) component_pin_pair: ReservedComponentPinPairCapacity,
 }
 
 pub(super) fn issue_publication_identities<D, I, E, Ctx, T>(
@@ -62,6 +68,7 @@ pub(super) fn reserve_publication_resources<D, I, E, Ctx, T>(
     expected: &crate::branch::ProductBranchObservation,
     commit_identity: &CompositeCommitIdentity,
     publication_attempt: Option<&CompositePublicationAttemptIdentity>,
+    successor_observation_requested: bool,
 ) -> Result<ReservedPublicationResources, NoEffectCause>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -73,13 +80,37 @@ where
         reserve_history(&history, expected, commit_identity, publication_attempt)?;
     let reserved_recovery_slot = reserve_recovery(owner)?;
     let reserved_component_pin_pair = reserve_component_pin_pair(owner)?;
+    let reserved_successor_observation = successor_observation_requested
+        .then(|| reserve_successor_observation(owner))
+        .transpose()?;
     let reserved_publication_capacity = reserve_publication_capacity(owner)?;
     Ok(ReservedPublicationResources {
         history,
         reserved_commit_capacity,
         reserved_recovery_slot,
         reserved_component_pin_pair,
+        reserved_successor_observation,
         reserved_publication_capacity,
+    })
+}
+
+fn reserve_successor_observation<D, I, E, Ctx, T>(
+    owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+) -> Result<ReservedSuccessorObservationResources, NoEffectCause>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    let capacity = owner
+        .state
+        .retention
+        .reserve_observation()
+        .map_err(|_| NoEffectCause::CapacityExhausted)?;
+    let component_pin_pair = reserve_component_pin_pair(owner)?;
+    Ok(ReservedSuccessorObservationResources {
+        capacity,
+        component_pin_pair,
     })
 }
 
@@ -189,6 +220,7 @@ pub(super) fn assemble_reserved_attempt(
                 reserved_commit_capacity,
                 reserved_recovery_slot,
                 reserved_component_pin_pair,
+                reserved_successor_observation,
                 reserved_publication_capacity,
             },
         plan,
@@ -196,6 +228,10 @@ pub(super) fn assemble_reserved_attempt(
         deadline,
         operation,
     } = assembly;
+    let (reserved_successor_observation_capacity, reserved_successor_observation_pin_pair) =
+        reserved_successor_observation.map_or((None, None), |reserved| {
+            (Some(reserved.capacity), Some(reserved.component_pin_pair))
+        });
     ReservedCompositePublicationAttempt::new(
         attempt_identity,
         expected_head.clone(),
@@ -208,6 +244,8 @@ pub(super) fn assemble_reserved_attempt(
             reserved_commit_capacity,
             reserved_recovery_slot,
             reserved_component_pin_pair,
+            reserved_successor_observation_capacity,
+            reserved_successor_observation_pin_pair,
             reserved_publication_capacity,
             history,
             operation,

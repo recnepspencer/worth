@@ -16,7 +16,6 @@ pub use commit_outcome::{
     WorthQueryApplicationUnresolvedCommitEvidence,
 };
 pub use commit_receipt::{
-    WorthQueryApplicationCommitPublicationExternalEffect,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
 };
 pub(in crate::domain_computation::primary_graph) use commit_receipt::{

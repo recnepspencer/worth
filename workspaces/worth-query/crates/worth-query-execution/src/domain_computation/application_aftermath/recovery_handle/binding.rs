@@ -115,10 +115,6 @@ impl WorthQueryRecoveryHandleBinding {
         &self.installed_operation
     }
 
-    pub const fn attempt_commit_id(&self) -> u64 {
-        self.commit.commit_id.0
-    }
-
     /// Exact Relational commit identity retained from the ordinary commit.
     pub const fn commit_reference(&self) -> &RelationalCommitReceipt {
         &self.commit
@@ -255,7 +251,7 @@ impl WorthQueryRecoveryHandleBindingAxisProbe {
         self
     }
 
-    pub(crate) fn attempt_commit_id(mut self, value: u64) -> Self {
+    pub(crate) fn relational_commit_id(mut self, value: u64) -> Self {
         self.binding.commit.commit_id = CommitId(value);
         self.binding.commit.version_id = VersionId(value);
         self.binding.commit.parents.clear();

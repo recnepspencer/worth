@@ -193,6 +193,7 @@ impl ReservedCompositeCommitCapacity {
         &mut self,
         commit: Arc<CompositeRuntimeWorldCommit>,
         pins: crate::retention::HistoryRetentionObligation,
+        successor_observation: Option<crate::branch::observation::PreparedProductBranchObservation>,
     ) -> Result<
         (
             crate::history::ProductHeadHistoryProtectionObligation,
@@ -219,8 +220,12 @@ impl ReservedCompositeCommitCapacity {
         }
         let identity = self.identity.clone();
         let delivery_identity = identity.clone();
+        let observation_identity = successor_observation.as_ref().map(|_| identity.clone());
         let reachability = Arc::clone(&state.reachability);
         let delivery_reachability = Arc::clone(&reachability);
+        let observation_reachability = successor_observation
+            .as_ref()
+            .map(|_| Arc::clone(&reachability));
         promote_reserved_commit(
             &mut state,
             &self.identity,
@@ -248,6 +253,18 @@ impl ReservedCompositeCommitCapacity {
                     &identity,
                 )
                 .expect("a new entry with one head protection has room for its delivery");
+            if successor_observation.is_some() {
+                index
+                    .increment_reserved_protection(
+                        &self
+                            .slots
+                            .as_ref()
+                            .expect("live reserved slots")
+                            .reachability,
+                        &identity,
+                    )
+                    .expect("a new entry has room for its reserved successor observation");
+            }
         }
         self.armed = false;
         self.slots = None;
@@ -265,6 +282,16 @@ impl ReservedCompositeCommitCapacity {
                 HistoryProtectionClass::ExplicitObligation,
             ),
         );
+        if let Some(prepared) = successor_observation {
+            let observation_history = ExplicitCommitHistoryProtectionObligation::issued(
+                CompositeHistoryProtectionObligation::new(
+                    observation_reachability.expect("requested observation retained reachability"),
+                    observation_identity.expect("requested observation retained identity"),
+                    HistoryProtectionClass::ExplicitObligation,
+                ),
+            );
+            publication.install_successor_observation(prepared.finalize(observation_history));
+        }
         let delivery = publication
             .claim_delivery(delivery_history)
             .expect("a newly installed publication has no earlier delivery claim");

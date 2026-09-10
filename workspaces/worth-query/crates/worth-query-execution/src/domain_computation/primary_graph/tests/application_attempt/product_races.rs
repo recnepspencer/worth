@@ -82,7 +82,10 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             let WorthQueryApplicationCommitOutcome::Committed(fresh) = outcome else {
                 panic!("explicit fresh admission must commit the unchanged independent facts: {outcome:?}");
             };
-            assert_ne!(fresh.commit_id(), winner.commit_id());
+            assert_ne!(
+                fresh.committed_product_publication(),
+                winner.committed_product_publication()
+            );
             let after = world.selected_product();
             assert_eq!(
                 after.product().relational_basis_descriptor(),
@@ -114,7 +117,10 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             let WorthQueryApplicationCommitOutcome::Committed(fresh) = outcome else {
                 panic!("fresh admission after pre-effect product staleness must commit: {outcome:?}");
             };
-            assert_ne!(fresh.commit_id(), winner.commit_id());
+            assert_ne!(
+                fresh.committed_product_publication(),
+                winner.committed_product_publication()
+            );
             assert_eq!(commit_count(), baseline + 2);
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) => {

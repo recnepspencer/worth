@@ -1,78 +1,113 @@
+use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, CompositeComponentChangePosture, CompositePublicationAttemptIdentity,
-    CompositeSignalPublicationIdentity, ConsumedCompositePublication, ProductBranchIdentity,
-    ProductBranchIncarnation, ProductBranchReferenceGeneration,
+    CompositeSignalPublicationIdentity, ProductBranchIdentity, ProductBranchIncarnation,
+    ProductBranchReferenceGeneration,
 };
 
 /// Descriptive identity of the exact World transition that committed a Query
 /// application. Construction requires World's permanently consumed delivery.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone)]
 pub struct WorthQueryCommittedProductPublication {
-    product_branch: ProductBranchIdentity,
-    product_incarnation: ProductBranchIncarnation,
-    product_generation: ProductBranchReferenceGeneration,
-    composite_commit: CompositeCommitIdentity,
-    publication_attempt: CompositePublicationAttemptIdentity,
-    relational_posture: CompositeComponentChangePosture,
-    signal_posture: CompositeComponentChangePosture,
-    signal_publication: Option<CompositeSignalPublicationIdentity>,
-    conditional_definition_generation: Option<u64>,
+    receipt: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
 }
 
 impl WorthQueryCommittedProductPublication {
-    pub(in crate::domain_computation::primary_graph) fn from_consumed(
-        publication: &ConsumedCompositePublication,
-        conditional_definition_generation: Option<u64>,
+    pub(in crate::domain_computation::primary_graph) fn from_receipt(
+        receipt: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
     ) -> Self {
-        let product = publication.new_product_head();
-        Self {
-            product_branch: product.branch_identity().clone(),
-            product_incarnation: product.lifecycle_incarnation(),
-            product_generation: product.reference_generation(),
-            composite_commit: publication.commit().identity().clone(),
-            publication_attempt: publication.attempt_identity().clone(),
-            relational_posture: publication.component_results().relational_posture(),
-            signal_posture: publication.component_results().signal_posture(),
-            signal_publication: publication
-                .component_results()
-                .signal_publication_identity(),
-            conditional_definition_generation,
-        }
+        Self { receipt }
     }
 
     pub fn product_branch(&self) -> &ProductBranchIdentity {
-        &self.product_branch
+        self.receipt
+            .publication()
+            .new_product_head()
+            .branch_identity()
     }
 
-    pub const fn product_incarnation(&self) -> ProductBranchIncarnation {
-        self.product_incarnation
+    pub fn product_incarnation(&self) -> ProductBranchIncarnation {
+        self.receipt
+            .publication()
+            .new_product_head()
+            .lifecycle_incarnation()
     }
 
-    pub const fn product_generation(&self) -> ProductBranchReferenceGeneration {
-        self.product_generation
+    pub fn product_generation(&self) -> ProductBranchReferenceGeneration {
+        self.receipt
+            .publication()
+            .new_product_head()
+            .reference_generation()
     }
 
-    pub const fn composite_commit(&self) -> &CompositeCommitIdentity {
-        &self.composite_commit
+    pub fn composite_commit(&self) -> &CompositeCommitIdentity {
+        self.receipt.publication().commit().identity()
     }
 
-    pub const fn publication_attempt(&self) -> &CompositePublicationAttemptIdentity {
-        &self.publication_attempt
+    pub fn publication_attempt(&self) -> &CompositePublicationAttemptIdentity {
+        self.receipt.publication().attempt_identity()
     }
 
-    pub const fn relational_posture(&self) -> CompositeComponentChangePosture {
-        self.relational_posture
+    /// Exact Relational result contained by this performed World publication.
+    /// It is descriptive component evidence and cannot authorize publication.
+    pub fn relational_commit(&self) -> &RelationalCommitReceipt {
+        &self
+            .receipt
+            .publication()
+            .component_results()
+            .relational_commit_result()
+            .expect("a committed Query application performs one Relational candidate")
+            .envelope()
+            .commit
     }
 
-    pub const fn signal_posture(&self) -> CompositeComponentChangePosture {
-        self.signal_posture
+    pub fn relational_posture(&self) -> CompositeComponentChangePosture {
+        self.receipt
+            .publication()
+            .component_results()
+            .relational_posture()
     }
 
-    pub const fn signal_publication(&self) -> Option<&CompositeSignalPublicationIdentity> {
-        self.signal_publication.as_ref()
+    pub fn signal_posture(&self) -> CompositeComponentChangePosture {
+        self.receipt
+            .publication()
+            .component_results()
+            .signal_posture()
     }
 
-    pub const fn conditional_definition_generation(&self) -> Option<u64> {
-        self.conditional_definition_generation
+    pub fn signal_publication(&self) -> Option<&CompositeSignalPublicationIdentity> {
+        self.receipt
+            .publication()
+            .commit()
+            .signal_publication_identity()
+    }
+
+    pub fn conditional_definition_generation(&self) -> Option<u64> {
+        self.receipt.conditional_definition_generation()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_successor_observation(
+        &self,
+    ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
+        self.receipt.take_successor_observation()
     }
 }
+
+impl std::fmt::Debug for WorthQueryCommittedProductPublication {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryCommittedProductPublication")
+            .field("product_branch", self.product_branch())
+            .field("composite_commit", self.composite_commit())
+            .field("publication_attempt", self.publication_attempt())
+            .finish_non_exhaustive()
+    }
+}
+
+impl PartialEq for WorthQueryCommittedProductPublication {
+    fn eq(&self, other: &Self) -> bool {
+        self.receipt == other.receipt
+    }
+}
+
+impl Eq for WorthQueryCommittedProductPublication {}

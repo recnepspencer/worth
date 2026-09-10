@@ -242,7 +242,9 @@ where
         >,
         WorthQueryTemporalQueryAuthorizationDenial,
     > {
-        let product = controls.product_branch();
+        let product = controls
+            .publication_product_branch()
+            .expect("temporal query authorization retains its selected product lease");
         let capability = crate::domain_computation::authorization::admit_capability_access(
             runtime,
             product,

@@ -59,6 +59,7 @@ impl CompositeComponentIntent {
 pub struct CompositePublicationIntent<S> {
     change: CompositeComponentIntent,
     prepared_relational_candidate: Option<PreparedRelationalCommitCandidate>,
+    successor_observation_requested: bool,
     _stage: PhantomData<S>,
 }
 
@@ -70,6 +71,7 @@ impl CompositePublicationIntent<WithoutSignal> {
         Self {
             change: CompositeComponentIntent::RelationalOnly(change),
             prepared_relational_candidate: None,
+            successor_observation_requested: false,
             _stage: PhantomData,
         }
     }
@@ -86,12 +88,21 @@ impl CompositePublicationIntent<WithSignal> {
         Self {
             change,
             prepared_relational_candidate: None,
+            successor_observation_requested: false,
             _stage: PhantomData,
         }
     }
 }
 
 impl<S> CompositePublicationIntent<S> {
+    /// Reserve and carry the exact successor observation in the performed
+    /// delivery. Callers request this only when an admitted downstream lane
+    /// already owns bounded capacity for that observation.
+    pub fn with_successor_observation(mut self) -> Self {
+        self.successor_observation_requested = true;
+        self
+    }
+
     /// Attach the one owner-issued Relational candidate that corresponds to
     /// this intent. The candidate remains move-only and is consumed by plan
     /// lowering or dropped with the intent on a rejected route.
@@ -112,7 +123,12 @@ impl<S> CompositePublicationIntent<S> {
     ) -> (
         CompositeComponentIntent,
         Option<PreparedRelationalCommitCandidate>,
+        bool,
     ) {
-        (self.change, self.prepared_relational_candidate)
+        (
+            self.change,
+            self.prepared_relational_candidate,
+            self.successor_observation_requested,
+        )
     }
 }

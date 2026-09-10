@@ -25,6 +25,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         Option<crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    live_delivery_reservation: Option<
+        crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
+    >,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
@@ -117,17 +120,35 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.conditional_definition.take()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn reserve_live_delivery(
+        &mut self,
+        provider: &WorthQueryPrimaryGraphProvider,
+    ) -> Result<bool, &'static str> {
+        assert!(self.live_delivery_reservation.is_none());
+        let reservation = provider.reserve_application_commit_causality(
+            self.affinity.product_publication().observation(),
+            self.effects.emissions().retained_bytes(),
+        )?;
+        let requires_observation = reservation.requires_successor_observation();
+        self.live_delivery_reservation = Some(reservation);
+        Ok(requires_observation)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn publish_causality(
         self,
         provider: &WorthQueryPrimaryGraphProvider,
-        commit_id: worth_relational::facade::history::CommitId,
-    ) -> Result<WorthQueryPublishedApplicationCausality, &'static str> {
-        let emitted_effect_count = provider
-            .publish_application_commit_causality(commit_id, self.effects.into_emissions())?;
-        Ok(WorthQueryPublishedApplicationCausality {
+        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+    ) -> WorthQueryPublishedApplicationCausality {
+        let emitted_effect_count = provider.publish_application_commit_causality(
+            self.live_delivery_reservation
+                .expect("World publication reserved live causality before owner effects"),
+            publication,
+            self.effects.into_emissions(),
+        );
+        WorthQueryPublishedApplicationCausality {
             outcome_identity: self.outcome_identity,
             emitted_effect_count,
-        })
+        }
     }
 }
 
@@ -234,6 +255,7 @@ impl WorthQueryPrimaryGraphProvider {
                 aftermath_causality,
                 dispatch_outbox,
                 conditional_definition,
+                live_delivery_reservation: None,
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

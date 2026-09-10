@@ -24,9 +24,12 @@ pub(super) fn publish(
     let idempotency = attempt.idempotency();
     let recovery = product.recovery();
     let disposition = provider.unpublished_idempotency_disposition();
+    let successor_observation_requested = attempt
+        .reserve_live_delivery(provider)
+        .map_err(|_| capacity_exhausted())?;
     let Some(change) = attempt.take_conditional_definition() else {
         let prepared = product
-            .prepare_relational_candidate(candidate, &request)
+            .prepare_relational_candidate(candidate, &request, successor_observation_requested)
             .map_err(world_no_effect)?;
         let recovery_handle = prepared.unpublished_recovery_handle();
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
@@ -81,7 +84,7 @@ pub(super) fn publish(
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let prepared = product
-            .prepare_combined_candidate(candidate, &request)
+            .prepare_combined_candidate(candidate, &request, successor_observation_requested)
             .map_err(world_no_effect)?;
         let predecessor = bridge
             .admit_exact_conditional_signal_basis(

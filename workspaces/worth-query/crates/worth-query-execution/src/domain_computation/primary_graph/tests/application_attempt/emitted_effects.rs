@@ -14,6 +14,11 @@ use crate::domain_computation::primary_graph::{
 #[test]
 fn typed_emission_is_published_with_the_exact_provider_commit() {
     let world = installed_authorization_world(true);
+    let selected = world.selected_product();
+    let _live = world
+        .application
+        .primary_provider
+        .observe_application_commit_causality(selected.product());
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
@@ -36,7 +41,7 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     let emissions = world
         .application
         .primary_provider
-        .committed_application_emissions(receipt.commit_id());
+        .committed_application_emissions(receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(emissions[0].effect(), "AccountActivityEffect");
     assert_eq!(
@@ -147,6 +152,11 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
 #[test]
 fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
     let world = installed_authorization_world(true);
+    let selected = world.selected_product();
+    let _live = world
+        .application
+        .primary_provider
+        .observe_application_commit_causality(selected.product());
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
@@ -198,7 +208,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         world
             .application
             .primary_provider
-            .committed_application_emissions(original.commit_id())
+            .committed_application_emissions(original.committed_product_publication())
             .is_empty(),
         "the first batch must be absent from the bounded live source"
     );

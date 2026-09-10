@@ -155,6 +155,12 @@ fn publish_with_snapshot(
             "application commit basis does not select the published commit",
         ));
     }
+    let committed_product_publication = pending
+        .application
+        .as_ref()
+        .expect("pending application retains its performed World publication")
+        .committed_product_publication()
+        .clone();
     if pending.receipt_basis_lease.is_none() {
         pending.receipt_basis_lease = Some(
             runtime
@@ -168,16 +174,11 @@ fn publish_with_snapshot(
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
         .map_err(bridge_head_failure)?;
-    provider
-        .admit_application_commit_causality(commit_id)
-        .map_err(failure)?;
     let attempt = pending
         .attempt
         .take()
         .expect("pending application publication retains causality until final cutover");
-    let causality = attempt
-        .publish_causality(provider, commit_id)
-        .expect("admitted serialized application causality publication must succeed");
+    let causality = attempt.publish_causality(provider, committed_product_publication);
     assert_eq!(
         causality.emitted_effect_count(),
         pending.emitted_effect_count

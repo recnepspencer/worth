@@ -7,13 +7,13 @@ use super::super::resource_lifecycle::{
 /// occurrence and its matching application component lease.
 pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationQueryBasisCustody
 {
-    product: crate::basis::WorthQueryProductBranchLease,
+    product: crate::basis::WorthQueryProductObservationLease,
     application_basis: WorthQueryApplicationBasisLease,
 }
 
 impl WorthQueryApplicationQueryBasisCustody {
     pub(super) fn new(
-        product: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductObservationLease,
         application_basis: WorthQueryApplicationBasisLease,
     ) -> Self {
         Self {
@@ -24,13 +24,13 @@ impl WorthQueryApplicationQueryBasisCustody {
 
     pub(in crate::domain_computation::primary_graph::application_query) fn product(
         &self,
-    ) -> &crate::basis::WorthQueryProductBranchLease {
+    ) -> &crate::basis::WorthQueryProductObservationLease {
         &self.product
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn retained_product(
         &self,
-    ) -> crate::basis::WorthQueryProductBranchLease {
+    ) -> crate::basis::WorthQueryProductObservationLease {
         self.product.retained_clone()
     }
 

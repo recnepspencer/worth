@@ -7,6 +7,11 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome
 #[test]
 fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidence() {
     let world = installed_authorization_world(true);
+    let selected = world.selected_product();
+    let _live = world
+        .application
+        .primary_provider
+        .observe_application_commit_causality(selected.product());
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
@@ -67,7 +72,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     let emissions = world
         .application
         .primary_provider
-        .committed_application_emissions(first_receipt.commit_id());
+        .committed_application_emissions(first_receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(
         emissions[0].payload::<String>().map(String::as_str),
@@ -90,7 +95,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     assert_eq!(
         bridge_head.commit_identity(),
         &worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(
-            first_receipt.commit_id().0,
+            first_receipt.commit_reference().commit_id.0,
         )
     );
     assert_eq!(

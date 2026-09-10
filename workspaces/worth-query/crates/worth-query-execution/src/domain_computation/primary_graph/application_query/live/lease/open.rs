@@ -186,7 +186,7 @@ where
         let (application, product, application_basis) = self.into_parts();
         let access = WorthQueryApplicationQueryAccessContext::new(principal, &scope);
         let query_controls = WorthQueryApplicationQueryControls::product_live(
-            product.retained_clone(),
+            product.read_lease(),
             application
                 .retain_product_application_basis(product.observation())
                 .map_err(|_| {
@@ -287,7 +287,7 @@ where
         let access =
             WorthQueryApplicationQueryAccessContext::new(request.principal, &request.scope);
         let query_controls = WorthQueryApplicationQueryControls::product_live(
-            request.product,
+            request.product.read_lease(),
             request.application_basis,
             request.controls.maximum_materialized_record_count(),
             request.controls.maximum_work_per_delivery(),
@@ -313,6 +313,12 @@ where
         let initial_read = execute_live_initial_read(self, plan, request.query.name())?;
         let basis =
             admit_live_managed_basis(self, live, &initial_read.graph_work, request.query.name())?;
+        let buffer_capacity = request.controls.buffer_capacity();
+        let queue = WorthQueryLiveCauseQueue::open(
+            &self.primary_provider.live_delivery,
+            retained_product.observation(),
+            buffer_capacity,
+        );
         Ok(WorthQueryApplicationLiveLease {
             runtime: self,
             query: request.query,
@@ -320,7 +326,7 @@ where
             scope: request.scope,
             parameters: request.parameters,
             controls: request.controls,
-            product: retained_product,
+            _opening_product: retained_product,
             governance: initial_read.governance,
             scope_identity: initial_read.scope_identity,
             basis: Some(basis),
@@ -329,7 +335,7 @@ where
             initial_read_work: Some(initial_read.initial_read_work),
             basis_release: Some(initial_read.basis_release),
             read_completion: None,
-            queue: WorthQueryLiveCauseQueue::open(&self.primary_provider.live_delivery),
+            queue,
             _target: PhantomData,
             _thread_affinity: PhantomData,
         })

@@ -21,7 +21,15 @@ pub(super) fn attempt_product_movement(
         cutoff,
     ) {
         Ok(performed) => RuntimeWorldPublicationOutcome::Performed(performed),
-        Err(loss) => {
+        Err(crate::publication::custody::AttemptProductMovementFailure::Observation(denial)) => {
+            let cause = ProductUnpublishedCause::from_retention_denial(&denial);
+            RuntimeWorldPublicationOutcome::ProductUnpublished(ready.custody.retain(
+                cause,
+                None,
+                RetainedCommitDisposition::ReleaseUnused,
+            ))
+        }
+        Err(crate::publication::custody::AttemptProductMovementFailure::Reference(loss)) => {
             let cause = match loss.cutoff_denial() {
                 Some(crate::publication::ProductMovementCutoffDenial::Cancelled) => {
                     ready.counters.record_cancellation_observation();

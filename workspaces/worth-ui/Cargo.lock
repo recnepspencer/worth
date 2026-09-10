@@ -4366,6 +4366,7 @@ dependencies = [
  "worth-proof",
  "worth-query-execution",
  "worth-query-installation",
+ "worth-runtime-world",
 ]
 
 [[package]]

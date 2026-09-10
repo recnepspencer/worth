@@ -111,6 +111,17 @@ impl WorthQueryCommittedDispatchOutboxObservation {
         self.owner.relational_runtime_instance_id = runtime;
         self
     }
+
+    /// Substitution probe for proving the exact World publication is paired
+    /// with its own Relational owner row before transport admission.
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn with_product_publication_for_test(
+        mut self,
+        publication: WorthQueryCommittedProductPublication,
+    ) -> Self {
+        self.committed_product_publication = publication;
+        self
+    }
 }
 
 impl WorthQueryCommittedDispatchOutboxOwnerObservation {

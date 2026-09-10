@@ -33,7 +33,7 @@ struct WorthQueryContinuationIdentity {
     graph_authority_identity: String,
     provider_identity: String,
     index_id: worth_relational::facade::indexes::DerivedIndexId,
-    product: Option<crate::basis::WorthQueryProductBranchLease>,
+    product: Option<crate::basis::WorthQueryProductObservationLease>,
     next_page_ordinal: u64,
 }
 

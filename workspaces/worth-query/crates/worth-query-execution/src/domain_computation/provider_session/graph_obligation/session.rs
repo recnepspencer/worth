@@ -47,7 +47,7 @@ impl WorthQueryGraphWorkAccessContextAffinity {
 enum WorthQueryGraphWorkBasis {
     Query {
         identity: WorthQueryApplicationBasisIdentity,
-        product: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductObservationLease,
         port: WorthQueryGraphReadOwnerPort,
     },
     Mutation(Option<WorthQueryApplicationSnapshotLease>),
@@ -89,7 +89,7 @@ impl WorthQueryManagedGraphWorkSession {
         principal: EntityId,
         access: WorthQueryGraphWorkAccessContextAffinity,
         basis: &WorthQueryApplicationBasisIdentity,
-        product: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductObservationLease,
         provider: &str,
         port: WorthQueryGraphReadOwnerPort,
     ) -> Result<Self, WorthQueryManagedGraphWorkSessionStartDenial> {
@@ -274,12 +274,12 @@ impl WorthQueryManagedGraphWorkSession {
 
     pub(in crate::domain_computation) fn product(
         &self,
-    ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
+    ) -> Option<&crate::basis::WorthQueryProductObservationLease> {
         match &self.basis {
             WorthQueryGraphWorkBasis::Query { product, .. } => Some(product),
-            WorthQueryGraphWorkBasis::Mutation(lease) => lease
-                .as_ref()
-                .map(WorthQueryApplicationSnapshotLease::product),
+            WorthQueryGraphWorkBasis::Mutation(lease) => {
+                lease.as_ref().map(|lease| lease.product().read_lease_ref())
+            }
         }
     }
 

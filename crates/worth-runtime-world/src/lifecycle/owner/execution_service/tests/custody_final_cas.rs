@@ -1,4 +1,5 @@
 use super::*;
+use crate::publication::AttemptProductMovementFailure;
 use crate::recovery::ProductUnpublishedRetentionPosture;
 
 #[test]
@@ -35,6 +36,9 @@ fn final_cell_comparison_rejects_a_real_winner_without_promoting_or_retagging() 
             None,
         )
         .unwrap_err();
+    let AttemptProductMovementFailure::Reference(loss) = loss else {
+        panic!("a final cell competitor must produce a reference loss");
+    };
     assert_eq!(loss.observed_head(), selected.snapshot());
     assert_eq!(
         owner.state.history.counters().metadata_promotions(),

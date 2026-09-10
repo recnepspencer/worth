@@ -2364,6 +2364,7 @@ dependencies = [
  "worth-query-declaration",
  "worth-query-execution",
  "worth-query-installation",
+ "worth-runtime-world",
 ]
 
 [[package]]

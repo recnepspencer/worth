@@ -114,19 +114,19 @@ impl WorthQueryApplicationEmission {
         self.external_payload.as_ref()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn cloned_payload<Schema, Effect, Payload>(
+    pub(in crate::domain_computation::primary_graph) fn payload_ref<Schema, Effect, Payload>(
         &self,
         effect: &worth_query_declaration::facade::application_schema::ApplicationEffectRef<
             Schema,
             Effect,
             Payload,
         >,
-    ) -> Option<Payload>
+    ) -> Option<&Payload>
     where
-        Payload: ApplicationEffectPayload + Clone,
+        Payload: ApplicationEffectPayload,
     {
         (self.effect == effect.name())
-            .then(|| self.payload.downcast_ref::<Payload>().cloned())
+            .then(|| self.payload.downcast_ref::<Payload>())
             .flatten()
     }
 

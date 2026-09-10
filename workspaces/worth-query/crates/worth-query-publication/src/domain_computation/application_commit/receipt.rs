@@ -1,12 +1,11 @@
-use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
-};
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt;
 
 use super::WorthQueryApplicationCommitPublicationInspection;
 use crate::application_aftermath::{
-    publish_application_aftermath, publish_application_aftermath_source,
-    WorthQueryPublishedApplicationAftermath, WorthQueryPublishedApplicationCommitBoundaryEvidence,
+    publish_application_aftermath, WorthQueryPublishedApplicationAftermath,
+    WorthQueryPublishedApplicationCommitBoundaryEvidence,
 };
+use crate::domain_computation::WorthQueryPublishedProductCommit;
 
 /// Publication receipt derived from one execution-owned commit terminal.
 ///
@@ -49,30 +48,23 @@ use crate::application_aftermath::{
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCommitPublicationReceipt {
+    product_commit: WorthQueryPublishedProductCommit,
     aftermath: WorthQueryPublishedApplicationAftermath,
     boundary_evidence: WorthQueryPublishedApplicationCommitBoundaryEvidence,
 }
 
 impl WorthQueryApplicationCommitPublicationReceipt {
     pub(super) fn from_terminal(terminal: WorthQueryApplicationCommitReceipt) -> Self {
+        let product_commit = WorthQueryPublishedProductCommit::from_execution(
+            terminal.committed_product_publication(),
+        );
         let aftermath = publish_application_aftermath(&terminal);
         let boundary_evidence =
             WorthQueryPublishedApplicationCommitBoundaryEvidence::from_owner(&terminal);
         Self {
+            product_commit,
             aftermath,
             boundary_evidence,
-        }
-    }
-
-    pub(super) fn from_publication_source(
-        source: &WorthQueryApplicationCommitPublicationSource,
-    ) -> Self {
-        Self {
-            aftermath: publish_application_aftermath_source(source),
-            boundary_evidence:
-                WorthQueryPublishedApplicationCommitBoundaryEvidence::from_publication_source(
-                    source,
-                ),
         }
     }
 
@@ -82,6 +74,10 @@ impl WorthQueryApplicationCommitPublicationReceipt {
 
     pub const fn aftermath(&self) -> &WorthQueryPublishedApplicationAftermath {
         &self.aftermath
+    }
+
+    pub const fn product_commit(&self) -> &WorthQueryPublishedProductCommit {
+        &self.product_commit
     }
 
     pub const fn boundary_evidence(&self) -> &WorthQueryPublishedApplicationCommitBoundaryEvidence {

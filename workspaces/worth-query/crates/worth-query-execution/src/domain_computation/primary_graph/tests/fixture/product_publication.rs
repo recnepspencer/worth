@@ -67,6 +67,6 @@ pub(in crate::domain_computation::primary_graph) fn prepare_relational_mutation_
 
     product
         .publication_binding()
-        .prepare_relational_candidate(candidate, request)
+        .prepare_relational_candidate(candidate, request, false)
         .expect("fixture World publication prepares")
 }

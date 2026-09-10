@@ -3,6 +3,8 @@ mod component_plan;
 mod conditional_definition;
 mod cost_counters;
 mod custody;
+#[cfg(test)]
+pub(crate) use custody::AttemptProductMovementFailure;
 pub(crate) use custody::{
     ActiveAttemptCustody, ActiveAttemptRecord, ActiveAttemptResources,
     ConditionalDefinitionAttemptCustody, RetainedCommitDisposition,

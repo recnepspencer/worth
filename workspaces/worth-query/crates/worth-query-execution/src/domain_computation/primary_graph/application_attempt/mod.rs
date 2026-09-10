@@ -46,7 +46,6 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitPublicationExternalEffect,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationSettlementDeferred,
     WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,

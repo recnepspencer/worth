@@ -1,13 +1,19 @@
 use primary_graph::{ProductUnpublishedNextAction, RuntimeWorldRecoveryDenial};
-use std::num::NonZeroUsize;
+use std::{num::NonZeroUsize, sync::Arc};
 use worth_query_host::facade::primary_graph;
 
+use super::adapters::CompletingExternalTransport;
 use super::courtroom_support::{assert_authoritative_value, observe};
 use super::schema::{IntentEffectField, IntentLifecycleField};
 use super::world::CourtroomWorld;
 
 pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() {
     let mut world = CourtroomWorld::publish("ready");
+    let transport = Arc::new(CompletingExternalTransport::default());
+    world
+        .application
+        .install_external_effect_transport(transport.clone())
+        .unwrap();
     let selected = world
         .application
         .product_runtime()
@@ -33,6 +39,11 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     assert_eq!(partial.retained_due_wake_count(), 1);
     assert_eq!(partial.retained_failed_wake_count(), 1);
     assert_eq!(world.contacts.snapshot(), (1, 1, 1, 1));
+    assert_eq!(
+        transport.contact_count(),
+        0,
+        "owner-local outbox state cannot dispatch without a composite product commit"
+    );
     let [provenance] = partial.execution_provenance() else {
         panic!("one partial wake must expose one lineage")
     };
@@ -128,6 +139,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         recovery.inspect(),
         Err(RuntimeWorldRecoveryDenial::MissingRecord)
     ));
+    assert_eq!(transport.contact_count(), 0);
 }
 
 pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() {

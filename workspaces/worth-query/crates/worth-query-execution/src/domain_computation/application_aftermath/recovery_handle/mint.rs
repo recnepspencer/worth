@@ -72,8 +72,10 @@ pub(crate) fn mint_recovery_handle_in_registry(
     let binding = WorthQueryRecoveryHandleBinding::from_receipt(receipt, expires_at)?;
     let claim = WorthQueryRecoveryMintClaim::new(
         receipt.provider_runtime_instance_id(),
-        receipt.terminal().branch().clone(),
-        receipt.commit_id(),
+        receipt
+            .committed_product_publication()
+            .composite_commit()
+            .clone(),
     );
     let slot = registry.register_once(claim).map_err(|_| {
         WorthQueryRecoveryHandleDenial::new(

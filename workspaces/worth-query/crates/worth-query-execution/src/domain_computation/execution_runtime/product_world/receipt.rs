@@ -12,6 +12,7 @@ struct WorthQueryProductPublicationTerminal {
 struct WorthQueryProductPublicationCustody {
     terminal: OnceLock<WorthQueryProductPublicationTerminal>,
     fresh_delivery_available: Mutex<bool>,
+    successor_observation: Mutex<Option<worth_runtime_world::facade::ProductBranchObservation>>,
     root_identity: Arc<WorthQueryProductRootIdentity>,
     _recovery_handle: ProductUnpublishedRecoveryHandle,
 }
@@ -37,6 +38,7 @@ impl WorthQueryReservedProductPublicationReceipt {
             custody: Arc::new(WorthQueryProductPublicationCustody {
                 terminal: OnceLock::new(),
                 fresh_delivery_available: Mutex::new(true),
+                successor_observation: Mutex::new(None),
                 root_identity,
                 _recovery_handle: recovery_handle,
             }),
@@ -45,9 +47,15 @@ impl WorthQueryReservedProductPublicationReceipt {
 
     pub(crate) fn fill(
         self,
-        publication: ConsumedCompositePublication,
+        mut publication: ConsumedCompositePublication,
         conditional_definition_generation: Option<u64>,
     ) -> WorthQueryProductPublicationReceipt {
+        let successor_observation = publication.take_successor_observation();
+        *self
+            .custody
+            .successor_observation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = successor_observation;
         let terminal = WorthQueryProductPublicationTerminal {
             publication,
             conditional_definition_generation,
@@ -92,6 +100,16 @@ impl WorthQueryProductPublicationReceipt {
         Some(WorthQueryPerformedRelationalProductChange::new(
             self.clone(),
         ))
+    }
+
+    pub(crate) fn take_successor_observation(
+        &self,
+    ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
+        self.custody
+            .successor_observation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
     }
 }
 

@@ -6,7 +6,7 @@ mod projection;
 mod publication_source;
 
 use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;
-use worth_relational::facade::history::{CommitId, RelationalCommitReceipt};
+use worth_relational::facade::history::RelationalCommitReceipt;
 
 use crate::domain_computation::application_aftermath::{
     WorthQueryCommittedAftermathCausality, WorthQueryDispatchOutboxRecord,
@@ -20,10 +20,7 @@ use super::super::{
 
 pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingApplicationCommitReceipt;
 pub(in crate::domain_computation::primary_graph) use projection::WorthQueryCommittedReceiptProjection;
-pub use publication_source::{
-    WorthQueryApplicationCommitPublicationExternalEffect,
-    WorthQueryApplicationCommitPublicationSource,
-};
+pub use publication_source::WorthQueryApplicationCommitPublicationSource;
 
 #[derive(Debug, PartialEq)]
 pub struct WorthQueryApplicationCommitReceipt {
@@ -101,10 +98,6 @@ impl WorthQueryApplicationCommitReceipt {
         self.provider_runtime_instance_id
     }
 
-    pub const fn commit_id(&self) -> CommitId {
-        self.commit.commit_id
-    }
-
     pub const fn commit_reference(&self) -> &RelationalCommitReceipt {
         &self.commit
     }
@@ -129,7 +122,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.emitted_effect_count
     }
 
-    pub fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {
+    pub(crate) fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {
         WorthQueryApplicationCommitPublicationSource::from_receipt(self)
     }
 

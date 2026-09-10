@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use worth_query_host::facade::{
     declaration::application_query::ApplicationQueryParameterSet, primary_graph, runtime,
 };
@@ -162,6 +161,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         publication.external_dispatch().unwrap().posture().kind(),
         primary_graph::WorthQueryExternalDispatchPostureKind::Completed
     );
+    super::projection_and_outbox::assert_commit_publication(&publication);
     assert_eq!(transport.contact_count(), 1);
     let performed = publication
         .take_performed_relational_product_change()

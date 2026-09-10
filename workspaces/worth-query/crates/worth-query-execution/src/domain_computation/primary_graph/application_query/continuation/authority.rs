@@ -80,7 +80,7 @@ pub struct WorthQueryApplicationQueryContinuation<Schema, Query, Parameters, Que
     pub(super) continuation_contract_digest: CanonicalDigestId,
     pub(super) graph_authority_identity: String,
     pub(super) provider_identity: String,
-    pub(super) product: crate::basis::WorthQueryProductBranchLease,
+    pub(super) product: crate::basis::WorthQueryProductObservationLease,
     pub(super) index_id: DerivedIndexId,
     pub(super) index_generation: DerivedIndexGenerationId,
     pub(super) boundary: RelatedEntityOrderingBoundary,

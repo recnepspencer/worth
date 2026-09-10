@@ -88,7 +88,6 @@ pub use application_attempt::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
     WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitOutcomeIdentity,
-    WorthQueryApplicationCommitPublicationExternalEffect,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationSettlementDeferred,
     WorthQueryApplicationSettlementNextAction,
@@ -154,7 +153,10 @@ pub use authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,
 };
 pub use bootstrap::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphPublication};
-pub use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity};
+pub use crate::basis::{
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
+    WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease,
+};
 pub use conditional_operation::{
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalClockHandle,

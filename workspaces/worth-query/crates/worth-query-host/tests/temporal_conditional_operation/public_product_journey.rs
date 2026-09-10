@@ -215,6 +215,8 @@ mod conditional_execution;
 mod definition_lineage;
 #[path = "public_product_journey/idempotency_affinity.rs"]
 mod idempotency_affinity;
+#[path = "public_product_journey/projection_and_outbox.rs"]
+mod projection_and_outbox;
 pub(super) use combined_publication::application_commits_relational_and_signal_in_one_world_publication;
 pub(super) use conditional_execution::publishes_delivers_executes_and_cleans_up;
 pub(super) use definition_lineage::independent_products_advance_and_retain_exact_definitions;

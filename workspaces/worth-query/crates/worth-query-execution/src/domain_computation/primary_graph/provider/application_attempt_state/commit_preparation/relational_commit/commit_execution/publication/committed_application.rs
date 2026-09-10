@@ -29,11 +29,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
             evidence,
             product_publication,
         } = seal;
-        let committed_product_publication =
-            crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_consumed(
-                product_publication.publication(),
-                product_publication.conditional_definition_generation(),
-            );
+        let committed_product_publication = crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(product_publication.clone());
         Self {
             application_outcome_identity: Some(outcome_identity),
             runtime_instance_id,

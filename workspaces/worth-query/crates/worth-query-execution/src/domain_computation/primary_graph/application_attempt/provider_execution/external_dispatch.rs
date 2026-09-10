@@ -256,6 +256,8 @@ where
 }
 
 #[cfg(test)]
+mod composite_dispatch_tests;
+#[cfg(test)]
 mod safe_retry_affinity_tests;
 
 #[cfg(test)]

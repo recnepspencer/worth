@@ -24,6 +24,7 @@ pub enum WorthQueryApplicationQueryFreshness {
 
 pub struct WorthQueryApplicationQueryControls<'a, Schema> {
     basis: WorthQueryApplicationQueryBasis,
+    publication_product: Option<crate::basis::WorthQueryProductBranchLease>,
     lane: WorthQueryApplicationQueryLane,
     maximum_result_count: NonZeroUsize,
     maximum_work: NonZeroUsize,
@@ -50,27 +51,19 @@ pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
 
 pub(super) enum WorthQueryApplicationQueryBasis {
     Selected {
-        product: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductObservationLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
     },
     RetainedContinuation {
-        product: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductObservationLease,
     },
 }
 
-impl WorthQueryApplicationQueryBasis {
-    fn product(&self) -> &crate::basis::WorthQueryProductBranchLease {
-        match self {
-            Self::Selected { product, .. } | Self::RetainedContinuation { product } => product,
-        }
-    }
-}
-
 impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
-    pub(in crate::domain_computation::primary_graph) fn product_branch(
+    pub(in crate::domain_computation::primary_graph) fn publication_product_branch(
         &self,
-    ) -> &crate::basis::WorthQueryProductBranchLease {
-        self.basis.product()
+    ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
+        self.publication_product.as_ref()
     }
     pub(in crate::domain_computation::primary_graph) fn product_one_shot(
         product: crate::basis::WorthQueryProductBranchLease,
@@ -79,11 +72,13 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         maximum_work: NonZeroUsize,
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
+        let read = product.read_lease();
         Self {
             basis: WorthQueryApplicationQueryBasis::Selected {
-                product,
+                product: read,
                 application_basis,
             },
+            publication_product: Some(product),
             lane: WorthQueryApplicationQueryLane::OneShot,
             maximum_result_count,
             maximum_work,
@@ -93,7 +88,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     }
 
     pub(in crate::domain_computation::primary_graph) fn product_continuation(
-        product: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductObservationLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_page_width: NonZeroUsize,
         maximum_work: NonZeroUsize,
@@ -104,6 +99,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
                 product,
                 application_basis,
             },
+            publication_product: None,
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: maximum_page_width,
             maximum_work,
@@ -113,7 +109,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     }
 
     pub(super) fn product_live(
-        product: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductObservationLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_materialized_record_count: NonZeroUsize,
         maximum_work: NonZeroUsize,
@@ -124,6 +120,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
                 product,
                 application_basis,
             },
+            publication_product: None,
             lane: WorthQueryApplicationQueryLane::Live,
             maximum_result_count: maximum_materialized_record_count,
             maximum_work,
@@ -181,11 +178,12 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     }
 
     pub(super) fn continuation_resume(
-        product: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductObservationLease,
         controls: WorthQueryApplicationQueryResumeControls<'a>,
     ) -> Self {
         Self {
             basis: WorthQueryApplicationQueryBasis::RetainedContinuation { product },
+            publication_product: None,
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: controls.maximum_page_width,
             maximum_work: controls.maximum_work,

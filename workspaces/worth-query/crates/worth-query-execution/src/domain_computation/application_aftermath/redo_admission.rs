@@ -32,6 +32,10 @@ where
         &self,
         proved: &WorthQueryProvedUndo,
     ) -> Result<WorthQueryRedoIntent, WorthQueryAftermathDerivationFailure> {
+        let product_commit = self.product().selected_commit().clone();
+        if &product_commit != proved.undo_product_publication().composite_commit() {
+            return Err(WorthQueryAftermathDerivationFailure::BasisRejected);
+        }
         let head = self
             .product()
             .relational_basis()
@@ -40,7 +44,7 @@ where
             .filter(|head| *head == proved.undo_commit())
             .cloned()
             .ok_or(WorthQueryAftermathDerivationFailure::BasisRejected)?;
-        WorthQueryRedoIntent::derive(proved, head)
+        WorthQueryRedoIntent::derive(proved, product_commit, head)
     }
 
     /// Admit redo against fresh authority and Relational-owned history.
@@ -53,6 +57,7 @@ where
         // Reading the selected product can itself deny. That is a non-event for
         // the recovery, so it relinquishes rather than dropping the handle it
         // is holding (Q8.21-L11).
+        let current_product_commit = self.product().selected_commit().clone();
         let (recovery, (current_head, prior_redo)) = recovery.admit_deriving(|_| {
             let current_head = self
                 .product()
@@ -95,7 +100,14 @@ where
                 });
             Ok((current_head, prior_redo))
         })?;
-        admit_redo_against_relational(recovery, authority, intent, &current_head, prior_redo)
+        admit_redo_against_product(
+            recovery,
+            authority,
+            intent,
+            &current_product_commit,
+            &current_head,
+            prior_redo,
+        )
     }
 }
 
@@ -169,10 +181,11 @@ impl WorthQueryRedoAdmission {
 /// Copied-intent is detected by re-deriving from `proved` and comparing
 /// digests. Duplicate redo is detected from the co-committed Query causal fact. Neither
 /// fact is a caller-supplied boolean (R8.43).
-pub(super) fn admit_redo_against_relational(
+pub(super) fn admit_redo_against_product(
     recovery: WorthQueryRedoRecovery,
     authority: &WorthQueryRecoveryEffectAuthority,
     intent: &WorthQueryRedoIntent,
+    current_product_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
     current_head: &RelationalCommitReceipt,
     prior_redo: WorthQueryPriorRedoObservation,
 ) -> Result<WorthQueryRedoAdmission, WorthQueryRedoDenial> {
@@ -205,7 +218,9 @@ pub(super) fn admit_redo_against_relational(
             return Err(WorthQueryRedoDenial::changed_operation_meaning());
         }
         // R8.45 — lane policy, not intent policy.
-        if current_head != intent.bound_relational_head() {
+        if current_product_commit != intent.bound_product_commit()
+            || current_head != intent.bound_relational_head()
+        {
             return Err(WorthQueryRedoDenial::divergence_invalidation());
         }
         Ok(retained_governed_input)
@@ -251,8 +266,12 @@ fn reject_copied_intent(
     intent: &WorthQueryRedoIntent,
     proved: &WorthQueryProvedUndo,
 ) -> Result<(), WorthQueryRedoDenial> {
-    let expected = WorthQueryRedoIntent::derive(proved, intent.bound_relational_head().clone())
-        .map_err(|_| WorthQueryRedoDenial::stale())?;
+    let expected = WorthQueryRedoIntent::derive(
+        proved,
+        intent.bound_product_commit().clone(),
+        intent.bound_relational_head().clone(),
+    )
+    .map_err(|_| WorthQueryRedoDenial::stale())?;
     if expected.identity().digest() != intent.identity().digest() {
         return Err(WorthQueryRedoDenial::copied_intent());
     }
@@ -260,6 +279,7 @@ fn reject_copied_intent(
     // with drifted fields is still a copy/forge.
     if intent.original_operation() != proved.original_operation()
         || intent.undo_commit() != proved.undo_commit()
+        || intent.undo_product_publication() != proved.undo_product_publication()
         || intent.principal_scope_digest() != proved.principal_scope_digest()
         || intent.compatibility_generation() != proved.compatibility_generation()
         || intent.runtime_instance() != proved.runtime_instance()

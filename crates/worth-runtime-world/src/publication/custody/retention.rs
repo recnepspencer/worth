@@ -43,6 +43,9 @@ impl ActiveAttemptCustody {
         self.retain_creation_resources();
         let mut lease = self.lease_resources();
         let resources = lease.resources_mut();
+        drop(resources.prepared_successor_observation.take());
+        drop(resources.successor_observation_capacity.take());
+        drop(resources.successor_observation_pins.take());
         let commit = Arc::clone(
             resources
                 .commit

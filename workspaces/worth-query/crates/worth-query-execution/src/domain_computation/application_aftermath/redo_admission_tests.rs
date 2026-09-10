@@ -8,7 +8,7 @@ use worth_relational::facade::{
 use super::recovery_handle::{WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBindingAxisProbe};
 use super::recovery_progression::WorthQueryRecoveryEffectAuthority;
 use super::redo_admission::{
-    admit_redo_against_relational, map_recovery_denial, WorthQueryPriorRedoObservation,
+    admit_redo_against_product, map_recovery_denial, WorthQueryPriorRedoObservation,
 };
 use super::redo_denial::WorthQueryRedoDenialKind;
 use super::redo_intent::{
@@ -31,7 +31,7 @@ fn probe_handle(governed_input_identity: Option<[u8; 32]>) -> WorthQueryRecovery
         .runtime_instance_id(7)
         .branch(BranchId("main".to_owned()))
         .installed_operation([0x44; 32])
-        .attempt_commit_id(10)
+        .relational_commit_id(10)
         .retained_governed_input_identity(governed_input_identity)
         .idempotency(WorthQueryApplicationIdempotencyBinding::new(
             [0x55; 32], [0x56; 32],
@@ -47,12 +47,16 @@ fn proved_and_intent(
 ) -> (WorthQueryProvedUndo, WorthQueryRedoIntent) {
     let proved = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
         original_operation: [0x44; 32],
-        undo_commit_id: 20,
         principal_scope_digest: bound_scope_digest(),
         compatibility_generation,
         runtime_instance: 7,
     });
-    let intent = WorthQueryRedoIntent::derive(&proved, relational_commit(20)).expect("derive");
+    let intent = WorthQueryRedoIntent::derive(
+        &proved,
+        proved.undo_product_publication().composite_commit().clone(),
+        proved.undo_commit().clone(),
+    )
+    .expect("derive");
     (proved, intent)
 }
 
@@ -80,10 +84,11 @@ fn admit(
         handle.runtime_authority(),
         handle.authority_identity(),
     );
-    admit_redo_against_relational(
+    admit_redo_against_product(
         WorthQueryRedoRecovery::axis_probe(proved, handle),
         &authority,
         intent,
+        intent.bound_product_commit(),
         &current_head,
         prior_redo,
     )
@@ -95,7 +100,7 @@ fn lawful_redo_admits_against_exact_relational_head() {
     let admission = admit(
         proved,
         &intent,
-        relational_commit(20),
+        intent.bound_relational_head().clone(),
         WorthQueryPriorRedoObservation::Absent,
         Some([0x66; 32]),
     )
@@ -119,7 +124,7 @@ fn missing_original_governed_input_fails_closed() {
     let denied = admit(
         proved,
         &intent,
-        relational_commit(20),
+        intent.bound_relational_head().clone(),
         WorthQueryPriorRedoObservation::Absent,
         None,
     )
@@ -150,21 +155,69 @@ fn exact_relational_head_drift_invalidates_without_mutating_intent() {
 }
 
 #[test]
+fn same_world_product_commit_drift_invalidates_before_redo() {
+    let (_, first, second) =
+        crate::domain_computation::primary_graph::two_recoverable_application_commits(211, 212);
+    let proved = WorthQueryProvedUndo::axis_probe_with_product_publication(
+        WorthQueryProvedUndoAxisProbe {
+            original_operation: [0x44; 32],
+            principal_scope_digest: bound_scope_digest(),
+            compatibility_generation: 1,
+            runtime_instance: 7,
+        },
+        first.committed_product_publication().clone(),
+    );
+    let intent = WorthQueryRedoIntent::derive(
+        &proved,
+        first
+            .committed_product_publication()
+            .composite_commit()
+            .clone(),
+        first.commit_reference().clone(),
+    )
+    .expect("same-product intent");
+    let handle = probe_handle(Some([0x66; 32]));
+    let authority = WorthQueryRecoveryEffectAuthority::mint(
+        handle.runtime_authority(),
+        handle.authority_identity(),
+    );
+    let denied = admit_redo_against_product(
+        WorthQueryRedoRecovery::axis_probe(proved, handle),
+        &authority,
+        &intent,
+        second.committed_product_publication().composite_commit(),
+        first.commit_reference(),
+        WorthQueryPriorRedoObservation::Absent,
+    )
+    .expect_err("sibling product commit cannot substitute for the bound occurrence");
+    assert_eq!(
+        denied.kind(),
+        WorthQueryRedoDenialKind::DivergenceInvalidation
+    );
+}
+
+#[test]
 fn copied_intent_and_duplicate_fact_are_distinct_denials() {
     let (proved, _) = proved_and_intent(1);
     let foreign = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
         original_operation: [0x99; 32],
-        undo_commit_id: 20,
         principal_scope_digest: [0x70; 32],
         compatibility_generation: 1,
         runtime_instance: 7,
     });
-    let foreign_intent =
-        WorthQueryRedoIntent::derive(&foreign, relational_commit(20)).expect("foreign intent");
+    let foreign_intent = WorthQueryRedoIntent::derive(
+        &foreign,
+        foreign
+            .undo_product_publication()
+            .composite_commit()
+            .clone(),
+        foreign.undo_commit().clone(),
+    )
+    .expect("foreign intent");
     let copied = admit(
         proved,
         &foreign_intent,
-        relational_commit(20),
+        foreign_intent.bound_relational_head().clone(),
         WorthQueryPriorRedoObservation::Absent,
         Some([0x66; 32]),
     )
@@ -175,7 +228,7 @@ fn copied_intent_and_duplicate_fact_are_distinct_denials() {
     let duplicate = admit(
         proved,
         &intent,
-        relational_commit(20),
+        intent.bound_relational_head().clone(),
         WorthQueryPriorRedoObservation::Committed,
         Some([0x66; 32]),
     )
@@ -189,7 +242,7 @@ fn current_generation_and_principal_binding_remain_required() {
     let generation = admit(
         proved,
         &intent,
-        relational_commit(20),
+        intent.bound_relational_head().clone(),
         WorthQueryPriorRedoObservation::Absent,
         Some([0x66; 32]),
     )
@@ -201,16 +254,20 @@ fn current_generation_and_principal_binding_remain_required() {
 
     let proved = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
         original_operation: [0x44; 32],
-        undo_commit_id: 20,
         principal_scope_digest: [0xAB; 32],
         compatibility_generation: 1,
         runtime_instance: 7,
     });
-    let intent = WorthQueryRedoIntent::derive(&proved, relational_commit(20)).expect("derive");
+    let intent = WorthQueryRedoIntent::derive(
+        &proved,
+        proved.undo_product_publication().composite_commit().clone(),
+        proved.undo_commit().clone(),
+    )
+    .expect("derive");
     let principal = admit(
         proved,
         &intent,
-        relational_commit(20),
+        intent.bound_relational_head().clone(),
         WorthQueryPriorRedoObservation::Absent,
         Some([0x66; 32]),
     )
