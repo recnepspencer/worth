@@ -3,7 +3,7 @@
 use crate::basis_lifecycle::BasisOperationLane;
 
 use super::super::{
-    WorthQueryBoundGraphExecutionReceipt, WorthQueryDirectExecutionResourceAttempt,
+    WorthQueryAdmittedExecutionResourcePlan, WorthQueryBoundGraphExecutionReceipt,
     WorthQueryExecutableDomainOperation, WorthQueryOperationExecutionCounters,
     WorthQueryOperationExecutionWarning,
 };
@@ -22,7 +22,8 @@ where
     phase_proof: crate::domain_installation::operation_authority_chain::WorthQueryOperationPhaseProof<
         crate::domain_installation::operation_authority_chain::WorthQueryResourceAdmittedOperationPhase,
     >,
-    resource_attempt: WorthQueryDirectExecutionResourceAttempt,
+    running: Option<worth_query_execution::facade::runtime::WorthQueryRunningDirectRun>,
+    resources: WorthQueryAdmittedExecutionResourcePlan,
     output: Output,
     result_state: crate::domain_installation::WorthQueryOperationResultState,
     warnings: Vec<WorthQueryOperationExecutionWarning>,

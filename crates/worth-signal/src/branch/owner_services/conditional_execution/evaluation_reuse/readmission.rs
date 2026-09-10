@@ -135,7 +135,7 @@ where
                 |value| value.checked_add(1),
             )
             .map_err(|_| Denial::EvaluationIdentityExhausted)?;
-        let execution_identity: Arc<str> = Arc::from(format!("signal-evaluation:{ordinal}"));
+        let execution_identity = super::super::evaluation_identity::evaluation_identity(ordinal);
         let charge = super::super::admission_retention::evaluation_admission_charge(
             &request.predecessor.contract,
             &request.predecessor.source,

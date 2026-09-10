@@ -152,7 +152,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             counters_before,
         } = admitted;
         let (resources, resource_evidence) = self
-            .resource_attempt
+            .managed_run()
             .stage_resources_and_evidence(stage.identity())
             .ok_or_else(|| {
                 WorthQueryWorkflowAdvanceDenial::new(
@@ -174,16 +174,18 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 return Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional));
             }
         };
-        let graph_receipts = invoke_stage_graphs(
+        let managed = self
+            .managed
+            .take()
+            .expect("live workflow owns its managed run");
+        let (managed, graph_receipts) = invoke_stage_graphs(
             &self.bound,
+            managed,
             &self.identity,
             &stage,
-            &resources,
-            &resource_evidence,
-            self.resource_attempt.provider_session(),
-            &graph_snapshot,
             &mut self.counters,
         )?;
+        self.managed = Some(managed);
         let executed = self.execute_admitted_stage(
             &stage,
             &resources,
@@ -322,7 +324,8 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         effect_workflow_binding: crate::workflow::WorkflowContextBinding,
     ) -> Result<WorthQueryWorkflowStageExecutionContext<'a>, WorthQueryWorkflowAdvanceDenial> {
         let artifact_production_authority = self
-            .artifact_authority
+            .managed_run()
+            .artifacts()
             .production_authority(stage.identity())
             .map_err(|denial| {
                 WorthQueryWorkflowAdvanceDenial::new(
@@ -331,7 +334,8 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 )
             })?;
         let artifact_access_authority = self
-            .artifact_authority
+            .managed_run()
+            .artifacts()
             .access_authority(stage.identity())
             .map_err(|denial| {
                 WorthQueryWorkflowAdvanceDenial::new(
@@ -360,7 +364,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 graph_receipts,
                 resources,
                 resource_evidence,
-                provider_session: self.resource_attempt.provider_session(),
+                provider_session_identity: self.provider_session_identity(),
                 query_authority: self
                     .bound
                     .definition()

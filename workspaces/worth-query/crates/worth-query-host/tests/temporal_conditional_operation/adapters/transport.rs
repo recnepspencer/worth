@@ -1,3 +1,5 @@
+#![allow(dead_code)] // This fixture is compiled by several independent certification targets.
+
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use worth_query_host::facade::primary_graph::{

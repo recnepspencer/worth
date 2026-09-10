@@ -161,10 +161,11 @@ fn while_peer_is_registered(
         attempt_basis,
         aftermath_causality,
     } = peer;
+    let product = attempt_basis.retained_product();
     let admitted = admit_provider_session(
         &mut running,
         &world.application.primary_graph_authority,
-        attempt_basis.retained_product(),
+        product.retained_clone(),
         mutation_run,
     )
     .unwrap_or_else(|_| panic!("the interleaved peer session must reach registration"));
@@ -203,17 +204,18 @@ fn while_peer_is_registered(
         "victim cleanup must preserve the exact registered peer"
     );
 
-    let serialization = world
+    let commit_lane = world
         .application
         .primary_provider
-        .serialize_application_commit();
+        .application_branch_commit_lane(product.observation());
+    let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         application: &world.application,
         provider: &world.application.primary_provider,
         admission: &admission,
         authorization,
         idempotency,
-        serialization: &serialization,
+        coordination: &coordination,
         aftermath_causality,
     };
     let peer = finish_application_commit(

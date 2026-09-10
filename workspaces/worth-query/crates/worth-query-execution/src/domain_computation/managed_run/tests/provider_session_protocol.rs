@@ -265,7 +265,7 @@ fn closed_session_affinity() -> WorthQueryProviderSessionAffinityIdentity {
 }
 
 #[test]
-fn legacy_provider_is_denied_before_any_session_protocol_call() {
+fn provider_without_session_lifecycle_is_denied_before_any_protocol_call() {
     let (mut running, graph) =
         managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, GraphOnlyProvider);
     let failure = running

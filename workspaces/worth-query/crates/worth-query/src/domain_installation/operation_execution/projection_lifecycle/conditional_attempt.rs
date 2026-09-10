@@ -25,14 +25,14 @@ pub(super) enum WorthQueryConditionalPromotionOutcome<D, O, F, L: BasisOperation
 }
 
 pub(super) fn evaluate_fresh_conditionals<D, O, F, L: BasisOperationLane>(
-    admitted: Box<WorthQueryAdmittedProjectionPromotion<D, O, F, L>>,
+    admitted: WorthQueryAdmittedProjectionPromotion<D, O, F, L>,
     workspace: &mut WorthQueryWorkspace,
 ) -> WorthQueryConditionalPromotionOutcome<D, O, F, L> {
     let WorthQueryAdmittedProjectionPromotion {
         current,
         read,
         counters,
-    } = *admitted;
+    } = admitted;
     let ready = match super::conditional_core::evaluate_fresh_lifecycle_conditionals(
         &current.settled,
         workspace,

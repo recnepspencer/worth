@@ -12,8 +12,12 @@ use worth_query_host::facade::{
     worth_query_portable_type, worth_query_principal_binding, worth_query_relation,
 };
 
+const SCALED_AMENDMENT_DECISION_FACT_BUDGET: usize = 128;
+const SCALED_AMENDMENT_PROJECTION_WORK_BUDGET: usize = 256;
+
 #[path = "schema/live_intent_query.rs"]
 mod live_intent_query;
+#[allow(unused_imports)]
 pub use live_intent_query::{
     temporal_intent_live_query_definition, IntentLiveQueryParameters, IntentLiveQueryResult,
     TemporalIntentLiveCause, TemporalIntentLiveQuery,
@@ -91,8 +95,14 @@ worth_query_application_schema! {
                 .operation_write(ExecuteTemporal::reference(), IntentLifecycleField::reference())
                 .operation_write(ExecuteTemporal::reference(), IntentEffectField::reference())
                 .operation_emit(ExecuteTemporal::reference(), TemporalExecutionEffect::reference())
-                .operation_decision_fact_budget(AmendTemporal::reference(), 5)
-                .operation_projection_work_budget(AmendTemporal::reference(), 12)
+                .operation_decision_fact_budget(
+                    AmendTemporal::reference(),
+                    SCALED_AMENDMENT_DECISION_FACT_BUDGET,
+                )
+                .operation_projection_work_budget(
+                    AmendTemporal::reference(),
+                    SCALED_AMENDMENT_PROJECTION_WORK_BUDGET,
+                )
                 .operation_read_field(AmendTemporal::reference(), IntentRevisionField::reference())
                 .operation_read_field(AmendTemporal::reference(), IntentLifecycleField::reference())
                 .operation_read_field(AmendTemporal::reference(), IntentGateField::reference())
@@ -186,7 +196,7 @@ impl declaration::application_schema::ApplicationEffectPayload for TemporalExecu
 worth_query_effect!(pub TemporalExecutionEffect(TemporalExecutionNotice) in TemporalHostSchema);
 worth_query_operation_emits!(ExecuteTemporal => [TemporalExecutionEffect]);
 worth_query_operation!(pub AmendTemporal(AmendTemporalInput) in TemporalHostSchema);
-worth_query_operation_reads!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
+worth_query_operation_reads!(AmendTemporal => [IntentIdentityField, IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
 worth_query_operation_writes!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
 worth_query_operation!(pub AmendTemporalAndPublishDefinition(AmendTemporalInput) in TemporalHostSchema);
 worth_query_operation_reads!(AmendTemporalAndPublishDefinition => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);

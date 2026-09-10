@@ -41,6 +41,7 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
         branch,
         "combined-input",
         Arc::new(replacement),
+        1,
     );
     let publication = receipt.committed_product_publication();
     assert_eq!(receipt.product_branch(), branch);

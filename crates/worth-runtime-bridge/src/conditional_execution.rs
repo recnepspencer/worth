@@ -29,6 +29,7 @@ mod observation_retention;
 mod owned_async;
 mod owned_async_observation;
 mod owned_installation;
+mod owned_retirement;
 mod owned_target_index;
 mod provider_admission;
 mod provider_semantics;
@@ -50,6 +51,7 @@ mod semantic_observations;
 mod service_binding;
 mod signal_basis_binding;
 mod signal_port;
+mod source_projection;
 mod successor_reconstitution;
 
 pub use compatibility::{

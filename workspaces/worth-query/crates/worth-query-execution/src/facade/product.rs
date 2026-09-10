@@ -27,13 +27,17 @@ pub use crate::domain_computation::execution_runtime::product_world::{
 pub use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedChange, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationNoEffect,
-    WorthQueryApplicationNoEffectCause, WorthQueryApplicationProductBranchCloseDenial,
-    WorthQueryApplicationProductBranches, WorthQueryApplicationQueryAccessContext,
-    WorthQueryAppliedProductTransaction, WorthQueryConditionalClockObservationOutcome,
+    WorthQueryApplicationNoEffectCause, WorthQueryApplicationProductBranchCleanup,
+    WorthQueryApplicationProductBranchCleanupDenial,
+    WorthQueryApplicationProductBranchCleanupFailure,
+    WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
+    WorthQueryApplicationQueryAccessContext, WorthQueryAppliedProductTransaction,
+    WorthQueryConditionalClockObservationOutcome,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionTerminal, WorthQueryConditionalSignalDecision,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
-    WorthQueryProductEntry, WorthQueryProductQueryControls, WorthQueryProductTransaction,
+    WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
+    WorthQueryProductQueryControls, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError, WorthQuerySelectedProductOperation,
 };
 pub use worth_runtime_world::facade::{

@@ -27,8 +27,4 @@ impl WorthQueryGraphReadMaterial {
                     .sum(),
             )
     }
-
-    pub(super) fn into_rows(self) -> Vec<WorthQueryGraphReadRow> {
-        self.rows
-    }
 }

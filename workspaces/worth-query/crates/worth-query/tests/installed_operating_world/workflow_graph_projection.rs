@@ -55,7 +55,13 @@ fn workflow_executor_consumes_execution_bound_separate_graph_projection() {
         .unwrap();
 
     assert_eq!(
-        remote_receipt.graph_read_product().unwrap().rows()[0].entity_identity(),
+        remote_receipt
+            .graph_read_product()
+            .unwrap()
+            .rows()
+            .next()
+            .unwrap()
+            .entity_identity(),
         "workflow-remote-row"
     );
     assert_eq!(

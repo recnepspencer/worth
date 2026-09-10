@@ -4,12 +4,14 @@ use worth_query_admission::facade::graph_read_access::WorthQueryGraphReadBudget;
 
 const DEFAULT_INLINE_INDEX_BYTES: usize = 5_120;
 const DEFAULT_RESULT_BYTES_PER_ROOT: usize = 2_048;
+const DEFAULT_CONCURRENT_GRAPH_WORK: usize = 64;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryResourceProfileDenial {
     ZeroInlineIndexBytes,
     ZeroResultBytesPerRoot,
     ZeroIntermediateSetSize,
+    ZeroConcurrentGraphWork,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -17,6 +19,7 @@ pub struct WorthQueryApplicationQueryResourceProfile {
     maximum_inline_index_bytes: NonZeroUsize,
     maximum_result_bytes_per_root: NonZeroUsize,
     maximum_intermediate_set_size: NonZeroUsize,
+    maximum_concurrent_graph_work: NonZeroUsize,
 }
 
 impl WorthQueryApplicationQueryResourceProfile {
@@ -24,6 +27,7 @@ impl WorthQueryApplicationQueryResourceProfile {
         maximum_inline_index_bytes: usize,
         maximum_result_bytes_per_root: usize,
         maximum_intermediate_set_size: usize,
+        maximum_concurrent_graph_work: usize,
     ) -> Result<Self, WorthQueryApplicationQueryResourceProfileDenial> {
         Ok(Self {
             maximum_inline_index_bytes: NonZeroUsize::new(maximum_inline_index_bytes)
@@ -32,6 +36,8 @@ impl WorthQueryApplicationQueryResourceProfile {
                 .ok_or(WorthQueryApplicationQueryResourceProfileDenial::ZeroResultBytesPerRoot)?,
             maximum_intermediate_set_size: NonZeroUsize::new(maximum_intermediate_set_size)
                 .ok_or(WorthQueryApplicationQueryResourceProfileDenial::ZeroIntermediateSetSize)?,
+            maximum_concurrent_graph_work: NonZeroUsize::new(maximum_concurrent_graph_work)
+                .ok_or(WorthQueryApplicationQueryResourceProfileDenial::ZeroConcurrentGraphWork)?,
         })
     }
 
@@ -45,6 +51,10 @@ impl WorthQueryApplicationQueryResourceProfile {
 
     pub const fn maximum_intermediate_set_size(self) -> NonZeroUsize {
         self.maximum_intermediate_set_size
+    }
+
+    pub const fn maximum_concurrent_graph_work(self) -> NonZeroUsize {
+        self.maximum_concurrent_graph_work
     }
 
     pub(crate) fn admission_budget(
@@ -72,6 +82,8 @@ impl Default for WorthQueryApplicationQueryResourceProfile {
             maximum_result_bytes_per_root: NonZeroUsize::new(DEFAULT_RESULT_BYTES_PER_ROOT)
                 .expect("default result bytes are non-zero"),
             maximum_intermediate_set_size: NonZeroUsize::MAX,
+            maximum_concurrent_graph_work: NonZeroUsize::new(DEFAULT_CONCURRENT_GRAPH_WORK)
+                .expect("default concurrent graph work is non-zero"),
         }
     }
 }
@@ -84,7 +96,8 @@ mod tests {
     #[test]
     fn request_limits_only_narrow_the_installed_profile() {
         let profile =
-            WorthQueryApplicationQueryResourceProfile::bounded(10_000, 2_000, 100).unwrap();
+            WorthQueryApplicationQueryResourceProfile::bounded(10_000, 2_000, 100, 7).unwrap();
+        assert_eq!(profile.maximum_concurrent_graph_work().get(), 7);
         let broad_request = profile.admission_budget(
             NonZeroUsize::new(3).unwrap(),
             NonZeroUsize::new(500).unwrap(),

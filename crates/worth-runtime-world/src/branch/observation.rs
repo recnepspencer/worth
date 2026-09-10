@@ -195,6 +195,9 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     /// every shared exact axis of the admitted source basis, so forking it
     /// would silently create a branch from state the caller never observed.
     ForkSourceChanged,
+    /// A bounded history carrier did not contain the requested entry or had no
+    /// owner-issued continuation for this product occurrence.
+    HistoryEntryUnavailable,
 }
 
 impl ProductBranchObservation {

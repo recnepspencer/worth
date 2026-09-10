@@ -67,6 +67,6 @@ mod workflow_projection_transition_authority;
 mod workflow_projection_transitions;
 
 fn provider_commit_admission_work_report(
-) -> worth_query::facade::domain::WorthQueryLegacyProviderWorkClaim {
-    worth_query::facade::domain::WorthQueryLegacyProviderWorkClaim::new(1, 0, 0, 0)
+) -> worth_query::facade::domain::WorthQueryProviderWorkReport {
+    worth_query::facade::domain::WorthQueryProviderWorkReport::new(1, 0, 0, 0)
 }

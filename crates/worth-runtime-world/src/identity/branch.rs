@@ -71,6 +71,11 @@ impl ProductBranchReferenceGeneration {
                 super::RuntimeWorldIdentityFamily::ProductBranchReferenceGeneration,
             ))
     }
+
+    pub(crate) fn retreat(self, steps: usize) -> Option<Self> {
+        let steps = u64::try_from(steps).ok()?;
+        self.0.checked_sub(steps).map(Self)
+    }
 }
 
 #[cfg(test)]

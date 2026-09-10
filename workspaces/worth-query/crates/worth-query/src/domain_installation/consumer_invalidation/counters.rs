@@ -2,8 +2,6 @@
 pub struct WorthQueryConsumerInvalidationCounters {
     pub lease_impact_readmission_attempts: usize,
     pub semantic_delivery_checks: usize,
-    pub conditional_relevance_checks: usize,
-    pub conditional_decision_checks: usize,
     pub consumer_support_checks: usize,
     pub disposition_classifications: usize,
     pub native_access_layout_lookups: usize,

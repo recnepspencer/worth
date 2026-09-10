@@ -1,3 +1,5 @@
+#![allow(dead_code)] // This fixture is compiled by several independent certification targets.
+
 use worth_query_host::facade::{primary_graph, product};
 
 use super::super::adapters::block_on;
@@ -5,6 +7,7 @@ use super::super::schema::*;
 use super::{admit_identity_adapter, request_scope, CourtroomWorld};
 
 enum AmendmentWidth {
+    #[allow(dead_code)] // Exercised through certification targets that reuse this fixture.
     GateOnly,
     Full,
 }
@@ -14,6 +17,7 @@ impl CourtroomWorld {
         self.supersede_intent(revision, 5, lifecycle, "payload", gate);
     }
 
+    #[allow(dead_code)] // Shared by the certification crate's invalidation targets.
     pub fn amend_gate_only(&mut self, gate: &str) {
         self.amendment_ordinal += 1;
         let branch = self.application.current_world();
@@ -29,6 +33,7 @@ impl CourtroomWorld {
         );
     }
 
+    #[allow(dead_code)] // Shared by the certification crate's invalidation targets.
     pub fn intent_record_identity(&self) -> primary_graph::RelationalBridgeRecordIdentityParts {
         self.application
             .on_branch(self.application.current_world())
@@ -102,6 +107,15 @@ impl CourtroomWorld {
         branch: product::WorthQueryProductBranch,
         input: &str,
     ) -> primary_graph::WorthQueryApplicationCommitOutcome {
+        self.change_input_on_branch_with_ordinal(branch, input, 0xEC)
+    }
+
+    pub fn change_input_on_branch_with_ordinal(
+        &self,
+        branch: product::WorthQueryProductBranch,
+        input: &str,
+        amendment_ordinal: u8,
+    ) -> primary_graph::WorthQueryApplicationCommitOutcome {
         let selected = self.application.on_branch(branch).select().unwrap();
         self.compare_amendment_program(
             selected,
@@ -111,7 +125,7 @@ impl CourtroomWorld {
             input,
             "ready",
             AmendmentWidth::Full,
-            0xEC,
+            amendment_ordinal,
         )
     }
 

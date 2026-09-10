@@ -3,7 +3,6 @@ pub enum WorthQueryConsumerInvalidationDeltaStopKind {
     ForeignOrStaleLease,
     ConsumerSupportUnavailable,
     NoSemanticDelivery,
-    ConditionalOwnerReadmissionRequired,
     ImpactDeliveryMismatch,
 }
 

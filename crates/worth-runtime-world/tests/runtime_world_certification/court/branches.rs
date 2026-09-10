@@ -247,18 +247,19 @@ fn sibling_fork_denial_retains_only_real_relational_custody_until_cleanup() {
     );
     let handle = effects.recovery_handle();
     drop(effects);
-    let work = court
+    let cleanup = court
         .world
         .recovery_port()
         .release_effects(&handle, 0)
         .unwrap();
+    assert_eq!(cleanup.unpublished_history_candidates().len(), 1);
     assert_eq!(
-        work.len(),
+        cleanup.owner_retirement_work().len(),
         1,
         "one real Relational fork is reported for component owner close"
     );
     let retired = branch.retire_product_branch(&existing).unwrap();
     assert_eq!(retired.owner_retirement_work().len(), 1);
-    drop((root, existing, retired, work));
+    drop((root, existing, retired, cleanup));
     court.finish();
 }

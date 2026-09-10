@@ -13,7 +13,7 @@ pub use worth_query_admission::facade::domain_computation::{
     WorthQueryFixedExecutionCapacity,
 };
 pub(crate) use worth_query_admission::integration::admit_execution_resource_plan;
-pub use worth_query_execution::facade::provider_session::{
-    WorthQueryDirectExecutionResourceAttempt, WorthQueryExecutionProviderSession,
-    WorthQueryExecutionResourceAttemptEvidence, WorthQueryWorkflowExecutionResourceAttempt,
+pub use worth_query_execution::facade::provider_session::WorthQueryExecutionResourceAttemptEvidence;
+pub(crate) use worth_query_execution::facade::provider_session::{
+    WorthQueryDirectExecutionResourceAttempt, WorthQueryWorkflowExecutionResourceAttempt,
 };

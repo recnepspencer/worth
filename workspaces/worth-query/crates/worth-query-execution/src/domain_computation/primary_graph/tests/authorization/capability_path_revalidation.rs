@@ -30,14 +30,21 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
 
     replace_grantor_with_custodian(&world, principal.principal_entity_id());
 
-    let serialization = world
+    let commit_lane = world
         .application
         .primary_provider
-        .serialize_application_commit();
+        .application_branch_commit_lane(
+            admission
+                .graph_work()
+                .mutation_product()
+                .unwrap()
+                .observation(),
+        );
+    let coordination = commit_lane.enter();
     let Err(denial) = commit_authorization.authorize_application_commit(
         &world.application,
         &admission,
-        &serialization,
+        &coordination,
     ) else {
         panic!("a replacement policy path must not inherit retained commit authority");
     };

@@ -197,8 +197,6 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
         &sibling_commit
     );
     drop(retained);
-    drop(access);
-    drop(scope);
     assert_eq!(
         world
             .application

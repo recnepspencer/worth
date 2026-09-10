@@ -29,7 +29,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
             WorthQueryProjectionPreflightOutcome::Admitted(admitted) => admitted,
             WorthQueryProjectionPreflightOutcome::Stopped(outcome) => return *outcome,
         };
-        let ready = match evaluate_fresh_conditionals(admitted, workspace) {
+        let ready = match evaluate_fresh_conditionals(*admitted, workspace) {
             WorthQueryConditionalPromotionOutcome::Ready(ready) => ready,
             WorthQueryConditionalPromotionOutcome::Stopped(outcome) => return *outcome,
         };
@@ -59,8 +59,7 @@ fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOper
                 .snapshot()
                 .semantic_dependency_closure()
                 .expect("settled installed projection retains its dependency closure");
-            if let Err(error) = workspace.register_installed_live_route::<D, O, F>(&handle, closure)
-            {
+            if let Err(error) = workspace.register_installed_live_route(&handle, closure) {
                 let detail = error.to_string();
                 let _ = handle.close_with_cause(
                     workspace,

@@ -1,9 +1,9 @@
-//! Move-only authorization for one serialized application commit transition.
+//! Move-only authorization for one exact product-branch commit transition.
 
 use std::marker::PhantomData;
 
 use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationCommitSerialization,
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationBranchCommitCoordination,
 };
 
 pub(in crate::domain_computation) struct WorthQueryApplicationCommitAuthorization<
@@ -15,7 +15,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationCommitAuthorizatio
     Scope,
 > {
     admission: &'admission WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    _serialization: PhantomData<&'serialization ()>,
+    _coordination: PhantomData<&'serialization ()>,
 }
 
 impl<'serialization, 'admission, Schema, Operation, Input, Scope>
@@ -29,7 +29,7 @@ impl<'serialization, 'admission, Schema, Operation, Input, Scope>
     >
 {
     pub(super) fn mint(
-        _serialization: &'serialization WorthQueryApplicationCommitSerialization<'_>,
+        _coordination: &'serialization WorthQueryApplicationBranchCommitCoordination<'_>,
         admission: &'admission WorthQueryAdmittedApplicationOperation<
             Schema,
             Operation,
@@ -39,7 +39,7 @@ impl<'serialization, 'admission, Schema, Operation, Input, Scope>
     ) -> Self {
         Self {
             admission,
-            _serialization: PhantomData,
+            _coordination: PhantomData,
         }
     }
 

@@ -16,7 +16,7 @@ worth-foundational.workspace = true
 worth-query.workspace = true
 worth-query-decl.workspace = true
 worth-query-admission = { path = "../worth-query-admission" }
-worth-query-execution = { path = "../worth-query-execution", features = ["test-primary-graph-faults"] }
+worth-query-execution = { path = "../worth-query-execution", features = ["test-durability-faults", "test-primary-graph-faults", "test-world-operation-control"] }
 worth-proof.workspace = true
 worth-relational.workspace = true
 worth-runtime-bridge.workspace = true
@@ -38,6 +38,22 @@ path = "tests/temporal_conditional_oracle_parity.rs"
 [[test]]
 name = "granular_invalidation"
 path = "tests/granular_invalidation.rs"
+
+[[test]]
+name = "runtime_world_branching"
+path = "tests/runtime_world_branching.rs"
+
+[[example]]
+name = "ordinary_product_workflow"
+path = "examples/ordinary_product_workflow.rs"
+test = true
+harness = false
+
+[[example]]
+name = "advanced_product_branching"
+path = "examples/advanced_product_branching.rs"
+test = true
+harness = false
 
 
 [lints]

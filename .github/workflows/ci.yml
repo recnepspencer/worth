@@ -330,7 +330,7 @@ jobs:
     name: WORTH Query scheduled cold certification
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -355,7 +355,60 @@ jobs:
 
       - name: Run Query reconstruction certification
         timeout-minutes: 4
-        run: cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification -p worth-query-replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification -p worth-query-replay -- --show-output --test-threads=1 2>&1 | tee query-reconstruction.log
+          for test_name in \
+            seeded_model_checks_public_branch_action_roster \
+            public_query_work_is_fixed_across_retained_populations \
+            public_query_work_is_fixed_across_independent_writers \
+            live_population_does_not_expand_publication_work \
+            graph_work_capacity_obeys_installed_exact_bound \
+            mutation_work_scales_only_with_touched_records \
+            active_world_attempt_population_does_not_expand_query_work \
+            retained_product_partial_population_does_not_expand_query_work; do
+            grep -Fq "test cumulative::${test_name} ... ok" query-reconstruction.log
+          done
+
+      - name: Run Query scheduled public branch action model
+        timeout-minutes: 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          test_name=cumulative::scheduled_seeded_model_broadens_public_action_roster
+          cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --test runtime_world_branching "${test_name}" -- --ignored --exact --show-output --test-threads=1 2>&1 | tee query-scheduled-model.log
+          grep -Fq "test ${test_name} ... ok" query-scheduled-model.log
+          grep -Fq "model_profile=scheduled seeds=8 rounds_per_seed=12 roster=fork/select/read/relational_only/signal_only/combined/retained_read/retirement/cleanup" query-scheduled-model.log
+          for seed in 0000000000009173 00000000000051a7 000000000000cafe 000000000000dead 000000000000beef 0000000000001234 0000000000005eed 000000000000a11c; do
+            grep -Eq "model_seed_complete profile=scheduled seed=0x${seed} rounds=12 creations=4 selections=4 reads=4 relational=[1-9][0-9]* signal=[1-9][0-9]* combined=[1-9][0-9]* retained_reads=12 cleanups=4" query-scheduled-model.log
+          done
+
+      - name: Run Query scheduled public-read timings
+        timeout-minutes: 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          test_name=cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions
+          cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --test runtime_world_branching "${test_name}" -- --ignored --exact --show-output --test-threads=1 2>&1 | tee query-public-read-timings.log
+          grep -Fq "test ${test_name} ... ok" query-public-read-timings.log
+          grep -Fq "timing_environment " query-public-read-timings.log
+          for population in 1 8 64; do
+            test "$(grep -Fc "timing_sample profile=public_read population=${population} " query-public-read-timings.log)" -eq 3
+            for posture in cold warm; do
+              grep -Fq "timing_distribution profile=public_read population=${population} posture=${posture} repetitions=3 " query-public-read-timings.log
+            done
+          done
+
+      - name: Upload Query scheduled certification reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: query-cold-certification
+          path: |
+            query-reconstruction.log
+            query-scheduled-model.log
+            query-public-read-timings.log
 
   miri:
     name: Miri (worth-math)

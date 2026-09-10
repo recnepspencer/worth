@@ -19,7 +19,12 @@ use super::{
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
 mod external_dispatch_attempt;
+mod graph_participation;
 pub(in crate::domain_computation::primary_graph) mod installation;
+#[cfg(feature = "test-world-operation-control")]
+mod operation_control;
+#[cfg(feature = "test-world-operation-control")]
+pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
 
 pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
 

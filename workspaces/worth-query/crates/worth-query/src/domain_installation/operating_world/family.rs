@@ -323,6 +323,7 @@ fn bind_execution_authority<D, O, F, L: BasisOperationLane>(
             world.runtime.query_execution_installation_authority(),
             operation.operation_authority(),
             world.basis.lane(),
+            world.basis.product(),
             &graphs
                 .iter()
                 .map(|binding| binding.record.installation_authority.as_ref())

@@ -47,7 +47,6 @@ impl<D: 'static, O, F, L: BasisOperationLane>
             &delta.impact,
             &delta.epoch_work,
             &delta.sharing,
-            delta.conditional_decision.as_ref(),
         ) {
             return Err(admission_stop(delta, counters));
         }

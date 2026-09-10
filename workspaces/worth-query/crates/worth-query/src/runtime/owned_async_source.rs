@@ -84,14 +84,6 @@ impl WorthQueryInstalledOwnedAsyncDeclaration {
     pub fn runtime_provenance(&self) -> super::WorthQueryRuntimeProvenance {
         self.runtime_provenance
     }
-    pub(super) const fn signal_graph_instance(&self) -> u64 {
-        self.signal_graph_instance
-    }
-    pub(super) fn lowered_declaration_identity(
-        &self,
-    ) -> &worth_runtime_bridge::facade::BridgeAsyncSourceDeclarationIdentity {
-        self.lowered.declaration_identity()
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

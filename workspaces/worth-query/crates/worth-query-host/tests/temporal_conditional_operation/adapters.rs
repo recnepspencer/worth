@@ -1,3 +1,5 @@
+#![allow(dead_code)] // This fixture is compiled by several independent certification targets.
+
 use std::future::Future;
 use std::pin::pin;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -22,6 +24,7 @@ mod predicate;
 pub use predicate::{Predicate, ReplacementPredicate};
 #[path = "adapters/transport.rs"]
 mod transport;
+#[allow(unused_imports)]
 pub use transport::CompletingExternalTransport;
 
 #[derive(Clone)]
@@ -55,15 +58,15 @@ impl
         domain::WorthQueryTemporalIntentProjectionFailure,
     > {
         let identity = domain::WorthQueryTemporalIntentIdentity::declare(row.identity.clone())
-            .map_err(|detail| projection_failure(detail))?;
+            .map_err(projection_failure)?;
         let input_identity =
             domain::WorthQueryTemporalOperationInputIdentity::declare(row.input.clone())
-                .map_err(|detail| projection_failure(detail))?;
+                .map_err(projection_failure)?;
         let idempotency = domain::WorthQueryTemporalIntentIdempotencyRelation::declare(format!(
             "{}:{}:{}",
             row.identity, row.revision, row.input
         ))
-        .map_err(|detail| projection_failure(detail))?;
+        .map_err(projection_failure)?;
         let due = domain::WorthQueryClockCoordinate::from_nanoseconds(row.due);
         let input = TemporalInput(row.input.clone());
         Ok(match row.lifecycle.as_str() {

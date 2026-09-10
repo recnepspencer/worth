@@ -31,8 +31,6 @@ pub(crate) struct WorthQueryInstalledLiveImpactClassifier {
     conditional_broad_locality: bool,
     continuation_window_on_ordering_or_grouping: bool,
     structural_roles: Vec<WorthQuerySemanticDependencyRole>,
-    conditional_locations:
-        BTreeSet<worth_query_installation::facade::WorthQueryConditionalNodeLocation>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -62,7 +60,6 @@ impl WorthQueryInstalledLiveImpactClassifier {
             conditional_broad_locality: false,
             continuation_window_on_ordering_or_grouping: false,
             structural_roles: Vec::new(),
-            conditional_locations: BTreeSet::new(),
         };
         let mut native_contracts = BTreeMap::<
             AspectKey,
@@ -72,9 +69,6 @@ impl WorthQueryInstalledLiveImpactClassifier {
             )>,
         >::new();
         for dependency in closure.dependencies() {
-            if let Some(location) = dependency.conditional_location() {
-                classifier.conditional_locations.insert(location.clone());
-            }
             let role = dependency.role();
             match dependency.source() {
                 WorthQuerySemanticAspectDependencyView::NativeProjection(projection) => {

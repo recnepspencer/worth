@@ -93,17 +93,23 @@ pub enum WorthQueryBoundExecutionDenialKind {
     ConditionalReentry(crate::domain_installation::WorthQueryConditionalAdmissionDenial),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug)]
 pub struct WorthQueryBoundExecutionDenial {
     kind: WorthQueryBoundExecutionDenialKind,
     detail: String,
     evidence: Box<WorthQueryBoundExecutionDenialEvidence>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug)]
 struct WorthQueryBoundExecutionDenialEvidence {
     counters: WorthQueryOperationExecutionCounters,
     graph_receipts: Vec<WorthQueryBoundGraphExecutionReceipt>,
+    managed_cleanup: Option<
+        Result<
+            worth_query_execution::facade::runtime::WorthQueryDirectRunCleanupReceipt,
+            worth_query_execution::facade::runtime::WorthQueryDirectRunCleanupFailure,
+        >,
+    >,
 }
 
 impl WorthQueryBoundExecutionDenial {
@@ -118,6 +124,7 @@ impl WorthQueryBoundExecutionDenial {
             evidence: Box::new(WorthQueryBoundExecutionDenialEvidence {
                 counters,
                 graph_receipts: Vec::new(),
+                managed_cleanup: None,
             }),
         }
     }
@@ -139,5 +146,25 @@ impl WorthQueryBoundExecutionDenial {
     }
     pub fn graph_receipts(&self) -> &[WorthQueryBoundGraphExecutionReceipt] {
         &self.evidence.graph_receipts
+    }
+    pub fn take_managed_cleanup(
+        &mut self,
+    ) -> Option<
+        Result<
+            worth_query_execution::facade::runtime::WorthQueryDirectRunCleanupReceipt,
+            worth_query_execution::facade::runtime::WorthQueryDirectRunCleanupFailure,
+        >,
+    > {
+        self.evidence.managed_cleanup.take()
+    }
+    pub(super) fn with_managed_cleanup(
+        mut self,
+        cleanup: Result<
+            worth_query_execution::facade::runtime::WorthQueryDirectRunCleanupReceipt,
+            worth_query_execution::facade::runtime::WorthQueryDirectRunCleanupFailure,
+        >,
+    ) -> Self {
+        self.evidence.managed_cleanup = Some(cleanup);
+        self
     }
 }

@@ -1,3 +1,5 @@
+#![allow(dead_code)] // This fixture is compiled by several independent certification targets.
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 

@@ -7,6 +7,46 @@ impl WorthQueryWorkspace {
         self.runtime.query_execution_runtime()
     }
 
+    pub(crate) fn admit_managed_direct_run(
+        &self,
+        operation: &worth_query_execution::facade::runtime::WorthQueryExecutionBoundOperationAuthority,
+        product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+        attempt: worth_query_execution::facade::provider_session::WorthQueryDirectExecutionResourceAttempt,
+    ) -> Result<
+        worth_query_execution::facade::runtime::WorthQueryAdmittedDirectRun,
+        worth_query_execution::facade::runtime::WorthQueryManagedDirectRunAdmissionFailure,
+    > {
+        let request =
+            worth_query_execution::facade::runtime::WorthQueryManagedTruthReadRequest::for_product(
+                product,
+                worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
+            );
+        self.runtime
+            .installed_product
+            .managed_run_admission(&self.runtime.execution_runtime)
+            .admit_direct(operation, attempt, request)
+    }
+
+    pub(crate) fn admit_managed_workflow_run(
+        &self,
+        operation: &worth_query_execution::facade::runtime::WorthQueryExecutionBoundOperationAuthority,
+        product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+        attempt: worth_query_execution::facade::provider_session::WorthQueryWorkflowExecutionResourceAttempt,
+    ) -> Result<
+        worth_query_execution::facade::runtime::WorthQueryAdmittedWorkflowRun,
+        worth_query_execution::facade::runtime::WorthQueryManagedWorkflowRunAdmissionFailure,
+    > {
+        let request =
+            worth_query_execution::facade::runtime::WorthQueryManagedTruthReadRequest::for_product(
+                product,
+                worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
+            );
+        self.runtime
+            .installed_product
+            .managed_run_admission(&self.runtime.execution_runtime)
+            .admit_workflow(operation, attempt, request)
+    }
+
     pub fn observe_operating_world(
         &self,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,

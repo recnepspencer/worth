@@ -56,8 +56,8 @@ mod touched_graph_closure;
 mod unwind_custody;
 
 use program_fixture::{
-    admitted_mutation_free_program, admitted_program, admitted_program_with_emit,
-    admitted_program_with_expected_status,
+    admitted_mutation_free_program, admitted_program, admitted_program_on_selected,
+    admitted_program_with_emit, admitted_program_with_expected_status,
 };
 
 pub(in crate::domain_computation::primary_graph) fn assert_product_basis_stale(

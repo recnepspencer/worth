@@ -1,3 +1,5 @@
+#![allow(dead_code)] // This fixture is compiled by several independent certification targets.
+
 use worth_query_host::facade::{declaration, primary_graph};
 
 use super::super::{adapters::block_on, schema::*};

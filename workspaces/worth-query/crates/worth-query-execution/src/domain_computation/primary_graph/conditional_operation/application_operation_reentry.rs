@@ -51,10 +51,6 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
     SettlementDeferred(
         crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
     ),
-    SettlementSnapshotCapacityBackpressured {
-        deferred: crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
-        maximum_active_snapshots: usize,
-    },
     Indeterminate(String),
 }
 

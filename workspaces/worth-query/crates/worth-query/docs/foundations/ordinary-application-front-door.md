@@ -85,6 +85,43 @@ typed declaration
     -> governed publication or legal recovery action
 ```
 
+For a product-bound read or mutation, the ordinary host route begins with one
+explicit World-owned branch selection:
+
+```rust,ignore
+let branch = application.current_world();
+let selected = application.on_branch(branch).select()?;
+let admitted = selected.admit_application_query(
+    &query,
+    &access,
+    ApplicationQueryParameterSet::new(),
+    controls,
+)?;
+let result = application.execute_application_query_one_shot(admitted)?;
+
+let outcome = application
+    .on_branch(branch)
+    .transaction()
+    .apply(admitted_change)
+    .commit()?;
+```
+
+`selected` pins the exact composite occurrence. Query carries its World,
+Relational, Signal, and Bridge affinity through admission and execution; later
+phases do not resolve latest product truth again. The complete executable
+[ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
+constructs the real declaration and host runtime, reads the selected branch,
+performs a World publication, delivers the patch, executes its conditional,
+checks a retained read, and closes runtime resources.
+
+Match every commit terminal. `Committed` and `AlreadyCommitted` carry the
+canonical product receipt. `ProductUnpublished`, `Deferred`,
+`SettlementDeferred`, and `Indeterminate` retain owner-specific recovery
+custody. `NoEffect`, `Stale`, `ProductStale`, `Cancelled`, `TimedOut`, `Denied`,
+and `Aborted` are distinct application decisions. `require_committed()` is a
+convenience: its error is the original typed terminal and must be handled rather
+than erased.
+
 Every later governed transition rechecks the current evidence it depends on.
 Continuation, live delivery, approval, recovery, and conditional-operation
 re-entry therefore do not inherit stale permission from an earlier request.
@@ -264,6 +301,10 @@ explains a transition; it does not perform the transition.
 - Recovery handles and temporal wake state are runtime-local. Durable restore
   belongs to the Store handoff; temporal wakes reconstruct from surviving
   authoritative domain truth rather than persisted wake handles.
+- Product branches, exact composite history, retained observations, and pending
+  cleanup are memory-resident. Process loss releases those live capabilities;
+  restart durability requires Store-owned descriptive state followed by fresh
+  owner readmission.
 - Linear undo and redo remain provisional experiments. Milestone 9.18 owns any
   accepted public correction-history contract.
 - Certification replay remains certification-only.

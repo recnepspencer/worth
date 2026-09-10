@@ -148,7 +148,6 @@ where
         wake.application_attempted = false;
         wake.application_admission_canonical_work =
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero();
-        let mut settlement_retry = None;
         let decision = std::mem::replace(
             &mut wake.decision,
             WorthQueryRetainedConditionalDecision::Failed(
@@ -160,10 +159,6 @@ where
                 evidence,
                 deferred,
             ) => match settlement_reentry::repair(runtime, deferred) {
-                WorthQuerySettlementReentry::RetryApplicationPublication(deferred) => {
-                    settlement_retry = Some(deferred);
-                    evidence
-                }
                 WorthQuerySettlementReentry::AlreadyCommitted => {
                     complete_wake(
                         bridge,
@@ -249,53 +244,24 @@ where
         };
         let identity = wake.due.intent_identity().as_str();
         let Some(candidate) = candidates.get(identity) else {
-            if settlement_retry.is_some() {
-                wake.decision = WorthQueryRetainedConditionalDecision::OperationIndeterminate(
-                    evidence,
-                    "settled publication retry lost its retained temporal candidate".to_string(),
-                );
-                counts.indeterminate += 1;
-            } else {
-                wake.decision =
-                    WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence);
-            }
+            wake.decision =
+                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence);
             continue;
         };
         if !wake_matches_candidate(wake, candidate.candidate()) {
-            if settlement_retry.is_some() {
-                wake.decision = WorthQueryRetainedConditionalDecision::OperationIndeterminate(
-                    evidence,
-                    "settled publication retry no longer matches its temporal candidate"
-                        .to_string(),
-                );
-                counts.indeterminate += 1;
-            } else {
-                wake.decision =
-                    WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence);
-            }
+            wake.decision =
+                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence);
             continue;
         }
         wake.application_attempted = true;
-        let attempt = settlement_retry.map_or_else(
-            || {
-                reenter_temporal_operation(
-                    runtime,
-                    product,
-                    operation,
-                    access,
-                    execution,
-                    candidate.candidate(),
-                    runtime_binding,
-                )
-            },
-            |deferred| {
-                settlement_reentry::retry_application_publication(
-                    runtime,
-                    candidate.candidate(),
-                    runtime_binding,
-                    deferred,
-                )
-            },
+        let attempt = reenter_temporal_operation(
+            runtime,
+            product,
+            operation,
+            access,
+            execution,
+            candidate.candidate(),
+            runtime_binding,
         );
         wake.application_admission_canonical_work = attempt.admission_canonical_work;
         apply_reentry_outcome(

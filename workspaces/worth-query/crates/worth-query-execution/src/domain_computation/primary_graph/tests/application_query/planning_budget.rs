@@ -69,7 +69,8 @@ fn nested_query_total_work_exhaustion_returns_no_plan_authority() {
 
 #[test]
 fn caller_work_cannot_widen_the_installed_index_profile() {
-    let resources = WorthQueryApplicationQueryResourceProfile::bounded(1, 4_096, 100_000).unwrap();
+    let resources =
+        WorthQueryApplicationQueryResourceProfile::bounded(1, 4_096, 100_000, 64).unwrap();
     let world = installed_authorization_world_with_resource_profile(resources);
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -126,7 +127,7 @@ fn caller_work_cannot_widen_the_installed_index_profile() {
 fn installer_profile_changes_admission_without_changing_query_identity() {
     let default_world = installed_authorization_world(true);
     let resources =
-        WorthQueryApplicationQueryResourceProfile::bounded(32_768, 4_096, 32_768).unwrap();
+        WorthQueryApplicationQueryResourceProfile::bounded(32_768, 4_096, 32_768, 64).unwrap();
     let world = installed_authorization_world_with_resource_profile(resources);
     assert_eq!(
         installed_nested_query(&default_world).identity(),

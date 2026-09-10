@@ -129,7 +129,8 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 self.counters,
             ));
         }
-        self.artifact_authority
+        self.managed_run()
+            .artifacts()
             .transfer_admission(predecessor_stage, stage_identity)
             .map_err(|denial| {
                 WorthQueryWorkflowAdvanceDenial::new(

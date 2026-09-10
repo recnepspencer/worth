@@ -102,6 +102,12 @@ impl WorthQueryWorkflowRunAffinity {
         }
     }
 
+    pub(in crate::domain_computation::managed_run) fn release_initial(
+        self,
+    ) -> crate::domain_computation::WorthQueryWorkflowExecutionAttemptReleaseReceipt {
+        self.attempt.release()
+    }
+
     pub(in crate::domain_computation::managed_run) fn logical_identity(&self) -> &str {
         &self.logical
     }
@@ -132,6 +138,13 @@ impl WorthQueryWorkflowRunAffinity {
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan
     {
         self.attempt.operation_resources()
+    }
+
+    pub(in crate::domain_computation::managed_run) fn resources(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryAdmittedWorkflowResourcePlan
+    {
+        self.attempt.resources()
     }
 
     pub(in crate::domain_computation::managed_run) fn evidence(
@@ -264,6 +277,21 @@ impl WorthQueryWorkflowRunAffinity {
             .bind_graph_provider_call(graph_authority, request, evidence, resources)
     }
 
+    pub(in crate::domain_computation::managed_run) fn bind_graph_commit_call(
+        &self,
+        graph_authorities: &[&worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority],
+        request: crate::domain_computation::WorthQueryGraphCommitCallRequest,
+        evidence: &WorthQueryExecutionResourceAttemptEvidence,
+        resources: Arc<worth_query_installation::facade::WorthQueryExecutionResourceEnvelope>,
+    ) -> Result<
+        crate::domain_computation::WorthQueryGraphCommitCall,
+        crate::domain_computation::WorthQueryGraphCallBindingDenial,
+    > {
+        self.attempt
+            .provider_session_for_managed_run(&WorthQueryWorkflowRunTransitionPermit::mint())
+            .bind_graph_commit_call(graph_authorities, request, evidence, resources)
+    }
+
     pub(in crate::domain_computation::managed_run) fn completed_evidence_authority(
         &self,
     ) -> &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority {
@@ -285,6 +313,12 @@ impl WorthQueryWorkflowRunAffinity {
     > {
         self.attempt
             .bind_workflow_artifacts_for_managed_run(&WorthQueryWorkflowRunTransitionPermit::mint())
+    }
+
+    pub(in crate::domain_computation::managed_run) fn binding_authority(
+        &self,
+    ) -> &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority {
+        self.attempt.binding_authority()
     }
 
     pub(in crate::domain_computation::managed_run) fn managed_stage_resources_and_evidence(

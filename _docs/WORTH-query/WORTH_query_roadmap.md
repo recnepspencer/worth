@@ -5233,7 +5233,12 @@ without a second Signal graph or an erased compatibility lane.
 
 #### Milestone 9.17.3: Query Product-Branch Carriage, Facade, And Certification
 
-Status: Phase 1 is certified. Later phases have not started.
+Status: Closed on 2026-09-10. Phases 1-6 and cumulative certification are
+complete. The ordinary and advanced examples and the bounded and scheduled
+model/cost courts run through the public Query/Bridge/Signal/Runtime World
+composition root. The scoped strict lint, line-cap, facade, boundary, and
+generated-context gates pass; the existing unrelated Signal unit-test compile
+debt remains outside this milestone's dirty set.
 
 Query carries the exact admitted composite basis and performed successor
 through every plan/session/read-set/proposal/invariant/effect/terminal/receipt/

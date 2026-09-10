@@ -30,8 +30,6 @@ pub struct WorthQueryConsumerInvalidationSemanticProjection {
     affected_native_keys: Vec<WorthQueryInvalidationSemanticAccessKey>,
     conditional_path:
         Vec<crate::domain_installation::operation_execution::WorthQueryConditionalTraceMeaning>,
-    conditional_decision:
-        Option<crate::domain_installation::operation_execution::WorthQueryConditionalTraceMeaning>,
     disposition: super::super::WorthQueryConsumerInvalidationDisposition,
     cause: super::super::WorthQueryConsumerInvalidationCause,
     locality: super::super::WorthQueryConsumerInvalidationLocality,
@@ -55,13 +53,6 @@ impl WorthQueryConsumerInvalidationSemanticProjection {
         &self,
     ) -> &[crate::domain_installation::operation_execution::WorthQueryConditionalTraceMeaning] {
         &self.conditional_path
-    }
-
-    pub const fn conditional_decision(
-        &self,
-    ) -> Option<&crate::domain_installation::operation_execution::WorthQueryConditionalTraceMeaning>
-    {
-        self.conditional_decision.as_ref()
     }
 
     pub const fn disposition(&self) -> super::super::WorthQueryConsumerInvalidationDisposition {
@@ -90,16 +81,12 @@ impl super::super::WorthQueryConsumerInvalidationDelta {
             .iter()
             .map(crate::domain_installation::operation_execution::workflow_conditional_trace::conditional_trace_meaning)
             .collect();
-        let conditional_decision = self
-            .conditional_decision()
-            .map(crate::domain_installation::operation_execution::workflow_conditional_trace::conditional_trace_meaning);
         let identity = super::encoding::invalidation_identity(self, &impact, &affected_native_keys);
         WorthQueryConsumerInvalidationSemanticProjection {
             identity,
             impact,
             affected_native_keys,
             conditional_path,
-            conditional_decision,
             disposition: self.disposition(),
             cause: self.cause().clone(),
             locality: self.locality(),

@@ -14,6 +14,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProductIdempot
 }
 
 impl WorthQueryProductIdempotencyAffinity {
+    pub(in crate::domain_computation::primary_graph) const fn incarnation(
+        &self,
+    ) -> ProductBranchIncarnation {
+        self.incarnation
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_observation(
         observation: &ProductBranchObservation,
     ) -> Self {

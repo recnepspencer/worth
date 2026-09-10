@@ -35,12 +35,15 @@ mod product_operation;
 pub use product_operation::{
     WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedChange,
     WorthQueryApplicationConditionalDefinitionAdmissionDenial,
+    WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
+    WorthQueryApplicationProductBranchCleanupFailure,
     WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
     WorthQueryAppliedProductTransaction, WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome,
     WorthQueryPerformedConditionalDefinitionPublication, WorthQueryProductEntry,
-    WorthQueryProductQueryControls, WorthQueryProductTransaction,
-    WorthQueryProductTransactionCommitError, WorthQuerySelectedProductOperation,
+    WorthQueryProductHistory, WorthQueryProductHistoryEntry, WorthQueryProductQueryControls,
+    WorthQueryProductTransaction, WorthQueryProductTransactionCommitError,
+    WorthQuerySelectedProductOperation,
 };
 mod provider;
 mod resolution;
@@ -241,7 +244,7 @@ pub(in crate::domain_computation) use tests::recoverable_commit_support::{
     committed_recoverable_application, recoverable_application_world,
     two_recoverable_application_commits,
 };
-pub(in crate::domain_computation) use provider::WorthQueryApplicationCommitSerialization;
+pub(in crate::domain_computation) use provider::WorthQueryApplicationBranchCommitCoordination;
 pub(in crate::domain_computation) use provider::WorthQueryCommittedDispatchOutboxBinding;
 #[cfg(test)]
 pub(in crate::domain_computation) use provider::{

@@ -12,7 +12,6 @@ pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotLeaseDenial 
 pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
     handle: WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: Option<SnapshotHandle>,
-    basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     product: crate::basis::WorthQueryProductBranchLease,
     pub(super) layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
 }
@@ -46,7 +45,6 @@ impl WorthQueryApplicationSnapshotLease {
         Ok(Self {
             handle,
             snapshot: Some(snapshot),
-            basis,
             product,
             layout,
         })
@@ -77,7 +75,6 @@ impl WorthQueryApplicationSnapshotLease {
         Self {
             handle,
             snapshot: Some(snapshot),
-            basis,
             product,
             layout,
         }
@@ -97,12 +94,6 @@ impl WorthQueryApplicationSnapshotLease {
 
     pub(in crate::domain_computation) fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
         &self.handle
-    }
-
-    pub(in crate::domain_computation) fn basis_descriptor(
-        &self,
-    ) -> &worth_relational::facade::branch::RelationalBranchBasisDescriptor {
-        self.basis.descriptor()
     }
 
     pub(in crate::domain_computation) fn release(mut self) -> bool {

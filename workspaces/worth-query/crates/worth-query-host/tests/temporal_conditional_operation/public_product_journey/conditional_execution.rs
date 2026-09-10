@@ -138,6 +138,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         source_branch,
         "changed-on-a",
         Arc::new(replacement),
+        1,
     );
     assert_eq!(
         publication
@@ -295,9 +296,9 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     );
 
     for (label, branch, expected_suppressed, expected_clocks) in [
-        ("B", sibling.clone(), 1, 3),
-        ("new A occurrence", source_branch.clone(), 0, 4),
-        ("B-return", sibling.clone(), 1, 4),
+        ("B", sibling, 1, 3),
+        ("new A occurrence", source_branch, 0, 4),
+        ("B-return", sibling, 1, 4),
     ] {
         let outcome = world
             .application
@@ -358,8 +359,8 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         assert_security_work(result.receipt());
     };
     for (branch, expected) in [
-        (sibling.clone(), "payload"),
-        (source_branch.clone(), "changed-on-a"),
+        (sibling, "payload"),
+        (source_branch, "changed-on-a"),
         (sibling, "payload"),
     ] {
         assert_product_input(branch, expected);
@@ -375,8 +376,6 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     );
     assert_security_work(retained.receipt());
     drop(retained);
-    drop(access);
-    drop(scope);
     assert_eq!(
         world
             .application

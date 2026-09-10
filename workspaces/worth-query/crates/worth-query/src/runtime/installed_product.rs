@@ -8,6 +8,7 @@ use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 pub(super) struct WorthQueryInstalledProduct {
     pub(super) world: WorthQueryProductRuntime,
     pub(super) conditional: BridgeSealedRuntimeAssembly,
+    managed_execution_bridge: worth_runtime_bridge::facade::RuntimeBridge,
     conditional_evaluations: conditional_evaluation::WorthQueryConditionalEvaluationRegistry,
 }
 
@@ -63,6 +64,7 @@ impl WorthQueryInstalledProduct {
     pub(super) fn install(
         backend: &dyn super::WorthQueryRuntimeBackend,
         mut conditional: BridgeSealedRuntimeAssembly,
+        managed_execution_bridge: worth_runtime_bridge::facade::RuntimeBridge,
         cache_budget: super::WorthQueryConditionalEvaluationCacheBudget,
         product_world_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
     ) -> Result<Self, super::WorthQueryRuntimeError> {
@@ -91,7 +93,16 @@ impl WorthQueryInstalledProduct {
         Ok(Self {
             world,
             conditional,
+            managed_execution_bridge,
             conditional_evaluations,
         })
+    }
+
+    pub(super) fn managed_run_admission<'runtime>(
+        &'runtime self,
+        query: &'runtime worth_query_execution::facade::runtime::WorthQueryExecutionRuntime,
+    ) -> worth_query_execution::facade::runtime::WorthQueryManagedRunAdmission<'runtime> {
+        self.world
+            .integration_managed_run_admission(query, &self.managed_execution_bridge)
     }
 }

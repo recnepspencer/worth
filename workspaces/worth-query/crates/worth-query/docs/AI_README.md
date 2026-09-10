@@ -726,10 +726,12 @@ can install a performed composite publication. Component movement without that
 installation remains `ProductUnpublished`, with settlement or cleanup obligations;
 it is neither rollback nor permission to run a missing sibling or adopt a successor.
 
-This owner is implemented in milestone 9.17.2. Query carriage, dispatch-outbox
-gating on performed composite publication, and the public product-branch facade
-remain milestone 9.17.3 work. The application path above still describes the
-current Query runtime; importing World directly does not provide that integration.
+Query's host facade now selects those World-owned product branches, carries the
+exact composite observation through reads and admitted application changes, and
+returns World's canonical terminal unchanged. Dispatch-outbox eligibility is
+bound to the original performed product occurrence. A caller cannot substitute
+a branch token, a component basis, or a fresh latest observation after
+admission. Importing World directly remains outside the Query audience route.
 See the [Runtime World contract](../../../../../crates/worth-runtime-world/README.md)
 for construction, outcomes, history, retention, and recovery.
 
@@ -1159,7 +1161,7 @@ Use this table when deciding where a change belongs.
 | Which scoped recomputation did the lower runtime actually perform? | Signal performed execution receipt |
 | Which projection, membership, ordering, group, or window consequence is required? | Query impact admission and maintenance |
 | What did an installed policy condition evaluate to? | Signal |
-| Which Relational and Signal bases form the current product? | Runtime World composition authority; Query integration remains milestone 9.17.3 |
+| Which Relational and Signal bases form the current product? | Runtime World composition authority, selected and carried through Query's host facade |
 | What generic proof progression or readmission law applies? | `worth-proof` |
 | What exact canonical value, provenance, receipt, or portable basis represents this meaning? | Foundational |
 | What application operation or query was declared? | Application domain |

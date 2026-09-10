@@ -83,6 +83,14 @@ pub(crate) fn direct_authority(
     )
 }
 
+pub(crate) fn authority_for_product(
+    mut authority: WorthQueryExecutionBoundOperationAuthority,
+    product: &crate::basis::WorthQueryProductBranchLease,
+) -> WorthQueryExecutionBoundOperationAuthority {
+    authority.application_product_observation = Some(product.observation().clone());
+    authority
+}
+
 pub(crate) fn direct_authority_with_graph(
     runtime: &crate::domain_computation::WorthQueryExecutionRuntime,
     plan: &WorthQueryAdmittedExecutionResourcePlan,

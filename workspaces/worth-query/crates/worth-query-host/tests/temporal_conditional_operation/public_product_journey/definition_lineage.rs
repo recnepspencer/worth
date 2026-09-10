@@ -48,7 +48,7 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
     let (published_a, published_b) = std::thread::scope(|scope| {
         let world_ref: &CourtroomWorld = &world;
         let start_a = Arc::clone(&start);
-        let product_a_for_publish = product_a.clone();
+        let product_a_for_publish = product_a;
         let publish_a = scope.spawn(move || {
             let (replacement, _) = ReplacementPredicate::controlled(world_ref.contacts.clone());
             let selected = world_ref
@@ -66,7 +66,7 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
                 .unwrap()
         });
         let start_b = Arc::clone(&start);
-        let product_b_for_publish = product_b.clone();
+        let product_b_for_publish = product_b;
         let publish_b = scope.spawn(move || {
             let (replacement, _) = ReplacementPredicate::controlled(world_ref.contacts.clone());
             let selected = world_ref

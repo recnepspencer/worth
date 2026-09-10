@@ -13,6 +13,8 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFaul
     FailedPostCommitSnapshot,
     #[cfg(test)]
     UndeclaredApplicationTouch,
+    #[cfg(test)]
+    PanickedPendingApplicationPublication,
 }
 
 pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFaultPort:
@@ -40,7 +42,7 @@ pub(in crate::domain_computation::primary_graph) fn production_fault_port(
 ) -> Arc<dyn WorthQueryPrimaryGraphFaultPort> {
     #[cfg(feature = "test-primary-graph-faults")]
     {
-        return Arc::new(WorthQueryScriptedPrimaryGraphFaults::default());
+        Arc::new(WorthQueryScriptedPrimaryGraphFaults::default())
     }
     #[cfg(not(feature = "test-primary-graph-faults"))]
     Arc::new(WorthQueryNoPrimaryGraphFaults)
@@ -49,7 +51,7 @@ pub(in crate::domain_computation::primary_graph) fn production_fault_port(
 #[cfg(feature = "test-primary-graph-faults")]
 #[derive(Default)]
 struct WorthQueryScriptedPrimaryGraphFaults {
-    scheduled: std::sync::atomic::AtomicU8,
+    scheduled: std::sync::atomic::AtomicU16,
 }
 
 #[cfg(feature = "test-primary-graph-faults")]
@@ -81,7 +83,7 @@ impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
 }
 
 #[cfg(feature = "test-primary-graph-faults")]
-const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u8 {
+const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
     match fault {
         WorthQueryPrimaryGraphFault::LostCommitResponse => 1 << 0,
         WorthQueryPrimaryGraphFault::RejectedSessionPreparation => 1 << 1,
@@ -92,5 +94,7 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u8 {
         WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot => 1 << 7,
         #[cfg(test)]
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
+        #[cfg(test)]
+        WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
     }
 }

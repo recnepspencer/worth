@@ -186,7 +186,9 @@ impl BridgeSignalServiceBinding {
         match snapshot {
             Some(snapshot) => self
                 .source_owner
-                .admit(snapshot.snapshot_identity().as_str())
+                .admit(super::source_projection::conditional_source_projection(
+                    snapshot.snapshot_identity(),
+                ))
                 .into(),
             None => ConditionalEvaluationSource::NoRelationalSource,
         }

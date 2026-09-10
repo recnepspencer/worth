@@ -114,9 +114,10 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         ) {
             return Err("application attempt registration reservation was replaced");
         }
-        *entry = WorthQueryApplicationAttemptEntry::Registered(
-            WorthQueryApplicationAttemptState::registered(attempt),
-        );
+        *entry = WorthQueryApplicationAttemptEntry::Registered {
+            identity: reservation.identity,
+            state: WorthQueryApplicationAttemptState::registered(attempt),
+        };
         Ok(())
     }
 

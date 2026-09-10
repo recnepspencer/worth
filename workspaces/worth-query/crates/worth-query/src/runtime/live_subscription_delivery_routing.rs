@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
 use crate::memory_workspace::{WorthQueryMutationKind, WorthQueryMutationReceipt};
 use crate::subscription::{
@@ -27,65 +25,6 @@ use super::{
     WorthQueryLiveGraphReadMaintenanceBudget, WorthQueryLiveGraphReadMaintenanceReceipt,
     WorthQueryRuntimeError,
 };
-
-pub(crate) struct ClassifiedLiveSubscriptionRoute<'a> {
-    target: &'a WorthQueryLiveArtifactTarget,
-    receipt: &'a WorthQueryMutationReceipt,
-    impact: crate::domain_installation::WorthQueryImpactClass,
-    routing_work: WorthQueryLiveMutationRoutingWork,
-}
-
-impl<'a> ClassifiedLiveSubscriptionRoute<'a> {
-    pub(crate) fn new(
-        target: &'a WorthQueryLiveArtifactTarget,
-        receipt: &'a WorthQueryMutationReceipt,
-        impact: crate::domain_installation::WorthQueryImpactClass,
-        routing_work: WorthQueryLiveMutationRoutingWork,
-    ) -> Self {
-        Self {
-            target,
-            receipt,
-            impact,
-            routing_work,
-        }
-    }
-}
-
-pub(super) fn route_classified_live_subscription_delivery(
-    active_subscriptions: &mut ActiveSubscriptionRuntime,
-    live_subscriptions: &mut BTreeMap<
-        WorthQueryLiveArtifactTarget,
-        WorthQueryRuntimeLiveSubscriptionState,
-    >,
-    route: ClassifiedLiveSubscriptionRoute<'_>,
-) -> Result<bool, WorthQueryRuntimeError> {
-    let Some(state) = live_subscriptions.get_mut(route.target) else {
-        return Err(WorthQueryRuntimeError::MissingLiveSubscription(
-            route.target.view_name().to_string(),
-        ));
-    };
-    let Some(delta_kind) =
-        maintenance_delta_kind_for_classified_impact(route.impact, &state.request)
-    else {
-        return Ok(false);
-    };
-    let mut affected = Vec::with_capacity(1);
-    for delta in &route.receipt.deltas {
-        RelevantLiveSubscriptionDeltaRoute {
-            active_subscriptions,
-            state,
-            target: route.target,
-            receipt: route.receipt,
-            delta,
-            delta_kind,
-            preclassified_installed_impact: None,
-            routing_work: route.routing_work,
-            affected: &mut affected,
-        }
-        .route()?;
-    }
-    Ok(!affected.is_empty())
-}
 
 struct RelevantLiveSubscriptionDeltaRoute<'a> {
     active_subscriptions: &'a mut ActiveSubscriptionRuntime,

@@ -37,7 +37,7 @@ pub fn reinstallation_reconstructs_active_authoritative_work() {
     assert!(lower.correspondence().exact_index_parity());
     assert_eq!(receipt.reconstructed_binding_count(), 1);
     assert_eq!(receipt.reconstructed_intent_count(), 1);
-    let observed = observe(&mut world);
+    let observed = observe(&world);
     assert_eq!(
         observed.committed_operation_count(),
         1,
@@ -76,15 +76,15 @@ pub fn reinstallation_restores_no_terminal_work() {
     let mut cancelled = CourtroomWorld::publish("ready");
     cancelled.amend_intent(2, "cancelled", "ready");
     cancelled.reinstall_conditional_runtime().unwrap();
-    let receipt = observe(&mut cancelled);
+    let receipt = observe(&cancelled);
     assert_eq!(receipt.committed_operation_count(), 0);
     assert_eq!(cancelled.contacts.snapshot(), (0, 0, 0, 0));
 
     let mut completed = CourtroomWorld::publish("ready");
-    let _ = observe(&mut completed);
+    let _ = observe(&completed);
     let contacts = completed.contacts.snapshot();
     completed.reinstall_conditional_runtime().unwrap();
-    let receipt = observe(&mut completed);
+    let receipt = observe(&completed);
     assert_eq!(receipt.committed_operation_count(), 1);
     assert_eq!(completed.contacts.snapshot(), contacts);
 }
@@ -92,7 +92,7 @@ pub fn reinstallation_restores_no_terminal_work() {
 pub fn reinstallation_after_eligibility_retries_freshly() {
     let mut world = CourtroomWorld::publish("ready");
     world.preconditions_panic.set(true);
-    let failed = observe(&mut world);
+    let failed = observe(&world);
     assert_eq!(
         failed.failed_operation_count(),
         1,
@@ -101,7 +101,7 @@ pub fn reinstallation_after_eligibility_retries_freshly() {
     );
     world.preconditions_panic.set(false);
     world.reinstall_conditional_runtime().unwrap();
-    let retried = observe(&mut world);
+    let retried = observe(&world);
     assert_eq!(
         retried.committed_operation_count(),
         1,
@@ -112,10 +112,10 @@ pub fn reinstallation_after_eligibility_retries_freshly() {
 
 pub fn reinstallation_after_commit_cannot_duplicate_effect() {
     let mut world = CourtroomWorld::publish("ready");
-    assert_eq!(observe(&mut world).committed_operation_count(), 1);
+    assert_eq!(observe(&world).committed_operation_count(), 1);
     let contacts = world.contacts.snapshot();
     world.reinstall_conditional_runtime().unwrap();
-    let second = observe(&mut world);
+    let second = observe(&world);
     assert_eq!(second.committed_operation_count(), 1);
     assert_eq!(second.already_committed_operation_count(), 0);
     assert_eq!(world.contacts.snapshot(), contacts);
@@ -130,7 +130,7 @@ pub fn reinstallation_revokes_captured_granular_batches() {
     let mut world = CourtroomWorld::publish("blocked");
     let before = world.application.granular_invalidation_installation();
     world.amend_intent(1, "active", "ready");
-    let mut observed = observe(&mut world);
+    let mut observed = observe(&world);
     let batch = observed.take_granular_invalidation_batch();
     assert!(before.admits_batch(&batch));
 
@@ -142,7 +142,7 @@ pub fn reinstallation_revokes_captured_granular_batches() {
 
 pub fn closing_runtime_releases_inventory_and_revokes_handles() {
     let mut world = CourtroomWorld::publish("blocked");
-    let _ = observe(&mut world);
+    let _ = observe(&world);
     let before = world
         .application
         .on_branch(world.application.current_world())
@@ -190,9 +190,9 @@ pub fn closing_runtime_releases_inventory_and_revokes_handles() {
 }
 
 pub fn dropping_runtime_releases_exact_inventory() {
-    let mut world = CourtroomWorld::publish("ready");
+    let world = CourtroomWorld::publish("ready");
     world.preconditions_panic.set(true);
-    let failed = observe(&mut world);
+    let failed = observe(&world);
     assert_eq!(failed.failed_operation_count(), 1);
     let probe = world.application.conditional_runtime_lifecycle_probe();
     let live = probe.live_inventory();

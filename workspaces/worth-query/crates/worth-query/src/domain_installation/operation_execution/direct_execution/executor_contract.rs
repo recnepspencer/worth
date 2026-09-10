@@ -133,7 +133,7 @@ pub struct WorthQueryOperationExecutionContext<'a> {
     installed_read: Option<&'a crate::ordinary::read::WorthQueryReadDeclaration>,
     graph_receipts: &'a [super::WorthQueryBoundGraphExecutionReceipt],
     resources: &'a super::WorthQueryAdmittedExecutionResourcePlan,
-    provider_session: &'a super::WorthQueryExecutionProviderSession,
+    provider_session_identity: &'a str,
 }
 
 /// The execution-scoped workspace surface available to a registered lowering.
@@ -166,7 +166,7 @@ impl<'a> WorthQueryOperationExecutionContext<'a> {
         installed_read: Option<&'a crate::ordinary::read::WorthQueryReadDeclaration>,
         graph_receipts: &'a [super::WorthQueryBoundGraphExecutionReceipt],
         resources: &'a super::WorthQueryAdmittedExecutionResourcePlan,
-        provider_session: &'a super::WorthQueryExecutionProviderSession,
+        provider_session_identity: &'a str,
     ) -> Self {
         Self {
             operation,
@@ -176,7 +176,7 @@ impl<'a> WorthQueryOperationExecutionContext<'a> {
             installed_read,
             graph_receipts,
             resources,
-            provider_session,
+            provider_session_identity,
         }
     }
 
@@ -202,8 +202,8 @@ impl<'a> WorthQueryOperationExecutionContext<'a> {
         self.resources
     }
 
-    pub fn provider_session(&self) -> &super::WorthQueryExecutionProviderSession {
-        self.provider_session
+    pub fn provider_session_identity(&self) -> &str {
+        self.provider_session_identity
     }
 
     pub fn graph_projection(

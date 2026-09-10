@@ -50,6 +50,22 @@ request family does not imply that the active runtime profile admits it.
 
 The query stays the same; the admitted basis changes.
 
+For a product branch, Runtime World owns the selected composite commit and its
+bounded single-parent ancestry. Query may expose current or exact selected
+truth only after World admission. An exact selection remains repeatable while
+the branch advances; asking for current truth is a distinct fresh operation.
+`application.branches().history(branch, maximum)` returns an owner-issued,
+bounded ancestry page. `continue_ancestry(maximum)` follows only the page's
+protected `next_parent_commit()`, and `select(&entry)` admits that exact
+historical product through World before Query can execute a read.
+
+Branch names, commit IDs, component IDs, digests, page cursors, and inspection
+records are descriptive. They cannot mint a product observation or substitute
+one branch's component basis into another. The live history page and admitted
+observations protect exact World resources. A `RuntimeWorldRecoveryCursor` is
+only a descriptive position in the separate recovery catalog and carries no
+retention or recovery authority.
+
 Query owns three linked decisions:
 
 1. which truth world the caller declared

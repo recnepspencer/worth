@@ -173,7 +173,7 @@ where
     let proof = match authority.authorization.authorize_application_commit(
         authority.application(),
         authority.admission(),
-        authority.serialization(),
+        authority.coordination(),
     ) {
         Ok(proof) => proof,
         Err(denial) => {

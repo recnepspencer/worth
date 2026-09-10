@@ -27,13 +27,6 @@ impl WorthQueryControlledTestWorkspace {
             .replace_domain_installation_with_successor_generation()
     }
 
-    /// Injects exact classified-delivery failures after owner impact has been
-    /// proven, for retry transactionality tests.
-    pub fn fail_next_classified_live_emissions(&mut self, count: usize) {
-        self.workspace
-            .inject_classified_live_emission_failures(count);
-    }
-
     /// Test-only hostile control that substitutes owner-installed lowerings
     /// while retaining the recipient Query installation authority.
     pub fn replace_conditional_lowerings_from<D: 'static, O: 'static, F: 'static>(

@@ -102,6 +102,24 @@ pub(crate) trait RuntimeWorldObservationService:
         &self,
         occurrence: crate::identity::ProductBranchIncarnation,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
+
+    fn trace_product_branch_ancestry(
+        &self,
+        occurrence: crate::identity::ProductBranchIncarnation,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<crate::branch::ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial>;
+
+    fn continue_product_branch_ancestry(
+        &self,
+        previous: &crate::branch::ProductBranchHistoryTraversal,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<crate::branch::ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial>;
+
+    fn observe_product_branch_history_entry(
+        &self,
+        history: &crate::branch::ProductBranchHistoryTraversal,
+        index: usize,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
 }
 
 /// Shared internal seam for product-reference creation and retirement. The
@@ -232,7 +250,10 @@ pub(crate) trait RuntimeWorldRecoveryService:
         &self,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
-    ) -> Result<Vec<crate::branch::OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial>;
+    ) -> Result<
+        crate::recovery::ProductUnpublishedCleanup,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    >;
 
     fn continue_effects(
         &self,

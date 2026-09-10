@@ -1,3 +1,5 @@
+#![allow(dead_code)] // This fixture is compiled by several independent certification targets.
+
 use worth_query_host::facade::{primary_graph, product};
 
 use super::super::adapters::{block_on, ReplacementPredicate};
@@ -10,9 +12,10 @@ impl CourtroomWorld {
         branch: product::WorthQueryProductBranch,
         input: &str,
         provider: std::sync::Arc<ReplacementPredicate>,
+        ordinal: u8,
     ) -> primary_graph::WorthQueryApplicationCommitReceipt {
         let selected = self.application.on_branch(branch).select().unwrap();
-        self.change_input_and_conditional_definition_on_selected(selected, input, provider)
+        self.change_input_and_conditional_definition_on_selected(selected, input, provider, ordinal)
     }
 
     fn change_input_and_conditional_definition_on_selected(
@@ -20,6 +23,7 @@ impl CourtroomWorld {
         selected: primary_graph::WorthQuerySelectedProductOperation<'_, TemporalHostSchema>,
         input: &str,
         provider: std::sync::Arc<ReplacementPredicate>,
+        ordinal: u8,
     ) -> primary_graph::WorthQueryApplicationCommitReceipt {
         let schema = self.application.installed_schema();
         let principal_binding = schema
@@ -120,7 +124,10 @@ impl CourtroomWorld {
             .unwrap();
         let change = product::WorthQueryAdmittedChange::new(
             effects.finish().unwrap(),
-            primary_graph::WorthQueryApplicationIdempotencyBinding::new([0x7A; 32], [0x4B; 32]),
+            primary_graph::WorthQueryApplicationIdempotencyBinding::new(
+                [ordinal; 32],
+                [ordinal.wrapping_add(0x40); 32],
+            ),
         );
         self.application
             .on_branch(branch)

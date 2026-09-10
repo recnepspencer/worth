@@ -258,6 +258,7 @@ impl WorthQueryDomainInstallationRegistry {
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn retain_portable_index(
         &self,
     ) -> Arc<worth_query_installation::facade::WorthQueryInstalledPackageIndex> {

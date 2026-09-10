@@ -205,8 +205,8 @@ fn execute_exact_completion(
     workspace: &mut runtime::WorthQueryWorkspace,
     expected_graph_receipts: usize,
 ) -> ExactCompletionObservation {
-    let expected_session = admitted.provider_session().identity().to_owned();
-    let expected_attempt = admitted.provider_session().attempt_identity().to_owned();
+    let expected_session = admitted.provider_session_identity().to_owned();
+    let expected_attempt = admitted.provider_session_attempt_identity().to_owned();
     let expected_snapshot = workspace
         .snapshot_identity()
         .evidence_identity()

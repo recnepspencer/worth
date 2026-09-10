@@ -45,6 +45,7 @@ pub(super) fn commit(
         branch,
         retained_preimage,
         preimage_retention_work,
+        _completion,
     } = prepared;
     let _ = mint;
     let product = attempt.affinity().product_publication().clone();

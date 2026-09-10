@@ -151,13 +151,15 @@ fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
         WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
         _ => panic!("acknowledged workflow stage did not complete"),
     };
+    let stream = completion
+        .receipt()
+        .graph_read_stream_evidence()
+        .expect("workflow managed projection should be streamed");
+    assert_eq!(stream.row_count(), 1);
+    assert_eq!(stream.product().rows().count(), 1);
     assert_eq!(
-        completion
-            .receipt()
-            .graph_read_stream_evidence()
-            .expect("workflow managed projection should be streamed")
-            .row_count(),
-        1
+        completion.receipt().work_report().output_retained_bytes(),
+        stream.retained_bytes()
     );
     let terminal = completion
         .into_running()

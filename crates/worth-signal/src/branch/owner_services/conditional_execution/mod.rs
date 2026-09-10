@@ -8,6 +8,7 @@ mod contract_admission;
 mod definition_binding;
 pub(crate) use capture::{SignalConditionalBasisCaptureDenial, SignalRetainedExecutionBasis};
 mod admission_retention;
+mod evaluation_identity;
 mod evaluation_reuse;
 #[cfg(test)]
 mod evaluation_reuse_tests;

@@ -75,8 +75,8 @@ mod tests {
 
     fn assert_one_byte_capacity_boundary(source: SourceEvidence, source_bytes: usize) {
         let contract = contract();
-        let execution_identity = "signal-evaluation:0";
-        let charge = super::evaluation_admission_charge(&contract, &source, execution_identity)
+        let execution_identity = super::super::evaluation_identity::evaluation_identity(0);
+        let charge = super::evaluation_admission_charge(&contract, &source, &execution_identity)
             .expect("finite retained representation");
         let independently_derived = contract.service_retained_bytes() as u64
             + source_bytes as u64

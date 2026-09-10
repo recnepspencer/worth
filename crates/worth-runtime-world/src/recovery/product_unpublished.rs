@@ -231,4 +231,7 @@ impl ProductUnpublishedOwnerEffectsRecord {
     pub(crate) fn deadline(&self) -> Option<RuntimeWorldInstant> {
         self.deadline
     }
+    pub(crate) fn successor_commit(&self) -> Option<&crate::identity::CompositeCommitIdentity> {
+        self.retention.successor_commit()
+    }
 }

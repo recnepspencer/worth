@@ -75,7 +75,9 @@ fn partial_recovery_preserves_movement_rejects_foreign_and_only_releases_obligat
     ));
     let inspected = recovery.inspect_effects(&handle).unwrap();
     drop(inspected);
-    assert!(recovery.release_effects(&handle, 0).unwrap().is_empty());
+    let cleanup = recovery.release_effects(&handle, 0).unwrap();
+    assert!(cleanup.owner_retirement_work().is_empty());
+    assert_eq!(cleanup.unpublished_history_candidates().len(), 1);
     assert!(matches!(
         recovery.inspect_effects(&handle),
         Err(RuntimeWorldRecoveryDenial::MissingRecord)

@@ -12,17 +12,6 @@ pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
-    #[cfg(test)]
-    pub(crate) fn ensure_primary_indexes_current(
-        &self,
-        runtime: &mut RelationalRuntime,
-    ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
-        let Some(head) = runtime.history().historical_latest_commit() else {
-            return Ok(());
-        };
-        self.ensure_primary_indexes_for_commit(runtime, head)
-    }
-
     pub(crate) fn ensure_primary_indexes_for_basis(
         &self,
         runtime: &mut RelationalRuntime,
@@ -43,26 +32,6 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             },
             basis,
         );
-        self.require_complete_build(build)
-    }
-
-    #[cfg(test)]
-    fn ensure_primary_indexes_for_commit(
-        &self,
-        runtime: &mut RelationalRuntime,
-        head: RelationalCommitReceipt,
-    ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
-        let branch = head.branch_id.clone();
-        if self.primary_indexes_are_current(runtime, &head) {
-            return Ok(());
-        }
-        let build = runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
-                source_commit_id: head.commit_id,
-                branch_id: branch,
-                index_ids: self.primary_index_ids.to_vec(),
-            });
         self.require_complete_build(build)
     }
 

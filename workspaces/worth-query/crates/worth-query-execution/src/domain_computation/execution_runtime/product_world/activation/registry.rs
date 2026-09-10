@@ -58,6 +58,14 @@ impl WorthQueryProductActivationRegistry {
             .ok_or(WorthQueryProductActivationDenial::UnknownProductBranch)
     }
 
+    #[cfg(feature = "test-world-operation-control")]
+    pub(crate) fn installed_branch_count(&self) -> usize {
+        self.gates
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
+    }
+
     /// Release only the retired occurrence; delayed cleanup cannot erase a replacement.
     pub(crate) fn release(
         &self,

@@ -352,7 +352,8 @@ fn settle_primary_projection(
         .bind(&installed, TemporalDomainOperation)
         .unwrap();
     let consumer = bound.consumer_projection_contract().unwrap();
-    let settled = bound
+
+    bound
         .admit_execution_resources((), resource_request(), &*workspace)
         .unwrap()
         .execute(workspace)
@@ -373,8 +374,7 @@ fn settle_primary_projection(
         )
         .unwrap()
         .settle()
-        .unwrap();
-    settled
+        .unwrap()
 }
 
 fn resource_request() -> query_domain::WorthQueryExecutionResourceRequest {

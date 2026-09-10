@@ -368,4 +368,15 @@ impl WorthQueryLiveDeliverySource {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .closed = true;
     }
+
+    #[cfg(feature = "test-world-operation-control")]
+    pub(in crate::domain_computation::primary_graph) fn active_subscriber_count(&self) -> usize {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .partitions
+            .values()
+            .map(|partition| partition.subscriber_count)
+            .sum()
+    }
 }

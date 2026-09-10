@@ -53,7 +53,7 @@ impl EffectExecutionReceipt {
             .admitted()
             .normalized()
             .basis_family();
-        let execution_identity = scalar_execution_receipt_identity(&executed, receipt_family);
+        let execution_identity = scalar_execution_receipt_identity(executed, receipt_family);
         let receipt_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -69,7 +69,7 @@ impl EffectExecutionReceipt {
                     &execution_identity,
                 )
                 .seal();
-        let decision_trace = EffectReceiptDecisionTrace::scalar(&executed);
+        let decision_trace = EffectReceiptDecisionTrace::scalar(executed);
         let integrity_markers = EffectReceiptIntegrityMarkers::new(
             executed.artifact(),
             executed.counters(),
@@ -96,7 +96,7 @@ impl EffectExecutionReceipt {
         let declared_effect_family = EffectFamily::Mutation;
         let authority_lane = executed.authority_lane();
         let basis_family = executed.basis_family();
-        let execution_identity = batch_execution_receipt_identity(&executed);
+        let execution_identity = batch_execution_receipt_identity(executed);
         let receipt_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -112,7 +112,7 @@ impl EffectExecutionReceipt {
                     &execution_identity,
                 )
                 .seal();
-        let decision_trace = EffectReceiptDecisionTrace::batch(&executed);
+        let decision_trace = EffectReceiptDecisionTrace::batch(executed);
         let integrity_markers = EffectReceiptIntegrityMarkers::new(
             executed.aggregate_artifact(),
             executed.counters(),

@@ -31,7 +31,9 @@ impl WorthQueryProductRuntime {
                     SignalBranchRetirementReason::DependencyCancellation,
                 ) {
                     TransitionOutcome::Success(plan) => plan,
-                    _ => return Err(WorthQueryProductBranchOwnerCleanupDenial::SignalOwnerDenied),
+                    TransitionOutcome::Denied(_) => {
+                        return Err(WorthQueryProductBranchOwnerCleanupDenial::SignalOwnerDenied);
+                    }
                 };
                 let cancellation = SignalOwnerCancellationSource::new();
                 match self
@@ -39,7 +41,9 @@ impl WorthQueryProductRuntime {
                     .retire_exact(plan, &cancellation.token())
                 {
                     TransitionOutcome::Success(_) => Ok(()),
-                    _ => Err(WorthQueryProductBranchOwnerCleanupDenial::SignalOwnerDenied),
+                    TransitionOutcome::Denied(_) => {
+                        Err(WorthQueryProductBranchOwnerCleanupDenial::SignalOwnerDenied)
+                    }
                 }
             }
         }

@@ -25,8 +25,16 @@ pub mod runtime {
     };
     pub use crate::domain_computation::execution_runtime::*;
     pub use crate::domain_computation::{
+        WorthQueryAdmittedDirectRun, WorthQueryAdmittedWorkflowRun,
+        WorthQueryDirectGraphStepOutcome, WorthQueryDirectRunCleanupFailure,
+        WorthQueryDirectRunCleanupReceipt, WorthQueryDirectRunTerminal,
         WorthQueryExecutionBoundOperationAuthority, WorthQueryExecutionOperationBindingDenial,
-        WorthQueryInstalledDomainExecutionAuthority,
+        WorthQueryInstalledDomainExecutionAuthority, WorthQueryManagedDirectRunAdmissionFailure,
+        WorthQueryManagedGraphCallRequest, WorthQueryManagedRunAdmission,
+        WorthQueryManagedTruthReadRequest, WorthQueryManagedWorkflowRunAdmissionFailure,
+        WorthQueryRunningDirectRun, WorthQueryRunningWorkflowRun,
+        WorthQueryWorkflowGraphStepOutcome, WorthQueryWorkflowRunCleanupOutcome,
+        WorthQueryWorkflowRunCleanupReceipt, WorthQueryWorkflowRunTerminal,
     };
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity,
@@ -385,10 +393,5 @@ pub mod integration {
         evidence: &worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
     ) -> crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision {
         crate::domain_computation::primary_graph::classify_bridge_signal(evidence)
-    }
-
-    #[doc(hidden)]
-    pub mod legacy_provider_execution {
-        pub use crate::domain_computation::provider_session::graph_provider::bounded_step::legacy_one_shot::execute_legacy_one_shot;
     }
 }

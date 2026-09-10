@@ -7,7 +7,7 @@ use super::super::fixture::{
 use super::{AccountStatus, TouchAccountOperation};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationEntityIdentity,
-    WorthQueryAuthenticatedPrincipal,
+    WorthQueryAuthenticatedPrincipal, WorthQuerySelectedProductOperation,
 };
 
 type Schema = super::super::fixture::IdentityExecutionSchema;
@@ -138,6 +138,28 @@ pub(super) fn admitted_program_with_expected_status(
     )
 }
 
+pub(super) fn admitted_program_on_selected(
+    world: &World,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    replacement: &str,
+) -> Program {
+    admitted_program_from_selected(
+        world,
+        selected,
+        principal,
+        account,
+        request,
+        ProgramOptions {
+            replacement,
+            emissions: Vec::new(),
+            preconditions: Preconditions::new(),
+        },
+    )
+}
+
 struct ProgramOptions<'a> {
     replacement: &'a str,
     emissions: Vec<&'a str>,
@@ -151,13 +173,24 @@ fn admitted_program_from_options(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     options: ProgramOptions<'_>,
 ) -> Program {
+    let selected = world.selected_product();
+    admitted_program_from_selected(world, &selected, principal, account, request, options)
+}
+
+fn admitted_program_from_selected(
+    world: &World,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    options: ProgramOptions<'_>,
+) -> Program {
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
-    let admission = world
-        .selected_product()
+    let admission = selected
         .authorize_operation(
             principal,
             account,

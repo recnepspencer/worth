@@ -33,7 +33,7 @@ pub(super) fn admit_live_managed_basis<Schema>(
     let attempt_identity = format!("application-query-live:{attempt}");
     let binding =
         WorthQueryManagedLowerBinding::new(subject, &attempt_identity, live.resource_envelope());
-    let request = WorthQueryManagedTruthReadRequest::new(
+    let request = WorthQueryManagedTruthReadRequest::from_relational_basis(
         descriptor,
         worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
     );

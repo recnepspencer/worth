@@ -10,12 +10,15 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    let serialization = application.primary_provider.serialize_application_commit();
     let Some(product) = admission.graph_work().mutation_product() else {
         return Some(denied(DenialStage::DecisionReadSet));
     };
     let product = product.publication_binding();
-    let proof = match application.authorize_retained_idempotency(admission, &serialization) {
+    let commit_lane = application
+        .primary_provider
+        .application_branch_commit_lane(product.observation());
+    let coordination = commit_lane.enter();
+    let proof = match application.authorize_retained_idempotency(admission, &coordination) {
         Ok(proof) => proof,
         Err(denial) => {
             return Some(commit_outcome_from_authorization_denial(

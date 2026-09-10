@@ -120,6 +120,49 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         pending
     }
 
+    pub(super) fn pending_signal_references(
+        &self,
+        identity: u64,
+    ) -> Vec<worth_signal::facade::branch::ManagedSignalBranchReference> {
+        let entry = lock(&self.state).entries.get(&identity).cloned();
+        let Some(entry) = entry else {
+            return Vec::new();
+        };
+        let references = lock(&entry.record)
+            .as_ref()
+            .map(|record| {
+                record
+                    .pending
+                    .iter()
+                    .filter_map(|work| match work {
+                        worth_runtime_world::facade::OwnerRetirementWork::SignalBranchRetirement {
+                            reference,
+                            ..
+                        } => Some(reference.clone()),
+                        worth_runtime_world::facade::OwnerRetirementWork::RelationalBranchRetirement {
+                            ..
+                        } => None,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        references
+    }
+
+    pub(super) fn release_history(
+        &self,
+        identity: u64,
+        runtime: &WorthQueryProductRuntime,
+    ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+        let entry = lock(&self.state)
+            .entries
+            .get(&identity)
+            .cloned()
+            .ok_or(WorthQueryProductBranchOwnerCleanupDenial::CleanupUnavailable)?;
+        let mut record = RetryRecordGuard::take(&entry.record)?;
+        record.record_mut().release_retired_history(runtime)
+    }
+
     pub(super) fn pending_application_retired_product_occurrences(
         &self,
     ) -> Vec<WorthQueryRetiredProductOccurrence> {
@@ -215,10 +258,10 @@ impl WorthQueryProductBranchOwnerCleanupReservation {
 
     pub(crate) fn install_unpublished(
         self,
-        pending: Vec<worth_runtime_world::facade::OwnerRetirementWork>,
+        cleanup: worth_runtime_world::facade::ProductUnpublishedCleanup,
     ) -> u64 {
         self.install(WorthQueryProductBranchOwnerCleanupRecord::from_unpublished(
-            pending,
+            cleanup,
         ))
     }
 

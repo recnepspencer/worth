@@ -13,8 +13,10 @@ use super::super::ports::{RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchC
 use super::RuntimeWorldOwnerRoot;
 
 mod creation;
+mod history;
 #[cfg(test)]
 mod install_control;
+mod observation;
 mod retirement;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -195,58 +197,6 @@ where
         )
         .map_err(|_| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
         Ok(observation)
-    }
-}
-
-impl<D, I, E, Ctx, T> super::super::ports::RuntimeWorldObservationService
-    for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    fn observe_product_branch(
-        &self,
-        branch: &ProductBranchIdentity,
-    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
-        if branch.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
-        if !self.branch_service_is_available() {
-            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
-        }
-        let _operation = self
-            .reserve_creation_operation()
-            .map_err(|()| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
-        let cell = self
-            .state
-            .branches
-            .branch_cell(branch)
-            .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
-        cell.observe(&self.state.history, &self.state.retention)
-            .map_err(map_observation_denial)
-    }
-
-    fn observe_product_branch_occurrence(
-        &self,
-        occurrence: ProductBranchIncarnation,
-    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
-        if occurrence.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
-        if !self.branch_service_is_available() {
-            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
-        }
-        let _operation = self
-            .reserve_creation_operation()
-            .map_err(|()| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
-        let cell = self
-            .state
-            .branches
-            .branch_cell_by_lifecycle(occurrence)
-            .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
-        cell.observe(&self.state.history, &self.state.retention)
-            .map_err(map_observation_denial)
     }
 }
 

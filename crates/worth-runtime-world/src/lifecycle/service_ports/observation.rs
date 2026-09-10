@@ -51,4 +51,43 @@ impl RuntimeWorldObservationPort {
             .observe_product_branch_occurrence(occurrence)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
+
+    pub fn trace_product_branch_ancestry(
+        &self,
+        occurrence: crate::identity::ProductBranchIncarnation,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<
+        crate::branch::ProductBranchHistoryTraversal,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .trace_product_branch_ancestry(occurrence, maximum)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    pub fn continue_product_branch_ancestry(
+        &self,
+        previous: &crate::branch::ProductBranchHistoryTraversal,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<
+        crate::branch::ProductBranchHistoryTraversal,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .continue_product_branch_ancestry(previous, maximum)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    pub fn observe_product_branch_history_entry(
+        &self,
+        history: &crate::branch::ProductBranchHistoryTraversal,
+        index: usize,
+    ) -> Result<
+        crate::branch::ProductBranchObservation,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .observe_product_branch_history_entry(history, index)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
 }

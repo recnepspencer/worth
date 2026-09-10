@@ -4,14 +4,13 @@ mod application_attempt_state;
 mod application_attempt_work;
 mod application_decision_fact;
 mod application_touch_admission;
+mod branch_commit_coordination;
 mod commit_causality;
 pub(super) mod committed_dispatch_outbox;
 mod conditional_commit_journal;
 mod decision_facts;
-pub(in crate::domain_computation::primary_graph) mod fault_port;
-// The items inside already declare `pub(in ...primary_graph)`; the module
-// declaration is what actually gated them.
 pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;
+pub(in crate::domain_computation::primary_graph) mod fault_port;
 mod graph_participation;
 mod idempotency;
 mod installation;
@@ -19,6 +18,7 @@ mod invariant_execution;
 mod invariant_execution_failure;
 mod mutation_work;
 mod pending_application_publication;
+pub(in crate::domain_computation::primary_graph) use pending_application_publication::WorthQueryApplicationPublicationRecoveryReservation;
 mod product_retirement;
 mod provisional_state;
 mod publication_recovery;
@@ -62,26 +62,36 @@ pub(super) use session_commit::{
 pub(crate) struct WorthQueryPrimaryGraphProvider {
     pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
     resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
-    commit_serialization: Mutex<()>,
+    branch_commit_coordination:
+        branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,
     pub(super) live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
-    attempts: Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>,
+    attempts: Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>>,
+    #[cfg(feature = "test-world-operation-control")]
+    pub(super) application_attempt_operation_control:
+        super::application_runtime::WorthQueryApplicationAttemptOperationControl,
     application_attempt_work: application_attempt_work::WorthQueryApplicationAttemptWorkLedger,
     completed_commit_evidence: Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>,
     unpublished_idempotency:
         Arc<Mutex<unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore>>,
     receipt_basis_retention: Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>,
-    pending_application_publication:
-        Mutex<Option<pending_application_publication::WorthQueryPendingApplicationPublication>>,
+    pending_application_publications:
+        pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
     conditional_commit_journal:
         Mutex<conditional_commit_journal::WorthQueryConditionalCommitJournal>,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationCommitSerialization<'provider> {
-    _guard: std::sync::MutexGuard<'provider, ()>,
-}
+pub(in crate::domain_computation) use branch_commit_coordination::{
+    WorthQueryApplicationBranchCommitCoordination, WorthQueryApplicationBranchCommitLane,
+};
 
 impl WorthQueryPrimaryGraphProvider {
+    #[cfg(feature = "test-world-operation-control")]
+    pub(super) fn after_application_attempt_registration_for_test(&self) {
+        self.application_attempt_operation_control
+            .after_registration();
+    }
+
     pub(in crate::domain_computation::primary_graph) fn conditional_commit_sequence(&self) -> u64 {
         self.conditional_commit_journal
             .lock()
@@ -210,15 +220,26 @@ impl WorthQueryPrimaryGraphProvider {
         Ok((batch, pending.map(|(_, pending)| pending)))
     }
 
-    pub(super) fn serialize_application_commit(
+    pub(in crate::domain_computation) fn application_branch_commit_lane(
         &self,
-    ) -> WorthQueryApplicationCommitSerialization<'_> {
-        WorthQueryApplicationCommitSerialization {
-            _guard: self
-                .commit_serialization
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner()),
-        }
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
+        self.branch_commit_coordination.lane_for(observation)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn application_branch_commit_lane_for_occurrence(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
+        self.branch_commit_coordination
+            .lane_for_occurrence(occurrence)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retire_application_branch_commit_lane(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) {
+        self.branch_commit_coordination.retire(occurrence);
     }
 
     #[cfg(test)]
@@ -227,6 +248,19 @@ impl WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .resource_count()
+    }
+
+    #[cfg(feature = "test-world-operation-control")]
+    pub(super) fn active_application_attempt_count_for_test(&self) -> usize {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .active_attempt_count()
+    }
+
+    #[cfg(feature = "test-world-operation-control")]
+    pub(super) fn active_live_consumer_count_for_test(&self) -> usize {
+        self.live_delivery.active_subscriber_count()
     }
 
     #[cfg(test)]
@@ -349,6 +383,13 @@ impl WorthQueryPrimaryGraphProvider {
     #[cfg(test)]
     pub(super) fn take_undeclared_application_touch(&self) -> bool {
         self.take_fault(fault_port::WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch)
+    }
+
+    #[cfg(test)]
+    pub(super) fn take_panicked_pending_application_publication(&self) -> bool {
+        self.take_fault(
+            fault_port::WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication,
+        )
     }
 
     fn take_fault(&self, fault: fault_port::WorthQueryPrimaryGraphFault) -> bool {

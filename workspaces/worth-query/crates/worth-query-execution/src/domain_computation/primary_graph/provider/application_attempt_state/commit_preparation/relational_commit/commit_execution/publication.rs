@@ -46,7 +46,7 @@ fn publish_retained(
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
     let WorthQueryCommittedApplicationSession {
-        attempt,
+        mut attempt,
         branch,
         before,
         next_basis,
@@ -54,6 +54,7 @@ fn publish_retained(
         product_publication,
         ..
     } = committed;
+    let recovery_reservation = attempt.take_publication_recovery_reservation();
     let changed_record_count = committed.patch().len();
     let runtime_instance_id = committed.snapshot.runtime_instance_id();
     let emitted_effect_count = attempt.emitted_effect_count();
@@ -71,6 +72,7 @@ fn publish_retained(
     let application = WorthQueryPrimaryGraphCommittedApplication::from_publication(seal);
     provider.install_and_publish_application(
         runtime,
+        recovery_reservation,
         WorthQueryPendingApplicationPublication::new(
             attempt,
             branch,

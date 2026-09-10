@@ -50,20 +50,6 @@ impl<D: 'static, O, F, L: BasisOperationLane>
                 epoch_counters,
             ));
         }
-        counters.conditional_relevance_checks = 1;
-        let condition_relevant = impact.affected_roles().contains(
-            &crate::domain_installation::WorthQuerySemanticDependencyRole::ConditionalEligibilityOrSemanticCleanliness,
-        );
-        if condition_relevant {
-            counters.conditional_decision_checks = 1;
-            if delivery.conditional_decision().is_none() {
-                return Err(stop(
-                    WorthQueryConsumerInvalidationDeltaStopKind::ConditionalOwnerReadmissionRequired,
-                    counters,
-                    epoch_counters,
-                ));
-            }
-        }
         for dimension in [
             crate::domain_installation::WorthQueryConsumerSupportDimension::Invalidation,
             crate::domain_installation::WorthQueryConsumerSupportDimension::DependencyImpact,
@@ -138,7 +124,6 @@ impl<D: 'static, O, F, L: BasisOperationLane>
             maintenance_ordinal: delivery.maintenance_ordinal(),
             impact: Arc::clone(impact),
             conditional_provenance: Arc::clone(delivery.conditional_provenance_arc()),
-            conditional_decision: delivery.conditional_decision_arc().map(Arc::clone),
             sharing: Arc::clone(delivery.sharing_admission()),
             epoch_work: Arc::clone(seed),
             affected_native_keys,

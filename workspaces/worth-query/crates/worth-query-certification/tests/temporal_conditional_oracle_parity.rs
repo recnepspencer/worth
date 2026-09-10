@@ -129,15 +129,15 @@ fn assert_case(case: Case) {
     match case {
         Case::Satisfied | Case::Due => assert_computed_changed(CourtroomWorld::publish("ready")),
         Case::Unsatisfied => {
-            let mut world = CourtroomWorld::publish("blocked");
-            let receipt = observe(&mut world);
+            let world = CourtroomWorld::publish("blocked");
+            let receipt = observe(&world);
             assert_oracle(SignalClass::SuppressedBeforeCompute, &receipt);
             assert_eq!(world.contacts.snapshot(), (1, 0, 0, 0));
         }
         Case::Failed => {
-            let mut world = CourtroomWorld::publish("ready");
+            let world = CourtroomWorld::publish("ready");
             world.predicate_panic.set(true);
-            let receipt = observe(&mut world);
+            let receipt = observe(&world);
             assert_eq!(receipt.failed_operation_count(), 0);
             let [lineage] = receipt.execution_provenance() else {
                 panic!("failed lineage")
@@ -216,8 +216,8 @@ fn assert_case(case: Case) {
     }
 }
 
-fn assert_computed_changed(mut world: CourtroomWorld) {
-    let receipt = observe(&mut world);
+fn assert_computed_changed(world: CourtroomWorld) {
+    let receipt = observe(&world);
     assert_oracle(SignalClass::ComputedChanged, &receipt);
     assert_authoritative_value(&world, IntentEffectField::reference(), {
         let [lineage] = receipt.execution_provenance() else {
@@ -266,7 +266,7 @@ fn assert_oracle(
 
 fn assert_provider_replacement() {
     let incumbent = CourtroomWorld::publish("ready");
-    let mut replacement = CourtroomWorld::publish_replacement("ready");
+    let replacement = CourtroomWorld::publish_replacement("ready");
     assert!(replacement
         .application
         .on_branch(replacement.application.current_world())

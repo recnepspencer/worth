@@ -38,7 +38,7 @@ impl WorthQueryProductRuntime {
         })
     }
 
-    fn lease_from_observation(
+    pub(super) fn lease_from_observation(
         &self,
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
@@ -97,7 +97,7 @@ impl WorthQueryProductRuntime {
     }
 }
 
-fn map_world_denial(
+pub(super) fn map_world_denial(
     denial: RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>,
 ) -> WorthQueryProductBranchAdmissionDenial {
     match denial {

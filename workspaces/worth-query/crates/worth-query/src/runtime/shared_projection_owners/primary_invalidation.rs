@@ -76,7 +76,7 @@ impl super::super::WorthQueryWorkspace {
         };
         let (owner_identity, owner) = self
             .runtime
-            .take_shared_owner_for_conditional_delivery(readmission, &mut counters)
+            .take_shared_owner_for_primary_delivery(readmission, &mut counters)
             .map_err(WorthQuerySharedPrimaryOwnerRefreshStop::Runtime)?;
         let refreshed = crate::domain_installation::refresh_granular_source(
             source,
@@ -87,7 +87,7 @@ impl super::super::WorthQueryWorkspace {
         )
         .map_err(WorthQuerySharedPrimaryOwnerRefreshStop::Refresh);
         self.runtime
-            .restore_shared_owner_after_conditional_stop(owner_identity, owner);
+            .restore_shared_owner_after_primary_delivery(owner_identity, owner);
         refreshed
     }
 

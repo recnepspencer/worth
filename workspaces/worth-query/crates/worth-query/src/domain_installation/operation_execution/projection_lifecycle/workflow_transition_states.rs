@@ -149,7 +149,6 @@ macro_rules! operational_inspection {
                     self.transitioned.successor().source(),
                     self.transitioned.successor().handle(),
                     workspace,
-                    None,
                 )
             }
         }

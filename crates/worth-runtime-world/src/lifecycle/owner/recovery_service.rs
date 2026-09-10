@@ -156,16 +156,30 @@ where
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
-    ) -> Result<Vec<OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial> {
+    ) -> Result<
+        crate::recovery::ProductUnpublishedCleanup,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
         let work = self.reserve_recovery_retirement_work(handle)?;
+        let mut unpublished_history_candidates = Vec::new();
+        unpublished_history_candidates
+            .try_reserve_exact(1)
+            .map_err(|_| crate::recovery::RuntimeWorldRecoveryDenial::OutputCapacityExhausted)?;
         let released = self
             .state
             .recovery
             .cleanup_record(handle, Some((self.state.clock.now(), minimum_age_ticks)))?;
-        Ok(self.drain_released_occurrence(&released, work))
+        if let Some(commit) = released.unpublished_commit() {
+            unpublished_history_candidates.push(commit.clone());
+        }
+        let owner_retirement_work = self.drain_released_occurrence(&released, work);
+        Ok(crate::recovery::ProductUnpublishedCleanup::new(
+            unpublished_history_candidates,
+            owner_retirement_work,
+        ))
     }
     fn continue_effects(
         &self,

@@ -24,7 +24,7 @@ fn replacement_updates_duplicate_native_storage_without_stale_precedence() {
     assert_eq!(structured.get(&rank), Some(&AspectValue::UInt64(2)));
     assert_eq!(
         structured.get(&desk),
-        Some(&AspectValue::String("rates".try_into().unwrap()))
+        Some(&AspectValue::String("rates".into()))
     );
     assert_eq!(
         replaced.scalar_value_at(&path),
@@ -47,7 +47,7 @@ fn absent_replacement_clears_every_copy_and_preserves_sibling_struct_fields() {
     assert_eq!(structured.get(&rank), None);
     assert_eq!(
         structured.get(&desk),
-        Some(&AspectValue::String("rates".try_into().unwrap()))
+        Some(&AspectValue::String("rates".into()))
     );
     assert_eq!(replaced.scalar_value_at(&path), None);
 }
@@ -66,10 +66,7 @@ fn duplicate_storage_entity() -> (
         CanonicalFieldPath::new([FieldKey::new("PortfolioFacts").unwrap(), rank.clone()]).unwrap();
     let structured = StructAspectValue::new([
         (rank.clone(), AspectValue::UInt64(1)),
-        (
-            desk.clone(),
-            AspectValue::String("rates".try_into().unwrap()),
-        ),
+        (desk.clone(), AspectValue::String("rates".into())),
     ])
     .unwrap();
     let entity = WorthQueryEntity::from_aspect_projection(

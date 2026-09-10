@@ -6,6 +6,7 @@ mod registry;
 
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, OwnerRetirementWork, ProductBranchRetirementReport,
+    ProductUnpublishedCleanup,
 };
 
 use super::WorthQueryProductRuntime;
@@ -101,6 +102,28 @@ impl WorthQueryProductBranchOwnerCleanup {
         self.runtime.owner_cleanup.pending_work(self.identity)
     }
 
+    pub(in crate::domain_computation) fn release_retired_history(
+        &self,
+    ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+        self.runtime
+            .owner_cleanup
+            .release_history(self.identity, &self.runtime)
+    }
+
+    pub(in crate::domain_computation) fn pending_signal_bases(
+        &self,
+    ) -> Result<
+        Vec<worth_signal::facade::branch::AdmittedSignalBranchBasis>,
+        worth_signal::facade::branch::SignalBranchBasisObservationDenial,
+    > {
+        self.runtime
+            .owner_cleanup
+            .pending_signal_references(self.identity)
+            .into_iter()
+            .map(|reference| self.runtime.signal_basis.observe_current(&reference))
+            .collect()
+    }
+
     pub fn retry(
         self,
     ) -> Result<
@@ -135,15 +158,20 @@ impl WorthQueryProductBranchOwnerCleanupFailure {
 }
 
 pub(super) struct WorthQueryProductBranchOwnerCleanupRecord {
-    history: Option<WorthQueryProductBranchRetiredHistory>,
+    history: Option<WorthQueryProductBranchHistoryCleanup>,
     pending: Vec<OwnerRetirementWork>,
     retired_component_count: usize,
 }
 
-pub(super) struct WorthQueryProductBranchRetiredHistory {
-    retired_head: CompositeCommitIdentity,
-    retirement_boundary: CompositeCommitIdentity,
-    pending: Option<Vec<CompositeCommitIdentity>>,
+pub(super) enum WorthQueryProductBranchHistoryCleanup {
+    RetiredBranch {
+        retired_head: CompositeCommitIdentity,
+        retirement_boundary: CompositeCommitIdentity,
+        pending: Option<Vec<CompositeCommitIdentity>>,
+    },
+    ExactUnpublished {
+        pending: Vec<CompositeCommitIdentity>,
+    },
 }
 
 impl WorthQueryProductBranchOwnerCleanupRecord {
@@ -151,7 +179,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         let (retired_head, retirement_boundary, pending) = report.into_cleanup_parts();
         Self {
             history: retirement_boundary.map(|retirement_boundary| {
-                WorthQueryProductBranchRetiredHistory {
+                WorthQueryProductBranchHistoryCleanup::RetiredBranch {
                     retired_head,
                     retirement_boundary,
                     pending: None,
@@ -162,9 +190,14 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         }
     }
 
-    pub(super) fn from_unpublished(pending: Vec<OwnerRetirementWork>) -> Self {
+    pub(super) fn from_unpublished(cleanup: ProductUnpublishedCleanup) -> Self {
+        let (unpublished_history_candidates, pending) = cleanup.into_parts();
         Self {
-            history: None,
+            history: (!unpublished_history_candidates.is_empty()).then_some(
+                WorthQueryProductBranchHistoryCleanup::ExactUnpublished {
+                    pending: unpublished_history_candidates,
+                },
+            ),
             pending,
             retired_component_count: 0,
         }

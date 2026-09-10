@@ -39,6 +39,15 @@ pub struct WorthQueryProductRuntime {
 }
 
 impl WorthQueryProductRuntime {
+    #[doc(hidden)]
+    pub fn integration_managed_run_admission<'runtime>(
+        &'runtime self,
+        query: &'runtime crate::domain_computation::WorthQueryExecutionRuntime,
+        bridge: &'runtime worth_runtime_bridge::facade::RuntimeBridge,
+    ) -> crate::domain_computation::WorthQueryManagedRunAdmission<'runtime> {
+        query.managed_run_admission(bridge, &self.source)
+    }
+
     pub(crate) fn from_parts(
         owner: RuntimeWorldOwner<(), (), (), (), ()>,
         source: RuntimeBridgeRelationalSource,

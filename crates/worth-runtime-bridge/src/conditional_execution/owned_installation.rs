@@ -57,50 +57,6 @@ impl BridgeOwnedSignalRuntime {
         })
     }
 
-    pub fn retire_owned_conditional(
-        &mut self,
-        lowering: &std::sync::Arc<BridgeInstalledConditionalLowering>,
-    ) -> Result<(), BridgeConditionalDenial> {
-        let installed = self
-            .conditional_lowerings
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let retained = installed
-            .get(&super::contract::lowering_key(lowering))
-            .ok_or_else(|| {
-                BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::ForeignSignalGraph,
-                    "owned conditional retirement did not match this Bridge runtime",
-                )
-            })?;
-        if !std::sync::Arc::ptr_eq(retained, lowering) {
-            return Err(BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::ForeignSignalGraph,
-                "owned conditional retirement did not carry the retained lowering",
-            ));
-        }
-        drop(installed);
-        self.signal_services()?
-            .conditional_port(lowering)?
-            .retire_installed_contract(lowering.signal_contract())
-            .map_err(|error| {
-                BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::SignalContractInstallation,
-                    format!("Signal denied owned conditional retirement: {error:?}"),
-                )
-            })?;
-        lowering.lease.revoke_liveness();
-        self.owned_conditional_targets
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .unregister(lowering);
-        self.conditional_lowerings
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .remove(&super::contract::lowering_key(lowering));
-        Ok(())
-    }
-
     fn owned_correspondence_registrations(
         &mut self,
         node_identity: &str,

@@ -146,14 +146,6 @@ pub fn classify_owner_delivered_impact(
     classify_preflight_owner_delivery(closure, delivery, conditional, counters)
 }
 
-pub(crate) fn preflight_owner_delivered_impact(
-    closure: &WorthQueryCompiledSemanticAspectDependencyClosure,
-    delivery: &BridgeCorrespondenceDeliveryReceipt,
-) -> Result<(), WorthQueryImpactAdmissionDenial> {
-    let mut counters = WorthQueryImpactCounters::default();
-    preflight_owner_delivery(closure, delivery, &mut counters)
-}
-
 pub(crate) fn preflight_owner_delivered_truth(
     closure: &WorthQueryCompiledSemanticAspectDependencyClosure,
     truth: &worth_runtime_bridge::facade::BridgeDeliveredTruthChange,

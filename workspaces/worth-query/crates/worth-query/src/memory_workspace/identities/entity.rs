@@ -1,8 +1,7 @@
 use std::sync::Arc;
 use worth_foundational::facade::admit_foundational_authority_identity;
 use worth_runtime_bridge::facade::{
-    BridgeAdmittedTruthRecordIdentity, RelationalBridgeRecordIdentityKind,
-    RelationalBridgeRecordIdentityParts,
+    RelationalBridgeRecordIdentityKind, RelationalBridgeRecordIdentityParts,
 };
 
 use crate::evidence_identity::{
@@ -49,21 +48,6 @@ impl WorthQueryEntityIdentity {
     ) -> Self {
         let authority = admit_foundational_authority_identity(
             Arc::<str>::from(relational_record.terminal_projection_for_reporting()),
-            query_receipt_admission_authority(),
-        );
-        Self {
-            inner: WorthQueryEntityIdentityInner::RelationalRecord { relational_record },
-            _authority: Some(authority),
-        }
-    }
-
-    pub(crate) fn from_admitted_bridge_record_identity(
-        admitted: &BridgeAdmittedTruthRecordIdentity,
-    ) -> Self {
-        let relational_record = admitted.projection();
-        let boundary = admitted.bridge_trust_boundary();
-        let authority = admit_foundational_authority_identity(
-            Arc::clone(boundary.value()),
             query_receipt_admission_authority(),
         );
         Self {

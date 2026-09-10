@@ -9,10 +9,11 @@ pub struct WorthQueryManagedTruthReadRequest {
     replay_mode: BridgeReplayMode,
     diagnostics_tier: BridgeDiagnosticsTier,
     delivery_intent: BridgeDeliveryIntent,
+    product_observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
 }
 
 impl WorthQueryManagedTruthReadRequest {
-    pub fn new(
+    pub(crate) fn from_relational_basis(
         relational_basis: RelationalBranchBasisDescriptor,
         packet: SnapshotReadPacket,
     ) -> Self {
@@ -22,6 +23,21 @@ impl WorthQueryManagedTruthReadRequest {
             replay_mode: BridgeReplayMode::Disabled,
             diagnostics_tier: BridgeDiagnosticsTier::Standard,
             delivery_intent: BridgeDeliveryIntent::PrepareSignalEvaluation,
+            product_observation: None,
+        }
+    }
+
+    pub fn for_product(
+        product: &crate::basis::WorthQueryProductBranchLease,
+        packet: SnapshotReadPacket,
+    ) -> Self {
+        Self {
+            relational_basis: product.relational_basis_descriptor().clone(),
+            packet,
+            replay_mode: BridgeReplayMode::Disabled,
+            diagnostics_tier: BridgeDiagnosticsTier::Standard,
+            delivery_intent: BridgeDeliveryIntent::PrepareSignalEvaluation,
+            product_observation: Some(product.observation().clone()),
         }
     }
 
@@ -48,6 +64,7 @@ impl WorthQueryManagedTruthReadRequest {
         BridgeReplayMode,
         BridgeDiagnosticsTier,
         BridgeDeliveryIntent,
+        Option<worth_runtime_world::facade::ProductBranchObservation>,
     ) {
         (
             self.relational_basis,
@@ -55,7 +72,22 @@ impl WorthQueryManagedTruthReadRequest {
             self.replay_mode,
             self.diagnostics_tier,
             self.delivery_intent,
+            self.product_observation,
         )
+    }
+
+    pub(crate) fn matches_operation_product(
+        &self,
+        operation: &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
+    ) -> bool {
+        match (
+            operation.application_product_observation(),
+            self.product_observation.as_ref(),
+        ) {
+            (Some(expected), Some(selected)) => expected == selected,
+            (None, None) => true,
+            _ => false,
+        }
     }
 }
 
@@ -70,10 +102,14 @@ mod tests {
         let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
         let identity = runtime.main_branch_identity();
         let (descriptor, _) = runtime.observe_branch(&identity).unwrap();
-        let (_, _, replay, _, _) =
-            WorthQueryManagedTruthReadRequest::new(descriptor, SnapshotReadPacket::new(Vec::new()))
-                .into_parts();
+        let (_, _, replay, _, _, product_observation) =
+            WorthQueryManagedTruthReadRequest::from_relational_basis(
+                descriptor,
+                SnapshotReadPacket::new(Vec::new()),
+            )
+            .into_parts();
 
         assert_eq!(replay, BridgeReplayMode::Disabled);
+        assert!(product_observation.is_none());
     }
 }

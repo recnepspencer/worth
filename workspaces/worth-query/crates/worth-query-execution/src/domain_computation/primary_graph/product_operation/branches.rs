@@ -8,16 +8,16 @@ use worth_runtime_world::facade::{
     RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
 };
 
+use super::WorthQueryApplicationProductBranchCleanup;
 use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchFork,
     WorthQueryProductBranchRecoveryDenial, WorthQueryProductBranches,
 };
-use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub struct WorthQueryApplicationProductBranches<'runtime, Schema> {
     branches: WorthQueryProductBranches<'runtime>,
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -57,7 +57,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
 
     /// Discovers every Query-owned cleanup obligation and releases only the
     /// application-retirement occurrences held by the primary provider.
-    pub fn pending_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
+    pub fn pending_cleanup(&self) -> Vec<WorthQueryApplicationProductBranchCleanup> {
         for occurrence in self
             .application
             .product_runtime
@@ -70,6 +70,17 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                     occurrence.incarnation(),
                 );
         }
-        self.application.product_runtime.pending_owner_cleanup()
+        let conditional = self.application.bridge.conditional_operations();
+        self.application
+            .product_runtime
+            .pending_owner_cleanup()
+            .into_iter()
+            .map(|cleanup| {
+                WorthQueryApplicationProductBranchCleanup::new(
+                    cleanup,
+                    std::sync::Arc::clone(&conditional),
+                )
+            })
+            .collect()
     }
 }

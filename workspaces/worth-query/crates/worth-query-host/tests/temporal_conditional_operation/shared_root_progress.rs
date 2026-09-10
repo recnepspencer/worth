@@ -61,6 +61,9 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
         panic,
         None,
         None,
+        None,
+        1,
+        true,
     );
     let application = &world.application;
     let clock = &world.clock;

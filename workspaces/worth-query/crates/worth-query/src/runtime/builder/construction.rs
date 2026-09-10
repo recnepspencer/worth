@@ -102,6 +102,9 @@ impl WorthQueryRuntimeBuilder {
                 authority_identity,
                 execution_runtime.retain_installed_packages(),
             );
+        let managed_execution_bridge = conditional_runtime_bridge
+            .as_ref()
+            .map(worth_runtime_bridge::facade::RuntimeBridge::fork_managed_request_lane);
         let (
             conditional_signal_runtime,
             conditional_execution_registry,
@@ -122,12 +125,20 @@ impl WorthQueryRuntimeBuilder {
                     .to_owned(),
             }
         })?;
+        let managed_execution_bridge = managed_execution_bridge.ok_or_else(|| {
+            WorthQueryRuntimeError::InvariantRegistration {
+                stage: "managed_execution_installation",
+                message: "installed operation execution requires the exact Runtime Bridge selected for Product World"
+                    .to_owned(),
+            }
+        })?;
         let resources = conditional_execution_resources
             .expect("sealed conditional runtime installation requires its resource configuration");
         let installed_product =
             super::super::installed_product::WorthQueryInstalledProduct::install(
                 backend.as_ref(),
                 conditional,
+                managed_execution_bridge,
                 resources.query_cache(),
                 self.product_world_resources,
             )?;

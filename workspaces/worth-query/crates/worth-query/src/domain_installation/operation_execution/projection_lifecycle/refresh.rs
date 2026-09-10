@@ -164,20 +164,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         &self,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryLiveProjectionRefresh, WorthQueryLiveProjectionRefreshError> {
-        refresh_source(self.snapshot(), self.managed_handle(), workspace, None)
-    }
-
-    pub fn refresh_owner_delivery(
-        &self,
-        delivery: &worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
-        workspace: &mut WorthQueryWorkspace,
-    ) -> Result<WorthQueryLiveProjectionRefresh, WorthQueryLiveProjectionRefreshError> {
-        refresh_source(
-            self.snapshot(),
-            self.managed_handle(),
-            workspace,
-            Some(delivery),
-        )
+        refresh_source(self.snapshot(), self.managed_handle(), workspace)
     }
 
     pub(crate) fn refresh_granular_scope(
@@ -203,35 +190,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         &self,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryLiveProjectionRefresh, WorthQueryLiveProjectionRefreshError> {
-        refresh_source(self.snapshot(), self.managed_handle(), workspace, None)
-    }
-
-    pub fn refresh_owner_delivery(
-        &self,
-        delivery: &worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
-        workspace: &mut WorthQueryWorkspace,
-    ) -> Result<WorthQueryLiveProjectionRefresh, WorthQueryLiveProjectionRefreshError> {
-        refresh_source(
-            self.snapshot(),
-            self.managed_handle(),
-            workspace,
-            Some(delivery),
-        )
-    }
-}
-
-pub(in crate::domain_installation::operation_execution) struct WorthQueryPendingOwnerImpact<'a> {
-    pub(super) delivery: &'a worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
-    pub(super) closure:
-        &'a crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure,
-}
-
-impl<'a> WorthQueryPendingOwnerImpact<'a> {
-    pub(in crate::domain_installation::operation_execution) const fn new(
-        delivery: &'a worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
-        closure: &'a crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure,
-    ) -> Self {
-        Self { delivery, closure }
+        refresh_source(self.snapshot(), self.managed_handle(), workspace)
     }
 }
 
@@ -239,9 +198,6 @@ pub(super) fn refresh_source<D: 'static, O: 'static, F: 'static, L: BasisOperati
     source: &S,
     handle: &crate::ordinary::live::WorthQueryManagedLiveHandle,
     workspace: &mut WorthQueryWorkspace,
-    pending_owner_delivery: Option<
-        &worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
-    >,
 ) -> Result<WorthQueryLiveProjectionRefresh, WorthQueryLiveProjectionRefreshError>
 where
     S: WorthQueryProjectionLifecycleSource<D, O, F, L>,
@@ -265,37 +221,22 @@ where
         work,
         owner_delivery_retained: false,
     })?;
-    let (delivery, impact) = match pending_owner_delivery {
-        Some(owner_delivery) => {
-            let completion = super::owner_refresh::refresh_owner_delivery::<D, O, F, L, S>(
-                source,
-                handle,
-                workspace,
-                WorthQueryPendingOwnerImpact::new(owner_delivery, closure),
-            )?;
-            work = completion.work();
-            let (delivery, impact, _, _, _) = completion.into_parts();
-            (delivery, impact)
-        }
-        None => {
-            work.begin_drain();
-            let delivery = handle.drain(workspace).map_err(|error| {
-                WorthQueryLiveProjectionRefreshError::Runtime {
-                    error,
-                    work,
-                    owner_delivery_retained: false,
-                }
+    work.begin_drain();
+    let delivery =
+        handle
+            .drain(workspace)
+            .map_err(|error| WorthQueryLiveProjectionRefreshError::Runtime {
+                error,
+                work,
+                owner_delivery_retained: false,
             })?;
-            work.retain_delivery(&delivery);
-            let impact = std::sync::Arc::new(
-                crate::domain_installation::WorthQueryImpactDecision::from_managed_live_delivery(
-                    closure, &delivery,
-                ),
-            );
-            work.retain_impact(&impact);
-            (delivery, impact)
-        }
-    };
+    work.retain_delivery(&delivery);
+    let impact = std::sync::Arc::new(
+        crate::domain_installation::WorthQueryImpactDecision::from_managed_live_delivery(
+            closure, &delivery,
+        ),
+    );
+    work.retain_impact(&impact);
     finish_refresh(source, handle, workspace, delivery, impact, work, None)
 }
 

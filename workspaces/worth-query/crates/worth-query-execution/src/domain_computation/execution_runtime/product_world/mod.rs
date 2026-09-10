@@ -5,6 +5,7 @@ mod bootstrap;
 mod branch_close;
 mod clock;
 mod creation;
+mod history;
 mod installation_denial;
 mod owned_async;
 mod owner_cleanup;

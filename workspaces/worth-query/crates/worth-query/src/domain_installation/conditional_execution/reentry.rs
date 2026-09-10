@@ -42,7 +42,7 @@ pub struct WorthQueryConditionalProvenance {
         std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
     pub(crate) class: WorthQueryConditionalOutcomeClass,
     pub(crate) _admission: WorthQueryOperationPhaseProof<WorthQueryConditionalReentryPhase>,
-    pub(super) product:
+    pub(super) _product:
         std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease>,
 }
 
@@ -302,7 +302,7 @@ pub(crate) fn admit_conditional_decision<D, O, F, L: BasisOperationLane>(
         bridge,
         class,
         _admission: admission,
-        product,
+        _product: product,
     })
 }
 

@@ -33,21 +33,11 @@ pub(crate) struct WorthQueryConditionalEvaluationPass<'a> {
     pub(crate) counters: &'a mut super::super::WorthQueryOperationExecutionCounters,
 }
 
-pub(crate) struct WorthQueryOwnerImpactConditionalEvaluationPass<'a> {
-    pub(crate) evaluation: WorthQueryConditionalEvaluationPass<'a>,
-    pub(crate) location: &'a worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-}
-
 pub(crate) fn evaluate_bound_conditionals<D, O, F, L: BasisOperationLane>(
     bound: &super::super::WorthQueryBoundDomainOperation<D, O, F, L>,
     evaluation: WorthQueryConditionalEvaluationPass<'_>,
 ) -> Result<Vec<WorthQueryConditionalProvenance>, WorthQueryConditionalEvaluationStop> {
-    evaluate_conditionals(
-        bound,
-        evaluation,
-        ConditionalAcceptance::FreshComputation,
-        None,
-    )
+    evaluate_conditionals(bound, evaluation, ConditionalAcceptance::FreshComputation)
 }
 
 pub(crate) fn evaluate_settled_projection_conditionals<D, O, F, L: BasisOperationLane>(
@@ -58,23 +48,6 @@ pub(crate) fn evaluate_settled_projection_conditionals<D, O, F, L: BasisOperatio
         bound,
         evaluation,
         ConditionalAcceptance::SettledOutputContinuity,
-        None,
-    )
-}
-
-pub(crate) fn evaluate_owner_impact_conditionals<D, O, F, L: BasisOperationLane>(
-    bound: &super::super::WorthQueryBoundDomainOperation<D, O, F, L>,
-    owner_impact: WorthQueryOwnerImpactConditionalEvaluationPass<'_>,
-) -> Result<Vec<WorthQueryConditionalProvenance>, WorthQueryConditionalEvaluationStop> {
-    let WorthQueryOwnerImpactConditionalEvaluationPass {
-        evaluation,
-        location,
-    } = owner_impact;
-    evaluate_conditionals(
-        bound,
-        evaluation,
-        ConditionalAcceptance::OwnerImpactObservation,
-        Some(location),
     )
 }
 
@@ -82,7 +55,6 @@ pub(crate) fn evaluate_owner_impact_conditionals<D, O, F, L: BasisOperationLane>
 enum ConditionalAcceptance {
     FreshComputation,
     SettledOutputContinuity,
-    OwnerImpactObservation,
 }
 
 impl ConditionalAcceptance {
@@ -97,7 +69,6 @@ impl ConditionalAcceptance {
                     | super::WorthQueryConditionalOutcomeClass::ComputedRevertedClean
                     | super::WorthQueryConditionalOutcomeClass::DependencyUnchanged
             ),
-            Self::OwnerImpactObservation => true,
         }
     }
 }
@@ -106,16 +77,14 @@ fn evaluate_conditionals<D, O, F, L: BasisOperationLane>(
     bound: &super::super::WorthQueryBoundDomainOperation<D, O, F, L>,
     mut evaluation: WorthQueryConditionalEvaluationPass<'_>,
     acceptance: ConditionalAcceptance,
-    exact_location: Option<&worth_query_installation::facade::WorthQueryConditionalNodeLocation>,
 ) -> Result<Vec<WorthQueryConditionalProvenance>, WorthQueryConditionalEvaluationStop> {
     let mut admitted = Vec::new();
     let scope = evaluation.scope;
-    for node in bound.conditional_nodes().iter().filter(|node| {
-        exact_location.map_or_else(
-            || location_matches(node, scope),
-            |location| &node.location == location,
-        )
-    }) {
+    for node in bound
+        .conditional_nodes()
+        .iter()
+        .filter(|node| location_matches(node, scope))
+    {
         let provenance = evaluate_installed_conditional_node(bound, node, &mut evaluation)?;
         let admitted_for_lane = acceptance.admits(&provenance);
         admitted.push(provenance);

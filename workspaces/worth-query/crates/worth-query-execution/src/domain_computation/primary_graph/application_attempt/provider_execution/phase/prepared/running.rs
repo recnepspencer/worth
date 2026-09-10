@@ -97,8 +97,8 @@ where
         .runtime
         .start_reserved_direct_resource_attempt(&operation, reserved)
         .map_err(|_| denied(DenialStage::ResourceAdmission))?;
-    let read_request = WorthQueryManagedTruthReadRequest::new(
-        lease.basis_descriptor().clone(),
+    let read_request = WorthQueryManagedTruthReadRequest::for_product(
+        lease.product(),
         SnapshotReadPacket::new(Vec::new()),
     );
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();

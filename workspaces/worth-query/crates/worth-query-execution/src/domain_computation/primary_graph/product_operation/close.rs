@@ -2,7 +2,10 @@
 
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::WorthQueryProductEntry;
+use super::{
+    WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupFailure,
+    WorthQueryProductEntry,
+};
 use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCloseReceipt,
     WorthQueryProductBranchCloseScope,
@@ -12,6 +15,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 pub enum WorthQueryApplicationProductBranchCloseDenial {
     ApplicationSettlementPending,
     Product(WorthQueryProductBranchCloseDenial),
+    OwnerCleanupPending(WorthQueryApplicationProductBranchCleanupFailure),
 }
 
 impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
@@ -19,13 +23,15 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         self,
     ) -> Result<WorthQueryProductBranchCloseReceipt, WorthQueryApplicationProductBranchCloseDenial>
     {
-        let _commit_serialization = self
+        let occurrence = self.branch.occurrence();
+        let commit_lane = self
             .application
             .primary_provider
-            .serialize_application_commit();
+            .application_branch_commit_lane_for_occurrence(occurrence);
+        let _coordination = commit_lane.enter();
         self.application
             .primary_provider
-            .settle_before_product_retirement()
+            .settle_before_product_retirement(occurrence)
             .map_err(|_| {
                 WorthQueryApplicationProductBranchCloseDenial::ApplicationSettlementPending
             })?;
@@ -40,8 +46,13 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
                 pending.occurrence().branch(),
                 pending.occurrence().incarnation(),
             );
-        pending
-            .finish()
-            .map_err(WorthQueryApplicationProductBranchCloseDenial::Product)
+        let (branch, cleanup) = pending.into_cleanup();
+        WorthQueryApplicationProductBranchCleanup::new(
+            cleanup,
+            self.application.bridge.conditional_operations(),
+        )
+        .retry()
+        .map(|receipt| WorthQueryProductBranchCloseReceipt::from_owner_cleanup(branch, receipt))
+        .map_err(WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending)
     }
 }

@@ -35,7 +35,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         .unwrap()
         .unwrap();
 
-    let partial = observe(&mut world);
+    let partial = observe(&world);
     assert_eq!(partial.committed_operation_count(), 0);
     assert_eq!(partial.already_committed_operation_count(), 0);
     assert_eq!(partial.retained_due_wake_count(), 1);
@@ -89,7 +89,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         .contains(&ProductUnpublishedNextAction::SettleOwnerEffects));
     assert!(!recovery.inspect().unwrap().relational_requires_settlement());
 
-    let retained = observe(&mut world);
+    let retained = observe(&world);
     assert_eq!(retained.retained_due_wake_count(), 1);
     assert_eq!(retained.committed_operation_count(), 0);
     assert_eq!(retained.already_committed_operation_count(), 0);
@@ -159,7 +159,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
 }
 
 pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() {
-    let mut world = CourtroomWorld::publish("ready");
+    let world = CourtroomWorld::publish("ready");
     let selected = world
         .application
         .on_branch(world.application.current_world())
@@ -175,7 +175,7 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
         integration.with_runtime(|runtime| runtime.history().immutable_commit_count());
     world.application.fail_next_index_publication_for_test();
 
-    let committed = observe(&mut world);
+    let committed = observe(&world);
     assert_eq!(committed.retained_due_wake_count(), 0);
     assert_eq!(committed.committed_operation_count(), 1);
     assert_eq!(committed.already_committed_operation_count(), 0);
@@ -203,7 +203,7 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
         "completed".to_string(),
     );
 
-    let settled = observe(&mut world);
+    let settled = observe(&world);
     assert_eq!(settled.retained_due_wake_count(), 0);
     assert_eq!(
         world.contacts.snapshot(),

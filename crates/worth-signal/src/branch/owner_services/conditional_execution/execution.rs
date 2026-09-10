@@ -243,7 +243,7 @@ where
                 |value| value.checked_add(1),
             )
             .map_err(|_| Denial::EvaluationIdentityExhausted)?;
-        let execution_identity: Arc<str> = Arc::from(format!("signal-evaluation:{ordinal}"));
+        let execution_identity = super::evaluation_identity::evaluation_identity(ordinal);
         let source = Arc::new(match source {
             ConditionalEvaluationSource::NoRelationalSource => {
                 SignalConditionalEvaluationSourceEvidence::no_relational_source(Arc::from(format!(

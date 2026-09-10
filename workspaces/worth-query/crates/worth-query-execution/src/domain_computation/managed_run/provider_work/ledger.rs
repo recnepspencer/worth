@@ -201,6 +201,28 @@ impl WorthQueryManagedProviderWorkLedger {
         self.retention.release_projection(retained_bytes)
     }
 
+    pub(crate) fn transfer_projection_to_output(
+        &mut self,
+        projection_bytes: usize,
+        additional_bytes: usize,
+    ) -> bool {
+        self.retention
+            .transfer_projection_to_output(projection_bytes, additional_bytes)
+    }
+
+    pub(crate) fn release_output_bytes(&mut self, retained_bytes: usize) -> bool {
+        self.retention.release_output(retained_bytes)
+    }
+
+    pub(crate) fn transfer_output_to_receipt(
+        &mut self,
+        envelope_bytes: usize,
+        total_output_bytes: usize,
+    ) -> bool {
+        self.retention.retain_output_envelope(envelope_bytes);
+        self.retention.release_output(total_output_bytes)
+    }
+
     pub(crate) fn settle_artifacts(&mut self, snapshot: WorthQueryArtifactOccurrenceSnapshot) {
         self.produced_artifact_count = snapshot.produced_artifact_count();
         self.retained_artifact_count = snapshot.retained_artifact_count();
@@ -258,6 +280,7 @@ impl WorthQueryManagedProviderWorkLedger {
                 disposed_artifact_count: self.disposed_artifact_count,
                 peak_scratch_bytes: self.peak_scratch_bytes,
                 provider_retained_bytes: self.retention.provider_bytes(),
+                output_retained_bytes: self.retention.output_bytes(),
                 retained_bytes: self.retention.current_bytes(),
                 peak_retained_bytes: self.retention.peak_bytes(),
                 checkpoint_available: self.checkpoint_available,

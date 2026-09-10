@@ -257,10 +257,13 @@ where
         conditional_evaluation_budget,
     )?;
     let truth_partition_role = graph.truth_partition_role().cloned();
+    let maximum_concurrent_graph_work = runtime
+        .application_query_resource_profile()
+        .maximum_concurrent_graph_work();
     let (provider_anchor, primary_provider) =
-        WorthQueryPrimaryGraphProvider::install(graph, fault_port);
+        WorthQueryPrimaryGraphProvider::install(graph, fault_port, maximum_concurrent_graph_work);
     let primary_graph_authority =
-        install_graph_participation_authority(&authority, truth_partition_role, provider_anchor)?;
+        super::graph_participation::install(&authority, truth_partition_role, provider_anchor)?;
     Ok(PublishedApplicationGraph {
         runtime,
         publication,
@@ -293,31 +296,6 @@ fn seal_application_graph(
         primary_provider: graph.primary_provider,
         primary_graph_authority: graph.primary_graph_authority,
         product_world_resources: graph.product_world_resources,
-    })
-}
-
-fn install_graph_participation_authority(
-    authority: &WorthQueryExecutionInstallationAuthority,
-    truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
-    provider_anchor: std::sync::Arc<
-        crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor,
-    >,
-) -> Result<WorthQueryInstalledGraphParticipationAuthority, WorthQueryPrimaryGraphInstallationDenial>
-{
-    WorthQueryInstalledGraphParticipationAuthority::install_with_truth_partition(
-        authority.installation_runtime(),
-        "primary",
-        provider_anchor.provider_identity(),
-        true,
-        Some("primary"),
-        truth_partition_role,
-        provider_anchor,
-    )
-    .map_err(|detail| {
-        WorthQueryPrimaryGraphInstallationDenial::new(
-            WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
-            detail,
-        )
     })
 }
 

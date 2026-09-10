@@ -14,7 +14,7 @@ use super::{
     WorthQueryOperationAuthorizationDenialKind, WorthQueryRetainedAuthorizationDecisionFacts,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationCommitSerialization,
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationBranchCommitCoordination,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use currentness::*;
@@ -84,7 +84,7 @@ where
             Input,
             Scope,
         >,
-        serialization: &'serialization WorthQueryApplicationCommitSerialization<'_>,
+        coordination: &'serialization WorthQueryApplicationBranchCommitCoordination<'_>,
     ) -> Result<
         WorthQueryApplicationCommitAuthorization<
             'serialization,
@@ -99,8 +99,16 @@ where
         if !self.refresh_admitted_capability_authorization(admission)? {
             self.readmit_admitted_non_capability_authorization(admission)?;
         }
+        let product = admission.graph_work().mutation_product().ok_or_else(|| {
+            WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
+        })?;
+        if !coordination.admits(product.observation()) {
+            return Err(WorthQueryOperationAuthorizationDenial::inconsistent(
+                admission.operation(),
+            ));
+        }
         Ok(WorthQueryApplicationCommitAuthorization::mint(
-            serialization,
+            coordination,
             admission,
         ))
     }
@@ -119,7 +127,7 @@ where
             Input,
             Scope,
         >,
-        serialization: &'serialization WorthQueryApplicationCommitSerialization<'_>,
+        coordination: &'serialization WorthQueryApplicationBranchCommitCoordination<'_>,
     ) -> Result<
         WorthQueryApplicationCommitAuthorization<
             'serialization,
@@ -132,8 +140,16 @@ where
         WorthQueryOperationAuthorizationDenial,
     > {
         self.validate_admitted_authorization(admission)?;
+        let product = admission.graph_work().mutation_product().ok_or_else(|| {
+            WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
+        })?;
+        if !coordination.admits(product.observation()) {
+            return Err(WorthQueryOperationAuthorizationDenial::inconsistent(
+                admission.operation(),
+            ));
+        }
         Ok(WorthQueryApplicationCommitAuthorization::mint(
-            serialization,
+            coordination,
             admission,
         ))
     }
@@ -153,7 +169,7 @@ where
             Scope,
         >,
         basis: &WorthQueryCommitAuthorizationBasis,
-        serialization: &'serialization WorthQueryApplicationCommitSerialization<'_>,
+        coordination: &'serialization WorthQueryApplicationBranchCommitCoordination<'_>,
     ) -> Result<
         WorthQueryApplicationCommitAuthorization<
             'serialization,
@@ -179,8 +195,13 @@ where
             WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
         })?;
         self.readmit_commit_basis(basis, product)?;
+        if !coordination.admits(product.observation()) {
+            return Err(WorthQueryOperationAuthorizationDenial::inconsistent(
+                admission.operation(),
+            ));
+        }
         Ok(WorthQueryApplicationCommitAuthorization::mint(
-            serialization,
+            coordination,
             admission,
         ))
     }

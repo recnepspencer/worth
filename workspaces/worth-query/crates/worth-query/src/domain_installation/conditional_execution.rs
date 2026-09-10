@@ -1,20 +1,16 @@
 mod bridge_lowering;
 mod compute_bridge;
-mod delivery;
 mod evaluation;
 mod installation;
 mod reentry;
 mod registry;
-mod retained_decision;
 
 pub(crate) use bridge_lowering::query_location_from_bridge_candidate;
 pub(crate) use compute_bridge::QueryComputeProvider;
-pub use delivery::WorthQueryConditionalDeliveryDenial;
 pub(crate) use evaluation::{
-    evaluate_bound_conditionals, evaluate_owner_impact_conditionals,
-    evaluate_settled_projection_conditionals, WorthQueryConditionalEvaluationPass,
-    WorthQueryConditionalEvaluationScope, WorthQueryConditionalEvaluationStop,
-    WorthQueryOwnerImpactConditionalEvaluationPass,
+    evaluate_bound_conditionals, evaluate_settled_projection_conditionals,
+    WorthQueryConditionalEvaluationPass, WorthQueryConditionalEvaluationScope,
+    WorthQueryConditionalEvaluationStop,
 };
 pub(crate) use installation::{
     PendingConditionalInstallation, PendingConditionalNode, PendingOwnedConditionalNode,
@@ -25,10 +21,7 @@ pub use installation::{
     WorthQueryConditionalNodeComputeProvider, WorthQueryConditionalNodeInstallationDenial,
     WorthQueryOwnedConditionalDependencyInstallation,
 };
-pub(crate) use reentry::{
-    admit_conditional_authority, admit_conditional_decision, classify_signal_decision,
-    WorthQueryConditionalAuthorityAdmission,
-};
+pub(crate) use reentry::classify_signal_decision;
 pub use reentry::{
     WorthQueryConditionalAdmissionDenial, WorthQueryConditionalOutcomeClass,
     WorthQueryConditionalProvenance, WorthQueryConditionalSemanticObservation,
@@ -39,4 +32,3 @@ pub use registry::WorthQueryConditionalExecutionIndexRebuildReport;
 pub(crate) use registry::{
     WorthQueryConditionalExecutionRegistry, WorthQueryInstalledConditionalNode,
 };
-pub(crate) use retained_decision::WorthQueryRetainedConditionalDecision;

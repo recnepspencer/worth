@@ -88,8 +88,11 @@ impl WorthQueryPrimaryGraphProvider {
         let layout = self.graph.layout.provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
-        self.graph.with_runtime_mut(|runtime| {
-            self.resume_pending_application_publication(runtime)
+        self.graph.with_runtime_mut_unwind_isolated(|runtime| {
+            self.resume_pending_application_publication(
+                runtime,
+                product.observation().lifecycle_incarnation(),
+            )
                 .map_err(pending_publication_denial)?;
             let basis = product.observation().basis().relational_basis();
             if let Some(resolution) = self.resolve_unpublished_application_idempotency(

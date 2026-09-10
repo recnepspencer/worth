@@ -95,15 +95,6 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
             );
             counts.indeterminate += 1;
         }
-        WorthQueryTemporalReentryOutcome::SettlementSnapshotCapacityBackpressured {
-            deferred,
-            maximum_active_snapshots,
-        } => {
-            wake.decision = WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(
-                evidence, deferred,
-            );
-            counts.snapshot_capacity_backpressure = Some(maximum_active_snapshots);
-        }
         WorthQueryTemporalReentryOutcome::Indeterminate(detail) => {
             wake.decision =
                 WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, detail);

@@ -25,8 +25,9 @@ impl WorthQueryPrimaryGraphProvider {
         worth_relational::facade::history::RelationalCommitReceipt,
         WorthQueryApplicationSettlementRecoveryError,
     > {
-        let _serialization = self.serialize_application_commit();
-        let repaired = self.graph.with_runtime_mut(|runtime| {
+        let commit_lane = self.application_branch_commit_lane_for_occurrence(product.incarnation());
+        let _coordination = commit_lane.enter();
+        let repaired = self.graph.with_runtime_mut_unwind_isolated(|runtime| {
             let repaired = runtime
                 .repair_deferred_publication_settlement(settlement)
                 .map_err(WorthQueryApplicationSettlementRecoveryError::Durability)?;
@@ -38,7 +39,7 @@ impl WorthQueryPrimaryGraphProvider {
                     "deferred application settlement does not match its performed publication",
                 ));
             }
-            self.resume_pending_application_publication(runtime)
+            self.resume_pending_application_publication(runtime, product.incarnation())
                 .map_err(settlement_publication_denial)?;
             Ok(repaired)
         })?;

@@ -28,6 +28,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     live_delivery_reservation: Option<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
     >,
+    publication_recovery_reservation: Option<
+        crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation,
+    >,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
@@ -125,13 +128,27 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         provider: &WorthQueryPrimaryGraphProvider,
     ) -> Result<bool, &'static str> {
         assert!(self.live_delivery_reservation.is_none());
+        assert!(self.publication_recovery_reservation.is_none());
+        let publication_recovery = provider.reserve_application_publication_recovery(
+            self.affinity.product_publication().observation(),
+        )?;
         let reservation = provider.reserve_application_commit_causality(
             self.affinity.product_publication().observation(),
             self.effects.emissions().retained_bytes(),
         )?;
         let requires_observation = reservation.requires_successor_observation();
         self.live_delivery_reservation = Some(reservation);
+        self.publication_recovery_reservation = Some(publication_recovery);
         Ok(requires_observation)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_publication_recovery_reservation(
+        &mut self,
+    ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation
+    {
+        self.publication_recovery_reservation
+            .take()
+            .expect("World publication reserved bounded recovery custody before owner effects")
     }
 
     pub(in crate::domain_computation::primary_graph) fn publish_causality(
@@ -256,6 +273,7 @@ impl WorthQueryPrimaryGraphProvider {
                 dispatch_outbox,
                 conditional_definition,
                 live_delivery_reservation: None,
+                publication_recovery_reservation: None,
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

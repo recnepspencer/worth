@@ -34,7 +34,7 @@ pub(super) fn commit_owner_validated(
         WorthQueryCommitProgressionMint::witness(),
     )?;
     let evidence = evidence_seal::seal(&committed);
-    provider.graph.with_runtime_mut(|runtime| {
+    provider.graph.with_runtime_mut_unwind_isolated(|runtime| {
         committed
             .publish_and_encode(provider, runtime, evidence)
             .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)

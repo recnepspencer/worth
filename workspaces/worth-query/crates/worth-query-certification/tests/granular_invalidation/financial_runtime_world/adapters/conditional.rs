@@ -42,13 +42,9 @@ impl domain::WorthQueryHostConditionalOutputVersionProvider<QuoteRiskNode>
         domain::WorthQueryHostProviderHeapRetention,
         domain::WorthQueryHostProviderRetentionOverflow,
     > {
-        Ok(domain::WorthQueryHostProviderHeapRetention::try_from_parts(
-            [
-                domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(
-                    self.0 .0.as_ref(),
-                ),
-            ],
-        )?)
+        domain::WorthQueryHostProviderHeapRetention::try_from_parts([
+            domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(self.0 .0.as_ref()),
+        ])
     }
 
     fn output_version(
@@ -115,13 +111,11 @@ macro_rules! eligible_predicate {
                 domain::WorthQueryHostProviderHeapRetention,
                 domain::WorthQueryHostProviderRetentionOverflow,
             > {
-                Ok(domain::WorthQueryHostProviderHeapRetention::try_from_parts(
-                    [
-                        domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(
-                            self.eligible.as_ref(),
-                        ),
-                    ],
-                )?)
+                domain::WorthQueryHostProviderHeapRetention::try_from_parts([
+                    domain::WorthQueryHostProviderHeapRetention::arc_allocation_bytes(
+                        self.eligible.as_ref(),
+                    ),
+                ])
             }
 
             fn evaluate(

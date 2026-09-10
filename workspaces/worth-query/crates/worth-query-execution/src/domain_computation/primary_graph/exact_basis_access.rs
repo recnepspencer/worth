@@ -17,6 +17,7 @@ pub(crate) fn open_exact_basis_snapshot(
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryExactBasisSnapshotDenial {
+    #[cfg(test)]
     BranchIdentityUnavailable,
     BranchObservationUnavailable,
     RetentionCapacityExhausted,

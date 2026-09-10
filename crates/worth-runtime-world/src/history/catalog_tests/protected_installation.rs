@@ -43,7 +43,7 @@ fn protected_installation_denial_keeps_the_original_reservation_for_retry() {
         catalog.counters().direct_protection_acquisitions(),
         before.direct_protection_acquisitions() + 1
     );
-    let retained_claims = owner.retention.snapshot().component_obligations();
+    let retained_claims = owner.retention.snapshot(0).component_obligations();
     let report = catalog
         .reclaim_batch(CompositeHistoryReclamationRequest::new(
             root.identity().owner_identity(),
@@ -62,7 +62,7 @@ fn protected_installation_denial_keeps_the_original_reservation_for_retry() {
         .unwrap();
     assert_eq!(report.reclaimed_commits(), &[child.identity().clone()]);
     assert_eq!(
-        owner.retention.snapshot().component_obligations(),
+        owner.retention.snapshot(0).component_obligations(),
         retained_claims - 2,
         "completed reservation must not keep reclaimed history pins alive"
     );

@@ -149,8 +149,8 @@ impl WorthQueryProductBranchCreationRecovery {
             .recovery
             .release_effects(&self.handle, minimum_age_ticks)
         {
-            Ok(work) => {
-                let cleanup_identity = cleanup_reservation.install_unpublished(work);
+            Ok(cleanup) => {
+                let cleanup_identity = cleanup_reservation.install_unpublished(cleanup);
                 WorthQueryProductBranchOwnerCleanup::new(self.runtime.clone(), cleanup_identity)
                     .retry()
                     .map(|receipt| WorthQueryProductBranchCreationRecoveryRelease {

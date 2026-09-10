@@ -50,7 +50,7 @@ pub fn duplicate_reordered_and_foreign_clocks_fail_closed() {
 
 pub fn provider_replacement_requires_fresh_runtime_publication() {
     let incumbent = CourtroomWorld::publish("ready");
-    let mut replacement = CourtroomWorld::publish_replacement("ready");
+    let replacement = CourtroomWorld::publish_replacement("ready");
     let denial = replacement
         .application
         .on_branch(replacement.application.current_world())
@@ -65,7 +65,7 @@ pub fn provider_replacement_requires_fresh_runtime_publication() {
     );
     drop(incumbent);
 
-    let receipt = observe(&mut replacement);
+    let receipt = observe(&replacement);
     assert_eq!(receipt.committed_operation_count(), 1);
     assert_eq!(replacement.contacts.snapshot(), (1, 1, 1, 1));
 }

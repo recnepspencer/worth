@@ -40,25 +40,4 @@ impl WorthQueryRuntime {
         self.installed_product
             .execute_conditional(selected, request, context)
     }
-
-    pub(crate) fn reenter_retained_conditional_decision(
-        &self,
-        selected: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
-        request: worth_runtime_bridge::facade::BridgeConditionalDecisionReentryRequest<'_>,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
-        (
-            String,
-            worth_runtime_bridge::facade::BridgeConditionalReentryCounters,
-        ),
-    > {
-        let product = &self.installed_product;
-        product
-            .validate_selected_source(selected, request.bridge_snapshot_identity)
-            .map_err(|(_, detail)| (detail.to_string(), Default::default()))?;
-        product
-            .conditional
-            .reenter_retained_conditional_decision(request)
-            .map_err(|denial| (denial.detail().to_string(), denial.reentry_counters()))
-    }
 }

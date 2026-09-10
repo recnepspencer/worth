@@ -25,6 +25,13 @@ pub(super) struct BridgeOwnedConditionalTargetReservation {
 }
 
 impl BridgeOwnedConditionalTargetIndex {
+    pub(super) fn retained_target_reference_count(&self) -> usize {
+        self.by_dependency
+            .values()
+            .flat_map(|bucket| bucket.targets.values())
+            .sum()
+    }
+
     pub(super) fn register(&mut self, lowering: &BridgeInstalledConditionalLowering) {
         for correspondence in lowering.correspondences.iter() {
             let dependency = correspondence.dependency();

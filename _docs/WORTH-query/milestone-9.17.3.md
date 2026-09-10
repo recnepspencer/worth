@@ -4,11 +4,12 @@
 > product-branch workflow. Persistence and restart recovery remain Worth Store
 > integration work.
 
-> **Implementation status:** Phase 1 is certified. The sealed Signal owner,
-> shared Query/Bridge/World root, exact source binding, bounded evaluation
-> admission, and complete conditional service table are installed. Later phases
-> have not started. The architecture and acceptance requirements below remain
-> binding.
+> **Implementation status:** Phases 1-6 are certified and the milestone closed
+> on 2026-09-10. The public Query product-branch journey, exact composite-basis
+> carriage, World publication, conditional delivery and execution, sibling
+> progress, retained reads, cleanup, examples, and cumulative courts all run
+> through the production composition root. The architecture and acceptance
+> requirements below remain binding.
 
 ## Goal And Roadmap Placement
 

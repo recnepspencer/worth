@@ -160,7 +160,7 @@ fn reconstruction_panic_restores_runtime_owners_for_retry() {
 
     world.reconstruction_panic.set(false);
     assert!(world.reinstall_conditional_runtime().is_ok());
-    let receipt = observe(&mut world);
+    let receipt = observe(&world);
     assert_eq!(receipt.committed_operation_count(), 1);
 }
 

@@ -49,6 +49,23 @@ impl WorthQueryRelationalSourceOwner {
         mutate(&mut runtime)
     }
 
+    pub(crate) fn with_runtime_mut_unwind_isolated<T>(
+        &self,
+        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
+    ) -> T {
+        let mut runtime = self
+            .runtime
+            .lock()
+            .expect("Relational source owner is available");
+        let outcome =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(&mut runtime)));
+        drop(runtime);
+        match outcome {
+            Ok(value) => value,
+            Err(payload) => std::panic::resume_unwind(payload),
+        }
+    }
+
     pub fn bridge_source(&self) -> RuntimeBridgeRelationalSource {
         self.source.clone()
     }

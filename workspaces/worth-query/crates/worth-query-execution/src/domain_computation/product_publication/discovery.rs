@@ -76,8 +76,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         let (handle, recovery_port, disposition) = recovery.into_release_parts();
-        let work = match recovery_port.release_effects(&handle, minimum_age_ticks) {
-            Ok(work) => work,
+        let cleanup = match recovery_port.release_effects(&handle, minimum_age_ticks) {
+            Ok(cleanup) => cleanup,
             Err(denial) => {
                 return Err(recovery_failure(
                     WorthQueryProductUnpublishedRecovery::new(handle, recovery_port, disposition),
@@ -86,7 +86,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         disposition.release(&handle);
-        let cleanup_identity = reservation.install_unpublished(work);
+        let cleanup_identity = reservation.install_unpublished(cleanup);
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(
             self.product_runtime.clone(),
             cleanup_identity,

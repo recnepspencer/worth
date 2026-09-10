@@ -56,6 +56,14 @@ impl BridgeSealedRuntimeAssembly {
             .len()
     }
 
+    pub fn installed_conditional_target_reference_count(&self) -> usize {
+        self.runtime
+            .owned_conditional_targets
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retained_target_reference_count()
+    }
+
     /// Confirms that a sibling owner was derived from the exact authoritative
     /// source sealed into this assembly.
     pub fn readmits_authoritative_source_profile(
@@ -342,6 +350,15 @@ impl BridgeSealedRuntimeAssembly {
         lowering: &std::sync::Arc<BridgeInstalledConditionalLowering>,
     ) -> Result<(), BridgeConditionalDenial> {
         self.runtime.retire_owned_conditional(lowering)
+    }
+
+    /// Retires conditional generations owned by one exact Signal branch.
+    pub fn retire_owned_conditionals_on_signal_branch(
+        &mut self,
+        basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    ) -> Result<usize, BridgeConditionalDenial> {
+        self.runtime
+            .retire_owned_conditionals_on_signal_branch(basis)
     }
 
     pub fn owned_signal_active_node_count(&self) -> Result<usize, BridgeConditionalDenial> {

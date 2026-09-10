@@ -1,5 +1,8 @@
 //! Move-only recovery state for Query publication after Relational movement.
 
+pub(super) mod registry;
+pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
+
 use super::{
     session_commit::{provider_failure, snapshot_admission_failure},
     WorthQueryPrimaryGraphApplicationAttempt, WorthQueryPrimaryGraphCommittedApplication,
@@ -11,6 +14,7 @@ use crate::domain_computation::{
 };
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
+    product_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
     attempt: Option<WorthQueryPrimaryGraphApplicationAttempt>,
     branch: worth_relational::facade::history::BranchId,
     before: Option<worth_relational::facade::snapshots::SnapshotHandle>,
@@ -35,7 +39,11 @@ impl WorthQueryPendingApplicationPublication {
         emitted_effect_count: usize,
         outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     ) -> Self {
+        let product_incarnation = application
+            .committed_product_publication()
+            .product_incarnation();
         Self {
+            product_incarnation,
             attempt: Some(attempt),
             branch,
             before: Some(before),
@@ -57,6 +65,10 @@ impl WorthQueryPendingApplicationPublication {
             crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
         }
     }
+
+    const fn product_incarnation(&self) -> worth_runtime_world::facade::ProductBranchIncarnation {
+        self.product_incarnation
+    }
 }
 
 impl WorthQueryPrimaryGraphProvider {
@@ -64,53 +76,68 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn has_pending_application_publication_for_test(
         &self,
     ) -> bool {
-        self.pending_application_publication
+        self.pending_application_publication_count_for_test() != 0
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn pending_application_publication_count_for_test(
+        &self,
+    ) -> usize {
+        self.pending_application_publications
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .is_some()
+            .active_slot_count()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn reserve_application_publication_recovery(
+        &self,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Result<WorthQueryApplicationPublicationRecoveryReservation, &'static str> {
+        registry::WorthQueryPendingApplicationPublicationRegistry::reserve(
+            &self.pending_application_publications,
+            observation.lifecycle_incarnation(),
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn install_and_publish_application(
         &self,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        reservation: WorthQueryApplicationPublicationRecoveryReservation,
         pending: WorthQueryPendingApplicationPublication,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
-        let mut installed = self
-            .pending_application_publication
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        assert!(
-            installed.replace(pending).is_none(),
-            "serialized application publication cannot replace unresolved recovery state"
-        );
-        drop(installed);
-        self.resume_pending_application_publication(runtime)
+        let occurrence = pending.product_incarnation();
+        reservation.install(pending);
+        self.resume_pending_application_publication(runtime, occurrence)
     }
 
     pub(in crate::domain_computation::primary_graph) fn resume_pending_application_publication(
         &self,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
-        let Some(mut pending) = self
-            .pending_application_publication
+        let Some(slot) = self
+            .pending_application_publications
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take()
+            .slot(occurrence)
         else {
             return Ok(());
         };
-        let result = resume(self, runtime, &mut pending);
-        if result.is_err() {
-            pending.release_before(runtime);
-            let replaced = self
-                .pending_application_publication
+        let result = slot
+            .with_pending(|pending| {
+                let result = resume(self, runtime, pending);
+                if result.is_err() {
+                    pending.release_before(runtime);
+                }
+                result
+            })
+            .map_err(failure)?;
+        if result.is_ok() {
+            slot.complete();
+            self.pending_application_publications
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .replace(pending);
-            assert!(
-                replaced.is_none(),
-                "serialized recovery retains exactly one pending application publication"
-            );
+                .remove_exact(occurrence, &slot);
         }
         result
     }
@@ -174,6 +201,10 @@ fn publish_with_snapshot(
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
         .map_err(bridge_head_failure)?;
+    #[cfg(test)]
+    if provider.take_panicked_pending_application_publication() {
+        panic!("injected unwind after performed World publication reached terminal cutover");
+    }
     let attempt = pending
         .attempt
         .take()

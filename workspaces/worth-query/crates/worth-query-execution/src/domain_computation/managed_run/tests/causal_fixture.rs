@@ -52,7 +52,7 @@ pub(super) struct SourceProfileSubstitutionContext {
 
 impl CausalManagedAdmissionContext {
     pub fn read_request(&self) -> WorthQueryManagedTruthReadRequest {
-        WorthQueryManagedTruthReadRequest::new(
+        WorthQueryManagedTruthReadRequest::from_relational_basis(
             self.descriptor.clone(),
             SnapshotReadPacket::new(vec![]),
         )

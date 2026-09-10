@@ -85,8 +85,6 @@ pub use worth_query_execution::facade::integration::{
     RuntimeWorldRetentionBudgetInstallation, WorthQueryProductWorldClock,
     WorthQueryProductWorldResources,
 };
-mod conditional_owner_delivery_admission;
-mod conditional_owner_delivery_continuation;
 mod facade_contract;
 mod installed_live_routing;
 mod installed_product;
@@ -98,21 +96,12 @@ mod product_selection;
 mod runtime_root_state;
 mod settlement_repair;
 mod shared_projection_owners;
-pub(crate) use conditional_owner_delivery_admission::{
-    WorthQueryStagedOwnerDeliveryAdmission, WorthQueryStagedOwnerDeliveryAdmissionError,
-};
-pub(crate) use conditional_owner_delivery_continuation::WorthQueryRetainedOwnerDeliveryClassification;
-pub(crate) use installed_live_routing::{
-    WorthQueryAdmittedStagedOwnerDelivery, WorthQueryClassifiedOwnerDeliveryEmissionError,
-};
 pub use primary_graph_source::{
     WorthQueryPrimaryGraphSourceAdapter, WorthQueryPrimaryGraphSourceProjection,
 };
 pub(crate) use shared_projection_owners::{
-    WorthQuerySharedConditionalDeliveryCompletion, WorthQuerySharedPrimaryOwnerRefreshStop,
-    WorthQuerySharedProjectionLeaseToken,
+    WorthQuerySharedPrimaryOwnerRefreshStop, WorthQuerySharedProjectionLeaseToken,
 };
-mod conditional_owner_delivery_lowering;
 mod delivery;
 mod domain_installation_api;
 mod downstream_delivery_contract;

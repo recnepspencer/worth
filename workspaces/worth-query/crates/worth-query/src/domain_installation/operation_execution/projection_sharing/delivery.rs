@@ -49,9 +49,6 @@ pub struct WorthQuerySharedProjectionDelivery {
     impact_closure:
         Arc<crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure>,
     conditional_provenance: Arc<[crate::domain_installation::WorthQueryConditionalProvenance]>,
-    conditional_decision: Option<Arc<crate::domain_installation::WorthQueryConditionalProvenance>>,
-    owner_delivery_receipt:
-        Option<Arc<worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>>,
     invalidation_seed: Arc<super::WorthQuerySharedInvalidationSeed>,
     _sharing: Arc<WorthQueryAdmittedProjectionSharing>,
     source_identity: String,
@@ -68,10 +65,6 @@ pub(crate) struct WorthQuerySharedProjectionEpochEvidence {
         Arc<crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure>,
     pub(crate) conditional_provenance:
         Arc<[crate::domain_installation::WorthQueryConditionalProvenance]>,
-    pub(crate) conditional_decision:
-        Option<Arc<crate::domain_installation::WorthQueryConditionalProvenance>>,
-    pub(crate) owner_delivery_receipt:
-        Option<Arc<worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>>,
     pub(crate) invalidation_seed: Arc<super::WorthQuerySharedInvalidationSeed>,
     pub(crate) sharing: Arc<WorthQueryAdmittedProjectionSharing>,
     pub(crate) counters: WorthQuerySharedProjectionDeliveryCounters,
@@ -103,8 +96,6 @@ impl WorthQuerySharedProjectionDelivery {
             impact: epoch.impact,
             impact_closure: epoch.impact_closure,
             conditional_provenance: epoch.conditional_provenance,
-            conditional_decision: epoch.conditional_decision,
-            owner_delivery_receipt: epoch.owner_delivery_receipt,
             invalidation_seed: epoch.invalidation_seed,
             _sharing: epoch.sharing,
             source_identity: lease_view.source_identity,
@@ -140,12 +131,6 @@ impl WorthQuerySharedProjectionDelivery {
         &self.conditional_provenance
     }
 
-    pub fn conditional_decision(
-        &self,
-    ) -> Option<&crate::domain_installation::WorthQueryConditionalProvenance> {
-        self.conditional_decision.as_deref()
-    }
-
     pub const fn counters(&self) -> WorthQuerySharedProjectionDeliveryCounters {
         self.counters
     }
@@ -164,14 +149,6 @@ impl WorthQuerySharedProjectionDelivery {
         Arc::ptr_eq(&self.impact, &other.impact)
     }
 
-    pub fn retains_same_current_conditional_decision_as(&self, other: &Self) -> bool {
-        match (&self.conditional_decision, &other.conditional_decision) {
-            (Some(left), Some(right)) => Arc::ptr_eq(left, right),
-            (None, None) => true,
-            _ => false,
-        }
-    }
-
     pub fn invalidation_epoch_counters(
         &self,
     ) -> crate::domain_installation::WorthQueryConsumerInvalidationEpochCounters {
@@ -182,12 +159,6 @@ impl WorthQuerySharedProjectionDelivery {
         &self,
     ) -> &Arc<[crate::domain_installation::WorthQueryConditionalProvenance]> {
         &self.conditional_provenance
-    }
-
-    pub(crate) fn conditional_decision_arc(
-        &self,
-    ) -> Option<&Arc<crate::domain_installation::WorthQueryConditionalProvenance>> {
-        self.conditional_decision.as_ref()
     }
 
     pub(crate) fn invalidation_seed(&self) -> &Arc<super::WorthQuerySharedInvalidationSeed> {
@@ -221,19 +192,9 @@ impl WorthQuerySharedProjectionDelivery {
         if !lease_readmitted {
             return Err(WorthQuerySharedImpactReadmissionDenial::Lease);
         }
-        let impact_readmitted = match (
-            self.owner_delivery_receipt.as_deref(),
-            self.conditional_decision.as_deref(),
-        ) {
-            (Some(receipt), Some(conditional)) => self
-                .impact
-                .readmit_owner_delivery(&self.impact_closure, receipt, conditional)
-                .is_ok(),
-            (None, None) => self
-                .impact
-                .readmit_managed_delivery(&self.impact_closure, &self.delivery),
-            _ => false,
-        };
+        let impact_readmitted = self
+            .impact
+            .readmit_managed_delivery(&self.impact_closure, &self.delivery);
         if !impact_readmitted {
             return Err(WorthQuerySharedImpactReadmissionDenial::Impact);
         }

@@ -27,6 +27,16 @@ pub struct WorthQueryProductBranchCloseReceipt {
 }
 
 impl WorthQueryProductBranchCloseReceipt {
+    pub(crate) fn from_owner_cleanup(
+        branch: WorthQueryProductBranch,
+        cleanup: super::WorthQueryProductBranchOwnerCleanupReceipt,
+    ) -> Self {
+        Self {
+            branch,
+            retired_component_count: cleanup.retired_component_count(),
+        }
+    }
+
     pub const fn product_branch(&self) -> WorthQueryProductBranch {
         self.branch
     }
@@ -57,16 +67,23 @@ impl WorthQueryPendingProductBranchClose {
         &self.occurrence
     }
 
+    pub(crate) fn into_cleanup(
+        self,
+    ) -> (WorthQueryProductBranch, WorthQueryProductBranchOwnerCleanup) {
+        (
+            self.branch,
+            WorthQueryProductBranchOwnerCleanup::new(self.runtime, self.cleanup_identity),
+        )
+    }
+
     pub(crate) fn finish(
         self,
     ) -> Result<WorthQueryProductBranchCloseReceipt, WorthQueryProductBranchCloseDenial> {
-        let cleanup = WorthQueryProductBranchOwnerCleanup::new(self.runtime, self.cleanup_identity)
+        let (branch, cleanup) = self.into_cleanup();
+        cleanup
             .retry()
-            .map_err(WorthQueryProductBranchCloseDenial::OwnerCleanupPending)?;
-        Ok(WorthQueryProductBranchCloseReceipt {
-            branch: self.branch,
-            retired_component_count: cleanup.retired_component_count(),
-        })
+            .map(|receipt| WorthQueryProductBranchCloseReceipt::from_owner_cleanup(branch, receipt))
+            .map_err(WorthQueryProductBranchCloseDenial::OwnerCleanupPending)
     }
 }
 
