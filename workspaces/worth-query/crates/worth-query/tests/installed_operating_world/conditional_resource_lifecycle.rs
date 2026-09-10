@@ -1,5 +1,5 @@
 use worth_proof::TransitionOutcome;
-use worth_query::facade::{domain, foundation, runtime};
+use worth_query::facade::{domain, foundation, product, runtime};
 use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
 use super::{conditional_node_contract, installed_operation_fixture};
@@ -31,7 +31,7 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
         .unwrap();
 
     let first = create_sibling(&workspace, "conditional-resource-first", 1);
-    execute_selected(&mut workspace, &installed, &first);
+    execute_selected(&mut workspace, &installed, first);
     execute_default(&mut workspace, &installed);
     let full = workspace
         .conditional_evaluation_resource_observation()
@@ -41,7 +41,7 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
     assert!(full.query_retained_bytes() > 0);
     assert!(full.signal_retained_bytes() > 0);
 
-    let reused = execute_selected(&mut workspace, &installed, &first);
+    let reused = execute_selected(&mut workspace, &installed, first);
     let warm = workspace
         .conditional_evaluation_resource_observation()
         .unwrap();
@@ -54,7 +54,7 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
     assert_eq!(reused.compute_contacts, 0);
 
     let second = create_sibling(&workspace, "conditional-resource-second", 2);
-    execute_selected(&mut workspace, &installed, &second);
+    execute_selected(&mut workspace, &installed, second);
     let turned = workspace
         .conditional_evaluation_resource_observation()
         .unwrap();
@@ -94,29 +94,15 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
 
 fn create_sibling(
     workspace: &runtime::WorthQueryWorkspace,
-    name: &str,
-    ordinal: usize,
-) -> runtime::ProductBranchIdentity {
-    let source_world = workspace.observe_operating_world().unwrap();
-    let source = source_world.product_branch().unwrap();
-    let creation = runtime::ProductBranchCreationIntent::from_source(
-        name,
-        runtime::ProductBranchCreationPlans::new(
-            runtime::RelationalBranchCreationPlan::ForkExact {
-                target: runtime::BranchId(format!("conditional-resource-truth-{ordinal}")),
-            },
-            runtime::SignalBranchCreationPlan::ReuseExact,
-        ),
-    )
-    .unwrap();
-    let cancellation = runtime::RuntimeWorldCancellationSource::new();
-    let outcome = workspace
-        .create_product_branch(source, creation, &cancellation.token())
-        .unwrap();
-    let runtime::RuntimeWorldBranchCreationOutcome::Performed(observation) = outcome else {
-        panic!("World must publish the selected sibling: {outcome:?}")
-    };
-    observation.branch_identity().clone()
+    _name: &str,
+    _ordinal: usize,
+) -> product::WorthQueryProductBranch {
+    workspace
+        .branches()
+        .fork(workspace.current_world())
+        .components(|components| components.fork_relational().reuse_exact_signal_basis())
+        .create()
+        .expect("World must publish the selected sibling")
 }
 
 fn execute_default(
@@ -134,7 +120,7 @@ fn execute_selected(
     installed: &domain::WorthQueryInstalledDomainHandle<
         installed_operation_fixture::GeometryDomain,
     >,
-    selected: &runtime::ProductBranchIdentity,
+    selected: product::WorthQueryProductBranch,
 ) -> ConditionalExecutionObservation {
     let bound = bind_selected(workspace, installed, selected);
     execute_bound(workspace, bound)
@@ -152,7 +138,7 @@ fn bind_default(
     foundation::ObservationLaneWitness,
 > {
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(installed_operation_fixture::ConditionalResourceFamily)
         .bind(
@@ -167,7 +153,7 @@ fn bind_selected(
     installed: &domain::WorthQueryInstalledDomainHandle<
         installed_operation_fixture::GeometryDomain,
     >,
-    selected: &runtime::ProductBranchIdentity,
+    selected: product::WorthQueryProductBranch,
 ) -> domain::WorthQueryBoundDomainOperation<
     installed_operation_fixture::GeometryDomain,
     installed_operation_fixture::ConditionalResourceOperation,
@@ -175,7 +161,7 @@ fn bind_selected(
     foundation::ObservationLaneWitness,
 > {
     workspace
-        .observe_product_operating_world(selected)
+        .observe_operating_world(selected)
         .unwrap()
         .family(installed_operation_fixture::ConditionalResourceFamily)
         .bind(

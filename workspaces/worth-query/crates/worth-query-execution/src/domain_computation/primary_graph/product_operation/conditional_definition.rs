@@ -59,6 +59,13 @@ pub struct WorthQueryPerformedConditionalDefinitionPublication {
 }
 
 impl WorthQueryPerformedConditionalDefinitionPublication {
+    pub fn product_branch(&self) -> crate::basis::WorthQueryProductBranch {
+        crate::basis::WorthQueryProductBranch::from_occurrence(
+            self.publication.new_product_head().lifecycle_incarnation(),
+        )
+    }
+
+    #[doc(hidden)]
     pub fn product_branch_identity(&self) -> &ProductBranchIdentity {
         self.publication.new_product_head().branch_identity()
     }

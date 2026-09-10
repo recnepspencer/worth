@@ -5,7 +5,9 @@ use super::{admitted_program_with_emit, authenticated_principal, idempotency, re
 use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, live_scope,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdmittedChange, WorthQueryApplicationCommitOutcome,
+};
 
 #[test]
 fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
@@ -30,17 +32,14 @@ fn assert_live_reservation_denial(
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
-    let selected = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap();
-    let product_before = selected.selected_commit().clone();
+    let branch = world.application.current_world();
+    let selected = world.application.on_branch(branch).select().unwrap();
+    let product_before = selected.product().selected_commit().clone();
     let bridge_before = bridge_head_commit(&world);
     let _live = world
         .application
         .primary_provider
-        .observe_application_commit_causality(&selected);
+        .observe_application_commit_causality(selected.product());
     world
         .application
         .primary_provider
@@ -56,22 +55,23 @@ fn assert_live_reservation_denial(
 
     let outcome = world
         .application
-        .compare_and_commit_application(program, idempotency(identity, identity));
-    assert!(
-        !matches!(
-            outcome,
-            WorthQueryApplicationCommitOutcome::Committed(_)
-                | WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
-                | WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
-        ),
-        "fanout reservation failure crossed the pre-effect boundary: {outcome:?}"
-    );
-    let product_after = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap();
-    assert_eq!(product_after.selected_commit(), &product_before);
+        .on_branch(branch)
+        .transaction()
+        .apply(WorthQueryAdmittedChange::new(
+            program,
+            idempotency(identity, identity),
+        ))
+        .commit()
+        .expect("the public product token remains admitted");
+    let Err(outcome) = outcome.require_committed() else {
+        panic!("fanout reservation failure cannot satisfy require_committed");
+    };
+    assert!(matches!(
+        outcome,
+        WorthQueryApplicationCommitOutcome::Aborted
+    ));
+    let product_after = world.application.on_branch(branch).select().unwrap();
+    assert_eq!(product_after.product().selected_commit(), &product_before);
     assert_eq!(bridge_head_commit(&world), bridge_before);
     assert_eq!(
         world

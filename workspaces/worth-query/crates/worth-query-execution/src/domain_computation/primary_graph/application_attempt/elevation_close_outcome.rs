@@ -135,6 +135,10 @@ pub enum WorthQueryElevationCloseOutcome {
         WorthQueryApprovedElevation,
     ),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(
+        super::WorthQueryApplicationNoEffect,
+        WorthQueryApprovedElevation,
+    ),
     Closed(WorthQueryMandatoryReview),
     AlreadyClosed(WorthQueryMandatoryReview),
     Stale(
@@ -185,6 +189,9 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryElevationCloseOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryElevationCloseOutcome::NoEffect(no_effect, binding.into_approved())
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryElevationCloseOutcome::SettlementDeferred(deferred)

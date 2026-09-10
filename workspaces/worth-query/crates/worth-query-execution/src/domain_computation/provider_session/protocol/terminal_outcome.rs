@@ -35,6 +35,7 @@ pub struct WorthQueryClosedProviderSessionDisposition {
 pub enum WorthQuerySessionCommitOrAbortOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     Committed(WorthQueryClosedProviderSessionDisposition),
     Aborted(WorthQueryClosedProviderSessionDisposition),
     CommitDeferred(super::WorthQueryProviderSessionCommitDeferred),
@@ -49,6 +50,7 @@ impl WorthQuerySessionCommitOrAbortOutcome {
         match self {
             Self::Committed(_)
             | Self::ProductStale(_)
+            | Self::NoEffect(_)
             | Self::Aborted(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_) => WorthQueryProviderSessionRecoveryPosture::Closed,
@@ -68,6 +70,7 @@ impl WorthQuerySessionCommitOrAbortOutcome {
             }
             Self::Committed(_)
             | Self::ProductStale(_)
+            | Self::NoEffect(_)
             | Self::ProductUnpublished(_)
             | Self::Aborted(_)
             | Self::CommitDeferred(_)
@@ -81,6 +84,7 @@ impl WorthQuerySessionCommitOrAbortOutcome {
             Self::CommitSettlementDeferred(deferred) => Some(deferred),
             Self::Committed(_)
             | Self::ProductStale(_)
+            | Self::NoEffect(_)
             | Self::ProductUnpublished(_)
             | Self::Aborted(_)
             | Self::CommitDeferred(_)

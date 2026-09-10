@@ -27,9 +27,9 @@ pub use support_snapshot::{
 };
 pub use test_backend::{
     advance_test_workspace_domain_installation_generation, compare_test_backend_write_receipts,
-    in_memory_test_runtime, WorthQueryControlledTestWorkspace,
-    WorthQueryInMemoryTestRuntimeBuilder, WorthQueryTestBackendEquivalenceReport,
-    WorthQueryTestBackendEquivalenceRow, WorthQueryTestBackendError,
-    WorthQueryTestBackendErrorKind, WorthQueryTestBackendSchema, WorthQueryTestSeedReceipt,
-    WorthQueryTestSeedRow,
+    in_memory_test_product_world_resources, in_memory_test_runtime,
+    WorthQueryControlledTestWorkspace, WorthQueryInMemoryTestRuntimeBuilder,
+    WorthQueryTestBackendEquivalenceReport, WorthQueryTestBackendEquivalenceRow,
+    WorthQueryTestBackendError, WorthQueryTestBackendErrorKind, WorthQueryTestBackendSchema,
+    WorthQueryTestSeedReceipt, WorthQueryTestSeedRow,
 };

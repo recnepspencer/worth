@@ -141,9 +141,7 @@ fn evaluate_conditional_node<D, O, F, L: BasisOperationLane>(
 ) -> Result<WorthQueryConditionalProvenance, WorthQueryConditionalEvaluationStop> {
     let authority = super::reentry::admit_conditional_authority(bound, node)
         .map_err(WorthQueryConditionalEvaluationStop::Reentry)?;
-    let product = bound
-        .product()
-        .map_err(WorthQueryConditionalEvaluationStop::Reentry)?;
+    let product = bound.product();
     let snapshot_identity = evaluation.snapshot.evidence_identity();
     let mut context =
         WorthQueryConditionalComputeContext::new(super::WorthQueryConditionalComputeContextParts {

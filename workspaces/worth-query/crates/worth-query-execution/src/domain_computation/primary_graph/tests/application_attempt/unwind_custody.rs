@@ -92,7 +92,11 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         before_retry_inspections,
         "ordinary idempotency resolution must not inspect World recovery",
     );
-    recovery.release_obligations(0).unwrap();
+    let receipt = world
+        .application
+        .release_product_publication_recovery(recovery, 0)
+        .unwrap();
+    assert_eq!(receipt.retired_component_count(), 0);
     assert_eq!(
         world
             .application

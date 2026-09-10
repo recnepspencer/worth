@@ -35,18 +35,18 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         .unwrap();
     let source = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    let source_commit = source.selected_commit().clone();
-    let source_branch = source.branch_identity().clone();
+    let source_commit = source.product().selected_commit().clone();
+    let source_branch = source.product().product_branch();
     let sibling = fork_relational_product(
         &world,
         &source,
         "public-journey-sibling",
         "public-journey-sibling-data",
     );
-    let warm_product = world.application.on_product(source).unwrap();
+    let warm_product = source;
     let scope = warm_product
         .resolve_entity(
             IntentIdentityField::reference(),
@@ -77,10 +77,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     assert_security_work(warm.receipt());
     drop(warm);
 
-    let retained_product = world
-        .application
-        .select_product_branch(&source_branch)
-        .unwrap();
+    let retained_product = world.application.on_branch(source_branch).select().unwrap();
     let retained = retained_product
         .admit_application_query(
             &query,
@@ -91,7 +88,8 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         .unwrap();
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(suppressed) = world
         .application
-        .select_product_branch(&source_branch)
+        .on_branch(source_branch)
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .unwrap()
@@ -111,7 +109,8 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
 
     let sibling_warm = world
         .application
-        .select_product_branch(&sibling)
+        .on_branch(sibling)
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .unwrap()
@@ -135,8 +134,8 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     );
 
     let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
-    let mut publication = world.change_input_and_conditional_definition_on_product(
-        &source_branch,
+    let mut publication = world.change_input_and_conditional_definition_on_branch(
+        source_branch,
         "changed-on-a",
         Arc::new(replacement),
     );
@@ -166,10 +165,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     let performed = publication
         .take_performed_relational_product_change()
         .expect("the combined publication retains its unique Relational delivery");
-    let selected_source = world
-        .application
-        .select_product_branch(&source_branch)
-        .unwrap();
+    let selected_source = world.application.on_branch(source_branch).select().unwrap();
     let failed = selected_source
         .deliver_relational_change_to_conditional(&world.clock, usize::MAX, performed)
         .expect_err("an undeclared dependency ordinal must fail before retention");
@@ -206,16 +202,17 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     world.clock_control.push(3, 11);
     let published = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    assert_eq!(published.branch_identity(), &source_branch);
-    assert_ne!(published.selected_commit(), &source_commit);
+    assert_eq!(published.product().product_branch(), source_branch);
+    assert_ne!(published.product().selected_commit(), &source_commit);
     drop(published);
 
     let outcome = world
         .application
-        .select_product_branch(&source_branch)
+        .on_branch(source_branch)
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .unwrap()
@@ -273,7 +270,8 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
 
     let sibling_outcome = world
         .application
-        .select_product_branch(&sibling)
+        .on_branch(sibling)
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .unwrap()
@@ -303,7 +301,8 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     ] {
         let outcome = world
             .application
-            .select_product_branch(&branch)
+            .on_branch(branch)
+            .select()
             .unwrap()
             .conditional_clock(&world.clock)
             .unwrap()
@@ -331,7 +330,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     }
 
     let assert_product_input = |branch, expected| {
-        let selected = world.application.select_product_branch(&branch).unwrap();
+        let selected = world.application.on_branch(branch).select().unwrap();
         let scope = selected
             .resolve_entity(
                 IntentIdentityField::reference(),
@@ -355,10 +354,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
             .execute_application_query_one_shot(plan)
             .unwrap();
         assert_eq!(result.rows()[0].input, expected);
-        assert_eq!(
-            product_identity(result.receipt()).branch_identity(),
-            &branch
-        );
+        assert_eq!(product_identity(result.receipt()).product_branch(), branch);
         assert_security_work(result.receipt());
     };
     for (branch, expected) in [

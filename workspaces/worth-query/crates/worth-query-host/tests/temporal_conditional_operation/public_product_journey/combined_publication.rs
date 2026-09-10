@@ -13,17 +13,19 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
         .application
         .install_external_effect_transport(transport.clone())
         .unwrap();
-    let branch = world.application.product_runtime().default_branch().clone();
+    let branch = world.application.current_world();
     let before = world
         .application
-        .select_product_branch(&branch)
+        .on_branch(branch)
+        .select()
         .unwrap()
         .product()
         .selected_commit()
         .clone();
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(warm) = world
         .application
-        .select_product_branch(&branch)
+        .on_branch(branch)
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .unwrap()
@@ -35,13 +37,13 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
     drop(warm);
     let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
 
-    let mut receipt = world.change_input_and_conditional_definition_on_product(
-        &branch,
+    let mut receipt = world.change_input_and_conditional_definition_on_branch(
+        branch,
         "combined-input",
         Arc::new(replacement),
     );
     let publication = receipt.committed_product_publication();
-    assert_eq!(publication.product_branch(), &branch);
+    assert_eq!(receipt.product_branch(), branch);
     assert_ne!(publication.composite_commit(), &before);
     assert_eq!(
         publication.relational_posture(),
@@ -65,7 +67,7 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
         .take_performed_relational_product_change()
         .expect("fresh combined publication retains one Relational delivery");
     assert_eq!(performed.product_commit(), &composite_commit);
-    let selected = world.application.select_product_branch(&branch).unwrap();
+    let selected = world.application.on_branch(branch).select().unwrap();
     let delivery = selected
         .deliver_relational_change_to_conditional(&world.clock, 0, performed)
         .expect("the performed patch and conditional handle belong to this product");
@@ -81,7 +83,8 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
     world.clock_control.push(3, 11);
     let execution = world
         .application
-        .select_product_branch(&branch)
+        .on_branch(branch)
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .unwrap()

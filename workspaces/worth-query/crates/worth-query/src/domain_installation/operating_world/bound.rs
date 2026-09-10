@@ -161,10 +161,7 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryBoundDomainOperation<D, O, F, L> 
 
     pub(crate) fn product(
         &self,
-    ) -> Result<
-        &Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease>,
-        super::super::WorthQueryConditionalAdmissionDenial,
-    > {
+    ) -> &Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease> {
         self.basis.product()
     }
 

@@ -59,6 +59,14 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryReceiptBasisRe
 }
 
 impl WorthQueryReceiptBasisRetentionStore {
+    pub(in crate::domain_computation::primary_graph::provider) fn release(
+        &mut self,
+        commit: CommitId,
+    ) {
+        self.by_commit.remove(&commit);
+        self.order.retain(|indexed| *indexed != commit);
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn retain(
         &mut self,
         commit: CommitId,

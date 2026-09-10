@@ -19,6 +19,7 @@ mod invariant_execution;
 mod invariant_execution_failure;
 mod mutation_work;
 mod pending_application_publication;
+mod product_retirement;
 mod provisional_state;
 mod publication_recovery;
 mod resource_support;

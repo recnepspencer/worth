@@ -7,7 +7,8 @@ pub fn duplicate_reordered_and_foreign_clocks_fail_closed() {
     let world = CourtroomWorld::publish("blocked");
     let selected = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
     let mut clock = selected.conditional_clock(&world.clock).unwrap();
     let _ = clock.observe();
@@ -35,7 +36,8 @@ pub fn duplicate_reordered_and_foreign_clocks_fail_closed() {
     let foreign = CourtroomWorld::publish("ready");
     let denial = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap()
         .conditional_clock(&foreign.clock)
         .err()
@@ -51,7 +53,8 @@ pub fn provider_replacement_requires_fresh_runtime_publication() {
     let mut replacement = CourtroomWorld::publish_replacement("ready");
     let denial = replacement
         .application
-        .select_product_branch(replacement.application.product_runtime().default_branch())
+        .on_branch(replacement.application.current_world())
+        .select()
         .unwrap()
         .conditional_clock(&incumbent.clock)
         .err()

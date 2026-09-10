@@ -3,8 +3,7 @@ use super::*;
 #[test]
 fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -106,8 +105,7 @@ fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
 
 #[test]
 fn idempotent_intent_inspection_preserves_outcome_without_mutation_claim() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -149,8 +147,7 @@ fn idempotent_intent_inspection_preserves_outcome_without_mutation_claim() {
 #[test]
 fn mutating_intent_with_empty_delta_denies_before_signal_routing() {
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

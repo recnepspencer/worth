@@ -14,7 +14,8 @@ impl CourtroomWorld {
         let external = block_on(authentication.authenticate((), &request)).unwrap();
         let principal = self
             .application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .on_branch(self.application.current_world())
+            .select()
             .expect("the selected product branch remains admitted")
             .resolve_authenticated_principal(
                 &binding,
@@ -25,7 +26,8 @@ impl CourtroomWorld {
             .unwrap();
         let mapping = self
             .application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .on_branch(self.application.current_world())
+            .select()
             .expect("the selected product branch remains admitted")
             .resolve_entity(
                 ExternalIdentityField::reference(),
@@ -43,7 +45,8 @@ impl CourtroomWorld {
             .unwrap();
         let admission = self
             .application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .on_branch(self.application.current_world())
+            .select()
             .unwrap()
             .authorize_operation(
                 &principal,

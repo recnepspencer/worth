@@ -1,7 +1,7 @@
 use std::num::NonZeroUsize;
 
 use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryRequestScope, primary_graph, runtime,
+    admission::authenticated_principal::WorthQueryRequestScope, primary_graph, product,
 };
 
 use super::adapters::block_on;
@@ -20,7 +20,8 @@ pub(super) fn principal(
     let external = block_on(authentication.authenticate((), request)).unwrap();
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &binding,
@@ -33,96 +34,51 @@ pub(super) fn principal(
 
 pub(super) fn fork_relational_product(
     world: &CourtroomWorld,
-    source: &primary_graph::WorthQueryProductBranchLease,
-    name: &str,
-    relational_name: &str,
-) -> runtime::ProductBranchIdentity {
-    let intent = runtime::ProductBranchCreationIntent::from_source(
-        name,
-        runtime::ProductBranchCreationPlans::new(
-            runtime::RelationalBranchCreationPlan::ForkExact {
-                target: runtime::BranchId(relational_name.to_owned()),
-            },
-            runtime::SignalBranchCreationPlan::ReuseExact,
-        ),
-    )
-    .unwrap();
-    let outcome = world
+    source: &primary_graph::WorthQuerySelectedProductOperation<'_, TemporalHostSchema>,
+    _name: &str,
+    _relational_name: &str,
+) -> product::WorthQueryProductBranch {
+    world
         .application
-        .product_runtime()
-        .create_product_branch(
-            source,
-            intent,
-            &runtime::RuntimeWorldCancellationSource::new().token(),
-        )
-        .unwrap();
-    let runtime::RuntimeWorldBranchCreationOutcome::Performed(observation) = outcome else {
-        panic!("fork must publish an exact sibling product: {outcome:?}")
-    };
-    observation.branch_identity().clone()
+        .branches()
+        .fork(source.product().product_branch())
+        .components(|components| components.fork_relational().reuse_exact_signal_basis())
+        .create()
+        .expect("fork must publish an exact sibling product")
 }
 
 pub(super) fn fork_independent_product(
     world: &CourtroomWorld,
-    source: &primary_graph::WorthQueryProductBranchLease,
-    name: &str,
-    relational_name: &str,
-    signal_name: &str,
-) -> runtime::ProductBranchIdentity {
-    let intent = runtime::ProductBranchCreationIntent::from_source(
-        name,
-        runtime::ProductBranchCreationPlans::new(
-            runtime::RelationalBranchCreationPlan::ForkExact {
-                target: runtime::BranchId(relational_name.to_owned()),
-            },
-            runtime::SignalBranchCreationPlan::ForkExact {
-                target: runtime::validate_signal_branch_name(signal_name)
-                    .expect("the independent Signal branch name validates"),
-            },
-        ),
-    )
-    .unwrap();
-    let outcome = world
+    source: &primary_graph::WorthQuerySelectedProductOperation<'_, TemporalHostSchema>,
+    _name: &str,
+    _relational_name: &str,
+    _signal_name: &str,
+) -> product::WorthQueryProductBranch {
+    world
         .application
-        .product_runtime()
-        .create_product_branch(
-            source,
-            intent,
-            &runtime::RuntimeWorldCancellationSource::new().token(),
-        )
-        .unwrap();
-    let runtime::RuntimeWorldBranchCreationOutcome::Performed(observation) = outcome else {
-        panic!("independent fork must publish both product components: {outcome:?}")
-    };
-    observation.branch_identity().clone()
+        .branches()
+        .fork(source.product().product_branch())
+        .components(|components| components.fork_relational().fork_signal())
+        .create()
+        .expect("independent fork must publish both product components")
 }
 
 pub(super) fn reuse_exact_product(
     world: &CourtroomWorld,
-    source: &primary_graph::WorthQueryProductBranchLease,
-    name: &str,
-) -> runtime::ProductBranchIdentity {
-    let intent = runtime::ProductBranchCreationIntent::from_source(
-        name,
-        runtime::ProductBranchCreationPlans::new(
-            runtime::RelationalBranchCreationPlan::ReuseExact,
-            runtime::SignalBranchCreationPlan::ReuseExact,
-        ),
-    )
-    .unwrap();
-    let outcome = world
+    source: &primary_graph::WorthQuerySelectedProductOperation<'_, TemporalHostSchema>,
+    _name: &str,
+) -> product::WorthQueryProductBranch {
+    world
         .application
-        .product_runtime()
-        .create_product_branch(
-            source,
-            intent,
-            &runtime::RuntimeWorldCancellationSource::new().token(),
-        )
-        .unwrap();
-    let runtime::RuntimeWorldBranchCreationOutcome::Performed(observation) = outcome else {
-        panic!("exact reuse must publish a product sibling: {outcome:?}")
-    };
-    observation.branch_identity().clone()
+        .branches()
+        .fork(source.product().product_branch())
+        .components(|components| {
+            components
+                .reuse_exact_relational_basis()
+                .reuse_exact_signal_basis()
+        })
+        .create()
+        .expect("exact reuse must publish a product sibling")
 }
 
 pub(super) fn controls(

@@ -28,7 +28,7 @@ fn failed_conditional_compute_retains_exact_lower_runtime_work() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)

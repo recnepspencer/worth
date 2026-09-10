@@ -33,11 +33,23 @@ impl PublicBridgeRuntimeHarness {
         relational_runtime: Option<worth_relational::facade::runtime::RelationalRuntime>,
     ) -> WorthQueryRuntime {
         record_public_bridge_runtime_bootstrap_invocation(PublicBridgeRuntimeBootstrapPath::Common);
+        let relational_runtime = relational_runtime.unwrap_or_else(|| {
+            worth_relational::facade::runtime::RelationalRuntimeBuilder::new().build()
+        });
+        let source =
+            worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
+                relational_runtime,
+                "public-graph",
+            )
+            .expect("public bridge tests require one real Relational product source");
+        let bridge = bridge::public_bridge(&source);
 
-        let mut builder = WorthQueryRuntime::builder()
+        WorthQueryRuntime::builder(public_product_world_resources())
             .aspect_contracts(public_bridge_aspect_contracts())
             .expect("public bridge aspect contracts should install")
-            .runtime_bridge(bridge::public_bridge())
+            .relational_source_owner(source)
+            .runtime_bridge(bridge)
+            .conditional_execution_resources(public_product_resources())
             .schema_adapter(PublicSchemaAdapter)
             .source_adapter(PublicSourceAdapter::new(self.state.clone()))
             .existing_truth_verification(PublicExistingTruthVerificationAdapter::new(
@@ -49,11 +61,7 @@ impl PublicBridgeRuntimeHarness {
             .subscription_activation(PublicSubscriptionActivationAdapter)
             .preview_basis(PublicPreviewBasisAdapter)
             .inspector_evidence(PublicInspectorEvidenceAdapter)
-            .support_profile(profile);
-        if let Some(relational_runtime) = relational_runtime {
-            builder = builder.relational_runtime(relational_runtime);
-        }
-        builder
+            .support_profile(profile)
             .build_backend_from_parts()
             .build()
             .expect("public bridge-backed runtime should build")

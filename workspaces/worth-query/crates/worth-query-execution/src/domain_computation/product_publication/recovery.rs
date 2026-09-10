@@ -1,6 +1,6 @@
 use worth_runtime_world::facade::{
-    OwnerRetirementWork, ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
-    RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPort,
+    ProductUnpublishedRecoveryHandle, RecoveryContinuationContract, RuntimeWorldRecoveryDenial,
+    RuntimeWorldRecoveryPort,
 };
 
 use super::WorthQueryProductUnpublishedApplication;
@@ -52,18 +52,79 @@ impl WorthQueryProductUnpublishedRecovery {
         self.recovery.continue_effects(effects)
     }
 
-    /// Returns every actual retirement obligation emitted by World cleanup.
-    #[must_use = "cleanup work must be retained or completed by its owning runtime"]
-    pub fn release_obligations(
-        &self,
-        minimum_age_ticks: u64,
-    ) -> Result<Vec<OwnerRetirementWork>, RuntimeWorldRecoveryDenial> {
-        let work = self
-            .recovery
-            .release_effects(&self.handle, minimum_age_ticks)?;
-        self.disposition.release(&self.handle);
-        Ok(work)
+    pub(super) fn into_release_parts(
+        self,
+    ) -> (
+        ProductUnpublishedRecoveryHandle,
+        RuntimeWorldRecoveryPort,
+        crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
+    ) {
+        (self.handle, self.recovery, self.disposition)
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryProductUnpublishedRecoveryReleaseDenial {
+    World(RuntimeWorldRecoveryDenial),
+    CleanupCapacityExhausted,
+}
+
+impl From<RuntimeWorldRecoveryDenial> for WorthQueryProductUnpublishedRecoveryReleaseDenial {
+    fn from(denial: RuntimeWorldRecoveryDenial) -> Self {
+        Self::World(denial)
+    }
+}
+
+#[derive(Debug)]
+pub struct WorthQueryProductUnpublishedRecoveryFailure {
+    denial: WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    recovery: WorthQueryProductUnpublishedRecovery,
+}
+
+impl WorthQueryProductUnpublishedRecoveryFailure {
+    pub const fn denial(&self) -> WorthQueryProductUnpublishedRecoveryReleaseDenial {
+        self.denial
+    }
+
+    pub fn into_recovery(self) -> WorthQueryProductUnpublishedRecovery {
+        self.recovery
+    }
+}
+
+#[derive(Debug)]
+pub enum WorthQueryProductUnpublishedRecoveryReleaseFailure {
+    Recovery(WorthQueryProductUnpublishedRecoveryFailure),
+    OwnerCleanup(
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupFailure,
+    ),
+}
+
+impl WorthQueryProductUnpublishedRecoveryReleaseFailure {
+    pub fn into_recovery(self) -> Option<WorthQueryProductUnpublishedRecovery> {
+        match self {
+            Self::Recovery(failure) => Some(failure.into_recovery()),
+            Self::OwnerCleanup(_) => None,
+        }
+    }
+
+    pub fn into_owner_cleanup(
+        self,
+    ) -> Option<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup>
+    {
+        match self {
+            Self::Recovery(_) => None,
+            Self::OwnerCleanup(failure) => Some(failure.into_cleanup()),
+        }
+    }
+}
+
+pub(super) fn recovery_failure(
+    recovery: WorthQueryProductUnpublishedRecovery,
+    denial: WorthQueryProductUnpublishedRecoveryReleaseDenial,
+) -> WorthQueryProductUnpublishedRecoveryReleaseFailure {
+    WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(
+        WorthQueryProductUnpublishedRecoveryFailure { denial, recovery },
+    )
 }
 
 impl std::fmt::Debug for WorthQueryProductUnpublishedRecovery {

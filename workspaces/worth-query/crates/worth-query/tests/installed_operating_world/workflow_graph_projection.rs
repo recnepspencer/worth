@@ -9,7 +9,7 @@ fn workflow_executor_consumes_execution_bound_separate_graph_projection() {
     let mut workspace = workflow_graph_projection_workspace("workflow-graph-projection").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)

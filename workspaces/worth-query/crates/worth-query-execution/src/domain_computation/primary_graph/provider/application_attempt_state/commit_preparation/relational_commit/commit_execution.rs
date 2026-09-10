@@ -115,9 +115,7 @@ fn world_no_effect(
                 "World publication deadline elapsed before effect",
             ))
         }
-        _ => Stop::Denied(failure(
-            "World rejected application publication before owner effects",
-        )),
+        _ => Stop::NoEffect(no_effect),
     }
 }
 impl WorthQueryCommittedApplicationSession {

@@ -6,6 +6,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome,
 };
+use crate::domain_computation::{
+    WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    WorthQueryProductUnpublishedRecoveryReleaseFailure,
+};
 use std::num::NonZeroUsize;
 use worth_runtime_world::facade::{
     ProductUnpublishedCause, ProductUnpublishedNextAction, RuntimeWorldRecoveryDenial,
@@ -68,10 +72,20 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
             .readmit_product_publication_recovery(recovery.record_handle()),
         Err(RuntimeWorldRecoveryDenial::ForeignHandle)
     ));
-    assert!(matches!(
-        recovery.release_obligations(0),
-        Err(RuntimeWorldRecoveryDenial::SettlementRequired)
-    ));
+    let failure = world
+        .application
+        .release_product_publication_recovery(recovery, 0)
+        .expect_err("unsettled owner effects must remain recoverable");
+    let WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure) = failure else {
+        panic!("unsettled owner effects cannot become cleanup custody")
+    };
+    assert_eq!(
+        failure.denial(),
+        WorthQueryProductUnpublishedRecoveryReleaseDenial::World(
+            RuntimeWorldRecoveryDenial::SettlementRequired
+        )
+    );
+    let recovery = failure.into_recovery();
     let held_view = recovery.inspect().unwrap();
     assert!(matches!(
         recovery.continue_owner_settlement(),
@@ -106,15 +120,17 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
         baseline + 1,
         "settlement must not rerun the application"
     );
-    let retirement_work = recovery.release_obligations(0).unwrap();
-    assert!(
-        retirement_work.is_empty(),
-        "ordinary publication created no component branches"
-    );
-    assert!(matches!(
-        recovery.inspect(),
-        Err(RuntimeWorldRecoveryDenial::MissingRecord)
-    ));
+    let receipt = world
+        .application
+        .release_product_publication_recovery(recovery, 0)
+        .unwrap();
+    assert_eq!(receipt.retired_component_count(), 0);
+    assert!(world
+        .application
+        .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
+        .unwrap()
+        .rows()
+        .is_empty());
     assert_eq!(
         world
             .application
@@ -204,8 +220,11 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
         .unwrap();
     assert_eq!(current.selected_commit(), selected.selected_commit());
     assert_eq!(commits(), baseline + 1);
-    let work = recovery.release_obligations(0).unwrap();
-    assert!(work.is_empty());
+    let receipt = world
+        .application
+        .release_product_publication_recovery(recovery, 0)
+        .unwrap();
+    assert_eq!(receipt.retired_component_count(), 0);
     assert_eq!(
         world
             .application

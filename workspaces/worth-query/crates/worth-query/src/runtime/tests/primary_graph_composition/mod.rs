@@ -2,14 +2,10 @@ mod authentication;
 mod runtime_world;
 mod schema;
 
-use std::time::Duration;
-
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
-use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationPrincipalKey, WorthQueryPrincipalResolutionMode,
-};
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationPrincipalKey;
 
-use self::authentication::{authenticate, external_identity, live_scope};
+use self::authentication::external_identity;
 use self::runtime_world::{
     host_relational_runtime, mixed_basis_relational_runtime, CommittingWriteAuthority,
 };
@@ -22,11 +18,13 @@ use super::support::{
 };
 
 use crate::ordinary::workflow::{branch_merge, declare_branch_merge};
+use crate::runtime::WorthQueryConditionalExecutionResources;
 
 #[test]
-fn ordinary_write_and_principal_resolution_share_one_configured_relational_graph() {
+fn ordinary_write_and_product_branch_creation_share_one_configured_relational_graph() {
     let subject = "dynamic-user-7f643b";
     let mut runtime = complete_backend_from_parts_builder()
+        .conditional_execution_resources(WorthQueryConditionalExecutionResources::development())
         .domain_package(primary_graph_domain_package())
         .expect("primary graph domain package should admit")
         .relational_runtime(host_relational_runtime())
@@ -64,31 +62,21 @@ fn ordinary_write_and_principal_resolution_share_one_configured_relational_graph
         ))
         .expect("ordinary Query write should commit through the shared graph");
 
-    let declaration =
-        PrimaryGraphCompositionSchema::declaration().expect("typed schema should declare");
-    let installed = runtime
-        .installed_application_schema(declaration)
-        .expect("runtime should bind the exact installed schema");
-    let binding = installed
-        .principal_binding(IdentityBinding::reference())
-        .expect("typed principal binding should be installed");
-    let scope = live_scope();
-    let admitted = authenticate(&installed, subject, Duration::from_secs(60), &scope);
-    let principal = runtime
-        .resolve_authenticated_principal(
-            &binding,
-            admitted,
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("post-write identity index should resolve the enabled principal");
-
-    assert_eq!(principal.external_identity().subject(), subject);
-    assert_eq!(*principal.principal_identity(), 7);
-    assert_eq!(principal.examined_candidate_count(), 1);
-    runtime
-        .validate_authenticated_principal(&principal, &scope)
-        .expect("resolved principal should remain fresh");
+    let workspace = runtime
+        .workspace("shared-primary-graph")
+        .expect("the installed runtime must expose its Product World");
+    let root = workspace.current_world();
+    let sibling = workspace
+        .branches()
+        .fork(root)
+        .components(|components| {
+            components
+                .reuse_exact_relational_basis()
+                .reuse_exact_signal_basis()
+        })
+        .create()
+        .expect("the Product World should create from the exact primary graph source");
+    assert!(sibling.occurrence_ordinal() > root.occurrence_ordinal());
 }
 
 #[test]
@@ -139,6 +127,7 @@ fn post_installation_bridge_backend_repairs_settlement_through_its_public_owner(
 
 fn primary_graph_merge_runtime() -> crate::runtime::WorthQueryRuntime {
     complete_backend_from_parts_builder()
+        .conditional_execution_resources(WorthQueryConditionalExecutionResources::development())
         .domain_package(primary_graph_domain_package())
         .expect("primary graph domain package admits")
         .relational_runtime(host_relational_runtime())

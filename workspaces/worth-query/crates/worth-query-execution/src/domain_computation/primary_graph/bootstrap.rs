@@ -46,6 +46,8 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     installed_packages: Arc<WorthQueryInstalledPackageIndex>,
     pub(super) graph: WorthQueryPrimaryGraph,
+    pub(super) product_world_resources:
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
     external_identities: BTreeSet<(String, WorthQueryExternalPrincipalIdentity)>,
     principal_identities: BTreeSet<(String, AuthoritativeFieldComparisonKey)>,
@@ -62,6 +64,7 @@ impl WorthQueryExecutionInstallationAuthority {
         &self,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
     ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: ApplicationSchema,
@@ -70,6 +73,7 @@ impl WorthQueryExecutionInstallationAuthority {
             runtime,
             installed_schema,
             RelationalRuntimeApi::builder().build(),
+            product_world_resources,
         )
     }
 
@@ -78,6 +82,7 @@ impl WorthQueryExecutionInstallationAuthority {
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         mut relational_runtime: RelationalRuntime,
+        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
     ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: ApplicationSchema,
@@ -123,6 +128,7 @@ impl WorthQueryExecutionInstallationAuthority {
             runtime_authority: runtime.authority_identity(),
             installed_packages: runtime.retain_installed_packages(),
             graph,
+            product_world_resources,
             rows: Vec::new(),
             external_identities: BTreeSet::new(),
             principal_identities: BTreeSet::new(),

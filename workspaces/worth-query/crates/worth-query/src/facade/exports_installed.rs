@@ -6,8 +6,7 @@
 //! generic proof machinery are deliberately absent.
 
 pub use crate::domain_installation::{
-    WorthQueryBoundDomainOperation, WorthQueryBranchHeadIdentity,
-    WorthQueryBranchHeadIdentityError, WorthQueryInstalledOperatingWorld,
+    WorthQueryBoundDomainOperation, WorthQueryInstalledOperatingWorld,
     WorthQueryOperatingWorldEntryDenial, WorthQueryOperatingWorldEntryDenialKind,
     WorthQueryOperatingWorldProductDenial, WorthQueryOperationBindingDenial,
     WorthQueryOperationBindingDenialKind, WorthQueryOperationFamilyView,

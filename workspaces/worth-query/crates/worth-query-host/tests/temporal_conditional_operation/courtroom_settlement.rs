@@ -16,9 +16,11 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         .unwrap();
     let selected = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
+    let selected_commit = selected.product().selected_commit().clone();
+    drop(selected);
     let integration = world
         .application
         .granular_invalidation_installation()
@@ -66,10 +68,21 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         .application
         .readmit_product_publication_recovery(row.handle())
         .unwrap();
+    let failure = world
+        .application
+        .release_product_publication_recovery(recovery, 0)
+        .expect_err("owner settlement remains required");
     assert!(matches!(
-        recovery.release_obligations(0),
-        Err(RuntimeWorldRecoveryDenial::SettlementRequired)
+        &failure,
+        primary_graph::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure)
+            if failure.denial()
+                == primary_graph::WorthQueryProductUnpublishedRecoveryReleaseDenial::World(
+                    RuntimeWorldRecoveryDenial::SettlementRequired,
+                )
     ));
+    let recovery = failure
+        .into_recovery()
+        .expect("a World recovery denial preserves the exact recovery capability");
     let actions = recovery.continue_owner_settlement().unwrap();
     assert!(!actions
         .actions()
@@ -94,23 +107,23 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     );
     let current = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
     assert_eq!(
-        current.selected_commit(),
-        selected.selected_commit(),
+        current.product().selected_commit(),
+        &selected_commit,
         "settlement cannot fabricate a product occurrence"
     );
     assert_eq!(
         integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
         commits_before + 1
     );
-    let work = recovery.release_obligations(0).unwrap();
-    assert!(
-        work.is_empty(),
-        "temporal application publication creates no owner branches"
-    );
+    let cleanup = world
+        .application
+        .release_product_publication_recovery(recovery, 0)
+        .unwrap();
+    assert_eq!(cleanup.retired_component_count(), 0);
     let lifetime = world.application.conditional_runtime_lifecycle_probe();
     world.application.close_conditional_runtime().unwrap();
     super::courtroom_lifecycle::assert_conditional_resources_empty(
@@ -118,7 +131,8 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     );
     let denial = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .err()
@@ -131,14 +145,16 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     super::courtroom_lifecycle::assert_conditional_resources_empty(lifetime.live_inventory());
     let after_close = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    assert_eq!(after_close.selected_commit(), selected.selected_commit());
-    assert!(matches!(
-        recovery.inspect(),
-        Err(RuntimeWorldRecoveryDenial::MissingRecord)
-    ));
+    assert_eq!(after_close.product().selected_commit(), &selected_commit);
+    assert!(world
+        .application
+        .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
+        .unwrap()
+        .rows()
+        .is_empty());
     assert_eq!(transport.contact_count(), 0);
 }
 
@@ -146,9 +162,11 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
     let mut world = CourtroomWorld::publish("ready");
     let selected = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
+    let selected_commit = selected.product().selected_commit().clone();
+    drop(selected);
     let integration = world
         .application
         .granular_invalidation_installation()
@@ -164,10 +182,12 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
     assert_eq!(world.contacts.snapshot(), (1, 1, 1, 1));
     let current = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    assert_ne!(current.selected_commit(), selected.selected_commit());
+    assert_ne!(current.product().selected_commit(), &selected_commit);
+    let current_commit = current.product().selected_commit().clone();
+    drop(current);
     assert_eq!(
         integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
         commits_before + 1
@@ -193,11 +213,12 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
     assert_eq!(
         world
             .application
-            .product_runtime()
-            .admit_product_branch(world.application.product_runtime().default_branch())
+            .on_branch(world.application.current_world())
+            .select()
             .unwrap()
+            .product()
             .selected_commit(),
-        current.selected_commit()
+        &current_commit
     );
     assert_eq!(
         integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),

@@ -1,6 +1,14 @@
 mod product_branch;
 
 pub use product_branch::{
-    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
-    WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease,
+    WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial,
+    WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationRecovery,
+    WorthQueryProductBranchCreationRecoveryCause, WorthQueryProductBranchCreationRecoveryFailure,
+    WorthQueryProductBranchCreationRecoveryInspection,
+    WorthQueryProductBranchCreationRecoveryNextAction,
+    WorthQueryProductBranchCreationRecoveryRelease,
+    WorthQueryProductBranchCreationRecoveryReleaseFailure, WorthQueryProductBranchFork,
+    WorthQueryProductBranchLease, WorthQueryProductBranchOwnerCleanupWork,
+    WorthQueryProductBranchReadIdentity, WorthQueryProductBranchRecoveryDenial,
+    WorthQueryProductBranches, WorthQueryProductObservationLease,
 };

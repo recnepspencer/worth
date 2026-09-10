@@ -68,6 +68,53 @@ impl WorthQueryRuntimeBackendParts {
         BridgeBackedRuntimeBootstrap::lower_from_parts(self)
     }
 
+    pub(in crate::runtime) fn install_query_owned_relational_product_bridge(
+        mut self,
+        graph_role: impl Into<std::sync::Arc<str>>,
+        build: impl FnOnce(
+            worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
+        )
+            -> Result<RuntimeBridge, worth_runtime_bridge::facade::BridgeBuildError>,
+    ) -> Result<(Self, RuntimeBridge), WorthQueryRuntimeError> {
+        if self.runtime_bridge.is_some() {
+            return Err(WorthQueryRuntimeError::InvariantRegistration {
+                stage: "relational_product_bridge_selection",
+                message: "relational_product_bridge(...) cannot be combined with runtime_bridge(...); choose one Bridge authority path".to_string(),
+            });
+        }
+        let runtime = match self.relational_runtime.take() {
+            None => worth_relational::facade::runtime::RelationalRuntimeApi::builder().build(),
+            Some(super::relational_owner::WorthQueryBackendRelationalOwner::Unpublished(
+                runtime,
+            )) => runtime,
+            Some(owner) => {
+                self.relational_runtime = Some(owner);
+                return Err(WorthQueryRuntimeError::InvariantRegistration {
+                    stage: "relational_product_bridge_selection",
+                    message: "relational_product_bridge(...) requires an unpublished Relational runtime; an installed Product or primary-graph source was already selected".to_string(),
+                });
+            }
+        };
+        let owner =
+            worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
+                runtime, graph_role,
+            )
+            .map_err(|denial| WorthQueryRuntimeError::InvariantRegistration {
+                stage: "relational_product_source_installation",
+                message: format!("{denial:?}"),
+            })?;
+        let bridge = build(owner.bridge_source()).map_err(|denial| {
+            WorthQueryRuntimeError::InvariantRegistration {
+                stage: "relational_product_bridge_installation",
+                message: format!("{denial:?}"),
+            }
+        })?;
+        self.relational_runtime =
+            Some(super::relational_owner::WorthQueryBackendRelationalOwner::ProductSource(owner));
+        self.runtime_bridge = Some(bridge.clone());
+        Ok((self, bridge))
+    }
+
     pub fn relational_runtime(mut self, runtime: RelationalRuntime) -> Self {
         self.relational_runtime =
             Some(super::relational_owner::WorthQueryBackendRelationalOwner::Unpublished(runtime));

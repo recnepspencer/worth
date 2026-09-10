@@ -12,6 +12,13 @@ use worth_query_host::facade::{
     worth_query_portable_type, worth_query_principal_binding, worth_query_relation,
 };
 
+#[path = "schema/live_intent_query.rs"]
+mod live_intent_query;
+pub use live_intent_query::{
+    temporal_intent_live_query_definition, IntentLiveQueryParameters, IntentLiveQueryResult,
+    TemporalIntentLiveCause, TemporalIntentLiveQuery,
+};
+
 worth_query_application_schema! {
     pub schema TemporalHostSchema {
         owner: temporal_host_courtroom,
@@ -38,8 +45,10 @@ worth_query_application_schema! {
                 .field(TemporalIntent::reference(), IntentEffectField::reference())
                 .field(UnrelatedRecord::reference(), UnrelatedValueField::reference())
                 .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
+                .relation(IntentLiveTarget::reference(), TemporalIntent::reference(), TemporalIntent::reference())
                 .principal_binding(TemporalPrincipalBinding::reference())
                 .effect(TemporalAmendmentEffect::reference())
+                .effect(TemporalExecutionEffect::reference())
                 .operation(
                     ExecuteTemporal::reference()
                         .definition()
@@ -81,6 +90,7 @@ worth_query_application_schema! {
                 .operation_write(ExecuteTemporal::reference(), IntentRevisionField::reference())
                 .operation_write(ExecuteTemporal::reference(), IntentLifecycleField::reference())
                 .operation_write(ExecuteTemporal::reference(), IntentEffectField::reference())
+                .operation_emit(ExecuteTemporal::reference(), TemporalExecutionEffect::reference())
                 .operation_decision_fact_budget(AmendTemporal::reference(), 5)
                 .operation_projection_work_budget(AmendTemporal::reference(), 12)
                 .operation_read_field(AmendTemporal::reference(), IntentRevisionField::reference())
@@ -107,6 +117,7 @@ worth_query_application_schema! {
                 .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentInputField::reference())
                 .operation_emit(AmendTemporalAndPublishDefinition::reference(), TemporalAmendmentEffect::reference())
                 .application_query(temporal_intent_query_definition())
+                .application_query(temporal_intent_live_query_definition())
         }
     }
 }
@@ -131,6 +142,7 @@ worth_query_field!(pub IntentGateField in TemporalHostSchema, TemporalIntent, In
 worth_query_field!(pub IntentEffectField in TemporalHostSchema, TemporalIntent, IntentFacts: String, read_write, equality);
 worth_query_field!(pub UnrelatedValueField in TemporalHostSchema, UnrelatedRecord, UnrelatedFacts: u64, read_only, equality);
 worth_query_relation!(pub MappingTarget in TemporalHostSchema, ExternalMapping => Principal);
+worth_query_relation!(pub IntentLiveTarget in TemporalHostSchema, TemporalIntent => TemporalIntent);
 worth_query_principal_binding!(
     pub TemporalPrincipalBinding in TemporalHostSchema,
     mapping ExternalMapping {
@@ -158,6 +170,21 @@ worth_query_portable_type!(AmendTemporalInput => "worth.query.test.host.temporal
 worth_query_operation!(pub ExecuteTemporal(TemporalInput) in TemporalHostSchema);
 worth_query_operation_reads!(ExecuteTemporal => [IntentIdentityField, IntentRevisionField, IntentLifecycleField, IntentEffectField]);
 worth_query_operation_writes!(ExecuteTemporal => [IntentRevisionField, IntentLifecycleField, IntentEffectField]);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TemporalExecutionNotice {
+    pub identity: String,
+}
+worth_query_portable_type!(TemporalExecutionNotice => "worth.query.test.host.temporal.execution_notice.v1");
+
+impl declaration::application_schema::ApplicationEffectPayload for TemporalExecutionNotice {
+    fn retained_bytes(&self) -> u64 {
+        u64::try_from(self.identity.len()).unwrap_or(u64::MAX)
+    }
+}
+
+worth_query_effect!(pub TemporalExecutionEffect(TemporalExecutionNotice) in TemporalHostSchema);
+worth_query_operation_emits!(ExecuteTemporal => [TemporalExecutionEffect]);
 worth_query_operation!(pub AmendTemporal(AmendTemporalInput) in TemporalHostSchema);
 worth_query_operation_reads!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);
 worth_query_operation_writes!(AmendTemporal => [IntentRevisionField, IntentDueField, IntentLifecycleField, IntentInputField, IntentGateField]);

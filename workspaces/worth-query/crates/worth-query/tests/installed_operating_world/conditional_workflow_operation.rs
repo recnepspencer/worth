@@ -29,7 +29,7 @@ fn eligible_operation_condition_enters_the_run_before_any_stage_work() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)
@@ -81,7 +81,7 @@ fn deferred_operation_condition_returns_fresh_retry_authority_and_zero_stage_wor
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)
@@ -135,7 +135,7 @@ fn ineligible_operation_condition_cannot_create_a_workflow_run() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)

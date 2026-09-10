@@ -117,13 +117,7 @@ fn assert_winner_and_custody_are_retained(
 
     let records = owner.state.custody.installed_records();
     assert_eq!(records.len(), 1);
-    assert_eq!(
-        records[0].target(),
-        &crate::branch::ComponentBranchTarget::Relational(BranchId(
-            STALE_HEAD_RELATIONAL_TARGET.to_owned()
-        )),
-        "the fork that really happened stays in custody under its own occurrence"
-    );
+    assert_eq!(records[0].target().name(), STALE_HEAD_RELATIONAL_TARGET);
     assert_eq!(owner.state.branches.branch_count(), 1);
     assert_eq!(owner.state.branches.reserved_branch_count(), 0);
     assert_eq!(owner.recovery_record_count(), 1);

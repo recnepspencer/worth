@@ -120,7 +120,7 @@ fn execute_workflow_completion(
 ) -> ExactWorkflowCompletionObservation {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let trace = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)
@@ -191,7 +191,7 @@ type AdmittedExactDirect = WorthQueryAdmittedDirectOperation<
 fn admit_exact_completion(workspace: &runtime::WorthQueryWorkspace) -> AdmittedExactDirect {
     let installed = workspace.domain(GeometryDomain).unwrap();
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(EvidenceFamily)
         .bind(&installed, EvidenceRead)

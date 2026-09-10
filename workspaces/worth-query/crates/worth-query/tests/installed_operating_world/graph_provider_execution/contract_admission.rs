@@ -73,7 +73,7 @@ fn assert_graph_contract_denial(
 ) {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let denial = match workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, FederatedRead)

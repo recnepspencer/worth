@@ -28,6 +28,9 @@ impl WorthQueryProductBranchReadIdentity {
     pub fn branch_identity(&self) -> &ProductBranchIdentity {
         &self.branch
     }
+    pub fn product_branch(&self) -> super::WorthQueryProductBranch {
+        super::WorthQueryProductBranch::from_occurrence(self.incarnation)
+    }
     pub fn lifecycle_incarnation(&self) -> ProductBranchIncarnation {
         self.incarnation
     }

@@ -97,6 +97,11 @@ pub(crate) trait RuntimeWorldObservationService:
         &self,
         branch: &ProductBranchIdentity,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
+
+    fn observe_product_branch_occurrence(
+        &self,
+        occurrence: crate::identity::ProductBranchIncarnation,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
 }
 
 /// Shared internal seam for product-reference creation and retirement. The

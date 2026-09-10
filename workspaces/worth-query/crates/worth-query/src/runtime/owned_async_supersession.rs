@@ -15,9 +15,7 @@ impl WorthQueryRuntime {
         prior: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
         displacing: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
     ) -> Result<WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError> {
-        let product = self.installed_product.as_ref().ok_or_else(|| {
-            foreign_request("owned async supersession requires an installed product runtime")
-        })?;
+        let product = &self.installed_product;
         let supersession = product
             .conditional
             .admit_owned_async_supersession(prior, displacing)
@@ -148,8 +146,6 @@ impl WorthQueryRuntime {
     ) -> Result<WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError> {
         let admitted = self
             .installed_product
-            .as_ref()
-            .ok_or_else(|| foreign_request("owned async transition requires an installed product"))?
             .conditional
             .validate_owned_async_request_occurrence(request)
             .map_err(|denial| foreign_request(denial.detail()))?;

@@ -7,20 +7,9 @@ impl WorthQueryWorkspace {
         self.runtime.query_execution_runtime()
     }
 
-    pub(crate) fn operating_world<L: crate::basis_lifecycle::BasisOperationLane>(
-        &self,
-        entry: crate::domain_installation::WorthQueryOperatingWorldEntry<L>,
-    ) -> crate::domain_installation::WorthQueryInstalledOperatingWorld<'_, L> {
-        crate::domain_installation::WorthQueryInstalledOperatingWorld::new(
-            &self.runtime,
-            crate::domain_installation::WorthQueryOperatingWorldBasis::Component(
-                entry.into_capability(),
-            ),
-        )
-    }
-
     pub fn observe_operating_world(
         &self,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     ) -> Result<
         crate::domain_installation::WorthQueryInstalledOperatingWorld<
             '_,
@@ -28,89 +17,14 @@ impl WorthQueryWorkspace {
         >,
         crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
     > {
-        if let Some(installed) = &self.runtime.installed_product {
-            let product = installed
-                .world
-                .admit_product_branch(installed.world.default_branch())
-                .map_err(product_admission_denial)?;
-            let entry =
-                crate::domain_installation::WorthQueryOperatingWorldEntry::observe_current()?;
-            return Ok(self.product_operating_world(entry, product));
-        }
-        crate::domain_installation::WorthQueryOperatingWorldEntry::observe_current()
-            .map(|entry| self.operating_world(entry))
-    }
-
-    pub fn observe_branch_operating_world(
-        &self,
-        branch_identity: crate::domain_installation::WorthQueryBranchHeadIdentity,
-    ) -> Result<
-        crate::domain_installation::WorthQueryInstalledOperatingWorld<
-            '_,
-            crate::basis_lifecycle::ObservationLaneWitness,
-        >,
-        crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
-    > {
-        self.require_component_operating_world()?;
-        crate::domain_installation::WorthQueryOperatingWorldEntry::observe_branch(&branch_identity)
-            .map(|entry| self.operating_world(entry))
-    }
-
-    pub fn prepare_mutation_operating_world(
-        &self,
-    ) -> Result<
-        crate::domain_installation::WorthQueryInstalledOperatingWorld<
-            '_,
-            crate::basis_lifecycle::MutationPreparationLaneWitness,
-        >,
-        crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
-    > {
-        if let Some(installed) = &self.runtime.installed_product {
-            let product = installed
-                .world
-                .admit_product_branch(installed.world.default_branch())
-                .map_err(product_admission_denial)?;
-            let entry = crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_current_mutation()?;
-            return Ok(self.product_operating_world(entry, product));
-        }
-        crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_current_mutation()
-            .map(|entry| self.operating_world(entry))
-    }
-
-    pub fn prepare_branch_mutation_operating_world(
-        &self,
-        branch_identity: crate::domain_installation::WorthQueryBranchHeadIdentity,
-    ) -> Result<
-        crate::domain_installation::WorthQueryInstalledOperatingWorld<
-            '_,
-            crate::basis_lifecycle::MutationPreparationLaneWitness,
-        >,
-        crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
-    > {
-        self.require_component_operating_world()?;
-        crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_branch_mutation(
-            &branch_identity,
-        )
-        .map(|entry| self.operating_world(entry))
-    }
-
-    pub fn observe_product_operating_world(
-        &self,
-        identity: &worth_query_execution::facade::runtime::ProductBranchIdentity,
-    ) -> Result<
-        crate::domain_installation::WorthQueryInstalledOperatingWorld<
-            '_,
-            crate::basis_lifecycle::ObservationLaneWitness,
-        >,
-        crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
-    > {
-        let installed = self.runtime.installed_product.as_ref().ok_or_else(|| crate::domain_installation::WorthQueryOperatingWorldEntryDenial::product(crate::domain_installation::WorthQueryOperatingWorldProductDenial::RuntimeUnavailable))?;
+        let installed = &self.runtime.installed_product;
+        let selects_root = branch == installed.world.root_product_branch();
         let product = installed
             .world
-            .admit_product_branch(identity)
+            .integration_admit_product_branch(branch)
             .map_err(product_admission_denial)?;
-        let entry = if identity == installed.world.default_branch() {
-            crate::domain_installation::WorthQueryOperatingWorldEntry::observe_current()?
+        let entry = if selects_root {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::observe_installed_root()?
         } else {
             crate::domain_installation::WorthQueryOperatingWorldEntry::observe_product_component(
                 &product,
@@ -119,17 +33,30 @@ impl WorthQueryWorkspace {
         Ok(self.product_operating_world(entry, product))
     }
 
-    pub fn create_product_branch(
+    pub fn prepare_mutation_operating_world(
         &self,
-        source: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
-        intent: worth_query_execution::facade::runtime::ProductBranchCreationIntent,
-        cancellation: &worth_query_execution::facade::runtime::RuntimeWorldCancellationToken,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     ) -> Result<
-        worth_query_execution::facade::runtime::RuntimeWorldBranchCreationOutcome,
-        super::WorthQueryProductBranchCreationDenial,
+        crate::domain_installation::WorthQueryInstalledOperatingWorld<
+            '_,
+            crate::basis_lifecycle::MutationPreparationLaneWitness,
+        >,
+        crate::domain_installation::WorthQueryOperatingWorldEntryDenial,
     > {
-        self.runtime
-            .create_product_branch(source, intent, cancellation)
+        let installed = &self.runtime.installed_product;
+        let selects_root = branch == installed.world.root_product_branch();
+        let product = installed
+            .world
+            .integration_admit_product_branch(branch)
+            .map_err(product_admission_denial)?;
+        let entry = if selects_root {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_installed_root_mutation()?
+        } else {
+            crate::domain_installation::WorthQueryOperatingWorldEntry::prepare_product_component(
+                &product,
+            )?
+        };
+        Ok(self.product_operating_world(entry, product))
     }
 
     fn product_operating_world<L: crate::basis_lifecycle::BasisOperationLane>(
@@ -139,20 +66,11 @@ impl WorthQueryWorkspace {
     ) -> crate::domain_installation::WorthQueryInstalledOperatingWorld<'_, L> {
         crate::domain_installation::WorthQueryInstalledOperatingWorld::new(
             &self.runtime,
-            crate::domain_installation::WorthQueryOperatingWorldBasis::Product {
-                capability: entry.into_capability(),
-                product: std::sync::Arc::new(product),
-            },
+            crate::domain_installation::WorthQueryOperatingWorldBasis::new(
+                entry.into_capability(),
+                product,
+            ),
         )
-    }
-
-    fn require_component_operating_world(
-        &self,
-    ) -> Result<(), crate::domain_installation::WorthQueryOperatingWorldEntryDenial> {
-        if self.runtime.installed_product.is_some() {
-            return Err(crate::domain_installation::WorthQueryOperatingWorldEntryDenial::product(crate::domain_installation::WorthQueryOperatingWorldProductDenial::SelectionRequired));
-        }
-        Ok(())
     }
 
     pub fn graph_participation<G: 'static>(

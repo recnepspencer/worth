@@ -9,6 +9,7 @@ mod hostile_resolution;
 mod index_refresh;
 mod invariant_projection;
 pub(in crate::domain_computation::primary_graph) mod live_delivery_support;
+mod product_branch_creation_recovery;
 mod product_publication_cancellation;
 pub(in crate::domain_computation) mod recoverable_commit_support;
 mod successful_resolution;

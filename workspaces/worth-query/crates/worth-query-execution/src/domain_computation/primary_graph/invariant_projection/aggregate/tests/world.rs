@@ -292,7 +292,7 @@ impl AggregateWorld {
             .bind_application_schema(AggregateSchema::declaration().expect("schema redeclares"))
             .expect("aggregate schema binds");
         let mut bootstrap = authority
-            .prepare_primary_graph(&runtime, &installed)
+            .prepare_primary_graph(&runtime, &installed, crate::domain_computation::execution_runtime::product_world::test_product_world_resources())
             .expect("primary graph prepares");
         let binding = installed
             .principal_binding(AggregateIdentityBinding::reference())

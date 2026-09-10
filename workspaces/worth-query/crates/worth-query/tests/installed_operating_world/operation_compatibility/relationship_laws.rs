@@ -102,7 +102,7 @@ fn changed_required_domain_authority_requires_its_owner_rebind_receipt() {
     let prior_geometry = controlled.domain(GeometryDomain).unwrap();
     let prior_auxiliary = controlled.domain(AuxiliaryDomain).unwrap();
     let subject = controlled
-        .observe_operating_world()
+        .observe_operating_world(controlled.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&prior_geometry, ReadVertex)
@@ -116,7 +116,7 @@ fn changed_required_domain_authority_requires_its_owner_rebind_receipt() {
         .rebind_domain(prior_auxiliary.rebind_request())
         .unwrap();
     let candidate = controlled
-        .observe_operating_world()
+        .observe_operating_world(controlled.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(geometry.handle(), ReadVertex)

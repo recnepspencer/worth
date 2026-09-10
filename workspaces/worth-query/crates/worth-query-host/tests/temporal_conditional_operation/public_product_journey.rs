@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use worth_query_host::facade::{
-    declaration::application_query::ApplicationQueryParameterSet, primary_graph, runtime,
+    declaration::application_query::ApplicationQueryParameterSet, primary_graph, product, runtime,
 };
 
 use super::adapters::ReplacementPredicate;
@@ -23,11 +23,11 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
         .unwrap();
     let source = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    let source_branch = source.branch_identity().clone();
-    let source_commit = source.selected_commit().clone();
+    let source_branch = source.product().product_branch();
+    let source_commit = source.product().selected_commit().clone();
     let sibling = fork_relational_product(
         &world,
         &source,
@@ -36,7 +36,7 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     );
     drop(source);
 
-    let selected = world.application.select_product_branch(&sibling).unwrap();
+    let selected = world.application.on_branch(sibling).select().unwrap();
     let sibling_commit = selected.product().selected_commit().clone();
     let scope = selected
         .resolve_entity(
@@ -58,7 +58,8 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
 
     let warm = world
         .application
-        .select_product_branch(&sibling)
+        .on_branch(sibling)
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .unwrap()
@@ -68,7 +69,7 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     };
     assert_eq!(warm.retained_suppressed_wake_count(), 1);
     drop(warm);
-    let selected_sibling = world.application.select_product_branch(&sibling).unwrap();
+    let selected_sibling = world.application.on_branch(sibling).select().unwrap();
     let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
     let definition = selected_sibling
         .publish_conditional_definition(
@@ -84,15 +85,15 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     };
     drop(definition);
 
-    let mut publication = world.change_input_on_product(&sibling, "changed-on-sibling");
-    assert_eq!(
-        publication.basis_descriptor().branch_id(),
-        &runtime::BranchId("operation-journey-sibling-data".to_owned())
-    );
+    let mut publication = world
+        .change_input_on_branch(sibling, "changed-on-sibling")
+        .require_committed()
+        .expect("the selected sibling mutation must commit");
+    assert_eq!(publication.product_branch(), sibling);
     let change = publication
         .take_performed_relational_product_change()
         .expect("the application commit must retain World's performed publication");
-    let sibling_after = world.application.select_product_branch(&sibling).unwrap();
+    let sibling_after = world.application.on_branch(sibling).select().unwrap();
     assert_ne!(sibling_after.product().selected_commit(), &sibling_commit);
     assert_eq!(
         change.product_commit(),
@@ -127,7 +128,8 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     world.clock_control.push(3, 11);
     let execution = world
         .application
-        .select_product_branch(&sibling)
+        .on_branch(sibling)
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .unwrap()
@@ -144,8 +146,8 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     assert_eq!(execution.authoritative_commit_count(), 1);
     drop(execution);
 
-    let read = |branch: &runtime::ProductBranchIdentity| {
-        let selected = world.application.select_product_branch(branch).unwrap();
+    let read = |branch: product::WorthQueryProductBranch| {
+        let selected = world.application.on_branch(branch).select().unwrap();
         let scope = selected
             .resolve_entity(
                 IntentIdentityField::reference(),
@@ -169,15 +171,15 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
             .execute_application_query_one_shot(plan)
             .unwrap()
     };
-    let sibling_fresh = read(&sibling);
+    let sibling_fresh = read(sibling);
     assert_eq!(sibling_fresh.rows()[0].input, "changed-on-sibling");
     assert_eq!(
-        product_identity(sibling_fresh.receipt()).branch_identity(),
-        &sibling
+        product_identity(sibling_fresh.receipt()).product_branch(),
+        sibling
     );
     drop(sibling_fresh);
 
-    let source_fresh = read(&source_branch);
+    let source_fresh = read(source_branch);
     assert_eq!(source_fresh.rows()[0].input, "payload");
     assert_eq!(
         product_identity(source_fresh.receipt()).selected_commit(),
@@ -207,6 +209,8 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     );
 }
 
+#[path = "public_product_journey/branch_facade.rs"]
+mod branch_facade;
 #[path = "public_product_journey/combined_publication.rs"]
 mod combined_publication;
 #[path = "public_product_journey/conditional_execution.rs"]
@@ -217,6 +221,7 @@ mod definition_lineage;
 mod idempotency_affinity;
 #[path = "public_product_journey/projection_and_outbox.rs"]
 mod projection_and_outbox;
+pub(super) use branch_facade::creates_and_selects_all_component_postures;
 pub(super) use combined_publication::application_commits_relational_and_signal_in_one_world_publication;
 pub(super) use conditional_execution::publishes_delivers_executes_and_cleans_up;
 pub(super) use definition_lineage::independent_products_advance_and_retain_exact_definitions;

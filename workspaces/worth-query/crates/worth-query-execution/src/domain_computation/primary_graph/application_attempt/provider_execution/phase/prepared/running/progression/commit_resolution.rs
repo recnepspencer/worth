@@ -136,6 +136,9 @@ pub(super) fn finish_authorized_compare(
         WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryProviderProgressionOutcome::ProductUnpublished(unpublished)
         }
+        WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryProviderProgressionOutcome::NoEffect(no_effect)
+        }
         WorthQueryProviderCompareAndCommitOutcome::ProductStale(stale) => {
             WorthQueryProviderProgressionOutcome::ProductStale(stale)
         }

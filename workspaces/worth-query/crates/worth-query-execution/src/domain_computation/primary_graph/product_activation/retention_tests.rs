@@ -1,6 +1,6 @@
 use crate::domain_computation::execution_runtime::product_world::{
     activation::{WorthQueryProductActivationDenial, WorthQueryProductActivationRegistry},
-    installed_budgets,
+    test_product_world_resources,
 };
 use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
 
@@ -12,7 +12,9 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
         .product_runtime()
         .admit_product_branch(world.application.product_runtime().default_branch())
         .unwrap();
-    let limit = installed_budgets().live_product_branches();
+    let limit = test_product_world_resources()
+        .budgets()
+        .live_product_branches();
     let registry = WorthQueryProductActivationRegistry::new(limit).unwrap();
     registry.reserve().unwrap().commit(product.observation());
     let held_gate = registry.gate(product.branch_identity()).unwrap();

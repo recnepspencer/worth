@@ -161,33 +161,35 @@ fn try_build_primary_query_world_with_dimensions(
         source_installation,
         IntentSourceProjection::new(record, Arc::clone(&observations)),
     );
-    let builder = runtime::WorthQueryRuntime::builder()
-        .primary_runtime_granular_invalidations(installation.clone())
-        .domain_package(domain::package(profile))
-        .expect("the temporal consumer package must admit")
-        .graph_participation(domain::graph_definition())
-        .graph_participation_provider(domain::PrimaryGraph, domain::PrimaryGraphProvider)
-        .runtime_bridge(bridge)
-        .conditional_execution_resources(
-            runtime::WorthQueryConditionalExecutionResources::development(),
-        )
-        .conditional_signal_graph(signal)
-        .conditional_node(
-            TemporalDomain,
-            TemporalDomainOperation,
-            TemporalDomainFamily,
-            domain::PrimaryGraph,
-            query_domain::WorthQueryConditionalNodeLocation::operation(node.identity()).unwrap(),
-            vec![dependency_installation],
-            providers,
-            conditional_compute,
-        )
-        .domain_operation_executor(
-            TemporalDomain,
-            TemporalDomainOperation,
-            TemporalDomainFamily,
-            domain::OperationExecutor(profile),
-        );
+    let builder = runtime::WorthQueryRuntime::builder(
+        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+    )
+    .primary_runtime_granular_invalidations(installation.clone())
+    .domain_package(domain::package(profile))
+    .expect("the temporal consumer package must admit")
+    .graph_participation(domain::graph_definition())
+    .graph_participation_provider(domain::PrimaryGraph, domain::PrimaryGraphProvider)
+    .runtime_bridge(bridge)
+    .conditional_execution_resources(
+        runtime::WorthQueryConditionalExecutionResources::development(),
+    )
+    .conditional_signal_graph(signal)
+    .conditional_node(
+        TemporalDomain,
+        TemporalDomainOperation,
+        TemporalDomainFamily,
+        domain::PrimaryGraph,
+        query_domain::WorthQueryConditionalNodeLocation::operation(node.identity()).unwrap(),
+        vec![dependency_installation],
+        providers,
+        conditional_compute,
+    )
+    .domain_operation_executor(
+        TemporalDomain,
+        TemporalDomainOperation,
+        TemporalDomainFamily,
+        domain::OperationExecutor(profile),
+    );
     let builder = if scale.install_unrelated_query {
         builder
             .domain_package(domain::unrelated_package())
@@ -344,7 +346,7 @@ fn settle_primary_projection(
 > {
     let installed = workspace.domain(TemporalDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(TemporalDomainFamily)
         .bind(&installed, TemporalDomainOperation)

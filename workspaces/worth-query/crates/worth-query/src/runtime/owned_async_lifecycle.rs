@@ -13,9 +13,7 @@ impl WorthQueryRuntime {
         coordinate: u64,
     ) -> Result<BridgeOwnedAsyncTimeoutAdmission, WorthQueryOwnedAsyncRuntimeDenial> {
         self.installed_product
-            .as_ref()
-            .map(|product| &product.conditional)
-            .ok_or(WorthQueryOwnedAsyncRuntimeDenial::ConditionalRuntimeUnavailable)?
+            .conditional
             .advance_owned_async_request_to_timeout(request, coordinate)
             .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)
     }
@@ -26,9 +24,7 @@ impl WorthQueryRuntime {
         timeout: &BridgeOwnedAsyncTimeoutAdmission,
     ) -> Result<BridgeOwnedAsyncRetrySchedule, WorthQueryOwnedAsyncRuntimeDenial> {
         self.installed_product
-            .as_ref()
-            .map(|product| &product.conditional)
-            .ok_or(WorthQueryOwnedAsyncRuntimeDenial::ConditionalRuntimeUnavailable)?
+            .conditional
             .schedule_owned_async_retry(request, timeout)
             .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)
     }
@@ -40,9 +36,7 @@ impl WorthQueryRuntime {
         coordinate: u64,
     ) -> Result<BridgeOwnedAsyncRetryAdmission, WorthQueryOwnedAsyncRuntimeDenial> {
         self.installed_product
-            .as_ref()
-            .map(|product| &product.conditional)
-            .ok_or(WorthQueryOwnedAsyncRuntimeDenial::ConditionalRuntimeUnavailable)?
+            .conditional
             .advance_owned_async_retry(request, schedule, coordinate)
             .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)
     }
@@ -52,20 +46,17 @@ impl WorthQueryRuntime {
         request: &BridgeOwnedAsyncRequestAdmission,
         selected: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
     ) -> Result<BridgeOwnedAsyncRevalidationAdmission, WorthQueryOwnedAsyncRuntimeDenial> {
-        let product = self
-            .installed_product
-            .as_ref()
-            .ok_or(WorthQueryOwnedAsyncRuntimeDenial::ConditionalRuntimeUnavailable)?;
+        let product = &self.installed_product;
         product
             .validate_selected_source(selected, None)
-            .map_err(|_| WorthQueryOwnedAsyncRuntimeDenial::ProductBasisRequired)?;
+            .map_err(|_| WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch)?;
         product
             .world
             .revalidate_owned_async_request(&product.conditional, request, selected)
             .map_err(|denial| match denial {
                 worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRevalidationDenial::ForeignOwner
                 | worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRevalidationDenial::RelationalSourceMismatch => {
-                    WorthQueryOwnedAsyncRuntimeDenial::ProductBasisRequired
+                    WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch
                 }
                 worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRevalidationDenial::Bridge(
                     denial,
@@ -78,9 +69,7 @@ impl WorthQueryRuntime {
         request: &BridgeOwnedAsyncRequestAdmission,
     ) -> Result<usize, WorthQueryOwnedAsyncRuntimeDenial> {
         self.installed_product
-            .as_ref()
-            .map(|product| &product.conditional)
-            .ok_or(WorthQueryOwnedAsyncRuntimeDenial::ConditionalRuntimeUnavailable)?
+            .conditional
             .owned_async_active_request_count(request)
             .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)
     }

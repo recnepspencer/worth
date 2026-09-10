@@ -22,6 +22,7 @@ pub enum WorthQueryProviderCommitAdmissionDenial {
 pub enum WorthQueryProviderCompareAndCommitOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     Committed(WorthQueryCommittedProviderSession),
     Stale(WorthQueryStaleDecisionReadSet),
     Denied(WorthQueryProviderCompareAndCommitDenial),
@@ -176,6 +177,10 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
                     .overlay
                     .release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished)
+            }
+            WorthQuerySessionCommitOrAbortOutcome::NoEffect(no_effect) => {
+                let _ = self.proposed.attempt.overlay.discard();
+                WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect)
             }
             WorthQuerySessionCommitOrAbortOutcome::Committed(disposition) => {
                 self.proposed

@@ -4,26 +4,58 @@ use super::WorthQueryProductRuntime;
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
 
 impl WorthQueryProductRuntime {
-    pub fn admit_product_branch(
+    pub(crate) fn admit_product_occurrence(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        if occurrence.owner_identity() != self.owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+        }
+        let observation = self
+            .owner
+            .observation_port()
+            .observe_product_branch_occurrence(occurrence)
+            .map_err(map_world_denial)?;
+        let gate = self.activations.gate(observation.branch_identity())?;
+        gate.with_admission(|| self.lease_from_observation(observation))
+    }
+
+    #[doc(hidden)]
+    pub fn integration_admit_product_branch(
+        &self,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        self.admit_product_occurrence(branch.occurrence())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn admit_product_branch(
         &self,
         identity: &worth_runtime_world::facade::ProductBranchIdentity,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
         self.with_product_observation(identity, |observation| {
-            let bridge_source = self
-                .source
-                .retain_branch_basis_for_bridge(observation.basis().relational_basis())
-                .map_err(|_| WorthQueryProductBranchAdmissionDenial::BridgeSourceUnavailable)?;
-            Ok(WorthQueryProductBranchLease::new(
-                super::WorthQueryProductPublicationBinding::new(
-                    observation,
-                    self.owner.publication_port(),
-                    self.owner.recovery_port(),
-                    self.clock.clone(),
-                    self.root_identity(),
-                ),
-                bridge_source,
-            ))
+            self.lease_from_observation(observation)
         })
+    }
+
+    fn lease_from_observation(
+        &self,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        let bridge_source = self
+            .source
+            .retain_branch_basis_for_bridge(observation.basis().relational_basis())
+            .map_err(|_| WorthQueryProductBranchAdmissionDenial::BridgeSourceUnavailable)?;
+        Ok(WorthQueryProductBranchLease::new(
+            super::WorthQueryProductPublicationBinding::new(
+                observation,
+                self.owner.publication_port(),
+                self.owner.recovery_port(),
+                self.clock.clone(),
+                self.root_identity(),
+            ),
+            bridge_source,
+        ))
     }
 
     /// Resolve through World once while the selected executable package is stable.

@@ -239,34 +239,34 @@ impl WorthQueryRuntime {
         let successor = self
             .domain_installation_registry
             .prepare_runtime_reconstitution();
-        if let Some(product) = self.installed_product.as_mut() {
-            let selected = product
-                .world
-                .admit_product_branch(product.world.default_branch())
-                .map_err(|denial| {
-                    crate::runtime::WorthQueryRuntimeError::InvariantRegistration {
-                        stage: "conditional_product_reconstitution_admission",
-                        message: format!("{denial:?}"),
-                    }
-                })?;
-            let current = &mut product.conditional;
-            let (candidate, registry) =
-                crate::runtime::WorthQueryRuntimeBuilder::prepare_conditional_reconstitution(
-                    current,
-                    &selected,
-                    &self.conditional_execution_registry,
-                    &successor,
-                )?;
-            current
-                .activate_conditional_reconstitution(candidate)
-                .map_err(|denial| {
-                    crate::runtime::WorthQueryRuntimeError::InvariantRegistration {
-                        stage: "conditional_runtime_reconstitution",
-                        message: format!("{:?}: {}", denial.kind(), denial.detail()),
-                    }
-                })?;
-            self.conditional_execution_registry = registry;
-        }
+        let product = &mut self.installed_product;
+        let current = product.world.root_product_branch();
+        let selected = product
+            .world
+            .integration_admit_product_branch(current)
+            .map_err(
+                |denial| crate::runtime::WorthQueryRuntimeError::InvariantRegistration {
+                    stage: "conditional_product_reconstitution_admission",
+                    message: format!("{denial:?}"),
+                },
+            )?;
+        let current = &mut product.conditional;
+        let (candidate, registry) =
+            crate::runtime::WorthQueryRuntimeBuilder::prepare_conditional_reconstitution(
+                current,
+                &selected,
+                &self.conditional_execution_registry,
+                &successor,
+            )?;
+        current
+            .activate_conditional_reconstitution(candidate)
+            .map_err(
+                |denial| crate::runtime::WorthQueryRuntimeError::InvariantRegistration {
+                    stage: "conditional_runtime_reconstitution",
+                    message: format!("{:?}: {}", denial.kind(), denial.detail()),
+                },
+            )?;
+        self.conditional_execution_registry = registry;
         self.domain_installation_registry
             .commit_runtime_reconstitution(successor);
         Ok(())

@@ -26,18 +26,21 @@ mod initial_schema_denial;
 mod invariant_projection;
 mod live_delivery;
 mod managed_bridge;
+pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod observations;
 mod ordinary_read;
 mod principal_key;
 pub(crate) mod product_activation;
 mod product_operation;
 pub use product_operation::{
-    WorthQueryAdmittedApplicationConditionalDefinition,
+    WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedChange,
     WorthQueryApplicationConditionalDefinitionAdmissionDenial,
-    WorthQueryConditionalDefinitionPublicationDenial,
+    WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
+    WorthQueryAppliedProductTransaction, WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome,
-    WorthQueryPerformedConditionalDefinitionPublication, WorthQueryProductQueryControls,
-    WorthQuerySelectedProductOperation,
+    WorthQueryPerformedConditionalDefinitionPublication, WorthQueryProductEntry,
+    WorthQueryProductQueryControls, WorthQueryProductTransaction,
+    WorthQueryProductTransactionCommitError, WorthQuerySelectedProductOperation,
 };
 mod provider;
 mod resolution;
@@ -86,7 +89,8 @@ pub use application_attempt::{
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
-    WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationNoEffectCause,
     WorthQueryApplicationCommitOutcomeIdentity,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationSettlementDeferred,

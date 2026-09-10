@@ -88,6 +88,12 @@ impl Clone for WorthQueryApplicationCommitReceipt {
 }
 
 impl WorthQueryApplicationCommitReceipt {
+    pub fn product_branch(&self) -> crate::basis::WorthQueryProductBranch {
+        crate::basis::WorthQueryProductBranch::from_occurrence(
+            self.committed_product_publication.product_incarnation(),
+        )
+    }
+
     pub const fn outcome_identity(
         &self,
     ) -> Option<super::super::WorthQueryApplicationCommitOutcomeIdentity> {

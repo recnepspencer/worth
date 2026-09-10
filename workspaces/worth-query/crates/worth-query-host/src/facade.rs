@@ -11,6 +11,7 @@ pub use worth_query_declaration::{
 pub use worth_query_execution::facade::convergence_epoch;
 pub use worth_query_execution::facade::installed;
 pub use worth_query_execution::facade::primary_graph;
+pub use worth_query_execution::facade::product;
 pub use worth_query_execution::facade::provisional_aftermath;
 pub use worth_query_execution::facade::runtime;
 pub use worth_query_installation::facade as domain;

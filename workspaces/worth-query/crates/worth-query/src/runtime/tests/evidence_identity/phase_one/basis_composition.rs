@@ -48,8 +48,7 @@ fn basis_admissions_emit_canonical_evidence_tokens() {
 
 #[test]
 fn preview_and_branch_receipts_compose_from_basis_admissions() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

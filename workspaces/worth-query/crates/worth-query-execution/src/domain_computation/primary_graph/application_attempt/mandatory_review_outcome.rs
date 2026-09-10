@@ -108,6 +108,10 @@ pub enum WorthQueryMandatoryReviewOutcome {
         WorthQueryMandatoryReview,
     ),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(
+        super::WorthQueryApplicationNoEffect,
+        WorthQueryMandatoryReview,
+    ),
     Reviewed(WorthQueryReviewedElevation),
     AlreadyReviewed(WorthQueryReviewedElevation),
     Stale(WorthQueryApplicationStaleAttempt, WorthQueryMandatoryReview),
@@ -152,6 +156,9 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryMandatoryReviewOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryMandatoryReviewOutcome::NoEffect(no_effect, binding.into_mandatory())
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryMandatoryReviewOutcome::SettlementDeferred(deferred)

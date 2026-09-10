@@ -5,7 +5,7 @@ use worth_foundational::facade::{
 };
 
 #[cfg(test)]
-pub(super) fn task_schema() -> WorthQueryTestBackendSchema {
+pub(crate) fn task_schema() -> WorthQueryTestBackendSchema {
     WorthQueryTestBackendSchema::single_collection("Task")
         .aspect_contract(required_string_struct_contract(
             "identity",

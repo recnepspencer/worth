@@ -16,7 +16,7 @@ fn ordinary_consumer_enters_through_the_curated_installed_facade() {
     let mut workspace = workspace("installed-public-facade-dx", false).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)
@@ -71,7 +71,7 @@ fn conditional_authoring_and_signal_execution_stay_inside_the_query_facade() {
         .unwrap();
         let domain = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
-            .observe_operating_world()
+            .observe_operating_world(workspace.current_world())
             .unwrap()
             .family(ReadFamily)
             .bind(&domain, ReadVertex)
@@ -120,7 +120,7 @@ fn assert_threshold_family_executes_through_facade(
             .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let baseline = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)
@@ -196,7 +196,7 @@ fn workflow_lineage_aftermath_support_and_inspection_stay_inside_the_facade() {
     let workspace = workspace("installed-public-facade-support", false).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)

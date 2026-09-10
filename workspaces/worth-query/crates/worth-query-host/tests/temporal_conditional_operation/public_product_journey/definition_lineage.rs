@@ -1,6 +1,6 @@
 use std::sync::{Arc, Barrier};
 
-use worth_query_host::facade::{primary_graph, runtime};
+use worth_query_host::facade::{primary_graph, product, runtime};
 
 use super::super::adapters::ReplacementPredicate;
 use super::super::courtroom_lifecycle::assert_conditional_resources_empty;
@@ -12,8 +12,8 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
     let mut world = CourtroomWorld::publish("blocked");
     let source = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
     let product_a = fork_independent_product(
         &world,
@@ -31,16 +31,16 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
     );
     drop(source);
 
-    let pinned_a_d0 = world.application.select_product_branch(&product_a).unwrap();
-    let pinned_b_d0 = world.application.select_product_branch(&product_b).unwrap();
+    let pinned_a_d0 = world.application.on_branch(product_a).select().unwrap();
+    let pinned_b_d0 = world.application.on_branch(product_b).select().unwrap();
     assert_suppressed(
         &world,
-        &product_a,
+        product_a,
         "A D0 must resolve before either successor",
     );
     assert_suppressed(
         &world,
-        &product_b,
+        product_b,
         "B D0 must resolve before either successor",
     );
 
@@ -53,7 +53,8 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
             let (replacement, _) = ReplacementPredicate::controlled(world_ref.contacts.clone());
             let selected = world_ref
                 .application
-                .select_product_branch(&product_a_for_publish)
+                .on_branch(product_a_for_publish)
+                .select()
                 .unwrap();
             start_a.wait();
             selected
@@ -70,7 +71,8 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
             let (replacement, _) = ReplacementPredicate::controlled(world_ref.contacts.clone());
             let selected = world_ref
                 .application
-                .select_product_branch(&product_b_for_publish)
+                .on_branch(product_b_for_publish)
+                .select()
                 .unwrap();
             start_b.wait();
             selected
@@ -88,7 +90,7 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
     else {
         panic!("A must publish its independent D1")
     };
-    assert_eq!(published_a.product_branch_identity(), &product_a);
+    assert_eq!(published_a.product_branch(), product_a);
     assert_eq!(published_a.definition_generation(), 2);
 
     let primary_graph::WorthQueryConditionalDefinitionPublicationOutcome::Performed(published_b) =
@@ -96,11 +98,11 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
     else {
         panic!("B must publish D1 after A without inheriting A's lowering")
     };
-    assert_eq!(published_b.product_branch_identity(), &product_b);
+    assert_eq!(published_b.product_branch(), product_b);
     assert_eq!(published_b.definition_generation(), 2);
 
-    assert_suppressed(&world, &product_a, "fresh A must resolve exact D1");
-    assert_suppressed(&world, &product_b, "fresh B must resolve exact D1");
+    assert_suppressed(&world, product_a, "fresh A must resolve exact D1");
+    assert_suppressed(&world, product_b, "fresh B must resolve exact D1");
     assert_pinned_suppressed(pinned_a_d0, &world, "pinned A must retain exact D0");
     assert_pinned_suppressed(pinned_b_d0, &world, "pinned B must retain exact D0");
 
@@ -112,10 +114,10 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
 
 fn assert_suppressed(
     world: &CourtroomWorld,
-    product: &runtime::ProductBranchIdentity,
+    branch: product::WorthQueryProductBranch,
     message: &str,
 ) {
-    let selected = world.application.select_product_branch(product).unwrap();
+    let selected = world.application.on_branch(branch).select().unwrap();
     assert_pinned_suppressed(selected, world, message);
 }
 

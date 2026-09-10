@@ -74,7 +74,7 @@ impl InvalidationSink for TestBridgeSink {
 }
 
 #[derive(Clone, Debug)]
-struct StaticWritebackAuthority;
+pub(in crate::runtime::tests) struct StaticWritebackAuthority;
 
 impl worth_runtime_bridge::facade::TruthWritebackAuthority for StaticWritebackAuthority {
     fn execute_writeback(

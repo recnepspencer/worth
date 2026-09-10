@@ -1,13 +1,15 @@
 use super::super::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationStaleAttempt, WorthQueryPendingApplicationCommitReceipt,
+    WorthQueryApplicationNoEffect, WorthQueryApplicationStaleAttempt,
+    WorthQueryPendingApplicationCommitReceipt,
 };
 use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkCompletion;
 
 pub(in crate::domain_computation) enum WorthQueryProviderProgressionOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     Committed(WorthQueryPendingApplicationCommitReceipt),
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
@@ -30,6 +32,9 @@ impl WorthQueryProviderProgressionOutcome {
             Self::ProductUnpublished(unpublished) => {
                 WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)
             }
+            Self::NoEffect(no_effect) => WorthQueryApplicationCommitOutcome::NoEffect(
+                WorthQueryApplicationNoEffect::from_world(no_effect),
+            ),
             Self::Committed(receipt) => {
                 WorthQueryApplicationCommitOutcome::Committed(receipt.complete(completion)?)
             }

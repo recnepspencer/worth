@@ -8,21 +8,25 @@ pub fn reinstallation_reconstructs_active_authoritative_work() {
     let mut world = CourtroomWorld::publish("ready");
     let before = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
+    let before_branch = before.product().branch_identity().clone();
+    let before_commit = before.product().selected_commit().clone();
+    let before_relational = before.product().relational_basis_descriptor().clone();
+    drop(before);
     let receipt = world.reinstall_conditional_runtime().unwrap();
     let lower = receipt.lower_runtime_reconstitution();
     let after = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    assert_eq!(before.branch_identity(), after.branch_identity());
-    assert_eq!(before.selected_commit(), after.selected_commit());
+    assert_eq!(&before_branch, after.product().branch_identity());
+    assert_eq!(&before_commit, after.product().selected_commit());
     assert_eq!(
-        before.relational_basis_descriptor(),
-        after.relational_basis_descriptor()
+        &before_relational,
+        after.product().relational_basis_descriptor()
     );
     assert_eq!(lower.signal().service_readmission_count(), 1);
     assert_eq!(lower.readmitted_lowering_count(), 1);
@@ -141,9 +145,13 @@ pub fn closing_runtime_releases_inventory_and_revokes_handles() {
     let _ = observe(&mut world);
     let before = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
+    let before_branch = before.product().branch_identity().clone();
+    let before_commit = before.product().selected_commit().clone();
+    let before_relational = before.product().relational_basis_descriptor().clone();
+    drop(before);
     let installed = world.application.inspect_conditional_runtime();
     assert_eq!(installed.installed_binding_count(), 1);
     assert_eq!(installed.managed_clock_count(), 1);
@@ -158,18 +166,19 @@ pub fn closing_runtime_releases_inventory_and_revokes_handles() {
     assert_eq!(empty.signal_graph_count(), installed.signal_graph_count());
     let after = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    assert_eq!(before.branch_identity(), after.branch_identity());
-    assert_eq!(before.selected_commit(), after.selected_commit());
+    assert_eq!(&before_branch, after.product().branch_identity());
+    assert_eq!(&before_commit, after.product().selected_commit());
     assert_eq!(
-        before.relational_basis_descriptor(),
-        after.relational_basis_descriptor()
+        &before_relational,
+        after.product().relational_basis_descriptor()
     );
     let denial = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap()
         .conditional_clock(&world.clock)
         .err()

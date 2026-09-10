@@ -190,103 +190,105 @@ fn build(
             ),
         },
     );
-    let mut workspace = runtime::WorthQueryRuntime::builder()
-        .primary_runtime_granular_invalidations(installation.clone())
-        .domain_package(query_domain::package(profile))
-        .expect("the financial Query package must admit")
-        .graph_participation(crate::query_runtime_world::graph_definition())
-        .graph_participation_provider(
-            crate::query_runtime_world::PrimaryGraph,
-            crate::query_runtime_world::PrimaryGraphProvider,
-        )
-        .runtime_bridge(bridge)
-        .conditional_execution_resources(
-            runtime::WorthQueryConditionalExecutionResources::development(),
-        )
-        .conditional_signal_graph(signal)
-        .conditional_node(
-            FinancialDomain,
-            FinancialOperation,
-            FinancialFamily,
-            crate::query_runtime_world::PrimaryGraph,
-            domain::WorthQueryConditionalNodeLocation::operation(node.identity()).unwrap(),
-            dependency_installations,
-            providers,
-            ConditionalCompute {
-                next_version: Arc::new(std::sync::atomic::AtomicU64::new(1)),
-            },
-        )
-        .domain_operation_executor(
-            FinancialDomain,
-            FinancialOperation,
-            FinancialFamily,
-            FinancialExecutor(profile),
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::Live,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::Sharing,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::DependencyImpact,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::Invalidation,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::CollectionDelivery,
-            if profile == FinancialQueryProfile::OrderedPortfolio {
-                domain::WorthQueryConsumerSupportPosture::Supported
-            } else {
-                domain::WorthQueryConsumerSupportPosture::Unsupported
-            },
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::Continuation,
-            if profile == FinancialQueryProfile::OrderedPortfolio {
-                domain::WorthQueryConsumerSupportPosture::Supported
-            } else {
-                domain::WorthQueryConsumerSupportPosture::Unsupported
-            },
-        )
-        .aspect_contracts(aspect_contracts)
-        .expect("the financial dependency contracts must install")
-        .schema_adapter(crate::query_runtime_world::SchemaAdapter)
-        .source_adapter(source)
-        .snapshot_identity(crate::query_runtime_world::PrimarySnapshotAdapter::new(
-            &installation,
-        ))
-        .write_authority(crate::query_runtime_world::DenyingWriteAuthority)
-        .signal_sink(crate::query_runtime_world::SignalSink)
-        .subscription_activation(crate::query_runtime_world::SubscriptionActivation)
-        .preview_basis(crate::query_runtime_world::PreviewBasis)
-        .inspector_evidence(crate::query_runtime_world::InspectorEvidence)
-        .build_backend_from_parts()
-        .build()
-        .expect("the financial primary-backed Query runtime must build")
-        .workspace("financial-primary-query")
-        .expect("the financial Query workspace must open");
+    let mut workspace = runtime::WorthQueryRuntime::builder(
+        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+    )
+    .primary_runtime_granular_invalidations(installation.clone())
+    .domain_package(query_domain::package(profile))
+    .expect("the financial Query package must admit")
+    .graph_participation(crate::query_runtime_world::graph_definition())
+    .graph_participation_provider(
+        crate::query_runtime_world::PrimaryGraph,
+        crate::query_runtime_world::PrimaryGraphProvider,
+    )
+    .runtime_bridge(bridge)
+    .conditional_execution_resources(
+        runtime::WorthQueryConditionalExecutionResources::development(),
+    )
+    .conditional_signal_graph(signal)
+    .conditional_node(
+        FinancialDomain,
+        FinancialOperation,
+        FinancialFamily,
+        crate::query_runtime_world::PrimaryGraph,
+        domain::WorthQueryConditionalNodeLocation::operation(node.identity()).unwrap(),
+        dependency_installations,
+        providers,
+        ConditionalCompute {
+            next_version: Arc::new(std::sync::atomic::AtomicU64::new(1)),
+        },
+    )
+    .domain_operation_executor(
+        FinancialDomain,
+        FinancialOperation,
+        FinancialFamily,
+        FinancialExecutor(profile),
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::Live,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::Sharing,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::DependencyImpact,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::Invalidation,
+        domain::WorthQueryConsumerSupportPosture::Supported,
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::CollectionDelivery,
+        if profile == FinancialQueryProfile::OrderedPortfolio {
+            domain::WorthQueryConsumerSupportPosture::Supported
+        } else {
+            domain::WorthQueryConsumerSupportPosture::Unsupported
+        },
+    )
+    .consumer_support_posture(
+        domain::WorthQueryConsumerSupportDimension::Continuation,
+        if profile == FinancialQueryProfile::OrderedPortfolio {
+            domain::WorthQueryConsumerSupportPosture::Supported
+        } else {
+            domain::WorthQueryConsumerSupportPosture::Unsupported
+        },
+    )
+    .aspect_contracts(aspect_contracts)
+    .expect("the financial dependency contracts must install")
+    .schema_adapter(crate::query_runtime_world::SchemaAdapter)
+    .source_adapter(source)
+    .snapshot_identity(crate::query_runtime_world::PrimarySnapshotAdapter::new(
+        &installation,
+    ))
+    .write_authority(crate::query_runtime_world::DenyingWriteAuthority)
+    .signal_sink(crate::query_runtime_world::SignalSink)
+    .subscription_activation(crate::query_runtime_world::SubscriptionActivation)
+    .preview_basis(crate::query_runtime_world::PreviewBasis)
+    .inspector_evidence(crate::query_runtime_world::InspectorEvidence)
+    .build_backend_from_parts()
+    .build()
+    .expect("the financial primary-backed Query runtime must build")
+    .workspace("financial-primary-query")
+    .expect("the financial Query workspace must open");
     if establish_sharing_baseline {
         drop(settle(&mut workspace, profile));
     }
@@ -322,7 +324,7 @@ fn settle(
 > {
     let installed = workspace.domain(FinancialDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(FinancialFamily)
         .bind(&installed, FinancialOperation)

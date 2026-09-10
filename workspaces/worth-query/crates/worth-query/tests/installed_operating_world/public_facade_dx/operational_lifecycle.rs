@@ -4,7 +4,9 @@ use super::*;
 fn bound_operations_drive_native_live_invalidation_collection_and_disposal() {
     let mut workspace = workspace("installed-public-facade-single-root", false).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
-    let root = workspace.observe_operating_world().unwrap();
+    let root = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
     let reads = root.family(ReadFamily);
     let subject = reads.bind(&domain, ReadVertex).unwrap();
     let compatibility_peer = reads.bind(&domain, ReadVertex).unwrap();
@@ -40,7 +42,9 @@ fn bound_operations_drive_native_live_invalidation_collection_and_disposal() {
 
     let mut collection_workspace = matrix_workspace("installed-public-facade-collection", 3, false);
     let collection_domain = collection_workspace.domain(GeometryDomain).unwrap();
-    let collection_root = collection_workspace.observe_operating_world().unwrap();
+    let collection_root = collection_workspace
+        .observe_operating_world(collection_workspace.current_world())
+        .unwrap();
     let collection_family = collection_root.family(ReadFamily);
     let collection_bound = collection_family
         .bind(&collection_domain, NativeMatrixRead)

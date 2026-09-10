@@ -12,6 +12,8 @@ mod courtroom_settlement;
 mod courtroom_support;
 #[path = "temporal_conditional_operation/product_query_support.rs"]
 mod product_query_support;
+#[path = "temporal_conditional_operation/public_live_route.rs"]
+mod public_live_route;
 #[path = "temporal_conditional_operation/public_product_journey.rs"]
 mod public_product_journey;
 #[path = "temporal_conditional_operation/schema.rs"]
@@ -35,14 +37,15 @@ fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
     let world =
         CourtroomWorld::publish_with_active_snapshot_limit("ready", MAXIMUM_ACTIVE_SNAPSHOTS);
     let (_, before) = world.application.relational_snapshot_state_for_test();
-    let branch = world.application.product_runtime().default_branch().clone();
-    let selected = world.application.select_product_branch(&branch).unwrap();
+    let branch = world.application.current_world();
+    let selected = world.application.on_branch(branch).select().unwrap();
     let already_active = world.application.relational_snapshot_state_for_test().0;
     let pinned = (already_active..MAXIMUM_ACTIVE_SNAPSHOTS)
         .map(|_| {
             world
                 .application
-                .select_product_branch(&branch)
+                .on_branch(branch)
+                .select()
                 .expect("each basis inside the configured limit must be admitted")
         })
         .collect::<Vec<_>>();
@@ -85,13 +88,14 @@ fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
 #[test]
 fn application_readiness_reports_current_query_basis_without_leaking_a_lease() {
     let world = CourtroomWorld::publish("ready");
-    let branch = world.application.product_runtime().default_branch().clone();
+    let branch = world.application.current_world();
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
 
     let readiness = world
         .application
-        .select_product_branch(&branch)
+        .on_branch(branch)
+        .select()
         .expect("the published product should be selectable")
         .inspect_application_readiness()
         .expect("the published application basis should be inspectable");
@@ -105,7 +109,8 @@ fn application_readiness_reports_current_query_basis_without_leaking_a_lease() {
         .starts_with("basis:query-primary-graph-v2:"));
     let repeated = world
         .application
-        .select_product_branch(&branch)
+        .on_branch(branch)
+        .select()
         .expect("the published product should remain selectable")
         .inspect_application_readiness()
         .expect("repeated readiness inspection should remain available");
@@ -136,7 +141,7 @@ fn successor_generation_requires_fresh_typed_rebinding() {
         .application
         .reinstall_conditional_runtime_for_installation(
             successor,
-            &world.application.product_runtime().default_branch().clone(),
+            world.application.current_world(),
         )
         .unwrap_err();
 
@@ -167,6 +172,21 @@ fn host_installs_and_executes_a_due_temporal_application_operation() {
 #[test]
 fn public_product_journey_publishes_delivers_executes_and_cleans_up() {
     public_product_journey::publishes_delivers_executes_and_cleans_up();
+}
+
+#[test]
+fn public_branch_facade_creates_and_selects_all_component_postures() {
+    public_product_journey::creates_and_selects_all_component_postures();
+}
+
+#[test]
+fn public_world_no_effect_retains_conditional_provenance() {
+    public_live_route::world_no_effect_retains_conditional_provenance();
+}
+
+#[test]
+fn public_live_query_receives_a_real_conditional_world_publication() {
+    public_live_route::live_query_receives_conditional_world_publication();
 }
 
 #[test]

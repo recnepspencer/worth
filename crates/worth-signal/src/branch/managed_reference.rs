@@ -75,6 +75,18 @@ impl Clone for ManagedSignalBranchReference {
     }
 }
 
+impl PartialEq for ManagedSignalBranchReference {
+    fn eq(&self, other: &Self) -> bool {
+        self.owner_runtime_instance_id == other.owner_runtime_instance_id
+            && self.owner_lifecycle_identity == other.owner_lifecycle_identity
+            && self.branch_id == other.branch_id
+            && self.cell_incarnation == other.cell_incarnation
+            && Weak::ptr_eq(&self.owner_lifecycle, &other.owner_lifecycle)
+    }
+}
+
+impl Eq for ManagedSignalBranchReference {}
+
 impl fmt::Debug for ManagedSignalBranchReference {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
@@ -84,6 +96,13 @@ impl fmt::Debug for ManagedSignalBranchReference {
 }
 
 impl ManagedSignalBranchReference {
+    /// Whether this owner-issued branch reference names the branch carrying
+    /// `basis`. This is descriptive lifecycle matching only; it does not
+    /// readmit the basis or grant mutation authority.
+    pub fn targets_basis(&self, basis: &super::AdmittedSignalBranchBasis) -> bool {
+        self.branch_id == basis.branch_id()
+    }
+
     #[allow(
         dead_code,
         reason = "Phase 4 basis-port issuance consumes this private owner seam"

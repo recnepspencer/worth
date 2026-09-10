@@ -37,4 +37,18 @@ impl RuntimeWorldObservationPort {
             .observe_product_branch(branch)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
+
+    /// Resolves one owner-issued live occurrence without exposing or
+    /// reconstructing its name-keyed product identity.
+    pub fn observe_product_branch_occurrence(
+        &self,
+        occurrence: crate::identity::ProductBranchIncarnation,
+    ) -> Result<
+        crate::branch::ProductBranchObservation,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .observe_product_branch_occurrence(occurrence)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
 }

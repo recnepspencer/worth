@@ -224,7 +224,29 @@ where
             .branch_cell(branch)
             .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
         cell.observe(&self.state.history, &self.state.retention)
-            .map_err(|_| RuntimeWorldBranchAdmissionDenial::CapacityExhausted)
+            .map_err(map_observation_denial)
+    }
+
+    fn observe_product_branch_occurrence(
+        &self,
+        occurrence: ProductBranchIncarnation,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
+        if occurrence.owner_identity() != self.owner_identity() {
+            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
+        }
+        if !self.branch_service_is_available() {
+            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
+        }
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
+        let cell = self
+            .state
+            .branches
+            .branch_cell_by_lifecycle(occurrence)
+            .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
+        cell.observe(&self.state.history, &self.state.retention)
+            .map_err(map_observation_denial)
     }
 }
 
@@ -337,6 +359,23 @@ fn map_retention_denial(
         | RetentionObligationDenial::UniquePinCapacityExhausted { .. }
         | RetentionObligationDenial::InFlightAcquisitionCapacityExhausted { .. }
         | RetentionObligationDenial::DependencyCountExhausted => {
+            RuntimeWorldBranchAdmissionDenial::CapacityExhausted
+        }
+    }
+}
+
+fn map_observation_denial(
+    denial: crate::branch::ProductBranchReferenceObservationFailure,
+) -> RuntimeWorldBranchAdmissionDenial {
+    use crate::branch::ProductBranchReferenceObservationFailure;
+
+    match denial {
+        ProductBranchReferenceObservationFailure::Retired => {
+            RuntimeWorldBranchAdmissionDenial::RetiredBranch
+        }
+        ProductBranchReferenceObservationFailure::HistoryProtection(_)
+        | ProductBranchReferenceObservationFailure::Retention(_)
+        | ProductBranchReferenceObservationFailure::ObservationBinding(_) => {
             RuntimeWorldBranchAdmissionDenial::CapacityExhausted
         }
     }

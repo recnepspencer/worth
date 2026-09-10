@@ -34,6 +34,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 pub(super) enum WorthQueryTemporalReentryOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),
     Committed,
     AlreadyCommitted,
     Obsolete,

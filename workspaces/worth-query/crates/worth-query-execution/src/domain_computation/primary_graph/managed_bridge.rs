@@ -95,6 +95,26 @@ pub(super) fn install_application_bridge<Schema>(
 where
     Schema: ApplicationSchema,
 {
+    let ordinary = build_application_runtime_bridge(schema, layout, source)?;
+    let conditional = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
+        ordinary.clone(),
+        conditional_evaluation_budget,
+    )
+    .map_err(|error| bridge_denial(format!("{error:?}")))?;
+    Ok(WorthQueryApplicationBridgeInstallation {
+        ordinary,
+        conditional,
+    })
+}
+
+pub(super) fn build_application_runtime_bridge<Schema>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+    source: RuntimeBridgeRelationalSource,
+) -> Result<RuntimeBridge, WorthQueryPrimaryGraphInstallationDenial>
+where
+    Schema: ApplicationSchema,
+{
     let mut mappings = application_mappings(schema, layout)?;
     let first = mappings.next().ok_or_else(|| {
         bridge_denial("installed application schema has no bridge-readable fields")
@@ -117,23 +137,28 @@ where
         ))
         .register_aspect_mapping(first.aspect)
         .register_mapping(first.routing);
-    let ordinary = mappings
+    mappings
         .fold(builder, |builder, mapping| {
             builder
                 .register_aspect_mapping(mapping.aspect)
                 .register_mapping(mapping.routing)
         })
         .build()
-        .map_err(|error| bridge_denial(format!("{error:?}")))?;
-    let conditional = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        ordinary.clone(),
-        conditional_evaluation_budget,
+        .map_err(|error| bridge_denial(format!("{error:?}")))
+}
+
+pub(crate) fn build_primary_graph_product_bridge<Schema>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    integration: &super::WorthQueryPrimaryGraphIntegrationHandle,
+) -> Result<RuntimeBridge, WorthQueryPrimaryGraphInstallationDenial>
+where
+    Schema: ApplicationSchema,
+{
+    build_application_runtime_bridge(
+        schema,
+        &integration.layout,
+        integration.source_owner.bridge_source(),
     )
-    .map_err(|error| bridge_denial(format!("{error:?}")))?;
-    Ok(WorthQueryApplicationBridgeInstallation {
-        ordinary,
-        conditional,
-    })
 }
 
 fn application_mappings<Schema>(

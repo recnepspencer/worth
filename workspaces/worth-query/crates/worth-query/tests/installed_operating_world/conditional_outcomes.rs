@@ -38,7 +38,9 @@ fn unchanged_correspondence_versions_stop_before_condition_and_compute() {
     )
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
-    let world = workspace.observe_operating_world().unwrap();
+    let world = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
     let bound = world
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -61,7 +63,9 @@ fn unchanged_correspondence_versions_stop_before_condition_and_compute() {
     );
     drop(first);
 
-    let world = workspace.observe_operating_world().unwrap();
+    let world = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
     let bound = world
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -118,7 +122,7 @@ fn unchanged_dependency_opens_live_continuity_without_new_semantic_output() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -182,7 +186,7 @@ fn unrequested_on_demand_node_defers_without_compute_or_query_work() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -246,7 +250,7 @@ fn temporal_wake_defers_without_compute_or_query_work() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)

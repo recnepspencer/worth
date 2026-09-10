@@ -36,7 +36,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn installed_world_with_
     let binding = schema
         .principal_binding(IdentityBinding::reference())
         .unwrap();
-    let mut bootstrap = authority.prepare_primary_graph(&runtime, &schema).unwrap();
+    let mut bootstrap = authority.prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
     for (ordinal, (subject, status)) in rows.iter().enumerate() {
         bootstrap
             .bind_principal(

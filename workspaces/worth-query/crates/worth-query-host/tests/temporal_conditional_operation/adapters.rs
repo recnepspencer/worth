@@ -9,7 +9,8 @@ use worth_query_host::facade::{admission, domain, primary_graph};
 
 use super::contract::TemporalReadyNode;
 use super::schema::{
-    ExecuteTemporal, IntentEffectField, IntentQueryResult, TemporalHostSchema, TemporalInput,
+    ExecuteTemporal, IntentEffectField, IntentIdentityField, IntentQueryResult,
+    TemporalExecutionEffect, TemporalExecutionNotice, TemporalHostSchema, TemporalInput,
     TemporalIntent,
 };
 
@@ -133,8 +134,10 @@ impl
     > for Invoker
 {
     const SEMANTIC_IDENTITY: &'static str = "worth.query.host.courtroom.invoker";
-    type Projection =
-        primary_graph::WorthQueryInvariantMutationTarget<TemporalHostSchema, TemporalIntent>;
+    type Projection = (
+        primary_graph::WorthQueryInvariantMutationTarget<TemporalHostSchema, TemporalIntent>,
+        String,
+    );
 
     fn preconditions(
         &self,
@@ -168,6 +171,28 @@ impl
     ) -> Result<Self::Projection, primary_graph::WorthQueryTemporalInvocationFailure> {
         self.contacts.projection.fetch_add(1, Ordering::SeqCst);
         reader
+            .require_decision_field(scope, IntentIdentityField::reference())
+            .map_err(|denial| {
+                primary_graph::WorthQueryTemporalInvocationFailure::new(
+                    primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
+                    denial.to_string(),
+                )
+            })?;
+        let identity = reader
+            .decision_field(scope, IntentIdentityField::reference())
+            .map_err(|denial| {
+                primary_graph::WorthQueryTemporalInvocationFailure::new(
+                    primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
+                    denial.to_string(),
+                )
+            })?
+            .ok_or_else(|| {
+                primary_graph::WorthQueryTemporalInvocationFailure::new(
+                    primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
+                    "required temporal identity was absent",
+                )
+            })?;
+        reader
             .decision_field(scope, IntentEffectField::reference())
             .map_err(|denial| {
                 primary_graph::WorthQueryTemporalInvocationFailure::new(
@@ -175,18 +200,19 @@ impl
                     denial.to_string(),
                 )
             })?;
-        reader.mutation_target(scope).map_err(|detail| {
+        let target = reader.mutation_target(scope).map_err(|detail| {
             primary_graph::WorthQueryTemporalInvocationFailure::new(
                 primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
                 detail,
             )
-        })
+        })?;
+        Ok((target, identity))
     }
 
     fn apply(
         &self,
         input: TemporalInput,
-        target: Self::Projection,
+        (target, identity): Self::Projection,
         effects: &mut primary_graph::WorthQueryApplicationEffectProgramBuilder<
             TemporalHostSchema,
             ExecuteTemporal,
@@ -203,6 +229,17 @@ impl
         })?;
         effects
             .write_field(&target, IntentEffectField::reference(), input.0)
+            .map_err(|denial| {
+                primary_graph::WorthQueryTemporalInvocationFailure::new(
+                    primary_graph::WorthQueryTemporalInvocationFailureKind::InvocationRejected,
+                    denial.to_string(),
+                )
+            })?;
+        effects
+            .emit(
+                TemporalExecutionEffect::reference(),
+                TemporalExecutionNotice { identity },
+            )
             .map_err(|denial| {
                 primary_graph::WorthQueryTemporalInvocationFailure::new(
                     primary_graph::WorthQueryTemporalInvocationFailureKind::InvocationRejected,

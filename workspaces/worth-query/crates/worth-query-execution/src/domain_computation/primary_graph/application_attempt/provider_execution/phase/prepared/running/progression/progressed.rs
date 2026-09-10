@@ -39,6 +39,13 @@ where
                 WorthQueryProviderProgressionOutcome::ProductStale(stale) => {
                     WorthQueryApplicationCommitOutcome::ProductStale(stale)
                 }
+                WorthQueryProviderProgressionOutcome::NoEffect(no_effect) => {
+                    WorthQueryApplicationCommitOutcome::NoEffect(
+                        crate::domain_computation::primary_graph::WorthQueryApplicationNoEffect::from_world(
+                            no_effect,
+                        ),
+                    )
+                }
                 _ => WorthQueryApplicationCommitOutcome::Indeterminate(
                     unknown_commit_recovery_evidence(
                         "managed mutation run failed to finish after provider progression",
@@ -72,6 +79,7 @@ const fn terminal_for(
         | WorthQueryProviderProgressionOutcome::AlreadyCommitted(_)
         | WorthQueryProviderProgressionOutcome::Stale(_)
         | WorthQueryProviderProgressionOutcome::ProductStale(_)
+        | WorthQueryProviderProgressionOutcome::NoEffect(_)
         | WorthQueryProviderProgressionOutcome::SettlementDeferred(_) => {
             WorthQueryManagedRunTerminalKind::Completed
         }

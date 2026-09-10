@@ -20,25 +20,29 @@ pub mod runtime {
         WorthQueryPerformedRelationalProductChangeDeliveryDenial,
         WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
         WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
-        WorthQueryProductBranchCreationDenial, WorthQueryProductRuntime,
+        WorthQueryProductBranchCreationDenial, WorthQueryProductWorldClock,
+        WorthQueryProductWorldResources,
     };
     pub use crate::domain_computation::execution_runtime::*;
     pub use crate::domain_computation::{
         WorthQueryExecutionBoundOperationAuthority, WorthQueryExecutionOperationBindingDenial,
         WorthQueryInstalledDomainExecutionAuthority,
     };
-    pub use worth_relational::facade::history::BranchId;
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity,
-        ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchIdentity,
-        ProductBranchRetirementReport, RelationalBranchCreationPlan,
-        RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource,
-        RuntimeWorldCancellationToken, SignalBranchCreationPlan,
+        RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
+        RuntimeWorldBudgetInstallation, RuntimeWorldBudgets, RuntimeWorldCancellationSource,
+        RuntimeWorldCancellationToken, RuntimeWorldCustodyBudgetInstallation,
+        RuntimeWorldHistoryBudgetInstallation, RuntimeWorldObservationBudgetInstallation,
+        RuntimeWorldPublicationBudgetInstallation, RuntimeWorldRecoveryBudgetInstallation,
+        RuntimeWorldRetentionBudgetInstallation,
     };
     pub use worth_signal::facade::branch::{
         validate_signal_branch_name, ValidatedSignalBranchName,
     };
 }
+
+pub mod product;
 
 pub mod provider_session {
     pub use crate::domain_computation::provider_session::*;
@@ -107,7 +111,8 @@ pub mod primary_graph {
         WorthQueryApplicationOperationInvariantProjectionReader,
         WorthQueryApplicationOperationInvariantProjectionSnapshot,
         WorthQueryApplicationPrincipalIdentity, WorthQueryApplicationPrincipalKey,
-        WorthQueryApplicationPrincipalKeyDenial, WorthQueryApplicationProjection,
+        WorthQueryApplicationPrincipalKeyDenial, WorthQueryApplicationProductBranchCloseDenial,
+        WorthQueryApplicationProductBranches, WorthQueryApplicationProjection,
         WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
         WorthQueryApplicationProjectionRow, WorthQueryApplicationProjectionRows,
         WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAccessReceipt,
@@ -194,9 +199,14 @@ pub mod primary_graph {
         WorthQueryCommittedDispatchOutboxReadWork,
     };
     pub use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
+    pub use crate::domain_computation::{
+        WorthQueryProductUnpublishedRecoveryFailure,
+        WorthQueryProductUnpublishedRecoveryReleaseDenial,
+        WorthQueryProductUnpublishedRecoveryReleaseFailure,
+    };
     pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
     pub use worth_runtime_world::facade::{
-        OwnerRetirementWork, ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle,
+        ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle,
         RecoveryContinuationContract, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
         RuntimeWorldRecoveryPage,
     };
@@ -233,6 +243,7 @@ pub mod integration {
     pub use crate::domain_computation::execution_runtime::product_world::{
         WorthQueryProductRelationalInstallation, WorthQueryProductRuntime,
         WorthQueryProductRuntimeInstallationDenial, WorthQueryProductSharedRoot,
+        WorthQueryProductWorldClock, WorthQueryProductWorldResources,
         WorthQueryRelationalSourceOwner,
     };
     use worth_query_installation::facade::{
@@ -240,7 +251,12 @@ pub mod integration {
     };
     use worth_relational::facade::runtime::RelationalRuntime;
     pub use worth_runtime_world::facade::{
+        RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
+        RuntimeWorldBudgetInstallation, RuntimeWorldBudgets, RuntimeWorldCustodyBudgetInstallation,
+        RuntimeWorldHistoryBudgetInstallation, RuntimeWorldObservationBudgetInstallation,
         RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+        RuntimeWorldPublicationBudgetInstallation, RuntimeWorldRecoveryBudgetInstallation,
+        RuntimeWorldRetentionBudgetInstallation,
     };
 
     use crate::domain_computation::execution_runtime::{
@@ -268,6 +284,7 @@ pub mod integration {
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: RelationalRuntime,
+        product_world_resources: WorthQueryProductWorldResources,
     ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: ApplicationSchema,
@@ -276,6 +293,17 @@ pub mod integration {
             runtime,
             installed_schema,
             relational_runtime,
+            product_world_resources,
+        )
+    }
+
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn product_world_resources_for_test(
+        retained_composite_commits: u64,
+    ) -> WorthQueryProductWorldResources {
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_history_limit(
+            retained_composite_commits,
         )
     }
 
@@ -286,6 +314,7 @@ pub mod integration {
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         maximum_active_snapshots: usize,
+        product_world_resources: WorthQueryProductWorldResources,
     ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: ApplicationSchema,
@@ -310,6 +339,7 @@ pub mod integration {
             runtime,
             installed_schema,
             relational,
+            product_world_resources,
         )
     }
 
@@ -317,6 +347,26 @@ pub mod integration {
         runtime: &WorthQueryExecutionRuntime,
     ) -> Option<WorthQueryPrimaryGraphIntegrationHandle> {
         runtime.retain_primary_graph_integration_handle()
+    }
+
+    /// Derives Product World's bridge from the exact published primary graph.
+    ///
+    /// The returned bridge carries the graph's source authority and schema
+    /// correspondence. It grants no primary-provider authority.
+    #[doc(hidden)]
+    pub fn prepare_primary_graph_product_bridge<Schema>(
+        installed_schema: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<
+            Schema,
+        >,
+        integration: &WorthQueryPrimaryGraphIntegrationHandle,
+    ) -> Result<worth_runtime_bridge::facade::RuntimeBridge, WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Schema: ApplicationSchema,
+    {
+        crate::domain_computation::primary_graph::build_primary_graph_product_bridge(
+            installed_schema,
+            integration,
+        )
     }
 
     pub fn publish_primary_graph<Schema>(

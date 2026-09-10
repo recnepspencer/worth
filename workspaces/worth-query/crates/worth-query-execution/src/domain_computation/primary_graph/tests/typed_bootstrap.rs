@@ -49,7 +49,7 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
         .unwrap()
         .0;
 
-    let bootstrap = authority.prepare_primary_graph(&runtime, &schema).unwrap();
+    let bootstrap = authority.prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
     let registered = bootstrap
         .graph
         .registered_entity_aspect("Principal", "PrincipalIdentity")
@@ -120,7 +120,7 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
         .bind_application_schema(declaration)
         .unwrap();
     let denial = authority
-        .prepare_primary_graph(&runtime, &schema)
+        .prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources())
         .err()
         .unwrap();
 
@@ -171,7 +171,7 @@ fn duplicate_typed_principal_identity_denies_without_poisoning_bootstrap() {
     let binding = schema
         .principal_binding(IdentityBinding::reference())
         .unwrap();
-    let mut bootstrap = authority.prepare_primary_graph(&runtime, &schema).unwrap();
+    let mut bootstrap = authority.prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
 
     bootstrap
         .bind_principal(

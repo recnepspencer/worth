@@ -225,7 +225,23 @@ fn primary_graph_application(
         .principal_binding(SessionIdentityBinding::reference())
         .expect("test principal binding must install");
     let mut graph = authority
-        .prepare_primary_graph(&runtime, &schema)
+        .prepare_primary_graph(
+            &runtime,
+            &schema,
+            worth_query_host::facade::runtime::WorthQueryProductWorldResources::install(
+                worth_query_host::facade::runtime::RuntimeWorldBudgetInstallation {
+                    branches: worth_query_host::facade::runtime::RuntimeWorldBranchBudgetInstallation { live_product_branches: 128 },
+                    history: worth_query_host::facade::runtime::RuntimeWorldHistoryBudgetInstallation { retained_composite_commits: 1_024, history_metadata_bytes: 16 * 1024 * 1024 },
+                    observations: worth_query_host::facade::runtime::RuntimeWorldObservationBudgetInstallation { active_observations: 512 },
+                    publication: worth_query_host::facade::runtime::RuntimeWorldPublicationBudgetInstallation { active_publication_attempts: 128 },
+                    recovery: worth_query_host::facade::runtime::RuntimeWorldRecoveryBudgetInstallation { retained_product_unpublished_records: 128, retained_partial_metadata_bytes: 16 * 1024 * 1024 },
+                    retention: worth_query_host::facade::runtime::RuntimeWorldRetentionBudgetInstallation { unique_exact_component_pins: 1_024, in_flight_pin_acquisition_reservations: 256 },
+                    custody: worth_query_host::facade::runtime::RuntimeWorldCustodyBudgetInstallation { owner_created_component_custody_records: 256 },
+                },
+                worth_query_host::facade::runtime::WorthQueryProductWorldClock::start(),
+            )
+            .expect("the server test Product World resources are valid"),
+        )
         .expect("test graph must prepare");
     graph
         .bind_principal(

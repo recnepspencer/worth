@@ -25,13 +25,13 @@ fn changed_request_mints_a_new_plan_and_session_without_mutating_prior_admission
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let first_bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
         .unwrap();
     let second_bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -126,7 +126,7 @@ fn workflow_stage_receipts_retain_stage_local_plans_and_one_attempt_session() {
     let mut workspace = workflow_workspace("resource-workflow-attempt-evidence").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let admitted = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)

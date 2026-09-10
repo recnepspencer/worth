@@ -167,10 +167,11 @@ fn assert_case(case: Case) {
         }
         Case::DuplicateClock => {
             let world = CourtroomWorld::publish("ready");
-            let product = world.application.product_runtime().default_branch().clone();
+            let product = world.application.current_world();
             let mut clock = world
                 .application
-                .select_product_branch(&product)
+                .on_branch(product)
+                .select()
                 .unwrap()
                 .conditional_clock(&world.clock)
                 .unwrap();
@@ -183,10 +184,11 @@ fn assert_case(case: Case) {
         }
         Case::ReorderedClock => {
             let world = CourtroomWorld::publish("ready");
-            let product = world.application.product_runtime().default_branch().clone();
+            let product = world.application.current_world();
             let mut clock = world
                 .application
-                .select_product_branch(&product)
+                .on_branch(product)
+                .select()
                 .unwrap()
                 .conditional_clock(&world.clock)
                 .unwrap();
@@ -201,11 +203,11 @@ fn assert_case(case: Case) {
         Case::GenerationChanged => {
             let mut world = CourtroomWorld::publish("ready");
             let successor = std::sync::Arc::new(world.installation.successor_generation());
-            let product = world.application.product_runtime().default_branch().clone();
+            let product = world.application.current_world();
             assert_eq!(
                 world
                     .application
-                    .reinstall_conditional_runtime_for_installation(successor, &product)
+                    .reinstall_conditional_runtime_for_installation(successor, product)
                     .unwrap_err()
                     .kind(),
                 InstallationDenial::RebindRequired
@@ -267,7 +269,8 @@ fn assert_provider_replacement() {
     let mut replacement = CourtroomWorld::publish_replacement("ready");
     assert!(replacement
         .application
-        .select_product_branch(replacement.application.product_runtime().default_branch())
+        .on_branch(replacement.application.current_world())
+        .select()
         .unwrap()
         .conditional_clock(&incumbent.clock)
         .is_err());

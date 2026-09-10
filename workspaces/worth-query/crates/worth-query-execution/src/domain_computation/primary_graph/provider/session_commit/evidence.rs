@@ -16,6 +16,23 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommi
 }
 
 impl WorthQueryCompletedCommitEvidenceStore {
+    pub(in crate::domain_computation::primary_graph::provider) fn take_one_for_product_occurrence(
+        &mut self,
+        branch: &worth_runtime_world::facade::ProductBranchIdentity,
+        incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Option<(CommitId, WorthQueryPrimaryGraphCommittedApplication)> {
+        let commit = self.by_commit.iter().find_map(|(commit, evidence)| {
+            let head = evidence.product_publication().new_product_head();
+            (head.branch_identity() == branch && head.lifecycle_incarnation() == incarnation)
+                .then_some(*commit)
+        })?;
+        self.by_session.retain(|_, indexed| *indexed != commit);
+        self.by_idempotency.retain(|_, indexed| *indexed != commit);
+        self.by_commit
+            .remove(&commit)
+            .map(|evidence| (commit, evidence))
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn record(
         &mut self,
         evidence: WorthQueryPrimaryGraphCommittedApplication,

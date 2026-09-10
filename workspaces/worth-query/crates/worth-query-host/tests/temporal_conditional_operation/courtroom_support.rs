@@ -3,7 +3,7 @@ use worth_query_host::facade::primary_graph;
 use super::world::{request_scope, CourtroomWorld};
 
 pub(super) fn observe(
-    world: &mut CourtroomWorld,
+    world: &CourtroomWorld,
 ) -> primary_graph::WorthQueryConditionalClockObservationReceipt<super::adapters::CourtroomClock> {
     let outcome = raw_observe(world);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) = outcome
@@ -38,7 +38,7 @@ pub(super) fn outcome_kind<Clock>(
 }
 
 pub(super) fn raw_observe(
-    world: &mut CourtroomWorld,
+    world: &CourtroomWorld,
 ) -> primary_graph::WorthQueryConditionalClockObservationOutcome<super::adapters::CourtroomClock> {
     world.conditional_clock().observe()
 }
@@ -63,7 +63,8 @@ pub(super) fn assert_authoritative_value<Entity, Aspect, Field, Value, Write, Un
 {
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             field,

@@ -200,6 +200,7 @@ fn retained_decision_evidence_mut(
         | Decision::OperationSettlementDeferred(evidence, _)
         | Decision::OperationProductUnpublished(evidence, _)
         | Decision::OperationProductStale(evidence, _)
+        | Decision::OperationNoEffect(evidence, _)
         | Decision::OperationIndeterminate(evidence, _)
         | Decision::OperationCommitted(evidence)
         | Decision::OperationAlreadyCommitted(evidence) => Some(evidence),

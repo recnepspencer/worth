@@ -7,7 +7,6 @@ pub use super::owned_async_source::{
     WorthQueryInstalledOwnedAsyncDeclaration, WorthQueryOwnedAsyncRequestDeclaration,
     WorthQueryOwnedAsyncRuntimeDenial, WorthQueryOwnedAsyncRuntimeTopology,
 };
-pub use super::product_branching::WorthQueryProductBranchCreationDenial;
 
 pub use super::async_source_binding::{
     WorthQueryAsyncResultTransitionBatch, WorthQueryAsyncSourceBindingError,
@@ -42,6 +41,7 @@ pub use super::backend::{
 pub use super::branch::WorthQueryBranchSession;
 
 pub use super::builder::{
+    WorthQueryDeclarationAuthorityRuntime, WorthQueryDeclarationAuthorityRuntimeBuilder,
     WorthQueryHostRuntimeCompletionError, WorthQueryHostRuntimeInstallationCompletion,
     WorthQueryHostRuntimeInstallationDenial, WorthQueryHostRuntimeInstallationDenialKind,
     WorthQueryHostRuntimeInstallationPlan, WorthQueryHostRuntimeInstallationRequest,

@@ -44,7 +44,7 @@ pub struct WorthQueryRuntime {
         crate::domain_installation::WorthQueryWorkflowParallelAdmissionProviderRegistry,
     pub(super) graph_participation_registry:
         crate::domain_installation::WorthQueryInstalledGraphParticipationRegistry,
-    pub(super) installed_product: Option<super::installed_product::WorthQueryInstalledProduct>,
+    pub(super) installed_product: super::installed_product::WorthQueryInstalledProduct,
     pub(super) conditional_execution_registry:
         crate::domain_installation::WorthQueryConditionalExecutionRegistry,
     pub(super) installed_owned_async_declarations:

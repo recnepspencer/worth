@@ -32,7 +32,7 @@ impl WorthQueryPrimaryGraphProvider {
                 .map_err(WorthQueryApplicationSettlementRecoveryError::Durability)?;
             if &repaired.branch_id != branch
                 || &repaired != settlement.commit()
-                || &repaired != &settlement.performed_result().commit
+                || repaired != settlement.performed_result().commit
             {
                 return Err(WorthQueryApplicationSettlementRecoveryError::Publication(
                     "deferred application settlement does not match its performed publication",

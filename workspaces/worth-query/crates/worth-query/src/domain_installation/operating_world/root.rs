@@ -18,22 +18,17 @@ impl<'runtime, L: BasisOperationLane> WorthQueryInstalledOperatingWorld<'runtime
     /// not resolve the branch again or manufacture a component admission.
     pub fn product_branch(
         &self,
-    ) -> Result<
-        &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
-        super::super::WorthQueryConditionalAdmissionDenial,
-    > {
-        self.basis.product().map(std::sync::Arc::as_ref)
+    ) -> &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease {
+        self.basis.product().as_ref()
     }
 
     /// Retain the exact product occurrence already admitted by this operating
     /// world for a longer-lived owner service.
     pub fn retain_product_branch(
         &self,
-    ) -> Result<
-        std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease>,
-        super::super::WorthQueryConditionalAdmissionDenial,
-    > {
-        self.basis.product().cloned()
+    ) -> std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease>
+    {
+        self.basis.product().clone()
     }
 
     pub fn family<F>(

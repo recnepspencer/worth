@@ -25,8 +25,6 @@ pub enum WorthQueryOperatingWorldEntryDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperatingWorldProductDenial {
-    SelectionRequired,
-    RuntimeUnavailable,
     Admission(worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial),
 }
 
@@ -38,7 +36,7 @@ pub enum WorthQueryOperatingWorldEntryDenialKind {
 }
 
 impl WorthQueryOperatingWorldEntry<ObservationLaneWitness> {
-    pub(crate) fn observe_current() -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
+    pub(crate) fn observe_installed_root() -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
         let path = basis_lifecycle()
             .current_head()
             .for_observation()
@@ -49,12 +47,6 @@ impl WorthQueryOperatingWorldEntry<ObservationLaneWitness> {
         Ok(Self {
             capability: admitted.capability().clone(),
         })
-    }
-
-    pub(crate) fn observe_branch(
-        branch_identity: &super::WorthQueryBranchHeadIdentity,
-    ) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
-        Self::observe_branch_name(branch_identity.as_str())
     }
 
     pub(crate) fn observe_product_component(
@@ -78,14 +70,18 @@ impl WorthQueryOperatingWorldEntry<ObservationLaneWitness> {
 }
 
 impl WorthQueryOperatingWorldEntry<MutationPreparationLaneWitness> {
-    pub(crate) fn prepare_current_mutation() -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
+    pub(crate) fn prepare_installed_root_mutation(
+    ) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
         Self::prepare_mutation(basis_lifecycle().current_head())
     }
 
-    pub(crate) fn prepare_branch_mutation(
-        branch_identity: &super::WorthQueryBranchHeadIdentity,
+    pub(crate) fn prepare_product_component(
+        product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryOperatingWorldEntryDenial> {
-        Self::prepare_mutation(basis_lifecycle().branch_head(branch_identity.as_str(), true))
+        Self::prepare_mutation(
+            basis_lifecycle()
+                .branch_head(&product.relational_basis_descriptor().branch_id().0, true),
+        )
     }
 
     fn prepare_mutation(

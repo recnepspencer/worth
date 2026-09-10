@@ -310,3 +310,23 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
 }
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    pub(in crate::domain_computation::primary_graph) fn belongs_to_application(
+        &self,
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    ) -> bool {
+        self.read_set
+            .admission
+            .belongs_to(runtime_authority, binding_identity)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn product_branch(
+        &self,
+    ) -> crate::basis::WorthQueryProductBranch {
+        self.read_set.lease.product().product_branch()
+    }
+}

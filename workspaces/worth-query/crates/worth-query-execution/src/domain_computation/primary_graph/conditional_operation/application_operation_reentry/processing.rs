@@ -236,6 +236,7 @@ where
             },
             WorthQueryRetainedConditionalDecision::Eligible(evidence)
             | WorthQueryRetainedConditionalDecision::OperationProductStale(evidence, _)
+            | WorthQueryRetainedConditionalDecision::OperationNoEffect(evidence, _)
             | WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, _)
             | WorthQueryRetainedConditionalDecision::OperationBackpressured(evidence, _)
             | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _) => {

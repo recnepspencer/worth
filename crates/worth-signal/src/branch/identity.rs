@@ -16,6 +16,10 @@ pub enum SignalBranchIdentityConstructionDenial {
 pub struct ValidatedSignalBranchName(String);
 
 impl ValidatedSignalBranchName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     pub(crate) fn into_inner(self) -> String {
         self.0
     }

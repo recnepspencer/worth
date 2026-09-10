@@ -166,6 +166,7 @@ pub(super) struct PublishedApplicationGraph<Bridge> {
     bridge: Bridge,
     primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     primary_graph_authority: WorthQueryInstalledGraphParticipationAuthority,
+    product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
 }
 
 fn validate_application_schema<Schema>(
@@ -221,6 +222,7 @@ where
     Schema: ApplicationSchema,
 {
     let bridge_layout = std::sync::Arc::clone(&bootstrap.graph.layout);
+    let product_world_resources = bootstrap.product_world_resources.clone();
     let publication = bootstrap.publish(&mut runtime, &authority)?;
     let graph = runtime
         .retain_primary_graph_integration_handle()
@@ -266,6 +268,7 @@ where
         bridge,
         primary_provider,
         primary_graph_authority,
+        product_world_resources,
     })
 }
 
@@ -289,6 +292,7 @@ fn seal_application_graph(
         })?,
         primary_provider: graph.primary_provider,
         primary_graph_authority: graph.primary_graph_authority,
+        product_world_resources: graph.product_world_resources,
     })
 }
 
@@ -340,6 +344,7 @@ where
                 format!("Product source admission: {denial:?}"),
             ))?,
         &mut graph.bridge.conditional_lifecycle(),
+        graph.product_world_resources,
     ).map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
         WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
         denial.detail(),

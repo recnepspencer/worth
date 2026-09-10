@@ -1,6 +1,9 @@
-use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
+use crate::basis::{
+    WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
+};
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
+#[cfg(test)]
 use worth_runtime_world::facade::ProductBranchIdentity;
 
 /// Shared application entry bound to one retained World occurrence. Selecting
@@ -12,15 +15,24 @@ pub struct WorthQuerySelectedProductOperation<'runtime, Schema> {
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
 }
 
+/// Public application entry naming one product occurrence. It performs no
+/// lookup until a concrete operation asks for an admitted selection.
+pub struct WorthQueryProductEntry<'runtime, Schema> {
+    pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(super) branch: WorthQueryProductBranch,
+}
+
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn product_runtime(
+    #[cfg(test)]
+    pub(crate) fn product_runtime(
         &self,
     ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime
     {
         &self.product_runtime
     }
 
-    pub fn select_product_branch(
+    #[cfg(test)]
+    pub(crate) fn select_product_branch(
         &self,
         identity: &ProductBranchIdentity,
     ) -> Result<
@@ -30,7 +42,30 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.on_product(self.product_runtime.admit_product_branch(identity)?)
     }
 
-    pub fn on_product(
+    /// Selects only a Query-issued occurrence token.
+    ///
+    /// ```compile_fail
+    /// use worth_query_execution::facade::{
+    ///     primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
+    ///     runtime::ProductBranchIdentity,
+    /// };
+    /// use worth_query_installation::facade::ApplicationSchema;
+    ///
+    /// fn raw_world_identity_cannot_select<Schema: ApplicationSchema>(
+    ///     app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ///     raw: ProductBranchIdentity,
+    /// ) {
+    ///     let _ = app.on_branch(raw);
+    /// }
+    /// ```
+    pub fn on_branch(&self, branch: WorthQueryProductBranch) -> WorthQueryProductEntry<'_, Schema> {
+        WorthQueryProductEntry {
+            application: self,
+            branch,
+        }
+    }
+
+    pub(crate) fn on_product(
         &self,
         product: WorthQueryProductBranchLease,
     ) -> Result<
@@ -46,6 +81,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             product,
             application_basis,
         })
+    }
+}
+
+impl<'runtime, Schema> WorthQueryProductEntry<'runtime, Schema>
+where
+    Schema: ApplicationSchema,
+{
+    pub fn select(
+        self,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'runtime, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        self.application.on_product(
+            self.application
+                .product_runtime
+                .admit_product_occurrence(self.branch.occurrence())?,
+        )
     }
 }
 

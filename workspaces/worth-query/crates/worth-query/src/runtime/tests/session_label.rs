@@ -5,8 +5,7 @@ use crate::facade::runtime::{
 };
 
 fn session_entry_runtime() -> WorthQueryRuntime {
-    WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

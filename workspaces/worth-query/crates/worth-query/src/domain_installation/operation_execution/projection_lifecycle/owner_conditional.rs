@@ -141,16 +141,12 @@ pub(super) fn reenter_owner_delivered_conditional<
     require_owner_conditional_location(source, &location, counters)?;
     let snapshot = owner_snapshot(delivery, counters)?;
     let bound = source.bound_operation();
-    let product = seed
-        .admit_product(bound.product().map_err(|_| {
-            owner_reentry_stop("conditional reentry requires product custody", counters)
-        })?)
-        .map_err(|_| {
-            owner_reentry_stop(
-                "retained conditional belongs to a different product occurrence",
-                counters,
-            )
-        })?;
+    let product = seed.admit_product(bound.product()).map_err(|_| {
+        owner_reentry_stop(
+            "retained conditional belongs to a different product occurrence",
+            counters,
+        )
+    })?;
     let node = installed_owner_conditional_node(bound, &location, counters)?;
     let authority =
         crate::domain_installation::conditional_execution::admit_conditional_authority(bound, node)

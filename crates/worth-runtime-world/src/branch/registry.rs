@@ -11,7 +11,7 @@ use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation, RuntimeWo
 
 use super::{
     ProductBranchName, ProductBranchObservation, ProductBranchReferenceCell,
-    ProductBranchReferenceSnapshot,
+    ProductBranchReferenceRetirement, ProductBranchReferenceSnapshot,
 };
 
 pub(crate) use reservation::{
@@ -42,7 +42,10 @@ struct ProductBranchRegistryState {
     /// Keyed by the owner-plus-normalized-name identity, so the installed name
     /// index and the branch index are one map rather than two authorities.
     entries: HashMap<ProductBranchIdentity, ProductBranchRegistryEntry>,
-    lifecycles: HashSet<ProductBranchIncarnation>,
+    /// Secondary occurrence index. The branch entry remains the sole head
+    /// authority; this index only resolves a copyable owner-issued occurrence
+    /// token to that entry.
+    lifecycles: HashMap<ProductBranchIncarnation, ProductBranchIdentity>,
     root: Option<ProductBranchIdentity>,
 }
 
@@ -50,6 +53,10 @@ struct ProductBranchRegistryState {
 struct ProductBranchRegistryEntry {
     lifecycle: ProductBranchIncarnation,
     cell: ProductBranchReferenceCell,
+    /// The exact source commit selected when this occurrence was installed.
+    /// Retirement reclaims only descendants of this boundary. Root has no
+    /// branch-local source boundary and is left to owner close.
+    retirement_boundary: Option<crate::identity::CompositeCommitIdentity>,
 }
 
 /// The only managed owner registry for Runtime World product branches.
@@ -76,7 +83,7 @@ impl ProductBranchRegistry {
                 reserved_branches: 0,
                 reserved_names: HashSet::new(),
                 entries: HashMap::new(),
-                lifecycles: HashSet::new(),
+                lifecycles: HashMap::new(),
                 root: None,
             })),
         }
@@ -148,6 +155,15 @@ impl ProductBranchRegistry {
             .map(|entry| entry.cell.clone())
     }
 
+    pub(crate) fn branch_cell_by_lifecycle(
+        &self,
+        lifecycle: ProductBranchIncarnation,
+    ) -> Option<ProductBranchReferenceCell> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        let branch = state.lifecycles.get(&lifecycle)?;
+        state.entries.get(branch).map(|entry| entry.cell.clone())
+    }
+
     #[cfg(test)]
     pub(crate) fn branch_count(&self) -> usize {
         self.state
@@ -171,8 +187,15 @@ impl ProductBranchRegistry {
     pub(crate) fn retire(
         &self,
         observed: &ProductBranchObservation,
-    ) -> Result<(ProductBranchReferenceCell, ProductBranchIncarnation), ProductBranchRegistryDenial>
-    {
+    ) -> Result<
+        (
+            ProductBranchReferenceCell,
+            ProductBranchIncarnation,
+            ProductBranchReferenceRetirement,
+            Option<crate::identity::CompositeCommitIdentity>,
+        ),
+        ProductBranchRegistryDenial,
+    > {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if observed.owner_identity() != state.owner {
             return Err(ProductBranchRegistryDenial::ForeignOwner);
@@ -187,9 +210,20 @@ impl ProductBranchRegistry {
         {
             return Err(ProductBranchRegistryDenial::AlreadyRetired);
         }
+        let retirement = state
+            .entries
+            .get(branch)
+            .expect("the observed incarnation was checked under the registry guard")
+            .cell
+            .retire();
         let entry = release_installed_entry(&mut state, branch)
             .expect("the observed incarnation was checked under the registry guard");
-        Ok((entry.cell, entry.lifecycle))
+        Ok((
+            entry.cell,
+            entry.lifecycle,
+            retirement,
+            entry.retirement_boundary,
+        ))
     }
 
     /// Release every installed non-root product reference and report how many

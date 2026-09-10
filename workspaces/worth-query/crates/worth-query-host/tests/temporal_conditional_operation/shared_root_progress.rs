@@ -60,13 +60,15 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
         },
         panic,
         None,
+        None,
     );
     let application = &world.application;
     let clock = &world.clock;
     std::thread::scope(|scope| {
         let conditional = scope.spawn(|| {
             let outcome = application
-                .select_product_branch(application.product_runtime().default_branch())
+                .on_branch(application.current_world())
+                .select()
                 .unwrap()
                 .conditional_clock(clock)
                 .unwrap()
@@ -91,11 +93,12 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
         let (read, completed) = mpsc::channel();
         let reader = scope.spawn(move || {
             let product = application
-                .product_runtime()
-                .admit_product_branch(application.product_runtime().default_branch())
+                .on_branch(application.current_world())
+                .select()
                 .is_ok();
             let entity = application
-                .select_product_branch(application.product_runtime().default_branch())
+                .on_branch(application.current_world())
+                .select()
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     IntentIdentityField::reference(),

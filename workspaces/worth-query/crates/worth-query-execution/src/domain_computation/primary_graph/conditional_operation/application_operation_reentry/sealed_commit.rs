@@ -97,6 +97,9 @@ fn classify_commit(
         WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryTemporalReentryOutcome::ProductUnpublished(unpublished)
         }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryTemporalReentryOutcome::NoEffect(no_effect.cause())
+        }
         WorthQueryApplicationCommitOutcome::Committed(_) => {
             WorthQueryTemporalReentryOutcome::Committed
         }

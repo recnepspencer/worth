@@ -103,6 +103,10 @@ impl WorthQueryProductBranchLease {
         self.observation().branch_identity()
     }
 
+    pub fn product_branch(&self) -> super::WorthQueryProductBranch {
+        super::WorthQueryProductBranch::from_occurrence(self.observation().lifecycle_incarnation())
+    }
+
     pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         self.observation().selected_commit()
     }

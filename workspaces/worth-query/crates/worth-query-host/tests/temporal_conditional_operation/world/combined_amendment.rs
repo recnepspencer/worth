@@ -1,13 +1,23 @@
-use worth_query_host::facade::primary_graph;
+use worth_query_host::facade::{primary_graph, product};
 
 use super::super::adapters::{block_on, ReplacementPredicate};
 use super::super::schema::*;
 use super::{admit_identity_adapter, request_scope, CourtroomWorld};
 
 impl CourtroomWorld {
-    pub fn change_input_and_conditional_definition_on_product(
+    pub fn change_input_and_conditional_definition_on_branch(
         &self,
-        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        branch: product::WorthQueryProductBranch,
+        input: &str,
+        provider: std::sync::Arc<ReplacementPredicate>,
+    ) -> primary_graph::WorthQueryApplicationCommitReceipt {
+        let selected = self.application.on_branch(branch).select().unwrap();
+        self.change_input_and_conditional_definition_on_selected(selected, input, provider)
+    }
+
+    fn change_input_and_conditional_definition_on_selected(
+        &self,
+        selected: primary_graph::WorthQuerySelectedProductOperation<'_, TemporalHostSchema>,
         input: &str,
         provider: std::sync::Arc<ReplacementPredicate>,
     ) -> primary_graph::WorthQueryApplicationCommitReceipt {
@@ -18,7 +28,7 @@ impl CourtroomWorld {
         let authentication = admit_identity_adapter(schema);
         let request = request_scope();
         let external = block_on(authentication.authenticate((), &request)).unwrap();
-        let selected = self.application.select_product_branch(product).unwrap();
+        let branch = selected.product().product_branch();
         let conditional_definition = selected
             .admit_application_conditional_definition(&self.clock, provider)
             .unwrap();
@@ -108,13 +118,17 @@ impl CourtroomWorld {
                 TemporalAmendmentNotice(input.to_string()),
             )
             .unwrap();
-        let outcome = self.application.compare_and_commit_application(
+        let change = product::WorthQueryAdmittedChange::new(
             effects.finish().unwrap(),
             primary_graph::WorthQueryApplicationIdempotencyBinding::new([0x7A; 32], [0x4B; 32]),
         );
-        let primary_graph::WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
-            panic!("unexpected combined amendment outcome: {outcome:?}")
-        };
-        receipt
+        self.application
+            .on_branch(branch)
+            .transaction()
+            .apply(change)
+            .commit()
+            .expect("the admitted combined change remains on its selected product")
+            .require_committed()
+            .expect("the combined amendment must commit")
     }
 }

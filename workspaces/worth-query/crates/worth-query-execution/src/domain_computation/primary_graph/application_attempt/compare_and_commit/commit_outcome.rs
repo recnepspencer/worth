@@ -2,6 +2,52 @@
 
 use super::WorthQueryApplicationCommitDeferred;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationNoEffectCause {
+    OwnerDeniedBeforeEffect,
+    CorrespondenceRebindRequired,
+    ReferenceGenerationExhausted,
+    CapacityExhausted,
+    OwnerUnavailable,
+    PreEffectFailure,
+}
+
+#[derive(Debug)]
+pub struct WorthQueryApplicationNoEffect {
+    terminal: worth_runtime_world::facade::NoEffectCompositePublication,
+}
+
+impl WorthQueryApplicationNoEffect {
+    pub(in crate::domain_computation::primary_graph) fn from_world(
+        terminal: worth_runtime_world::facade::NoEffectCompositePublication,
+    ) -> Self {
+        Self { terminal }
+    }
+
+    pub fn cause(&self) -> WorthQueryApplicationNoEffectCause {
+        use worth_runtime_world::facade::NoEffectCause as Cause;
+        match self.terminal.cause() {
+            Cause::OwnerDeniedBeforeEffect => {
+                WorthQueryApplicationNoEffectCause::OwnerDeniedBeforeEffect
+            }
+            Cause::CorrespondenceRebindRequired => {
+                WorthQueryApplicationNoEffectCause::CorrespondenceRebindRequired
+            }
+            Cause::ReferenceGenerationExhausted => {
+                WorthQueryApplicationNoEffectCause::ReferenceGenerationExhausted
+            }
+            Cause::CapacityExhausted => WorthQueryApplicationNoEffectCause::CapacityExhausted,
+            Cause::OwnerUnavailable => WorthQueryApplicationNoEffectCause::OwnerUnavailable,
+            Cause::PreEffectFailure => WorthQueryApplicationNoEffectCause::PreEffectFailure,
+            Cause::StaleExpectedProductHead
+            | Cause::CancelledBeforeEffect
+            | Cause::DeadlineBeforeEffect => {
+                unreachable!("stale, cancellation, and deadline have dedicated Query outcomes")
+            }
+        }
+    }
+}
+
 mod settlement_deferred;
 pub use settlement_deferred::{
     WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
@@ -221,6 +267,7 @@ impl WorthQueryApplicationCommitDenial {
 pub enum WorthQueryApplicationCommitOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(WorthQueryApplicationNoEffect),
     Committed(super::WorthQueryApplicationCommitReceipt),
     AlreadyCommitted(super::WorthQueryApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
@@ -231,6 +278,17 @@ pub enum WorthQueryApplicationCommitOutcome {
     Deferred(WorthQueryApplicationCommitDeferred),
     SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate(WorthQueryApplicationUnresolvedCommitEvidence),
+}
+
+impl WorthQueryApplicationCommitOutcome {
+    /// Requires a committed application result while returning every other
+    /// typed terminal with its recovery custody intact.
+    pub fn require_committed(self) -> Result<super::WorthQueryApplicationCommitReceipt, Self> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => Ok(receipt),
+            other => Err(other),
+        }
+    }
 }
 
 /// Correlation evidence retained when commit outcome is unresolved (R8.26 / C3).

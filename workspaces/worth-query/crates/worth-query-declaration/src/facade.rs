@@ -33,6 +33,10 @@ pub mod binding {
     pub use crate::binding::*;
 }
 
+pub mod branch {
+    pub use crate::branch::*;
+}
+
 pub mod canonicalization {
     pub use crate::canonicalization::*;
 }

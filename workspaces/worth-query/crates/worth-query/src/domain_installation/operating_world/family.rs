@@ -168,13 +168,6 @@ fn admit_bound_conditionals<D: 'static, O: 'static, F: 'static, L: BasisOperatio
 > {
     counters.conditional_lowering_lookups += 1;
     let conditional_nodes = world.runtime.conditional_nodes::<D, O, F>();
-    if !conditional_nodes.is_empty() && world.basis.product().is_err() {
-        return Err(WorthQueryOperationBindingDenial::new(
-            WorthQueryOperationBindingDenialKind::ProductBasisRequired,
-            "conditional operations require a retained product selection",
-            *counters,
-        ));
-    }
     counters.conditional_lowerings_retained = conditional_nodes.len();
     let admission = admit_conditional_inventory(
         operation.definition(),

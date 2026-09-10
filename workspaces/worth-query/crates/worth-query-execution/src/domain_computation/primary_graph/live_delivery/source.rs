@@ -66,6 +66,7 @@ struct WorthQueryLiveProductPartition {
     retained_payload_bytes: u64,
     subscriber_count: usize,
     reservation_live: bool,
+    retired: bool,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatch {
@@ -132,6 +133,7 @@ impl WorthQueryLiveDeliverySource {
                     retained_payload_bytes: 0,
                     subscriber_count: 0,
                     reservation_live: false,
+                    retired: false,
                 });
         partition.subscriber_count = partition
             .subscriber_count
@@ -175,6 +177,7 @@ impl WorthQueryLiveDeliverySource {
                     retained_payload_bytes: 0,
                     subscriber_count: 0,
                     reservation_live: false,
+                    retired: false,
                 }),
             configured_batch_capacity,
             byte_capacity,
@@ -330,10 +333,32 @@ impl WorthQueryLiveDeliverySource {
         if let Some(batch) = offset.and_then(|offset| partition.batches.get(offset)) {
             return WorthQueryLiveSourcePoll::Batch(Arc::clone(batch));
         }
-        if state.closed {
+        if state.closed || partition.retired {
             WorthQueryLiveSourcePoll::Closed
         } else {
             WorthQueryLiveSourcePoll::Pending
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retire_product_occurrence(
+        &self,
+        branch: &worth_runtime_world::facade::ProductBranchIdentity,
+        incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) {
+        let key = WorthQueryLiveProductKey {
+            branch: branch.clone(),
+            incarnation,
+        };
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let remove = state.partitions.get_mut(&key).is_some_and(|partition| {
+            partition.retired = true;
+            partition.subscriber_count == 0 && !partition.reservation_live
+        });
+        if remove {
+            state.partitions.remove(&key);
         }
     }
 

@@ -16,7 +16,7 @@ pub enum WorthQueryProductBranchCreationDenial {
 impl WorthQueryProductRuntime {
     /// World owns creation and the returned occurrence. Query reserves only
     /// bounded activation coordination before any component owner can move.
-    pub fn create_product_branch(
+    pub(crate) fn create_product_branch(
         &self,
         source: &WorthQueryProductBranchLease,
         intent: ProductBranchCreationIntent,

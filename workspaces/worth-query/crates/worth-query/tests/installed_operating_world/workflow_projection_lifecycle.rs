@@ -218,7 +218,7 @@ pub(super) fn settle_workflow(
 ) -> (SettledWorkflow, domain::WorthQueryNativeAccessKey) {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)

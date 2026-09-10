@@ -106,7 +106,13 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
     let binding = schema
         .principal_binding(IdentityBinding::reference())
         .unwrap();
-    let mut graph = authority.prepare_primary_graph(&runtime, &schema).unwrap();
+    let mut graph = authority
+        .prepare_primary_graph(
+            &runtime,
+            &schema,
+            worth_query_execution::facade::integration::product_world_resources_for_test(1_024),
+        )
+        .unwrap();
     graph
         .bind_principal(
             &binding,
@@ -152,7 +158,8 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
         cancellation.token(),
     );
     let account = application
-        .select_product_branch(application.product_runtime().default_branch())
+        .on_branch(application.current_world())
+        .select()
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountNumber::reference(),

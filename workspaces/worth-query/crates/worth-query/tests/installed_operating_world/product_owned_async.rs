@@ -66,8 +66,10 @@ fn completion_envelope(
 #[test]
 fn selected_product_drives_owned_async_completion_and_definition_reuse() {
     let workspace = workspace();
-    let world = workspace.observe_operating_world().unwrap();
-    let selected = world.product_branch().unwrap();
+    let world = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
+    let selected = world.product_branch();
     let identity = async_identity();
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&identity)
@@ -110,8 +112,10 @@ fn selected_product_drives_owned_async_completion_and_definition_reuse() {
 #[test]
 fn configured_timeout_retry_completes_and_releases_the_exact_request() {
     let workspace = workspace();
-    let world = workspace.observe_operating_world().unwrap();
-    let selected = world.product_branch().unwrap();
+    let world = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
+    let selected = world.product_branch();
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&async_identity())
         .unwrap();
@@ -158,31 +162,18 @@ fn configured_timeout_retry_completes_and_releases_the_exact_request() {
 #[test]
 fn sibling_product_revalidation_carries_truth_drift_and_releases_the_replacement() {
     let workspace = workspace();
-    let source_world = workspace.observe_operating_world().unwrap();
-    let source = source_world.product_branch().unwrap();
-    let creation = runtime::ProductBranchCreationIntent::from_source(
-        "owned-async-sibling",
-        runtime::ProductBranchCreationPlans::new(
-            runtime::RelationalBranchCreationPlan::ForkExact {
-                target: runtime::BranchId("owned-async-sibling-truth".to_owned()),
-            },
-            runtime::SignalBranchCreationPlan::ReuseExact,
-        ),
-    )
-    .unwrap();
-    let cancellation = runtime::RuntimeWorldCancellationSource::new();
-    let outcome = workspace
-        .create_product_branch(source, creation, &cancellation.token())
+    let source_world = workspace
+        .observe_operating_world(workspace.current_world())
         .unwrap();
-    let runtime::RuntimeWorldBranchCreationOutcome::Performed(observation) = outcome else {
-        panic!("World must publish the sibling product occurrence: {outcome:?}")
-    };
-    let sibling_identity = observation.branch_identity().clone();
-    drop(observation);
-    let sibling_world = workspace
-        .observe_product_operating_world(&sibling_identity)
-        .unwrap();
-    let sibling = sibling_world.product_branch().unwrap();
+    let source = source_world.product_branch();
+    let sibling_branch = workspace
+        .branches()
+        .fork(source.product_branch())
+        .components(|components| components.fork_relational().reuse_exact_signal_basis())
+        .create()
+        .expect("World must publish the sibling product occurrence");
+    let sibling_world = workspace.observe_operating_world(sibling_branch).unwrap();
+    let sibling = sibling_world.product_branch();
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&async_identity())
         .unwrap();
@@ -224,8 +215,10 @@ fn sibling_product_revalidation_carries_truth_drift_and_releases_the_replacement
 fn foreign_world_product_cannot_enter_the_owned_async_owner() {
     let origin = workspace();
     let foreign = workspace();
-    let foreign_world = foreign.observe_operating_world().unwrap();
-    let foreign_product = foreign_world.product_branch().unwrap();
+    let foreign_world = foreign
+        .observe_operating_world(foreign.current_world())
+        .unwrap();
+    let foreign_product = foreign_world.product_branch();
     let declaration = origin
         .installed_owned_bridge_async_declaration(&async_identity())
         .unwrap();
@@ -236,15 +229,17 @@ fn foreign_world_product_cannot_enter_the_owned_async_owner() {
     };
     assert!(matches!(
         denial,
-        runtime::WorthQueryOwnedAsyncRuntimeDenial::ProductBasisRequired
+        runtime::WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch
     ));
 }
 
 #[test]
 fn stale_prior_occurrence_cannot_supersede_a_view_bound_to_its_same_source_successor() {
     let mut workspace = workspace();
-    let world = workspace.observe_operating_world().unwrap();
-    let selected = world.retain_product_branch().unwrap();
+    let world = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
+    let selected = world.retain_product_branch();
     drop(world);
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&async_identity())
@@ -308,8 +303,10 @@ fn terminal_retries_require_the_exact_bound_occurrence() {
 
 fn assert_terminal_retry_is_occurrence_bound(cancel: bool) {
     let mut workspace = workspace();
-    let world = workspace.observe_operating_world().unwrap();
-    let selected = world.retain_product_branch().unwrap();
+    let world = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
+    let selected = world.retain_product_branch();
     drop(world);
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&async_identity())

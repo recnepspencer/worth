@@ -15,6 +15,7 @@ pub enum WorthQueryConditionalSignalDecision {
 pub enum WorthQueryConditionalExecutionTerminal {
     ProductStale,
     ProductUnpublished,
+    NoEffect,
     EligibleRetained,
     SuppressedRetained,
     DeferredRetained,
@@ -29,6 +30,7 @@ pub enum WorthQueryConditionalExecutionTerminal {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
     ProductHeadChanged,
+    NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
@@ -131,6 +133,9 @@ fn cause(
     match decision {
         WorthQueryRetainedConditionalDecision::OperationProductStale(_, _) => {
             Some(WorthQueryConditionalExecutionCause::ProductHeadChanged)
+        }
+        WorthQueryRetainedConditionalDecision::OperationNoEffect(_, cause) => {
+            Some(WorthQueryConditionalExecutionCause::NoEffect(*cause))
         }
         WorthQueryRetainedConditionalDecision::OperationBackpressured(_, cause) => match cause {
             Backpressure::ActiveSnapshotCapacityExhausted {
@@ -307,6 +312,9 @@ fn terminal(
         }
         WorthQueryRetainedConditionalDecision::OperationProductStale(_, _) => {
             WorthQueryConditionalExecutionTerminal::ProductStale
+        }
+        WorthQueryRetainedConditionalDecision::OperationNoEffect(_, _) => {
+            WorthQueryConditionalExecutionTerminal::NoEffect
         }
         WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(_, _) => {
             WorthQueryConditionalExecutionTerminal::DeferredRetained

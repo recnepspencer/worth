@@ -91,6 +91,9 @@ impl WorthQuerySessionPrepareOutcome<'_> {
                     unpublished,
                 ),
             )) => WorthQuerySessionCommitOrAbortOutcome::ProductUnpublished(unpublished),
+            Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::NoEffect(
+                no_effect,
+            ))) => WorthQuerySessionCommitOrAbortOutcome::NoEffect(no_effect),
             Ok(Ok(provider_receipt)) => WorthQuerySessionCommitOrAbortOutcome::Committed(
                 WorthQueryClosedProviderSessionDisposition::close(
                     provider_receipt,

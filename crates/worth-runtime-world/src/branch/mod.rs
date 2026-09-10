@@ -33,7 +33,8 @@ pub use observation::{
 };
 pub(crate) use reference_cell::{
     ProductBranchHeadProtection, ProductBranchReferenceCell, ProductBranchReferenceLoss,
-    ProductBranchReferenceMovement,
+    ProductBranchReferenceMovement, ProductBranchReferenceObservationFailure,
+    ProductBranchReferenceRetirement,
 };
 pub use reference_snapshot::ProductBranchReferenceSnapshot;
 pub use retirement::RuntimeWorldBranchRetirementDenial;

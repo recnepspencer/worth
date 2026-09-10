@@ -17,6 +17,8 @@ use super::schema::*;
 mod amendment;
 #[path = "world/combined_amendment.rs"]
 mod combined_amendment;
+#[path = "world/resources.rs"]
+mod resources;
 #[path = "world/security.rs"]
 mod security;
 
@@ -45,8 +47,8 @@ impl CourtroomWorld {
         primary_graph::WorthQueryConditionalRuntimeReinstallationReceipt,
         primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        let branch = self.application.product_runtime().default_branch().clone();
-        self.application.reinstall_conditional_runtime(&branch)
+        let branch = self.application.current_world();
+        self.application.reinstall_conditional_runtime(branch)
     }
 
     pub fn conditional_clock(
@@ -58,7 +60,8 @@ impl CourtroomWorld {
         CourtroomClock,
     > {
         self.application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .on_branch(self.application.current_world())
+            .select()
             .unwrap()
             .conditional_clock(&self.clock)
             .unwrap()
@@ -78,19 +81,42 @@ impl CourtroomWorld {
             predicate,
             predicate_panic,
             None,
+            None,
         )
     }
 
     pub fn publish_with_active_snapshot_limit(gate: &str, maximum: usize) -> Self {
         let contacts = ContactCounters::default();
         let (predicate, predicate_panic) = Predicate::controlled(contacts.clone());
-        Self::publish_with_predicate(gate, 0, contacts, predicate, predicate_panic, Some(maximum))
+        Self::publish_with_predicate(
+            gate,
+            0,
+            contacts,
+            predicate,
+            predicate_panic,
+            Some(maximum),
+            None,
+        )
+    }
+
+    pub fn publish_with_world_history_limit(gate: &str, maximum: u64) -> Self {
+        let contacts = ContactCounters::default();
+        let (predicate, predicate_panic) = Predicate::controlled(contacts.clone());
+        Self::publish_with_predicate(
+            gate,
+            0,
+            contacts,
+            predicate,
+            predicate_panic,
+            None,
+            Some(maximum),
+        )
     }
 
     pub fn publish_replacement(gate: &str) -> Self {
         let contacts = ContactCounters::default();
         let (predicate, predicate_panic) = ReplacementPredicate::controlled(contacts.clone());
-        Self::publish_with_predicate(gate, 0, contacts, predicate, predicate_panic, None)
+        Self::publish_with_predicate(gate, 0, contacts, predicate, predicate_panic, None, None)
     }
 
     pub(super) fn publish_with_predicate<Provider>(
@@ -100,6 +126,7 @@ impl CourtroomWorld {
         predicate: Provider,
         predicate_panic: PanicController,
         maximum_active_snapshots: Option<usize>,
+        maximum_world_history: Option<u64>,
     ) -> Self
     where
         Provider: domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> + 'static,
@@ -158,17 +185,34 @@ impl CourtroomWorld {
             )
             .unwrap();
 
-        let mut graph = match maximum_active_snapshots {
-            Some(maximum_active_snapshots) => {
+        let mut graph = match (maximum_active_snapshots, maximum_world_history) {
+            (Some(maximum_active_snapshots), None) => {
                 worth_query_execution::facade::integration::prepare_primary_graph_with_active_snapshot_limit_for_test(
                     &authority,
                     &runtime,
                     &schema,
                     maximum_active_snapshots,
+                    resources::product_world_resources(1_024),
                 )
                 .unwrap()
             }
-            None => authority.prepare_primary_graph(&runtime, &schema).unwrap(),
+            (None, Some(maximum_world_history)) => {
+                authority
+                    .prepare_primary_graph(
+                        &runtime,
+                        &schema,
+                        resources::product_world_resources(maximum_world_history),
+                    )
+                    .unwrap()
+            }
+            (None, None) => authority
+                .prepare_primary_graph(
+                    &runtime,
+                    &schema,
+                    resources::product_world_resources(1_024),
+                )
+                .unwrap(),
+            (Some(_), Some(_)) => panic!("one installation capacity boundary per courtroom"),
         };
         seed_graph(&mut graph, &principal_binding, gate, unrelated_row_count);
         let invariant = Arc::new(graph.retain_invariant_projection_authority());
@@ -277,6 +321,14 @@ fn seed_graph(
             .field(IntentGateField::reference(), gate.to_string())
             .field(IntentEffectField::reference(), "pending".to_string()),
         )
+        .unwrap();
+    graph
+        .bind_relation(primary_graph::WorthQueryApplicationRelationSeed::new(
+            IntentLiveTarget::reference(),
+            "intent-live-target-1",
+            primary_graph::WorthQueryApplicationEntityKey::new("intent-row-1").unwrap(),
+            primary_graph::WorthQueryApplicationEntityKey::new("intent-row-1").unwrap(),
+        ))
         .unwrap();
     for ordinal in 0..unrelated_row_count {
         graph

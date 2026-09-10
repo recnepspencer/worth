@@ -20,7 +20,9 @@ fn reconstituted_runtime_handles_reenter_the_retained_conditional_source() {
     workspace.advance_domain_installation_generation().unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     assert!(installed.installation_generation() > prior.installation_generation());
-    let world = workspace.observe_operating_world().unwrap();
+    let world = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
     assert!(world.family(ReadFamily).bind(&prior, ReadVertex).is_err());
     let bound = world
         .family(ReadFamily)
@@ -55,7 +57,7 @@ fn rebuilt_conditional_lookup_retains_the_exact_installed_authority() {
 
     let installed = workspace.domain(GeometryDomain).unwrap();
     let before_rebuild = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -67,7 +69,7 @@ fn rebuilt_conditional_lookup_retains_the_exact_installed_authority() {
     assert!(report.exact_index_parity());
 
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)

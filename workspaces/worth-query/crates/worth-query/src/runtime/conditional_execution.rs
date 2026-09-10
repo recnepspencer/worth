@@ -4,9 +4,7 @@ impl WorthQueryRuntime {
     pub fn conditional_evaluation_resource_observation(
         &self,
     ) -> Option<super::WorthQueryConditionalEvaluationResourceObservation> {
-        self.installed_product
-            .as_ref()?
-            .conditional_resource_observation()
+        self.installed_product.conditional_resource_observation()
     }
 
     pub(crate) fn conditional_nodes<D: 'static, O: 'static, F: 'static>(
@@ -39,15 +37,8 @@ impl WorthQueryRuntime {
             usize,
         ),
     > {
-        let product = self.installed_product.as_ref().ok_or_else(|| {
-            (
-                worth_runtime_bridge::facade::BridgeConditionalDenialKind::StaleLowering,
-                "installed conditional product is unavailable".to_string(),
-                Default::default(),
-                0,
-            )
-        })?;
-        product.execute_conditional(selected, request, context)
+        self.installed_product
+            .execute_conditional(selected, request, context)
     }
 
     pub(crate) fn reenter_retained_conditional_decision(
@@ -61,12 +52,7 @@ impl WorthQueryRuntime {
             worth_runtime_bridge::facade::BridgeConditionalReentryCounters,
         ),
     > {
-        let product = self.installed_product.as_ref().ok_or_else(|| {
-            (
-                "installed conditional product is unavailable".to_string(),
-                Default::default(),
-            )
-        })?;
+        let product = &self.installed_product;
         product
             .validate_selected_source(selected, request.bridge_snapshot_identity)
             .map_err(|(_, detail)| (detail.to_string(), Default::default()))?;

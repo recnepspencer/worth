@@ -1,5 +1,7 @@
 use worth_query::facade::{domain, runtime};
 
+use crate::support::public_bridge_runtime::public_product_world_resources;
+
 use super::super::{execution_resource_support, read_vertex_definition, GeometryDomain};
 use super::{
     conditional_model_graph_definition, ConditionalInstallation, ConditionalModelGraph,
@@ -107,7 +109,7 @@ pub(crate) fn conditional_resource_workspace(
     let dependency_contract = node.dependencies()[0].contract().clone();
     let package = conditional_resource_package(&node);
     let installation = installation.prepare_public();
-    let builder = runtime::WorthQueryRuntime::builder()
+    let builder = runtime::WorthQueryRuntime::builder(public_product_world_resources())
         .domain_package(package)
         .expect("conditional resource package should admit")
         .graph_participation(conditional_model_graph_definition())

@@ -132,7 +132,11 @@ fn prepare_seeded_primary_graph(
 ) -> Result<PreparedBankGraph, BankIdentityRuntimeBuildError> {
     let (runtime, authority, installed_schema) = execution_runtime;
     let mut graph = authority
-        .prepare_primary_graph(&runtime, &installed_schema)
+        .prepare_primary_graph(
+            &runtime,
+            &installed_schema,
+            super::product_world_resources::bank_product_world_resources(),
+        )
         .map_err(BankIdentityRuntimeBuildError::PrimaryGraph)?;
     let binding = installed_schema
         .principal_binding(BankPrincipalBinding::reference())

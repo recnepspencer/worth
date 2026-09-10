@@ -60,10 +60,14 @@ fn foreign_runtime_is_denied_before_operational_work() {
 fn a_wrong_basis_is_rejected_before_a_bound_capability_can_exist() {
     let workspace = workspace("operation-compatibility-basis", false).unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
+    let branch = workspace
+        .branches()
+        .fork(workspace.current_world())
+        .components(|components| components.reuse_exact_relational_basis().fork_signal())
+        .create()
+        .unwrap();
     let denial = match workspace
-        .observe_branch_operating_world(
-            worth_query::facade::installed::WorthQueryBranchHeadIdentity::new("branch-a").unwrap(),
-        )
+        .observe_operating_world(branch)
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -232,7 +236,7 @@ fn bind(
     foundation::ObservationLaneWitness,
 > {
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(installed, ReadVertex)

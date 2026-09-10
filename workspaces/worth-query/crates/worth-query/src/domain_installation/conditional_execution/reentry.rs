@@ -18,7 +18,6 @@ pub enum WorthQueryConditionalOutcomeClass {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorthQueryConditionalAdmissionDenial {
     ForeignOperation,
-    ProductBasisRequired,
     ProductSelectionMismatch,
     ForeignRuntime,
     StaleInstallation,
@@ -267,7 +266,7 @@ pub(crate) fn admit_conditional_decision<D, O, F, L: BasisOperationLane>(
     attempt: u64,
 ) -> Result<WorthQueryConditionalProvenance, WorthQueryConditionalAdmissionDenial> {
     if !authority.product.has_same_selected_occurrence(&product)
-        || !product.has_same_selected_occurrence(bound.product()?)
+        || !product.has_same_selected_occurrence(bound.product())
     {
         return Err(WorthQueryConditionalAdmissionDenial::ProductSelectionMismatch);
     }
@@ -311,7 +310,7 @@ pub(crate) fn admit_conditional_authority<D, O, F, L: BasisOperationLane>(
     bound: &super::super::WorthQueryBoundDomainOperation<D, O, F, L>,
     node: &super::WorthQueryInstalledConditionalNode,
 ) -> Result<WorthQueryConditionalAuthorityAdmission, WorthQueryConditionalAdmissionDenial> {
-    let product = std::sync::Arc::clone(bound.product()?);
+    let product = std::sync::Arc::clone(bound.product());
     if node.operation_identity != bound.definition().canonical_identity() {
         return Err(WorthQueryConditionalAdmissionDenial::ForeignOperation);
     }

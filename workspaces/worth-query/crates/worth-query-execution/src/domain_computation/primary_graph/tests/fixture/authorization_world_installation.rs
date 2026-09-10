@@ -108,9 +108,14 @@ fn prepare_authorization_world(
         .unwrap();
     let bootstrap = match relational {
         Some(relational) => authority
-            .prepare_primary_graph_with_relational_runtime(&runtime, &schema, relational)
+            .prepare_primary_graph_with_relational_runtime(
+                &runtime,
+                &schema,
+                relational,
+                crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+            )
             .unwrap(),
-        None => authority.prepare_primary_graph(&runtime, &schema).unwrap(),
+        None => authority.prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap(),
     };
     PreparedAuthorizationWorld {
         runtime,

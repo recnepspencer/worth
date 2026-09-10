@@ -45,7 +45,8 @@ pub(crate) fn real_denial(scenario: CompositionScenario) -> WorthQueryOperationA
         authentication::authenticate_external(world.runtime.installed_schema(), &request);
     let selected = world
         .runtime
-        .select_product_branch(world.runtime.product_runtime().default_branch())
+        .on_branch(world.runtime.current_world())
+        .select()
         .expect("the published product branch must remain admitted");
     let principal = selected
         .resolve_authenticated_principal(

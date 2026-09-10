@@ -30,6 +30,8 @@ pub use managed_run::*;
 pub use operation_binding::*;
 pub use product_publication::{
     WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
-    WorthQueryProductUnpublishedRecovery,
+    WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryFailure,
+    WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
 pub use provider_session::*;

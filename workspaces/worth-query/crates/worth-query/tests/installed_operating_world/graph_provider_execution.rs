@@ -34,7 +34,7 @@ fn projection_receipt_without_query_material_denies_before_executor_contact() {
         .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, FederatedRead)
@@ -109,7 +109,7 @@ fn every_graph_entrypoint_fails_at_its_exact_boundary_and_commit_precedes_touch(
             .unwrap();
         let installed = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
-            .prepare_mutation_operating_world()
+            .prepare_mutation_operating_world(workspace.current_world())
             .unwrap()
             .family(ReadFamily)
             .bind(&installed, FederatedRead)
@@ -167,7 +167,7 @@ fn read_only_participation_does_not_widen_the_mutating_commit_set() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, FederatedRead)
@@ -209,7 +209,7 @@ fn graph_contract_insufficiency_denies_before_provider_contact() {
         .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let denial = match workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, FederatedRead)

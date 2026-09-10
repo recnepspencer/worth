@@ -1,13 +1,18 @@
 mod application_basis;
+mod branches;
+mod close;
 mod conditional_definition;
 mod context;
 mod operation;
 mod query;
 mod relational_change_delivery;
 mod security_basis;
+mod transaction;
 
 pub(in crate::domain_computation) use security_basis::WorthQueryProductSecurityBasis;
 
+pub use branches::WorthQueryApplicationProductBranches;
+pub use close::WorthQueryApplicationProductBranchCloseDenial;
 pub use conditional_definition::{
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryApplicationConditionalDefinitionAdmissionDenial,
@@ -15,5 +20,9 @@ pub use conditional_definition::{
     WorthQueryConditionalDefinitionPublicationOutcome,
     WorthQueryPerformedConditionalDefinitionPublication,
 };
-pub use context::WorthQuerySelectedProductOperation;
+pub use context::{WorthQueryProductEntry, WorthQuerySelectedProductOperation};
 pub use query::WorthQueryProductQueryControls;
+pub use transaction::{
+    WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,
+    WorthQueryProductTransactionCommitError,
+};

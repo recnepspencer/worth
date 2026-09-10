@@ -10,8 +10,7 @@ use worth_runtime_bridge::facade::{
 };
 
 fn remasked_runtime(projection: WorthQueryRuntimeRemaskProjection) -> WorthQueryRuntime {
-    WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

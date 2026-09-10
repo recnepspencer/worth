@@ -1,4 +1,4 @@
-use worth_query_host::facade::primary_graph;
+use worth_query_host::facade::{primary_graph, product};
 
 use super::super::adapters::block_on;
 use super::super::schema::*;
@@ -16,9 +16,9 @@ impl CourtroomWorld {
 
     pub fn amend_gate_only(&mut self, gate: &str) {
         self.amendment_ordinal += 1;
-        let branch = self.application.product_runtime().default_branch().clone();
+        let branch = self.application.current_world();
         self.commit_amendment(
-            &branch,
+            branch,
             1,
             5,
             "active",
@@ -31,7 +31,8 @@ impl CourtroomWorld {
 
     pub fn intent_record_identity(&self) -> primary_graph::RelationalBridgeRecordIdentityParts {
         self.application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .on_branch(self.application.current_world())
+            .select()
             .expect("the selected product branch remains admitted")
             .resolve_entity(
                 IntentIdentityField::reference(),
@@ -52,9 +53,9 @@ impl CourtroomWorld {
         gate: &str,
     ) {
         self.amendment_ordinal += 1;
-        let branch = self.application.product_runtime().default_branch().clone();
+        let branch = self.application.current_world();
         self.commit_amendment(
-            &branch,
+            branch,
             revision,
             due,
             lifecycle,
@@ -66,9 +67,9 @@ impl CourtroomWorld {
     }
 
     pub fn change_input_after_query_admission(&self, input: &str) {
-        let branch = self.application.product_runtime().default_branch().clone();
+        let branch = self.application.current_world();
         self.commit_amendment(
-            &branch,
+            branch,
             2,
             11,
             "active",
@@ -79,13 +80,13 @@ impl CourtroomWorld {
         );
     }
 
-    pub fn change_input_on_product(
+    pub fn retry_input_change_on_branch(
         &self,
-        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        branch: product::WorthQueryProductBranch,
         input: &str,
-    ) -> primary_graph::WorthQueryApplicationCommitReceipt {
-        self.commit_amendment(
-            product,
+    ) -> primary_graph::WorthQueryApplicationCommitOutcome {
+        self.compare_amendment(
+            branch,
             2,
             11,
             "active",
@@ -96,13 +97,14 @@ impl CourtroomWorld {
         )
     }
 
-    pub fn retry_input_change_on_product(
+    pub fn change_input_on_branch(
         &self,
-        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        branch: product::WorthQueryProductBranch,
         input: &str,
     ) -> primary_graph::WorthQueryApplicationCommitOutcome {
-        self.compare_amendment(
-            product,
+        let selected = self.application.on_branch(branch).select().unwrap();
+        self.compare_amendment_program(
+            selected,
             2,
             11,
             "active",
@@ -115,7 +117,7 @@ impl CourtroomWorld {
 
     fn commit_amendment(
         &self,
-        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        branch: product::WorthQueryProductBranch,
         revision: u64,
         due: u64,
         lifecycle: &str,
@@ -125,7 +127,7 @@ impl CourtroomWorld {
         amendment_ordinal: u8,
     ) -> primary_graph::WorthQueryApplicationCommitReceipt {
         let outcome = self.compare_amendment(
-            product,
+            branch,
             revision,
             due,
             lifecycle,
@@ -142,7 +144,7 @@ impl CourtroomWorld {
 
     fn compare_amendment(
         &self,
-        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        branch: product::WorthQueryProductBranch,
         revision: u64,
         due: u64,
         lifecycle: &str,
@@ -151,8 +153,9 @@ impl CourtroomWorld {
         width: AmendmentWidth,
         amendment_ordinal: u8,
     ) -> primary_graph::WorthQueryApplicationCommitOutcome {
+        let selected = self.application.on_branch(branch).select().unwrap();
         self.compare_amendment_program(
-            product,
+            selected,
             revision,
             due,
             lifecycle,
@@ -165,7 +168,7 @@ impl CourtroomWorld {
 
     fn compare_amendment_program(
         &self,
-        product: &worth_query_host::facade::runtime::ProductBranchIdentity,
+        selected: primary_graph::WorthQuerySelectedProductOperation<'_, TemporalHostSchema>,
         revision: u64,
         due: u64,
         lifecycle: &str,
@@ -181,7 +184,7 @@ impl CourtroomWorld {
         let authentication = admit_identity_adapter(schema);
         let request = request_scope();
         let external = block_on(authentication.authenticate((), &request)).unwrap();
-        let selected = self.application.select_product_branch(product).unwrap();
+        let branch = selected.product().product_branch();
         let principal = selected
             .resolve_authenticated_principal(
                 &principal_binding,
@@ -265,7 +268,13 @@ impl CourtroomWorld {
             [0x91 ^ amendment_ordinal; 32],
             [0xA0 ^ amendment_ordinal; 32],
         );
+        let admitted_change =
+            product::WorthQueryAdmittedChange::new(effects.finish().unwrap(), idempotency);
         self.application
-            .compare_and_commit_application(effects.finish().unwrap(), idempotency)
+            .on_branch(branch)
+            .transaction()
+            .apply(admitted_change)
+            .commit()
+            .expect("the admitted change and transaction select the same product occurrence")
     }
 }

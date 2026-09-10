@@ -1,5 +1,4 @@
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{atomic::Ordering, Arc};
 
 use super::WorthQueryLiveDeliverySource;
 use crate::domain_computation::primary_graph::{

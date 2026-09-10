@@ -1,6 +1,16 @@
 use super::WorthQueryRuntimeBuilder;
 
 impl WorthQueryRuntimeBuilder {
+    pub(crate) fn installed_product_bridge(
+        mut self,
+        bridge: worth_runtime_bridge::facade::RuntimeBridge,
+        resources: super::super::WorthQueryConditionalExecutionResources,
+    ) -> Self {
+        self.conditional_runtime_bridge = Some(bridge);
+        self.conditional_execution_resources = Some(resources);
+        self
+    }
+
     pub fn conditional_execution_resources(
         mut self,
         resources: super::super::WorthQueryConditionalExecutionResources,
@@ -138,7 +148,35 @@ impl WorthQueryRuntimeBuilder {
                     "a conditional Signal graph was supplied without conditional declarations",
                 ));
             }
-            return Ok((None, Default::default(), Vec::new()));
+            let Some(bridge) = conditional_runtime_bridge else {
+                return Ok((None, Default::default(), Vec::new()));
+            };
+            let resources = resources.ok_or_else(|| {
+                conditional_installation_error(
+                    "Product World installation requires explicit conditional_execution_resources(...) limits",
+                )
+            })?;
+            let assembly =
+                worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
+                    bridge,
+                    resources.signal_evaluations(),
+                )
+                .map_err(|denial| {
+                    conditional_installation_error(format!(
+                        "{:?}: {}",
+                        denial.kind(),
+                        denial.detail()
+                    ))
+                })?
+                .seal()
+                .map_err(|denial| {
+                    conditional_installation_error(format!(
+                        "{:?}: {}",
+                        denial.kind(),
+                        denial.detail()
+                    ))
+                })?;
+            return Ok((Some(assembly), Default::default(), Vec::new()));
         }
         let resources = resources.ok_or_else(|| {
             conditional_installation_error(

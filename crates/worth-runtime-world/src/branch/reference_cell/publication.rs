@@ -20,6 +20,12 @@ impl ProductBranchReferenceCell {
     ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
         let expected_snapshot = expected.snapshot();
         let mut current = self.state.write();
+        if current.protection.is_none() {
+            return Err(ProductBranchReferenceLoss {
+                denial: ProductBranchReferenceCellDenial::Retired,
+                observed_head: current.snapshot.clone(),
+            });
+        }
         if &current.snapshot != expected_snapshot {
             return Err(ProductBranchReferenceLoss {
                 denial: ProductBranchReferenceCellDenial::ExpectedHeadMismatch(
@@ -71,9 +77,11 @@ impl ProductBranchReferenceCell {
             &mut *current,
             ProductBranchReferenceImage {
                 snapshot: successor_snapshot,
-                protection: successor_slot
-                    .take()
-                    .expect("validated successor custody moves only at the cell swap"),
+                protection: Some(
+                    successor_slot
+                        .take()
+                        .expect("validated successor custody moves only at the cell swap"),
+                ),
             },
         );
         if let Some(publication) = publication {

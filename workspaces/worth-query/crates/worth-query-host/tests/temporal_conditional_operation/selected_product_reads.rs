@@ -19,12 +19,12 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
         .unwrap();
     let old = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    let old_commit = old.selected_commit().clone();
+    let old_commit = old.product().selected_commit().clone();
     let sibling = fork_relational_product(&world, &old, "read-sibling", "read-sibling-data");
-    let selected = world.application.on_product(old).unwrap();
+    let selected = old;
     let scope = selected
         .resolve_entity(
             IntentIdentityField::reference(),
@@ -46,10 +46,12 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
     world.change_input_after_query_admission("changed-after-admission");
     let current = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
-    assert_ne!(current.selected_commit(), &old_commit);
+    assert_ne!(current.product().selected_commit(), &old_commit);
+    let current_branch = current.product().product_branch();
+    drop(current);
     let result = world
         .application
         .execute_application_query_one_shot(plan)
@@ -63,9 +65,9 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
 
     for (product, expected) in [
         (sibling, "payload"),
-        (current.branch_identity().clone(), "changed-after-admission"),
+        (current_branch, "changed-after-admission"),
     ] {
-        let selected = world.application.select_product_branch(&product).unwrap();
+        let selected = world.application.on_branch(product).select().unwrap();
         let scope = selected
             .resolve_entity(
                 IntentIdentityField::reference(),
@@ -89,10 +91,7 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
             .execute_application_query_one_shot(plan)
             .unwrap();
         assert_eq!(result.rows()[0].input, expected);
-        assert_eq!(
-            product_identity(result.receipt()).branch_identity(),
-            &product
-        );
+        assert_eq!(product_identity(result.receipt()).product_branch(), product);
         assert_security_work(result.receipt());
     }
     assert_eq!(
@@ -117,12 +116,12 @@ fn revoke_after_product_query_admission_denies_a_and_leaves_b_security_independe
         .unwrap();
     let source = world
         .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .on_branch(world.application.current_world())
+        .select()
         .unwrap();
     let sibling =
         fork_relational_product(&world, &source, "security-sibling", "security-sibling-data");
-    let selected_a = world.application.on_product(source).unwrap();
+    let selected_a = source;
     let scope_a = selected_a
         .resolve_entity(
             IntentIdentityField::reference(),
@@ -141,7 +140,7 @@ fn revoke_after_product_query_admission_denies_a_and_leaves_b_security_independe
             controls(&request),
         )
         .unwrap();
-    let selected_b = world.application.select_product_branch(&sibling).unwrap();
+    let selected_b = world.application.on_branch(sibling).select().unwrap();
     let scope_b = selected_b
         .resolve_entity(
             IntentIdentityField::reference(),
@@ -177,13 +176,13 @@ fn revoke_after_product_query_admission_denies_a_and_leaves_b_security_independe
         .unwrap();
     assert_eq!(result_b.rows()[0].input, "payload");
     assert_eq!(
-        product_identity(result_b.receipt()).branch_identity(),
-        &sibling
+        product_identity(result_b.receipt()).product_branch(),
+        sibling
     );
     assert_security_work(result_b.receipt());
 
     // Both entry and execution must resolve B security, even after MAIN revoked it.
-    let selected_b = world.application.select_product_branch(&sibling).unwrap();
+    let selected_b = world.application.on_branch(sibling).select().unwrap();
     let fresh_b = selected_b
         .admit_application_query(
             &query,

@@ -56,6 +56,18 @@ impl BridgeSealedRuntimeAssembly {
             .len()
     }
 
+    /// Confirms that a sibling owner was derived from the exact authoritative
+    /// source sealed into this assembly.
+    pub fn readmits_authoritative_source_profile(
+        &self,
+        candidate: &crate::facade::BridgeAuthoritativeSourceProfile,
+    ) -> bool {
+        self.runtime
+            .bridge
+            .authoritative_source_profile()
+            .is_some_and(|installed| installed == candidate)
+    }
+
     pub fn install_managed_clock(
         &self,
         parts: super::BridgeManagedClockInstallationParts<'_>,

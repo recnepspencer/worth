@@ -91,7 +91,7 @@ where
     /// installation is exactly the installation already owning this runtime.
     pub fn reinstall_conditional_runtime(
         &mut self,
-        product_branch: &worth_runtime_world::facade::ProductBranchIdentity,
+        product_branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
@@ -106,14 +106,15 @@ where
     pub fn reinstall_conditional_runtime_for_installation(
         &mut self,
         candidate: Arc<WorthQueryInstalledPackageIndex>,
-        product_branch: &worth_runtime_world::facade::ProductBranchIdentity,
+        product_branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
         require_equivalent_installation(self.runtime.installed_packages(), &candidate)?;
         let selected = self
-            .select_product_branch(product_branch)
+            .on_branch(product_branch)
+            .select()
             .map_err(|denial| bridge_denial(format!("product selection failed: {denial:?}")))?;
         let truth = WorthQueryConditionalTruthBasis::from_selected(selected);
         let mut bridge_candidate = self

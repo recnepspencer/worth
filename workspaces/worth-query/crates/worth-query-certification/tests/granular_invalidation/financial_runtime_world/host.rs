@@ -78,7 +78,8 @@ impl FinancialCourtroomWorld {
         primary_graph::WorthQueryConditionalClockObservationDenial,
     > {
         self.application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .on_branch(self.application.current_world())
+            .select()
             .unwrap()
             .conditional_clock(handle)
     }
@@ -142,7 +143,11 @@ impl FinancialCourtroomWorld {
             .unwrap();
 
         let mut graph = authority
-            .prepare_primary_graph(&installed_runtime, &schema)
+            .prepare_primary_graph(
+                &installed_runtime,
+                &schema,
+                worth_query_execution::facade::integration::product_world_resources_for_test(1_024),
+            )
             .unwrap()
             .semantic_truth_partition(
                 worth_foundational::facade::TruthPartitionRole::new("usd-rates").unwrap(),
@@ -354,7 +359,8 @@ impl FinancialCourtroomWorld {
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .on_branch(self.application.current_world())
+            .select()
             .expect("the selected product branch remains admitted")
             .resolve_entity(
                 MarketIdentityField::reference(),
@@ -370,7 +376,8 @@ impl FinancialCourtroomWorld {
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .on_branch(self.application.current_world())
+            .select()
             .expect("the selected product branch remains admitted")
             .resolve_entity(
                 MarketIdentityField::reference(),

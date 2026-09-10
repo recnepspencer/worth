@@ -42,8 +42,9 @@ impl WorthQueryInstalledProduct {
             &'static str,
         ),
     > {
-        if selected.branch_identity().owner_identity()
-            != self.world.default_branch().owner_identity()
+        if !self
+            .world
+            .integration_owns_product_branch(selected.product_branch())
         {
             return Err((
                 worth_runtime_bridge::facade::BridgeConditionalDenialKind::GraphAuthorityMismatch,
@@ -63,6 +64,7 @@ impl WorthQueryInstalledProduct {
         backend: &dyn super::WorthQueryRuntimeBackend,
         mut conditional: BridgeSealedRuntimeAssembly,
         cache_budget: super::WorthQueryConditionalEvaluationCacheBudget,
+        product_world_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
     ) -> Result<Self, super::WorthQueryRuntimeError> {
         let source = backend.prepare_product_source().map_err(|denial| {
             super::WorthQueryRuntimeError::InvariantRegistration {
@@ -71,12 +73,13 @@ impl WorthQueryInstalledProduct {
             }
         })?;
         let world =
-            WorthQueryProductRuntime::install(source, &mut conditional).map_err(|denial| {
-                super::WorthQueryRuntimeError::InvariantRegistration {
-                    stage: "product_world_installation",
-                    message: denial.detail().to_string(),
-                }
-            })?;
+            WorthQueryProductRuntime::install(source, &mut conditional, product_world_resources)
+                .map_err(
+                    |denial| super::WorthQueryRuntimeError::InvariantRegistration {
+                        stage: "product_world_installation",
+                        message: denial.detail().to_string(),
+                    },
+                )?;
         let conditional_evaluations =
             conditional_evaluation::WorthQueryConditionalEvaluationRegistry::new(cache_budget)
                 .map_err(

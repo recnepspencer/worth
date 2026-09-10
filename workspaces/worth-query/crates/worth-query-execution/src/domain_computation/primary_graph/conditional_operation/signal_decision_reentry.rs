@@ -87,6 +87,10 @@ pub(super) enum WorthQueryRetainedConditionalDecision {
         BridgeConditionalDecisionEvidence,
         crate::domain_computation::WorthQueryProductStaleApplication,
     ),
+    OperationNoEffect(
+        BridgeConditionalDecisionEvidence,
+        crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause,
+    ),
     Eligible(BridgeConditionalDecisionEvidence),
     Suppressed(BridgeConditionalDecisionEvidence),
     Deferred(BridgeConditionalDecisionEvidence),
@@ -157,6 +161,11 @@ pub(super) fn retained_decision_counts(
             WorthQueryRetainedConditionalDecision::OperationProductStale(evidence, stale) => {
                 let _decision = evidence.signal().class();
                 let _expected_product = stale.expected_product();
+                counts.failed += 1;
+            }
+            WorthQueryRetainedConditionalDecision::OperationNoEffect(evidence, cause) => {
+                let _decision = evidence.signal().class();
+                let _typed_no_effect_cause = cause;
                 counts.failed += 1;
             }
             WorthQueryRetainedConditionalDecision::Eligible(evidence) => {

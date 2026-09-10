@@ -2,8 +2,7 @@ use super::support::*;
 
 #[test]
 fn redeclared_live_view_replaces_runtime_delivery_index_membership() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .write_authority(TestWriteAuthority)

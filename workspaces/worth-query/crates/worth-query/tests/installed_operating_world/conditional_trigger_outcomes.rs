@@ -125,7 +125,7 @@ fn domain_predicate_deferral_is_not_reported_as_temporal_or_on_demand() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)
@@ -199,7 +199,7 @@ fn execute_first(
     installed: &domain::WorthQueryInstalledDomainHandle<GeometryDomain>,
 ) {
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(installed, ReadVertex)
@@ -227,7 +227,7 @@ fn execute_second(
     foundation::ObservationLaneWitness,
 > {
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(installed, ReadVertex)
