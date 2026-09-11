@@ -158,6 +158,7 @@ pub mod runtime {
 /// Ordinary product-world selection, creation, and operation progression.
 pub mod product {
     pub use crate::runtime::product_branch::*;
+    pub use worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease;
 }
 
 #[cfg(test)]

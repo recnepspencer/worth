@@ -12,16 +12,20 @@ worth_query_declaration::worth_query_portable_type!(
 worth_query_declaration::worth_query_portable_type!(
     EmptyInput => "worth.query.installation-test.empty-input"
 );
+worth_query_declaration::worth_query_structured_value_binding!(
+    ReadOnlyInputBinding for ReadOnlyInput { identity: "worth.query.installation-test.read-only-input" }
+);
+worth_query_declaration::worth_query_structured_value_binding!(
+    EmptyInputBinding for EmptyInput { identity: "worth.query.installation-test.empty-input" }
+);
 
-impl ApplicationOperationMarkerIdentity for ReadOnlyOperation {
-    type Schema = ReadTestSchema;
-    type Input = ReadOnlyInput;
+impl ApplicationOperationMarkerIdentity<ReadTestSchema> for ReadOnlyOperation {
+    type InputBinding = ReadOnlyInputBinding;
     const IDENTIFIER: &'static str = "ReadOnlyOperation";
 }
 
-impl ApplicationOperationMarkerIdentity for EmptyOperation {
-    type Schema = ReadTestSchema;
-    type Input = EmptyInput;
+impl ApplicationOperationMarkerIdentity<ReadTestSchema> for EmptyOperation {
+    type InputBinding = EmptyInputBinding;
     const IDENTIFIER: &'static str = "EmptyOperation";
 }
 

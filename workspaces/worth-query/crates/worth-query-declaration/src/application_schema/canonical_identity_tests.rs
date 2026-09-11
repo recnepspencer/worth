@@ -16,7 +16,6 @@ use crate::application_schema::{
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 #[path = "canonical_identity_query_fixture.rs"]
 mod query_fixture;
-
 use query_fixture::{application_query, QueryEntity, QueryMarker, QueryResult, QuerySchema};
 
 #[path = "canonical_identity_application_query_tests.rs"]
@@ -40,6 +39,7 @@ fn every_application_schema_member_family_changes_identity() {
             relation: "Relation".to_string(),
             from: "From".to_string(),
             to: "To".to_string(),
+            integrity: crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
         },
         principal_binding("PrincipalBinding"),
         application_query("value"),
@@ -243,8 +243,8 @@ fn operation_input_effect_payload_and_schema_version_change_identity() {
     };
     assert_ne!(identity(&[effect]), identity(&[changed_effect]));
 
-    let initial = canonical_identity(header(0), &[]);
-    let successor = canonical_identity(header(1), &[]);
+    let initial = canonical_identity(header(0), &[], &[]);
+    let successor = canonical_identity(header(1), &[], &[]);
     assert_ne!(initial, successor);
 }
 
@@ -338,7 +338,7 @@ fn every_operation_program_action_changes_identity() {
 }
 
 fn identity(members: &[ApplicationSchemaMember]) -> ApplicationSchemaIdentity {
-    canonical_identity(header(0), members)
+    canonical_identity(header(0), members, &[])
 }
 
 fn mutation_precondition(
@@ -376,6 +376,7 @@ fn field(
         scalar_family,
         value_type: value_type.to_string(),
         unit: unit.map(str::to_string),
+        frame: None,
         writable,
         equality_queryable,
     }

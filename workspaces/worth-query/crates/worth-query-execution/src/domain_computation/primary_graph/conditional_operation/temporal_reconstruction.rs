@@ -2,7 +2,6 @@ use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
-    TypedApplicationIdentityValue, TypedApplicationReadableValue, TypedApplicationValue,
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
     WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
     WritePosture,
@@ -67,6 +66,7 @@ pub(super) fn reconstruct_temporal_intents<
     PrincipalMapping,
     Principal,
     PrincipalIdentity,
+    PrincipalIdentityBinding,
     ScopeAspect,
     ScopeField,
     ScopeValue,
@@ -105,6 +105,7 @@ pub(super) fn reconstruct_temporal_intents<
         PrincipalMapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -136,8 +137,15 @@ where
     Source: WorthQueryNamedClockSource<Clock>,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     Projector: WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>,
-    PrincipalIdentity: TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue + Clone,
+    PrincipalIdentity: 'static,
+    PrincipalIdentityBinding:
+        worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+            Value = PrincipalIdentity,
+        >,
+    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField::Binding:
+        worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
+    ScopeValue: Clone,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
@@ -150,7 +158,11 @@ where
         PrincipalIdentity,
         Scope,
     >,
-    IdentityValue: TypedApplicationReadableValue,
+    IdentityField:
+        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+        Value = IdentityValue,
+    >,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
 {
@@ -246,6 +258,7 @@ fn isolate_principal_source<
     Mapping,
     Principal,
     PrincipalIdentity,
+    PrincipalIdentityBinding,
     Scope,
     ScopeAspect,
     ScopeField,
@@ -261,6 +274,7 @@ fn isolate_principal_source<
         Mapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -275,8 +289,14 @@ fn isolate_principal_source<
     WorthQueryConditionalRuntimeInstallationDenial,
 >
 where
-    PrincipalIdentity: TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue,
+    PrincipalIdentity: 'static,
+    PrincipalIdentityBinding:
+        worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+            Value = PrincipalIdentity,
+        >,
+    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField::Binding:
+        worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,

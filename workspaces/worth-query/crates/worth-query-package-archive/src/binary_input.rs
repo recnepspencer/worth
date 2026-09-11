@@ -72,6 +72,10 @@ impl<'a> BinaryInput<'a> {
         self.bytes.len() - self.offset
     }
 
+    pub(crate) fn remaining_starts_with(&self, prefix: &[u8]) -> bool {
+        self.bytes[self.offset..].starts_with(prefix)
+    }
+
     pub(crate) const fn is_finished(&self) -> bool {
         self.offset == self.bytes.len()
     }

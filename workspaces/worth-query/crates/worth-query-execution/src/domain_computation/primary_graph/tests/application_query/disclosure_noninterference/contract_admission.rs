@@ -81,7 +81,9 @@ fn result_disclosure_rule_cannot_open_a_predicate_read() {
             &query,
             &access,
             capability,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_owned()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_owned())
+                .expect("fixture query parameter must encode"),
             controls(&context.request),
         )
         .err()
@@ -143,7 +145,9 @@ fn forbidden_predicate_influence_denies_before_result_construction() {
             &query,
             &access,
             capability,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_owned()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_owned())
+                .expect("fixture query parameter must encode"),
             controls(&context.request),
         )
         .err()

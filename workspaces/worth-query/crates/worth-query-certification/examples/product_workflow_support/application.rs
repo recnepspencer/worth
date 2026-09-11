@@ -149,6 +149,7 @@ fn seed_graph(
         ExternalMapping,
         Principal,
         u64,
+        declaration::application_schema::U64ApplicationValueBinding,
     >,
     gate: &str,
 ) {

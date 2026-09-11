@@ -1,11 +1,15 @@
+use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationPrincipalBindingRequirements,
+    ApplicationFieldMarkerIdentity, ApplicationFieldPresence, ApplicationFieldRef,
+    ApplicationPrincipalBindingRef, ApplicationPrincipalBindingRequirements,
     ApplicationPrincipalIdentityRequirement, ApplicationPrincipalMappingIdentityRequirement,
     ApplicationPrincipalMappingStatusRequirement, ApplicationPrincipalTargetRequirement,
-    ApplicationRelationRef, EqualityPredicate, ReadOnly, ReadWrite,
+    ApplicationRelationRef, DeclaredApplicationFieldValue, EqualityPredicate, ReadOnly, ReadWrite,
+    StringApplicationValueBinding, U64ApplicationValueBinding,
 };
 use worth_query_declaration::facade::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
+    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 use worth_query_declaration::{
     worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field,
@@ -42,23 +46,34 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub ExternalMapping in IdentitySchema);
-worth_query_entity!(pub Principal in IdentitySchema);
-worth_query_aspect!(pub ExternalIdentity in IdentitySchema, ExternalMapping; identity = AspectIdentity(0x91611046), revision = AspectContractRevision(1),);
+worth_query_entity!(pub ExternalMapping for IdentitySchema);
+worth_query_entity!(pub Principal for IdentitySchema);
+worth_query_aspect!(pub ExternalIdentity for IdentitySchema, ExternalMapping; identity = AspectIdentity(0x91611046), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub ExternalIdentityField in IdentitySchema, ExternalMapping, ExternalIdentity:
-    WorthQueryExternalPrincipalIdentity, read_only, equality
+    pub ExternalIdentityField for IdentitySchema, ExternalMapping, ExternalIdentity:
+    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
 );
-worth_query_aspect!(pub PrincipalIdentity in IdentitySchema, Principal; identity = AspectIdentity(0x91611047), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PrincipalIdentity for IdentitySchema, Principal; identity = AspectIdentity(0x91611047), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub PrincipalIdentityField in IdentitySchema, Principal, PrincipalIdentity:
-    u64, read_only, equality
+    pub PrincipalIdentityField for IdentitySchema, Principal, PrincipalIdentity:
+    u64 => U64ApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub MappingStatusField in IdentitySchema, ExternalMapping, ExternalIdentity:
-    WorthQueryPrincipalMappingStatus, read_write, equality
+    pub MappingStatusField for IdentitySchema, ExternalMapping, ExternalIdentity:
+    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
 );
-worth_query_relation!(pub MappingTarget in IdentitySchema, ExternalMapping => Principal);
+worth_query_relation!(pub MappingTarget in IdentitySchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
+struct ForgedPrincipalIdentityField;
+impl ApplicationFieldMarkerIdentity<IdentitySchema, Principal, PrincipalIdentity>
+    for ForgedPrincipalIdentityField
+{
+    const IDENTIFIER: &'static str = "PrincipalIdentityField";
+}
+impl DeclaredApplicationFieldValue for ForgedPrincipalIdentityField {
+    type Value = String;
+    type Binding = StringApplicationValueBinding;
+    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
+}
 worth_query_principal_binding!(
     pub IdentityBinding in IdentitySchema,
     mapping ExternalMapping {
@@ -78,6 +93,13 @@ fn installed_principal_binding_is_runtime_generation_and_schema_affine() {
     let binding = schema
         .principal_binding(IdentityBinding::reference())
         .unwrap();
+    assert!(binding.principal_identity_binding().is_identity());
+    assert_eq!(
+        binding
+            .decode_principal_identity(&AspectValue::UInt64(42))
+            .unwrap(),
+        42
+    );
     index.validate_principal_binding(&binding).unwrap();
 
     let foreign = installed_index();
@@ -119,6 +141,7 @@ fn forged_string_identity_binding() -> ApplicationPrincipalBindingRef<
     ExternalMapping,
     Principal,
     String,
+    StringApplicationValueBinding,
 > {
     let identity = ApplicationFieldRef::<
         IdentitySchema,
@@ -143,12 +166,14 @@ fn forged_string_identity_binding() -> ApplicationPrincipalBindingRef<
         MappingTarget,
         ExternalMapping,
         Principal,
-    >::from_schema_identifiers("MappingTarget", "ExternalMapping", "Principal");
+    >::from_schema_identifiers("MappingTarget", "ExternalMapping", "Principal",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            );
     let principal_identity = ApplicationFieldRef::<
         IdentitySchema,
         Principal,
         PrincipalIdentity,
-        PrincipalIdentityField,
+        ForgedPrincipalIdentityField,
         String,
         ReadOnly,
         EqualityPredicate,

@@ -62,7 +62,7 @@ where
         WorthQueryOperationAuthorizationDenial,
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
         crate::domain_computation::authorization::operation_progression::progress_capability_operation(
@@ -88,7 +88,7 @@ pub(in crate::domain_computation::authorization) fn validate_capability_operatio
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     validate_progression_authority(runtime, access, operation, progression)?;

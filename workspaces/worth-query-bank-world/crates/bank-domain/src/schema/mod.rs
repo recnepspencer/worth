@@ -1,4 +1,5 @@
 mod authentication;
+mod contributions;
 mod decision_read_manifest;
 mod entities;
 mod estate;

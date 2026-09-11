@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
-    TypedApplicationReadableValue, WorthQueryTemporalIntentCandidate, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
+    ApplicationSchema, DeclaredApplicationFieldValue, EqualityPredicate,
+    WorthQueryTemporalIntentCandidate, WritePosture,
 };
 
 use super::{
@@ -69,7 +70,8 @@ pub(super) fn bind_source_records<
 >
 where
     Schema: ApplicationSchema,
-    IdentityValue: TypedApplicationReadableValue,
+    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
 {
@@ -79,8 +81,7 @@ where
     candidates
         .into_iter()
         .map(|(identity, candidate)| {
-            let value = IdentityValue::from_foundational_value(candidate.record_identity())
-                .ok_or_else(|| {
+            let value = IdentityField::Binding::decode(candidate.record_identity()).map_err(|_| {
                     reconstruction_denial(
                         WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
                         format!(

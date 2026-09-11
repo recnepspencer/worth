@@ -3,10 +3,10 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity, TypedApplicationIdentityValue,
-    WorthQueryExternalPrincipalIdentity, WorthQueryInstalledApplicationSchema,
-    WorthQueryInstalledPackageIndex, WorthQueryInstalledPrincipalBinding,
-    WorthQueryPrincipalBindingInstallationDenialKind, WorthQueryPrincipalMappingStatus,
+    ApplicationIdentityScalarValueBinding, ApplicationSchema, WorthQueryExternalPrincipalIdentity,
+    WorthQueryInstalledApplicationSchema, WorthQueryInstalledPackageIndex,
+    WorthQueryInstalledPrincipalBinding, WorthQueryPrincipalBindingInstallationDenialKind,
+    WorthQueryPrincipalMappingStatus,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
@@ -27,7 +27,9 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
+mod publication;
 mod truth_partition;
+pub use publication::WorthQueryPrimaryGraphPublication;
 
 pub(super) struct WorthQueryPrincipalBootstrapRow {
     pub(super) binding: String,
@@ -146,7 +148,13 @@ impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn bind_principal<Binding, Mapping, Principal, PrincipalIdentity>(
+    pub fn bind_principal<
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >(
         &mut self,
         installed_binding: &WorthQueryInstalledPrincipalBinding<
             Schema,
@@ -154,6 +162,7 @@ where
             Mapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
         >,
         principal_key: WorthQueryApplicationPrincipalKey<Schema, Principal>,
         principal_identity: PrincipalIdentity,
@@ -161,7 +170,8 @@ where
         status: WorthQueryPrincipalMappingStatus,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
-        PrincipalIdentity: TypedApplicationIdentityValue,
+        PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+        PrincipalIdentity: 'static,
     {
         self.installed_packages
             .validate_principal_binding(installed_binding)
@@ -188,7 +198,15 @@ where
         self.admit_principal_row(WorthQueryPrincipalBootstrapRow {
             binding: installed_binding.binding().to_string(),
             principal_key: principal_key.as_str().to_string(),
-            principal_identity: principal_identity.into_foundational_value(),
+            principal_identity: installed_binding
+                .principal_identity_binding()
+                .encode(&principal_identity)
+                .map_err(|denial| {
+                    primary_graph_denial(
+                        WorthQueryPrimaryGraphInstallationDenialKind::BindingSchemaMismatch,
+                        format!("principal identity encoding was rejected: {denial:?}"),
+                    )
+                })?,
             identity,
             status,
             layout,
@@ -345,43 +363,5 @@ fn map_binding_denial_kind(
         | WorthQueryPrincipalBindingInstallationDenialKind::AuthorityMismatch => {
             WorthQueryPrimaryGraphInstallationDenialKind::BindingNotInstalled
         }
-    }
-}
-
-/// Evidence that a consumed bootstrap published the primary graph and all
-/// declared identity indexes into one execution runtime.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPrimaryGraphPublication {
-    binding_identity: ApplicationSchemaBindingIdentity,
-    principal_binding_count: usize,
-    identity_index_count: usize,
-    application_equality_index_count: usize,
-    policy_entity_count: usize,
-    policy_relation_count: usize,
-}
-
-impl WorthQueryPrimaryGraphPublication {
-    pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
-        &self.binding_identity
-    }
-
-    pub const fn principal_binding_count(&self) -> usize {
-        self.principal_binding_count
-    }
-
-    pub const fn identity_index_count(&self) -> usize {
-        self.identity_index_count
-    }
-
-    pub const fn application_equality_index_count(&self) -> usize {
-        self.application_equality_index_count
-    }
-
-    pub const fn policy_entity_count(&self) -> usize {
-        self.policy_entity_count
-    }
-
-    pub const fn policy_relation_count(&self) -> usize {
-        self.policy_relation_count
     }
 }

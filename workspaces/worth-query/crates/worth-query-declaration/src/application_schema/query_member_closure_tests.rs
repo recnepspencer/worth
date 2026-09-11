@@ -25,11 +25,13 @@ struct AccountResult;
 struct AccountIdSlot;
 struct ViewAccount;
 
+crate::worth_query_structured_value_binding!(AccountQueryParametersBinding for AccountParameters { identity: "AccountParameters" });
+crate::worth_query_structured_value_binding!(AccountQueryResultBinding for AccountResult { identity: "worth.query.test.member-closure.account-result.v1" });
 crate::worth_query_application_query!(
-    AccountQuery in TestSchema,
+    AccountQuery for TestSchema,
     identity "AccountQuery",
-    parameters AccountParameters => "AccountParameters",
-    result AccountResult => "worth.query.test.member-closure.account-result.v1",
+    parameters AccountQueryParametersBinding,
+    result AccountQueryResultBinding,
     scope Account => "Account",
     name "account"
 );
@@ -38,6 +40,7 @@ worth_query_portable_type!(AccountIdSlot => "worth.query.test.member-closure.acc
 
 impl crate::application_schema::DeclaredApplicationFieldValue for AccountId {
     type Value = u64;
+    type Binding = crate::application_schema::U64ApplicationValueBinding;
     const PRESENCE: crate::application_schema::ApplicationFieldPresence =
         crate::application_schema::ApplicationFieldPresence::Required;
 }
@@ -158,6 +161,7 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
                     .as_str()
                     .to_string(),
             unit: None,
+            frame: None,
             writable: false,
             equality_queryable: true,
         },
@@ -193,6 +197,7 @@ fn governed_query() -> ErasedApplicationQueryDefinition {
         AccountQuery,
         Account,
         AccountResult,
+        AccountQueryResultBinding,
     >::new(account)
     .field(ApplicationQueryResultFieldRef::<
         AccountQuery,
@@ -257,6 +262,7 @@ fn build_query(
         AccountQuery,
         Account,
         AccountResult,
+        AccountQueryResultBinding,
     >::new(account)
     .field(result_field)
     .build();

@@ -1,4 +1,6 @@
-use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, StringApplicationValueBinding, TypedMutationPreconditions,
+};
 
 use super::super::fixture::{
     MutationFreeEmitInput, MutationFreeEmitOperation, MutationFreeExternalEffect,
@@ -132,7 +134,10 @@ pub(super) fn admitted_program_with_expected_status(
             emissions: Vec::new(),
             preconditions: Preconditions::new().expect_fact(
                 AccountStatus::reference(),
-                status_and_replacement.0.to_owned(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    status_and_replacement.0.to_owned(),
+                )
+                .expect("fixture account status must encode"),
             ),
         },
     )

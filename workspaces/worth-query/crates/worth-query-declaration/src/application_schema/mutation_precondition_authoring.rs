@@ -1,7 +1,7 @@
 use super::capabilities::{ApplicationFieldUnit, OperationExpectsFact, OperationExpectsVersion};
 use super::field_reference::ApplicationFieldRef;
 use super::references::ApplicationOperationRef;
-use super::values::TypedApplicationValue;
+use super::values::DeclaredApplicationFieldValue;
 use super::{
     ApplicationMutationPreconditionFamily, ApplicationMutationPreconditionTarget,
     ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember,
@@ -25,7 +25,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     ) -> Self
     where
         Field: OperationExpectsVersion<Operation>,
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.precondition(
@@ -52,7 +52,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     ) -> Self
     where
         Field: OperationExpectsFact<Operation>,
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.precondition(
@@ -69,7 +69,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.push_member(ApplicationSchemaMember::OperationMutationPrecondition {

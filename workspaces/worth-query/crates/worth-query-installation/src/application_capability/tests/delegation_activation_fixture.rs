@@ -3,10 +3,12 @@ use worth_query_declaration::facade::application_capability::ApplicationCapabili
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 
 struct ActivationOperation;
+worth_query_declaration::worth_query_structured_value_binding!(
+    pub(crate) ActivationInputBinding for () { identity: "worth.rust.unit" }
+);
 
-impl ApplicationOperationMarkerIdentity for ActivationOperation {
-    type Schema = Schema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<Schema> for ActivationOperation {
+    type InputBinding = ActivationInputBinding;
     const IDENTIFIER: &'static str = "Activation";
 }
 

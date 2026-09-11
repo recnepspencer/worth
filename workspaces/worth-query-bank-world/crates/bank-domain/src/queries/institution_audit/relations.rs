@@ -11,9 +11,13 @@ use crate::schema::{
 use super::InstitutionAuditQuery;
 
 pub(super) struct InstitutionAccountsSlot;
+worth_query_decl::facade::worth_query_portable_type!(InstitutionAccountsSlot => "InstitutionAccountsSlot");
 pub(super) struct AccountPostingsSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountPostingsSlot => "AccountPostingsSlot");
 pub(super) struct PostingJournalSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingJournalSlot => "PostingJournalSlot");
 pub(super) struct JournalReversalSlot;
+worth_query_decl::facade::worth_query_portable_type!(JournalReversalSlot => "JournalReversalSlot");
 
 pub(super) fn institution_accounts() -> ApplicationQueryResultRelationRef<
     InstitutionAuditQuery,

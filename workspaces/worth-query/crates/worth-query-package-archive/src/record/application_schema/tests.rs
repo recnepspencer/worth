@@ -1,5 +1,8 @@
 mod fixture;
 
+use worth_query_declaration::facade::application_schema::{
+    ApplicationRelationIntegrity, ApplicationSchemaMember,
+};
 use worth_query_installation::facade::WorthQueryPortablePackageRecord;
 
 use crate::binary_output::BinaryOutput;
@@ -35,6 +38,11 @@ fn every_application_schema_member_family_round_trips_exact_owned_meaning() {
     };
     assert_eq!(decoded, record);
     assert_eq!(decoded.members().len(), fixture::EXPECTED_MEMBER_COUNT);
+    assert_eq!(decoded.contributions().len(), 2);
+    assert_eq!(
+        decoded.contributions()[0].member_ordinals(),
+        &(0..13).collect::<Vec<_>>()
+    );
     assert!(attempt.finish().nested_entries() > decoded.members().len() as u64);
 }
 
@@ -87,7 +95,66 @@ fn version_one_application_schema_member_tags_are_frozen() {
         .iter()
         .map(super::member::member_tag)
         .collect::<Vec<_>>();
-    assert_eq!(tags, (1_u16..=24).collect::<Vec<_>>());
+    let mut expected = (1_u16..=24).collect::<Vec<_>>();
+    expected[2] = 25;
+    assert_eq!(tags, expected);
+
+    let mut legacy_field = record.members()[2].clone();
+    let worth_query_declaration::facade::application_schema::ApplicationSchemaMember::Field {
+        frame,
+        ..
+    } = &mut legacy_field
+    else {
+        unreachable!()
+    };
+    *frame = None;
+    assert_eq!(super::member::member_tag(&legacy_field), 3);
+    assert_eq!(super::member::member_tag(&record.members()[3]), 4);
+}
+
+#[test]
+fn tag_four_relation_bytes_retain_self_edge_meaning_and_reencode_exactly() {
+    let member = ApplicationSchemaMember::Relation {
+        relation: "Peer".to_owned(),
+        from: "Entity".to_owned(),
+        to: "Entity".to_owned(),
+        integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+    };
+    let bytes = encode_member(&member);
+
+    assert_eq!(
+        bytes,
+        vec![
+            0, 4, 0, 0, 0, 4, b'P', b'e', b'e', b'r', 0, 0, 0, 6, b'E', b'n', b't', b'i', b't',
+            b'y', 0, 0, 0, 6, b'E', b'n', b't', b'i', b't', b'y',
+        ]
+    );
+    let decoded = decode_member(&bytes);
+    let ApplicationSchemaMember::Relation { integrity, .. } = &decoded else {
+        panic!("tag 4 must decode as a relation")
+    };
+    assert!(integrity.endpoints.self_edges_allowed);
+    assert_eq!(encode_member(&decoded), bytes);
+}
+
+#[test]
+fn no_self_edges_uses_the_revised_relation_record() {
+    let member = ApplicationSchemaMember::Relation {
+        relation: "Peer".to_owned(),
+        from: "Entity".to_owned(),
+        to: "Entity".to_owned(),
+        integrity:
+            ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling(),
+    };
+    let bytes = encode_member(&member);
+
+    assert_eq!(&bytes[..2], &26_u16.to_be_bytes());
+    let decoded = decode_member(&bytes);
+    let ApplicationSchemaMember::Relation { integrity, .. } = &decoded else {
+        panic!("tag 26 must decode as a relation")
+    };
+    assert!(!integrity.endpoints.self_edges_allowed);
+    assert_eq!(decoded, member);
 }
 
 #[test]
@@ -168,6 +235,26 @@ fn encode_payload(
     let mut output = BinaryOutput::with_capacity(usize::try_from(payload_bytes).unwrap());
     write_payload(record, &mut output, limits).unwrap();
     output.into_bytes()
+}
+
+fn encode_member(member: &ApplicationSchemaMember) -> Vec<u8> {
+    let mut output = BinaryOutput::with_capacity(256);
+    super::member::write(&mut output, member).unwrap();
+    output.into_bytes()
+}
+
+fn decode_member(bytes: &[u8]) -> ApplicationSchemaMember {
+    let limits = WorthQueryPackageArchiveLimits::DEFAULT;
+    let mut input = crate::binary_input::BinaryInput::new(bytes);
+    let mut attempt = RecordDecodeAttempt::begin(
+        Default::default(),
+        u64::try_from(bytes.len()).unwrap(),
+        limits,
+    )
+    .unwrap();
+    let member = super::member::decode(&mut input, &mut attempt).unwrap();
+    assert!(input.is_finished());
+    member
 }
 
 fn frame_payload(payload: &[u8]) -> Vec<u8> {

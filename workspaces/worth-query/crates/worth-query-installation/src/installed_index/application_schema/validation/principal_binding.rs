@@ -6,7 +6,14 @@ use crate::application_principal_binding::{
 use super::super::super::WorthQueryInstalledPackageIndex;
 
 impl WorthQueryInstalledPackageIndex {
-    pub fn validate_principal_binding<Schema, Binding, Mapping, Principal, PrincipalIdentity>(
+    pub fn validate_principal_binding<
+        Schema,
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >(
         &self,
         installed: &WorthQueryInstalledPrincipalBinding<
             Schema,
@@ -14,6 +21,7 @@ impl WorthQueryInstalledPackageIndex {
             Mapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
         >,
     ) -> Result<(), WorthQueryPrincipalBindingInstallationDenial> {
         let identity = installed.binding_identity();
@@ -74,7 +82,14 @@ impl WorthQueryInstalledPackageIndex {
     }
 }
 
-fn principal_binding_denial<Schema, Binding, Mapping, Principal, PrincipalIdentity>(
+fn principal_binding_denial<
+    Schema,
+    Binding,
+    Mapping,
+    Principal,
+    PrincipalIdentity,
+    PrincipalIdentityBinding,
+>(
     kind: WorthQueryPrincipalBindingInstallationDenialKind,
     installed: &WorthQueryInstalledPrincipalBinding<
         Schema,
@@ -82,6 +97,7 @@ fn principal_binding_denial<Schema, Binding, Mapping, Principal, PrincipalIdenti
         Mapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
     >,
 ) -> WorthQueryPrincipalBindingInstallationDenial {
     WorthQueryPrincipalBindingInstallationDenial::new(kind, installed.binding())

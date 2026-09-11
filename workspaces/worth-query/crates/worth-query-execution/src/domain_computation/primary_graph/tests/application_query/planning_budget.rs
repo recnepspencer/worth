@@ -55,7 +55,9 @@ fn nested_query_total_work_exhaustion_returns_no_plan_authority() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             controls,
         )
         .err()
@@ -109,7 +111,9 @@ fn caller_work_cannot_widen_the_installed_index_profile() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             controls,
         )
         .err()
@@ -170,7 +174,9 @@ fn installer_profile_changes_admission_without_changing_query_identity() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             controls,
         )
         .expect("the installer-owned profile should admit the exact plan");

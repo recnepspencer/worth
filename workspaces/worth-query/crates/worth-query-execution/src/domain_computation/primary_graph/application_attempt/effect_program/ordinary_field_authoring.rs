@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget, OperationWrites,
-    TypedApplicationValue, WritableCapability,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget,
+    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationWrites,
+    WritableCapability,
 };
 use worth_relational::facade::transactions::EntityReference;
 
@@ -24,11 +25,16 @@ impl<Schema, Operation, Input, Scope>
         value: Value,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationWrites<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Write: WritableCapability,
         Unit: ApplicationFieldUnit,
     {
+        let value = Field::Binding::encode(&value).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+                field.field(),
+            )
+        })?;
         self.validate_target(target, field.entity())?;
         self.admit_program_target(&ApplicationOperationProgramTarget::Write {
             entity: field.entity().to_string(),
@@ -68,7 +74,7 @@ impl<Schema, Operation, Input, Scope>
                 locator,
                 WorthQueryApplicationOptionalFieldWrite {
                     contract,
-                    value: Some(value.into_foundational_value()),
+                    value: Some(value),
                 },
             );
             return Ok(());
@@ -88,14 +94,14 @@ impl<Schema, Operation, Input, Scope>
                 entity_id: candidate,
                 fields,
             }) if entity == field.entity() && *candidate == entity_id => {
-                fields.insert(locator, value.into_foundational_value());
+                fields.insert(locator, value);
             }
             _ => self
                 .effects
                 .push(WorthQueryApplicationRealizedEffect::UpdateEntity {
                     entity: field.entity().to_string(),
                     entity_id,
-                    fields: BTreeMap::from([(locator, value.into_foundational_value())]),
+                    fields: BTreeMap::from([(locator, value)]),
                 }),
         }
         Ok(())

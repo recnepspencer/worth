@@ -43,11 +43,14 @@ pub const fn estate_legal_compliance(estate: EstateCaseId) -> EstateLegalComplia
     EstateLegalComplianceRequest { estate }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateLegalComplianceQueryParametersBinding for EstateLegalComplianceQueryParameters { identity: "EstateLegalComplianceQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateLegalComplianceQueryResultBinding for EstateLegalComplianceResult { identity: "EstateLegalComplianceResult" });
 worth_query_application_query!(
-    pub EstateLegalComplianceQuery in BankSchema,
-    parameters EstateLegalComplianceQueryParameters,
-    result EstateLegalComplianceResult,
-    scope EstateCase,
+    pub EstateLegalComplianceQuery for BankSchema,
+    identity "EstateLegalComplianceQuery",
+    parameters EstateLegalComplianceQueryParametersBinding,
+    result EstateLegalComplianceQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_legal_compliance"
 );
 
@@ -73,17 +76,21 @@ pub fn estate_legal_compliance_definition() -> ApplicationQueryDefinition<
 }
 
 fn disclosure_contract() -> ApplicationQueryDisclosureContract {
-    let field = RestrictedBankField::LegalDocument;
+    let field = || {
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            RestrictedBankField::LegalDocument,
+        )
+    };
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     ApplicationQueryDisclosureContract::governed_by(
         "estate-legal-compliance",
         ViewEstateLegalComplianceCapability::reference(),
     )
-    .disclose_field_by(estate_identity(), field, influence.clone())
-    .disclose_relation_by(estate_authorities(), field, influence.clone())
-    .disclose_field_by(authority_identity(), field, influence.clone())
-    .disclose_field_by(authority_kind(), field, influence.clone())
-    .disclose_field_by(authority_recognized(), field, influence.clone())
-    .disclose_relation_by(authority_holder(), field, influence.clone())
-    .disclose_field_by(authority_holder_identity(), field, influence)
+    .disclose_field_by(estate_identity(), field(), influence.clone())
+    .disclose_relation_by(estate_authorities(), field(), influence.clone())
+    .disclose_field_by(authority_identity(), field(), influence.clone())
+    .disclose_field_by(authority_kind(), field(), influence.clone())
+    .disclose_field_by(authority_recognized(), field(), influence.clone())
+    .disclose_relation_by(authority_holder(), field(), influence.clone())
+    .disclose_field_by(authority_holder_identity(), field(), influence)
 }

@@ -33,7 +33,8 @@ The dependency order is strict:
         -> 9.17.1.2 final owner services and Signal independent progress
             -> 9.17.2 composite history and coordinated publication
                 -> 9.17.3 Query carriage, facade, and certification
-                    -> 9.18 tree-based semantic undo and redo
+                    -> 9.17.4 application API hardening (post-closure)
+                        -> 9.18 tree-based semantic undo and redo
 ```
 
 This partition is not five interpretations of one feature. The product steps
@@ -411,8 +412,9 @@ explicit Store or cross-runtime work.
 - `worth-foundational` and `worth-proof` docs are linked where their shared
   vocabulary or progression law is used, without teaching them as operational
   owners; and
-- successor documents identify 9.17.3 as the final implementation prerequisite
-  while retaining 9.17 as the semantic umbrella.
+- successor documents identify 9.17.3 as the final branching-umbrella
+  prerequisite and 9.17.4 as subsequent application API hardening, while
+  retaining 9.17 as the branching semantic umbrella.
 
 ## Umbrella Acceptance
 
@@ -452,8 +454,10 @@ Runtime World unit test, or Query facade compile alone is not umbrella closure.
 
 ## Handoff
 
-[Milestone 9.18](./milestone-9.18.md) begins only after 9.17.3 and therefore the
-entire 9.17 umbrella close. It consumes exact product branches, immutable
+[Milestone 9.17.4](./milestone-9.17.4.md) follows the certified 9.17.3 foundation
+as application API hardening; it does not reopen this umbrella's historical
+certification. [Milestone 9.18](./milestone-9.18.md) begins after that consumer
+cutover and the completed 9.17 umbrella. It consumes exact product branches, immutable
 single-parent composite commits, component bases, ancestry, retention, and
 coordinated compare-and-publish authority and performed-publication-gated
 aftermath to define tree-based semantic undo and

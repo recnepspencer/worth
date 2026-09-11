@@ -40,11 +40,14 @@ pub const fn estate_governance_context(estate: EstateCaseId) -> EstateGovernance
     EstateGovernanceRequest { estate }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateGovernanceQueryParametersBinding for EstateGovernanceQueryParameters { identity: "EstateGovernanceQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateGovernanceQueryResultBinding for EstateGovernanceContext { identity: "EstateGovernanceContext" });
 worth_query_application_query!(
-    pub EstateGovernanceQuery in BankSchema,
-    parameters EstateGovernanceQueryParameters,
-    result EstateGovernanceContext,
-    scope EstateCase,
+    pub EstateGovernanceQuery for BankSchema,
+    identity "EstateGovernanceQuery",
+    parameters EstateGovernanceQueryParametersBinding,
+    result EstateGovernanceQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_governance_context"
 );
 

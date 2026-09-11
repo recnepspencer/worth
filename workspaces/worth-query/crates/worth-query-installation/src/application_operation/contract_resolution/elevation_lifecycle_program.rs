@@ -119,9 +119,8 @@ mod tests {
         application_schema::{
             ApplicationEffectMarkerIdentity, ApplicationEffectRef,
             ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationRelationRef,
-            OperationEmits,
+            ApplicationRetainedEffectBinding, ApplicationStructuredValueBinding, OperationEmits,
         },
-        portable_identity::WorthQueryPortableType,
     };
 
     struct Schema;
@@ -154,16 +153,32 @@ mod tests {
     worth_query_declaration::worth_query_portable_type!(
         SecondInput => "worth.query.installation-test.second-lifecycle-input"
     );
+    worth_query_declaration::worth_query_structured_value_binding!(
+        LifecycleOperationInputBinding for String { identity: "worth.rust.string" }
+    );
+    worth_query_declaration::worth_query_structured_value_binding!(
+        LifecycleEffectPayloadBinding for String { identity: "worth.rust.string" }
+    );
+    worth_query_declaration::worth_query_structured_value_binding!(
+        FirstInputBinding for FirstInput { identity: "worth.query.installation-test.first-lifecycle-input" }
+    );
+    worth_query_declaration::worth_query_structured_value_binding!(
+        SecondInputBinding for SecondInput { identity: "worth.query.installation-test.second-lifecycle-input" }
+    );
 
-    impl ApplicationOperationMarkerIdentity for Operation {
-        type Schema = Schema;
-        type Input = String;
+    impl ApplicationRetainedEffectBinding for LifecycleEffectPayloadBinding {
+        fn retained_bytes(value: &Self::Value) -> u64 {
+            std::mem::size_of::<String>() as u64 + value.capacity() as u64
+        }
+    }
+
+    impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+        type InputBinding = LifecycleOperationInputBinding;
         const IDENTIFIER: &'static str = "Run";
     }
 
-    impl ApplicationEffectMarkerIdentity for Effect {
-        type Schema = Schema;
-        type Payload = String;
+    impl ApplicationEffectMarkerIdentity<Schema> for Effect {
+        type PayloadBinding = LifecycleEffectPayloadBinding;
         const IDENTIFIER: &'static str = "ActivityEffect";
     }
 
@@ -171,13 +186,13 @@ mod tests {
 
     impl ApplicationCapabilityLifecycleEffect<Schema, Operation> for String {
         type Effect = Effect;
-        type Payload = String;
+        type PayloadBinding = LifecycleEffectPayloadBinding;
 
-        fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Self::Payload> {
+        fn effect() -> ApplicationEffectRef<Schema, Self::Effect, String> {
             ApplicationEffectRef::from_declaration()
         }
 
-        fn lifecycle_effect(&self) -> Option<Self::Payload> {
+        fn lifecycle_effect(&self) -> Option<String> {
             Some(self.clone())
         }
     }
@@ -204,8 +219,8 @@ mod tests {
 
     #[test]
     fn same_named_lifecycle_operations_select_resource_read_by_exact_input_type() {
-        let first_transition = transition::<FirstCapability, FirstInput>();
-        let second_transition = transition::<SecondCapability, SecondInput>();
+        let first_transition = transition::<FirstCapability, FirstInputBinding>();
+        let second_transition = transition::<SecondCapability, SecondInputBinding>();
         let first_relation = resource_relation::<FirstRelation, FirstResource>("FirstResource");
         let second_relation = resource_relation::<SecondRelation, SecondResource>("SecondResource");
 
@@ -215,7 +230,7 @@ mod tests {
                 (&second_transition, &second_relation),
             ],
             "Advance",
-            SecondInput::PORTABLE_TYPE_IDENTITY.as_str(),
+            SecondInputBinding::IDENTITY.as_str(),
         );
 
         assert_eq!(
@@ -228,24 +243,26 @@ mod tests {
         );
     }
 
-    fn transition<Capability, Input>() -> ApplicationCapabilityTransitionBinding
+    fn transition<Capability, InputBinding>() -> ApplicationCapabilityTransitionBinding
     where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema>,
-        Input: WorthQueryPortableType,
+        InputBinding: ApplicationStructuredValueBinding,
     {
-        struct TransitionOperation<Input>(std::marker::PhantomData<Input>);
-        impl<Input> ApplicationOperationMarkerIdentity for TransitionOperation<Input>
+        struct TransitionOperation<InputBinding>(std::marker::PhantomData<InputBinding>);
+        impl<InputBinding> ApplicationOperationMarkerIdentity<Schema> for TransitionOperation<InputBinding>
         where
-            Input: WorthQueryPortableType,
+            InputBinding: ApplicationStructuredValueBinding,
         {
-            type Schema = Schema;
-            type Input = Input;
+            type InputBinding = InputBinding;
             const IDENTIFIER: &'static str = "Advance";
         }
         ApplicationCapabilityTransitionBinding::from_references(
             ApplicationCapabilityRef::<Schema, Capability>::from_declaration(),
-            ApplicationOperationRef::<Schema, TransitionOperation<Input>, Input>::from_declaration(
-            ),
+            ApplicationOperationRef::<
+                Schema,
+                TransitionOperation<InputBinding>,
+                InputBinding::Value,
+            >::from_declaration(),
         )
     }
 
@@ -258,7 +275,8 @@ mod tests {
             Elevation,
             Resource,
         >::from_schema_identifiers(
-            name, "Elevation", name
-        ))
+            name, "Elevation", name,
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ))
     }
 }

@@ -13,10 +13,12 @@ use super::{
 
 struct Schema;
 struct ResolutionOperation;
+worth_query_declaration::worth_query_structured_value_binding!(
+    ResolutionInputBinding for () { identity: "worth.rust.unit" }
+);
 
-impl ApplicationOperationMarkerIdentity for ResolutionOperation {
-    type Schema = Schema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<Schema> for ResolutionOperation {
+    type InputBinding = ResolutionInputBinding;
     const IDENTIFIER: &'static str = "ResolutionOperation";
 }
 

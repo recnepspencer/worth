@@ -1,47 +1,48 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::{
     application_schema::{
-        ApplicationEffectPayload, ApplicationExternalEffectPayload,
-        ApplicationExternalEffectProtocol,
+        ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
+        ApplicationRetainedEffectBinding,
     },
     worth_query_effect,
 };
 
 use crate::{estate::EstateDeathNotificationRequest, schema::BankSchema};
 
-impl ApplicationEffectPayload for EstateDeathNotificationRequest {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>()).unwrap_or(u64::MAX)
+worth_query_structured_value_binding!(pub EstateDeathNotificationRequestBinding for EstateDeathNotificationRequest { identity: "bank.estate.effect.death-notification.payload.v1" });
+
+impl ApplicationRetainedEffectBinding for EstateDeathNotificationRequestBinding {
+    fn retained_bytes(_: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<EstateDeathNotificationRequest>()).unwrap_or(u64::MAX)
     }
 }
 
-impl ApplicationExternalEffectPayload for EstateDeathNotificationRequest {
+impl ApplicationExternalEffectBinding for EstateDeathNotificationRequestBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
         BoundaryProtocolIdentity::new("bank.estate.death-notification"),
         BoundaryProtocolVersion::new(1),
     );
     const MAX_EXTERNAL_BYTES: u64 = 24;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(Self::MAX_EXTERNAL_BYTES as usize);
-        bytes.extend_from_slice(&self.estate().get().to_be_bytes());
-        bytes.extend_from_slice(&self.notice().get().to_be_bytes());
-        bytes.extend_from_slice(&self.subject().get().to_be_bytes());
+        bytes.extend_from_slice(&value.estate().get().to_be_bytes());
+        bytes.extend_from_slice(&value.notice().get().to_be_bytes());
+        bytes.extend_from_slice(&value.subject().get().to_be_bytes());
         bytes
     }
 }
 
-worth_query_effect!(
-    pub EstateDeathNotificationEffect(EstateDeathNotificationRequest) in BankSchema
-);
+worth_query_effect!(pub EstateDeathNotificationEffect for BankSchema, payload EstateDeathNotificationRequestBinding);
 
 #[cfg(test)]
 mod tests {
     use worth_query_decl::facade::application_schema::{
-        ApplicationEffectPayload, ApplicationExternalEffectPayload,
+        ApplicationExternalEffectBinding, ApplicationRetainedEffectBinding,
     };
 
-    use super::EstateDeathNotificationRequest;
+    use super::{EstateDeathNotificationRequest, EstateDeathNotificationRequestBinding};
     use crate::{
         estate::{DeathNoticeId, EstateCaseId},
         model::BankPrincipalId,
@@ -56,7 +57,7 @@ mod tests {
         );
 
         assert_eq!(
-            request.retained_bytes(),
+            EstateDeathNotificationRequestBinding::retained_bytes(&request),
             u64::try_from(std::mem::size_of::<EstateDeathNotificationRequest>()).unwrap()
         );
     }
@@ -70,7 +71,10 @@ mod tests {
         );
         let corpus =
             include_str!("../../../../../../protocol-corpus/estate-death-notification/v1.hex");
-        assert_eq!(request.external_effect_bytes(), decode_hex(corpus));
+        assert_eq!(
+            EstateDeathNotificationRequestBinding::external_effect_bytes(&request),
+            decode_hex(corpus)
+        );
     }
 
     fn decode_hex(corpus: &str) -> Vec<u8> {

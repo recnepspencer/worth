@@ -4,10 +4,10 @@ use worth_query_decl::facade::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
         ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryLiveCauseBinding, ApplicationQueryLiveResourceContract,
-        ApplicationQueryOrderingDirection, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ExactlyOneResult,
-        ManyResults, OptionalOneResult, ReverseResultTraversal,
+        ApplicationQueryLiveResourceContract, ApplicationQueryOrderingDirection,
+        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+        ApplicationQueryResultShapeBuilder, ExactlyOneResult, ManyResults, OptionalOneResult,
+        ReverseResultTraversal,
     },
     application_schema::{
         DeclaredApplicationUnit, EqualityPredicate, NoApplicationUnit, NoEqualityPredicate,
@@ -25,11 +25,14 @@ use crate::model::{
 };
 use crate::reads::AccountActivityItem;
 use crate::schema::{
-    Account, AccountActivityEffect, AccountIdentity, ActivityEvent, BankSchema, Identity,
-    JournalEntry, JournalIdentity, JournalIdentityField, JournalPosting, JournalPurpose,
-    JournalReversal, JournalState, Posting, PostingAccount, PostingAccountSequence, PostingAmount,
-    PostingIdentity, PostingIdentityField, PostingPurpose, PostingValue, Purpose, UsdCurrency,
+    Account, AccountIdentity, BankSchema, Identity, JournalEntry, JournalIdentity,
+    JournalIdentityField, JournalPosting, JournalPurpose, JournalReversal, JournalState, Posting,
+    PostingAccount, PostingAccountSequence, PostingAmount, PostingIdentity, PostingIdentityField,
+    PostingPurpose, PostingValue, Purpose, UsdCurrency,
 };
+
+mod live_cause;
+pub use live_cause::AccountActivityLiveCause;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct AccountActivityQueryParameters;
@@ -50,25 +53,39 @@ impl AccountActivityQueryResult {
     }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountActivityQueryParametersBinding for AccountActivityQueryParameters { identity: "AccountActivityQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountActivityQueryResultBinding for AccountActivityQueryResult { identity: "AccountActivityQueryResult" });
 worth_query_application_query!(
-    pub AccountActivityQuery in BankSchema,
-    parameters AccountActivityQueryParameters,
-    result AccountActivityQueryResult,
-    scope Account,
+    pub AccountActivityQuery for BankSchema,
+    identity "AccountActivityQuery",
+    parameters AccountActivityQueryParametersBinding,
+    result AccountActivityQueryResultBinding,
+    scope Account => "Account",
     name "account_activity"
 );
 
 struct AccountIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountIdentitySlot => "AccountIdentitySlot");
 struct AccountPostingsSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountPostingsSlot => "AccountPostingsSlot");
 struct PostingSequenceSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingSequenceSlot => "PostingSequenceSlot");
 struct PostingIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingIdentitySlot => "PostingIdentitySlot");
 struct PostingAmountSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingAmountSlot => "PostingAmountSlot");
 struct PostingPurposeSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingPurposeSlot => "PostingPurposeSlot");
 struct PostingJournalSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingJournalSlot => "PostingJournalSlot");
 struct JournalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(JournalIdentitySlot => "JournalIdentitySlot");
 struct JournalPurposeSlot;
+worth_query_decl::facade::worth_query_portable_type!(JournalPurposeSlot => "JournalPurposeSlot");
 struct JournalReversalSlot;
+worth_query_decl::facade::worth_query_portable_type!(JournalReversalSlot => "JournalReversalSlot");
 struct ReversalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(ReversalIdentitySlot => "ReversalIdentitySlot");
 
 type AccountIdentitySelector = ApplicationQueryResultFieldRef<
     AccountActivityQuery,
@@ -173,6 +190,7 @@ pub fn account_activity_definition() -> ApplicationQueryDefinition<
         AccountActivityQuery,
         JournalEntry,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(JournalEntry::reference())
     .field(reversal_identity());
     let journal = ApplicationQueryResultShapeBuilder::<
@@ -180,24 +198,29 @@ pub fn account_activity_definition() -> ApplicationQueryDefinition<
         AccountActivityQuery,
         JournalEntry,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(JournalEntry::reference())
     .field(journal_identity())
     .field(journal_purpose())
     .relation(journal_reversal(), reversal);
-    let posting =
-        ApplicationQueryResultShapeBuilder::<BankSchema, AccountActivityQuery, Posting, ()>::new(
-            Posting::reference(),
-        )
-        .field(posting_identity())
-        .field(posting_sequence())
-        .field(posting_amount())
-        .field(posting_purpose())
-        .relation(posting_journal(), journal);
+    let posting = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        AccountActivityQuery,
+        Posting,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Posting::reference())
+    .field(posting_identity())
+    .field(posting_sequence())
+    .field(posting_amount())
+    .field(posting_purpose())
+    .relation(posting_journal(), journal);
     let shape = ApplicationQueryResultShapeBuilder::<
         BankSchema,
         AccountActivityQuery,
         Account,
         AccountActivityQueryResult,
+        AccountActivityQueryResultBinding,
     >::new(Account::reference())
     .field(account_identity())
     .relation(account_postings(), posting)
@@ -286,33 +309,6 @@ fn posting_sequence() -> PostingSequenceSelector {
 
 fn posting_identity() -> PostingIdentitySelector {
     ApplicationQueryResultFieldRef::new("posting", PostingIdentityField::reference())
-}
-
-pub struct AccountActivityLiveCause;
-
-impl ApplicationQueryLiveCauseBinding<BankSchema, AccountActivityQuery, Account, Posting>
-    for AccountActivityLiveCause
-{
-    type Effect = AccountActivityEffect;
-    type Payload = ActivityEvent;
-    type ScopeIdentity = AccountId;
-    type TargetIdentity = PostingId;
-
-    fn effect() -> worth_query_decl::facade::application_schema::ApplicationEffectRef<
-        BankSchema,
-        Self::Effect,
-        Self::Payload,
-    > {
-        AccountActivityEffect::reference()
-    }
-
-    fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity {
-        payload.account
-    }
-
-    fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity {
-        payload.posting
-    }
 }
 
 fn posting_amount() -> PostingAmountSelector {

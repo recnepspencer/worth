@@ -1,8 +1,9 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationExternalEffectPayload, ApplicationExternalEffectProtocol,
-    ApplicationOperationRef, ApplicationSchema, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder,
+    ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
+    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationRetainedEffectBinding,
+    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationStructuredValueBinding,
 };
 use worth_query_installation::facade::{
     InstalledExternalEffectContract, WorthQueryInstallationAdmissionProfile,
@@ -29,27 +30,28 @@ macro_rules! moved_payload_module {
             worth_query_declaration::worth_query_portable_type!(
                 Payload => "worth.query.test.protocol-stability-payload.v1"
             );
+            worth_query_declaration::worth_query_structured_value_binding!(pub(super) PayloadBinding for Payload { identity: "worth.query.test.protocol-stability-payload.v1" });
 
             worth_query_declaration::worth_query_operation!(
-                pub(super) Notify(Payload) in ProtocolSchema
+                pub(super) Notify for ProtocolSchema, input PayloadBinding
             );
             worth_query_declaration::worth_query_effect!(
-                pub(super) Notice(Payload) in ProtocolSchema
+                pub(super) Notice for ProtocolSchema, payload PayloadBinding
             );
             worth_query_declaration::worth_query_operation_emits!(Notify => [Notice]);
 
-            impl ApplicationEffectPayload for Payload {
-                fn retained_bytes(&self) -> u64 {
-                    std::mem::size_of::<Self>() as u64
+            impl ApplicationRetainedEffectBinding for PayloadBinding {
+                fn retained_bytes(_value: &Self::Value) -> u64 {
+                    std::mem::size_of::<Self::Value>() as u64
                 }
             }
 
-            impl ApplicationExternalEffectPayload for Payload {
+            impl ApplicationExternalEffectBinding for PayloadBinding {
                 const PROTOCOL: ApplicationExternalEffectProtocol =
                     ApplicationExternalEffectProtocol::new(FAMILY, VERSION);
                 const MAX_EXTERNAL_BYTES: u64 = BYTES.len() as u64;
 
-                fn external_effect_bytes(&self) -> Vec<u8> {
+                fn external_effect_bytes(_value: &Self::Value) -> Vec<u8> {
                     BYTES.to_vec()
                 }
             }
@@ -116,8 +118,10 @@ fn rust_module_move_cannot_change_installed_or_outbox_protocol_identity() {
     );
     assert_eq!(original_contract.protocol(), moved_contract.protocol());
 
-    let original_payload = original_location::Payload.external_effect_bytes();
-    let moved_payload = moved_location::Payload.external_effect_bytes();
+    let original_payload =
+        original_location::PayloadBinding::external_effect_bytes(&original_location::Payload);
+    let moved_payload =
+        moved_location::PayloadBinding::external_effect_bytes(&moved_location::Payload);
     assert_eq!(original_payload, BYTES);
     assert_eq!(moved_payload, BYTES);
 
@@ -135,7 +139,8 @@ fn installed_contract<Schema, Operation, Input>(
 ) -> InstalledExternalEffectContract
 where
     Schema: ApplicationSchema,
-    Operation: 'static,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
     Input: worth_query_declaration::facade::portable_identity::WorthQueryPortableType + 'static,
 {
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(

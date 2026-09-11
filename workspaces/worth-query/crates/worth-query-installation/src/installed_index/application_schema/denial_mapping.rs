@@ -1,6 +1,7 @@
 use super::super::{
     WorthQueryInstalledPackageIndexDenial, WorthQueryInstalledPackageIndexDenialKind,
 };
+use crate::application_schema::WorthQueryApplicationValueBindingInstallationDenialKind as ValueBindingDenialKind;
 use crate::application_schema::{
     ApplicationSchemaCompilationDenial, WorthQueryApplicationSchemaContractCatalogDenial,
     WorthQueryApplicationSchemaContractCatalogDenialKind as CatalogDenialKind,
@@ -58,6 +59,27 @@ pub(super) fn map_compilation_denial(
             WorthQueryInstalledApplicationSchemaDenialKind::CanonicalDigestSlotRejected,
             schema.to_string(),
         ),
+        ApplicationSchemaCompilationDenial::Contribution(_) => (
+            WorthQueryInstalledApplicationSchemaDenialKind::SchemaMeaningChanged,
+            schema.to_string(),
+        ),
+        ApplicationSchemaCompilationDenial::ValueBinding(denial) => {
+            let kind = match denial.kind() {
+                ValueBindingDenialKind::MissingBinding => {
+                    WorthQueryInstalledApplicationSchemaDenialKind::FieldBindingMissing
+                }
+                ValueBindingDenialKind::UnexpectedBinding => {
+                    WorthQueryInstalledApplicationSchemaDenialKind::FieldBindingUnexpected
+                }
+                ValueBindingDenialKind::ContractMismatch => {
+                    WorthQueryInstalledApplicationSchemaDenialKind::FieldBindingContractMismatch
+                }
+                ValueBindingDenialKind::NativeContractMissing => {
+                    WorthQueryInstalledApplicationSchemaDenialKind::FieldBindingNativeContractMissing
+                }
+            };
+            (kind, denial.subject().to_string())
+        }
     };
     WorthQueryInstalledApplicationSchemaDenial::new(kind, subject)
 }

@@ -38,11 +38,14 @@ pub const fn account_summary(account: AccountId) -> AccountSummaryRequest {
     AccountSummaryRequest::new(account)
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountSummaryQueryParametersBinding for AccountSummaryQueryParameters { identity: "AccountSummaryQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountSummaryQueryResultBinding for AccountSummary { identity: "AccountSummary" });
 worth_query_application_query!(
-    pub AccountSummaryQuery in BankSchema,
-    parameters AccountSummaryQueryParameters,
-    result AccountSummary,
-    scope Account,
+    pub AccountSummaryQuery for BankSchema,
+    identity "AccountSummaryQuery",
+    parameters AccountSummaryQueryParametersBinding,
+    result AccountSummaryQueryResultBinding,
+    scope Account => "Account",
     name "account_summary"
 );
 
@@ -56,7 +59,14 @@ pub fn account_summary_definition() -> ApplicationQueryDefinition<
     ApplicationQueryDefinitionBuilder::declare(AccountSummaryQuery::reference())
         .root(Account::reference())
         .scope(Account::reference())
-        .result_shape(account_summary_shape().build())
+        .result_shape(
+            account_summary_shape::<
+                AccountSummaryQuery,
+                AccountSummary,
+                AccountSummaryQueryResultBinding,
+            >()
+            .build(),
+        )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 6))
         .disclosure(ApplicationQueryDisclosureContract::public())

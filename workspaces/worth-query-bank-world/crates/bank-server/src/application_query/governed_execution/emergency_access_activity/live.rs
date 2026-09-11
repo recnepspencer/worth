@@ -165,6 +165,10 @@ impl<'runtime, 'principal>
         BankApplicationQueryDenial,
     > {
         let application = self.runtime.application_runtime();
+        let selected = application
+            .on_branch(application.current_world())
+            .select()
+            .map_err(BankApplicationQueryDenial::from_product_selection)?;
         let query = application
             .installed_schema()
             .application_query(EstateEmergencyAccessActivityQuery::reference())
@@ -176,7 +180,7 @@ impl<'runtime, 'principal>
                 ViewRestrictedEstateOperation::reference(),
             )
             .map_err(BankApplicationQueryDenial::from_capability_installation)?;
-        let capability_access = application
+        let capability_access = selected
             .admit_approved_elevation_access(
                 self.approved.query(),
                 self.principal.query(),
@@ -185,7 +189,7 @@ impl<'runtime, 'principal>
                 controls.request(),
             )
             .map_err(BankApplicationQueryDenial::from_capability_admission)?;
-        let scope = application
+        let scope = selected
             .resolve_entity(
                 EstateCaseIdentityField::reference(),
                 self.request.estate(),
@@ -193,7 +197,7 @@ impl<'runtime, 'principal>
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .map_err(BankApplicationQueryDenial::from_scope_resolution)?;
-        let query = application
+        let query = selected
             .open_governed_application_query_live::<
                 EstateEmergencyAccessActivityQuery,
                 EstateEmergencyAccessActivityQueryParameters,

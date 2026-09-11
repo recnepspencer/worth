@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
@@ -45,7 +45,10 @@ pub(super) fn complete_review_out_of_band(
         .kind;
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         locator,
-        CapabilityReviewStatus::Completed.into_foundational_value(),
+        super::super::super::fixture::CapabilityReviewStatusBinding::encode(
+            &CapabilityReviewStatus::Completed,
+        )
+        .unwrap(),
     )]));
     super::super::super::fixture::publish_relational_mutation(
         world,

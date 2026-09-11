@@ -61,19 +61,27 @@ impl AccountAuthorizedUsersQueryResult {
     }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountAuthorizedUsersQueryParametersBinding for AccountAuthorizedUsersQueryParameters { identity: "AccountAuthorizedUsersQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountAuthorizedUsersQueryResultBinding for AccountAuthorizedUsersQueryResult { identity: "AccountAuthorizedUsersQueryResult" });
 worth_query_application_query!(
-    pub AccountAuthorizedUsersQuery in BankSchema,
-    parameters AccountAuthorizedUsersQueryParameters,
-    result AccountAuthorizedUsersQueryResult,
-    scope Account,
+    pub AccountAuthorizedUsersQuery for BankSchema,
+    identity "AccountAuthorizedUsersQuery",
+    parameters AccountAuthorizedUsersQueryParametersBinding,
+    result AccountAuthorizedUsersQueryResultBinding,
+    scope Account => "Account",
     name "account_authorized_users"
 );
 
 struct AuthorizationsSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorizationsSlot => "AuthorizationsSlot");
 struct AuthorizationIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorizationIdentitySlot => "AuthorizationIdentitySlot");
 struct AuthorizationRoleSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorizationRoleSlot => "AuthorizationRoleSlot");
 struct AuthorizationPrincipalSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorizationPrincipalSlot => "AuthorizationPrincipalSlot");
 struct PrincipalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(PrincipalIdentitySlot => "PrincipalIdentitySlot");
 
 type AuthorizationIdentitySelector = ApplicationQueryResultFieldRef<
     AccountAuthorizedUsersQuery,
@@ -126,6 +134,7 @@ pub fn account_authorized_users_definition() -> ApplicationQueryDefinition<
         AccountAuthorizedUsersQuery,
         Principal,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(Principal::reference())
     .field(principal_identity());
     let authorization = ApplicationQueryResultShapeBuilder::<
@@ -133,6 +142,7 @@ pub fn account_authorized_users_definition() -> ApplicationQueryDefinition<
         AccountAuthorizedUsersQuery,
         AccountAuthorization,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(AccountAuthorization::reference())
     .field(authorization_identity())
     .field(authorization_role())
@@ -142,6 +152,7 @@ pub fn account_authorized_users_definition() -> ApplicationQueryDefinition<
         AccountAuthorizedUsersQuery,
         Account,
         AccountAuthorizedUsersQueryResult,
+        AccountAuthorizedUsersQueryResultBinding,
     >::new(Account::reference())
     .relation(account_authorizations(), authorization)
     .build();

@@ -28,9 +28,9 @@ pub struct BankCommitReceipt {
 
 impl BankCommitReceipt {
     pub(super) fn from_publication_projection(projection: BankCommitPublicationProjection) -> Self {
-        let (publication, execution) = projection.into_parts();
-        let description = BankCommitPublicDescription::from_execution(&execution);
-        let recovery = BankCommitRecoveryEvidence::from_execution(execution);
+        let (publication, recovery_description) = projection.into_parts();
+        let description = BankCommitPublicDescription::from_execution(&recovery_description);
+        let recovery = BankCommitRecoveryEvidence::from_execution(recovery_description);
         Self {
             publication,
             description,

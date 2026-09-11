@@ -13,10 +13,14 @@ use super::{
 
 struct CardinalitySchema;
 struct CardinalityOperation;
+crate::worth_query_structured_value_binding!(
+    CardinalityInputBinding for () {
+        identity: "worth.rust.unit"
+    }
+);
 
-impl ApplicationOperationMarkerIdentity for CardinalityOperation {
-    type Schema = CardinalitySchema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<CardinalitySchema> for CardinalityOperation {
+    type InputBinding = CardinalityInputBinding;
     const IDENTIFIER: &'static str = "CardinalityOperation";
 }
 

@@ -1,7 +1,6 @@
 use bank_server::{
     queries, BankApplicationOneShotDenialKind, BankApplicationQueryDenial, BankReadControls,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls;
 
 use super::fixture::{ordinary_read_world, over_budget_discovery_world, OWNER};
 use crate::support::request_scope;
@@ -68,19 +67,12 @@ fn discovery_and_account_reads_are_bounded_by_the_touched_neighborhood() {
 fn activity_limit_is_enforced_and_reported_by_the_public_result() {
     let fixture = ordinary_read_world("read-activity-limit", 0);
     let owner = fixture.authenticate(OWNER);
-    let request = request_scope();
     let activity = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
-        .page(
-            WorthQueryApplicationQueryControls::current_continuation_page(
-                std::num::NonZeroUsize::new(1).unwrap(),
-                std::num::NonZeroUsize::new(4_096).unwrap(),
-                &request,
-            ),
-        )
+        .page(BankReadControls::current(request_scope(), 1, 4_096).unwrap())
         .expect("account activity page should execute");
 
     assert_eq!(activity.rows()[0].entries().len(), 1);

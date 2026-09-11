@@ -1,3 +1,8 @@
+use super::{
+    Account, AccountAllActivity, AccountLabel, AccountPrimaryActivity, AccountSecondaryActivity,
+    AccountStatus, Activity, ActivityFacts, ActivitySequence, CapabilityDisclosure,
+    CapabilityDisclosureBinding, IdentityExecutionSchema, TouchAccountCapability, ViewAccount,
+};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
@@ -5,12 +10,15 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection, ApplicationQueryReference,
     ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder, ApplicationQueryRootPath,
 };
-use worth_query_declaration::worth_query_application_query;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, ApplicationStructuredValueBinding, StringApplicationValueBinding,
+};
 
-use super::{
-    Account, AccountAllActivity, AccountLabel, AccountPrimaryActivity, AccountSecondaryActivity,
-    AccountStatus, Activity, ActivityFacts, ActivitySequence, IdentityExecutionSchema,
-    TouchAccountCapability, ViewAccount,
+#[path = "application_queries/markers.rs"]
+mod markers;
+pub use markers::{
+    AccountSummaryQuery, CrossRootQuery, CrossRootQueryResultBinding, GovernedAccountSummaryQuery,
+    OrderedAccountSummaryQuery, ScopedAccountSummaryQuery, ScopedAccountSummaryQueryResultBinding,
 };
 
 #[path = "application_queries/parameter_reference.rs"]
@@ -66,7 +74,11 @@ impl AccountSummaryResult {
     }
 }
 
-impl<Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity>
+impl<
+        Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+            IdentityExecutionSchema,
+        >,
+    >
     crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
         IdentityExecutionSchema,
         Query,
@@ -87,28 +99,6 @@ impl<Query: worth_query_declaration::facade::application_query::ApplicationQuery
     }
 }
 
-worth_query_application_query!(
-    pub AccountSummaryQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result AccountSummaryResult,
-    scope Account,
-    name "account_summary"
-);
-worth_query_application_query!(
-    pub ScopedAccountSummaryQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result AccountSummaryResult,
-    scope Account,
-    name "scoped_account_summary"
-);
-worth_query_application_query!(
-    pub CrossRootQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result ActivitySequenceResult,
-    scope Account,
-    name "cross_root"
-);
-
 impl
     crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
         IdentityExecutionSchema,
@@ -128,20 +118,7 @@ impl
         })
     }
 }
-worth_query_application_query!(
-    pub GovernedAccountSummaryQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result AccountSummaryResult,
-    scope Account,
-    name "governed_account_summary"
-);
-worth_query_application_query!(
-    pub OrderedAccountSummaryQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result AccountSummaryResult,
-    scope Account,
-    name "ordered_account_summary"
-);
+
 pub(in crate::domain_computation::primary_graph::tests) fn status_result_field<Query>(
 ) -> ApplicationQueryResultFieldRef<
     Query,
@@ -202,6 +179,7 @@ pub(super) fn scoped_account_summary_definition() -> ApplicationQueryDefinition<
         ScopedAccountSummaryQuery,
         Account,
         AccountSummaryResult,
+        ScopedAccountSummaryQueryResultBinding,
     >::new(Account::reference())
     .field(status_result_field::<ScopedAccountSummaryQuery>())
     .field(label_result_field::<ScopedAccountSummaryQuery>())
@@ -234,6 +212,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn cross_root_definition
         CrossRootQuery,
         Activity,
         ActivitySequenceResult,
+        CrossRootQueryResultBinding,
     >::new(Activity::reference())
     .field(activity_sequence_result_field())
     .build();
@@ -249,17 +228,17 @@ pub(in crate::domain_computation::primary_graph::tests) fn cross_root_definition
         .requires_ability(ViewAccount::reference())
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), status.to_string())
+                .where_equal(AccountStatus::reference(), encoded_string(status))
                 .forward(AccountPrimaryActivity::reference()),
         )
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), status.to_string())
+                .where_equal(AccountStatus::reference(), encoded_string(status))
                 .forward(AccountSecondaryActivity::reference()),
         )
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountStatus::reference(), status.to_string())
+                .where_equal(AccountStatus::reference(), encoded_string(status))
                 .forward(AccountAllActivity::reference()),
         )
         .order_by(
@@ -285,17 +264,17 @@ pub(super) fn governed_account_summary_definition() -> ApplicationQueryDefinitio
         )
         .use_field_by(
             AccountStatus::reference(),
-            super::CapabilityDisclosure::AccountActivity,
+            encoded_disclosure(CapabilityDisclosure::AccountActivity),
             ApplicationQueryInfluenceContract::permit_all(),
         )
         .disclose_field_by(
             status_result_field::<GovernedAccountSummaryQuery>(),
-            super::CapabilityDisclosure::AccountActivity,
+            encoded_disclosure(CapabilityDisclosure::AccountActivity),
             ApplicationQueryInfluenceContract::forbid_all(),
         )
         .disclose_field_by(
             label_result_field::<GovernedAccountSummaryQuery>(),
-            super::CapabilityDisclosure::AccountActivity,
+            encoded_disclosure(CapabilityDisclosure::AccountActivity),
             ApplicationQueryInfluenceContract::forbid_all(),
         ),
         false,
@@ -321,7 +300,9 @@ pub(super) fn ordered_account_summary_definition() -> ApplicationQueryDefinition
 }
 
 fn definition<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity + 'static,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+            IdentityExecutionSchema,
+        > + 'static,
 >(
     reference: ApplicationQueryReference<
         IdentityExecutionSchema,
@@ -340,12 +321,16 @@ fn definition<
     AccountSummaryParameters,
     AccountSummaryResult,
     Account,
-> {
+>
+where
+    Query::ResultBinding: ApplicationStructuredValueBinding<Value = AccountSummaryResult>,
+{
     let shape = ApplicationQueryResultShapeBuilder::<
         IdentityExecutionSchema,
         Query,
         Account,
         AccountSummaryResult,
+        Query::ResultBinding,
     >::new(Account::reference())
     .field(status_result_field::<Query>())
     .field(label_result_field::<Query>())
@@ -396,4 +381,15 @@ fn definition<
         builder
     };
     builder.build().unwrap()
+}
+
+type EncodedDisclosure = ApplicationEncodedScalarValue<CapabilityDisclosureBinding>;
+type EncodedString = ApplicationEncodedScalarValue<StringApplicationValueBinding>;
+
+fn encoded_disclosure(value: CapabilityDisclosure) -> EncodedDisclosure {
+    ApplicationEncodedScalarValue::try_new(value).expect("fixture disclosure must encode")
+}
+
+fn encoded_string(value: &str) -> EncodedString {
+    ApplicationEncodedScalarValue::try_new(value.to_owned()).expect("fixture string must encode")
 }

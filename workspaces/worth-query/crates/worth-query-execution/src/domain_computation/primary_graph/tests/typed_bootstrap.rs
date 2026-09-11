@@ -15,6 +15,7 @@ use super::fixture::{
 use worth_foundational::facade::AspectIdentity;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    U64ApplicationValueBinding,
 };
 
 #[test]
@@ -68,15 +69,15 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
 }
 
 struct ExhaustedProviderIdentitySchema;
-worth_query_declaration::worth_query_entity!(ExhaustedEntity in ExhaustedProviderIdentitySchema);
+worth_query_declaration::worth_query_entity!(ExhaustedEntity for ExhaustedProviderIdentitySchema);
 worth_query_declaration::worth_query_aspect!(
-    ExhaustedAspect in ExhaustedProviderIdentitySchema, ExhaustedEntity;
+    ExhaustedAspect for ExhaustedProviderIdentitySchema, ExhaustedEntity;
     identity = AspectIdentity(u64::MAX - 2),
     revision = AspectContractRevision(1),
 );
 worth_query_declaration::worth_query_field!(
-    ExhaustedField in ExhaustedProviderIdentitySchema, ExhaustedEntity, ExhaustedAspect:
-    u64, read_only, no_equality
+    ExhaustedField for ExhaustedProviderIdentitySchema, ExhaustedEntity, ExhaustedAspect:
+    u64 => U64ApplicationValueBinding, read_only, no_equality
 );
 
 impl ApplicationSchema for ExhaustedProviderIdentitySchema {

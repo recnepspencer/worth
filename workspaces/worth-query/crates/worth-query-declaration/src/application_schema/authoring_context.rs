@@ -136,6 +136,7 @@ impl ApplicationSchemaAuthoringContext {
                     relation: installed,
                     from: installed_from,
                     to: installed_to,
+                    ..
                 } if installed == relation && installed_from == from && installed_to == to
             )
         }) {

@@ -13,22 +13,38 @@ use crate::schema::{
 
 use super::governance::EstateGovernanceQuery;
 
-pub(super) struct BeneficiariesSlot;
-pub(super) struct AssignmentsSlot;
-pub(super) struct AssignmentPrincipalSlot;
-pub(super) struct CapabilitiesSlot;
-pub(super) struct CapabilityGranteeSlot;
-pub(super) struct CapabilityGrantorSlot;
-pub(super) struct CapabilityAccountSlot;
-pub(super) struct CapabilityInstitutionSlot;
-pub(super) struct CapabilityBranchSlot;
-pub(super) struct CapabilityParentSlot;
-pub(super) struct EmergenciesSlot;
-pub(super) struct EmergencyRequesterSlot;
-pub(super) struct EmergencyApproverSlot;
-pub(super) struct EmergencyReviewSlot;
-pub(super) struct ReviewEstateSlot;
-pub(super) struct ReviewReviewerSlot;
+pub(super) struct EstateBeneficiariesRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateBeneficiariesRelationSlot => "EstateGovernanceEstateBeneficiariesRelationSlot");
+pub(super) struct EstateAssignmentsRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateAssignmentsRelationSlot => "EstateGovernanceEstateAssignmentsRelationSlot");
+pub(super) struct AssignmentPrincipalRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentPrincipalRelationSlot => "EstateGovernanceAssignmentPrincipalRelationSlot");
+pub(super) struct EstateCapabilitiesRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateCapabilitiesRelationSlot => "EstateGovernanceEstateCapabilitiesRelationSlot");
+pub(super) struct CapabilityGranteeRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(CapabilityGranteeRelationSlot => "EstateGovernanceCapabilityGranteeRelationSlot");
+pub(super) struct CapabilityGrantorRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(CapabilityGrantorRelationSlot => "EstateGovernanceCapabilityGrantorRelationSlot");
+pub(super) struct CapabilityAccountRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(CapabilityAccountRelationSlot => "EstateGovernanceCapabilityAccountRelationSlot");
+pub(super) struct CapabilityInstitutionRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(CapabilityInstitutionRelationSlot => "EstateGovernanceCapabilityInstitutionRelationSlot");
+pub(super) struct CapabilityBranchRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(CapabilityBranchRelationSlot => "EstateGovernanceCapabilityBranchRelationSlot");
+pub(super) struct CapabilityParentRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(CapabilityParentRelationSlot => "EstateGovernanceCapabilityParentRelationSlot");
+pub(super) struct CapabilityEmergenciesRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(CapabilityEmergenciesRelationSlot => "EstateGovernanceCapabilityEmergenciesRelationSlot");
+pub(super) struct EmergencyRequesterRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(EmergencyRequesterRelationSlot => "EstateGovernanceEmergencyRequesterRelationSlot");
+pub(super) struct EmergencyApproverRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(EmergencyApproverRelationSlot => "EstateGovernanceEmergencyApproverRelationSlot");
+pub(super) struct EmergencyReviewRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(EmergencyReviewRelationSlot => "EstateGovernanceEmergencyReviewRelationSlot");
+pub(super) struct ReviewEstateRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewEstateRelationSlot => "EstateGovernanceReviewEstateRelationSlot");
+pub(super) struct ReviewReviewerRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewReviewerRelationSlot => "EstateGovernanceReviewReviewerRelationSlot");
 
 macro_rules! reverse_many {
     ($name:ident, $slot:ty, $relation:ty, $from:ty, $to:ty, $alias:literal) => {
@@ -66,7 +82,7 @@ macro_rules! reverse_one {
 
 reverse_many!(
     estate_beneficiaries,
-    BeneficiariesSlot,
+    EstateBeneficiariesRelationSlot,
     EstateBeneficiary,
     Principal,
     EstateCase,
@@ -74,7 +90,7 @@ reverse_many!(
 );
 reverse_many!(
     estate_assignments,
-    AssignmentsSlot,
+    EstateAssignmentsRelationSlot,
     EstateAssignment,
     EmployeeAssignment,
     EstateCase,
@@ -82,7 +98,7 @@ reverse_many!(
 );
 reverse_many!(
     estate_capabilities,
-    CapabilitiesSlot,
+    EstateCapabilitiesRelationSlot,
     CapabilityEstate,
     CapabilityGrant,
     EstateCase,
@@ -90,7 +106,7 @@ reverse_many!(
 );
 reverse_many!(
     capability_emergencies,
-    EmergenciesSlot,
+    CapabilityEmergenciesRelationSlot,
     EmergencyGrant,
     EmergencyAccess,
     CapabilityGrant,
@@ -98,7 +114,7 @@ reverse_many!(
 );
 reverse_one!(
     capability_grantee,
-    CapabilityGranteeSlot,
+    CapabilityGranteeRelationSlot,
     CapabilityGrantee,
     Principal,
     CapabilityGrant,
@@ -109,7 +125,7 @@ reverse_one!(
 
 pub(super) fn capability_account() -> ApplicationQueryResultRelationRef<
     EstateGovernanceQuery,
-    CapabilityAccountSlot,
+    CapabilityAccountRelationSlot,
     BankSchema,
     CapabilityAccount,
     CapabilityGrant,
@@ -122,7 +138,7 @@ pub(super) fn capability_account() -> ApplicationQueryResultRelationRef<
 
 pub(super) fn capability_institution() -> ApplicationQueryResultRelationRef<
     EstateGovernanceQuery,
-    CapabilityInstitutionSlot,
+    CapabilityInstitutionRelationSlot,
     BankSchema,
     CapabilityInstitution,
     CapabilityGrant,
@@ -138,7 +154,7 @@ pub(super) fn capability_institution() -> ApplicationQueryResultRelationRef<
 
 pub(super) fn capability_branch() -> ApplicationQueryResultRelationRef<
     EstateGovernanceQuery,
-    CapabilityBranchSlot,
+    CapabilityBranchRelationSlot,
     BankSchema,
     CapabilityBranch,
     CapabilityGrant,
@@ -151,7 +167,7 @@ pub(super) fn capability_branch() -> ApplicationQueryResultRelationRef<
 
 pub(super) fn capability_parent() -> ApplicationQueryResultRelationRef<
     EstateGovernanceQuery,
-    CapabilityParentSlot,
+    CapabilityParentRelationSlot,
     BankSchema,
     CapabilityParent,
     CapabilityGrant,
@@ -164,7 +180,7 @@ pub(super) fn capability_parent() -> ApplicationQueryResultRelationRef<
 
 pub(super) fn emergency_review() -> ApplicationQueryResultRelationRef<
     EstateGovernanceQuery,
-    EmergencyReviewSlot,
+    EmergencyReviewRelationSlot,
     BankSchema,
     EmergencyReview,
     EmergencyAccess,
@@ -177,7 +193,7 @@ pub(super) fn emergency_review() -> ApplicationQueryResultRelationRef<
 
 pub(super) fn review_estate() -> ApplicationQueryResultRelationRef<
     EstateGovernanceQuery,
-    ReviewEstateSlot,
+    ReviewEstateRelationSlot,
     BankSchema,
     ReviewEstate,
     MandatoryReview,
@@ -190,7 +206,7 @@ pub(super) fn review_estate() -> ApplicationQueryResultRelationRef<
 
 pub(super) fn review_reviewer() -> ApplicationQueryResultRelationRef<
     EstateGovernanceQuery,
-    ReviewReviewerSlot,
+    ReviewReviewerRelationSlot,
     BankSchema,
     ReviewPrincipal,
     Principal,
@@ -202,7 +218,7 @@ pub(super) fn review_reviewer() -> ApplicationQueryResultRelationRef<
 }
 reverse_one!(
     capability_grantor,
-    CapabilityGrantorSlot,
+    CapabilityGrantorRelationSlot,
     CapabilityGrantor,
     Principal,
     CapabilityGrant,
@@ -212,7 +228,7 @@ reverse_one!(
 );
 reverse_one!(
     emergency_requester,
-    EmergencyRequesterSlot,
+    EmergencyRequesterRelationSlot,
     EmergencyRequester,
     Principal,
     EmergencyAccess,
@@ -222,7 +238,7 @@ reverse_one!(
 );
 reverse_one!(
     emergency_approver,
-    EmergencyApproverSlot,
+    EmergencyApproverRelationSlot,
     EmergencyApprover,
     Principal,
     EmergencyAccess,
@@ -233,7 +249,7 @@ reverse_one!(
 
 pub(super) fn assignment_principal() -> ApplicationQueryResultRelationRef<
     EstateGovernanceQuery,
-    AssignmentPrincipalSlot,
+    AssignmentPrincipalRelationSlot,
     BankSchema,
     AssignmentPrincipal,
     EmployeeAssignment,

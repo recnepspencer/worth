@@ -1,6 +1,9 @@
 use bank_domain::{
     model::BankPrincipalId,
-    schema::{BankPrincipalBinding, BankSchema, ExternalPrincipalMapping, Principal},
+    schema::{
+        BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
+        Principal,
+    },
 };
 use worth_query_host::facade::{
     domain::{
@@ -8,8 +11,8 @@ use worth_query_host::facade::{
         WorthQueryInstalledApplicationSchema, WorthQueryInstalledPrincipalBinding,
     },
     primary_graph::{
-        WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
-        WorthQueryRuntimeTimeSource,
+        SignalConditionalEvaluationBudget, WorthQueryPrimaryGraphApplicationRuntime,
+        WorthQueryPrimaryGraphBootstrap, WorthQueryRuntimeTimeSource,
     },
     runtime::{
         WorthQueryApplicationQueryResourceProfile, WorthQueryExecutionInstallationAuthority,
@@ -29,6 +32,7 @@ type InstalledBankPrincipalBinding = WorthQueryInstalledPrincipalBinding<
     ExternalPrincipalMapping,
     Principal,
     BankPrincipalId,
+    BankPrincipalIdBinding,
 >;
 
 pub(super) enum BankAuthorizationTimeInstallation {
@@ -54,6 +58,7 @@ impl PreparedBankGraph {
                 self.runtime,
                 self.authority,
                 self.installed_schema,
+                SignalConditionalEvaluationBudget::development(),
             ),
             BankAuthorizationTimeInstallation::Installed(source) => self
                 .graph
@@ -61,6 +66,7 @@ impl PreparedBankGraph {
                     self.runtime,
                     self.authority,
                     self.installed_schema,
+                    SignalConditionalEvaluationBudget::development(),
                     source,
                 ),
         }
@@ -106,7 +112,7 @@ fn install_bank_execution_runtime() -> Result<
     .admit(validated)
     .map_err(BankIdentityRuntimeBuildError::PackageAdmission)?;
     let application_query_resources =
-        WorthQueryApplicationQueryResourceProfile::bounded(32_768, 32_768, 32_768)
+        WorthQueryApplicationQueryResourceProfile::bounded(32_768, 32_768, 32_768, 64)
             .expect("bank application-query resource profile is statically non-zero");
     let installation = WorthQueryExecutionRuntimeInstaller::new()
         .application_query_resources(application_query_resources)

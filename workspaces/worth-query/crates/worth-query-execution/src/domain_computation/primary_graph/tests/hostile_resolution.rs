@@ -4,8 +4,13 @@ use std::time::Duration;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, U64ApplicationValueBinding,
+};
+use worth_query_declaration::facade::authentication::{
+    WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatus,
+    WorthQueryPrincipalMappingStatusBinding,
+};
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
@@ -199,7 +204,7 @@ fn change_principal_identity(
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         layout.principal_identity_locator,
-        identity.into_foundational_value(),
+        U64ApplicationValueBinding::encode(&identity).unwrap(),
     )]));
     super::fixture::publish_relational_mutation_on_application(
         &world.application,
@@ -224,7 +229,10 @@ fn disable_mapping(
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         layout.status_locator,
-        WorthQueryPrincipalMappingStatus::Disabled.into_foundational_value(),
+        WorthQueryPrincipalMappingStatusBinding::encode(
+            &WorthQueryPrincipalMappingStatus::Disabled,
+        )
+        .unwrap(),
     )]));
     super::fixture::publish_relational_mutation_on_application(
         &world.application,
@@ -261,11 +269,15 @@ fn append_duplicate_mapping(world: &mut super::fixture::IdentityWorld, subject: 
         let fields = AspectFieldPatch::from(BTreeMap::from([
             (
                 layout.identity_locator.clone(),
-                external_identity(subject).into_foundational_value(),
+                WorthQueryExternalPrincipalIdentityBinding::encode(&external_identity(subject))
+                    .unwrap(),
             ),
             (
                 layout.status_locator,
-                WorthQueryPrincipalMappingStatus::Enabled.into_foundational_value(),
+                WorthQueryPrincipalMappingStatusBinding::encode(
+                    &WorthQueryPrincipalMappingStatus::Enabled,
+                )
+                .unwrap(),
             ),
         ]));
         let batch = WorkerIntentBatch::new("duplicate-mapping")
@@ -275,7 +287,7 @@ fn append_duplicate_mapping(world: &mut super::fixture::IdentityWorld, subject: 
                 client_key: principal_key,
                 fields: AspectFieldPatch::from(BTreeMap::from([(
                     layout.principal_identity_locator.clone(),
-                    99_u64.into_foundational_value(),
+                    U64ApplicationValueBinding::encode(&99_u64).unwrap(),
                 )])),
             })))
             .push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {

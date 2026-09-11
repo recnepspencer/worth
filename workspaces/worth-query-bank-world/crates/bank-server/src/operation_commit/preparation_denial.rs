@@ -20,10 +20,13 @@ pub enum BankApplicationAttemptDenialKind {
     MutationPreconditionMismatch,
     AmbiguousRelation,
     UndeclaredEffect,
+    InvalidEffectValue,
     ForeignEffectTarget,
     DuplicateEffectKey,
     RetainedEffectBytesExceeded,
     ExternalEffectPayloadProjectionRejected,
+    ForeignConditionalDefinitionChange,
+    DuplicateConditionalDefinitionChange,
     IncompleteEffectBasis,
     DelegationActivationRequired,
     DelegationActivationProgramMismatch,
@@ -96,6 +99,7 @@ const fn application_attempt_kind(
         }
         Query::AmbiguousRelation => BankApplicationAttemptDenialKind::AmbiguousRelation,
         Query::UndeclaredEffect => BankApplicationAttemptDenialKind::UndeclaredEffect,
+        Query::InvalidEffectValue => BankApplicationAttemptDenialKind::InvalidEffectValue,
         Query::ForeignEffectTarget => BankApplicationAttemptDenialKind::ForeignEffectTarget,
         Query::DuplicateEffectKey => BankApplicationAttemptDenialKind::DuplicateEffectKey,
         Query::RetainedEffectBytesExceeded => {
@@ -103,6 +107,12 @@ const fn application_attempt_kind(
         }
         Query::ExternalEffectPayloadProjectionRejected => {
             BankApplicationAttemptDenialKind::ExternalEffectPayloadProjectionRejected
+        }
+        Query::ForeignConditionalDefinitionChange => {
+            BankApplicationAttemptDenialKind::ForeignConditionalDefinitionChange
+        }
+        Query::DuplicateConditionalDefinitionChange => {
+            BankApplicationAttemptDenialKind::DuplicateConditionalDefinitionChange
         }
         Query::IncompleteEffectBasis => BankApplicationAttemptDenialKind::IncompleteEffectBasis,
         Query::DelegationActivationRequired => {

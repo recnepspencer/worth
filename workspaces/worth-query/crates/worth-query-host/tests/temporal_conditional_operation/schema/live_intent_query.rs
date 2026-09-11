@@ -36,12 +36,16 @@ pub struct IntentLiveQueryResult {
 worth_query_host::facade::worth_query_portable_type!(
     IntentLiveQueryResult => "worth.query.test.host.temporal.live_result.v1"
 );
+worth_query_host::facade::worth_query_structured_value_binding!(pub IntentLiveQueryParametersBinding for IntentLiveQueryParameters { identity: "IntentLiveQueryParameters" });
+worth_query_host::facade::worth_query_structured_value_binding!(pub IntentLiveQueryResultBinding for IntentLiveQueryResult { identity: "worth.query.test.host.temporal.live_result.v1" });
+worth_query_host::facade::worth_query_structured_value_binding!(IntentLiveNestedResultBinding for () { identity: "worth.rust.unit" });
 
 worth_query_application_query!(
-    pub TemporalIntentLiveQuery in TemporalHostSchema,
-    parameters IntentLiveQueryParameters,
-    result IntentLiveQueryResult,
-    scope TemporalIntent,
+    pub TemporalIntentLiveQuery for TemporalHostSchema,
+    identity "TemporalIntentLiveQuery",
+    parameters IntentLiveQueryParametersBinding,
+    result IntentLiveQueryResultBinding,
+    scope TemporalIntent => "TemporalIntent",
     name "temporal_intent_live_query"
 );
 
@@ -57,12 +61,19 @@ pub fn temporal_intent_live_query_definition() -> ApplicationQueryDefinition<
         TemporalIntentLiveQuery,
         TemporalIntent,
         (),
+        IntentLiveNestedResultBinding,
     >::new(TemporalIntent::reference())
     .field(target_identity());
-    let shape = ApplicationQueryResultShapeBuilder::new(TemporalIntent::reference())
-        .field(scope_identity())
-        .relation(live_targets(), target)
-        .build();
+    let shape = ApplicationQueryResultShapeBuilder::<
+        TemporalHostSchema,
+        TemporalIntentLiveQuery,
+        TemporalIntent,
+        IntentLiveQueryResult,
+        IntentLiveQueryResultBinding,
+    >::new(TemporalIntent::reference())
+    .field(scope_identity())
+    .relation(live_targets(), target)
+    .build();
     ApplicationQueryDefinitionBuilder::declare(TemporalIntentLiveQuery::reference())
         .root(TemporalIntent::reference())
         .scope(TemporalIntent::reference())
@@ -123,23 +134,23 @@ impl
     > for TemporalIntentLiveCause
 {
     type Effect = TemporalExecutionEffect;
-    type Payload = TemporalExecutionNotice;
-    type ScopeIdentity = String;
-    type TargetIdentity = String;
+    type PayloadBinding = super::TemporalExecutionNoticeBinding;
+    type ScopeIdentityBinding = declaration::application_schema::StringApplicationValueBinding;
+    type TargetIdentityBinding = declaration::application_schema::StringApplicationValueBinding;
 
     fn effect() -> declaration::application_schema::ApplicationEffectRef<
         TemporalHostSchema,
         Self::Effect,
-        Self::Payload,
+        TemporalExecutionNotice,
     > {
         TemporalExecutionEffect::reference()
     }
 
-    fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity {
+    fn scope_identity(payload: &TemporalExecutionNotice) -> String {
         payload.identity.clone()
     }
 
-    fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity {
+    fn target_identity(payload: &TemporalExecutionNotice) -> String {
         payload.identity.clone()
     }
 }

@@ -4,7 +4,10 @@ use super::*;
 fn declared_context_anchor_closes_over_its_exact_path_traversal() {
     let anchor = ApplicationCapabilityPathContextAnchor::after_forward(
         ApplicationRelationRef::<Schema, PrincipalResource, Principal, Resource>::
-            from_schema_identifiers("PrincipalResource", "Principal", "Resource"),
+            from_schema_identifiers(
+                "PrincipalResource", "Principal", "Resource",
+                crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
         resource_slot::<Context, ResourceSlot>("Context", "ResourceSlot"),
     );
     let contract = contract_with_composition(false, false, anchored_composition(anchor));
@@ -18,6 +21,7 @@ fn context_anchor_rejects_absent_traversal_and_undeclared_slot() {
             "ScopedRelation",
             "Grant",
             "Resource",
+            crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
         ),
         resource_slot::<Context, ResourceSlot>("Context", "ResourceSlot"),
     );
@@ -29,7 +33,10 @@ fn context_anchor_rejects_absent_traversal_and_undeclared_slot() {
 
     let missing_slot = ApplicationCapabilityPathContextAnchor::after_forward(
         ApplicationRelationRef::<Schema, PrincipalResource, Principal, Resource>::
-            from_schema_identifiers("PrincipalResource", "Principal", "Resource"),
+            from_schema_identifiers(
+                "PrincipalResource", "Principal", "Resource",
+                crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
         resource_slot::<Context, MissingResourceSlot>("Context", "MissingResourceSlot"),
     );
     let contract = contract_with_composition(false, false, anchored_composition(missing_slot));
@@ -43,7 +50,10 @@ fn context_anchor_rejects_absent_traversal_and_undeclared_slot() {
 fn context_anchor_cannot_cross_the_contract_context() {
     let anchor = ApplicationCapabilityPathContextAnchor::after_forward(
         ApplicationRelationRef::<Schema, PrincipalResource, Principal, Resource>::
-            from_schema_identifiers("PrincipalResource", "Principal", "Resource"),
+            from_schema_identifiers(
+                "PrincipalResource", "Principal", "Resource",
+                crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
         resource_slot::<OtherContext, OtherResourceSlot>("OtherContext", "OtherResourceSlot"),
     );
     let contract = contract_with_composition(false, false, anchored_composition(anchor));

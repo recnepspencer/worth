@@ -1,8 +1,12 @@
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding,
+};
+use worth_query_declaration::facade::authentication::{
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
+};
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
@@ -13,7 +17,7 @@ use super::super::application_attempt::{authenticated_principal, idempotency};
 use super::super::fixture::{
     installed_capability_authorization_world, installed_capability_replacement_world, live_scope,
     publish_relational_mutation, AccountLabel, AccountStatus, CapabilityIdentity, CapabilityStatus,
-    CapabilityStatusField, CapabilityTouchOperation,
+    CapabilityStatusBinding, CapabilityStatusField, CapabilityTouchOperation,
 };
 use super::capability_progression::{
     admitted_capability_access, admitted_capability_operation, admitted_capability_program, time,
@@ -276,7 +280,7 @@ fn revoke_grant(world: &World) {
         world,
         grant.entity_id(),
         locator,
-        CapabilityStatus::Revoked.into_foundational_value(),
+        CapabilityStatusBinding::encode(&CapabilityStatus::Revoked).unwrap(),
         "revoke-capability-grant",
     );
 }
@@ -291,7 +295,10 @@ fn disable_mapping(world: &World, mapping: EntityId) {
         world,
         mapping,
         layout.status_locator.clone(),
-        WorthQueryPrincipalMappingStatus::Disabled.into_foundational_value(),
+        WorthQueryPrincipalMappingStatusBinding::encode(
+            &WorthQueryPrincipalMappingStatus::Disabled,
+        )
+        .unwrap(),
         "disable-capability-principal",
     );
 }
@@ -302,7 +309,7 @@ fn change_account_status(world: &World, key: &str, status: &str) {
         world,
         key,
         (field.entity(), field.aspect(), field.field()),
-        status.to_owned().into_foundational_value(),
+        StringApplicationValueBinding::encode(&status.to_owned()).unwrap(),
         "change-capability-resource-workflow",
     );
 }
@@ -313,7 +320,7 @@ fn change_account_label(world: &World, key: &str, label: &str) {
         world,
         key,
         (field.entity(), field.aspect(), field.field()),
-        label.to_owned().into_foundational_value(),
+        StringApplicationValueBinding::encode(&label.to_owned()).unwrap(),
         "change-unrelated-capability-fact",
     );
 }

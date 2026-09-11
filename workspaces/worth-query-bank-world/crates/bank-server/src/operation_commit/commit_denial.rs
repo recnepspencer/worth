@@ -7,6 +7,18 @@ use worth_query_host::facade::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommitDenialKind {
     ProviderRejected,
+    ProductBasisStale,
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
+    RetentionCapacityExhausted,
+    RetentionIdentityExhausted,
+    SnapshotIdentityExhausted,
+    CandidateIdentityExhausted,
+    PreparedRootBudgetExhausted {
+        maximum_bytes: u64,
+        required_bytes: u64,
+    },
     IdempotencyIntentDrift,
     ElevationTransitionRequired,
     ElevationRequestProgramMismatch,
@@ -41,6 +53,23 @@ pub(crate) const fn denial_kind(
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
         Query::ProviderRejected => BankCommitDenialKind::ProviderRejected,
+        Query::ProductBasisStale => BankCommitDenialKind::ProductBasisStale,
+        Query::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => BankCommitDenialKind::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        },
+        Query::RetentionCapacityExhausted => BankCommitDenialKind::RetentionCapacityExhausted,
+        Query::RetentionIdentityExhausted => BankCommitDenialKind::RetentionIdentityExhausted,
+        Query::SnapshotIdentityExhausted => BankCommitDenialKind::SnapshotIdentityExhausted,
+        Query::CandidateIdentityExhausted => BankCommitDenialKind::CandidateIdentityExhausted,
+        Query::PreparedRootBudgetExhausted {
+            maximum_bytes,
+            required_bytes,
+        } => BankCommitDenialKind::PreparedRootBudgetExhausted {
+            maximum_bytes,
+            required_bytes,
+        },
         Query::IdempotencyIntentDrift => BankCommitDenialKind::IdempotencyIntentDrift,
         Query::ElevationTransitionRequired => BankCommitDenialKind::ElevationTransitionRequired,
         Query::ElevationRequestProgramMismatch => {

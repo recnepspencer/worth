@@ -20,8 +20,22 @@ pub(super) fn complete_untrusted_schema_record() -> WorthQueryPortableApplicatio
             major: 4,
             minor: 2,
             members: members(),
+            contributions: contributions(),
         },
     )
+}
+
+fn contributions() -> Vec<ApplicationSchemaContributionProvenance> {
+    vec![
+        ApplicationSchemaContributionProvenance::from_untrusted_parts(
+            "worth.archive.tests.foundation.v1".to_owned(),
+            (0..13).collect(),
+        ),
+        ApplicationSchemaContributionProvenance::from_untrusted_parts(
+            "worth.archive.tests.operations.v1".to_owned(),
+            (13..EXPECTED_MEMBER_COUNT as u32).collect(),
+        ),
+    ]
 }
 
 fn members() -> Vec<ApplicationSchemaMember> {
@@ -43,6 +57,7 @@ fn members() -> Vec<ApplicationSchemaMember> {
             scalar_family: ScalarAspectType::UInt64,
             value_type: text("worth.rust.u64"),
             unit: Some(text("count")),
+            frame: Some(text("worth.tests.frame.v1")),
             writable: true,
             equality_queryable: true,
         },
@@ -50,6 +65,7 @@ fn members() -> Vec<ApplicationSchemaMember> {
             relation: text("relates"),
             from: text("Entity"),
             to: text("Other"),
+            integrity: worth_query_installation::facade::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
         },
         principal_binding(),
         ApplicationSchemaMember::ApplicationQuery {

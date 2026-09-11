@@ -4,8 +4,9 @@ use bank_domain::{
     schema::{
         ApproveEstateEmergencyAccessCapability, ApproveEstateEmergencyAccessOperation,
         CompleteEstateMandatoryReviewCapability, CompleteEstateMandatoryReviewOperation,
-        EstateEmergencyAccessActivityEvent, RequestEstateEmergencyAccessCapability,
-        RequestEstateEmergencyAccessOperation, RevokeEstateEmergencyAccessCapability,
+        EmergencyAccessStatusBinding, EstateEmergencyAccessActivityEventBinding,
+        RequestEstateEmergencyAccessCapability, RequestEstateEmergencyAccessOperation,
+        RestrictedBankFieldBinding, RevokeEstateEmergencyAccessCapability,
         RevokeEstateEmergencyAccessOperation, ViewEstateAdministrationCapability,
         ViewEstateEmergencyProtectionCapability, ViewRestrictedEstateOperation,
     },
@@ -17,7 +18,7 @@ use worth_query_host::facade::{
             ApplicationQueryDisclosurePosture, ApplicationQueryObservableInfluence,
             ApplicationQueryOrderingDirection, ApplicationQueryResultTraversalDirection,
         },
-        application_schema::TypedApplicationValue,
+        application_schema::{ApplicationScalarValueBinding, ApplicationStructuredValueBinding},
     },
     domain::WorthQueryInstallationRuntimeIdentity,
 };
@@ -42,7 +43,7 @@ fn emergency_view_installs_exact_resource_lifecycle_and_effect_meaning() {
 
     assert_eq!(
         elevation.states().expired().value(),
-        &EmergencyAccessStatus::Expired.into_foundational_value()
+        &EmergencyAccessStatusBinding::encode(&EmergencyAccessStatus::Expired).unwrap()
     );
     assert_eq!(
         elevation.validity().timeline(),
@@ -153,7 +154,7 @@ fn emergency_access_activity_installs_one_identity_across_all_five_lanes() {
     assert_eq!(live.effect(), "EstateEmergencyAccessActivityEffect");
     assert_eq!(
         live.payload_type(),
-        std::any::type_name::<EstateEmergencyAccessActivityEvent>()
+        EstateEmergencyAccessActivityEventBinding::IDENTITY_NAME
     );
     assert_eq!(live.collection_path(), continuation.collection_path());
     assert_eq!(live.scope_identity().field(), "EstateCaseIdentityField");
@@ -181,7 +182,7 @@ fn emergency_access_activity_installs_only_governed_lifecycle_disclosure() {
     );
     assert_eq!(disclosure.rules().len(), 13);
     let expected_disclosure =
-        RestrictedBankField::EmergencyAccessActivity.into_foundational_value();
+        RestrictedBankFieldBinding::encode(&RestrictedBankField::EmergencyAccessActivity).unwrap();
     assert!(disclosure
         .rules()
         .iter()
@@ -264,7 +265,8 @@ fn activity_field_is_permitted_only_by_emergency_protection() {
             ViewRestrictedEstateOperation::reference(),
         )
         .unwrap();
-    let field = RestrictedBankField::EmergencyAccessActivity.into_foundational_value();
+    let field =
+        RestrictedBankFieldBinding::encode(&RestrictedBankField::EmergencyAccessActivity).unwrap();
 
     assert!(disclosure_values(&emergency).contains(&field));
     assert!(!disclosure_values(&administration).contains(&field));

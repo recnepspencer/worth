@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::{
     worth_query_application_query, worth_query_application_schema, worth_query_aspect,
     worth_query_entity, worth_query_field, worth_query_portable_type, worth_query_relation,
+    worth_query_structured_value_binding,
 };
 
 use crate::facade::{
@@ -46,21 +47,22 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub Parent in CardinalitySchema);
-worth_query_entity!(pub Child in CardinalitySchema);
-worth_query_aspect!(pub ParentFacts in CardinalitySchema, Parent; identity = AspectIdentity(0x91611048), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ChildFacts in CardinalitySchema, Child; identity = AspectIdentity(0x91611049), revision = AspectContractRevision(1),);
+worth_query_entity!(pub Parent for CardinalitySchema);
+worth_query_entity!(pub Child for CardinalitySchema);
+worth_query_aspect!(pub ParentFacts for CardinalitySchema, Parent; identity = AspectIdentity(0x91611048), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub ChildFacts for CardinalitySchema, Child; identity = AspectIdentity(0x91611049), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub ParentId in CardinalitySchema, Parent, ParentFacts:
-    u64, read_only, equality
+    pub ParentId for CardinalitySchema, Parent, ParentFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+    read_only, equality
 );
 worth_query_field!(
-    pub ChildId in CardinalitySchema, Child, ChildFacts:
-    u64, read_only, equality
+    pub ChildId for CardinalitySchema, Child, ChildFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+    read_only, equality
 );
 worth_query_relation!(
-    pub ParentChild in CardinalitySchema, Parent => Child
-);
+    pub ParentChild in CardinalitySchema, Parent => Child; integrity = same_context_unbounded_retain_dangling);
 
 struct OptionalChildQueryParameters;
 struct ManyChildrenQueryParameters;
@@ -75,19 +77,41 @@ worth_query_portable_type!(ChildResult => "worth.query.test.cardinality.child-re
 worth_query_portable_type!(ParentIdSlot => "worth.query.test.cardinality.parent-id-slot.v1");
 worth_query_portable_type!(ChildIdSlot => "worth.query.test.cardinality.child-id-slot.v1");
 worth_query_portable_type!(ChildrenSlot => "worth.query.test.cardinality.children-slot.v1");
+worth_query_structured_value_binding!(
+    OptionalChildQueryParametersBinding for OptionalChildQueryParameters {
+        identity: "OptionalChildQueryParameters"
+    }
+);
+worth_query_structured_value_binding!(
+    ManyChildrenQueryParametersBinding for ManyChildrenQueryParameters {
+        identity: "ManyChildrenQueryParameters"
+    }
+);
+worth_query_structured_value_binding!(
+    ParentResultBinding for ParentResult {
+        identity: "worth.query.test.cardinality.parent-result.v1"
+    }
+);
+worth_query_structured_value_binding!(
+    ChildResultBinding for ChildResult {
+        identity: "worth.query.test.cardinality.child-result.v1"
+    }
+);
 
 worth_query_application_query!(
-    OptionalChildQuery in CardinalitySchema,
-    parameters OptionalChildQueryParameters,
-    result ParentResult,
-    scope Parent,
+    OptionalChildQuery for CardinalitySchema,
+    identity "OptionalChildQuery",
+    parameters OptionalChildQueryParametersBinding,
+    result ParentResultBinding,
+    scope Parent => "Parent",
     name "optional_child"
 );
 worth_query_application_query!(
-    ManyChildrenQuery in CardinalitySchema,
-    parameters ManyChildrenQueryParameters,
-    result ParentResult,
-    scope Parent,
+    ManyChildrenQuery for CardinalitySchema,
+    identity "ManyChildrenQuery",
+    parameters ManyChildrenQueryParametersBinding,
+    result ParentResultBinding,
+    scope Parent => "Parent",
     name "many_children"
 );
 
@@ -135,40 +159,49 @@ fn query_definition<Query, Parameters>(
     cardinality: ApplicationQueryCardinality,
 ) -> ApplicationQueryDefinition<CardinalitySchema, Query, Parameters, ParentResult, Parent>
 where
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        CardinalitySchema,
+        ResultBinding = ParentResultBinding,
+    >,
 {
-    let child =
-        ApplicationQueryResultShapeBuilder::<CardinalitySchema, Query, Child, ChildResult>::new(
-            Child::reference(),
-        )
-        .field(ApplicationQueryResultFieldRef::<
-            Query,
-            ChildIdSlot,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-        >::new("child_id", ChildId::reference()));
-    let shape =
-        ApplicationQueryResultShapeBuilder::<CardinalitySchema, Query, Parent, ParentResult>::new(
-            Parent::reference(),
-        )
-        .field(ApplicationQueryResultFieldRef::<
-            Query,
-            ParentIdSlot,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-        >::new("parent_id", ParentId::reference()));
+    let child = ApplicationQueryResultShapeBuilder::<
+        CardinalitySchema,
+        Query,
+        Child,
+        ChildResult,
+        ChildResultBinding,
+    >::new(Child::reference())
+    .field(ApplicationQueryResultFieldRef::<
+        Query,
+        ChildIdSlot,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >::new("child_id", ChildId::reference()));
+    let shape = ApplicationQueryResultShapeBuilder::<
+        CardinalitySchema,
+        Query,
+        Parent,
+        ParentResult,
+        ParentResultBinding,
+    >::new(Parent::reference())
+    .field(ApplicationQueryResultFieldRef::<
+        Query,
+        ParentIdSlot,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >::new("parent_id", ParentId::reference()));
     let shape = match cardinality {
         ApplicationQueryCardinality::OptionalOne => shape.relation(
             ApplicationQueryResultRelationRef::<

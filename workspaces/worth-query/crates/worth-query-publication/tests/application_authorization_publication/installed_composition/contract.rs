@@ -18,7 +18,8 @@ use worth_query_declaration::facade::{
         ApplicationCapabilityWorkflowDefinition,
     },
     application_schema::{
-        ApplicationAuthorizationPathBuilder, ApplicationSchemaDeclarationBuilder,
+        ApplicationAuthorizationPathBuilder, ApplicationEncodedScalarValue,
+        ApplicationSchemaDeclarationBuilder, StringApplicationValueBinding,
     },
 };
 
@@ -51,13 +52,16 @@ fn publication_capability_contract() -> ApplicationCapabilityContract<
 
 fn target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(GrantActionField::reference(), "inspect".to_owned()),
+        ApplicationCapabilityValueBinding::new(
+            GrantActionField::reference(),
+            encoded_string("inspect"),
+        ),
         ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
             GrantPurposeField::reference(),
-            "publication-proof".to_owned(),
+            encoded_string("publication-proof"),
         ),
     )
 }
@@ -69,7 +73,7 @@ fn constraints() -> ApplicationCapabilityConstraintDefinition {
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
                 GrantStatusField::reference(),
-                "active".to_owned(),
+                encoded_string("active"),
             ),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(GrantWorkflowField::reference()),
@@ -85,6 +89,11 @@ fn constraints() -> ApplicationCapabilityConstraintDefinition {
         ),
         PublicationRequestContext::reference(),
     )
+}
+
+fn encoded_string(value: &str) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
+    ApplicationEncodedScalarValue::try_new(value.to_owned())
+        .expect("publication capability declaration value must encode")
 }
 
 fn delegation() -> ApplicationCapabilityDelegationDefinition {

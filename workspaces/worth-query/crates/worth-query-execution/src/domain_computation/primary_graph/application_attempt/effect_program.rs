@@ -19,8 +19,8 @@ use worth_foundational::facade::AspectFieldLocator;
 use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationProgramTarget, OperationCreates, OperationDeletes, OperationWrites,
-    TypedApplicationValue,
+    ApplicationOperationProgramTarget, ApplicationScalarValueBinding,
+    DeclaredApplicationFieldValue, OperationCreates, OperationDeletes, OperationWrites,
 };
 use worth_relational::facade::transactions::EntityReference;
 
@@ -206,10 +206,15 @@ impl<Schema, Operation, Input, Scope>
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Entity: OperationCreates<Operation>,
-        Field: OperationWrites<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
+        let value = Field::Binding::encode(&value).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+                field.field(),
+            )
+        })?;
         self.validate_target(target, field.entity())?;
         self.admit_program_target(&ApplicationOperationProgramTarget::Write {
             entity: field.entity().to_string(),
@@ -226,7 +231,7 @@ impl<Schema, Operation, Input, Scope>
                 field.entity(),
             ));
         };
-        fields.insert(locator, value.into_foundational_value());
+        fields.insert(locator, value);
         Ok(())
     }
 

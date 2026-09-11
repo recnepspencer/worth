@@ -1,7 +1,7 @@
 use worth_query_declaration::{
     facade::{
         application_query::ApplicationQueryLiveCauseBinding,
-        application_schema::{ApplicationEffectPayload, ApplicationEffectRef},
+        application_schema::{ApplicationEffectRef, ApplicationRetainedEffectBinding},
     },
     worth_query_effect,
 };
@@ -17,14 +17,21 @@ worth_query_declaration::worth_query_portable_type!(
     PlanningLiveEvent => "worth.query.test.planning-live-event.v1"
 );
 
-impl ApplicationEffectPayload for PlanningLiveEvent {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>()).unwrap_or(u64::MAX)
+worth_query_declaration::worth_query_structured_value_binding!(
+    pub(super) PlanningLiveEventBinding for PlanningLiveEvent {
+        identity: "worth.query.test.planning-live-event.v1"
+    }
+);
+
+impl ApplicationRetainedEffectBinding for PlanningLiveEventBinding {
+    fn retained_bytes(value: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of_val(value)).unwrap_or(u64::MAX)
     }
 }
 
 worth_query_effect!(
-    pub(super) PlanningLiveEffect(PlanningLiveEvent) in PlanningTestSchema
+    pub(super) PlanningLiveEffect for PlanningTestSchema,
+    payload PlanningLiveEventBinding
 );
 
 pub(super) struct PlanningLiveCause;
@@ -36,19 +43,27 @@ impl ApplicationQueryLiveCauseBinding<PlanningTestSchema, ActivityQuery, Account
     for PlanningLiveCause
 {
     type Effect = PlanningLiveEffect;
-    type Payload = PlanningLiveEvent;
+    type PayloadBinding = PlanningLiveEventBinding;
     type ScopeIdentity = u64;
     type TargetIdentity = u64;
 
-    fn effect() -> ApplicationEffectRef<PlanningTestSchema, Self::Effect, Self::Payload> {
+    fn effect() -> ApplicationEffectRef<
+        PlanningTestSchema,
+        Self::Effect,
+        <Self::PayloadBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+    >{
         PlanningLiveEffect::reference()
     }
 
-    fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity {
+    fn scope_identity(
+        payload: &<Self::PayloadBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+    ) -> Self::ScopeIdentity {
         payload.account
     }
 
-    fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity {
+    fn target_identity(
+        payload: &<Self::PayloadBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+    ) -> Self::TargetIdentity {
         payload.activity
     }
 }
@@ -58,7 +73,9 @@ fn live_lane_adds_only_its_declared_maintenance_requirement() {
     let query = installed_query();
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let one_shot = admitted_requirements(

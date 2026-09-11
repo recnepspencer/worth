@@ -47,20 +47,29 @@ pub const fn account_detail(account: AccountId) -> AccountDetailRequest {
     AccountDetailRequest::new(account)
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountDetailQueryParametersBinding for AccountDetailQueryParameters { identity: "AccountDetailQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountDetailQueryResultBinding for AccountDetail { identity: "AccountDetail" });
 worth_query_application_query!(
-    pub AccountDetailQuery in BankSchema,
-    parameters AccountDetailQueryParameters,
-    result AccountDetail,
-    scope Account,
+    pub AccountDetailQuery for BankSchema,
+    identity "AccountDetailQuery",
+    parameters AccountDetailQueryParametersBinding,
+    result AccountDetailQueryResultBinding,
+    scope Account => "Account",
     name "account_detail"
 );
 
 struct InstitutionSlot;
+worth_query_decl::facade::worth_query_portable_type!(InstitutionSlot => "InstitutionSlot");
 struct InstitutionIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(InstitutionIdentitySlot => "InstitutionIdentitySlot");
 struct PersonalOwnerSlot;
+worth_query_decl::facade::worth_query_portable_type!(PersonalOwnerSlot => "PersonalOwnerSlot");
 struct PrincipalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(PrincipalIdentitySlot => "PrincipalIdentitySlot");
 struct BusinessOwnerSlot;
+worth_query_decl::facade::worth_query_portable_type!(BusinessOwnerSlot => "BusinessOwnerSlot");
 struct BusinessIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(BusinessIdentitySlot => "BusinessIdentitySlot");
 
 type InstitutionIdentitySelector = ApplicationQueryResultFieldRef<
     AccountDetailQuery,
@@ -108,26 +117,39 @@ pub fn account_detail_definition() -> ApplicationQueryDefinition<
     AccountDetail,
     Account,
 > {
-    let institution =
-        ApplicationQueryResultShapeBuilder::<BankSchema, AccountDetailQuery, Institution, ()>::new(
-            Institution::reference(),
-        )
-        .field(institution_identity());
-    let personal =
-        ApplicationQueryResultShapeBuilder::<BankSchema, AccountDetailQuery, Principal, ()>::new(
-            Principal::reference(),
-        )
-        .field(principal_identity());
-    let business =
-        ApplicationQueryResultShapeBuilder::<BankSchema, AccountDetailQuery, Business, ()>::new(
-            Business::reference(),
-        )
-        .field(business_identity());
-    let shape = account_summary_shape()
-        .relation(account_institution(), institution)
-        .relation(account_personal_owner(), personal)
-        .relation(account_business_owner(), business)
-        .build();
+    let institution = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        AccountDetailQuery,
+        Institution,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Institution::reference())
+    .field(institution_identity());
+    let personal = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        AccountDetailQuery,
+        Principal,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Principal::reference())
+    .field(principal_identity());
+    let business = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        AccountDetailQuery,
+        Business,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Business::reference())
+    .field(business_identity());
+    let shape = account_summary_shape::<
+        AccountDetailQuery,
+        AccountDetail,
+        AccountDetailQueryResultBinding,
+    >()
+    .relation(account_institution(), institution)
+    .relation(account_personal_owner(), personal)
+    .relation(account_business_owner(), business)
+    .build();
     ApplicationQueryDefinitionBuilder::declare(AccountDetailQuery::reference())
         .root(Account::reference())
         .scope(Account::reference())

@@ -23,15 +23,25 @@ use crate::{
 use super::EstateEmergencyAccessActivityQuery;
 
 pub(super) struct EstateIdSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateIdSlot => "EstateIdSlot");
 pub(super) struct EstateAccessesSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateAccessesSlot => "EstateAccessesSlot");
 pub(super) struct AccessIdSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccessIdSlot => "AccessIdSlot");
 pub(super) struct AccessReasonSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccessReasonSlot => "AccessReasonSlot");
 pub(super) struct AccessStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccessStatusSlot => "AccessStatusSlot");
 pub(super) struct AccessIssuedAtSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccessIssuedAtSlot => "AccessIssuedAtSlot");
 pub(super) struct AccessExpiresAtSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccessExpiresAtSlot => "AccessExpiresAtSlot");
 pub(super) struct AccessReviewSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccessReviewSlot => "AccessReviewSlot");
 pub(super) struct ReviewIdSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewIdSlot => "ReviewIdSlot");
 pub(super) struct ReviewStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewStatusSlot => "ReviewStatusSlot");
 
 macro_rules! selector {
     ($name:ident, $slot:ty, $entity:ty, $aspect:ty, $field:ty, $value:ty, $write:ty, $alias:literal) => {

@@ -13,8 +13,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAuthenticatedPrincipal, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
 };
+use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{
-    ApplicationSchema, TypedApplicationValue, WorthQueryInstalledApplicationOperation,
+    ApplicationScalarValueBinding, ApplicationSchema, WorthQueryInstalledApplicationOperation,
     WorthQueryInstalledApplicationOperationAuthorization,
 };
 
@@ -79,10 +80,14 @@ where
             .expect("a mutation session owns its graph handle")
             .clone();
         let entity_resolution = graph.retain_entity_resolution_context();
-        let expected_external_identity = principal
-            .external_identity()
-            .clone()
-            .into_foundational_value();
+        let expected_external_identity =
+            WorthQueryExternalPrincipalIdentityBinding::encode(principal.external_identity())
+                .map_err(|_| {
+                    denial(
+                        WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
+                        principal.binding(),
+                    )
+                })?;
         let decision_facts = handle.with_runtime_mut(|relational| {
             validate_freshness_at_snapshot(
                 relational,

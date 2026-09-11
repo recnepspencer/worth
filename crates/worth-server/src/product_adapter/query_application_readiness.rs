@@ -12,8 +12,24 @@ pub(crate) trait WorthServerQueryApplicationReadinessProvider:
         &self,
     ) -> Result<
         primary_graph::WorthQueryPrimaryGraphApplicationReadinessSnapshot,
-        primary_graph::WorthQueryApplicationQueryAdmissionDenial,
+        WorthServerQueryApplicationReadinessDenial,
     >;
+}
+
+pub(crate) enum WorthServerQueryApplicationReadinessDenial {
+    ProductSelection(primary_graph::WorthQueryProductBranchAdmissionDenial),
+    Application(primary_graph::WorthQueryApplicationQueryAdmissionDenial),
+}
+
+impl WorthServerQueryApplicationReadinessDenial {
+    pub(crate) fn subject(&self) -> String {
+        match self {
+            Self::ProductSelection(denial) => {
+                format!("current product branch selection: {denial:?}")
+            }
+            Self::Application(denial) => denial.subject().to_string(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -60,9 +76,14 @@ where
         &self,
     ) -> Result<
         primary_graph::WorthQueryPrimaryGraphApplicationReadinessSnapshot,
-        primary_graph::WorthQueryApplicationQueryAdmissionDenial,
+        WorthServerQueryApplicationReadinessDenial,
     > {
-        self.application.inspect_application_readiness()
+        self.application
+            .on_branch(self.application.current_world())
+            .select()
+            .map_err(WorthServerQueryApplicationReadinessDenial::ProductSelection)?
+            .inspect_application_readiness()
+            .map_err(WorthServerQueryApplicationReadinessDenial::Application)
     }
 }
 

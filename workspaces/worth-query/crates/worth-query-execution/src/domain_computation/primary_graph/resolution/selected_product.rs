@@ -4,7 +4,13 @@ impl<Schema> super::super::WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn resolve_authenticated_principal<Binding, Mapping, Principal, PrincipalIdentity>(
+    pub fn resolve_authenticated_principal<
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >(
         &self,
         installed_binding: &WorthQueryInstalledPrincipalBinding<
             Schema,
@@ -12,6 +18,7 @@ where
             Mapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
         >,
         external: WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &WorthQueryRequestScope,
@@ -21,7 +28,8 @@ where
         WorthQueryPrincipalResolutionDenial,
     >
     where
-        PrincipalIdentity: TypedApplicationIdentityValue,
+        PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+        PrincipalIdentity: 'static,
     {
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
         let runtime = &self.application().runtime;
@@ -40,7 +48,15 @@ where
                 installed_binding.binding(),
             ));
         }
-        let expected_identity = external.identity().clone().into_foundational_value();
+        let expected_identity = WorthQueryExternalPrincipalIdentityBinding::encode(
+            external.identity(),
+        )
+        .map_err(|_| {
+            resolution_denial(
+                WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+                installed_binding.binding(),
+            )
+        })?;
         let handle = graph.integration_handle();
         let evidence = handle.with_runtime_mut(|relational| {
             handle
@@ -51,7 +67,7 @@ where
                         installed_binding.binding(),
                     )
                 })?;
-            resolve_at_snapshot::<PrincipalIdentity>(
+            resolve_at_snapshot(
                 relational,
                 self.application_basis().snapshot_handle(),
                 &WorthQueryPrincipalSnapshotResolution {
@@ -62,6 +78,7 @@ where
                     runtime_authority: runtime.authority_identity(),
                     binding_identity: graph.binding_identity().clone(),
                 },
+                installed_binding,
             )
         })?;
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
@@ -88,10 +105,14 @@ where
             principal.binding_identity(),
             principal.binding(),
         )?;
-        let expected_identity = principal
-            .external_identity()
-            .clone()
-            .into_foundational_value();
+        let expected_identity =
+            WorthQueryExternalPrincipalIdentityBinding::encode(principal.external_identity())
+                .map_err(|_| {
+                    resolution_denial(
+                        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+                        principal.binding(),
+                    )
+                })?;
         let handle = graph.integration_handle();
         handle.with_runtime_mut(|relational| {
             handle

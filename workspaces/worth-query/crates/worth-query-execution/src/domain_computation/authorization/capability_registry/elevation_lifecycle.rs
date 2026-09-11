@@ -90,7 +90,7 @@ impl WorthQueryInstalledElevationLifecycleRegistry {
         Ok(())
     }
 
-    pub(super) fn operation<Operation>(
+    pub(super) fn operation<Schema, Operation>(
         &self,
         operation: &str,
         input_type: &str,
@@ -103,7 +103,7 @@ impl WorthQueryInstalledElevationLifecycleRegistry {
         (),
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
     {
         let Some(inputs) = self.operations.get(operation) else {
             return Ok(None);

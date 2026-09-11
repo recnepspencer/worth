@@ -108,6 +108,7 @@ pub(super) fn field_member(field: &str) -> ApplicationSchemaMember {
                 .as_str()
                 .to_string(),
         unit: None,
+        frame: None,
         writable: false,
         equality_queryable: true,
     }
@@ -125,6 +126,7 @@ pub(super) fn resource_field_member(field: &str) -> ApplicationSchemaMember {
                 .as_str()
                 .to_string(),
         unit: None,
+        frame: None,
         writable: false,
         equality_queryable: true,
     }
@@ -135,5 +137,6 @@ pub(super) fn relation_member(relation: &str, from: &str, to: &str) -> Applicati
         relation: relation.to_string(),
         from: from.to_string(),
         to: to.to_string(),
+        integrity: crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
     }
 }

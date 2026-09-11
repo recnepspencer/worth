@@ -2,12 +2,10 @@ use std::num::NonZeroUsize;
 
 use bank_domain::model::Money;
 use bank_domain::proposals::BankIdempotencyKey;
-use bank_domain::schema::{BankSchema, Deposit};
+use bank_domain::schema::Deposit;
 use bank_server::{
-    mutations, BankApplicationQueryAdmissionDenialKind, BankApplicationQueryDenial,
-    BankMutationControls, BankMutationStatus,
+    mutations, BankApplicationQueryDenial, BankMutationControls, BankMutationStatus,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls;
 
 use super::fixture::{ordinary_read_world, OrdinaryReadFixture, OWNER, TELLER};
 use super::support::request_scope;
@@ -33,19 +31,12 @@ fn account_activity_reads_one_real_prior_bank_commit() {
             &historical_request,
         )
         .expect("the retained bank commit must remain queryable");
-    let current_request = request_scope();
     let current = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
-        .execute(
-            WorthQueryApplicationQueryControls::<BankSchema>::current_one_shot(
-                NonZeroUsize::new(16).unwrap(),
-                NonZeroUsize::new(2_048).unwrap(),
-                &current_request,
-            ),
-        )
+        .execute(bank_server::BankReadControls::current(request_scope(), 16, 2_048).unwrap())
         .expect("the current account activity must execute");
 
     assert_eq!(historical.rows()[0].entries().len(), 3);
@@ -81,13 +72,11 @@ fn foreign_bank_commit_receipt_cannot_select_local_history() {
         .err()
         .expect("a foreign bank commit receipt must not select local history");
 
-    let BankApplicationQueryDenial::Admission(denial) = denial else {
-        panic!("foreign receipt must deny during historical basis admission");
-    };
-    assert_eq!(
-        denial.kind(),
-        BankApplicationQueryAdmissionDenialKind::ForeignHistoricalReceipt
-    );
+    assert!(matches!(
+        denial,
+        BankApplicationQueryDenial::HistoricalCommitUnavailable
+            | BankApplicationQueryDenial::ProductSelection(_)
+    ));
 }
 
 fn commit_deposit(

@@ -37,8 +37,10 @@ fn forged_operation_identity_is_not_admitted_as_authored_capability_meaning() {
 
 #[test]
 fn noncanonical_accepted_values_are_preserved_then_denied() {
-    let canonical =
-        ApplicationCapabilityAcceptedValues::one_of(field::<Field>("Field"), [1_u64, 2_u64]);
+    let canonical = ApplicationCapabilityAcceptedValues::one_of(
+        field::<Field>("Field"),
+        [encoded(1_u64), encoded(2_u64)],
+    );
     let mut parts = canonical.parts();
     parts.values.reverse();
     let requirement = ApplicationCapabilityAcceptedValues::from_untrusted_parts(
@@ -154,4 +156,12 @@ fn composition_with_disclosure(
             disclosure,
         ),
     )
+}
+
+fn encoded(
+    value: u64,
+) -> crate::application_schema::ApplicationEncodedScalarValue<
+    crate::application_schema::U64ApplicationValueBinding,
+> {
+    crate::application_schema::ApplicationEncodedScalarValue::try_new(value).unwrap()
 }

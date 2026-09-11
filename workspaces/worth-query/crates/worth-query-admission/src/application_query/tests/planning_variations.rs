@@ -145,7 +145,9 @@ fn each_planning_dimension_changes_only_its_owned_evidence() {
     let query = installed_query();
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let derive = |variation| {

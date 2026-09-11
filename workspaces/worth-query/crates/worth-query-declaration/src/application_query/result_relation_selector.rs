@@ -161,7 +161,7 @@ where
 
     pub fn query_type(&self) -> &'static str
     where
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
     {
         Query::QUERY_TYPE_NAME
     }
@@ -179,7 +179,7 @@ where
 
     pub fn slot_key(&self) -> ApplicationQueryResultSlotKey
     where
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         ApplicationQueryResultSlotKey::relation(

@@ -7,7 +7,9 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInt
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
     application_query::{ApplicationQueryLiveCauseBinding, ApplicationQueryParameterSet},
-    application_schema::{ApplicationSchema, TypedApplicationValue},
+    application_schema::{
+        ApplicationScalarValueBinding, ApplicationSchema, ApplicationStructuredValueBinding,
+    },
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_runtime_bridge::facade::BridgeExecutionBasisTerminalDisposition;
@@ -75,7 +77,9 @@ pub struct WorthQueryApplicationLiveLease<
     basis_release: Option<super::super::WorthQueryApplicationBasisReleaseReceipt>,
     read_completion:
         Option<crate::domain_computation::provider_session::WorthQueryGraphReadCompletion>,
-    queue: WorthQueryLiveCauseQueue<Binding::Payload>,
+    queue: WorthQueryLiveCauseQueue<
+        <Binding::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+    >,
     _target: PhantomData<fn() -> (Target, Binding)>,
     _thread_affinity: PhantomData<Rc<()>>,
 }
@@ -150,7 +154,8 @@ where
                 Binding::effect(),
                 self.controls.buffer_capacity(),
                 |payload| {
-                    Binding::scope_identity(payload).into_foundational_value() == *expected_scope
+                    Binding::ScopeIdentityBinding::encode(&Binding::scope_identity(payload))
+                        .is_ok_and(|identity| identity == *expected_scope)
                 },
             )
         };
@@ -185,7 +190,11 @@ where
                 outcome => outcome,
             };
         };
-        let target_identity = Binding::target_identity(payload).into_foundational_value();
+        let target_identity =
+            match Binding::TargetIdentityBinding::encode(&Binding::target_identity(payload)) {
+                Ok(identity) => identity,
+                Err(_) => return WorthQueryApplicationLiveOutcome::Unavailable,
+            };
         self.project_front(
             publication.clone(),
             product.retained_clone(),

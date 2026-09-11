@@ -1,44 +1,61 @@
 use super::*;
 
+worth_query_structured_value_binding!(
+    HostActivityParametersBinding for ActivityQueryParameters {
+        identity: "ActivityQueryParameters"
+    }
+);
+worth_query_structured_value_binding!(
+    HostActivityResultBinding for ActivityQueryResult {
+        identity: "ActivityQueryResult"
+    }
+);
+
 worth_query_application_query!(
-    HostAuthoredQuery in QueryTestSchema,
+    HostAuthoredQuery for QueryTestSchema,
     identity "worth.query.test.installation.host-query.v1",
-    parameters ActivityQueryParameters => "ActivityQueryParameters",
-    result ActivityQueryResult => "ActivityQueryResult",
+    parameters HostActivityParametersBinding,
+    result HostActivityResultBinding,
     scope Account => "Account",
     name "account_activity"
 );
 struct HostParameters;
+worth_query_structured_value_binding!(
+    HostParametersBinding for HostParameters { identity: "HostParameters" }
+);
 worth_query_application_query!(
-    ChangedParametersQuery in QueryTestSchema,
+    ChangedParametersQuery for QueryTestSchema,
     identity "ActivityQuery",
-    parameters HostParameters => "HostParameters",
-    result ActivityQueryResult => "ActivityQueryResult",
+    parameters HostParametersBinding,
+    result HostActivityResultBinding,
     scope Account => "Account",
     name "account_activity"
 );
 struct HostResult;
+worth_query_structured_value_binding!(
+    HostResultBinding for HostResult { identity: "HostResult" }
+);
 worth_query_application_query!(
-    ChangedResultQuery in QueryTestSchema,
+    ChangedResultQuery for QueryTestSchema,
     identity "ActivityQuery",
-    parameters ActivityQueryParameters => "ActivityQueryParameters",
-    result HostResult => "HostResult",
+    parameters HostActivityParametersBinding,
+    result HostResultBinding,
     scope Account => "Account",
     name "account_activity"
 );
 worth_query_application_query!(
-    ChangedScopeQuery in QueryTestSchema,
+    ChangedScopeQuery for QueryTestSchema,
     identity "ActivityQuery",
-    parameters ActivityQueryParameters => "ActivityQueryParameters",
-    result ActivityQueryResult => "ActivityQueryResult",
+    parameters HostActivityParametersBinding,
+    result HostActivityResultBinding,
     scope Activity => "Activity",
     name "account_activity"
 );
 worth_query_application_query!(
-    MissingQuery in QueryTestSchema,
+    MissingQuery for QueryTestSchema,
     identity "ActivityQuery",
-    parameters ActivityQueryParameters => "ActivityQueryParameters",
-    result ActivityQueryResult => "ActivityQueryResult",
+    parameters HostActivityParametersBinding,
+    result HostActivityResultBinding,
     scope Account => "Account",
     name "host_query"
 );

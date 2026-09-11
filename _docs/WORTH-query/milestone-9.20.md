@@ -73,7 +73,15 @@ worth-query-certification/src/reference_domains/
     chip_netlist/
     geometry/
     bank_compliance/
+worth-query-certification/fixtures/
+    consumer_values/  # reuse/extend 9.17.4 and 9.19 value definitions
+    consumer_entry/   # reuse/extend their installed contributions
 ```
+
+Geometry and Bank reference-domain modules own correlated-execution court
+orchestration, not duplicate schemas or bindings. Extend the preceding fixture
+crates and real Bank entry; share compiled fixtures and the owning integration
+target across cases. Chip/netlist adds its distinct domain meaning explicitly.
 
 ## Phase Plan
 

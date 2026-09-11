@@ -4,6 +4,7 @@ pub enum WorthQueryEntityResolutionDenialKind {
     DeadlineExceeded,
     PrimaryGraphNotInstalled,
     FieldNotInstalled,
+    ValueEncodingRejected,
     EqualityIndexUnavailable,
     UnknownEntity,
     AmbiguousEntity,

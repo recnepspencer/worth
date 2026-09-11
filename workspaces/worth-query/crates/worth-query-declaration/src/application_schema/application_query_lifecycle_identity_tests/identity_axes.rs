@@ -9,30 +9,32 @@ mod original_module {
     pub(super) struct LiveBinding;
     worth_query_portable_type!(Result => "worth.query.test.module-move.result.v1");
     worth_query_portable_type!(LiveBinding => "worth.query.test.module-move.live-binding.v1");
+    crate::worth_query_structured_value_binding!(pub(super) QueryParametersBinding for Parameters { identity: "worth.query.test.module-move.parameters.v1" });
+    crate::worth_query_structured_value_binding!(pub(super) QueryResultBinding for Result { identity: "worth.query.test.module-move.result.v1" });
     crate::worth_query_application_query!(
-        pub(super) Query in Schema,
+        pub(super) Query for Schema,
         identity "worth.query.test.module-move.query.v1",
-        parameters Parameters => "worth.query.test.module-move.parameters.v1",
-        result Result => "worth.query.test.module-move.result.v1",
+        parameters QueryParametersBinding,
+        result QueryResultBinding,
         scope Scope => "worth.query.test.module-move.scope.v1",
         name "module_move_query"
     );
 
     impl ApplicationQueryLiveCauseBinding<Schema, super::super::Query, Root, Child> for LiveBinding {
         type Effect = Effect;
-        type Payload = Cause;
-        type ScopeIdentity = u64;
-        type TargetIdentity = u64;
+        type PayloadBinding = super::super::CauseBinding;
+        type ScopeIdentityBinding = crate::application_schema::U64ApplicationValueBinding;
+        type TargetIdentityBinding = crate::application_schema::U64ApplicationValueBinding;
 
-        fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Self::Payload> {
+        fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Cause> {
             ApplicationEffectRef::from_declaration()
         }
 
-        fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity {
+        fn scope_identity(payload: &Cause) -> u64 {
             payload.root
         }
 
-        fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity {
+        fn target_identity(payload: &Cause) -> u64 {
             payload.child
         }
     }
@@ -47,30 +49,32 @@ mod relocated_module {
     pub(super) struct LiveBinding;
     worth_query_portable_type!(Result => "worth.query.test.module-move.result.v1");
     worth_query_portable_type!(LiveBinding => "worth.query.test.module-move.live-binding.v1");
+    crate::worth_query_structured_value_binding!(pub(super) QueryParametersBinding for Parameters { identity: "worth.query.test.module-move.parameters.v1" });
+    crate::worth_query_structured_value_binding!(pub(super) QueryResultBinding for Result { identity: "worth.query.test.module-move.result.v1" });
     crate::worth_query_application_query!(
-        pub(super) Query in Schema,
+        pub(super) Query for Schema,
         identity "worth.query.test.module-move.query.v1",
-        parameters Parameters => "worth.query.test.module-move.parameters.v1",
-        result Result => "worth.query.test.module-move.result.v1",
+        parameters QueryParametersBinding,
+        result QueryResultBinding,
         scope Scope => "worth.query.test.module-move.scope.v1",
         name "module_move_query"
     );
 
     impl ApplicationQueryLiveCauseBinding<Schema, super::super::Query, Root, Child> for LiveBinding {
         type Effect = Effect;
-        type Payload = Cause;
-        type ScopeIdentity = u64;
-        type TargetIdentity = u64;
+        type PayloadBinding = super::super::CauseBinding;
+        type ScopeIdentityBinding = crate::application_schema::U64ApplicationValueBinding;
+        type TargetIdentityBinding = crate::application_schema::U64ApplicationValueBinding;
 
-        fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Self::Payload> {
+        fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Cause> {
             ApplicationEffectRef::from_declaration()
         }
 
-        fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity {
+        fn scope_identity(payload: &Cause) -> u64 {
             payload.root
         }
 
-        fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity {
+        fn target_identity(payload: &Cause) -> u64 {
             payload.child
         }
     }

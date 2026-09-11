@@ -5,6 +5,9 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryLaneEligibility, ApplicationQueryResultShapeBuilder,
     TypedApplicationQueryResultShape,
 };
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, ApplicationStructuredValueBinding,
+};
 use worth_query_declaration::worth_query_application_query;
 
 use super::application_queries::{
@@ -12,30 +15,40 @@ use super::application_queries::{
     AccountSummaryResult,
 };
 use super::{
-    Account, AccountStatus, CapabilityDisclosure, IdentityExecutionSchema, TouchAccountCapability,
+    Account, AccountStatus, CapabilityDisclosure, CapabilityDisclosureBinding,
+    IdentityExecutionSchema, TouchAccountCapability,
 };
 
+worth_query_declaration::worth_query_structured_value_binding!(pub IncompleteDisclosureQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub IncompleteDisclosureQueryResultBinding for AccountSummaryResult { identity: "AccountSummaryResult" });
 worth_query_application_query!(
-    pub IncompleteDisclosureQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result AccountSummaryResult,
-    scope Account,
+    pub IncompleteDisclosureQuery for IdentityExecutionSchema,
+    identity "IncompleteDisclosureQuery",
+    parameters IncompleteDisclosureQueryParametersBinding,
+    result IncompleteDisclosureQueryResultBinding,
+    scope Account => "Account",
     name "incomplete_disclosure"
 );
 
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenInfluenceQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenInfluenceQueryResultBinding for AccountSummaryResult { identity: "AccountSummaryResult" });
 worth_query_application_query!(
-    pub ForbiddenInfluenceQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result AccountSummaryResult,
-    scope Account,
+    pub ForbiddenInfluenceQuery for IdentityExecutionSchema,
+    identity "ForbiddenInfluenceQuery",
+    parameters ForbiddenInfluenceQueryParametersBinding,
+    result ForbiddenInfluenceQueryResultBinding,
+    scope Account => "Account",
     name "forbidden_influence"
 );
 
+worth_query_declaration::worth_query_structured_value_binding!(pub ResultRulePredicateQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub ResultRulePredicateQueryResultBinding for AccountSummaryResult { identity: "AccountSummaryResult" });
 worth_query_application_query!(
-    pub ResultRulePredicateQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result AccountSummaryResult,
-    scope Account,
+    pub ResultRulePredicateQuery for IdentityExecutionSchema,
+    identity "ResultRulePredicateQuery",
+    parameters ResultRulePredicateQueryParametersBinding,
+    result ResultRulePredicateQueryResultBinding,
+    scope Account => "Account",
     name "result_rule_predicate"
 );
 
@@ -53,7 +66,7 @@ pub(super) fn incomplete_disclosure_definition() -> ApplicationQueryDefinition<
     )
     .disclose_field_by(
         status_result_field::<IncompleteDisclosureQuery>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     );
     definition(
@@ -78,17 +91,17 @@ pub(super) fn forbidden_influence_definition() -> ApplicationQueryDefinition<
     )
     .use_field_by(
         AccountStatus::reference(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
     .disclose_field_by(
         status_result_field::<ForbiddenInfluenceQuery>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
     .disclose_field_by(
         label_result_field::<ForbiddenInfluenceQuery>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     );
     definition(
@@ -112,12 +125,12 @@ pub(super) fn result_rule_predicate_definition() -> ApplicationQueryDefinition<
     )
     .disclose_field_by(
         status_result_field::<ResultRulePredicateQuery>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     )
     .disclose_field_by(
         label_result_field::<ResultRulePredicateQuery>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     );
     definition(
@@ -129,15 +142,25 @@ pub(super) fn result_rule_predicate_definition() -> ApplicationQueryDefinition<
 }
 
 fn shape<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
->(
-) -> TypedApplicationQueryResultShape<IdentityExecutionSchema, Query, Account, AccountSummaryResult>
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        IdentityExecutionSchema,
+    >,
+>() -> TypedApplicationQueryResultShape<
+    IdentityExecutionSchema,
+    Query,
+    Account,
+    AccountSummaryResult,
+    Query::ResultBinding,
+>
+where
+    Query::ResultBinding: ApplicationStructuredValueBinding<Value = AccountSummaryResult>,
 {
     ApplicationQueryResultShapeBuilder::<
         IdentityExecutionSchema,
         Query,
         Account,
         AccountSummaryResult,
+        Query::ResultBinding,
     >::new(Account::reference())
     .field(status_result_field::<Query>())
     .field(label_result_field::<Query>())
@@ -145,7 +168,9 @@ fn shape<
 }
 
 fn definition<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        IdentityExecutionSchema,
+    >,
 >(
     reference: worth_query_declaration::facade::application_query::ApplicationQueryReference<
         IdentityExecutionSchema,
@@ -159,6 +184,7 @@ fn definition<
         Query,
         Account,
         AccountSummaryResult,
+        Query::ResultBinding,
     >,
     disclosure: ApplicationQueryDisclosureContract,
     predicate: bool,
@@ -168,7 +194,10 @@ fn definition<
     AccountSummaryParameters,
     AccountSummaryResult,
     Account,
-> {
+>
+where
+    Query::ResultBinding: ApplicationStructuredValueBinding<Value = AccountSummaryResult>,
+{
     let builder = ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Account::reference())
         .scope(Account::reference())
@@ -188,4 +217,10 @@ fn definition<
     } else {
         builder.build().unwrap()
     }
+}
+
+fn encoded_disclosure(
+    value: CapabilityDisclosure,
+) -> ApplicationEncodedScalarValue<CapabilityDisclosureBinding> {
+    ApplicationEncodedScalarValue::try_new(value).expect("fixture disclosure must encode")
 }

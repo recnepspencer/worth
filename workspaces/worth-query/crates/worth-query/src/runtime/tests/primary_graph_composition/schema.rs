@@ -4,7 +4,8 @@ use crate::domain_installation::{
     WorthQueryDomainIdentityNamespace, WorthQueryDomainPackage, WorthQueryDomainSemanticVersion,
 };
 use worth_query_declaration::facade::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
+    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 use worth_query_declaration::{
     worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field,
@@ -51,34 +52,33 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub(super) ExternalMapping in PrimaryGraphCompositionSchema);
-worth_query_entity!(pub(super) Principal in PrimaryGraphCompositionSchema);
-worth_query_aspect!(pub(super) ExternalIdentity in PrimaryGraphCompositionSchema,
+worth_query_entity!(pub(super) ExternalMapping for PrimaryGraphCompositionSchema);
+worth_query_entity!(pub(super) Principal for PrimaryGraphCompositionSchema);
+worth_query_aspect!(pub(super) ExternalIdentity for PrimaryGraphCompositionSchema,
     ExternalMapping; identity = AspectIdentity(0x91611054), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub(super) ExternalIdentityField in PrimaryGraphCompositionSchema,
+    pub(super) ExternalIdentityField for PrimaryGraphCompositionSchema,
     ExternalMapping,
     ExternalIdentity:
-    WorthQueryExternalPrincipalIdentity, read_only, equality
+    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
 );
-worth_query_aspect!(pub(super) PrincipalIdentity in PrimaryGraphCompositionSchema,
+worth_query_aspect!(pub(super) PrincipalIdentity for PrimaryGraphCompositionSchema,
     Principal; identity = AspectIdentity(0x91611055), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub(super) PrincipalIdentityField in PrimaryGraphCompositionSchema,
+    pub(super) PrincipalIdentityField for PrimaryGraphCompositionSchema,
     Principal,
     PrincipalIdentity:
-    u64, read_only, equality
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub(super) MappingStatusField in PrimaryGraphCompositionSchema,
+    pub(super) MappingStatusField for PrimaryGraphCompositionSchema,
     ExternalMapping,
     ExternalIdentity:
-    WorthQueryPrincipalMappingStatus, read_write, equality
+    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
 );
 worth_query_relation!(
     pub(super) MappingTarget in PrimaryGraphCompositionSchema,
-    ExternalMapping => Principal
-);
+    ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(
     pub(super) IdentityBinding in PrimaryGraphCompositionSchema,
     mapping ExternalMapping {

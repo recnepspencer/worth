@@ -1,7 +1,10 @@
-use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
+use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use std::marker::PhantomData;
 
-use crate::application_schema::{ApplicationEntityRef, ApplicationOperationRef};
+use crate::application_schema::{
+    ApplicationEntityRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
+    ApplicationStructuredValueBinding,
+};
 
 use super::{ApplicationCapabilityContract, ErasedApplicationCapabilityContract, Missing, Present};
 use crate::application_capability::{
@@ -23,7 +26,13 @@ use crate::application_capability::{
 /// };
 /// struct Schema;
 /// struct Capability;
-/// worth_query_declaration::worth_query_operation!(Operation(()) in Schema);
+/// worth_query_declaration::worth_query_structured_value_binding!(
+///     OperationInputBinding for () { identity: "worth.example.operation-input.v1" }
+/// );
+/// worth_query_declaration::worth_query_operation!(
+///     Operation for Schema,
+///     input OperationInputBinding
+/// );
 /// struct Grant;
 ///
 /// let builder = ApplicationCapabilityContractBuilder::<
@@ -316,7 +325,8 @@ impl<Schema, Capability, Operation, Input>
 {
     pub fn build(self) -> ApplicationCapabilityContract<Schema, Capability, Operation, Input>
     where
-        Input: WorthQueryPortableType,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
     {
         ApplicationCapabilityContract {
             erased: ErasedApplicationCapabilityContract {
@@ -324,7 +334,7 @@ impl<Schema, Capability, Operation, Input>
                 capability_type: self.capability_type,
                 operation: self.operation.to_string(),
                 operation_type: self.operation_type,
-                input_type: Input::PORTABLE_TYPE_IDENTITY,
+                input_type: Operation::InputBinding::IDENTITY,
                 grant_entity: self.grant_entity.to_string(),
                 target: self.target.0,
                 constraints: self.constraints.0,

@@ -4,8 +4,9 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, EqualityPredicate, TypedApplicationIdentityValue,
-    TypedApplicationValue, WorthQueryInstalledPrincipalBinding, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationIdentityScalarValueBinding,
+    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, EqualityPredicate,
+    WorthQueryInstalledPrincipalBinding, WritePosture,
 };
 
 use crate::domain_computation::primary_graph::{
@@ -101,6 +102,7 @@ pub struct WorthQueryTemporalReconstructionAccess<
     Mapping,
     Principal,
     PrincipalIdentity,
+    PrincipalIdentityBinding,
     Scope,
     ScopeAspect,
     ScopeField,
@@ -110,8 +112,14 @@ pub struct WorthQueryTemporalReconstructionAccess<
     PrincipalSource,
     QueryAuthorization = super::WorthQueryPublicTemporalQueryAuthorization,
 > {
-    pub(super) principal_binding:
-        WorthQueryInstalledPrincipalBinding<Schema, Binding, Mapping, Principal, PrincipalIdentity>,
+    pub(super) principal_binding: WorthQueryInstalledPrincipalBinding<
+        Schema,
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >,
     pub(super) principal_source: Arc<PrincipalSource>,
     pub(super) scope_field: ApplicationFieldRef<
         Schema,
@@ -133,6 +141,7 @@ impl<
         Mapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -147,6 +156,7 @@ impl<
         Mapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -156,8 +166,10 @@ impl<
         PrincipalSource,
     >
 where
-    PrincipalIdentity: TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue,
+    PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+    PrincipalIdentity: 'static,
+    ScopeField: DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField::Binding: ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
@@ -169,6 +181,7 @@ where
             Mapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
         >,
         principal_source: PrincipalSource,
         scope_field: ApplicationFieldRef<
@@ -206,6 +219,7 @@ impl<
         Mapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -221,6 +235,7 @@ impl<
         Mapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -231,8 +246,10 @@ impl<
         QueryAuthorization,
     >
 where
-    PrincipalIdentity: TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue,
+    PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+    PrincipalIdentity: 'static,
+    ScopeField: DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField::Binding: ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
@@ -245,6 +262,7 @@ where
             Mapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
         >,
         principal_source: PrincipalSource,
         scope_field: ApplicationFieldRef<

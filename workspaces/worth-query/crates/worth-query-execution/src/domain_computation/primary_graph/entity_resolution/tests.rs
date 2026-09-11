@@ -1,4 +1,6 @@
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding,
+};
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 
 use super::super::tests::fixture::{
@@ -115,7 +117,7 @@ fn installed_context_derives_binding_layout_and_index_from_its_graph() {
                 "Account",
                 "AccountPolicy",
                 "AccountStatus",
-                "open".to_owned().into_foundational_value(),
+                StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
             )
             .unwrap();
         let typed = resolved.into_application_identity::<IdentityExecutionSchema, super::super::tests::fixture::Account>();

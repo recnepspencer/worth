@@ -12,9 +12,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    ApplicationSchema, ApplicationSchemaBindingIdentity, TypedApplicationReadableValue,
-    WritePosture,
+    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue, WritePosture,
 };
 use worth_relational::facade::identity::{EntityId, KindId, RelationId, VersionId};
 use worth_relational::facade::storage::RecordLifecycleState;
@@ -213,7 +213,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<Value>
     where
-        Value: TypedApplicationReadableValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -236,7 +237,7 @@ where
                     &locator,
                 )
             })
-            .and_then(|value| Value::from_foundational_value(&value))
+            .and_then(|value| Field::Binding::decode(&value).ok())
     }
 
     pub fn relations<Relation, From, To>(

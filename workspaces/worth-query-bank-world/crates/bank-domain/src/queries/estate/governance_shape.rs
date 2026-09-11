@@ -12,14 +12,20 @@ use crate::{
 
 use super::{governance::EstateGovernanceQuery, governance_fields::*, governance_relations::*};
 
-type Shape<Entity> =
-    ApplicationQueryResultShapeBuilder<BankSchema, EstateGovernanceQuery, Entity, ()>;
+type Shape<Entity> = ApplicationQueryResultShapeBuilder<
+    BankSchema,
+    EstateGovernanceQuery,
+    Entity,
+    (),
+    crate::queries::UnitQueryResultBinding,
+>;
 
 pub(super) fn governance_shape() -> TypedApplicationQueryResultShape<
     BankSchema,
     EstateGovernanceQuery,
     EstateCase,
     EstateGovernanceContext,
+    super::governance::EstateGovernanceQueryResultBinding,
 > {
     let assignment = assignment_shape();
     let capability = capability_shape();
@@ -121,7 +127,7 @@ fn parent_shape() -> Shape<CapabilityGrant> {
         .field(capability_parent_identity())
 }
 
-fn principal_shape<Slot: 'static>(
+fn principal_shape<Slot: worth_query_decl::facade::portable_identity::WorthQueryPortableType>(
     selector: worth_query_decl::facade::application_query::ApplicationQueryResultFieldRef<
         EstateGovernanceQuery,
         Slot,

@@ -5,7 +5,7 @@ use worth_query_host::facade::{
             ApplicationCapabilityFieldDimension, ApplicationCapabilityRelationDimension,
             ApplicationCapabilityRequest,
         },
-        application_schema::TypedApplicationValue,
+        application_schema::ApplicationScalarValueBinding,
     },
     domain::WorthQueryInstallationRuntimeIdentity,
 };
@@ -19,10 +19,13 @@ macro_rules! assert_transition_target {
             .unwrap();
         let contract = capability.contract();
         let target = contract.target();
-        assert_eq!(target.action().value(), &$action.into_foundational_value());
+        assert_eq!(
+            target.action().value(),
+            &EstateCapabilityOperationBinding::encode(&$action).unwrap()
+        );
         assert_eq!(
             target.purpose().value(),
-            &$purpose.into_foundational_value()
+            &EstateCapabilityPurposeBinding::encode(&$purpose).unwrap()
         );
         assert!(matches!(
             target.relation(),
@@ -93,6 +96,6 @@ fn revoke_command_projects_the_exact_emergency_access_subject() {
     assert_eq!(subject.selector().entity(), "EmergencyAccess");
     assert_eq!(
         subject.selector().value(),
-        &access.into_foundational_value()
+        &EmergencyAccessIdBinding::encode(&access).unwrap()
     );
 }

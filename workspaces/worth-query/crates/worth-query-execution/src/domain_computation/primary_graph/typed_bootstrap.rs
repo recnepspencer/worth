@@ -4,7 +4,8 @@ use std::marker::PhantomData;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    ApplicationSchema, EqualityPosture, TypedApplicationValue, WritePosture,
+    ApplicationScalarValueBinding, ApplicationSchema, DeclaredApplicationFieldValue,
+    EqualityPosture, WritePosture,
 };
 use worth_relational::facade::identity::KindId;
 
@@ -16,7 +17,12 @@ use super::{
 pub struct WorthQueryApplicationEntitySeed<Schema, Entity> {
     entity: &'static str,
     key: WorthQueryApplicationEntityKey<Schema, Entity>,
-    fields: Vec<(&'static str, &'static str, AspectValue)>,
+    fields: Vec<
+        Result<
+            (&'static str, &'static str, AspectValue),
+            worth_query_installation::facade::ApplicationValueEncodeDenial,
+        >,
+    >,
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
@@ -37,16 +43,15 @@ impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
         value: Value,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationScalarValueBinding<Value = Value>,
         Write: WritePosture,
         Equality: EqualityPosture,
         Unit: ApplicationFieldUnit,
     {
-        self.fields.push((
-            field.aspect(),
-            field.field(),
-            value.into_foundational_value(),
-        ));
+        self.fields.push(
+            Field::Binding::encode(&value).map(|value| (field.aspect(), field.field(), value)),
+        );
         self
     }
 }
@@ -111,7 +116,9 @@ where
         let fields = seed
             .fields
             .into_iter()
-            .map(|(aspect, field, value)| {
+            .map(|encoded| {
+                let (aspect, field, value) = encoded
+                    .map_err(|_| invalid_seed("typed bootstrap field value failed validation"))?;
                 self.graph
                     .layout
                     .field_locator(seed.entity, aspect, field)

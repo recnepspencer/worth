@@ -35,11 +35,14 @@ pub const fn pending_payments() -> PendingPaymentsRequest {
     PendingPaymentsRequest
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub PendingPaymentsQueryParametersBinding for PendingPaymentsQueryParameters { identity: "PendingPaymentsQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub PendingPaymentsQueryResultBinding for PaymentSummary { identity: "PaymentSummary" });
 worth_query_application_query!(
-    pub PendingPaymentsQuery in BankSchema,
-    parameters PendingPaymentsQueryParameters,
-    result PaymentSummary,
-    scope Principal,
+    pub PendingPaymentsQuery for BankSchema,
+    identity "PendingPaymentsQuery",
+    parameters PendingPaymentsQueryParametersBinding,
+    result PendingPaymentsQueryResultBinding,
+    scope Principal => "Principal",
     name "pending_payments"
 );
 
@@ -54,7 +57,14 @@ pub fn pending_payments_definition() -> ApplicationQueryDefinition<
     ApplicationQueryDefinitionBuilder::declare(PendingPaymentsQuery::reference())
         .root(PaymentIntent::reference())
         .scope(Principal::reference())
-        .result_shape(payment_summary_shape().build())
+        .result_shape(
+            payment_summary_shape::<
+                PendingPaymentsQuery,
+                PaymentSummary,
+                PendingPaymentsQueryResultBinding,
+            >()
+            .build(),
+        )
         .cardinality(ApplicationQueryCardinality::Many)
         .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(3, 9, 8))
         .disclosure(ApplicationQueryDisclosureContract::public())
@@ -64,12 +74,15 @@ pub fn pending_payments_definition() -> ApplicationQueryDefinition<
         .root_path(
             ApplicationQueryRootPath::from(Principal::reference())
                 .forward(AccountAuthorizedUser::reference())
-                .where_equal(AuthorizationRole::reference(), CustomerRole::Approver)
+                .where_equal(
+                    AuthorizationRole::reference(),
+                    crate::schema::encoded_bank_value(CustomerRole::Approver),
+                )
                 .forward(AuthorizationAccount::reference())
                 .reverse(PaymentSource::reference())
                 .where_equal(
                     PaymentStatusField::reference(),
-                    PaymentStatus::ApprovalRequired,
+                    crate::schema::encoded_bank_value(PaymentStatus::ApprovalRequired),
                 ),
         )
         .order_by(identity, ApplicationQueryOrderingDirection::Ascending)

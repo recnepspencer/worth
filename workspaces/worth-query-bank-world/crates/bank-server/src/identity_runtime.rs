@@ -2,18 +2,22 @@ use std::collections::BTreeSet;
 
 #[path = "identity_runtime/installation.rs"]
 mod installation;
-mod product_world_resources;
+pub(crate) mod product_world_resources;
 
 use bank_domain::estate::BankEstateWorld;
 use bank_domain::model::BankPrincipalId;
 use bank_domain::proposals::BankSnapshot;
-use bank_domain::schema::{BankPrincipalBinding, BankSchema, ExternalPrincipalMapping, Principal};
+use bank_domain::schema::{
+    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping, Principal,
+};
 use worth_query_host::facade::admission::authenticated_principal::{
     admit_authentication_adapter, WorthQueryAuthenticationAdapter,
     WorthQueryAuthenticationAdapterAdmission, WorthQueryAuthenticationAudience,
     WorthQueryAuthenticationMethod, WorthQueryRequestScope,
 };
-use worth_query_host::facade::declaration::application_schema::ApplicationOperationRef;
+use worth_query_host::facade::declaration::application_schema::{
+    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationStructuredValueBinding,
+};
 use worth_query_host::facade::domain::{
     WorthQueryInstalledAftermathContract, WorthQueryInstalledPrincipalBinding,
 };
@@ -54,6 +58,7 @@ pub struct BankIdentityRuntime {
         ExternalPrincipalMapping,
         Principal,
         BankPrincipalId,
+        BankPrincipalIdBinding,
     >,
     invariant_projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
 }
@@ -128,8 +133,10 @@ impl BankIdentityRuntime {
             .authenticate(credential, scope)
             .await
             .map_err(BankPrincipalAdmissionError::Authentication)?;
-        let query = self
-            .runtime
+        let selected = self
+            .select_current_product()
+            .map_err(BankPrincipalAdmissionError::ProductSelection)?;
+        let query = selected
             .resolve_authenticated_principal(
                 &self.binding,
                 external,
@@ -146,7 +153,8 @@ impl BankIdentityRuntime {
         principal: &BankAuthenticatedPrincipal,
         scope: &WorthQueryRequestScope,
     ) -> Result<(), BankPrincipalAdmissionError> {
-        self.runtime
+        self.select_current_product()
+            .map_err(BankPrincipalAdmissionError::ProductSelection)?
             .validate_authenticated_principal(principal.query(), scope)
             .map_err(BankPrincipalAdmissionError::Resolution)
     }
@@ -159,10 +167,7 @@ impl BankIdentityRuntime {
         &self,
         request: &WorthQueryRequestScope,
     ) -> Result<BankPreviewSession, BankApplicationQueryDenial> {
-        self.runtime
-            .open_application_preview_session(request)
-            .map(BankPreviewSession::from_query)
-            .map_err(BankApplicationQueryDenial::from_preview_session)
+        BankPreviewSession::open(&self.runtime, request)
     }
 
     pub(crate) const fn application_runtime(
@@ -176,7 +181,12 @@ impl BankIdentityRuntime {
     pub fn installed_operation_aftermath<Operation, Input>(
         &self,
         operation: ApplicationOperationRef<BankSchema, Operation, Input>,
-    ) -> WorthQueryInstalledAftermathContract {
+    ) -> WorthQueryInstalledAftermathContract
+    where
+        Operation: ApplicationOperationMarkerIdentity<BankSchema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
+    {
         self.application_runtime()
             .installed_schema()
             .installed_operation(operation)

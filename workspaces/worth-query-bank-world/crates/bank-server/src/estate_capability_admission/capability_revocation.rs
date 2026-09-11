@@ -108,13 +108,13 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
             &request_scope(),
         )
         .expect("governed target drift is a typed commit outcome");
-    assert_eq!(
+    assert!(matches!(
         target_drift,
         BankMutationCommitOutcome::Denied {
             kind: BankCommitDenialKind::IdempotencyIntentDrift,
             stage: BankCommitDenialStage::Idempotency,
         }
-    );
+    ));
 
     let after_commit = governance_readback(&fixture);
     assert_revoked_target_and_unchanged_alternate(&after_commit, &alternate_before);

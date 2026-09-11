@@ -5,11 +5,14 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
     ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
-use worth_query_declaration::{worth_query_application_query, worth_query_portable_type};
+use worth_query_declaration::{
+    worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
+};
 
 use super::{
     installed_schema, Account, AccountActivity, AccountId, Activity, ActivityKind,
-    ActivityQueryResult, ActivitySequence, ActivityStatus, QueryTestSchema,
+    ActivityQueryResult, ActivityQueryResultBinding, ActivitySequence, ActivityStatus,
+    QueryTestSchema,
 };
 
 pub(super) struct GroupedOneParameters;
@@ -29,19 +32,30 @@ worth_query_portable_type!(SecondStatusSlot => "worth.query.test.installation.sh
 worth_query_portable_type!(AccountIdSlot => "worth.query.test.installation.shape.account-id.v1");
 worth_query_portable_type!(FirstRelationSlot => "worth.query.test.installation.shape.first-relation.v1");
 worth_query_portable_type!(SecondRelationSlot => "worth.query.test.installation.shape.second-relation.v1");
+worth_query_structured_value_binding!(
+    pub(super) GroupedOneParametersBinding for GroupedOneParameters { identity: "GroupedOneParameters" }
+);
+worth_query_structured_value_binding!(
+    pub(super) GroupedTwoParametersBinding for GroupedTwoParameters { identity: "GroupedTwoParameters" }
+);
+worth_query_structured_value_binding!(
+    GroupedNestedResultBinding for () { identity: "worth.rust.unit" }
+);
 
 worth_query_application_query!(
-    pub(super) GroupedOneQuery in QueryTestSchema,
-    parameters GroupedOneParameters,
-    result ActivityQueryResult,
-    scope Account,
+    pub(super) GroupedOneQuery for QueryTestSchema,
+    identity "GroupedOneQuery",
+    parameters GroupedOneParametersBinding,
+    result ActivityQueryResultBinding,
+    scope Account => "Account",
     name "grouped_one"
 );
 worth_query_application_query!(
-    pub(super) GroupedTwoQuery in QueryTestSchema,
-    parameters GroupedTwoParameters,
-    result ActivityQueryResult,
-    scope Account,
+    pub(super) GroupedTwoQuery for QueryTestSchema,
+    identity "GroupedTwoQuery",
+    parameters GroupedTwoParametersBinding,
+    result ActivityQueryResultBinding,
+    scope Account => "Account",
     name "grouped_two"
 );
 
@@ -92,11 +106,18 @@ fn grouped_shape_definition<Query, Parameters>(
     split_after_first: bool,
 ) -> ApplicationQueryDefinition<QueryTestSchema, Query, Parameters, ActivityQueryResult, Account>
 where
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        QueryTestSchema,
+        ResultBinding = ActivityQueryResultBinding,
+    >,
 {
-    let first = ApplicationQueryResultShapeBuilder::<QueryTestSchema, Query, Activity, ()>::new(
-        Activity::reference(),
-    )
+    let first = ApplicationQueryResultShapeBuilder::<
+        QueryTestSchema,
+        Query,
+        Activity,
+        (),
+        GroupedNestedResultBinding,
+    >::new(Activity::reference())
     .field(ApplicationQueryResultFieldRef::<
         Query,
         FirstKindSlot,
@@ -125,9 +146,13 @@ where
             _,
         >::new("sequence", ActivitySequence::reference()))
     };
-    let second = ApplicationQueryResultShapeBuilder::<QueryTestSchema, Query, Activity, ()>::new(
-        Activity::reference(),
-    );
+    let second = ApplicationQueryResultShapeBuilder::<
+        QueryTestSchema,
+        Query,
+        Activity,
+        (),
+        GroupedNestedResultBinding,
+    >::new(Activity::reference());
     let second = if split_after_first {
         second
             .field(ApplicationQueryResultFieldRef::<
@@ -168,46 +193,52 @@ where
             _,
         >::new("status", ActivityStatus::reference()))
     };
-    let shape = ApplicationQueryResultShapeBuilder::new(Account::reference())
-        .field(ApplicationQueryResultFieldRef::<
+    let shape = ApplicationQueryResultShapeBuilder::<
+        QueryTestSchema,
+        Query,
+        Account,
+        ActivityQueryResult,
+        ActivityQueryResultBinding,
+    >::new(Account::reference())
+    .field(ApplicationQueryResultFieldRef::<
+        Query,
+        AccountIdSlot,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >::new("account_id", AccountId::reference()))
+    .relation(
+        ApplicationQueryResultRelationRef::<
             Query,
-            AccountIdSlot,
+            FirstRelationSlot,
             _,
             _,
             _,
             _,
+            ForwardResultTraversal,
+            ManyResults,
+        >::forward_many("first", AccountActivity::reference()),
+        first,
+    )
+    .relation(
+        ApplicationQueryResultRelationRef::<
+            Query,
+            SecondRelationSlot,
             _,
             _,
             _,
             _,
-        >::new("account_id", AccountId::reference()))
-        .relation(
-            ApplicationQueryResultRelationRef::<
-                Query,
-                FirstRelationSlot,
-                _,
-                _,
-                _,
-                _,
-                ForwardResultTraversal,
-                ManyResults,
-            >::forward_many("first", AccountActivity::reference()),
-            first,
-        )
-        .relation(
-            ApplicationQueryResultRelationRef::<
-                Query,
-                SecondRelationSlot,
-                _,
-                _,
-                _,
-                _,
-                ForwardResultTraversal,
-                ManyResults,
-            >::forward_many("second", AccountActivity::reference()),
-            second,
-        )
-        .build();
+            ForwardResultTraversal,
+            ManyResults,
+        >::forward_many("second", AccountActivity::reference()),
+        second,
+    )
+    .build();
     ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Account::reference())
         .scope(Account::reference())

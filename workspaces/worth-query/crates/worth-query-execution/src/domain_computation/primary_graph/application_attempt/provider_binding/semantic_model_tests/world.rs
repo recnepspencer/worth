@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectValue, FieldKey, InternedString,
 };
-use worth_query_declaration::facade::application_schema::ApplicationEffectPayload;
+use worth_query_declaration::facade::application_schema::ApplicationRetainedEffectBinding;
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, RelationId};
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_bind
     WorthQueryApplicationEmission, WorthQueryApplicationObservedFact,
     WorthQueryApplicationRealizedEffect,
 };
+use crate::domain_computation::primary_graph::tests::fixture::AccountActivityBinding;
 
 pub(super) struct MixedEffectWorld {
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
@@ -66,7 +67,8 @@ pub(super) fn mixed_effect_world() -> MixedEffectWorld {
     };
     let audit_payload = "sent".to_owned();
     let metric_payload = "counted".to_owned();
-    let retained_bytes = audit_payload.retained_bytes() + metric_payload.retained_bytes();
+    let retained_bytes = AccountActivityBinding::retained_bytes(&audit_payload)
+        + AccountActivityBinding::retained_bytes(&metric_payload);
     MixedEffectWorld {
         facts: observed.facts,
         effects: mixed_effects(&axes, &audit_payload, &metric_payload),
@@ -157,10 +159,9 @@ fn delete_entity(axes: &MixedEffectAxes) -> WorthQueryApplicationRealizedEffect 
 }
 
 fn emission(effect: &'static str, payload: &str) -> WorthQueryApplicationRealizedEffect {
-    WorthQueryApplicationRealizedEffect::Emit(WorthQueryApplicationEmission::new(
-        effect,
-        payload.to_owned(),
-    ))
+    WorthQueryApplicationRealizedEffect::Emit(WorthQueryApplicationEmission::new::<
+        AccountActivityBinding,
+    >(effect, payload.to_owned()))
 }
 
 pub(super) fn values<const N: usize>(

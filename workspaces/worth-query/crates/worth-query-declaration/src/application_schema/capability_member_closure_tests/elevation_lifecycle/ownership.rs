@@ -76,7 +76,7 @@ fn lifecycle_operation_cannot_also_own_capability_revocation() {
         ApplicationCapabilityRevocationDefinition::new(
             operation::<RequestOperation>("Request"),
             binding::<Action>("Action"),
-            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), 2_u64),
+            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), encoded(2_u64)),
         ),
     ))
     .composition(composition(true))
@@ -128,4 +128,12 @@ fn lifecycle_operation_cannot_also_own_delegation_activation() {
         build_from_members(elevation_members(contract)),
         Err(ApplicationSchemaDeclarationDenial::InvalidApplicationCapability)
     );
+}
+
+fn encoded(
+    value: u64,
+) -> crate::application_schema::ApplicationEncodedScalarValue<
+    crate::application_schema::U64ApplicationValueBinding,
+> {
+    crate::application_schema::ApplicationEncodedScalarValue::try_new(value).unwrap()
 }

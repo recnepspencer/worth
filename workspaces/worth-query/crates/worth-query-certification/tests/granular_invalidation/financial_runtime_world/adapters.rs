@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant, SystemTime};
 
-use worth_query_host::facade::{admission, domain, primary_graph};
+use worth_query_host::facade::{admission, declaration, domain, primary_graph};
 
 use super::schema::{
     ExecuteFinancial, FinancialHostSchema, FinancialInput, FinancialIntentResult,
@@ -49,8 +49,10 @@ impl<Node>
         .map_err(projection_failure)?;
         let input = FinancialInput(row.input.clone());
         let due = domain::WorthQueryClockCoordinate::from_nanoseconds(row.due);
-        Ok(match row.lifecycle.as_str() {
-            "active" => domain::WorthQueryTemporalIntentCandidate::active(
+        match row.lifecycle.as_str() {
+            "active" => domain::WorthQueryTemporalIntentCandidate::active::<
+                declaration::application_schema::StringApplicationValueBinding,
+            >(
                 identity,
                 row.identity.clone(),
                 row.revision,
@@ -59,7 +61,9 @@ impl<Node>
                 input_identity,
                 idempotency,
             ),
-            "cancelled" => domain::WorthQueryTemporalIntentCandidate::cancelled(
+            "cancelled" => domain::WorthQueryTemporalIntentCandidate::cancelled::<
+                declaration::application_schema::StringApplicationValueBinding,
+            >(
                 identity,
                 row.identity.clone(),
                 row.revision,
@@ -68,7 +72,9 @@ impl<Node>
                 input_identity,
                 idempotency,
             ),
-            _ => domain::WorthQueryTemporalIntentCandidate::completed(
+            _ => domain::WorthQueryTemporalIntentCandidate::completed::<
+                declaration::application_schema::StringApplicationValueBinding,
+            >(
                 identity,
                 row.identity.clone(),
                 row.revision,
@@ -77,11 +83,14 @@ impl<Node>
                 input_identity,
                 idempotency,
             ),
-        })
+        }
+        .map_err(|denial| projection_failure(format!("{denial:?}")))
     }
 }
 
-fn projection_failure(detail: &'static str) -> domain::WorthQueryTemporalIntentProjectionFailure {
+fn projection_failure(
+    detail: impl Into<String>,
+) -> domain::WorthQueryTemporalIntentProjectionFailure {
     domain::WorthQueryTemporalIntentProjectionFailure::new(
         domain::WorthQueryTemporalIntentProjectionFailureKind::InvalidIdentity,
         detail,

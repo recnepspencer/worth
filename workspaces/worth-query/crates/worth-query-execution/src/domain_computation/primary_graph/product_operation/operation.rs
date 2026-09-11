@@ -1,7 +1,7 @@
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
-    application_schema::TypedMutationPreconditions, portable_identity::WorthQueryPortableType,
+    application_schema::TypedMutationPreconditions,
 };
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationCapability,
@@ -49,8 +49,14 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryOperationAuthorizationDenial,
     >
     where
-        Operation: 'static,
-        Input: ApplicationCapabilityRequest<Schema, Capability> + WorthQueryPortableType + 'static,
+        Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+        <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+            worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+                Value = Input,
+            >,
+        Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
         crate::domain_computation::authorization::admit_capability_access(
             self.application(),
@@ -81,8 +87,14 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryOperationAuthorizationDenial,
     >
     where
-        Operation: 'static,
-        Input: ApplicationCapabilityRequest<Schema, Capability> + WorthQueryPortableType + 'static,
+        Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+        <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+            worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+                Value = Input,
+            >,
+        Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
         crate::domain_computation::authorization::admit_capability_access(
             self.application(),

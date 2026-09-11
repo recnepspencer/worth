@@ -1,7 +1,7 @@
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    TypedApplicationReadableValue, WorthQueryInstalledApplicationOperation,
-    WorthQueryTemporalIntentCandidate, WorthQueryTemporalIntentRevisionValue, WritableCapability,
+    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationSchema,
+    DeclaredApplicationFieldValue, OperationReads, OperationWrites,
+    WorthQueryInstalledApplicationOperation, WorthQueryTemporalIntentCandidate, WritableCapability,
     WritePosture,
 };
 
@@ -41,15 +41,21 @@ where
     Input: Clone + Send + Sync + 'static,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
     IdentityField: OperationReads<Operation>,
-    IdentityValue: TypedApplicationReadableValue + Clone,
+    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
+    IdentityValue: Clone,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
     RevisionField: OperationReads<Operation> + OperationWrites<Operation>,
-    RevisionValue: WorthQueryTemporalIntentRevisionValue + TypedApplicationReadableValue + Clone,
+    RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue> + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+    RevisionValue: Clone,
     RevisionWrite: WritableCapability,
     RevisionUnit: ApplicationFieldUnit,
     LifecycleField: OperationReads<Operation> + OperationWrites<Operation>,
-    LifecycleValue: TypedApplicationReadableValue + Clone,
+    LifecycleField: DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
+    LifecycleValue: Clone,
     LifecycleWrite: WritableCapability,
     LifecycleUnit: ApplicationFieldUnit,
     Authorization: WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
@@ -62,8 +68,6 @@ where
         fresh: &WorthQueryFreshTemporalOperationAccess<Schema, Principal, PrincipalIdentity, Scope>,
         current: &WorthQueryCurrentTemporalIntent<Schema, IntentEntity, IdentityValue, RevisionValue>,
     ) -> Result<Option<WorthQueryAdmittedTemporalProjection<Schema, Operation, Input, Scope, Invoker::Projection>>, WorthQueryTemporalReentryDenial>
-    where
-        PrincipalIdentity: worth_query_installation::facade::TypedApplicationIdentityValue,
     {
         let preconditions = isolate_invoker(|| self.invoker.preconditions(candidate.input()))
             .map_err(|detail| format!("temporal operation preconditions failed: {detail}"))?;

@@ -7,6 +7,9 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
     ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding,
+};
 use worth_query_declaration::{worth_query_application_query, worth_query_effect};
 
 use super::application_queries::AccountSummaryParameters;
@@ -14,6 +17,8 @@ use super::{
     Account, AccountAllActivity, AccountIdentity, AccountPolicy, Activity, ActivityFacts,
     ActivityIdentity, ActivitySequence, IdentityExecutionSchema, ViewAccount,
 };
+
+worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LiveActivityEvent {
@@ -44,19 +49,20 @@ impl LiveActivityEvent {
     }
 }
 
-impl worth_query_declaration::facade::application_schema::ApplicationEffectPayload
-    for LiveActivityEvent
+worth_query_declaration::worth_query_structured_value_binding!(pub LiveActivityEventBinding for LiveActivityEvent { identity: "worth.query.test.live-activity-event.v1" });
+impl worth_query_declaration::facade::application_schema::ApplicationRetainedEffectBinding
+    for LiveActivityEventBinding
 {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>())
+    fn retained_bytes(value: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<Self::Value>())
             .unwrap_or(u64::MAX)
-            .saturating_add(u64::try_from(self.account.capacity()).unwrap_or(u64::MAX))
-            .saturating_add(u64::try_from(self.activity.capacity()).unwrap_or(u64::MAX))
+            .saturating_add(u64::try_from(value.account.capacity()).unwrap_or(u64::MAX))
+            .saturating_add(u64::try_from(value.activity.capacity()).unwrap_or(u64::MAX))
     }
 }
 
 worth_query_effect!(
-    pub LiveActivityEffect(LiveActivityEvent) in IdentityExecutionSchema
+    pub LiveActivityEffect for IdentityExecutionSchema, payload LiveActivityEventBinding
 );
 
 pub struct AccountIdentitySlot;
@@ -86,23 +92,32 @@ impl LiveAccountActivityResult {
     }
 }
 
+worth_query_declaration::worth_query_structured_value_binding!(pub LiveAccountActivityQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub LiveAccountActivityQueryResultBinding for LiveAccountActivityResult { identity: "worth.query.test.execution.live.result.v1" });
 worth_query_application_query!(
-    pub LiveAccountActivityQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result LiveAccountActivityResult,
-    scope Account,
+    pub LiveAccountActivityQuery for IdentityExecutionSchema,
+    identity "LiveAccountActivityQuery",
+    parameters LiveAccountActivityQueryParametersBinding,
+    result LiveAccountActivityQueryResultBinding,
+    scope Account => "Account",
     name "live_account_activity"
 );
 
 pub(in crate::domain_computation::primary_graph) fn live_account_parameter(
-) -> ApplicationQueryParameterRef<LiveAccountActivityQuery, AccountIdentityParameter, String> {
+) -> ApplicationQueryParameterRef<
+    LiveAccountActivityQuery,
+    AccountIdentityParameter,
+    StringApplicationValueBinding,
+> {
     ApplicationQueryParameterRef::from_query_identifier("account")
 }
 
 pub(in crate::domain_computation::primary_graph) fn live_account_parameters(
     account: impl Into<String>,
 ) -> ApplicationQueryParameterSet<LiveAccountActivityQuery> {
-    ApplicationQueryParameterSet::new().bind(live_account_parameter(), account.into())
+    ApplicationQueryParameterSet::new()
+        .bind(live_account_parameter(), account.into())
+        .expect("fixture account identity must encode")
 }
 
 pub(super) fn live_account_activity_definition() -> ApplicationQueryDefinition<
@@ -117,6 +132,7 @@ pub(super) fn live_account_activity_definition() -> ApplicationQueryDefinition<
         LiveAccountActivityQuery,
         Activity,
         (),
+        NestedUnitResultBinding,
     >::new(Activity::reference())
     .field(activity_identity())
     .field(activity_sequence());
@@ -125,6 +141,7 @@ pub(super) fn live_account_activity_definition() -> ApplicationQueryDefinition<
         LiveAccountActivityQuery,
         Account,
         LiveAccountActivityResult,
+        LiveAccountActivityQueryResultBinding,
     >::new(Account::reference())
     .field(account_identity())
     .relation(activities(), activity)
@@ -199,23 +216,29 @@ impl
     > for LiveAccountActivityCause
 {
     type Effect = LiveActivityEffect;
-    type Payload = LiveActivityEvent;
-    type ScopeIdentity = String;
-    type TargetIdentity = String;
+    type PayloadBinding = LiveActivityEventBinding;
+    type ScopeIdentityBinding =
+        worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
+    type TargetIdentityBinding =
+        worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
 
     fn effect() -> worth_query_declaration::facade::application_schema::ApplicationEffectRef<
         IdentityExecutionSchema,
         Self::Effect,
-        Self::Payload,
+        LiveActivityEvent,
     > {
         LiveActivityEffect::reference()
     }
 
-    fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity {
+    fn scope_identity(
+        payload: &LiveActivityEvent,
+    ) -> <Self::ScopeIdentityBinding as ApplicationScalarValueBinding>::Value {
         payload.account.clone()
     }
 
-    fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity {
+    fn target_identity(
+        payload: &LiveActivityEvent,
+    ) -> <Self::TargetIdentityBinding as ApplicationScalarValueBinding>::Value {
         payload.activity.clone()
     }
 }

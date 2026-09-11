@@ -1,10 +1,12 @@
 use super::{
-    admit_request, entity_denial, ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema,
-    EqualityPredicate, TypedApplicationValue, WorthQueryApplicationEntityIdentity,
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryPrincipalResolutionMode, WorthQueryRequestScope, WritePosture,
+    admit_request, entity_denial, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationScalarValueBinding, ApplicationSchema, EqualityPredicate,
+    WorthQueryApplicationEntityIdentity, WorthQueryEntityResolutionDenial,
+    WorthQueryEntityResolutionDenialKind, WorthQueryPrincipalResolutionMode,
+    WorthQueryRequestScope, WritePosture,
 };
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use worth_query_installation::facade::DeclaredApplicationFieldValue;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
@@ -24,11 +26,17 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         mode: WorthQueryPrincipalResolutionMode,
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
         admit_request(request, field.field())?;
+        let encoded = Field::Binding::encode(&value).map_err(|_| {
+            entity_denial(
+                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
+                field.field(),
+            )
+        })?;
         let application = self.application();
         let graph = application.runtime.primary_graph().ok_or_else(|| {
             entity_denial(
@@ -50,12 +58,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             installed
                 .at_snapshot(relational, self.application_basis().snapshot_handle(), mode)
                 .and_then(|truth| {
-                    truth.resolve(
-                        field.entity(),
-                        field.aspect(),
-                        field.field(),
-                        value.into_foundational_value(),
-                    )
+                    truth.resolve(field.entity(), field.aspect(), field.field(), encoded)
                 })
         })?;
         admit_request(request, field.field())?;

@@ -38,11 +38,14 @@ pub const fn payment(payment: PaymentId) -> PaymentDetailRequest {
     PaymentDetailRequest::new(payment)
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub PaymentDetailQueryParametersBinding for PaymentDetailQueryParameters { identity: "PaymentDetailQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub PaymentDetailQueryResultBinding for PaymentSummary { identity: "PaymentSummary" });
 worth_query_application_query!(
-    pub PaymentDetailQuery in BankSchema,
-    parameters PaymentDetailQueryParameters,
-    result PaymentSummary,
-    scope PaymentIntent,
+    pub PaymentDetailQuery for BankSchema,
+    identity "PaymentDetailQuery",
+    parameters PaymentDetailQueryParametersBinding,
+    result PaymentDetailQueryResultBinding,
+    scope PaymentIntent => "PaymentIntent",
     name "payment_detail"
 );
 
@@ -56,7 +59,14 @@ pub fn payment_detail_definition() -> ApplicationQueryDefinition<
     ApplicationQueryDefinitionBuilder::declare(PaymentDetailQuery::reference())
         .root(PaymentIntent::reference())
         .scope(PaymentIntent::reference())
-        .result_shape(payment_summary_shape().build())
+        .result_shape(
+            payment_summary_shape::<
+                PaymentDetailQuery,
+                PaymentSummary,
+                PaymentDetailQueryResultBinding,
+            >()
+            .build(),
+        )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(2, 6, 8))
         .disclosure(ApplicationQueryDisclosureContract::public())

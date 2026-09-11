@@ -129,11 +129,14 @@ pub const fn estate_emergency_access_activity(
     EstateEmergencyAccessActivityRequest { estate, access }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateEmergencyAccessActivityQueryParametersBinding for EstateEmergencyAccessActivityQueryParameters { identity: "EstateEmergencyAccessActivityQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateEmergencyAccessActivityQueryResultBinding for EstateEmergencyAccessActivity { identity: "EstateEmergencyAccessActivity" });
 worth_query_application_query!(
-    pub EstateEmergencyAccessActivityQuery in BankSchema,
-    parameters EstateEmergencyAccessActivityQueryParameters,
-    result EstateEmergencyAccessActivity,
-    scope EstateCase,
+    pub EstateEmergencyAccessActivityQuery for BankSchema,
+    identity "EstateEmergencyAccessActivityQuery",
+    parameters EstateEmergencyAccessActivityQueryParametersBinding,
+    result EstateEmergencyAccessActivityQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_emergency_access_activity"
 );
 
@@ -144,7 +147,11 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
     EstateEmergencyAccessActivity,
     EstateCase,
 > {
-    let field = RestrictedBankField::EmergencyAccessActivity;
+    let field = || {
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            RestrictedBankField::EmergencyAccessActivity,
+        )
+    };
     let no_influence = ApplicationQueryInfluenceContract::forbid_all();
     let live_scope = ApplicationQueryInfluenceContract::permit([
         ApplicationQueryObservableInfluence::LiveMembership,
@@ -165,29 +172,33 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
     )
     .use_field_by(
         EstateCaseIdentityField::reference(),
-        field,
+        field(),
         live_scope.clone(),
     )
     .use_field_by(
         EmergencyAccessIdentityField::reference(),
-        field,
+        field(),
         access_ordering.clone(),
     )
     .use_field_by(
         EmergencyAccessIssuedAtField::reference(),
-        field,
+        field(),
         access_ordering.clone(),
     )
-    .disclose_field_by(estate_id(), field, live_scope)
-    .disclose_relation_by(estate_accesses(), field, collection)
-    .disclose_field_by(access_id(), field, access_ordering.clone())
-    .disclose_field_by(selectors::access_reason(), field, no_influence.clone())
-    .disclose_field_by(selectors::access_status(), field, no_influence.clone())
-    .disclose_field_by(selectors::access_issued_at(), field, access_ordering)
-    .disclose_field_by(selectors::access_expires_at(), field, no_influence.clone())
-    .disclose_relation_by(selectors::access_review(), field, no_influence.clone())
-    .disclose_field_by(selectors::review_id(), field, no_influence.clone())
-    .disclose_field_by(selectors::review_status(), field, no_influence);
+    .disclose_field_by(estate_id(), field(), live_scope)
+    .disclose_relation_by(estate_accesses(), field(), collection)
+    .disclose_field_by(access_id(), field(), access_ordering.clone())
+    .disclose_field_by(selectors::access_reason(), field(), no_influence.clone())
+    .disclose_field_by(selectors::access_status(), field(), no_influence.clone())
+    .disclose_field_by(selectors::access_issued_at(), field(), access_ordering)
+    .disclose_field_by(
+        selectors::access_expires_at(),
+        field(),
+        no_influence.clone(),
+    )
+    .disclose_relation_by(selectors::access_review(), field(), no_influence.clone())
+    .disclose_field_by(selectors::review_id(), field(), no_influence.clone())
+    .disclose_field_by(selectors::review_status(), field(), no_influence);
     ApplicationQueryDefinitionBuilder::declare(EstateEmergencyAccessActivityQuery::reference())
         .root(EstateCase::reference())
         .scope(EstateCase::reference())

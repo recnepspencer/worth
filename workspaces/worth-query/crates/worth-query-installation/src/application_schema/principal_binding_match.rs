@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::application_schema::{
-    ApplicationPrincipalBindingRef, ApplicationSchemaMember, TypedApplicationValue,
+    ApplicationPrincipalBindingRef, ApplicationSchemaMember,
 };
 
 pub(super) fn principal_binding_name(member: &ApplicationSchemaMember) -> Option<&str> {
@@ -9,19 +9,24 @@ pub(super) fn principal_binding_name(member: &ApplicationSchemaMember) -> Option
     }
 }
 
-pub(super) fn principal_binding_matches<Schema, Binding, Mapping, Principal, PrincipalIdentity>(
+pub(super) fn principal_binding_matches<
+    Schema,
+    Binding,
+    Mapping,
+    Principal,
+    PrincipalIdentity,
+    PrincipalIdentityBinding,
+>(
     member: &ApplicationSchemaMember,
-    reference: ApplicationPrincipalBindingRef<
+    reference: &ApplicationPrincipalBindingRef<
         Schema,
         Binding,
         Mapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
     >,
-) -> bool
-where
-    PrincipalIdentity: TypedApplicationValue,
-{
+) -> bool {
     matches!(
         member,
         ApplicationSchemaMember::PrincipalBinding {

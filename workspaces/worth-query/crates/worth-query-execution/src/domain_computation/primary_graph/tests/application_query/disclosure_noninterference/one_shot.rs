@@ -4,7 +4,7 @@ use std::time::{Duration, UNIX_EPOCH};
 
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 
 use super::super::super::fixture::{
     admit_touch_account_capability, installed_capability_world_with_label, live_scope,
@@ -60,7 +60,10 @@ fn protected_label_difference_is_absent_from_every_one_shot_observable() {
     assert_eq!(omission.classification(), "account-omission");
     assert_eq!(
         omission.required_disclosure(),
-        &CapabilityDisclosure::PrivateLabel.into_foundational_value()
+        &super::super::super::fixture::CapabilityDisclosureBinding::encode(
+            &CapabilityDisclosure::PrivateLabel,
+        )
+        .unwrap()
     );
     assert!(matches!(
         left.rows[0].note(),
@@ -76,7 +79,10 @@ fn protected_label_difference_is_absent_from_every_one_shot_observable() {
             .iter()
             .filter(|decision| {
                 decision.required_disclosure()
-                    == &CapabilityDisclosure::PrivateLabel.into_foundational_value()
+                    == &super::super::super::fixture::CapabilityDisclosureBinding::encode(
+                        &CapabilityDisclosure::PrivateLabel,
+                    )
+                    .unwrap()
             })
             .count(),
         5

@@ -1,8 +1,9 @@
 use std::marker::PhantomData;
 
 use crate::application_schema::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    EqualityCapable, EqualityPredicate, TypedApplicationValue, WritePosture,
+    ApplicationEncodedScalarValue, ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationRelationRef, DeclaredApplicationFieldValue, EqualityCapable, EqualityPredicate,
+    WritePosture,
 };
 
 use super::ApplicationQueryRootPathGuard;
@@ -181,10 +182,10 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
             EqualityPredicate,
             Unit,
         >,
-        expected: Value,
+        expected: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         EqualityPredicate: EqualityCapable,
         Unit: ApplicationFieldUnit,

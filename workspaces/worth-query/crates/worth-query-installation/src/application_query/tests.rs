@@ -6,10 +6,13 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
     ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
-use worth_query_declaration::facade::application_schema::ApplicationEntityRef;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEntityRef, U64ApplicationValueBinding,
+};
 use worth_query_declaration::{
     worth_query_application_query, worth_query_application_schema, worth_query_aspect,
     worth_query_entity, worth_query_field, worth_query_portable_type, worth_query_relation,
+    worth_query_structured_value_binding,
 };
 
 use crate::facade::{
@@ -23,6 +26,7 @@ use super::WorthQueryApplicationQueryInstallationDenialKind;
 
 mod authority_validation_tests;
 mod canonical_basis_residue;
+mod installed_identity;
 mod selector_identity;
 mod shape_identity;
 
@@ -55,29 +59,32 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub Account in QueryTestSchema);
-worth_query_entity!(pub Activity in QueryTestSchema);
-worth_query_aspect!(pub AccountFacts in QueryTestSchema, Account; identity = AspectIdentity(0x9161104a), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ActivityFacts in QueryTestSchema, Activity; identity = AspectIdentity(0x9161104b), revision = AspectContractRevision(1),);
+worth_query_entity!(pub Account for QueryTestSchema);
+worth_query_entity!(pub Activity for QueryTestSchema);
+worth_query_aspect!(pub AccountFacts for QueryTestSchema, Account; identity = AspectIdentity(0x9161104a), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub ActivityFacts for QueryTestSchema, Activity; identity = AspectIdentity(0x9161104b), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub AccountId in QueryTestSchema, Account, AccountFacts:
-    u64, read_only, equality
+    pub AccountId for QueryTestSchema, Account, AccountFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+    read_only, equality
 );
 worth_query_field!(
-    pub ActivitySequence in QueryTestSchema, Activity, ActivityFacts:
-    u64, read_only, equality
+    pub ActivitySequence for QueryTestSchema, Activity, ActivityFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+    read_only, equality
 );
 worth_query_field!(
-    pub ActivityKind in QueryTestSchema, Activity, ActivityFacts:
-    u64, read_only, equality
+    pub ActivityKind for QueryTestSchema, Activity, ActivityFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+    read_only, equality
 );
 worth_query_field!(
-    pub ActivityStatus in QueryTestSchema, Activity, ActivityFacts:
-    u64, read_only, equality
+    pub ActivityStatus for QueryTestSchema, Activity, ActivityFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+    read_only, equality
 );
 worth_query_relation!(
-    pub AccountActivity in QueryTestSchema, Account => Activity
-);
+    pub AccountActivity in QueryTestSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
 
 pub(super) struct ActivityQueryParameters;
 pub(super) struct ActivityQueryResult;
@@ -90,19 +97,34 @@ worth_query_portable_type!(ActivityQueryResult => "worth.query.test.installation
 worth_query_portable_type!(AccountIdSlot => "worth.query.test.installation.account-id-slot.v1");
 worth_query_portable_type!(ActivitySequenceSlot => "worth.query.test.installation.sequence-slot.v1");
 worth_query_portable_type!(ActivityRelationSlot => "worth.query.test.installation.relation-slot.v1");
+worth_query_structured_value_binding!(
+    pub(super) ActivityQueryParametersBinding for ActivityQueryParameters {
+        identity: "ActivityQueryParameters"
+    }
+);
+worth_query_structured_value_binding!(
+    pub(super) ActivityQueryResultBinding for ActivityQueryResult {
+        identity: "worth.query.test.installation.activity-result.v1"
+    }
+);
+worth_query_structured_value_binding!(
+    ActivityItemResultBinding for () { identity: "worth.rust.unit" }
+);
 
 worth_query_application_query!(
-    pub(super) ActivityQuery in QueryTestSchema,
-    parameters ActivityQueryParameters,
-    result ActivityQueryResult,
-    scope Account,
+    pub(super) ActivityQuery for QueryTestSchema,
+    identity "ActivityQuery",
+    parameters ActivityQueryParametersBinding,
+    result ActivityQueryResultBinding,
+    scope Account => "Account",
     name "account_activity"
 );
 worth_query_application_query!(
-    ActivityScopedQuery in QueryTestSchema,
-    parameters ActivityQueryParameters,
-    result ActivityQueryResult,
-    scope Activity,
+    ActivityScopedQuery for QueryTestSchema,
+    identity "ActivityScopedQuery",
+    parameters ActivityQueryParametersBinding,
+    result ActivityQueryResultBinding,
+    scope Activity => "Activity",
     name "activity_scoped_account_activity"
 );
 fn query_reference() -> ApplicationQueryReference<
@@ -115,7 +137,8 @@ fn query_reference() -> ApplicationQueryReference<
     ActivityQuery::reference()
 }
 
-fn account_parameter<Query>() -> ApplicationQueryParameterRef<Query, AccountParameter, u64> {
+fn account_parameter<Query>(
+) -> ApplicationQueryParameterRef<Query, AccountParameter, U64ApplicationValueBinding> {
     ApplicationQueryParameterRef::from_query_identifier("account")
 }
 
@@ -180,22 +203,30 @@ fn definition_for<
     Scope,
 >
 where
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        QueryTestSchema,
+        ResultBinding = ActivityQueryResultBinding,
+    >,
 {
     let sequence =
         ApplicationQueryResultFieldRef::<Query, SequenceSlot, _, _, _, _, _, _, _, _>::new(
             output_name,
             ActivitySequence::reference(),
         );
-    let nested = ApplicationQueryResultShapeBuilder::<QueryTestSchema, Query, Activity, ()>::new(
-        Activity::reference(),
-    )
+    let nested = ApplicationQueryResultShapeBuilder::<
+        QueryTestSchema,
+        Query,
+        Activity,
+        (),
+        ActivityItemResultBinding,
+    >::new(Activity::reference())
     .field(sequence);
     let shape = ApplicationQueryResultShapeBuilder::<
         QueryTestSchema,
         Query,
         Account,
         ActivityQueryResult,
+        ActivityQueryResultBinding,
     >::new(Account::reference())
     .field(ApplicationQueryResultFieldRef::<
         Query,
@@ -240,96 +271,6 @@ where
         .order_by(sequence, direction)
         .build()
         .unwrap()
-}
-
-#[test]
-fn equivalent_installed_queries_converge_and_identity_dimensions_do_not_alias() {
-    let schema = installed_schema();
-    let left = schema.application_query(query_reference()).unwrap();
-    let equivalent = schema.application_query(query_reference()).unwrap();
-    let changed_order =
-        definition(ApplicationQueryOrderingDirection::Ascending, "sequence").into_erased();
-    let changed_shape =
-        definition(ApplicationQueryOrderingDirection::Descending, "position").into_erased();
-
-    assert_eq!(left.identity(), equivalent.identity());
-    assert_eq!(
-        left.read_family_binding().identity(),
-        equivalent.read_family_binding().identity()
-    );
-    assert_eq!(
-        left.read_family_binding().planning_contract(),
-        left.read_graph()
-    );
-    assert_eq!(
-        left.read_family_binding().canonical_planning_identity(),
-        left.read_graph().canonical_planning_basis().digest()
-    );
-    assert_eq!(
-        left.graph_obligations().identity(),
-        equivalent.graph_obligations().identity()
-    );
-    assert_eq!(left.graph_obligations().rows().len(), 1);
-    assert_eq!(
-        left.graph_obligations().rows()[0].kind(),
-        crate::graph_obligation::WorthQueryInstalledGraphObligationKind::GraphRead
-    );
-    assert_eq!(
-        left.graph_obligations()
-            .installation_evidence()
-            .canonical_work()
-            .digest_text_materializations(),
-        0
-    );
-    assert_ne!(
-        definition(ApplicationQueryOrderingDirection::Descending, "sequence")
-            .into_erased()
-            .canonical_basis(),
-        changed_order.canonical_basis()
-    );
-    assert_ne!(
-        definition(ApplicationQueryOrderingDirection::Descending, "sequence")
-            .into_erased()
-            .canonical_basis(),
-        changed_shape.canonical_basis()
-    );
-    assert_eq!(
-        left.read_graph().relations()[0].relation(),
-        "AccountActivity"
-    );
-    assert_eq!(
-        left.read_graph().ordering()[0].collection_path(),
-        "root/relation[0]"
-    );
-    assert_eq!(
-        left.read_graph().ordering()[0].slot_type(),
-        <ActivitySequenceSlot as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str()
-    );
-}
-
-#[test]
-fn authorization_scope_is_identity_bearing() {
-    let account_scoped = definition_for::<ActivityQuery, Account, ActivitySequenceSlot>(
-        ActivityQuery::reference(),
-        Account::reference(),
-        ApplicationQueryOrderingDirection::Descending,
-        "sequence",
-    )
-    .into_erased();
-    let activity_scoped = definition_for::<ActivityScopedQuery, Activity, ActivitySequenceSlot>(
-        ActivityScopedQuery::reference(),
-        Activity::reference(),
-        ApplicationQueryOrderingDirection::Descending,
-        "sequence",
-    )
-    .into_erased();
-
-    assert_ne!(
-        account_scoped.canonical_basis(),
-        activity_scoped.canonical_basis()
-    );
-    assert_eq!(account_scoped.scope_entity(), "Account");
-    assert_eq!(activity_scoped.scope_entity(), "Activity");
 }
 
 fn installed_schema() -> crate::facade::WorthQueryInstalledApplicationSchema<QueryTestSchema> {

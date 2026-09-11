@@ -160,7 +160,7 @@ impl WorthQueryInstalledCapabilityRegistry {
         self.plans.get(capability_identity)
     }
 
-    pub(super) fn elevation_lifecycle_operation<Operation>(
+    pub(super) fn elevation_lifecycle_operation<Schema, Operation>(
         &self,
         operation: &str,
         input_type: &str,
@@ -173,10 +173,10 @@ impl WorthQueryInstalledCapabilityRegistry {
         (),
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
     {
         self.elevation_lifecycles
-            .operation::<Operation>(operation, input_type)
+            .operation::<Schema, Operation>(operation, input_type)
     }
 
     pub(super) const fn compilation(&self) -> WorthQueryCapabilityPlanCompilationEvidence {

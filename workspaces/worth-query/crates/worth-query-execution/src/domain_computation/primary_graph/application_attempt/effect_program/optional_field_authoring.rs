@@ -2,8 +2,9 @@ use std::collections::BTreeMap;
 
 use worth_foundational::facade::PortableAspectContractBasis;
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget, OperationWrites,
-    OptionalApplicationFieldValue, TypedApplicationValue, WritableCapability,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget,
+    ApplicationScalarValueBinding, OperationWrites, OptionalApplicationFieldValue,
+    WritableCapability,
 };
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::EntityReference;
@@ -31,10 +32,18 @@ impl<Schema, Operation, Input, Scope>
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationValue,
         Write: WritableCapability,
         Unit: ApplicationFieldUnit,
     {
+        let value = value
+            .map(|value| Field::Binding::encode(&value))
+            .transpose()
+            .map_err(|_| {
+                super::denial(
+                    WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+                    field.field(),
+                )
+            })?;
         self.validate_target(target, field.entity())?;
         self.admit_program_target(&ApplicationOperationProgramTarget::Write {
             entity: field.entity().to_string(),
@@ -58,10 +67,7 @@ impl<Schema, Operation, Input, Scope>
                     field.field(),
                 )
             })?;
-        let write = WorthQueryApplicationOptionalFieldWrite {
-            contract,
-            value: value.map(TypedApplicationValue::into_foundational_value),
-        };
+        let write = WorthQueryApplicationOptionalFieldWrite { contract, value };
         promote_ordinary_writes(&self.layout, &mut self.effects, field.entity(), entity_id)?;
         record_write(&mut self.effects, field.entity(), entity_id, locator, write);
         Ok(())

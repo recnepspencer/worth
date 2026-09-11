@@ -1,4 +1,6 @@
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding, U64ApplicationValueBinding,
+};
 
 use super::super::application_attempt::authenticated_principal;
 use super::super::fixture::capability::{
@@ -191,19 +193,22 @@ fn apply_parent_drift(world: &super::super::fixture::AuthorizationWorld, drift: 
             world,
             "capability-parent",
             field(world, CapabilityStatusField::reference()),
-            super::super::fixture::CapabilityStatus::Revoked.into_foundational_value(),
+            super::super::fixture::CapabilityStatusBinding::encode(
+                &super::super::fixture::CapabilityStatus::Revoked,
+            )
+            .unwrap(),
         ),
         ParentDrift::Expiry => update_grant_field(
             world,
             "capability-parent",
             field(world, CapabilityNotAfterField::reference()),
-            99_u64.into_foundational_value(),
+            U64ApplicationValueBinding::encode(&99_u64).unwrap(),
         ),
         ParentDrift::Workflow => update_grant_field(
             world,
             "capability-parent",
             field(world, CapabilityWorkflowField::reference()),
-            "closed".to_owned().into_foundational_value(),
+            StringApplicationValueBinding::encode(&"closed".to_owned()).unwrap(),
         ),
         ParentDrift::Resource => replace_parent_resource(world),
         ParentDrift::DelegationGrantor => replace_child_grantor_with_grantee(world),

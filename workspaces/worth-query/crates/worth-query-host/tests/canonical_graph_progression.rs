@@ -31,16 +31,18 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub Record in HostileConsumerSchema);
-worth_query_aspect!(pub RecordFacts in HostileConsumerSchema, Record; identity = AspectIdentity(0x91611041), revision = AspectContractRevision(1),);
+worth_query_entity!(pub Record for HostileConsumerSchema);
+worth_query_aspect!(pub RecordFacts for HostileConsumerSchema, Record; identity = AspectIdentity(0x91611041), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub RecordIdentity in HostileConsumerSchema, Record, RecordFacts:
+    pub RecordIdentity for HostileConsumerSchema, Record, RecordFacts:
     u64, read_only, equality
 );
 
 struct RecordQueryParameters;
 struct RecordQueryResult;
 struct RecordIdentitySlot;
+worth_query_declaration::worth_query_structured_value_binding!(RecordQueryParametersBinding for RecordQueryParameters { identity: "RecordQueryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(RecordQueryResultBinding for RecordQueryResult { identity: "worth.query.test.host.record_query.result.v1" });
 worth_query_declaration::worth_query_portable_type!(
     RecordQueryResult => "worth.query.test.host.record_query.result.v1"
 );
@@ -49,10 +51,11 @@ worth_query_declaration::worth_query_portable_type!(
 );
 
 worth_query_application_query!(
-    RecordQuery in HostileConsumerSchema,
-    parameters RecordQueryParameters,
-    result RecordQueryResult,
-    scope Record,
+    RecordQuery for HostileConsumerSchema,
+    identity "RecordQuery",
+    parameters RecordQueryParametersBinding,
+    result RecordQueryResultBinding,
+    scope Record => "Record",
     name "record_query"
 );
 
@@ -68,6 +71,7 @@ fn record_query_definition() -> ApplicationQueryDefinition<
         RecordQuery,
         Record,
         RecordQueryResult,
+        RecordQueryResultBinding,
     >::new(Record::reference())
     .field(ApplicationQueryResultFieldRef::<
         RecordQuery,

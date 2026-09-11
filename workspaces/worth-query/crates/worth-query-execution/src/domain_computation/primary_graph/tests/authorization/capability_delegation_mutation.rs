@@ -27,7 +27,6 @@ pub(super) fn field<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
     >,
 ) -> AspectFieldLocator
 where
-    Value: worth_query_declaration::facade::application_schema::TypedApplicationValue,
     Unit: worth_query_declaration::facade::application_schema::ApplicationFieldUnit,
 {
     installed_field(world, field.entity(), field.aspect(), field.field())

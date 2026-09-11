@@ -1,6 +1,11 @@
 //! Bank-owned terminal classification of one Query application commit.
 
-use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcome;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationSettlementDeferred, WorthQueryProductStaleApplication,
+    WorthQueryProductUnpublishedApplication,
+};
+use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
 use super::commit_denial::{denial_kind, denial_stage};
 use super::{
@@ -8,22 +13,25 @@ use super::{
     BankCommitRecoveryKind, BankUnresolvedCommitEvidence,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub enum BankMutationCommitOutcome {
+    ProductStale(WorthQueryProductStaleApplication),
+    ProductUnpublished(WorthQueryProductUnpublishedApplication),
+    NoEffect(WorthQueryApplicationNoEffectCause),
     Committed(BankCommitReceipt),
     AlreadyCommitted(BankCommitReceipt),
     Stale {
         stale_fact_count: usize,
     },
     Cancelled,
+    TimedOut,
     Denied {
         kind: BankCommitDenialKind,
         stage: BankCommitDenialStage,
     },
     Aborted,
-    /// Some effect may have landed. Query's correlation evidence is retained
-    /// so recovery can distinguish commit-path from abort-path repair.
-    PartialEffect(BankUnresolvedCommitEvidence),
+    Deferred(WorthQueryApplicationCommitDeferred),
+    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     /// The commit's fate is unknown. The same retained Query evidence names
     /// which recovery the operator owes.
     Indeterminate(BankUnresolvedCommitEvidence),
@@ -32,7 +40,7 @@ pub enum BankMutationCommitOutcome {
 impl BankMutationCommitOutcome {
     pub const fn unresolved_evidence(&self) -> Option<&BankUnresolvedCommitEvidence> {
         match self {
-            Self::PartialEffect(evidence) | Self::Indeterminate(evidence) => Some(evidence),
+            Self::Indeterminate(evidence) => Some(evidence),
             _ => None,
         }
     }
@@ -48,6 +56,13 @@ impl BankMutationCommitOutcome {
 impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
     fn from(outcome: WorthQueryApplicationCommitOutcome) -> Self {
         match outcome {
+            WorthQueryApplicationCommitOutcome::ProductStale(stale) => Self::ProductStale(stale),
+            WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+                Self::ProductUnpublished(unpublished)
+            }
+            WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+                Self::NoEffect(no_effect.cause())
+            }
             WorthQueryApplicationCommitOutcome::Committed(receipt) => {
                 Self::Committed(commit_receipt(receipt))
             }
@@ -58,13 +73,15 @@ impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
                 stale_fact_count: stale.stale_fact_count(),
             },
             WorthQueryApplicationCommitOutcome::Cancelled => Self::Cancelled,
+            WorthQueryApplicationCommitOutcome::TimedOut => Self::TimedOut,
             WorthQueryApplicationCommitOutcome::Denied(denial) => Self::Denied {
                 kind: denial_kind(denial.kind()),
                 stage: denial_stage(denial.stage()),
             },
             WorthQueryApplicationCommitOutcome::Aborted => Self::Aborted,
-            WorthQueryApplicationCommitOutcome::PartialEffect(evidence) => {
-                Self::PartialEffect(BankUnresolvedCommitEvidence::from_execution(evidence))
+            WorthQueryApplicationCommitOutcome::Deferred(deferred) => Self::Deferred(deferred),
+            WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
+                Self::SettlementDeferred(deferred)
             }
             WorthQueryApplicationCommitOutcome::Indeterminate(evidence) => {
                 Self::Indeterminate(BankUnresolvedCommitEvidence::from_execution(evidence))

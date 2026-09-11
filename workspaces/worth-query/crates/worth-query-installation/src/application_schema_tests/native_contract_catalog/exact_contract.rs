@@ -16,21 +16,26 @@ use crate::facade::{
 };
 
 struct ExactContractSchema;
-worth_query_declaration::worth_query_entity!(ExactEntity in ExactContractSchema);
+worth_query_declaration::worth_query_entity!(ExactEntity for ExactContractSchema);
 worth_query_declaration::worth_query_aspect!(
-    ExactAspect in ExactContractSchema, ExactEntity;
+    ExactAspect for ExactContractSchema, ExactEntity;
     identity = AspectIdentity(0x9161_2100),
     revision = AspectContractRevision(7),
 );
 worth_query_declaration::worth_query_field!(
-    RequiredCount in ExactContractSchema, ExactEntity, ExactAspect: u64, read_only, equality
+    RequiredCount for ExactContractSchema, ExactEntity, ExactAspect:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+    read_only, equality
 );
 worth_query_declaration::worth_query_field!(
-    OptionalLabel in ExactContractSchema, ExactEntity, ExactAspect:
-    optional String, read_only, no_equality
+    OptionalLabel for ExactContractSchema, ExactEntity, ExactAspect:
+    optional String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding,
+    read_only, no_equality
 );
 worth_query_declaration::worth_query_field!(
-    RequiredActive in ExactContractSchema, ExactEntity, ExactAspect: bool, read_only, no_equality
+    RequiredActive for ExactContractSchema, ExactEntity, ExactAspect:
+    bool => worth_query_declaration::facade::application_schema::BoolApplicationValueBinding,
+    read_only, no_equality
 );
 
 impl ApplicationSchema for ExactContractSchema {

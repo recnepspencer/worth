@@ -19,7 +19,6 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationProjectionDenial,
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
 };
-use worth_query_host::facade::provisional_aftermath::{WorthQueryRedoDenial, WorthQueryUndoDenial};
 
 use super::{
     BankCapabilityDelegationProjectionDenial, BankCapabilityRevocationProjectionDenial,
@@ -31,6 +30,7 @@ use super::{
 
 #[derive(Debug)]
 pub enum BankEstateProgressionDenial {
+    ProductSelection(worth_query_host::facade::product::WorthQueryProductBranchAdmissionDenial),
     CapabilityInstallation(crate::BankApplicationCapabilityInstallationDenialKind),
     OperationInstallation(crate::BankOperationInstallationDenial),
     Authorization(crate::BankAuthorizationDenial),
@@ -54,8 +54,6 @@ pub enum BankEstateProgressionDenial {
     LifecycleProjection(BankEstateLifecycleProjectionDenial),
     Attempt(crate::BankCommitPreparationDenial),
     Recovery(BankRecoveryDenial),
-    Undo(WorthQueryUndoDenial),
-    Redo(WorthQueryRedoDenial),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -140,6 +138,9 @@ impl BankRecoveryDenial {
 impl std::fmt::Display for BankEstateProgressionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ProductSelection(denial) => {
+                write!(formatter, "product selection denied: {denial:?}")
+            }
             Self::CapabilityInstallation(_) => {
                 formatter.write_str("capability-installation-denied")
             }
@@ -169,13 +170,17 @@ impl std::fmt::Display for BankEstateProgressionDenial {
             Self::Recovery(denial) => {
                 write!(formatter, "recovery handle denied: {:?}", denial.kind())
             }
-            Self::Undo(denial) => write!(formatter, "undo denied: {:?}", denial.kind()),
-            Self::Redo(denial) => write!(formatter, "redo denied: {:?}", denial.kind()),
         }
     }
 }
 
 impl BankEstateProgressionDenial {
+    pub(crate) const fn from_product_selection(
+        denial: worth_query_host::facade::product::WorthQueryProductBranchAdmissionDenial,
+    ) -> Self {
+        Self::ProductSelection(denial)
+    }
+
     pub(crate) fn from_capability_installation(
         denial: WorthQueryApplicationCapabilityInstallationDenial,
     ) -> Self {

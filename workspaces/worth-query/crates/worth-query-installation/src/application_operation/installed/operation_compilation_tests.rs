@@ -15,7 +15,8 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationProgramTarget, ApplicationOperationRef,
     ApplicationSchema, ApplicationSchemaBindingIdentity, ApplicationSchemaDeclaration,
     ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember, DeclaredApplicationFieldValue,
-    RequiredApplicationFieldValue, WorthQueryExternalEffectCorrelationFamily,
+    RequiredApplicationFieldValue, U64ApplicationValueBinding,
+    WorthQueryExternalEffectCorrelationFamily,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -32,10 +33,12 @@ struct Entity;
 struct Aspect;
 struct Field;
 struct CompilationOperation;
+worth_query_declaration::worth_query_structured_value_binding!(
+    CompilationInputBinding for () { identity: "worth.rust.unit" }
+);
 
-impl ApplicationOperationMarkerIdentity for CompilationOperation {
-    type Schema = Schema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<Schema> for CompilationOperation {
+    type InputBinding = CompilationInputBinding;
     const IDENTIFIER: &'static str = "CompilationOperation";
 }
 
@@ -67,14 +70,11 @@ impl ApplicationSchema for Schema {
     }
 }
 
-impl ApplicationEntityMarkerIdentity for Entity {
-    type Schema = Schema;
+impl ApplicationEntityMarkerIdentity<Schema> for Entity {
     const IDENTIFIER: &'static str = "Account";
 }
 
-impl ApplicationAspectMarkerIdentity for Aspect {
-    type Schema = Schema;
-    type Entity = Entity;
+impl ApplicationAspectMarkerIdentity<Schema, Entity> for Aspect {
     const IDENTIFIER: &'static str = "State";
     const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
         worth_query_declaration::facade::application_schema::AspectIdentity(0x9161200b);
@@ -83,15 +83,13 @@ impl ApplicationAspectMarkerIdentity for Aspect {
         worth_query_declaration::facade::application_schema::AspectContractRevision(1);
 }
 
-impl ApplicationFieldMarkerIdentity for Field {
-    type Schema = Schema;
-    type Entity = Entity;
-    type Aspect = Aspect;
+impl ApplicationFieldMarkerIdentity<Schema, Entity, Aspect> for Field {
     const IDENTIFIER: &'static str = "balance";
 }
 
 impl DeclaredApplicationFieldValue for Field {
     type Value = u64;
+    type Binding = U64ApplicationValueBinding;
     const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
 }
 

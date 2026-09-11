@@ -2,15 +2,19 @@ use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityEntitySelector, ApplicationCapabilityRequestContext,
     ApplicationCapabilityRequestProjection,
 };
-use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, ApplicationOperationMarkerIdentity,
+    StringApplicationValueBinding,
+};
 
 use super::super::application_attempt::authenticated_principal;
 use super::super::fixture::{
     installed_elevated_capability_world, live_scope, AccountIdentity, CapabilityAction,
-    CapabilityDisclosure, CapabilityElevationIdentity, CapabilityElevationScenario,
-    CapabilityElevationStatus, CapabilityPurpose, CapabilityRequestContext,
-    CapabilityTouchOperation, ElevatedCapabilityTouchInput, ElevatedCapabilityTouchOperation,
-    ElevatedTouchAccountCapability, RequestCapabilityElevationOperation, RequestElevationInput,
+    CapabilityActionBinding, CapabilityDisclosure, CapabilityElevationIdentity,
+    CapabilityElevationScenario, CapabilityElevationStatus, CapabilityPurpose,
+    CapabilityPurposeBinding, CapabilityRequestContext, CapabilityTouchOperation,
+    ElevatedCapabilityTouchInput, ElevatedCapabilityTouchOperation, ElevatedTouchAccountCapability,
+    IdentityExecutionSchema, RequestCapabilityElevationOperation, RequestElevationInput,
     TouchAccountCapability,
 };
 use super::capability_progression::time;
@@ -56,9 +60,13 @@ mod validity;
 
 struct AliasedRequestCapabilityElevationOperation;
 
-impl ApplicationOperationMarkerIdentity for AliasedRequestCapabilityElevationOperation {
-    type Schema = ();
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<IdentityExecutionSchema>
+    for AliasedRequestCapabilityElevationOperation
+{
+    type InputBinding =
+        <RequestCapabilityElevationOperation as ApplicationOperationMarkerIdentity<
+            IdentityExecutionSchema,
+        >>::InputBinding;
     const IDENTIFIER: &'static str = "AliasedRequestCapabilityElevationOperation";
 }
 
@@ -75,7 +83,7 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     let (_, _, request_role) = world
         .application
         .authorization
-        .elevation_lifecycle_operation::<RequestCapabilityElevationOperation>(
+        .elevation_lifecycle_operation::<IdentityExecutionSchema, RequestCapabilityElevationOperation>(
             "RequestCapabilityElevationOperation",
             <RequestElevationInput as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str(),
         )
@@ -85,7 +93,10 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     assert!(world
         .application
         .authorization
-        .elevation_lifecycle_operation::<AliasedRequestCapabilityElevationOperation>(
+        .elevation_lifecycle_operation::<
+            IdentityExecutionSchema,
+            AliasedRequestCapabilityElevationOperation,
+        >(
             "RequestCapabilityElevationOperation",
             <RequestElevationInput as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str(),
         )
@@ -182,15 +193,25 @@ fn non_governed_capability_rejects_an_elevation_selector() {
     let projection = ApplicationCapabilityRequestProjection::new(
         ApplicationCapabilityEntitySelector::new(
             AccountIdentity::reference(),
-            "account-1".to_owned(),
+            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                "account-1".to_owned(),
+            )
+            .expect("fixture account identity must encode"),
         ),
-        CapabilityAction::Touch,
-        CapabilityPurpose::AccountMaintenance,
+        ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(CapabilityAction::Touch)
+            .expect("fixture capability action must encode"),
+        ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
+            CapabilityPurpose::AccountMaintenance,
+        )
+        .expect("fixture capability purpose must encode"),
         ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()),
     )
     .elevation(ApplicationCapabilityEntitySelector::new(
         CapabilityElevationIdentity::reference(),
-        "elevation-1".to_owned(),
+        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+            "elevation-1".to_owned(),
+        )
+        .expect("fixture elevation identity must encode"),
     ));
 
     let denial = crate::domain_computation::authorization::validate_elevation_projection(

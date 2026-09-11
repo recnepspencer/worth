@@ -5,10 +5,11 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::{
     ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
     ApplicationFieldMarkerIdentity, ApplicationFieldPresence, DeclaredApplicationFieldValue,
-    OperationCreates, OperationExpectsFact, OperationReads,
+    OperationCreates, OperationExpectsFact, OperationReads, U64ApplicationValueBinding,
 };
 use worth_query_declaration::facade::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
+    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 
 use super::{TestOperation, TestSchema};
@@ -21,14 +22,13 @@ pub(super) struct FixturePrincipalIdentityField<Schema>(PhantomData<fn() -> Sche
 
 pub(super) type TestEntity = FixtureEntity<TestSchema>;
 
-impl<Schema> ApplicationEntityMarkerIdentity for FixtureEntity<Schema> {
-    type Schema = Schema;
+impl<Schema> ApplicationEntityMarkerIdentity<Schema> for FixtureEntity<Schema> {
     const IDENTIFIER: &'static str = "TestEntity";
 }
 
-impl<Schema> ApplicationAspectMarkerIdentity for FixtureIdentityAspect<Schema> {
-    type Schema = Schema;
-    type Entity = FixtureEntity<Schema>;
+impl<Schema> ApplicationAspectMarkerIdentity<Schema, FixtureEntity<Schema>>
+    for FixtureIdentityAspect<Schema>
+{
     const IDENTIFIER: &'static str = "IdentityAspect";
     const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
         worth_query_declaration::facade::application_schema::AspectIdentity(0x9161200c);
@@ -39,10 +39,13 @@ impl<Schema> ApplicationAspectMarkerIdentity for FixtureIdentityAspect<Schema> {
 
 macro_rules! field_marker_identity {
     ($marker:ident, $identifier:literal) => {
-        impl<Schema> ApplicationFieldMarkerIdentity for $marker<Schema> {
-            type Schema = Schema;
-            type Entity = FixtureEntity<Schema>;
-            type Aspect = FixtureIdentityAspect<Schema>;
+        impl<Schema>
+            ApplicationFieldMarkerIdentity<
+                Schema,
+                FixtureEntity<Schema>,
+                FixtureIdentityAspect<Schema>,
+            > for $marker<Schema>
+        {
             const IDENTIFIER: &'static str = $identifier;
         }
     };
@@ -53,9 +56,10 @@ field_marker_identity!(FixtureMappingStatusField, "MappingStatusField");
 field_marker_identity!(FixturePrincipalIdentityField, "PrincipalIdentityField");
 
 macro_rules! required_field {
-    ($field:ident, $value:ty) => {
+    ($field:ident, $value:ty, $binding:ty) => {
         impl<Schema> DeclaredApplicationFieldValue for $field<Schema> {
             type Value = $value;
+            type Binding = $binding;
             const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
         }
     };
@@ -63,10 +67,19 @@ macro_rules! required_field {
 
 required_field!(
     FixtureExternalIdentityField,
-    WorthQueryExternalPrincipalIdentity
+    WorthQueryExternalPrincipalIdentity,
+    WorthQueryExternalPrincipalIdentityBinding
 );
-required_field!(FixtureMappingStatusField, WorthQueryPrincipalMappingStatus);
-required_field!(FixturePrincipalIdentityField, u64);
+required_field!(
+    FixtureMappingStatusField,
+    WorthQueryPrincipalMappingStatus,
+    WorthQueryPrincipalMappingStatusBinding
+);
+required_field!(
+    FixturePrincipalIdentityField,
+    u64,
+    U64ApplicationValueBinding
+);
 
 impl<Schema> OperationCreates<TestOperation<Schema>> for FixtureEntity<Schema> {}
 impl<Schema> OperationReads<TestOperation<Schema>> for FixturePrincipalIdentityField<Schema> {}

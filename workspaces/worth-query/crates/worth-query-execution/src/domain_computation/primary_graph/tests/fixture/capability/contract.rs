@@ -1,25 +1,23 @@
 use worth_query_declaration::facade::{
     application_capability::{
-        ApplicationCapabilityAcceptedValues, ApplicationCapabilityActorComposition,
-        ApplicationCapabilityAllowRule, ApplicationCapabilityCardinalityDimension,
-        ApplicationCapabilityComposition, ApplicationCapabilityConflictRule,
-        ApplicationCapabilityConstraintDefinition, ApplicationCapabilityContract,
-        ApplicationCapabilityContractBuilder, ApplicationCapabilityCurrentnessDefinition,
-        ApplicationCapabilityDecisionComposition, ApplicationCapabilityDelegationDefinition,
-        ApplicationCapabilityDelegationRule, ApplicationCapabilityDenyRule,
-        ApplicationCapabilityDisclosureRule, ApplicationCapabilityDistinctActorRule,
-        ApplicationCapabilityElevationRule, ApplicationCapabilityFieldBinding,
-        ApplicationCapabilityFieldDimension, ApplicationCapabilityGraphClause,
-        ApplicationCapabilityGraphRule, ApplicationCapabilityMagnitudeDimension,
-        ApplicationCapabilityPathContextAnchor, ApplicationCapabilityPropagationComposition,
+        ApplicationCapabilityActorComposition, ApplicationCapabilityAllowRule,
+        ApplicationCapabilityCardinalityDimension, ApplicationCapabilityComposition,
+        ApplicationCapabilityConflictRule, ApplicationCapabilityConstraintDefinition,
+        ApplicationCapabilityContract, ApplicationCapabilityContractBuilder,
+        ApplicationCapabilityCurrentnessDefinition, ApplicationCapabilityDecisionComposition,
+        ApplicationCapabilityDelegationDefinition, ApplicationCapabilityDenyRule,
+        ApplicationCapabilityDistinctActorRule, ApplicationCapabilityElevationRule,
+        ApplicationCapabilityFieldBinding, ApplicationCapabilityFieldDimension,
+        ApplicationCapabilityGraphClause, ApplicationCapabilityGraphRule,
+        ApplicationCapabilityMagnitudeDimension, ApplicationCapabilityPathContextAnchor,
         ApplicationCapabilityRelationBinding, ApplicationCapabilityRelationDimension,
-        ApplicationCapabilityScopeGuard, ApplicationCapabilitySeparationOfDutyRule,
-        ApplicationCapabilityTargetDefinition, ApplicationCapabilityValidityDefinition,
-        ApplicationCapabilityValidityTimeline, ApplicationCapabilityValueBinding,
-        ApplicationCapabilityWorkflowDefinition,
+        ApplicationCapabilitySeparationOfDutyRule, ApplicationCapabilityTargetDefinition,
+        ApplicationCapabilityValidityDefinition, ApplicationCapabilityValidityTimeline,
+        ApplicationCapabilityValueBinding, ApplicationCapabilityWorkflowDefinition,
     },
     application_schema::{
-        ApplicationAuthorizationPathBuilder, ApplicationSchemaDeclarationBuilder,
+        ApplicationAuthorizationPathBuilder, ApplicationEncodedScalarValue,
+        ApplicationSchemaDeclarationBuilder,
     },
 };
 
@@ -27,6 +25,10 @@ use super::super::{
     Account, AccountLabel, AccountOwner, AccountStatus, IdentityExecutionSchema, Principal,
 };
 use super::declaration::*;
+
+#[path = "propagation.rs"]
+mod propagation;
+use propagation::capability_propagation;
 
 pub(in super::super) fn install(
     schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
@@ -242,14 +244,20 @@ fn capability_target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
             CapabilityActionField::reference(),
-            CapabilityAction::Touch,
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
+                CapabilityAction::Touch,
+            )
+            .unwrap(),
         ),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::bound(CapabilityRelated::reference()),
         ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::reference()),
         ApplicationCapabilityValueBinding::new(
             CapabilityPurposeField::reference(),
-            CapabilityPurpose::AccountMaintenance,
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
+                CapabilityPurpose::AccountMaintenance,
+            )
+            .unwrap(),
         ),
     )
 }
@@ -261,7 +269,10 @@ fn capability_constraints() -> ApplicationCapabilityConstraintDefinition {
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
                 CapabilityStatusField::reference(),
-                CapabilityStatus::Active,
+                ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
+                    CapabilityStatus::Active,
+                )
+                .unwrap(),
             ),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
@@ -365,25 +376,5 @@ fn composed_capability_composition() -> ApplicationCapabilityComposition {
             ApplicationCapabilityDistinctActorRule::when(anchored_graph(prior_actor)),
         ),
         capability_propagation(),
-    )
-}
-
-fn capability_propagation() -> ApplicationCapabilityPropagationComposition {
-    ApplicationCapabilityPropagationComposition::new(
-        ApplicationCapabilityDelegationRule::narrow_all_dimensions(
-            worth_query_declaration::facade::application_capability::ApplicationCapabilityDelegationDepth::new(2)
-                .unwrap(),
-        ),
-        ApplicationCapabilityDisclosureRule::permit([
-            ApplicationCapabilityScopeGuard::requiring([
-                ApplicationCapabilityAcceptedValues::one_of(
-                    CapabilityDisclosureField::reference(),
-                    [
-                        CapabilityDisclosure::AccountActivity,
-                        CapabilityDisclosure::PrivateLabel,
-                    ],
-                ),
-            ]),
-        ]),
     )
 }

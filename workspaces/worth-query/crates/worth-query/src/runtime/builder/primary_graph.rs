@@ -10,7 +10,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphPublication,
 };
 use worth_query_installation::facade::{
-    TypedApplicationIdentityValue, WorthQueryExternalPrincipalIdentity,
+    ApplicationIdentityScalarValueBinding, WorthQueryExternalPrincipalIdentity,
     WorthQueryInstalledApplicationSchema, WorthQueryPrincipalMappingStatus,
 };
 
@@ -73,7 +73,13 @@ impl<Schema> WorthQueryPrimaryGraphConfiguration<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn bind_principal<Binding, Mapping, Principal, PrincipalIdentity>(
+    pub fn bind_principal<
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >(
         &mut self,
         binding: ApplicationPrincipalBindingRef<
             Schema,
@@ -81,6 +87,7 @@ where
             Mapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
         >,
         principal_key: WorthQueryApplicationPrincipalKey<Schema, Principal>,
         principal_identity: PrincipalIdentity,
@@ -88,7 +95,8 @@ where
         status: WorthQueryPrincipalMappingStatus,
     ) -> Result<(), WorthQueryPrimaryGraphConfigurationDenial>
     where
-        PrincipalIdentity: TypedApplicationIdentityValue,
+        PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+        PrincipalIdentity: 'static,
     {
         let installed_binding =
             self.installed_schema

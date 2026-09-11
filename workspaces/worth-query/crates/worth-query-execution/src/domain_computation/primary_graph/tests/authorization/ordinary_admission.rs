@@ -14,7 +14,8 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_schema::{
-    OperationExpectsFact, TypedMutationPreconditions,
+    ApplicationEncodedScalarValue, OperationExpectsFact, StringApplicationValueBinding,
+    TypedMutationPreconditions,
 };
 
 impl OperationExpectsFact<TouchAccountOperation> for AccountLabel {}
@@ -151,7 +152,10 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
         .unwrap();
     let caller_only = TypedMutationPreconditions::new().expect_fact(
         AccountLabel::reference(),
-        "forged-contract-widening".to_owned(),
+        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+            "forged-contract-widening".to_owned(),
+        )
+        .expect("fixture account label must encode"),
     );
 
     let denial = world

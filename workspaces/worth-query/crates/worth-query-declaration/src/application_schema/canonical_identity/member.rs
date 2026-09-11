@@ -14,6 +14,7 @@ pub(super) fn append_member(
     basis: &mut ApplicationSchemaCanonicalBasis,
     index: usize,
     member: &ApplicationSchemaMember,
+    revised: bool,
 ) {
     let prefix = format!("member[{index}]");
     match member {
@@ -22,7 +23,7 @@ pub(super) fn append_member(
         | ApplicationSchemaMember::Field { .. }
         | ApplicationSchemaMember::Relation { .. }
         | ApplicationSchemaMember::PrincipalBinding { .. } => {
-            schema::append_schema_member(basis, &prefix, member)
+            schema::append_schema_member(basis, &prefix, member, revised)
         }
         ApplicationSchemaMember::ApplicationQuery { .. }
         | ApplicationSchemaMember::ApplicationCapability { .. }

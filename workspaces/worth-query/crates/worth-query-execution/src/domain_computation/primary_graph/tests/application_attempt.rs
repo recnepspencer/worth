@@ -47,6 +47,8 @@ mod provider_terminal_evidence;
 mod retry_outbox_rebind;
 #[path = "application_attempt/settlement_failures.rs"]
 mod settlement_failures;
+#[path = "application_attempt/structured_effect_validation.rs"]
+mod structured_effect_validation;
 #[path = "application_attempt/terminal_failures.rs"]
 mod terminal_failures;
 #[path = "application_attempt/touched_graph_closure.rs"]

@@ -83,7 +83,15 @@ worth-query-publication/src/application_query/
 worth-query-certification/src/reference_domains/
     bank_compliance/
     geometry/
+worth-query-certification/fixtures/
+    consumer_values/  # extend 9.17.4's Query-free values
+    consumer_entry/   # extend 9.17.4's explicit entry contributions
 ```
+
+Reference-domain modules orchestrate advanced courts over the 9.17.4 fixture
+crates and Bank's real entry where applicable. They do not redeclare those
+schemas or value/binding identities. Cases share the owning integration target
+and compiled fixture dependencies rather than creating a binary per scenario.
 
 ## Phase Plan
 

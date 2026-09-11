@@ -5,7 +5,8 @@ use worth_foundational::facade::AspectValue;
 use super::capabilities::{ApplicationFieldUnit, EqualityCapable, EqualityPredicate};
 use super::field_reference::ApplicationFieldRef;
 use super::references::{ApplicationEntityRef, ApplicationRelationRef};
-use super::values::TypedApplicationValue;
+use super::values::DeclaredApplicationFieldValue;
+use super::ApplicationEncodedScalarValue;
 
 mod portable_parts;
 pub use portable_parts::{
@@ -185,10 +186,10 @@ impl<Schema, Current> ApplicationAuthorizationPathBuilder<Schema, Current> {
             EqualityPredicate,
             Unit,
         >,
-        value: Value,
+        value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
         EqualityPredicate: EqualityCapable,
     {

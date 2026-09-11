@@ -1,4 +1,3 @@
-use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
 use worth_query_declaration::facade::{
     application_capability::{
         ApplicationCapabilityElevationRequest, ApplicationCapabilityElevationRequestProjection,
@@ -7,7 +6,9 @@ use worth_query_declaration::facade::{
         ApplicationCapabilityRequestProjection, ApplicationCapabilityRequestProjectionDenial,
         ApplicationCapabilityValueBinding,
     },
-    application_schema::{TypedApplicationReadableValue, TypedApplicationValue},
+    application_schema::{
+        ApplicationEncodedScalarValue, StringApplicationValueBinding, U64ApplicationValueBinding,
+    },
 };
 use worth_query_declaration::{
     worth_query_aspect, worth_query_capability, worth_query_capability_context_entity_slot,
@@ -18,6 +19,12 @@ use worth_query_declaration::{
 
 use super::super::{Account, AccountIdentity, AccountLabel, IdentityExecutionSchema, Principal};
 use super::declaration::*;
+
+#[path = "elevated/value_bindings.rs"]
+mod value_bindings;
+pub use value_bindings::{
+    CapabilityElevationStatusBinding, CapabilityReviewKindBinding, CapabilityReviewStatusBinding,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CapabilityElevationStatus {
@@ -38,57 +45,25 @@ pub enum CapabilityReviewKind {
     Elevation,
 }
 
-macro_rules! string_value {
-    ($type:ty, {$($variant:path => $value:literal),+ $(,)?}) => {
-        impl TypedApplicationValue for $type {
-            const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::String;
-            fn into_foundational_value(self) -> AspectValue {
-                let value = match self { $($variant => $value),+ };
-                AspectValue::String(InternedString::from(value))
-            }
-        }
-        impl TypedApplicationReadableValue for $type {
-            fn from_foundational_value(value: &AspectValue) -> Option<Self> {
-                let AspectValue::String(InternedString::Raw(value)) = value else { return None; };
-                match value.as_str() { $($value => Some($variant),)+ _ => None }
-            }
-        }
-    };
-}
-
-string_value!(CapabilityElevationStatus, {
-    CapabilityElevationStatus::Requested => "requested",
-    CapabilityElevationStatus::Approved => "approved",
-    CapabilityElevationStatus::Expired => "expired",
-    CapabilityElevationStatus::Revoked => "revoked"
-});
-string_value!(CapabilityReviewStatus, {
-    CapabilityReviewStatus::Required => "required",
-    CapabilityReviewStatus::Completed => "completed"
-});
-string_value!(CapabilityReviewKind, {
-    CapabilityReviewKind::Elevation => "elevation"
-});
-
-worth_query_entity!(pub CapabilityElevation in IdentityExecutionSchema);
-worth_query_aspect!(pub CapabilityElevationFacts in IdentityExecutionSchema, CapabilityElevation; identity = AspectIdentity(0x91611038), revision = AspectContractRevision(1),);
-worth_query_field!(pub CapabilityElevationIdentity in IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: String, read_only, equality);
-worth_query_field!(pub CapabilityElevationReason in IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: String, read_only, no_equality);
-worth_query_field!(pub CapabilityElevationStatusField in IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: CapabilityElevationStatus, read_write, no_equality);
-worth_query_field!(pub CapabilityElevationNotBefore in IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: u64, read_write, no_equality);
-worth_query_field!(pub CapabilityElevationNotAfter in IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: u64, read_write, no_equality);
-worth_query_entity!(pub CapabilityReview in IdentityExecutionSchema);
-worth_query_aspect!(pub CapabilityReviewFacts in IdentityExecutionSchema, CapabilityReview; identity = AspectIdentity(0x91611039), revision = AspectContractRevision(1),);
-worth_query_field!(pub CapabilityReviewIdentity in IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: String, read_only, equality);
-worth_query_field!(pub CapabilityReviewKindField in IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: CapabilityReviewKind, read_only, equality);
-worth_query_field!(pub CapabilityReviewStatusField in IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: CapabilityReviewStatus, read_write, no_equality);
-worth_query_relation!(pub CapabilityElevationRequester in IdentityExecutionSchema, Principal => CapabilityElevation);
-worth_query_relation!(pub CapabilityElevationApprover in IdentityExecutionSchema, Principal => CapabilityElevation);
-worth_query_relation!(pub CapabilityElevationGrant in IdentityExecutionSchema, CapabilityElevation => CapabilityGrant);
-worth_query_relation!(pub CapabilityElevationResource in IdentityExecutionSchema, CapabilityElevation => Account);
-worth_query_relation!(pub CapabilityElevationReview in IdentityExecutionSchema, CapabilityElevation => CapabilityReview);
-worth_query_relation!(pub CapabilityReviewResource in IdentityExecutionSchema, CapabilityReview => Account);
-worth_query_relation!(pub CapabilityReviewer in IdentityExecutionSchema, Principal => CapabilityReview);
+worth_query_entity!(pub CapabilityElevation for IdentityExecutionSchema);
+worth_query_aspect!(pub CapabilityElevationFacts for IdentityExecutionSchema, CapabilityElevation; identity = AspectIdentity(0x91611038), revision = AspectContractRevision(1),);
+worth_query_field!(pub CapabilityElevationIdentity for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: String => StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub CapabilityElevationReason for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: String => StringApplicationValueBinding, read_only, no_equality);
+worth_query_field!(pub CapabilityElevationStatusField for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: CapabilityElevationStatus => CapabilityElevationStatusBinding, read_write, no_equality);
+worth_query_field!(pub CapabilityElevationNotBefore for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: u64 => U64ApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub CapabilityElevationNotAfter for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: u64 => U64ApplicationValueBinding, read_write, no_equality);
+worth_query_entity!(pub CapabilityReview for IdentityExecutionSchema);
+worth_query_aspect!(pub CapabilityReviewFacts for IdentityExecutionSchema, CapabilityReview; identity = AspectIdentity(0x91611039), revision = AspectContractRevision(1),);
+worth_query_field!(pub CapabilityReviewIdentity for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: String => StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub CapabilityReviewKindField for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: CapabilityReviewKind => CapabilityReviewKindBinding, read_only, equality);
+worth_query_field!(pub CapabilityReviewStatusField for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: CapabilityReviewStatus => CapabilityReviewStatusBinding, read_write, no_equality);
+worth_query_relation!(pub CapabilityElevationRequester in IdentityExecutionSchema, Principal => CapabilityElevation; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub CapabilityElevationApprover in IdentityExecutionSchema, Principal => CapabilityElevation; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub CapabilityElevationGrant in IdentityExecutionSchema, CapabilityElevation => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub CapabilityElevationResource in IdentityExecutionSchema, CapabilityElevation => Account; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub CapabilityElevationReview in IdentityExecutionSchema, CapabilityElevation => CapabilityReview; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub CapabilityReviewResource in IdentityExecutionSchema, CapabilityReview => Account; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub CapabilityReviewer in IdentityExecutionSchema, Principal => CapabilityReview; integrity = same_context_unbounded_retain_dangling);
 worth_query_capability_context_entity_slot!(pub CapabilityElevationSlot in IdentityExecutionSchema, CapabilityRequestContext => CapabilityElevation);
 worth_query_capability_context_entity_slot!(pub CapabilityReviewSlot in IdentityExecutionSchema, CapabilityRequestContext => CapabilityReview);
 worth_query_capability!(pub ElevatedTouchAccountCapability in IdentityExecutionSchema);
@@ -141,9 +116,12 @@ worth_query_declaration::worth_query_portable_type!(
     ApproveElevationInput => "worth.query.test.approve-elevation-input.v1"
 );
 
-worth_query_operation!(pub ElevatedCapabilityTouchOperation(ElevatedCapabilityTouchInput) in IdentityExecutionSchema);
-worth_query_operation!(pub RequestCapabilityElevationOperation(RequestElevationInput) in IdentityExecutionSchema);
-worth_query_operation!(pub ApproveCapabilityElevationOperation(ApproveElevationInput) in IdentityExecutionSchema);
+worth_query_declaration::worth_query_structured_value_binding!(pub ElevatedCapabilityTouchOperationInputBinding for ElevatedCapabilityTouchInput { identity: "worth.query.test.elevated-capability-touch-input.v1" });
+worth_query_operation!(pub ElevatedCapabilityTouchOperation for IdentityExecutionSchema, input ElevatedCapabilityTouchOperationInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub RequestCapabilityElevationOperationInputBinding for RequestElevationInput { identity: "worth.query.test.request-elevation-input.v1" });
+worth_query_operation!(pub RequestCapabilityElevationOperation for IdentityExecutionSchema, input RequestCapabilityElevationOperationInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub ApproveCapabilityElevationOperationInputBinding for ApproveElevationInput { identity: "worth.query.test.approve-elevation-input.v1" });
+worth_query_operation!(pub ApproveCapabilityElevationOperation for IdentityExecutionSchema, input ApproveCapabilityElevationOperationInputBinding);
 worth_query_operation_reads!(ElevatedCapabilityTouchOperation => [AccountLabel]);
 worth_query_operation_writes!(ElevatedCapabilityTouchOperation => [AccountLabel]);
 worth_query_operation_reads!(RequestCapabilityElevationOperation => [AccountLabel]);
@@ -173,26 +151,47 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, ElevatedTouchAccountC
         let projection = ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
                 AccountIdentity::reference(),
-                self.account.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.account.clone(),
+                )
+                .expect("fixture account identity must encode"),
             ),
-            self.action,
-            self.purpose,
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(self.action)
+                .expect("fixture capability action must encode"),
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(self.purpose)
+                .expect("fixture capability purpose must encode"),
             ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()),
         );
         let projection = match (&self.elevation, self.substitute_resource_selector) {
             (Some(_), true) => projection.elevation(ApplicationCapabilityEntitySelector::new(
                 AccountIdentity::reference(),
-                self.account.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.account.clone(),
+                )
+                .expect("fixture account identity must encode"),
             )),
             (Some(elevation), false) => {
                 projection.elevation(ApplicationCapabilityEntitySelector::new(
                     CapabilityElevationIdentity::reference(),
-                    elevation.clone(),
+                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                        elevation.clone(),
+                    )
+                    .expect("fixture elevation identity must encode"),
                 ))
             }
             (None, _) => projection,
         };
-        Ok(projection.field(self.disclosure).magnitude(self.amount))
+        Ok(projection
+            .field(
+                ApplicationEncodedScalarValue::<CapabilityDisclosureBinding>::try_new(
+                    self.disclosure,
+                )
+                .expect("fixture capability disclosure must encode"),
+            )
+            .magnitude(
+                ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(self.amount)
+                    .expect("fixture capability magnitude must encode"),
+            ))
     }
 }
 
@@ -235,15 +234,27 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, ApproveElevationCapab
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
                 AccountIdentity::reference(),
-                self.account.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.account.clone(),
+                )
+                .expect("fixture account identity must encode"),
             ),
-            CapabilityAction::ApproveElevation,
-            CapabilityPurpose::AccountMaintenance,
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
+                CapabilityAction::ApproveElevation,
+            )
+            .expect("fixture capability action must encode"),
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
+                CapabilityPurpose::AccountMaintenance,
+            )
+            .expect("fixture capability purpose must encode"),
             ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()).entity(
                 CapabilityElevationSlot::reference(),
                 ApplicationCapabilityEntitySelector::new(
                     CapabilityElevationIdentity::reference(),
-                    self.elevation.clone(),
+                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                        self.elevation.clone(),
+                    )
+                    .expect("fixture elevation identity must encode"),
                 ),
             ),
         ))
@@ -273,21 +284,33 @@ impl
             self.target_projection(),
             ApplicationCapabilityEntitySelector::new(
                 CapabilityIdentity::reference(),
-                self.grant.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.grant.clone(),
+                )
+                .expect("fixture grant identity must encode"),
             ),
             self.elevation_key.clone(),
             ApplicationCapabilityValueBinding::new(
                 CapabilityElevationIdentity::reference(),
-                self.elevation_identity.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.elevation_identity.clone(),
+                )
+                .expect("fixture elevation identity must encode"),
             ),
             self.review_key.clone(),
             ApplicationCapabilityValueBinding::new(
                 CapabilityReviewIdentity::reference(),
-                self.review_identity.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.review_identity.clone(),
+                )
+                .expect("fixture review identity must encode"),
             ),
             ApplicationCapabilityValueBinding::new(
                 CapabilityElevationReason::reference(),
-                self.reason.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.reason.clone(),
+                )
+                .expect("fixture elevation reason must encode"),
             ),
             self.duration,
         )
@@ -305,10 +328,19 @@ impl RequestElevationInput {
         ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
                 AccountIdentity::reference(),
-                self.account.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.account.clone(),
+                )
+                .expect("fixture account identity must encode"),
             ),
-            CapabilityAction::RequestElevation,
-            CapabilityPurpose::AccountMaintenance,
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
+                CapabilityAction::RequestElevation,
+            )
+            .expect("fixture capability action must encode"),
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
+                CapabilityPurpose::AccountMaintenance,
+            )
+            .expect("fixture capability purpose must encode"),
             ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()),
         )
     }
@@ -323,14 +355,25 @@ impl RequestElevationInput {
         ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
                 AccountIdentity::reference(),
-                self.target_account.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.target_account.clone(),
+                )
+                .expect("fixture target account identity must encode"),
             ),
-            self.action,
-            self.target_purpose,
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(self.action)
+                .expect("fixture capability action must encode"),
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(self.target_purpose)
+                .expect("fixture capability purpose must encode"),
             ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()),
         )
-        .field(self.disclosure)
-        .magnitude(self.amount)
+        .field(
+            ApplicationEncodedScalarValue::<CapabilityDisclosureBinding>::try_new(self.disclosure)
+                .expect("fixture capability disclosure must encode"),
+        )
+        .magnitude(
+            ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(self.amount)
+                .expect("fixture capability magnitude must encode"),
+        )
     }
 }
 

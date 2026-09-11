@@ -6,7 +6,8 @@ use bank_domain::{
     schema::{ViewEstateAdministrationCapability, ViewRestrictedEstateOperation},
 };
 use worth_query_host::facade::{
-    domain::TypedApplicationValue, primary_graph::WorthQueryOperationAuthorizationDenialKind,
+    declaration::application_schema::ApplicationScalarValueBinding,
+    primary_graph::WorthQueryOperationAuthorizationDenialKind,
 };
 
 use super::fixture::{capability_world, request_scope, GrantSpec, ESTATE};
@@ -28,7 +29,8 @@ fn active_bank_grant_mints_only_a_current_move_only_access_proof() {
         )
         .unwrap();
     let request = request_scope();
-    let access = application
+    let selected = fixture.runtime.select_current_product().unwrap();
+    let access = selected
         .admit_capability_access(principal.query(), &capability, view_action(), &request)
         .unwrap();
 
@@ -36,7 +38,12 @@ fn active_bank_grant_mints_only_a_current_move_only_access_proof() {
     assert_eq!(access.authorization_decision_fact_count(), 2);
     assert_eq!(
         access.projected_request().field_value(),
-        Some(&RestrictedBankField::CustomerIdentity.into_foundational_value())
+        Some(
+            &bank_domain::schema::RestrictedBankFieldBinding::encode(
+                &RestrictedBankField::CustomerIdentity,
+            )
+            .unwrap(),
+        )
     );
     assert_eq!(access.capability_time_sample().semantic_byte_width(), 9);
     assert!(access.relational_counters().paths_evaluated > 0);
@@ -100,7 +107,10 @@ fn view_denial(
             ViewRestrictedEstateOperation::reference(),
         )
         .unwrap();
-    application
+    fixture
+        .runtime
+        .select_current_product()
+        .unwrap()
         .admit_capability_access(
             principal.query(),
             &capability,

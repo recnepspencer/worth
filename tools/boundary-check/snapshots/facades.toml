@@ -46,11 +46,14 @@ exports = [
     "diagnostics",
     "identity",
     "identity_authority",
+    "portable_identity",
     "schema_view",
     "typed",
     "validation",
     "view_declaration",
     "worth_query_ability",
+    "worth_query_application",
+    "worth_query_application_contribution",
     "worth_query_application_query",
     "worth_query_application_schema",
     "worth_query_aspect",
@@ -76,7 +79,9 @@ exports = [
     "worth_query_portable_type",
     "worth_query_principal_binding",
     "worth_query_relation",
+    "worth_query_structured_value_binding",
     "worth_query_unit",
+    "worth_query_value_binding",
 ]
 
 [[facades]]
@@ -111,6 +116,7 @@ exports = [
     "worth_query_portable_type",
     "worth_query_principal_binding",
     "worth_query_relation",
+    "worth_query_structured_value_binding",
 ]
 
 [[facades]]

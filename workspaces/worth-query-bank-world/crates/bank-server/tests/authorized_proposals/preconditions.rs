@@ -3,7 +3,8 @@ use bank_domain::schema::{
     Account, AccountingRevision, BankSchema, SendMoney, SendMoneyOperation, Status,
 };
 use bank_server::{
-    BankMutationCommitOutcome, BankOperationProposals, BankPrincipalSeed, BankWorldSeed,
+    BankApplicationAttemptDenialKind, BankCommitPreparationDenial, BankMutationCommitOutcome,
+    BankOperationProposals, BankPrincipalSeed, BankWorldSeed,
 };
 use worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions;
 
@@ -13,7 +14,7 @@ use super::fixture::{
 use crate::support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
 
 #[test]
-fn expected_source_facts_stale_on_relevant_drift() {
+fn expected_source_facts_reject_relevant_drift_during_commit_preparation() {
     let snapshot = funded_personal_world();
     let owner = DynamicIdentity::new("precondition-owner");
     let recipient = DynamicIdentity::new("precondition-recipient");
@@ -57,6 +58,13 @@ fn expected_source_facts_stale_on_relevant_drift() {
         &input,
         "precondition-first",
     );
+    let BankMutationCommitOutcome::Committed(receipt) =
+        world.runtime.commit_send_money(first).unwrap()
+    else {
+        panic!("the first matching attempt must commit");
+    };
+    assert_eq!(receipt.expected_version_count(), 1);
+    assert_eq!(receipt.expected_fact_count(), 1);
     let stale = prepare(
         &world.runtime,
         &actor,
@@ -66,19 +74,11 @@ fn expected_source_facts_stale_on_relevant_drift() {
         &input,
         "precondition-stale",
     );
-
-    let BankMutationCommitOutcome::Committed(receipt) =
-        world.runtime.commit_send_money(first).unwrap()
-    else {
-        panic!("the first matching attempt must commit");
-    };
-    assert_eq!(receipt.expected_version_count(), 1);
-    assert_eq!(receipt.expected_fact_count(), 1);
     assert!(matches!(
-        world.runtime.commit_send_money(stale).unwrap(),
-        BankMutationCommitOutcome::Stale {
-            stale_fact_count: 2..
-        }
+        world.runtime.commit_send_money(stale),
+        Err(BankCommitPreparationDenial::Application {
+            kind: BankApplicationAttemptDenialKind::MutationPreconditionMismatch,
+        })
     ));
 }
 
@@ -105,19 +105,6 @@ fn unrelated_drift_preserves_expected_source_facts() {
     let second_source = snapshot
         .primary_account(id(BankPrincipalId::new, 2))
         .unwrap();
-    let first = prepare(
-        &world.runtime,
-        &first_actor,
-        &request,
-        &snapshot,
-        first_source,
-        &SendMoney {
-            from: first_source,
-            recipient: id(BankPrincipalId::new, 3),
-            amount: Money::from_minor(250).unwrap(),
-        },
-        "precondition-independent-first",
-    );
     let unrelated = prepare(
         &world.runtime,
         &second_actor,
@@ -136,6 +123,19 @@ fn unrelated_drift_preserves_expected_source_facts() {
         world.runtime.commit_send_money(unrelated).unwrap(),
         BankMutationCommitOutcome::Committed(_)
     ));
+    let first = prepare(
+        &world.runtime,
+        &first_actor,
+        &request,
+        &snapshot,
+        first_source,
+        &SendMoney {
+            from: first_source,
+            recipient: id(BankPrincipalId::new, 3),
+            amount: Money::from_minor(250).unwrap(),
+        },
+        "precondition-independent-first",
+    );
     let BankMutationCommitOutcome::Committed(receipt) =
         world.runtime.commit_send_money(first).unwrap()
     else {
@@ -155,13 +155,24 @@ fn prepare(
     idempotency_key: &str,
 ) -> bank_server::BankAuthorizedProposal<SendMoneyOperation, SendMoney, Account, AccountId> {
     let account = snapshot.account(source).unwrap();
+    use worth_query_host::facade::declaration::application_schema::ApplicationEncodedScalarValue;
+
     let preconditions =
         TypedMutationPreconditions::<BankSchema, SendMoneyOperation, Account>::new()
             .expect_version(
                 AccountingRevision::reference(),
-                snapshot.account_journal_revision(source).unwrap(),
+                ApplicationEncodedScalarValue::<bank_domain::schema::AccountJournalRevisionBinding>::try_new(
+                    snapshot.account_journal_revision(source).unwrap(),
+                )
+                .unwrap(),
             )
-            .expect_fact(Status::reference(), account.status());
+            .expect_fact(
+                Status::reference(),
+                ApplicationEncodedScalarValue::<bank_domain::schema::AccountStatusBinding>::try_new(
+                    account.status(),
+                )
+                .unwrap(),
+            );
     let admission = runtime
         .authorize_send_money(actor, source, preconditions, request)
         .unwrap();

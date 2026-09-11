@@ -4,19 +4,22 @@ use super::operations::{bind_operations, FixtureReads};
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
     ApplicationAbilityRef, ApplicationAspectMarkerIdentity, ApplicationAspectRef,
-    ApplicationAuthorizationPathBuilder, ApplicationEffectPayload, ApplicationEntityMarkerIdentity,
-    ApplicationEntityRef, ApplicationExternalEffectPayload, ApplicationExternalEffectProtocol,
+    ApplicationAuthorizationPathBuilder, ApplicationEntityMarkerIdentity, ApplicationEntityRef,
+    ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
     ApplicationFieldMarkerIdentity, ApplicationFieldPresence, ApplicationFieldRef,
     ApplicationOperationMarkerIdentity, ApplicationPolicyRef, ApplicationPrincipalBindingRef,
     ApplicationPrincipalBindingRequirements, ApplicationPrincipalIdentityRequirement,
     ApplicationPrincipalMappingIdentityRequirement, ApplicationPrincipalMappingStatusRequirement,
-    ApplicationPrincipalTargetRequirement, ApplicationRelationRef, ApplicationSchema,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationPrincipalTargetRequirement, ApplicationRelationRef,
+    ApplicationRetainedEffectBinding, ApplicationSchema, ApplicationSchemaDeclaration,
+    ApplicationSchemaDeclarationBuilder, BoolApplicationValueBinding,
     DeclaredApplicationFieldValue, EqualityPredicate, NoEqualityPredicate, OperationEmits,
-    OperationReads, OperationRequiresAbility, ReadOnly, ReadWrite,
+    OperationReads, OperationRequiresAbility, ReadOnly, ReadWrite, StringApplicationValueBinding,
+    U64ApplicationValueBinding,
 };
 use worth_query_declaration::facade::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
+    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 use worth_query_declaration::worth_query_effect;
 pub(super) struct AftermathFixtureSchema;
@@ -38,12 +41,12 @@ pub(super) struct Charge;
 worth_query_declaration::worth_query_portable_type!(
     FixtureInput => "worth.query.test.aftermath-fixture-input.v1"
 );
+worth_query_declaration::worth_query_structured_value_binding!(pub(super) FixtureInputBinding for FixtureInput { identity: "worth.query.test.aftermath-fixture-input.v1" });
 
 macro_rules! operation_identity {
     ($operation:ty => $identifier:literal) => {
-        impl ApplicationOperationMarkerIdentity for $operation {
-            type Schema = AftermathFixtureSchema;
-            type Input = FixtureInput;
+        impl ApplicationOperationMarkerIdentity<AftermathFixtureSchema> for $operation {
+            type InputBinding = FixtureInputBinding;
             const IDENTIFIER: &'static str = $identifier;
         }
     };
@@ -77,14 +80,11 @@ pub(super) struct BalanceField;
 struct MappingTarget;
 struct PrincipalBinding;
 
-impl ApplicationEntityMarkerIdentity for FixtureEntity {
-    type Schema = AftermathFixtureSchema;
+impl ApplicationEntityMarkerIdentity<AftermathFixtureSchema> for FixtureEntity {
     const IDENTIFIER: &'static str = "FixtureEntity";
 }
 
-impl ApplicationAspectMarkerIdentity for IdentityAspect {
-    type Schema = AftermathFixtureSchema;
-    type Entity = FixtureEntity;
+impl ApplicationAspectMarkerIdentity<AftermathFixtureSchema, FixtureEntity> for IdentityAspect {
     const IDENTIFIER: &'static str = "IdentityAspect";
     const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
         worth_query_declaration::facade::application_schema::AspectIdentity(0x91612008);
@@ -95,10 +95,9 @@ impl ApplicationAspectMarkerIdentity for IdentityAspect {
 
 macro_rules! field_identity {
     ($field:ty => $identifier:literal) => {
-        impl ApplicationFieldMarkerIdentity for $field {
-            type Schema = AftermathFixtureSchema;
-            type Entity = FixtureEntity;
-            type Aspect = IdentityAspect;
+        impl ApplicationFieldMarkerIdentity<AftermathFixtureSchema, FixtureEntity, IdentityAspect>
+            for $field
+        {
             const IDENTIFIER: &'static str = $identifier;
         }
     };
@@ -112,20 +111,23 @@ field_identity!(NoteField => "note");
 field_identity!(BalanceField => "balance");
 
 macro_rules! required_field {
-    ($field:ty, $value:ty) => {
-        impl DeclaredApplicationFieldValue for $field {
+    ($($field:ty => $value:ty, $binding:ty);+ $(;)?) => {
+        $(impl DeclaredApplicationFieldValue for $field {
             type Value = $value;
+            type Binding = $binding;
             const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-        }
+        })+
     };
 }
 
-required_field!(ExternalIdentityField, WorthQueryExternalPrincipalIdentity);
-required_field!(MappingStatusField, WorthQueryPrincipalMappingStatus);
-required_field!(PrincipalIdentityField, u64);
-required_field!(FrozenField, bool);
-required_field!(NoteField, String);
-required_field!(BalanceField, u64);
+required_field!(
+    ExternalIdentityField => WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding;
+    MappingStatusField => WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding;
+    PrincipalIdentityField => u64, U64ApplicationValueBinding;
+    FrozenField => bool, BoolApplicationValueBinding;
+    NoteField => String, StringApplicationValueBinding;
+    BalanceField => u64, U64ApplicationValueBinding;
+);
 
 macro_rules! reads_principal {
     ($($op:ty),+ $(,)?) => { $(impl OperationReads<$op> for PrincipalIdentityField {})+ };
@@ -154,30 +156,31 @@ pub(super) struct FixtureExternalNotice(u64);
 worth_query_declaration::worth_query_portable_type!(
     FixtureExternalNotice => "worth.query.test.fixture-external-notice.v1"
 );
+worth_query_declaration::worth_query_structured_value_binding!(pub(super) FixtureExternalNoticeBinding for FixtureExternalNotice { identity: "worth.query.test.fixture-external-notice.v1" });
 
-impl ApplicationEffectPayload for FixtureExternalNotice {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>()).unwrap_or(u64::MAX)
+impl ApplicationRetainedEffectBinding for FixtureExternalNoticeBinding {
+    fn retained_bytes(_value: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<Self::Value>()).unwrap_or(u64::MAX)
     }
 }
 
-impl ApplicationExternalEffectPayload for FixtureExternalNotice {
+impl ApplicationExternalEffectBinding for FixtureExternalNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
         BoundaryProtocolIdentity::new("test.fixture-external-notice"),
         BoundaryProtocolVersion::new(1),
     );
     const MAX_EXTERNAL_BYTES: u64 = 8;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
-        self.0.to_be_bytes().to_vec()
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
+        value.0.to_be_bytes().to_vec()
     }
 }
 
 worth_query_effect!(
-    pub(super) DeathNoticeEffect(FixtureExternalNotice) in AftermathFixtureSchema
+    pub(super) DeathNoticeEffect for AftermathFixtureSchema, payload FixtureExternalNoticeBinding
 );
 worth_query_effect!(
-    pub(super) WireInstructionEffect(FixtureExternalNotice) in AftermathFixtureSchema
+    pub(super) WireInstructionEffect for AftermathFixtureSchema, payload FixtureExternalNoticeBinding
 );
 
 impl OperationEmits<NotifyDeath> for DeathNoticeEffect {}
@@ -324,18 +327,7 @@ fn bind_authorization_shape(
     ability: ApplicationAbilityRef<AftermathFixtureSchema, FixtureAbility, FixtureEntity>,
 ) -> FixtureBuilder {
     schema
-        .relation(
-            ApplicationRelationRef::<
-                AftermathFixtureSchema,
-                MappingTarget,
-                FixtureEntity,
-                FixtureEntity,
-            >::from_schema_identifiers(
-                "MappingTarget", "FixtureEntity", "FixtureEntity"
-            ),
-            entity,
-            entity,
-        )
+        .relation(mapping_target(), entity, entity)
         .principal_binding(fixture_principal_binding())
         .policy(fixture_policy())
         .ability(ability)
@@ -352,6 +344,7 @@ fn fixture_principal_binding() -> ApplicationPrincipalBindingRef<
     FixtureEntity,
     FixtureEntity,
     u64,
+    U64ApplicationValueBinding,
 > {
     let identity = ApplicationFieldRef::<
         AftermathFixtureSchema,
@@ -371,12 +364,7 @@ fn fixture_principal_binding() -> ApplicationPrincipalBindingRef<
         ReadWrite,
         NoEqualityPredicate,
     >::from_schema_types();
-    let target = ApplicationRelationRef::<
-        AftermathFixtureSchema,
-        MappingTarget,
-        FixtureEntity,
-        FixtureEntity,
-    >::from_schema_identifiers("MappingTarget", "FixtureEntity", "FixtureEntity");
+    let target = mapping_target();
     let principal_identity = ApplicationFieldRef::<
         AftermathFixtureSchema,
         FixtureEntity,
@@ -396,5 +384,15 @@ fn fixture_principal_binding() -> ApplicationPrincipalBindingRef<
                 principal_identity,
             ),
         },
+    )
+}
+
+fn mapping_target(
+) -> ApplicationRelationRef<AftermathFixtureSchema, MappingTarget, FixtureEntity, FixtureEntity> {
+    ApplicationRelationRef::from_schema_identifiers(
+        "MappingTarget",
+        "FixtureEntity",
+        "FixtureEntity",
+        worth_query_installation::facade::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
     )
 }

@@ -3,6 +3,9 @@ use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRequestContext, ApplicationCapabilityRequestProjection,
     ApplicationCapabilityRequestProjectionDenial,
 };
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, StringApplicationValueBinding,
+};
 use worth_query_declaration::{
     worth_query_application_schema, worth_query_aspect, worth_query_capability,
     worth_query_capability_context, worth_query_capability_context_entity_slot,
@@ -74,45 +77,45 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub ExternalMapping in PublicationAuthorizationSchema);
-worth_query_entity!(pub Principal in PublicationAuthorizationSchema);
-worth_query_entity!(pub Resource in PublicationAuthorizationSchema);
-worth_query_entity!(pub CapabilityGrant in PublicationAuthorizationSchema);
-worth_query_entity!(pub ActionRecord in PublicationAuthorizationSchema);
+worth_query_entity!(pub ExternalMapping for PublicationAuthorizationSchema);
+worth_query_entity!(pub Principal for PublicationAuthorizationSchema);
+worth_query_entity!(pub Resource for PublicationAuthorizationSchema);
+worth_query_entity!(pub CapabilityGrant for PublicationAuthorizationSchema);
+worth_query_entity!(pub ActionRecord for PublicationAuthorizationSchema);
 
-worth_query_aspect!(pub ExternalIdentity in PublicationAuthorizationSchema, ExternalMapping; identity = AspectIdentity(0x9161104c), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PrincipalFacts in PublicationAuthorizationSchema, Principal; identity = AspectIdentity(0x9161104d), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ResourceFacts in PublicationAuthorizationSchema, Resource; identity = AspectIdentity(0x9161104e), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub GrantFacts in PublicationAuthorizationSchema, CapabilityGrant; identity = AspectIdentity(0x9161104f), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ActionRecordFacts in PublicationAuthorizationSchema, ActionRecord; identity = AspectIdentity(0x91611050), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub ExternalIdentity for PublicationAuthorizationSchema, ExternalMapping; identity = AspectIdentity(0x9161104c), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PrincipalFacts for PublicationAuthorizationSchema, Principal; identity = AspectIdentity(0x9161104d), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub ResourceFacts for PublicationAuthorizationSchema, Resource; identity = AspectIdentity(0x9161104e), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub GrantFacts for PublicationAuthorizationSchema, CapabilityGrant; identity = AspectIdentity(0x9161104f), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub ActionRecordFacts for PublicationAuthorizationSchema, ActionRecord; identity = AspectIdentity(0x91611050), revision = AspectContractRevision(1),);
 
-worth_query_field!(pub ExternalIdentityField in PublicationAuthorizationSchema, ExternalMapping, ExternalIdentity: worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity, read_only, equality);
-worth_query_field!(pub MappingStatusField in PublicationAuthorizationSchema, ExternalMapping, ExternalIdentity: worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus, read_write, equality);
-worth_query_field!(pub PrincipalIdentityField in PublicationAuthorizationSchema, Principal, PrincipalFacts: u64, read_only, equality);
-worth_query_field!(pub ResourceIdentityField in PublicationAuthorizationSchema, Resource, ResourceFacts: String, read_only, equality);
-worth_query_field!(pub ResourceWorkflowField in PublicationAuthorizationSchema, Resource, ResourceFacts: String, read_write, equality);
-worth_query_field!(pub ResourceLabelField in PublicationAuthorizationSchema, Resource, ResourceFacts: String, read_write, equality);
-worth_query_field!(pub GrantIdentityField in PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String, read_only, equality);
-worth_query_field!(pub GrantActionField in PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String, read_only, no_equality);
-worth_query_field!(pub GrantPurposeField in PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String, read_only, no_equality);
-worth_query_field!(pub GrantStatusField in PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String, read_write, no_equality);
-worth_query_field!(pub GrantWorkflowField in PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String, read_write, no_equality);
-worth_query_field!(pub GrantNotBeforeField in PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: u64, read_write, no_equality);
-worth_query_field!(pub GrantNotAfterField in PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: u64, read_write, no_equality);
-worth_query_field!(pub GrantDelegationLimitField in PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: u64, read_write, no_equality);
-worth_query_field!(pub ActionRecordIdentityField in PublicationAuthorizationSchema, ActionRecord, ActionRecordFacts: String, read_only, equality);
+worth_query_field!(pub ExternalIdentityField for PublicationAuthorizationSchema, ExternalMapping, ExternalIdentity: worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity => worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
+worth_query_field!(pub MappingStatusField for PublicationAuthorizationSchema, ExternalMapping, ExternalIdentity: worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus => worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
+worth_query_field!(pub PrincipalIdentityField for PublicationAuthorizationSchema, Principal, PrincipalFacts: u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub ResourceIdentityField for PublicationAuthorizationSchema, Resource, ResourceFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub ResourceWorkflowField for PublicationAuthorizationSchema, Resource, ResourceFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_write, equality);
+worth_query_field!(pub ResourceLabelField for PublicationAuthorizationSchema, Resource, ResourceFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_write, equality);
+worth_query_field!(pub GrantIdentityField for PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub GrantActionField for PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, no_equality);
+worth_query_field!(pub GrantPurposeField for PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, no_equality);
+worth_query_field!(pub GrantStatusField for PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub GrantWorkflowField for PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub GrantNotBeforeField for PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub GrantNotAfterField for PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub GrantDelegationLimitField for PublicationAuthorizationSchema, CapabilityGrant, GrantFacts: u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub ActionRecordIdentityField for PublicationAuthorizationSchema, ActionRecord, ActionRecordFacts: String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, equality);
 
-worth_query_relation!(pub MappingTarget in PublicationAuthorizationSchema, ExternalMapping => Principal);
-worth_query_relation!(pub ResourceOwner in PublicationAuthorizationSchema, Principal => Resource);
-worth_query_relation!(pub GrantGrantee in PublicationAuthorizationSchema, Principal => CapabilityGrant);
-worth_query_relation!(pub GrantGrantor in PublicationAuthorizationSchema, Principal => CapabilityGrant);
-worth_query_relation!(pub GrantResource in PublicationAuthorizationSchema, CapabilityGrant => Resource);
-worth_query_relation!(pub GrantParent in PublicationAuthorizationSchema, CapabilityGrant => CapabilityGrant);
-worth_query_relation!(pub ExplicitDeny in PublicationAuthorizationSchema, Principal => Resource);
-worth_query_relation!(pub ConflictingActor in PublicationAuthorizationSchema, Principal => Resource);
-worth_query_relation!(pub RequestActor in PublicationAuthorizationSchema, Principal => ActionRecord);
-worth_query_relation!(pub PriorActor in PublicationAuthorizationSchema, Principal => ActionRecord);
-worth_query_relation!(pub ActionResource in PublicationAuthorizationSchema, ActionRecord => Resource);
+worth_query_relation!(pub MappingTarget in PublicationAuthorizationSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub ResourceOwner in PublicationAuthorizationSchema, Principal => Resource; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub GrantGrantee in PublicationAuthorizationSchema, Principal => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub GrantGrantor in PublicationAuthorizationSchema, Principal => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub GrantResource in PublicationAuthorizationSchema, CapabilityGrant => Resource; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub GrantParent in PublicationAuthorizationSchema, CapabilityGrant => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub ExplicitDeny in PublicationAuthorizationSchema, Principal => Resource; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub ConflictingActor in PublicationAuthorizationSchema, Principal => Resource; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub RequestActor in PublicationAuthorizationSchema, Principal => ActionRecord; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub PriorActor in PublicationAuthorizationSchema, Principal => ActionRecord; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub ActionResource in PublicationAuthorizationSchema, ActionRecord => Resource; integrity = same_context_unbounded_retain_dangling);
 
 worth_query_principal_binding!(pub PublicationIdentityBinding in PublicationAuthorizationSchema, mapping ExternalMapping { identity: ExternalIdentityField, status: MappingStatusField, target: MappingTarget => Principal, principal_identity: PrincipalIdentityField });
 worth_query_capability_context!(pub PublicationRequestContext in PublicationAuthorizationSchema);
@@ -124,8 +127,9 @@ worth_query_capability!(pub PublicationCapability in PublicationAuthorizationSch
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublicationInput;
 worth_query_declaration::worth_query_portable_type!(PublicationInput => "worth.query.test.publication.input.v1");
+worth_query_declaration::worth_query_structured_value_binding!(pub PublicationInputBinding for PublicationInput { identity: "worth.query.test.publication.input.v1" });
 
-worth_query_operation!(pub PublicationOperation(PublicationInput) in PublicationAuthorizationSchema);
+worth_query_operation!(pub PublicationOperation for PublicationAuthorizationSchema, input PublicationInputBinding);
 worth_query_operation_reads!(PublicationOperation => [ResourceLabelField]);
 worth_query_operation_writes!(PublicationOperation => [ResourceLabelField]);
 
@@ -148,25 +152,30 @@ impl ApplicationCapabilityRequest<PublicationAuthorizationSchema, PublicationCap
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
                 ResourceIdentityField::reference(),
-                "resource-1".to_owned(),
+                encoded_string("resource-1"),
             ),
-            "inspect".to_owned(),
-            "publication-proof".to_owned(),
+            encoded_string("inspect"),
+            encoded_string("publication-proof"),
             ApplicationCapabilityRequestContext::new(PublicationRequestContext::reference())
                 .entity(
                     RequestActorSlot::reference(),
                     ApplicationCapabilityEntitySelector::new(
                         ActionRecordIdentityField::reference(),
-                        "selected-request".to_owned(),
+                        encoded_string("selected-request"),
                     ),
                 )
                 .entity(
                     PriorActorSlot::reference(),
                     ApplicationCapabilityEntitySelector::new(
                         ActionRecordIdentityField::reference(),
-                        "selected-prior".to_owned(),
+                        encoded_string("selected-prior"),
                     ),
                 ),
         ))
     }
+}
+
+fn encoded_string(value: &str) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
+    ApplicationEncodedScalarValue::try_new(value.to_owned())
+        .expect("publication request fixture value must encode")
 }

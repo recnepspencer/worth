@@ -22,14 +22,20 @@ mod payment_projection;
 use account_projection::{install_account_projection_reads, install_accounting_projection_reads};
 use payment_projection::install_payment_projection_reads;
 
-pub(super) fn install_operation_decision_reads(
+pub(super) fn install_account_decision_reads(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let schema = install_account_creation_reads(schema);
+    let schema = install_account_access_reads(schema);
+    install_account_operation_budgets(schema)
+}
+
+pub(super) fn install_payment_decision_reads(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let schema = install_money_movement_reads(schema);
     let schema = install_payment_reads(schema);
-    let schema = install_account_access_reads(schema);
-    install_operation_budgets(schema)
+    install_payment_operation_budgets(schema)
 }
 
 fn install_account_creation_reads(
@@ -186,12 +192,24 @@ fn install_account_access_reads(
         )
 }
 
-fn install_operation_budgets(
+fn install_account_operation_budgets(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
         .operation_decision_fact_budget(CreatePersonalAccountOperation::reference(), 8)
         .operation_decision_fact_budget(CreateBusinessAccountOperation::reference(), 8)
+        .operation_decision_fact_budget(GrantAccountAuthorizationOperation::reference(), 96)
+        .operation_decision_fact_budget(RevokeAccountAuthorizationOperation::reference(), 96)
+        .operation_projection_work_budget(CreatePersonalAccountOperation::reference(), 256)
+        .operation_projection_work_budget(CreateBusinessAccountOperation::reference(), 256)
+        .operation_projection_work_budget(GrantAccountAuthorizationOperation::reference(), 512)
+        .operation_projection_work_budget(RevokeAccountAuthorizationOperation::reference(), 512)
+}
+
+fn install_payment_operation_budgets(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    schema
         .operation_decision_fact_budget(ApplyOpeningFundingOperation::reference(), 256)
         .operation_decision_fact_budget(DepositOperation::reference(), 256)
         .operation_decision_fact_budget(WithdrawOperation::reference(), 256)
@@ -199,11 +217,7 @@ fn install_operation_budgets(
         .operation_decision_fact_budget(InitiateBusinessPaymentOperation::reference(), 64)
         .operation_decision_fact_budget(ApprovePaymentOperation::reference(), 256)
         .operation_decision_fact_budget(RejectPaymentOperation::reference(), 128)
-        .operation_decision_fact_budget(GrantAccountAuthorizationOperation::reference(), 96)
-        .operation_decision_fact_budget(RevokeAccountAuthorizationOperation::reference(), 96)
         .operation_decision_fact_budget(ReverseJournalOperation::reference(), 256)
-        .operation_projection_work_budget(CreatePersonalAccountOperation::reference(), 256)
-        .operation_projection_work_budget(CreateBusinessAccountOperation::reference(), 256)
         .operation_projection_work_budget(ApplyOpeningFundingOperation::reference(), 4_096)
         .operation_projection_work_budget(DepositOperation::reference(), 4_096)
         .operation_projection_work_budget(WithdrawOperation::reference(), 4_096)
@@ -211,7 +225,5 @@ fn install_operation_budgets(
         .operation_projection_work_budget(InitiateBusinessPaymentOperation::reference(), 4_096)
         .operation_projection_work_budget(ApprovePaymentOperation::reference(), 8_192)
         .operation_projection_work_budget(RejectPaymentOperation::reference(), 512)
-        .operation_projection_work_budget(GrantAccountAuthorizationOperation::reference(), 512)
-        .operation_projection_work_budget(RevokeAccountAuthorizationOperation::reference(), 512)
         .operation_projection_work_budget(ReverseJournalOperation::reference(), 8_192)
 }

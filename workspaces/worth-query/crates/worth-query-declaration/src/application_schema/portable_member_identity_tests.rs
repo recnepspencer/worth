@@ -1,9 +1,7 @@
 use super::*;
-use crate::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultShapeBuilder,
-};
+
+mod query_definition;
+use query_definition::query_definition;
 
 pub(super) struct Schema;
 struct FirstInput;
@@ -19,7 +17,7 @@ struct SecondEffect;
 struct QueryEntity;
 struct QueryParameters;
 
-crate::worth_query_entity!(PortableEntity in Schema);
+crate::worth_query_entity!(PortableEntity for Schema);
 crate::worth_query_capability_context!(
     FirstContext in Schema,
     identity "worth.query.test.colliding-context.v1"
@@ -54,27 +52,33 @@ crate::worth_query_capability_provenance!(
     identity "worth.query.test.colliding-provenance.v1"
 );
 
+crate::worth_query_structured_value_binding!(FirstQueryParametersBinding for QueryParameters { identity: "worth.query.test.query-parameters.v1" });
+crate::worth_query_structured_value_binding!(FirstQueryResultBinding for () { identity: "worth.rust.unit" });
 crate::worth_query_application_query!(
-    FirstQuery in Schema,
+    FirstQuery for Schema,
     identity "worth.query.test.colliding-query.v1",
-    parameters QueryParameters => "worth.query.test.query-parameters.v1",
-    result () => "worth.rust.unit",
+    parameters FirstQueryParametersBinding,
+    result FirstQueryResultBinding,
     scope QueryEntity => "worth.query.test.query-scope.v1",
     name "first_query"
 );
+crate::worth_query_structured_value_binding!(SecondQueryParametersBinding for QueryParameters { identity: "worth.query.test.query-parameters.v1" });
+crate::worth_query_structured_value_binding!(SecondQueryResultBinding for () { identity: "worth.rust.unit" });
 crate::worth_query_application_query!(
-    SecondQuery in Schema,
+    SecondQuery for Schema,
     identity "worth.query.test.colliding-query.v1",
-    parameters QueryParameters => "worth.query.test.query-parameters.v1",
-    result () => "worth.rust.unit",
+    parameters SecondQueryParametersBinding,
+    result SecondQueryResultBinding,
     scope QueryEntity => "worth.query.test.query-scope.v1",
     name "second_query"
 );
+crate::worth_query_structured_value_binding!(BlankQueryParametersBinding for QueryParameters { identity: "worth.query.test.query-parameters.v1" });
+crate::worth_query_structured_value_binding!(BlankQueryResultBinding for () { identity: "worth.rust.unit" });
 crate::worth_query_application_query!(
-    BlankQuery in Schema,
+    BlankQuery for Schema,
     identity "",
-    parameters QueryParameters => "worth.query.test.query-parameters.v1",
-    result () => "worth.rust.unit",
+    parameters BlankQueryParametersBinding,
+    result BlankQueryResultBinding,
     scope QueryEntity => "worth.query.test.query-scope.v1",
     name "blank_query"
 );
@@ -98,36 +102,68 @@ worth_query_portable_type!(FirstPayload => "worth.query.test.first-payload.v1");
 worth_query_portable_type!(SecondPayload => "worth.query.test.second-payload.v1");
 
 macro_rules! operation_identity {
-    ($operation:ty, $input:ty, $identifier:literal) => {
-        impl ApplicationOperationMarkerIdentity for $operation {
-            type Schema = Schema;
-            type Input = $input;
+    ($operation:ty, $binding:ident, $input:ty, $input_identity:literal, $identifier:literal) => {
+        crate::worth_query_structured_value_binding!(
+            $binding for $input { identity: $input_identity }
+        );
+        impl ApplicationOperationMarkerIdentity<Schema> for $operation {
+            type InputBinding = $binding;
             const IDENTIFIER: &'static str = $identifier;
         }
     };
 }
 
-operation_identity!(FirstOperation, FirstInput, "SameOperation");
-operation_identity!(SecondOperation, SecondInput, "SameOperation");
-operation_identity!(BlankOperation, BlankInput, "BlankOperation");
+operation_identity!(
+    FirstOperation,
+    FirstInputBinding,
+    FirstInput,
+    "worth.query.test.first-input.v1",
+    "SameOperation"
+);
+operation_identity!(
+    SecondOperation,
+    SecondInputBinding,
+    SecondInput,
+    "worth.query.test.second-input.v1",
+    "SameOperation"
+);
+operation_identity!(
+    BlankOperation,
+    BlankInputBinding,
+    BlankInput,
+    "",
+    "BlankOperation"
+);
 
 macro_rules! effect_identity {
-    ($effect:ty, $payload:ty) => {
-        impl ApplicationEffectMarkerIdentity for $effect {
-            type Schema = Schema;
-            type Payload = $payload;
+    ($effect:ty, $binding:ident, $payload:ty, $payload_identity:literal) => {
+        crate::worth_query_structured_value_binding!(
+            $binding for $payload { identity: $payload_identity }
+        );
+        impl ApplicationEffectMarkerIdentity<Schema> for $effect {
+            type PayloadBinding = $binding;
             const IDENTIFIER: &'static str = "SameEffect";
         }
-        impl ApplicationEffectPayload for $payload {
-            fn retained_bytes(&self) -> u64 {
+        impl ApplicationRetainedEffectBinding for $binding {
+            fn retained_bytes(_: &Self::Value) -> u64 {
                 0
             }
         }
     };
 }
 
-effect_identity!(FirstEffect, FirstPayload);
-effect_identity!(SecondEffect, SecondPayload);
+effect_identity!(
+    FirstEffect,
+    FirstPayloadBinding,
+    FirstPayload,
+    "worth.query.test.first-payload.v1"
+);
+effect_identity!(
+    SecondEffect,
+    SecondPayloadBinding,
+    SecondPayload,
+    "worth.query.test.second-payload.v1"
+);
 
 #[test]
 fn one_operation_name_cannot_redeclare_a_different_input_identity() {
@@ -304,7 +340,7 @@ fn capability_marker_identity_survives_a_rust_module_move() {
 #[test]
 fn capability_dimension_schema_identity_survives_rust_module_moves() {
     mod original_location {
-        crate::worth_query_entity!(pub(super) Entity in super::Schema);
+        crate::worth_query_entity!(pub(super) Entity for super::Schema);
         crate::worth_query_capability_context!(
             pub(super) Context in super::Schema,
             identity "worth.query.test.moved-context.v1"
@@ -320,7 +356,7 @@ fn capability_dimension_schema_identity_survives_rust_module_moves() {
         );
     }
     mod moved_location {
-        crate::worth_query_entity!(pub(super) Entity in super::Schema);
+        crate::worth_query_entity!(pub(super) Entity for super::Schema);
         crate::worth_query_capability_context!(
             pub(super) Context in super::Schema,
             identity "worth.query.test.moved-context.v1"
@@ -352,42 +388,4 @@ fn capability_dimension_schema_identity_survives_rust_module_moves() {
         .unwrap();
 
     assert_eq!(original.identity(), moved.identity());
-}
-
-fn query_definition<Query>(
-    reference: crate::application_query::ApplicationQueryReference<
-        Schema,
-        Query,
-        QueryParameters,
-        (),
-        QueryEntity,
-    >,
-    entity: ApplicationEntityRef<Schema, QueryEntity>,
-) -> Result<
-    crate::application_query::ApplicationQueryDefinition<
-        Schema,
-        Query,
-        QueryParameters,
-        (),
-        QueryEntity,
-    >,
-    crate::application_query::ApplicationQueryDefinitionDenial,
->
-where
-    Query: crate::application_query::ApplicationQueryMarkerIdentity,
-{
-    ApplicationQueryDefinitionBuilder::declare(reference)
-        .root(entity)
-        .scope(entity)
-        .result_shape(
-            ApplicationQueryResultShapeBuilder::<Schema, Query, QueryEntity, ()>::new(entity)
-                .build(),
-        )
-        .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 0))
-        .disclosure(ApplicationQueryDisclosureContract::public())
-        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-        .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
-        .build()
 }

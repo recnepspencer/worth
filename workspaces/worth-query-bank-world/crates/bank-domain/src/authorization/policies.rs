@@ -8,14 +8,7 @@ use crate::schema::*;
 
 use super::abilities::*;
 
-pub(crate) fn install_ability_policies(
-    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
-) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
-    let schema = install_employee_and_estate_policies(schema);
-    install_account_and_payment_policies(schema)
-}
-
-fn install_employee_and_estate_policies(
+pub(crate) fn install_account_ability_policies(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
@@ -35,27 +28,6 @@ fn install_employee_and_estate_policies(
             [employee_path(EmployeeRole::Auditor)],
         )
         .ability_policy(
-            ViewEstateCase::reference(),
-            EstateCapabilityScopePolicy::reference(),
-            estate_view_paths(),
-        )
-        .ability_policy(
-            ViewEstateLegalCompliance::reference(),
-            EstateCapabilityScopePolicy::reference(),
-            estate_governance_paths(),
-        )
-        .ability_policy(
-            ViewEstateMandatoryReview::reference(),
-            EstateCapabilityScopePolicy::reference(),
-            estate_governance_paths(),
-        )
-}
-
-fn install_account_and_payment_policies(
-    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
-) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
-    schema
-        .ability_policy(
             DiscoverOwnAccounts::reference(),
             AccountVisibilityPolicy::reference(),
             [
@@ -74,6 +46,38 @@ fn install_account_and_payment_policies(
             account_management_paths(),
         )
         .ability_policy(
+            ManageAccountAccess::reference(),
+            AccountMutationScopePolicy::reference(),
+            account_management_paths(),
+        )
+}
+
+pub(crate) fn install_estate_ability_policies(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    schema
+        .ability_policy(
+            ViewEstateCase::reference(),
+            EstateCapabilityScopePolicy::reference(),
+            estate_view_paths(),
+        )
+        .ability_policy(
+            ViewEstateLegalCompliance::reference(),
+            EstateCapabilityScopePolicy::reference(),
+            estate_governance_paths(),
+        )
+        .ability_policy(
+            ViewEstateMandatoryReview::reference(),
+            EstateCapabilityScopePolicy::reference(),
+            estate_governance_paths(),
+        )
+}
+
+pub(crate) fn install_payment_ability_policies(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    schema
+        .ability_policy(
             ViewPayment::reference(),
             AccountVisibilityPolicy::reference(),
             payment_view_paths(),
@@ -82,11 +86,6 @@ fn install_account_and_payment_policies(
             SendPersonalFunds::reference(),
             AccountMutationScopePolicy::reference(),
             account_send_paths(),
-        )
-        .ability_policy(
-            ManageAccountAccess::reference(),
-            AccountMutationScopePolicy::reference(),
-            account_management_paths(),
         )
         .ability_policy(
             InitiateBusinessFunds::reference(),
@@ -103,7 +102,10 @@ fn install_account_and_payment_policies(
 fn employee_path(role: EmployeeRole) -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .reverse(AssignmentPrincipal::reference())
-        .where_equal(AssignmentRole::reference(), role)
+        .where_equal(
+            AssignmentRole::reference(),
+            crate::schema::encoded_bank_value(role),
+        )
         .reverse(InstitutionEmployee::reference())
         .allow(Institution::reference())
 }
@@ -126,7 +128,10 @@ fn estate_governance_paths() -> Vec<ApplicationAuthorizationPath> {
 fn estate_assignment_path(role: EmployeeRole) -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .reverse(AssignmentPrincipal::reference())
-        .where_equal(AssignmentRole::reference(), role)
+        .where_equal(
+            AssignmentRole::reference(),
+            crate::schema::encoded_bank_value(role),
+        )
         .forward(EstateAssignment::reference())
         .allow(EstateCase::reference())
 }
@@ -167,7 +172,10 @@ fn personal_owner_path() -> ApplicationAuthorizationPath {
 fn account_role_path(role: CustomerRole) -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(AccountAuthorizedUser::reference())
-        .where_equal(AuthorizationRole::reference(), role)
+        .where_equal(
+            AuthorizationRole::reference(),
+            crate::schema::encoded_bank_value(role),
+        )
         .forward(AuthorizationAccount::reference())
         .allow(Account::reference())
 }
@@ -186,7 +194,10 @@ fn business_paths(role: CustomerRole) -> Vec<ApplicationAuthorizationPath> {
             .allow(Business::reference()),
         ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
             .forward(AccountAuthorizedUser::reference())
-            .where_equal(AuthorizationRole::reference(), role)
+            .where_equal(
+                AuthorizationRole::reference(),
+                crate::schema::encoded_bank_value(role),
+            )
             .forward(AuthorizationAccount::reference())
             .reverse(BusinessAccount::reference())
             .allow(Business::reference()),
@@ -197,7 +208,10 @@ fn approval_paths() -> Vec<ApplicationAuthorizationPath> {
     vec![
         ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
             .forward(AccountAuthorizedUser::reference())
-            .where_equal(AuthorizationRole::reference(), CustomerRole::Approver)
+            .where_equal(
+                AuthorizationRole::reference(),
+                crate::schema::encoded_bank_value(CustomerRole::Approver),
+            )
             .forward(AuthorizationAccount::reference())
             .reverse(PaymentSource::reference())
             .allow(PaymentIntent::reference()),
@@ -233,7 +247,10 @@ fn payment_view_paths() -> Vec<ApplicationAuthorizationPath> {
         .map(|role| {
             ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
                 .forward(AccountAuthorizedUser::reference())
-                .where_equal(AuthorizationRole::reference(), role)
+                .where_equal(
+                    AuthorizationRole::reference(),
+                    crate::schema::encoded_bank_value(role),
+                )
                 .forward(AuthorizationAccount::reference())
                 .reverse(PaymentSource::reference())
                 .allow(PaymentIntent::reference())

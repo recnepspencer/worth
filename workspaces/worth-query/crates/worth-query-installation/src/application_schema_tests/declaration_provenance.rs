@@ -6,15 +6,13 @@ use worth_query_declaration::facade::application_schema::{
 struct ImpostorOperation;
 struct ImpostorEffect;
 
-impl ApplicationOperationMarkerIdentity for ImpostorOperation {
-    type Schema = TestSchema;
-    type Input = TestInput;
+impl ApplicationOperationMarkerIdentity<TestSchema> for ImpostorOperation {
+    type InputBinding = TestInputBinding;
     const IDENTIFIER: &'static str = "TestOperation";
 }
 
-impl ApplicationEffectMarkerIdentity for ImpostorEffect {
-    type Schema = TestSchema;
-    type Payload = TestPayload;
+impl ApplicationEffectMarkerIdentity<TestSchema> for ImpostorEffect {
+    type PayloadBinding = TestPayloadBinding;
     const IDENTIFIER: &'static str = "TestEffect";
 }
 

@@ -14,12 +14,14 @@ pub(super) fn customer_disclosure_shape() -> TypedApplicationQueryResultShape<
     EstateCustomerDisclosureQuery,
     EstateCase,
     EstateCustomerDisclosure,
+    super::customer_disclosure::EstateCustomerDisclosureQueryResultBinding,
 > {
     let customer = ApplicationQueryResultShapeBuilder::<
         BankSchema,
         EstateCustomerDisclosureQuery,
         Principal,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(Principal::reference())
     .field(customer_identity());
     let beneficiary = ApplicationQueryResultShapeBuilder::<
@@ -27,6 +29,7 @@ pub(super) fn customer_disclosure_shape() -> TypedApplicationQueryResultShape<
         EstateCustomerDisclosureQuery,
         Principal,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(Principal::reference())
     .field(beneficiary_identity());
     ApplicationQueryResultShapeBuilder::new(EstateCase::reference())

@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
@@ -44,7 +44,7 @@ pub(super) fn set_status(
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         locator,
-        status.into_foundational_value(),
+        super::super::super::fixture::CapabilityElevationStatusBinding::encode(&status).unwrap(),
     )]));
     super::super::super::fixture::publish_relational_mutation(
         world,

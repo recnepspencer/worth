@@ -4,10 +4,11 @@ use super::authoring_context::ApplicationOperationProgramAdmission;
 use super::capabilities::OperationEmits;
 use super::references::{ApplicationEffectRef, ApplicationOperationRef};
 use super::{
+    ApplicationEffectMarkerIdentity, ApplicationOperationMarkerIdentity,
     ApplicationSchemaAuthoringContext, ApplicationSchemaAuthoringDenial,
-    ApplicationSchemaBindingIdentity,
+    ApplicationSchemaBindingIdentity, ApplicationStructuredValueBinding,
 };
-use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
+use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 pub struct TypedEffectIntent<Schema, Operation> {
     operation: &'static str,
@@ -70,7 +71,9 @@ pub struct TypedEffectIntentBuilder<Schema, Operation, Input> {
 
 impl<Schema, Operation: 'static, Input> TypedEffectIntentBuilder<Schema, Operation, Input>
 where
-    Input: WorthQueryPortableType + 'static,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    Input: 'static,
 {
     pub fn new(operation: ApplicationOperationRef<Schema, Operation, Input>) -> Self {
         Self {
@@ -85,7 +88,7 @@ where
     #[doc(hidden)]
     pub fn with_installed_context(mut self, context: ApplicationSchemaAuthoringContext) -> Self {
         self.denial = context
-            .admit_operation::<Operation, Input>(self.operation, Input::PORTABLE_TYPE_IDENTITY)
+            .admit_operation::<Operation, Input>(self.operation, Operation::InputBinding::IDENTITY)
             .err();
         self.context = Some(context);
         self
@@ -97,13 +100,14 @@ where
         _payload: Payload,
     ) -> Self
     where
-        Effect: OperationEmits<Operation> + 'static,
-        Payload: WorthQueryPortableType + 'static,
+        Effect: ApplicationEffectMarkerIdentity<Schema> + OperationEmits<Operation> + 'static,
+        Effect::PayloadBinding: ApplicationStructuredValueBinding<Value = Payload>,
+        Payload: 'static,
     {
         if self.denial.is_none() {
             self.denial = self.context.as_ref().and_then(|context| {
                 context
-                    .admit_effect::<Effect, Payload>(effect.name(), Payload::PORTABLE_TYPE_IDENTITY)
+                    .admit_effect::<Effect, Payload>(effect.name(), effect.payload_identity())
                     .and_then(|()| {
                         context.admit_operation_program(
                             self.operation,
@@ -114,7 +118,7 @@ where
             });
         }
         self.effects
-            .push((effect.name(), Payload::PORTABLE_TYPE_IDENTITY));
+            .push((effect.name(), effect.payload_identity()));
         self
     }
 

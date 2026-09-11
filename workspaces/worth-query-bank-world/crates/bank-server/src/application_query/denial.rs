@@ -11,7 +11,7 @@ pub use admission::{
 pub use execution::{
     BankApplicationContinuationDenialKind, BankApplicationLiveOpenDenialKind,
     BankApplicationOneShotDenialKind, BankApplicationPreviewSessionDenialKind,
-    BankApplicationProjectionDenialKind, BankBoundedLaneDenialKind,
+    BankApplicationProjectionDenialKind, BankProductSelectionDenialKind,
 };
 pub use installation::{
     BankApplicationCapabilityInstallationDenialKind, BankApplicationQueryInstallationDenialKind,
@@ -22,14 +22,14 @@ use worth_query_host::facade::domain::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationLiveOpenDenial,
-    WorthQueryApplicationOneShotDenial, WorthQueryApplicationPreviewSessionDenial,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryBoundedLaneDenial,
+    WorthQueryApplicationOneShotDenial, WorthQueryApplicationQueryAdmissionDenial,
     WorthQueryEntityResolutionDenial, WorthQueryOperationAuthorizationDenial,
+    WorthQueryProductBranchAdmissionDenial,
 };
 
 use crate::{BankAuthorizationDenial, BankEntityResolutionDenial};
 use admission::admission;
-use execution::{bounded, continuation, live, one_shot, preview};
+use execution::{continuation, live, one_shot, product_selection};
 use installation::{capability_installation, query_installation};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -69,11 +69,11 @@ pub enum BankApplicationQueryDenial {
     CapabilityInstallation(BankApplicationCapabilityInstallationDenialKind),
     CapabilityAdmission(BankAuthorizationDenial),
     ScopeResolution(BankEntityResolutionDenial),
-    Admission(BankApplicationQueryLaneDenial<BankApplicationQueryAdmissionDenialKind>),
+    ProductSelection(BankProductSelectionDenialKind),
+    HistoricalCommitUnavailable,
     PreviewSession(BankApplicationPreviewSessionDenialKind),
+    Admission(BankApplicationQueryLaneDenial<BankApplicationQueryAdmissionDenialKind>),
     Execution(BankApplicationQueryLaneDenial<BankApplicationOneShotDenialKind>),
-    PreviewExecution(BankApplicationQueryLaneDenial<BankBoundedLaneDenialKind>),
-    HistoricalExecution(BankApplicationQueryLaneDenial<BankBoundedLaneDenialKind>),
     ContinuationExecution(BankApplicationQueryLaneDenial<BankApplicationContinuationDenialKind>),
     LiveOpen(BankApplicationQueryLaneDenial<BankApplicationLiveOpenDenialKind>),
 }
@@ -99,6 +99,12 @@ impl BankApplicationQueryDenial {
         Self::ScopeResolution(BankEntityResolutionDenial::from_query(denial.kind()))
     }
 
+    pub(crate) const fn from_product_selection(
+        denial: WorthQueryProductBranchAdmissionDenial,
+    ) -> Self {
+        Self::ProductSelection(product_selection(denial))
+    }
+
     pub(crate) fn from_admission(denial: WorthQueryApplicationQueryAdmissionDenial) -> Self {
         Self::Admission(BankApplicationQueryLaneDenial::from_query(
             admission(denial.kind()),
@@ -106,27 +112,9 @@ impl BankApplicationQueryDenial {
         ))
     }
 
-    pub(crate) fn from_preview_session(denial: WorthQueryApplicationPreviewSessionDenial) -> Self {
-        Self::PreviewSession(preview(denial.kind()))
-    }
-
     pub(crate) fn from_execution(denial: WorthQueryApplicationOneShotDenial) -> Self {
         Self::Execution(BankApplicationQueryLaneDenial::from_query(
             one_shot(denial.kind()),
-            denial.authorization_denial(),
-        ))
-    }
-
-    pub(crate) fn from_preview_execution(denial: WorthQueryBoundedLaneDenial) -> Self {
-        Self::PreviewExecution(BankApplicationQueryLaneDenial::from_query(
-            bounded(denial.kind()),
-            denial.authorization_denial(),
-        ))
-    }
-
-    pub(crate) fn from_historical_execution(denial: WorthQueryBoundedLaneDenial) -> Self {
-        Self::HistoricalExecution(BankApplicationQueryLaneDenial::from_query(
-            bounded(denial.kind()),
             denial.authorization_denial(),
         ))
     }

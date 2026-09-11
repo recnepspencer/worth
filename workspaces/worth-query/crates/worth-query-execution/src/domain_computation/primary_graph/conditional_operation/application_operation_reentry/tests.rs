@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::conditional_operation::canonical_i
     WorthQueryTemporalRuntimeBindingIdentity,
 };
 use worth_foundational::facade::CanonicalDigestId;
+use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
 use worth_query_installation::facade::{
     WorthQueryClockCoordinate, WorthQueryTemporalIntentIdempotencyRelation,
     WorthQueryTemporalIntentIdentity, WorthQueryTemporalOperationInputIdentity,
@@ -14,7 +15,7 @@ use worth_query_installation::facade::{
 struct TestClock;
 
 fn candidate(input_identity: &str) -> WorthQueryTemporalIntentCandidate<TestClock, String> {
-    WorthQueryTemporalIntentCandidate::active(
+    WorthQueryTemporalIntentCandidate::active::<StringApplicationValueBinding>(
         WorthQueryTemporalIntentIdentity::declare("intent-7").unwrap(),
         "record-7".to_string(),
         4,
@@ -23,6 +24,7 @@ fn candidate(input_identity: &str) -> WorthQueryTemporalIntentCandidate<TestCloc
         WorthQueryTemporalOperationInputIdentity::declare(input_identity).unwrap(),
         WorthQueryTemporalIntentIdempotencyRelation::declare("relation-7").unwrap(),
     )
+    .expect("fixture record identity must encode")
 }
 
 fn runtime_binding(seed: u8) -> WorthQueryTemporalRuntimeBindingIdentity {

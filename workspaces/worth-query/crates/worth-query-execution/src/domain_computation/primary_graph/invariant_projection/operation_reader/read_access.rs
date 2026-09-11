@@ -24,8 +24,7 @@ where
         value: Value,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -50,8 +49,7 @@ where
         WorthQueryEntityResolutionDenial,
     >
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -64,8 +62,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<Value>
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationReadableValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -132,8 +130,8 @@ where
     ) -> Result<super::super::WorthQueryInvariantAggregate<Value>, WorthQueryInvariantAggregateDenial>
     where
         Relation: OperationReads<Operation>,
-        Field: OperationReads<Operation>,
-        Value: worth_query_installation::facade::TypedApplicationSignedAggregateValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationSignedAggregateValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {

@@ -4,7 +4,7 @@ use std::time::{Duration, UNIX_EPOCH};
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::{
-    TypedApplicationValue, WorthQueryInstalledApplicationQuery,
+    ApplicationScalarValueBinding, WorthQueryInstalledApplicationQuery,
 };
 
 use super::super::super::fixture::{
@@ -155,7 +155,10 @@ fn capture_lane(
         assert_eq!(omission.classification(), "account-activity");
         assert_eq!(
             omission.required_disclosure(),
-            &CapabilityDisclosure::PrivateLabel.into_foundational_value()
+            &super::super::super::fixture::CapabilityDisclosureBinding::encode(
+                &CapabilityDisclosure::PrivateLabel,
+            )
+            .unwrap()
         );
     }
     occurrences.capture(receipt.read_completion());

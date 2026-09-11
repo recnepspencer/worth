@@ -53,7 +53,8 @@ fn payment_projection_rejects_multiple_decision_entities() {
                     approver: id(BankPrincipalId::new, 3),
                 },
             )
-        });
+        })
+        .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::AmbiguousRelation("PaymentApproval"))
@@ -98,6 +99,7 @@ fn payment_projection_preserves_the_source_account_balance() {
                 },
             )
         })
+        .unwrap()
         .into_output()
         .unwrap();
     assert_eq!(projected.starting_balance(source), Some(expected));
@@ -142,7 +144,8 @@ fn orphan_incoming_reversal_cannot_hide_from_targeted_projection() {
                     reason: ReversalReason::OperatorCorrection,
                 },
             )
-        });
+        })
+        .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::MissingField("JournalIdentityField")),
@@ -183,6 +186,7 @@ fn payment_work(
                 },
             )
         })
+        .unwrap()
         .work()
 }
 
@@ -211,6 +215,7 @@ fn reversal_work(
                 },
             )
         })
+        .unwrap()
         .work()
 }
 

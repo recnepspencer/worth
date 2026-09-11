@@ -168,7 +168,9 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .unwrap();
@@ -244,7 +246,9 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .err()
@@ -293,7 +297,9 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
         .admit_application_query(
             &query,
             &crossed,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .err()
@@ -321,7 +327,9 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
         .admit_application_query(
             &governed,
             &local,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .err()
@@ -366,7 +374,9 @@ fn path_bound_ordering_mechanism_opens_exact_plan_authority() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .unwrap();

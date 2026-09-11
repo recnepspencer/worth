@@ -4,10 +4,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
-use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
-use worth_query_installation::facade::{
-    TypedApplicationValue, WorthQueryInstalledApplicationQuery,
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding,
 };
+use worth_query_declaration::facade::authentication::{
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
+};
+use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
     WorkerIntentBatch,
@@ -209,7 +212,10 @@ impl ContinuationTestContext {
             &self.world,
             self.principal.mapping_entity_id(),
             layout.status_locator,
-            WorthQueryPrincipalMappingStatus::Disabled.into_foundational_value(),
+            WorthQueryPrincipalMappingStatusBinding::encode(
+                &WorthQueryPrincipalMappingStatus::Disabled,
+            )
+            .unwrap(),
             "stale-continuation-principal",
         );
     }
@@ -231,7 +237,7 @@ impl ContinuationTestContext {
             &self.world,
             self.account.entity_id(),
             locator,
-            "account-renamed".to_owned().into_foundational_value(),
+            StringApplicationValueBinding::encode(&"account-renamed".to_owned()).unwrap(),
             "stale-continuation-scope",
         );
     }

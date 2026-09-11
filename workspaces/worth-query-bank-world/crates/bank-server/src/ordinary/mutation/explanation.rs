@@ -15,6 +15,9 @@ pub enum BankMutationExplanationStage {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankMutationExplanation<'outcome> {
+    ProductStale,
+    ProductUnpublished,
+    NoEffect,
     Committed {
         receipt: &'outcome BankCommitReceipt,
         recovered: bool,
@@ -23,6 +26,7 @@ pub enum BankMutationExplanation<'outcome> {
         stale_fact_count: usize,
     },
     Cancelled,
+    TimedOut,
     DeadlineExceeded,
     Denied {
         stage: BankMutationExplanationStage,
@@ -30,11 +34,8 @@ pub enum BankMutationExplanation<'outcome> {
     },
     InvariantViolated(&'outcome BankProposalDenial),
     Aborted,
-    /// Some effect may have landed; `recovery` is Query's own verdict on
-    /// which repair the operator owes, not a Bank re-derivation.
-    PartialEffect {
-        recovery: BankCommitRecoveryKind,
-    },
+    Deferred,
+    SettlementDeferred,
     Indeterminate {
         recovery: BankCommitRecoveryKind,
     },
@@ -43,6 +44,11 @@ pub enum BankMutationExplanation<'outcome> {
 impl BankMutationOutcome {
     pub fn explanation(&self) -> BankMutationExplanation<'_> {
         match self.status() {
+            BankMutationStatus::ProductStale(_) => BankMutationExplanation::ProductStale,
+            BankMutationStatus::ProductUnpublished(_) => {
+                BankMutationExplanation::ProductUnpublished
+            }
+            BankMutationStatus::NoEffect(_) => BankMutationExplanation::NoEffect,
             BankMutationStatus::Committed(receipt) => BankMutationExplanation::Committed {
                 receipt,
                 recovered: false,
@@ -55,6 +61,7 @@ impl BankMutationOutcome {
                 stale_fact_count: *stale_fact_count,
             },
             BankMutationStatus::Cancelled => BankMutationExplanation::Cancelled,
+            BankMutationStatus::TimedOut => BankMutationExplanation::TimedOut,
             BankMutationStatus::DeadlineExceeded => BankMutationExplanation::DeadlineExceeded,
             BankMutationStatus::Denied(reason) => BankMutationExplanation::Denied {
                 stage: denial_stage(reason),
@@ -64,9 +71,10 @@ impl BankMutationOutcome {
                 BankMutationExplanation::InvariantViolated(reason)
             }
             BankMutationStatus::Aborted => BankMutationExplanation::Aborted,
-            BankMutationStatus::PartialEffect(evidence) => BankMutationExplanation::PartialEffect {
-                recovery: evidence.recovery_kind(),
-            },
+            BankMutationStatus::Deferred(_) => BankMutationExplanation::Deferred,
+            BankMutationStatus::SettlementDeferred(_) => {
+                BankMutationExplanation::SettlementDeferred
+            }
             BankMutationStatus::Indeterminate(evidence) => BankMutationExplanation::Indeterminate {
                 recovery: evidence.recovery_kind(),
             },
@@ -76,7 +84,8 @@ impl BankMutationOutcome {
 
 fn denial_stage(denial: &BankMutationDenial) -> BankMutationExplanationStage {
     match denial {
-        BankMutationDenial::Scope(_)
+        BankMutationDenial::ProductSelection(_)
+        | BankMutationDenial::Scope(_)
         | BankMutationDenial::Installation(_)
         | BankMutationDenial::Authorization(_) => BankMutationExplanationStage::Admission,
         BankMutationDenial::Proposal(BankMutationProposalDenial::Idempotency(_))

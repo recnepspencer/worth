@@ -6,8 +6,9 @@ use worth_query_declaration::facade::application_aftermath::{
     DeclaredPreImageLocus, DeclaredReconciliationProcedure, DeclaredRecordedInverse,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationAbilityRef, ApplicationOperationRef, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, WorthQueryExternalEffectCorrelationFamily,
+    ApplicationAbilityRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
+    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationStructuredValueBinding, WorthQueryExternalEffectCorrelationFamily,
 };
 
 use super::declaration::{
@@ -36,11 +37,8 @@ pub(super) struct FixtureReads {
 
 fn op<Operation>() -> ApplicationOperationRef<AftermathFixtureSchema, Operation, FixtureInput>
 where
-    Operation:
-        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
-            Schema = AftermathFixtureSchema,
-            Input = FixtureInput,
-        >,
+    Operation: ApplicationOperationMarkerIdentity<AftermathFixtureSchema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = FixtureInput>,
 {
     ApplicationOperationRef::from_declaration()
 }

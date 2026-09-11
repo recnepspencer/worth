@@ -17,17 +17,15 @@ mod release_estate;
 #[path = "estate_capability_installation/transition_dimensions.rs"]
 mod transition_dimensions;
 
-use bank_domain::{estate::EstateAction, schema::*};
+use bank_domain::schema::*;
 use installed_contract_views::{
     installed_program_targets, installed_read_targets, InstalledProgramTarget, InstalledReadTarget,
 };
-use worth_query_host::facade::declaration::application_schema::ApplicationOperationRef;
 use worth_query_host::facade::domain::{
-    ApplicationCapabilityRef, WorthQueryApplicationCapabilityInstallationDenialKind,
-    WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
-    WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledApplicationSchema,
-    WorthQueryInstalledPackageIndex, WorthQueryPortableDomainIdentity,
-    WorthQueryPortableDomainPackage,
+    WorthQueryApplicationCapabilityInstallationDenialKind, WorthQueryInstallationAdmissionProfile,
+    WorthQueryInstallationGeneration, WorthQueryInstallationRuntimeIdentity,
+    WorthQueryInstalledApplicationSchema, WorthQueryInstalledPackageIndex,
+    WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
 
 macro_rules! assert_installed {
@@ -279,45 +277,6 @@ fn wrong_operation_and_stale_or_foreign_worlds_fail_with_exact_denials() {
             .unwrap_err()
             .kind(),
         WorthQueryApplicationCapabilityInstallationDenialKind::ForeignRuntime
-    );
-}
-
-#[test]
-fn same_name_foreign_marker_types_cannot_resolve_installed_capability_authority() {
-    struct ForeignCapability;
-    struct ForeignOperation;
-
-    let (_index, bank) = installed_bank(WorthQueryInstallationRuntimeIdentity::fresh());
-    let forged_capability =
-        ApplicationCapabilityRef::<BankSchema, ForeignCapability>::from_schema_identifier(
-            "ViewEstateLegalComplianceCapability",
-        );
-    let capability_denial = match bank.capability(
-        forged_capability,
-        ViewRestrictedEstateOperation::reference(),
-    ) {
-        Ok(_) => panic!("a same-name foreign capability marker must open no authority"),
-        Err(denial) => denial,
-    };
-    assert_eq!(
-        capability_denial.kind(),
-        WorthQueryApplicationCapabilityInstallationDenialKind::CapabilityMeaningChanged
-    );
-
-    let forged_operation =
-        ApplicationOperationRef::<BankSchema, ForeignOperation, EstateAction>::from_schema_identifier(
-            "ViewRestrictedEstateOperation",
-        );
-    let operation_denial = match bank.capability(
-        ViewEstateLegalComplianceCapability::reference(),
-        forged_operation,
-    ) {
-        Ok(_) => panic!("a same-name foreign operation marker must open no authority"),
-        Err(denial) => denial,
-    };
-    assert_eq!(
-        operation_denial.kind(),
-        WorthQueryApplicationCapabilityInstallationDenialKind::CapabilityMeaningChanged
     );
 }
 

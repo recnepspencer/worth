@@ -45,11 +45,14 @@ impl OptionalAccountFieldResult {
     }
 }
 
+worth_query_declaration::worth_query_structured_value_binding!(pub OptionalAccountFieldQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub OptionalAccountFieldQueryResultBinding for OptionalAccountFieldResult { identity: "worth.query.test.execution.optional_account.result.v1" });
 worth_query_application_query!(
-    pub OptionalAccountFieldQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result OptionalAccountFieldResult,
-    scope Account,
+    pub OptionalAccountFieldQuery for IdentityExecutionSchema,
+    identity "OptionalAccountFieldQuery",
+    parameters OptionalAccountFieldQueryParametersBinding,
+    result OptionalAccountFieldQueryResultBinding,
+    scope Account => "Account",
     name "optional_account_field"
 );
 
@@ -60,11 +63,17 @@ pub(super) fn optional_account_field_definition() -> ApplicationQueryDefinition<
     OptionalAccountFieldResult,
     Account,
 > {
-    let shape = ApplicationQueryResultShapeBuilder::new(Account::reference())
-        .field(account())
-        .optional_field(note())
-        .optional_field(score())
-        .build();
+    let shape = ApplicationQueryResultShapeBuilder::<
+        IdentityExecutionSchema,
+        OptionalAccountFieldQuery,
+        Account,
+        OptionalAccountFieldResult,
+        OptionalAccountFieldQueryResultBinding,
+    >::new(Account::reference())
+    .field(account())
+    .optional_field(note())
+    .optional_field(score())
+    .build();
     ApplicationQueryDefinitionBuilder::declare(OptionalAccountFieldQuery::reference())
         .root(Account::reference())
         .scope(Account::reference())

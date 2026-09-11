@@ -92,7 +92,9 @@ fn provider_mechanism_deletion_mints_no_support_row() {
     let query = super::installed_nested_query(&world);
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(super::status_parameter(), "open".to_string()),
+        ApplicationQueryParameterSet::new()
+            .bind(super::status_parameter(), "open".to_string())
+            .expect("fixture query parameter must encode"),
     )
     .unwrap();
     let requirements = derive_graph_read_access_requirements_for_contract(
@@ -169,7 +171,9 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
     let query = super::installed_nested_query(&world);
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(super::status_parameter(), "open".to_string()),
+        ApplicationQueryParameterSet::new()
+            .bind(super::status_parameter(), "open".to_string())
+            .expect("fixture query parameter must encode"),
     )
     .unwrap();
     let requirements = derive_graph_read_access_requirements_for_contract(
@@ -334,17 +338,17 @@ macro_rules! hostile_live_index_schema {
                     }
                 }
             }
-            worth_query_entity!(pub Account in $schema);
-            worth_query_entity!(pub Activity in $schema);
-            worth_query_aspect!(pub AccountPolicy in $schema, Account; identity = AspectIdentity(0x91611034), revision = AspectContractRevision(1),);
+            worth_query_entity!(pub Account for $schema);
+            worth_query_entity!(pub Activity for $schema);
+            worth_query_aspect!(pub AccountPolicy for $schema, Account; identity = AspectIdentity(0x91611034), revision = AspectContractRevision(1),);
             worth_query_field!(
-                pub AccountIdentity in $schema, Account, AccountPolicy:
-                String, read_only, $scope_equality
+                pub AccountIdentity for $schema, Account, AccountPolicy:
+                String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, $scope_equality
             );
-            worth_query_aspect!(pub ActivityFacts in $schema, Activity; identity = AspectIdentity(0x91611035), revision = AspectContractRevision(1),);
+            worth_query_aspect!(pub ActivityFacts for $schema, Activity; identity = AspectIdentity(0x91611035), revision = AspectContractRevision(1),);
             worth_query_field!(
-                pub ActivityIdentity in $schema, Activity, ActivityFacts:
-                String, read_only, $target_equality
+                pub ActivityIdentity for $schema, Activity, ActivityFacts:
+                String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, $target_equality
             );
         }
     };

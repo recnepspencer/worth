@@ -1,3 +1,4 @@
+use worth_query_decl::facade::application_schema::BoolApplicationValueBinding;
 use worth_query_decl::facade::{worth_query_aspect, worth_query_field};
 
 use crate::estate::{
@@ -9,125 +10,135 @@ use crate::estate::{
 };
 use crate::model::{Money, USD};
 use crate::schema::BankSchema;
+use crate::schema::UsdMoneyBinding;
 
 use super::entities::{
     Branch, CapabilityGrant, DeathNotice, EmergencyAccess, EstateCase, LegalAuthority,
     MandatoryReview,
 };
+use super::values::{
+    BranchIdBinding, CapabilityGrantIdBinding, CapabilityGrantStatusBinding, DeathNoticeIdBinding,
+    DeathNoticeStatusBinding, DelegationLimitBinding, EmergencyAccessIdBinding,
+    EmergencyAccessReasonBinding, EmergencyAccessStatusBinding, EstateCapabilityOperationBinding,
+    EstateCapabilityPurposeBinding, EstateCaseIdBinding, EstateCaseStatusBinding,
+    EstateMomentBinding, EstateWorkflowStageBinding, LegalAuthorityIdBinding,
+    LegalAuthorityKindBinding, MandatoryReviewIdBinding, MandatoryReviewKindBinding,
+    MandatoryReviewStatusBinding, RestrictedBankFieldBinding,
+};
 
-worth_query_aspect!(pub BranchIdentity in BankSchema, Branch; identity = AspectIdentity(0x91611003), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub DeathNoticeRecord in BankSchema, DeathNotice; identity = AspectIdentity(0x91611004), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub EstateCaseRecord in BankSchema, EstateCase; identity = AspectIdentity(0x91611005), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub LegalAuthorityRecord in BankSchema, LegalAuthority; identity = AspectIdentity(0x91611006), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub CapabilityGrantRecord in BankSchema, CapabilityGrant; identity = AspectIdentity(0x91611007), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub EmergencyAccessRecord in BankSchema, EmergencyAccess; identity = AspectIdentity(0x91611008), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub MandatoryReviewRecord in BankSchema, MandatoryReview; identity = AspectIdentity(0x91611009), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub BranchIdentity for BankSchema, Branch; identity = AspectIdentity(0x91611003), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub DeathNoticeRecord for BankSchema, DeathNotice; identity = AspectIdentity(0x91611004), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub EstateCaseRecord for BankSchema, EstateCase; identity = AspectIdentity(0x91611005), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub LegalAuthorityRecord for BankSchema, LegalAuthority; identity = AspectIdentity(0x91611006), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub CapabilityGrantRecord for BankSchema, CapabilityGrant; identity = AspectIdentity(0x91611007), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub EmergencyAccessRecord for BankSchema, EmergencyAccess; identity = AspectIdentity(0x91611008), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub MandatoryReviewRecord for BankSchema, MandatoryReview; identity = AspectIdentity(0x91611009), revision = AspectContractRevision(1),);
 
 worth_query_field!(
-    pub BranchIdentityField in BankSchema, Branch, BranchIdentity:
-    BranchId, read_only, equality
+    pub BranchIdentityField for BankSchema, Branch, BranchIdentity:
+    BranchId => BranchIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub DeathNoticeIdentityField in BankSchema, DeathNotice, DeathNoticeRecord:
-    DeathNoticeId, read_only, equality
+    pub DeathNoticeIdentityField for BankSchema, DeathNotice, DeathNoticeRecord:
+    DeathNoticeId => DeathNoticeIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub DeathNoticeStatusField in BankSchema, DeathNotice, DeathNoticeRecord:
-    DeathNoticeStatus, read_write, equality
+    pub DeathNoticeStatusField for BankSchema, DeathNotice, DeathNoticeRecord:
+    DeathNoticeStatus => DeathNoticeStatusBinding, read_write, equality
 );
 worth_query_field!(
-    pub EstateCaseIdentityField in BankSchema, EstateCase, EstateCaseRecord:
-    EstateCaseId, read_only, equality
+    pub EstateCaseIdentityField for BankSchema, EstateCase, EstateCaseRecord:
+    EstateCaseId => EstateCaseIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub EstateWorkflowStageField in BankSchema, EstateCase, EstateCaseRecord:
-    EstateWorkflowStage, read_write, equality
+    pub EstateWorkflowStageField for BankSchema, EstateCase, EstateCaseRecord:
+    EstateWorkflowStage => EstateWorkflowStageBinding, read_write, equality
 );
 worth_query_field!(
-    pub EstateCaseStatusField in BankSchema, EstateCase, EstateCaseRecord:
-    EstateCaseStatus, read_write, equality
+    pub EstateCaseStatusField for BankSchema, EstateCase, EstateCaseRecord:
+    EstateCaseStatus => EstateCaseStatusBinding, read_write, equality
 );
 worth_query_field!(
-    pub LegalAuthorityIdentityField in BankSchema, LegalAuthority, LegalAuthorityRecord:
-    LegalAuthorityId, read_only, equality
+    pub LegalAuthorityIdentityField for BankSchema, LegalAuthority, LegalAuthorityRecord:
+    LegalAuthorityId => LegalAuthorityIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub LegalAuthorityKindField in BankSchema, LegalAuthority, LegalAuthorityRecord:
-    LegalAuthorityKind, read_write, equality
+    pub LegalAuthorityKindField for BankSchema, LegalAuthority, LegalAuthorityRecord:
+    LegalAuthorityKind => LegalAuthorityKindBinding, read_write, equality
 );
 worth_query_field!(
-    pub LegalAuthorityRecognizedField in BankSchema, LegalAuthority, LegalAuthorityRecord:
-    bool, read_write, equality
+    pub LegalAuthorityRecognizedField for BankSchema, LegalAuthority, LegalAuthorityRecord:
+    bool => BoolApplicationValueBinding, read_write, equality
 );
 worth_query_field!(
-    pub CapabilityGrantIdentityField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    CapabilityGrantId, read_only, equality
+    pub CapabilityGrantIdentityField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    CapabilityGrantId => CapabilityGrantIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub CapabilityOperationField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    EstateCapabilityOperation, read_write, equality
+    pub CapabilityOperationField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    EstateCapabilityOperation => EstateCapabilityOperationBinding, read_write, equality
 );
 worth_query_field!(
-    pub CapabilityPurposeField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    EstateCapabilityPurpose, read_write, equality
+    pub CapabilityPurposeField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    EstateCapabilityPurpose => EstateCapabilityPurposeBinding, read_write, equality
 );
 worth_query_field!(
-    pub CapabilityDisclosureField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    optional RestrictedBankField, read_write, equality
+    pub CapabilityDisclosureField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    optional RestrictedBankField => RestrictedBankFieldBinding, read_write, equality
 );
 worth_query_field!(
-    pub CapabilityAmountCeilingField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    optional Money<USD>, unit crate::schema::UsdCurrency, read_write, no_equality
+    pub CapabilityAmountCeilingField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    optional Money<USD> => UsdMoneyBinding, unit crate::schema::UsdCurrency, read_write, no_equality
 );
 worth_query_field!(
-    pub CapabilityValidFromField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    EstateMoment, read_write, equality
+    pub CapabilityValidFromField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    EstateMoment => EstateMomentBinding, read_write, equality
 );
 worth_query_field!(
-    pub CapabilityValidThroughField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    EstateMoment, read_write, equality
+    pub CapabilityValidThroughField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    EstateMoment => EstateMomentBinding, read_write, equality
 );
 worth_query_field!(
-    pub CapabilityDelegationLimitField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    DelegationLimit, read_write, equality
+    pub CapabilityDelegationLimitField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    DelegationLimit => DelegationLimitBinding, read_write, equality
 );
 worth_query_field!(
-    pub CapabilityWorkflowStageField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    EstateWorkflowStage, read_write, equality
+    pub CapabilityWorkflowStageField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    EstateWorkflowStage => EstateWorkflowStageBinding, read_write, equality
 );
 worth_query_field!(
-    pub CapabilityGrantStatusField in BankSchema, CapabilityGrant, CapabilityGrantRecord:
-    CapabilityGrantStatus, read_write, equality
+    pub CapabilityGrantStatusField for BankSchema, CapabilityGrant, CapabilityGrantRecord:
+    CapabilityGrantStatus => CapabilityGrantStatusBinding, read_write, equality
 );
 worth_query_field!(
-    pub EmergencyAccessIdentityField in BankSchema, EmergencyAccess, EmergencyAccessRecord:
-    EmergencyAccessId, read_only, equality
+    pub EmergencyAccessIdentityField for BankSchema, EmergencyAccess, EmergencyAccessRecord:
+    EmergencyAccessId => EmergencyAccessIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub EmergencyAccessReasonField in BankSchema, EmergencyAccess, EmergencyAccessRecord:
-    EmergencyAccessReason, read_write, equality
+    pub EmergencyAccessReasonField for BankSchema, EmergencyAccess, EmergencyAccessRecord:
+    EmergencyAccessReason => EmergencyAccessReasonBinding, read_write, equality
 );
 worth_query_field!(
-    pub EmergencyAccessStatusField in BankSchema, EmergencyAccess, EmergencyAccessRecord:
-    EmergencyAccessStatus, read_write, equality
+    pub EmergencyAccessStatusField for BankSchema, EmergencyAccess, EmergencyAccessRecord:
+    EmergencyAccessStatus => EmergencyAccessStatusBinding, read_write, equality
 );
 worth_query_field!(
-    pub EmergencyAccessIssuedAtField in BankSchema, EmergencyAccess, EmergencyAccessRecord:
-    EstateMoment, read_write, equality
+    pub EmergencyAccessIssuedAtField for BankSchema, EmergencyAccess, EmergencyAccessRecord:
+    EstateMoment => EstateMomentBinding, read_write, equality
 );
 worth_query_field!(
-    pub EmergencyAccessExpiresAtField in BankSchema, EmergencyAccess, EmergencyAccessRecord:
-    EstateMoment, read_write, equality
+    pub EmergencyAccessExpiresAtField for BankSchema, EmergencyAccess, EmergencyAccessRecord:
+    EstateMoment => EstateMomentBinding, read_write, equality
 );
 worth_query_field!(
-    pub MandatoryReviewIdentityField in BankSchema, MandatoryReview, MandatoryReviewRecord:
-    MandatoryReviewId, read_only, equality
+    pub MandatoryReviewIdentityField for BankSchema, MandatoryReview, MandatoryReviewRecord:
+    MandatoryReviewId => MandatoryReviewIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub MandatoryReviewStatusField in BankSchema, MandatoryReview, MandatoryReviewRecord:
-    MandatoryReviewStatus, read_write, equality
+    pub MandatoryReviewStatusField for BankSchema, MandatoryReview, MandatoryReviewRecord:
+    MandatoryReviewStatus => MandatoryReviewStatusBinding, read_write, equality
 );
 worth_query_field!(
-    pub MandatoryReviewKindField in BankSchema, MandatoryReview, MandatoryReviewRecord:
-    MandatoryReviewKind, read_only, equality
+    pub MandatoryReviewKindField for BankSchema, MandatoryReview, MandatoryReviewRecord:
+    MandatoryReviewKind => MandatoryReviewKindBinding, read_only, equality
 );

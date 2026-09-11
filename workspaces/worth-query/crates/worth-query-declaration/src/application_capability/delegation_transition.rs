@@ -1,7 +1,6 @@
 use std::{collections::BTreeSet, marker::PhantomData};
 
 use crate::application_schema::ApplicationOperationRef;
-use crate::portable_identity::WorthQueryPortableType;
 
 use super::{
     ApplicationCapabilityEntitySelector, ApplicationCapabilityFieldBinding,
@@ -37,10 +36,7 @@ impl ApplicationCapabilityRevocationDefinition {
         operation: ApplicationOperationRef<Schema, Operation, Input>,
         identity: ApplicationCapabilityFieldBinding,
         revoked_status: ApplicationCapabilityValueBinding,
-    ) -> Self
-    where
-        Input: WorthQueryPortableType,
-    {
+    ) -> Self {
         Self {
             operation: ApplicationCapabilityOperationBinding::from_reference(operation),
             identity,
@@ -113,10 +109,7 @@ impl ApplicationCapabilityDelegationActivationDefinition {
     pub fn new<Schema, Operation, Input>(
         operation: ApplicationOperationRef<Schema, Operation, Input>,
         identity: ApplicationCapabilityFieldBinding,
-    ) -> Self
-    where
-        Input: WorthQueryPortableType,
-    {
+    ) -> Self {
         Self {
             operation: ApplicationCapabilityOperationBinding::from_reference(operation),
             identity,

@@ -14,9 +14,7 @@ use bank_server::{
     queries, BankAuthenticatedPrincipal, BankCommitDenialKind, BankCommitDenialStage,
     BankCommitReceipt, BankEstateProgressionDenial, BankMutationCommitOutcome, BankReadControls,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationQueryControls,
-};
+use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 use self::fixture::{disbursement_drift_world, disbursement_world, DisbursementFixture};
 use crate::support::request_scope;
@@ -157,11 +155,7 @@ fn account_activity(
         .runtime
         .account_activity(account)
         .as_principal(principal)
-        .execute(WorthQueryApplicationQueryControls::current_one_shot(
-            std::num::NonZeroUsize::new(16).unwrap(),
-            std::num::NonZeroUsize::new(1_024).unwrap(),
-            &request_scope(),
-        ))
+        .execute(BankReadControls::current(request_scope(), 16, 1_024).unwrap())
         .expect("an exact account owner should read authoritative activity")
         .rows()[0]
         .entries()

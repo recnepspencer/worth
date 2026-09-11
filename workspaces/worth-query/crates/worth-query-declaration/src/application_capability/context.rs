@@ -94,7 +94,7 @@ impl<Schema, Context, Slot, Entity>
     ApplicationCapabilityContextEntitySlotRef<Schema, Context, Slot, Entity>
 where
     Context: super::ApplicationCapabilityContextMarkerIdentity<Schema = Schema>,
-    Entity: crate::application_schema::ApplicationEntityMarkerIdentity<Schema = Schema>,
+    Entity: crate::application_schema::ApplicationEntityMarkerIdentity<Schema>,
     Slot: super::ApplicationCapabilityContextEntitySlotMarkerIdentity<
         Schema = Schema,
         Context = Context,

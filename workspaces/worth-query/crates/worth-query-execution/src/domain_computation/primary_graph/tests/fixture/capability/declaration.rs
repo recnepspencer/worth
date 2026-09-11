@@ -1,4 +1,3 @@
-use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
 use worth_query_declaration::facade::{
     application_capability::{
         ApplicationCapabilityEntitySelector, ApplicationCapabilityGovernedInputIdentity,
@@ -6,7 +5,11 @@ use worth_query_declaration::facade::{
         ApplicationCapabilityRequestContext, ApplicationCapabilityRequestProjection,
         ApplicationCapabilityRequestProjectionDenial,
     },
-    application_schema::{TypedApplicationReadableValue, TypedApplicationValue},
+    application_schema::{
+        ApplicationEncodedScalarValue, ApplicationStructuredValueBinding,
+        ApplicationValueValidationDenial, StringApplicationValueBinding,
+        U64ApplicationValueBinding,
+    },
 };
 use worth_query_declaration::{
     worth_query_aspect, worth_query_capability, worth_query_capability_context,
@@ -17,6 +20,13 @@ use worth_query_declaration::{
 
 use super::super::{Account, AccountIdentity, AccountLabel, IdentityExecutionSchema, Principal};
 use super::governed_input::CapabilityGovernedInputIdentity;
+
+#[path = "value_bindings.rs"]
+mod value_bindings;
+pub use value_bindings::{
+    CapabilityActionBinding, CapabilityDisclosureBinding, CapabilityPurposeBinding,
+    CapabilityStatusBinding,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CapabilityAction {
@@ -47,147 +57,89 @@ pub enum CapabilityDisclosure {
     PrivateLabel,
 }
 
-macro_rules! string_value {
-    ($type:ty, {$($variant:path => $value:literal),+ $(,)?}) => {
-        impl TypedApplicationValue for $type {
-            const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::String;
-
-            fn into_foundational_value(self) -> AspectValue {
-                let value = match self { $($variant => $value),+ };
-                AspectValue::String(InternedString::from(value))
-            }
-        }
-
-        impl TypedApplicationReadableValue for $type {
-            fn from_foundational_value(value: &AspectValue) -> Option<Self> {
-                let AspectValue::String(InternedString::Raw(value)) = value else {
-                    return None;
-                };
-                match value.as_str() {
-                    $($value => Some($variant),)+
-                    _ => None,
-                }
-            }
-        }
-    };
-}
-
-string_value!(CapabilityAction, {
-    CapabilityAction::Touch => "touch",
-    CapabilityAction::Inspect => "inspect",
-    CapabilityAction::Disburse => "disburse",
-    CapabilityAction::RequestElevation => "request-elevation",
-    CapabilityAction::ApproveElevation => "approve-elevation",
-    CapabilityAction::RevokeElevation => "revoke-elevation",
-    CapabilityAction::CompleteReview => "complete-review"
-});
-string_value!(CapabilityPurpose, {
-    CapabilityPurpose::AccountMaintenance => "account-maintenance",
-    CapabilityPurpose::Audit => "audit"
-});
-string_value!(CapabilityStatus, {
-    CapabilityStatus::Active => "active",
-    CapabilityStatus::Revoked => "revoked"
-});
-string_value!(CapabilityDisclosure, {
-    CapabilityDisclosure::AccountActivity => "account-activity",
-    CapabilityDisclosure::PrivateLabel => "private-label"
-});
-
-worth_query_entity!(pub CapabilityGrant in IdentityExecutionSchema);
-worth_query_aspect!(pub CapabilityFacts in IdentityExecutionSchema, CapabilityGrant; identity = AspectIdentity(0x91611036), revision = AspectContractRevision(1),);
+worth_query_entity!(pub CapabilityGrant for IdentityExecutionSchema);
+worth_query_aspect!(pub CapabilityFacts for IdentityExecutionSchema, CapabilityGrant; identity = AspectIdentity(0x91611036), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub CapabilityIdentity in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    String, read_only, equality
+    pub CapabilityIdentity for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub CapabilityActionField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    CapabilityAction, read_only, no_equality
+    pub CapabilityActionField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    CapabilityAction => CapabilityActionBinding, read_only, no_equality
 );
 worth_query_field!(
-    pub CapabilityPurposeField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    CapabilityPurpose, read_only, no_equality
+    pub CapabilityPurposeField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    CapabilityPurpose => CapabilityPurposeBinding, read_only, no_equality
 );
 worth_query_field!(
-    pub CapabilityDisclosureField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    CapabilityDisclosure, read_only, no_equality
+    pub CapabilityDisclosureField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    CapabilityDisclosure => CapabilityDisclosureBinding, read_only, no_equality
 );
 worth_query_field!(
-    pub CapabilityAmountField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    u64, read_write, no_equality
+    pub CapabilityAmountField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    u64 => U64ApplicationValueBinding, read_write, no_equality
 );
 worth_query_field!(
-    pub CapabilityStatusField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    CapabilityStatus, read_write, no_equality
+    pub CapabilityStatusField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    CapabilityStatus => CapabilityStatusBinding, read_write, no_equality
 );
 worth_query_field!(
-    pub CapabilityWorkflowField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    String, read_write, no_equality
+    pub CapabilityWorkflowField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    String => StringApplicationValueBinding, read_write, no_equality
 );
 worth_query_field!(
-    pub CapabilityNotBeforeField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    u64, read_write, no_equality
+    pub CapabilityNotBeforeField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    u64 => U64ApplicationValueBinding, read_write, no_equality
 );
 worth_query_field!(
-    pub CapabilityNotAfterField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    u64, read_write, no_equality
+    pub CapabilityNotAfterField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    u64 => U64ApplicationValueBinding, read_write, no_equality
 );
 worth_query_field!(
-    pub CapabilityDelegationLimitField in IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
-    u64, read_write, no_equality
+    pub CapabilityDelegationLimitField for IdentityExecutionSchema, CapabilityGrant, CapabilityFacts:
+    u64 => U64ApplicationValueBinding, read_write, no_equality
 );
-worth_query_entity!(pub CapabilityActionRecord in IdentityExecutionSchema);
-worth_query_aspect!(pub CapabilityActionRecordFacts in IdentityExecutionSchema,
+worth_query_entity!(pub CapabilityActionRecord for IdentityExecutionSchema);
+worth_query_aspect!(pub CapabilityActionRecordFacts for IdentityExecutionSchema,
     CapabilityActionRecord; identity = AspectIdentity(0x91611037), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub CapabilityActionRecordIdentity in IdentityExecutionSchema,
+    pub CapabilityActionRecordIdentity for IdentityExecutionSchema,
     CapabilityActionRecord, CapabilityActionRecordFacts:
-    String, read_only, equality
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_relation!(
     pub CapabilityGrantee in IdentityExecutionSchema,
-    Principal => CapabilityGrant
-);
+    Principal => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityGrantor in IdentityExecutionSchema,
-    Principal => CapabilityGrant
-);
+    Principal => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityCustodian in IdentityExecutionSchema,
-    Principal => CapabilityGrant
-);
+    Principal => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityResource in IdentityExecutionSchema,
-    CapabilityGrant => Account
-);
+    CapabilityGrant => Account; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityRelated in IdentityExecutionSchema,
-    CapabilityGrant => Account
-);
+    CapabilityGrant => Account; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityParent in IdentityExecutionSchema,
-    CapabilityGrant => CapabilityGrant
-);
+    CapabilityGrant => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityExplicitDeny in IdentityExecutionSchema,
-    Principal => Account
-);
+    Principal => Account; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityConflictingBeneficiary in IdentityExecutionSchema,
-    Principal => Account
-);
+    Principal => Account; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityRequestActor in IdentityExecutionSchema,
-    Principal => CapabilityActionRecord
-);
+    Principal => CapabilityActionRecord; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityPriorActor in IdentityExecutionSchema,
-    Principal => CapabilityActionRecord
-);
+    Principal => CapabilityActionRecord; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityActionResource in IdentityExecutionSchema,
-    CapabilityActionRecord => Account
-);
+    CapabilityActionRecord => Account; integrity = same_context_unbounded_retain_dangling);
 worth_query_capability_context!(pub CapabilityRequestContext in IdentityExecutionSchema);
 worth_query_capability_context_entity_slot!(
     pub CapabilityRequestActorSlot in IdentityExecutionSchema,
@@ -218,16 +170,28 @@ worth_query_declaration::worth_query_portable_type!(CapabilityAction => "worth.q
 worth_query_declaration::worth_query_portable_type!(CapabilityPurpose => "worth.query.test.execution.capability.purpose.v1");
 worth_query_declaration::worth_query_portable_type!(CapabilityStatus => "worth.query.test.execution.capability.status.v1");
 worth_query_declaration::worth_query_portable_type!(CapabilityDisclosure => "worth.query.test.execution.capability.disclosure.v1");
-worth_query_declaration::worth_query_portable_type!(
-    CapabilityTouchInput => "worth.query.test.capability-touch-input.v1"
-);
+pub struct CapabilityTouchOperationInputBinding;
 
-worth_query_operation!(
-    pub CapabilityTouchOperation(CapabilityTouchInput) in IdentityExecutionSchema
-);
-worth_query_operation!(
-    pub ComposedCapabilityTouchOperation(CapabilityTouchInput) in IdentityExecutionSchema
-);
+impl ApplicationStructuredValueBinding for CapabilityTouchOperationInputBinding {
+    type Value = CapabilityTouchInput;
+
+    const IDENTITY_NAME: &'static str = "worth.query.test.capability-touch-input.v1";
+
+    fn validate(value: &Self::Value) -> Result<(), ApplicationValueValidationDenial> {
+        (value.caller_time != u64::MAX)
+            .then_some(())
+            .ok_or_else(|| {
+                ApplicationValueValidationDenial::rejected(
+                    Self::IDENTITY,
+                    "reserved caller time is invalid",
+                )
+            })
+    }
+}
+
+worth_query_operation!(pub CapabilityTouchOperation for IdentityExecutionSchema, input CapabilityTouchOperationInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub ComposedCapabilityTouchOperationInputBinding for CapabilityTouchInput { identity: "worth.query.test.capability-touch-input.v1" });
+worth_query_operation!(pub ComposedCapabilityTouchOperation for IdentityExecutionSchema, input ComposedCapabilityTouchOperationInputBinding);
 worth_query_operation_reads!(CapabilityTouchOperation => [AccountLabel]);
 worth_query_operation_writes!(CapabilityTouchOperation => [AccountLabel]);
 worth_query_operation_reads!(ComposedCapabilityTouchOperation => [AccountLabel]);
@@ -277,14 +241,20 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, ComposedTouchAccountC
                     CapabilityRequestActorSlot::reference(),
                     ApplicationCapabilityEntitySelector::new(
                         CapabilityActionRecordIdentity::reference(),
-                        self.request_record.clone(),
+                        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                            self.request_record.clone(),
+                        )
+                        .expect("fixture request record identity must encode"),
                     ),
                 )
                 .entity(
                     CapabilityPriorActorSlot::reference(),
                     ApplicationCapabilityEntitySelector::new(
                         CapabilityActionRecordIdentity::reference(),
-                        self.prior_record.clone(),
+                        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                            self.prior_record.clone(),
+                        )
+                        .expect("fixture prior record identity must encode"),
                     ),
                 ),
         )
@@ -309,20 +279,34 @@ impl CapabilityTouchInput {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
                 AccountIdentity::reference(),
-                self.account.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.account.clone(),
+                )
+                .expect("fixture account identity must encode"),
             ),
-            self.action,
-            self.purpose,
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(self.action)
+                .expect("fixture capability action must encode"),
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(self.purpose)
+                .expect("fixture capability purpose must encode"),
             context,
         )
         .related_entity(ApplicationCapabilityRelatedEntitySelector::new(
             CapabilityRelated::reference(),
             ApplicationCapabilityEntitySelector::new(
                 AccountIdentity::reference(),
-                self.related_account.clone(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    self.related_account.clone(),
+                )
+                .expect("fixture related account identity must encode"),
             ),
         ))
-        .field(self.disclosure)
-        .magnitude(self.amount))
+        .field(
+            ApplicationEncodedScalarValue::<CapabilityDisclosureBinding>::try_new(self.disclosure)
+                .expect("fixture capability disclosure must encode"),
+        )
+        .magnitude(
+            ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(self.amount)
+                .expect("fixture capability magnitude must encode"),
+        ))
     }
 }

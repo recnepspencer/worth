@@ -113,8 +113,8 @@ fn historical_denies_if_exact_support_is_revoked_after_admission() {
         Err(denial) => denial,
     };
 
-    let BankApplicationQueryDenial::HistoricalExecution(denial) = denial else {
-        panic!("historical cutoff must occur during bounded execution: {denial:?}");
+    let BankApplicationQueryDenial::Execution(denial) = denial else {
+        panic!("historical cutoff must occur during selected execution: {denial:?}");
     };
     assert_stale_authorization(denial.kind());
     assert_exact_revoked_alternate_active(&fixture, &requester);
@@ -142,8 +142,8 @@ fn preview_denies_if_exact_support_is_revoked_after_admission() {
         Err(denial) => denial,
     };
 
-    let BankApplicationQueryDenial::PreviewExecution(denial) = denial else {
-        panic!("preview cutoff must occur during bounded execution: {denial:?}");
+    let BankApplicationQueryDenial::Execution(denial) = denial else {
+        panic!("preview cutoff must occur during selected execution: {denial:?}");
     };
     assert_stale_authorization(denial.kind());
     assert_exact_revoked_alternate_active(&fixture, &requester);
@@ -215,10 +215,10 @@ fn revoke_exact_support(
     assert!(matches!(outcome, BankMutationCommitOutcome::Committed(_)));
 }
 
-fn assert_stale_authorization(kind: crate::BankBoundedLaneDenialKind) {
+fn assert_stale_authorization(kind: crate::BankApplicationOneShotDenialKind) {
     assert_eq!(
         kind,
-        crate::BankBoundedLaneDenialKind::Authorization(
+        crate::BankApplicationOneShotDenialKind::Authorization(
             crate::BankAuthorizationDenialKind::StaleAuthorization,
         )
     );

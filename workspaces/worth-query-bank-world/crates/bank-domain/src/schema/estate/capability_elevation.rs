@@ -83,7 +83,7 @@ pub(super) fn rule(
                 ),
                 ApplicationCapabilityValueBinding::new(
                     MandatoryReviewKindField::reference(),
-                    MandatoryReviewKind::EmergencyAccess,
+                    crate::schema::encoded_bank_value(MandatoryReviewKind::EmergencyAccess),
                 ),
                 ApplicationCapabilityRelationBinding::from_reference(ReviewEstate::reference()),
                 ApplicationCapabilityRelationBinding::from_reference(ReviewPrincipal::reference()),
@@ -101,9 +101,15 @@ pub(super) fn rule(
 }
 
 fn elevation_status(status: EmergencyAccessStatus) -> ApplicationCapabilityValueBinding {
-    ApplicationCapabilityValueBinding::new(EmergencyAccessStatusField::reference(), status)
+    ApplicationCapabilityValueBinding::new(
+        EmergencyAccessStatusField::reference(),
+        crate::schema::encoded_bank_value(status),
+    )
 }
 
 fn review_status(status: MandatoryReviewStatus) -> ApplicationCapabilityValueBinding {
-    ApplicationCapabilityValueBinding::new(MandatoryReviewStatusField::reference(), status)
+    ApplicationCapabilityValueBinding::new(
+        MandatoryReviewStatusField::reference(),
+        crate::schema::encoded_bank_value(status),
+    )
 }

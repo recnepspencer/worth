@@ -7,8 +7,10 @@ use worth_query_declaration::facade::application_aftermath::{
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
-    ApplicationFieldMarkerIdentity, ApplicationOperationDecisionReadTarget,
-    ApplicationSchemaMember, OperationDeletes, OperationLinks, OperationUnlinks, OperationWrites,
+    ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
+    ApplicationOperationDecisionReadTarget, ApplicationSchemaMember, DeclaredApplicationFieldValue,
+    OperationDeletes, OperationLinks, OperationUnlinks, OperationWrites,
+    U64ApplicationValueBinding,
 };
 
 struct OtherEntity;
@@ -18,14 +20,11 @@ struct OtherAspect;
 struct OtherAspectField;
 struct OtherField;
 
-impl ApplicationEntityMarkerIdentity for OtherEntity {
-    type Schema = TestSchema;
+impl ApplicationEntityMarkerIdentity<TestSchema> for OtherEntity {
     const IDENTIFIER: &'static str = "OtherEntity";
 }
 
-impl ApplicationAspectMarkerIdentity for OtherEntityAspect {
-    type Schema = TestSchema;
-    type Entity = OtherEntity;
+impl ApplicationAspectMarkerIdentity<TestSchema, OtherEntity> for OtherEntityAspect {
     const IDENTIFIER: &'static str = "IdentityAspect";
     const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
         worth_query_declaration::facade::application_schema::AspectIdentity(0x9161200d);
@@ -34,16 +33,18 @@ impl ApplicationAspectMarkerIdentity for OtherEntityAspect {
         worth_query_declaration::facade::application_schema::AspectContractRevision(1);
 }
 
-impl ApplicationFieldMarkerIdentity for OtherEntityField {
-    type Schema = TestSchema;
-    type Entity = OtherEntity;
-    type Aspect = OtherEntityAspect;
+impl ApplicationFieldMarkerIdentity<TestSchema, OtherEntity, OtherEntityAspect>
+    for OtherEntityField
+{
     const IDENTIFIER: &'static str = "PrincipalIdentityField";
 }
+impl DeclaredApplicationFieldValue for OtherEntityField {
+    type Value = u64;
+    type Binding = U64ApplicationValueBinding;
+    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
+}
 
-impl ApplicationAspectMarkerIdentity for OtherAspect {
-    type Schema = TestSchema;
-    type Entity = TestEntity;
+impl ApplicationAspectMarkerIdentity<TestSchema, TestEntity> for OtherAspect {
     const IDENTIFIER: &'static str = "OtherAspect";
     const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
         worth_query_declaration::facade::application_schema::AspectIdentity(0x9161200e);
@@ -52,18 +53,24 @@ impl ApplicationAspectMarkerIdentity for OtherAspect {
         worth_query_declaration::facade::application_schema::AspectContractRevision(1);
 }
 
-impl ApplicationFieldMarkerIdentity for OtherAspectField {
-    type Schema = TestSchema;
-    type Entity = TestEntity;
-    type Aspect = OtherAspect;
+impl ApplicationFieldMarkerIdentity<TestSchema, TestEntity, OtherAspect> for OtherAspectField {
     const IDENTIFIER: &'static str = "PrincipalIdentityField";
 }
+impl DeclaredApplicationFieldValue for OtherAspectField {
+    type Value = u64;
+    type Binding = U64ApplicationValueBinding;
+    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
+}
 
-impl ApplicationFieldMarkerIdentity for OtherField {
-    type Schema = TestSchema;
-    type Entity = TestEntity;
-    type Aspect = FixtureIdentityAspect<TestSchema>;
+impl ApplicationFieldMarkerIdentity<TestSchema, TestEntity, FixtureIdentityAspect<TestSchema>>
+    for OtherField
+{
     const IDENTIFIER: &'static str = "OtherField";
+}
+impl DeclaredApplicationFieldValue for OtherField {
+    type Value = u64;
+    type Binding = U64ApplicationValueBinding;
+    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
 }
 
 impl OperationReads<TestOperation<TestSchema>> for FixtureExternalIdentityField<TestSchema> {}
@@ -177,7 +184,9 @@ fn installed_contracts_group_exact_reads_and_retain_every_typed_graph_touch() {
         MappingTarget,
         TestEntity,
         TestEntity,
-    >::from_schema_identifiers("MappingTarget", "TestEntity", "TestEntity");
+    >::from_schema_identifiers("MappingTarget", "TestEntity", "TestEntity",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            );
     let declaration = test_schema_members::<TestSchema>(None)
         .operation_read_field(
             operation,
@@ -320,9 +329,9 @@ fn coherent_candidate<Entity, Aspect, Field>(
     maximum_encoded_bytes: usize,
 ) -> Vec<ApplicationSchemaMember>
 where
-    Entity: ApplicationEntityMarkerIdentity<Schema = TestSchema>,
-    Aspect: ApplicationAspectMarkerIdentity<Schema = TestSchema, Entity = Entity>,
-    Field: ApplicationFieldMarkerIdentity<Schema = TestSchema, Entity = Entity, Aspect = Aspect>,
+    Entity: ApplicationEntityMarkerIdentity<TestSchema>,
+    Aspect: ApplicationAspectMarkerIdentity<TestSchema, Entity>,
+    Field: ApplicationFieldMarkerIdentity<TestSchema, Entity, Aspect, Value = u64>,
 {
     let declaration =
         test_schema_members::<TestSchema>(Some(recorded_inverse_at::<Entity, Aspect, Field>(
@@ -357,9 +366,9 @@ fn recorded_inverse_at<Entity, Aspect, Field>(
     maximum_encoded_bytes: usize,
 ) -> DeclaredApplicationAftermathContract<TestSchema>
 where
-    Entity: ApplicationEntityMarkerIdentity<Schema = TestSchema>,
-    Aspect: ApplicationAspectMarkerIdentity<Schema = TestSchema, Entity = Entity>,
-    Field: ApplicationFieldMarkerIdentity<Schema = TestSchema, Entity = Entity, Aspect = Aspect>,
+    Entity: ApplicationEntityMarkerIdentity<TestSchema>,
+    Aspect: ApplicationAspectMarkerIdentity<TestSchema, Entity>,
+    Field: ApplicationFieldMarkerIdentity<TestSchema, Entity, Aspect, Value = u64>,
 {
     let field = ApplicationFieldRef::<TestSchema, Entity, Aspect, Field, u64>::from_schema_types();
     let inverse = DeclaredRecordedInverse::new(

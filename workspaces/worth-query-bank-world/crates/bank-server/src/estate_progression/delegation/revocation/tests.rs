@@ -60,10 +60,21 @@ fn target_status_drift_after_materialization_stales_provider_commit() {
         .runtime
         .application_runtime()
         .compare_and_commit_capability_revocation(program, idempotency(155));
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationCommitOutcome::Stale(_)
-    ));
+    assert_product_basis_stale(outcome);
+}
+
+fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("an old materialized program must retain its exact product basis: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
 }
 
 /// Q8.26-C1: the retention demand attaches from the installed contract, with no

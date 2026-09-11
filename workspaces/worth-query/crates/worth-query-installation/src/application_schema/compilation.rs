@@ -6,7 +6,14 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaMemberProvenance,
 };
 
+use super::contribution::{
+    validate_installed_contribution_members, WorthQueryApplicationContributionCompilationDenial,
+};
 use super::native_contract::WorthQueryInstalledApplicationSchemaContractCatalog;
+use super::value_binding::{
+    compile_value_binding_catalog, WorthQueryApplicationValueBindingInstallationDenial,
+    WorthQueryInstalledApplicationValueBindingCatalog,
+};
 use crate::application_capability::{
     compile_capability_registry, ApplicationCapabilityRegistry,
     WorthQueryApplicationCapabilityInstallationDenial,
@@ -24,6 +31,8 @@ use crate::package::{
 pub(crate) enum ApplicationSchemaCompilationDenial {
     Capability(WorthQueryApplicationCapabilityInstallationDenial),
     Canonical(CanonicalDigestDerivationDenial),
+    Contribution(WorthQueryApplicationContributionCompilationDenial),
+    ValueBinding(WorthQueryApplicationValueBindingInstallationDenial),
 }
 
 pub(crate) struct ApplicationSchemaCompilationInput<'a, Schema> {
@@ -46,6 +55,7 @@ pub(crate) struct CompiledApplicationSchema<Schema> {
     pub member_provenance: ApplicationSchemaMemberProvenance,
     pub capability_registry: ApplicationCapabilityRegistry,
     pub authorization_policy_registry: ApplicationAuthorizationPolicyRegistry,
+    pub value_binding_catalog: WorthQueryInstalledApplicationValueBindingCatalog,
     pub native_contract_catalog: Arc<WorthQueryInstalledApplicationSchemaContractCatalog>,
     pub portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
     pub portable_operation_contracts:
@@ -60,6 +70,8 @@ pub(crate) fn compile_application_schema<Schema>(
 where
     Schema: ApplicationSchema,
 {
+    validate_installed_contribution_members(input.declaration.erased())
+        .map_err(ApplicationSchemaCompilationDenial::Contribution)?;
     let binding_identity = ApplicationSchemaBindingIdentity::from_installed_parts(
         input.package_authority.runtime_ordinal,
         input.package_authority.generation.ordinal(),
@@ -67,6 +79,13 @@ where
         input.schema_identity,
     );
     let members = input.declaration.erased().members();
+    let value_binding_catalog = compile_value_binding_catalog(
+        &binding_identity,
+        input.declaration.erased(),
+        input.declaration.member_provenance(),
+        input.native_contract_catalog.as_ref(),
+    )
+    .map_err(ApplicationSchemaCompilationDenial::ValueBinding)?;
     let capability_registry =
         compile_capability_registry(&input.package_authority, &binding_identity, members)
             .map_err(ApplicationSchemaCompilationDenial::Capability)?;
@@ -91,6 +110,7 @@ where
         package_authority: input.package_authority,
         capability_registry,
         authorization_policy_registry,
+        value_binding_catalog,
         native_contract_catalog: input.native_contract_catalog,
         portable_native_contracts: input.portable_native_contracts,
         portable_operation_contracts: input.portable_operation_contracts,

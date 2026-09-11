@@ -24,8 +24,11 @@ Milestones 9.17.1 through 9.17.1.2 own the exact component bases, owner
 services, and branch-local progress contracts. Milestone 9.17.2 owns composite
 history and product-head movement in `worth-runtime-world`. Query owns admission,
 phase carriage, public DX, and projection; it cannot restamp lower authority.
-Closing this milestone closes the 9.17 umbrella and unlocks tree-based semantic
-undo/redo in Milestone 9.18.
+Closing this milestone closes the 9.17 umbrella. The subsequently specified
+[Milestone 9.17.4](./milestone-9.17.4.md) hardens application bindings and
+consumer execution before tree-based semantic undo/redo in Milestone 9.18.
+It preserves this milestone's certified authority and behavior contracts while
+replacing the ordinary caller orchestration described here.
 
 ## Central Claim
 

@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, StringApplicationValueBinding, TypedMutationPreconditions,
+};
 
 use super::super::fixture::{
     installed_authorization_world, live_scope, AccountStatus, TouchAccountOperation,
@@ -51,8 +53,20 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
     assert_eq!(budget.maximum_encoded_bytes(), 256 * 1_024);
 
     let duplicate_target = TypedMutationPreconditions::new()
-        .expect_fact(AccountStatus::reference(), "open".to_owned())
-        .expect_fact(AccountStatus::reference(), "open".to_owned());
+        .expect_fact(
+            AccountStatus::reference(),
+            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                "open".to_owned(),
+            )
+            .expect("fixture account status must encode"),
+        )
+        .expect_fact(
+            AccountStatus::reference(),
+            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                "open".to_owned(),
+            )
+            .expect("fixture account status must encode"),
+        );
     assert_precondition_rejected(
         world.selected_product().authorize_operation(
             &principal,
@@ -65,8 +79,11 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
     );
 
     let oversized_value = "x".repeat(budget.maximum_encoded_bytes());
-    let oversized =
-        TypedMutationPreconditions::new().expect_fact(AccountStatus::reference(), oversized_value);
+    let oversized = TypedMutationPreconditions::new().expect_fact(
+        AccountStatus::reference(),
+        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(oversized_value)
+            .expect("fixture account status must encode"),
+    );
     assert_precondition_rejected(
         world
             .selected_product()

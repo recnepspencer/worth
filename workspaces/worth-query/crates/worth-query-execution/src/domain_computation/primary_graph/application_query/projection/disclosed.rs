@@ -7,8 +7,8 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, OptionalApplicationFieldValue, TypedApplicationReadableValue,
-    WritePosture,
+    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, OptionalApplicationFieldValue,
+    RequiredApplicationFieldValue, WritePosture,
 };
 
 use super::{
@@ -68,10 +68,11 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         >,
     ) -> Result<WorthQueryApplicationDisclosed<Value>, WorthQueryApplicationProjectionDenial>
     where
-        Value: TypedApplicationReadableValue + WorthQueryPortableType,
+        Field: RequiredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         let slot = selector.slot_key();
@@ -96,7 +97,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                 projected.result_path(),
             ));
         }
-        let value = Value::from_foundational_value(projected.value()).ok_or_else(|| {
+        let value = Field::Binding::decode(projected.value()).map_err(|_| {
             projection_denial(
                 WorthQueryApplicationProjectionDenialKind::FieldTypeMismatch,
                 projected.result_path(),
@@ -122,10 +123,10 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     ) -> Result<WorthQueryApplicationDisclosed<Option<Value>>, WorthQueryApplicationProjectionDenial>
     where
         Field: OptionalApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationReadableValue + WorthQueryPortableType,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         let slot = selector.slot_key();
@@ -147,7 +148,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                 projected.result_path(),
             ));
         }
-        let value = Value::from_foundational_value(projected.value()).ok_or_else(|| {
+        let value = Field::Binding::decode(projected.value()).map_err(|_| {
             projection_denial(
                 WorthQueryApplicationProjectionDenialKind::FieldTypeMismatch,
                 projected.result_path(),
@@ -176,7 +177,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     >
     where
         Direction: ApplicationQueryResultTraversal,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.disclosed_relation(&selector).and_then(|disclosure| {
@@ -209,7 +210,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     >
     where
         Direction: ApplicationQueryResultTraversal,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.disclosed_relation(&selector).and_then(|disclosure| {
@@ -241,7 +242,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     >
     where
         Direction: ApplicationQueryResultTraversal,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.disclosed_relation(&selector).and_then(|disclosure| {
@@ -275,7 +276,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     where
         Direction: ApplicationQueryResultTraversal,
         Cardinality: ApplicationQueryResultRelationCardinality,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         let slot = selector.slot_key();

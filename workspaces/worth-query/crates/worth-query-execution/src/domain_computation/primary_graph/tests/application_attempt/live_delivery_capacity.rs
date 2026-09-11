@@ -1,9 +1,9 @@
-use worth_query_declaration::facade::application_schema::ApplicationEffectPayload;
+use worth_query_declaration::facade::application_schema::ApplicationRetainedEffectBinding;
 use worth_runtime_bridge::facade::TruthBranchHeadSource;
 
 use super::{admitted_program_with_emit, authenticated_principal, idempotency, resolved_account};
 use crate::domain_computation::primary_graph::tests::fixture::{
-    installed_authorization_world, live_scope,
+    installed_authorization_world, live_scope, AccountActivityBinding,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedChange, WorthQueryApplicationCommitOutcome,
@@ -17,7 +17,7 @@ fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
 #[test]
 fn one_missing_payload_byte_denies_before_world_or_bridge_movement() {
     let payload = "byte-short".to_owned();
-    let required = payload.retained_bytes();
+    let required = AccountActivityBinding::retained_bytes(&payload);
     assert!(required > 0);
     assert_live_reservation_denial(1, required - 1, &payload, 212);
 }

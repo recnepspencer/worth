@@ -2,11 +2,14 @@ use bank_domain::schema::BankSchema;
 use worth_query_host::facade::declaration::{
     application_query::{ApplicationQueryParameterSet, ApplicationQueryReference},
     application_schema::{
-        ApplicationFieldRef, ApplicationFieldUnit, EqualityPredicate, TypedApplicationValue,
-        WritePosture,
+        ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue,
+        EqualityPredicate, WritePosture,
     },
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls;
+use worth_query_host::facade::{
+    admission::authenticated_principal::WorthQueryRequestScope,
+    primary_graph::WorthQueryProductQueryControls,
+};
 
 pub(crate) struct BankApplicationQueryInvocation<
     'request,
@@ -34,7 +37,8 @@ pub(crate) struct BankApplicationQueryInvocation<
     >,
     pub(super) scope_identity: ScopeIdentity,
     pub(super) parameters: ApplicationQueryParameterSet<Query>,
-    pub(super) controls: WorthQueryApplicationQueryControls<'request, BankSchema>,
+    pub(super) controls: WorthQueryProductQueryControls<'request>,
+    pub(super) request: &'request WorthQueryRequestScope,
 }
 
 impl<
@@ -62,7 +66,7 @@ impl<
         ScopeUnit,
     >
 where
-    ScopeIdentity: TypedApplicationValue,
+    ScopeField: DeclaredApplicationFieldValue<Value = ScopeIdentity>,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
 {
@@ -80,7 +84,8 @@ where
         >,
         scope_identity: ScopeIdentity,
         parameters: ApplicationQueryParameterSet<Query>,
-        controls: WorthQueryApplicationQueryControls<'request, BankSchema>,
+        controls: WorthQueryProductQueryControls<'request>,
+        request: &'request WorthQueryRequestScope,
     ) -> Self {
         Self {
             reference,
@@ -88,6 +93,7 @@ where
             scope_identity,
             parameters,
             controls,
+            request,
         }
     }
 }

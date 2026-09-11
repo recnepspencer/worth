@@ -20,7 +20,9 @@ pub(super) fn grouped_graph_rule(conjunctive: bool) -> ApplicationCapabilityGrap
 
 pub(super) fn anchored_graph_rule() -> ApplicationCapabilityGraphRule {
     let relation = ApplicationRelationRef::<Schema, PrincipalResource, Principal, Resource>::
-        from_schema_identifiers("PrincipalResource", "Principal", "Resource");
+        from_schema_identifiers("PrincipalResource", "Principal", "Resource",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            );
     let slot = ApplicationCapabilityContextEntitySlotRef::<
         Schema,
         Context,

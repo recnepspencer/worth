@@ -24,19 +24,33 @@ use crate::schema::{
 };
 
 pub(super) struct PaymentIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(PaymentIdentitySlot => "PaymentIdentitySlot");
 struct PaymentAmountSlot;
+worth_query_decl::facade::worth_query_portable_type!(PaymentAmountSlot => "PaymentAmountSlot");
 struct PaymentStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(PaymentStatusSlot => "PaymentStatusSlot");
 struct PaymentSourceSlot;
+worth_query_decl::facade::worth_query_portable_type!(PaymentSourceSlot => "PaymentSourceSlot");
 struct SourceIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(SourceIdentitySlot => "SourceIdentitySlot");
 struct PaymentDestinationSlot;
+worth_query_decl::facade::worth_query_portable_type!(PaymentDestinationSlot => "PaymentDestinationSlot");
 struct DestinationIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(DestinationIdentitySlot => "DestinationIdentitySlot");
 struct PaymentBusinessSlot;
+worth_query_decl::facade::worth_query_portable_type!(PaymentBusinessSlot => "PaymentBusinessSlot");
 struct BusinessIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(BusinessIdentitySlot => "BusinessIdentitySlot");
 struct PaymentInitiatorSlot;
+worth_query_decl::facade::worth_query_portable_type!(PaymentInitiatorSlot => "PaymentInitiatorSlot");
 struct InitiatorIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(InitiatorIdentitySlot => "InitiatorIdentitySlot");
 struct PaymentApprovalSlot;
+worth_query_decl::facade::worth_query_portable_type!(PaymentApprovalSlot => "PaymentApprovalSlot");
 struct ApprovalPrincipalSlot;
+worth_query_decl::facade::worth_query_portable_type!(ApprovalPrincipalSlot => "ApprovalPrincipalSlot");
 struct DecidingPrincipalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(DecidingPrincipalIdentitySlot => "DecidingPrincipalIdentitySlot");
 
 type PaymentIdentitySelector<Query> = ApplicationQueryResultFieldRef<
     Query,
@@ -116,35 +130,61 @@ type PrincipalIdentitySelector<Query, Slot> = ApplicationQueryResultFieldRef<
     NoApplicationUnit,
 >;
 
-pub(super) fn payment_summary_shape<Query, Result>(
-) -> ApplicationQueryResultShapeBuilder<BankSchema, Query, PaymentIntent, Result>
+pub(super) fn payment_summary_shape<Query, Result, ShapeBinding>(
+) -> ApplicationQueryResultShapeBuilder<BankSchema, Query, PaymentIntent, Result, ShapeBinding>
 where
-    Query: 'static,
+    Query: worth_query_decl::facade::application_query::ApplicationQueryMarkerIdentity<BankSchema>,
+    ShapeBinding: worth_query_decl::facade::application_schema::ApplicationStructuredValueBinding<
+        Value = Result,
+    >,
 {
-    let source = ApplicationQueryResultShapeBuilder::<BankSchema, Query, Account, ()>::new(
-        Account::reference(),
-    )
+    let source = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        Query,
+        Account,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Account::reference())
     .field(source_identity());
-    let destination = ApplicationQueryResultShapeBuilder::<BankSchema, Query, Account, ()>::new(
-        Account::reference(),
-    )
+    let destination = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        Query,
+        Account,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Account::reference())
     .field(destination_identity());
-    let business = ApplicationQueryResultShapeBuilder::<BankSchema, Query, Business, ()>::new(
-        Business::reference(),
-    )
+    let business = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        Query,
+        Business,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Business::reference())
     .field(business_identity());
-    let initiator = ApplicationQueryResultShapeBuilder::<BankSchema, Query, Principal, ()>::new(
-        Principal::reference(),
-    )
+    let initiator = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        Query,
+        Principal,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Principal::reference())
     .field(initiator_identity());
-    let deciding_principal =
-        ApplicationQueryResultShapeBuilder::<BankSchema, Query, Principal, ()>::new(
-            Principal::reference(),
-        )
-        .field(deciding_principal_identity());
-    let approval = ApplicationQueryResultShapeBuilder::<BankSchema, Query, Approval, ()>::new(
-        Approval::reference(),
-    )
+    let deciding_principal = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        Query,
+        Principal,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Principal::reference())
+    .field(deciding_principal_identity());
+    let approval = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        Query,
+        Approval,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Approval::reference())
     .relation(approval_principal(), deciding_principal);
     ApplicationQueryResultShapeBuilder::new(PaymentIntent::reference())
         .field(payment_identity())
@@ -161,7 +201,7 @@ pub(super) fn project_payment_summary<Query>(
     row: &WorthQueryApplicationProjectionRow<'_, BankSchema, Query>,
 ) -> Result<PaymentSummary, WorthQueryApplicationProjectionDenial>
 where
-    Query: 'static,
+    Query: worth_query_decl::facade::application_query::ApplicationQueryMarkerIdentity<BankSchema>,
 {
     let deciding_principal = row
         .optional(payment_approval())?

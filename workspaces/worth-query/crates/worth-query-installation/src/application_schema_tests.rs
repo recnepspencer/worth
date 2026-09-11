@@ -34,8 +34,9 @@ mod package_schema_identity;
 mod portable_record_assertions;
 mod principal_binding;
 mod read_only_operations;
+mod value_bindings;
 
-use effect_fixture::{TestEffect, TestPayload};
+use effect_fixture::{TestEffect, TestPayload, TestPayloadBinding};
 use field_references::*;
 use principal_binding::test_principal_binding;
 
@@ -52,9 +53,11 @@ struct TestPolicy;
 worth_query_declaration::worth_query_portable_type!(
     TestInput => "worth.query.installation-test.operation-input"
 );
-impl<Schema> ApplicationOperationMarkerIdentity for TestOperation<Schema> {
-    type Schema = Schema;
-    type Input = TestInput;
+worth_query_declaration::worth_query_structured_value_binding!(
+    TestInputBinding for TestInput { identity: "worth.query.installation-test.operation-input" }
+);
+impl<Schema> ApplicationOperationMarkerIdentity<Schema> for TestOperation<Schema> {
+    type InputBinding = TestInputBinding;
     const IDENTIFIER: &'static str = "TestOperation";
 }
 
@@ -106,7 +109,8 @@ fn test_schema_members_for<Schema, Operation>(
 ) -> ApplicationSchemaDeclarationBuilder<Schema>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity<Schema = Schema, Input = TestInput> + 'static,
+    Operation:
+        ApplicationOperationMarkerIdentity<Schema, InputBinding = TestInputBinding> + 'static,
     TestAbility: OperationRequiresAbility<Operation>,
     FixtureEntity<Schema>: OperationCreates<Operation>,
     FixturePrincipalIdentityField<Schema>:
@@ -117,7 +121,7 @@ where
     let ability = ApplicationAbilityRef::<Schema, TestAbility, FixtureEntity<Schema>>::from_schema_identifiers(
         "TestAbility",
         "TestEntity",
-    );
+            );
     let operation = ApplicationOperationRef::<Schema, Operation, TestInput>::from_declaration();
     let operation_definition = match aftermath {
         Some(contract) => operation
@@ -180,6 +184,7 @@ where
                 "MappingTarget",
                 "TestEntity",
                 "TestEntity",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
             ),
             entity,
             entity,

@@ -1,4 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryLiveCauseBinding;
+use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use super::super::{
@@ -35,7 +36,7 @@ where
         == <Binding as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str()
         && live.effect() == Binding::effect().name()
         && live.payload_type()
-            == <Binding::Payload as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str();
+            == <Binding::PayloadBinding as ApplicationStructuredValueBinding>::IDENTITY.as_str();
     if binding_matches {
         Ok(live)
     } else {

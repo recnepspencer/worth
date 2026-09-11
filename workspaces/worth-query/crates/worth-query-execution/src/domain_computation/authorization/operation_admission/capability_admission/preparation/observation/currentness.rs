@@ -1,7 +1,8 @@
 //! Exact-snapshot currentness observation for one prepared capability admission.
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
-use worth_query_installation::facade::{ApplicationSchema, TypedApplicationValue};
+use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
+use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
 
 use super::request_resolution::resolve_capability_request;
 use super::{ObservedCapabilityAdmission, ObservedSeal, WorthQueryResolvedCapabilityRequest};
@@ -244,11 +245,10 @@ fn validate_principal_freshness<Schema, Principal, Identity, Capability, Operati
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    let expected = prepared
-        .principal()
-        .external_identity()
-        .clone()
-        .into_foundational_value();
+    let expected = WorthQueryExternalPrincipalIdentityBinding::encode(
+        prepared.principal().external_identity(),
+    )
+    .map_err(|_| denial::stale_principal(prepared.principal().binding()))?;
     validate_freshness_at_snapshot(
         relational,
         snapshot,

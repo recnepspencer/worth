@@ -47,15 +47,15 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub SessionExternalMapping in SessionBasisSchema);
-worth_query_entity!(pub SessionPrincipal in SessionBasisSchema);
-worth_query_entity!(pub SessionBasisRecord in SessionBasisSchema);
-worth_query_aspect!(pub SessionExternalIdentity in SessionBasisSchema, SessionExternalMapping; identity = AspectIdentity(0x91611101), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub SessionPrincipalFacts in SessionBasisSchema, SessionPrincipal; identity = AspectIdentity(0x91611102), revision = AspectContractRevision(1),);
-worth_query_field!(pub SessionExternalIdentityField in SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity, read_only, equality);
-worth_query_field!(pub SessionMappingStatusField in SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus, read_write, equality);
-worth_query_field!(pub SessionPrincipalIdentityField in SessionBasisSchema, SessionPrincipal, SessionPrincipalFacts: u64, read_only, equality);
-worth_query_relation!(pub SessionMappingTarget in SessionBasisSchema, SessionExternalMapping => SessionPrincipal);
+worth_query_entity!(pub SessionExternalMapping for SessionBasisSchema);
+worth_query_entity!(pub SessionPrincipal for SessionBasisSchema);
+worth_query_entity!(pub SessionBasisRecord for SessionBasisSchema);
+worth_query_aspect!(pub SessionExternalIdentity for SessionBasisSchema, SessionExternalMapping; identity = AspectIdentity(0x91611101), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub SessionPrincipalFacts for SessionBasisSchema, SessionPrincipal; identity = AspectIdentity(0x91611102), revision = AspectContractRevision(1),);
+worth_query_field!(pub SessionExternalIdentityField for SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity => worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
+worth_query_field!(pub SessionMappingStatusField for SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus => worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
+worth_query_field!(pub SessionPrincipalIdentityField for SessionBasisSchema, SessionPrincipal, SessionPrincipalFacts: u64 => worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
+worth_query_relation!(pub SessionMappingTarget in SessionBasisSchema, SessionExternalMapping => SessionPrincipal; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(
     pub SessionIdentityBinding in SessionBasisSchema,
     mapping SessionExternalMapping {
@@ -65,8 +65,8 @@ worth_query_principal_binding!(
         principal_identity: SessionPrincipalIdentityField
     }
 );
-worth_query_aspect!(pub SessionBasisFacts in SessionBasisSchema, SessionBasisRecord; identity = AspectIdentity(0x91611103), revision = AspectContractRevision(1),);
-worth_query_field!(pub SessionBasisValue in SessionBasisSchema, SessionBasisRecord, SessionBasisFacts: String, read_only, equality);
+worth_query_aspect!(pub SessionBasisFacts for SessionBasisSchema, SessionBasisRecord; identity = AspectIdentity(0x91611103), revision = AspectContractRevision(1),);
+worth_query_field!(pub SessionBasisValue for SessionBasisSchema, SessionBasisRecord, SessionBasisFacts: String => worth_query_host::facade::declaration::application_schema::StringApplicationValueBinding, read_only, equality);
 
 #[test]
 fn product_adapter_registration_rejects_incomplete_authority_or_basis_contract() {
@@ -145,6 +145,9 @@ fn primary_graph_application_registration_requires_its_query_owner() {
 async fn mutation_session_response_carries_registered_primary_graph_basis() {
     let application = Arc::new(primary_graph_application());
     let expected_basis = application
+        .on_branch(application.current_world())
+        .select()
+        .expect("current product branch must select")
         .inspect_application_readiness()
         .expect("published Query application must expose readiness")
         .basis_token()

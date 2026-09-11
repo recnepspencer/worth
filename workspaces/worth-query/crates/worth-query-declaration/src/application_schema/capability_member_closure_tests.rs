@@ -1,9 +1,8 @@
 use super::{
     capability_member_closure::validate_application_capability_members,
-    ApplicationAuthorizationPathBuilder, ApplicationEntityRef, ApplicationFieldRef,
-    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationRelationRef,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaDeclarationDenial,
-    ApplicationSchemaMember, EqualityPredicate, NoApplicationUnit, ReadOnly,
+    ApplicationAuthorizationPathBuilder, ApplicationEntityRef, ApplicationOperationMarkerIdentity,
+    ApplicationOperationRef, ApplicationRelationRef, ApplicationSchemaDeclarationBuilder,
+    ApplicationSchemaDeclarationDenial, ApplicationSchemaMember,
 };
 use crate::application_capability::{
     ApplicationCapabilityAcceptedValues, ApplicationCapabilityActorComposition,
@@ -15,17 +14,19 @@ use crate::application_capability::{
     ApplicationCapabilityDelegationDefinition, ApplicationCapabilityDelegationRule,
     ApplicationCapabilityDenyRule, ApplicationCapabilityDisclosureRule,
     ApplicationCapabilityDistinctActorRule, ApplicationCapabilityElevationRule,
-    ApplicationCapabilityFieldBinding, ApplicationCapabilityFieldDimension,
-    ApplicationCapabilityGraphClause, ApplicationCapabilityGraphRule,
-    ApplicationCapabilityPathContextAnchor, ApplicationCapabilityPropagationComposition,
-    ApplicationCapabilityProvenanceRef, ApplicationCapabilityRef,
-    ApplicationCapabilityRelationBinding, ApplicationCapabilityRelationDimension,
-    ApplicationCapabilityScopeGuard, ApplicationCapabilitySeparationOfDutyRule,
-    ApplicationCapabilityTargetDefinition, ApplicationCapabilityValidityDefinition,
-    ApplicationCapabilityValidityTimeline, ApplicationCapabilityValueBinding,
-    ApplicationCapabilityWorkflowDefinition,
+    ApplicationCapabilityFieldDimension, ApplicationCapabilityGraphClause,
+    ApplicationCapabilityGraphRule, ApplicationCapabilityPathContextAnchor,
+    ApplicationCapabilityPropagationComposition, ApplicationCapabilityProvenanceRef,
+    ApplicationCapabilityRef, ApplicationCapabilityRelationBinding,
+    ApplicationCapabilityRelationDimension, ApplicationCapabilityScopeGuard,
+    ApplicationCapabilitySeparationOfDutyRule, ApplicationCapabilityTargetDefinition,
+    ApplicationCapabilityValidityDefinition, ApplicationCapabilityValidityTimeline,
+    ApplicationCapabilityValueBinding, ApplicationCapabilityWorkflowDefinition,
 };
 use worth_foundational::facade::ScalarAspectType;
+#[macro_use]
+mod field_binding_fixture;
+use field_binding_fixture::{binding, encoded, field, resource_binding};
 pub(crate) struct Schema;
 struct Capability;
 struct Operation;
@@ -58,9 +59,26 @@ struct MissingResourceSlot;
 struct OtherContext;
 struct OtherResourceSlot;
 
-impl ApplicationOperationMarkerIdentity for Operation {
-    type Schema = Schema;
-    type Input = ();
+declare_u64_field!(
+    Action,
+    Purpose,
+    Field,
+    Amount,
+    Workflow,
+    ResourceWorkflow,
+    Status,
+    ValidFrom,
+    ValidThrough,
+    DelegationLimit,
+);
+crate::worth_query_structured_value_binding!(
+    UnitOperationInputBinding for () {
+        identity: "worth.rust.unit"
+    }
+);
+
+impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+    type InputBinding = UnitOperationInputBinding;
     const IDENTIFIER: &'static str = "Operation";
 }
 type ErasedContract = crate::application_capability::ErasedApplicationCapabilityContract;
@@ -187,7 +205,7 @@ fn target_definition(
         relation::<ResourceRelation, Grant, Resource>("ResourceRelation", "Grant", "Resource")
     };
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(field::<Action>("Action"), 1_u64),
+        ApplicationCapabilityValueBinding::new(field::<Action>("Action"), encoded(1_u64)),
         resource,
         ApplicationCapabilityRelationDimension::Bound(relation::<ScopedRelation, Grant, Resource>(
             "ScopedRelation",
@@ -197,7 +215,7 @@ fn target_definition(
         ApplicationCapabilityFieldDimension::bound(field::<Field>("Field")),
         ApplicationCapabilityValueBinding::new(
             field::<Purpose>("Purpose"),
-            if changed_purpose { 2_u64 } else { 1_u64 },
+            encoded(if changed_purpose { 2_u64 } else { 1_u64 }),
         ),
     )
 }
@@ -207,7 +225,7 @@ fn constraint_definition() -> ApplicationCapabilityConstraintDefinition {
         ApplicationCapabilityFieldDimension::bound(field::<Amount>("Amount")),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), 1_u64),
+            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), encoded(1_u64)),
             ApplicationCapabilityWorkflowDefinition::new(
                 binding::<Workflow>("Workflow"),
                 resource_binding::<ResourceWorkflow>("ResourceWorkflow"),
@@ -266,7 +284,10 @@ fn anchored_composition(
             ApplicationCapabilityDelegationRule::forbidden(),
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
-                    ApplicationCapabilityAcceptedValues::one_of(field::<Field>("Field"), [1_u64]),
+                    ApplicationCapabilityAcceptedValues::one_of(
+                        field::<Field>("Field"),
+                        [encoded(1_u64)],
+                    ),
                 ]),
             ]),
         ),
@@ -279,7 +300,7 @@ fn composition(disclosure: bool) -> ApplicationCapabilityComposition {
     )]);
     let disclosure = if disclosure {
         ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring([
-            ApplicationCapabilityAcceptedValues::one_of(field::<Field>("Field"), [1_u64]),
+            ApplicationCapabilityAcceptedValues::one_of(field::<Field>("Field"), [encoded(1_u64)]),
         ])])
     } else {
         ApplicationCapabilityDisclosureRule::not_applicable()
@@ -314,42 +335,9 @@ fn principal_resource_path() -> crate::application_schema::ApplicationAuthorizat
         "PrincipalResource",
         "Principal",
         "Resource",
+        crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
     ))
     .allow(ApplicationEntityRef::<Schema, Resource>::from_schema_identifier("Resource"))
-}
-
-fn field<FieldMarker>(
-    name: &'static str,
-) -> ApplicationFieldRef<
-    Schema,
-    Grant,
-    Facts,
-    FieldMarker,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationFieldRef::from_schema_identifiers("Grant", "Facts", name)
-}
-
-fn binding<FieldMarker>(name: &'static str) -> ApplicationCapabilityFieldBinding {
-    ApplicationCapabilityFieldBinding::from_reference(field::<FieldMarker>(name))
-}
-
-fn resource_binding<FieldMarker>(name: &'static str) -> ApplicationCapabilityFieldBinding {
-    ApplicationCapabilityFieldBinding::from_reference(ApplicationFieldRef::<
-        Schema,
-        Resource,
-        ResourceFacts,
-        FieldMarker,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    >::from_schema_identifiers(
-        "Resource", "ResourceFacts", name
-    ))
 }
 
 fn relation<RelationMarker, From, To>(
@@ -363,6 +351,9 @@ fn relation<RelationMarker, From, To>(
         From,
         To,
     >::from_schema_identifiers(
-        name, from, to
+        name,
+        from,
+        to,
+        crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
     ))
 }

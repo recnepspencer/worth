@@ -3,7 +3,9 @@ use std::num::NonZeroUsize;
 use std::time::Duration;
 
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding,
+};
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
     WorkerIntentBatch,
@@ -105,7 +107,7 @@ fn change_account_status(
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         locator,
-        status.to_string().into_foundational_value(),
+        StringApplicationValueBinding::encode(&status.to_string()).unwrap(),
     )]));
     super::super::fixture::publish_relational_mutation(
         world,

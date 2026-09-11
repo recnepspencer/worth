@@ -63,11 +63,14 @@ pub const fn estate_emergency_account_details(
     EstateEmergencyAccountDetailsRequest { estate, access }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateEmergencyAccountDetailsQueryParametersBinding for EstateEmergencyAccountDetailsQueryParameters { identity: "EstateEmergencyAccountDetailsQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateEmergencyAccountDetailsQueryResultBinding for EstateEmergencyAccountDetails { identity: "EstateEmergencyAccountDetails" });
 worth_query_application_query!(
-    pub EstateEmergencyAccountDetailsQuery in BankSchema,
-    parameters EstateEmergencyAccountDetailsQueryParameters,
-    result EstateEmergencyAccountDetails,
-    scope EstateCase,
+    pub EstateEmergencyAccountDetailsQuery for BankSchema,
+    identity "EstateEmergencyAccountDetailsQuery",
+    parameters EstateEmergencyAccountDetailsQueryParametersBinding,
+    result EstateEmergencyAccountDetailsQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_emergency_account_details"
 );
 
@@ -78,16 +81,20 @@ pub fn estate_emergency_account_details_definition() -> ApplicationQueryDefiniti
     EstateEmergencyAccountDetails,
     EstateCase,
 > {
-    let field = RestrictedBankField::AccountDetails;
+    let field = || {
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            RestrictedBankField::AccountDetails,
+        )
+    };
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
         "estate-emergency-account-details",
         ViewEstateEmergencyProtectionCapability::reference(),
     )
-    .disclose_relation_by(estate_account(), field, influence.clone())
-    .disclose_field_by(account_identity(), field, influence.clone())
-    .disclose_field_by(account_name(), field, influence.clone())
-    .disclose_field_by(account_status(), field, influence);
+    .disclose_relation_by(estate_account(), field(), influence.clone())
+    .disclose_field_by(account_identity(), field(), influence.clone())
+    .disclose_field_by(account_name(), field(), influence.clone())
+    .disclose_field_by(account_status(), field(), influence);
     ApplicationQueryDefinitionBuilder::declare(EstateEmergencyAccountDetailsQuery::reference())
         .root(EstateCase::reference())
         .scope(EstateCase::reference())

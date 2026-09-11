@@ -7,6 +7,7 @@ mod installation;
 #[path = "world/scenario.rs"]
 mod scenario;
 
+use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
@@ -31,6 +32,7 @@ type InstalledBinding = WorthQueryInstalledPrincipalBinding<
     ExternalMapping,
     Principal,
     u64,
+    U64ApplicationValueBinding,
 >;
 
 pub(super) struct InstalledWorld {

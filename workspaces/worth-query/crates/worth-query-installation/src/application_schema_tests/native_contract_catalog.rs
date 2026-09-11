@@ -18,26 +18,26 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaDeclarationBuilder,
 };
 
-worth_query_declaration::worth_query_entity!(ZeroEntity in ZeroRevisionSchema);
+worth_query_declaration::worth_query_entity!(ZeroEntity for ZeroRevisionSchema);
 worth_query_declaration::worth_query_aspect!(
-    ZeroAspect in ZeroRevisionSchema, ZeroEntity;
+    ZeroAspect for ZeroRevisionSchema, ZeroEntity;
     identity = AspectIdentity(1),
     revision = AspectContractRevision(0),
 );
-worth_query_declaration::worth_query_entity!(DuplicateEntity in DuplicateIdentitySchema);
+worth_query_declaration::worth_query_entity!(DuplicateEntity for DuplicateIdentitySchema);
 worth_query_declaration::worth_query_aspect!(
-    DuplicateAspectA in DuplicateIdentitySchema, DuplicateEntity;
+    DuplicateAspectA for DuplicateIdentitySchema, DuplicateEntity;
     identity = AspectIdentity(7),
     revision = AspectContractRevision(1),
 );
 worth_query_declaration::worth_query_aspect!(
-    DuplicateAspectB in DuplicateIdentitySchema, DuplicateEntity;
+    DuplicateAspectB for DuplicateIdentitySchema, DuplicateEntity;
     identity = AspectIdentity(7),
     revision = AspectContractRevision(2),
 );
-worth_query_declaration::worth_query_entity!(EmptyEntity in EmptyAspectSchema);
+worth_query_declaration::worth_query_entity!(EmptyEntity for EmptyAspectSchema);
 worth_query_declaration::worth_query_aspect!(
-    EmptyAspect in EmptyAspectSchema, EmptyEntity;
+    EmptyAspect for EmptyAspectSchema, EmptyEntity;
     identity = AspectIdentity(9),
     revision = AspectContractRevision(1),
 );
@@ -47,14 +47,16 @@ struct DuplicateIdentitySchema;
 struct EmptyAspectSchema;
 struct CrossOwnerSchema;
 
-worth_query_declaration::worth_query_entity!(CrossEntity in CrossOwnerSchema);
+worth_query_declaration::worth_query_entity!(CrossEntity for CrossOwnerSchema);
 worth_query_declaration::worth_query_aspect!(
-    CrossAspect in CrossOwnerSchema, CrossEntity;
+    CrossAspect for CrossOwnerSchema, CrossEntity;
     identity = AspectIdentity(0x9161200c),
     revision = AspectContractRevision(1),
 );
 worth_query_declaration::worth_query_field!(
-    CrossField in CrossOwnerSchema, CrossEntity, CrossAspect: u64, read_only, equality
+    CrossField for CrossOwnerSchema, CrossEntity, CrossAspect:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+    read_only, equality
 );
 
 impl ApplicationSchema for CrossOwnerSchema {

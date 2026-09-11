@@ -2,9 +2,10 @@ use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
+use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity, TypedApplicationIdentityValue,
-    TypedApplicationValue, WorthQueryInstalledPrincipalBinding,
+    ApplicationIdentityScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
+    ApplicationSchemaBindingIdentity, WorthQueryInstalledPrincipalBinding,
 };
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
@@ -75,16 +76,32 @@ fn principal_graph_binding<'a>(
     Ok((graph, layout))
 }
 
-fn resolve_at_snapshot<PrincipalIdentity>(
+fn resolve_at_snapshot<
+    Schema,
+    Binding,
+    Mapping,
+    Principal,
+    PrincipalIdentity,
+    PrincipalIdentityBinding,
+>(
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     resolution: &WorthQueryPrincipalSnapshotResolution<'_>,
+    installed_binding: &WorthQueryInstalledPrincipalBinding<
+        Schema,
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >,
 ) -> Result<
     WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
     WorthQueryPrincipalResolutionDenial,
 >
 where
-    PrincipalIdentity: TypedApplicationIdentityValue,
+    PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+    PrincipalIdentity: 'static,
 {
     let (mapping_id, examined_candidate_count) =
         resolve_unique_mapping_candidate(runtime, snapshot, resolution)?;
@@ -104,8 +121,9 @@ where
         resolution.binding,
     )?;
     let freshness = WorthQueryPrincipalFreshnessEvidence::new(mapping.clone(), target.clone());
-    let principal_identity = PrincipalIdentity::from_foundational_value(&target.principal_identity)
-        .ok_or_else(|| {
+    let principal_identity = installed_binding
+        .decode_principal_identity(&target.principal_identity)
+        .map_err(|_| {
             resolution_denial(
                 WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
                 resolution.binding,

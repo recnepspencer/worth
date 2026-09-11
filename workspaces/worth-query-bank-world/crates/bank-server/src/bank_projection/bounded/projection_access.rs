@@ -1,7 +1,7 @@
 use bank_domain::schema::BankSchema;
 use worth_query_host::facade::declaration::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, OperationReads,
-    TypedApplicationReadableValue, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
+    ApplicationRelationRef, DeclaredApplicationFieldValue, OperationReads, WritePosture,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryInvariantEntityIdentity, WorthQueryInvariantRelation,
@@ -18,8 +18,8 @@ impl BoundedProjectionState {
         field: ApplicationFieldRef<BankSchema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Result<Option<Value>, BankProjectionDenial>
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationReadableValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {

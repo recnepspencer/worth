@@ -11,8 +11,8 @@ use crate::application_query::{
     ApplicationQueryResultTraversal, ApplicationQueryRootPath, ManyResults,
 };
 use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, EqualityCapable, EqualityPredicate,
-    TypedApplicationValue,
+    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue, EqualityCapable,
+    EqualityPredicate,
 };
 use crate::portable_identity::WorthQueryPortableType;
 
@@ -46,7 +46,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 root_entity: parts.root.name(),
                 scope_entity: parts.scope.name(),
                 parameters: Vec::new(),
-                result_shape: parts.result_shape.into_erased(),
+                result_shape: parts.result_shape,
                 root_paths: Vec::new(),
                 cardinality: parts.cardinality,
                 predicates: Vec::new(),
@@ -63,12 +63,12 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         }
     }
 
-    pub fn parameter<Parameter, Value>(
+    pub fn parameter<Parameter, Binding>(
         mut self,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Value>,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Binding: crate::application_schema::ApplicationScalarValueBinding,
     {
         self.definition
             .parameters
@@ -81,7 +81,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         self
     }
 
-    pub fn where_equal<Root, Aspect, Field, Value, Write, Unit, Parameter>(
+    pub fn where_equal<Root, Aspect, Field, Value, Write, Unit, Parameter, Binding>(
         mut self,
         field: ApplicationFieldRef<
             Schema,
@@ -93,10 +93,11 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             EqualityPredicate,
             Unit,
         >,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Value>,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue + WorthQueryPortableType,
+        Binding: crate::application_schema::ApplicationScalarValueBinding<Value = Value>,
+        Field: DeclaredApplicationFieldValue<Value = Value, Binding = Binding>,
         Unit: ApplicationFieldUnit,
         EqualityPredicate: EqualityCapable,
     {
@@ -127,9 +128,9 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         direction: ApplicationQueryOrderingDirection,
     ) -> Self
     where
-        Value: TypedApplicationValue + WorthQueryPortableType,
+        Field: crate::application_schema::RequiredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.definition
@@ -155,7 +156,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     ) -> Self
     where
         Direction: ApplicationQueryResultTraversal,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.definition.continuation = Some(
@@ -185,7 +186,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             Scope,
             ScopeAspect,
             ScopeField,
-            Binding::ScopeIdentity,
+            <Binding::ScopeIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
             crate::application_schema::ReadOnly,
             crate::application_schema::EqualityPredicate,
             ScopeUnit,
@@ -197,7 +198,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             Target,
             TargetAspect,
             TargetField,
-            Binding::TargetIdentity,
+            <Binding::TargetIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
             crate::application_schema::ReadOnly,
             crate::application_schema::EqualityPredicate,
             TargetUnit,
@@ -206,9 +207,17 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     ) -> Self
     where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+        ScopeField: crate::application_schema::RequiredApplicationFieldValue<
+            Value = <Binding::ScopeIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
+            Binding = Binding::ScopeIdentityBinding,
+        >,
+        TargetField: crate::application_schema::RequiredApplicationFieldValue<
+            Value = <Binding::TargetIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
+            Binding = Binding::TargetIdentityBinding,
+        >,
         ScopeUnit: ApplicationFieldUnit,
         TargetUnit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         ScopeSlot: WorthQueryPortableType,
         TargetSlot: WorthQueryPortableType,
     {

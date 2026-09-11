@@ -19,11 +19,13 @@ struct QueryResult;
 struct Parameter;
 struct ResultSlot;
 
+crate::worth_query_structured_value_binding!(QueryParametersBinding for Parameters { identity: "Parameters" });
+crate::worth_query_structured_value_binding!(QueryResultBinding for QueryResult { identity: "worth.query.test.control-query-result.v1" });
 crate::worth_query_application_query!(
-    Query in Schema,
+    Query for Schema,
     identity "Query",
-    parameters Parameters => "Parameters",
-    result QueryResult => "worth.query.test.control-query-result.v1",
+    parameters QueryParametersBinding,
+    result QueryResultBinding,
     scope Entity => "Entity",
     name "query"
 );
@@ -32,6 +34,7 @@ worth_query_portable_type!(ResultSlot => "worth.query.test.control-result-slot.v
 
 impl crate::application_schema::DeclaredApplicationFieldValue for Field {
     type Value = u64;
+    type Binding = crate::application_schema::U64ApplicationValueBinding;
     const PRESENCE: crate::application_schema::ApplicationFieldPresence =
         crate::application_schema::ApplicationFieldPresence::Required;
 }
@@ -154,12 +157,20 @@ fn definition(fixture: &QueryControlFixture) -> ErasedApplicationQueryDefinition
         EqualityPredicate,
         NoApplicationUnit,
     >::new(fixture.output, field);
-    let parameter = ApplicationQueryParameterRef::<Query, Parameter, u64>::from_query_identifier(
-        fixture.parameter,
-    );
-    let shape = ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, QueryResult>::new(root)
-        .field(result)
-        .build();
+    let parameter = ApplicationQueryParameterRef::<
+        Query,
+        Parameter,
+        crate::application_schema::U64ApplicationValueBinding,
+    >::from_query_identifier(fixture.parameter);
+    let shape = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        Entity,
+        QueryResult,
+        QueryResultBinding,
+    >::new(root)
+    .field(result)
+    .build();
     let builder = ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(root)
         .scope(scope)

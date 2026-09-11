@@ -6,6 +6,7 @@ use crate::application_query::ErasedApplicationQueryDefinition;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::authorization_policy::ApplicationAuthorizationPath;
+use super::ApplicationRelationIntegrity;
 use super::WorthQueryExternalEffectCorrelationFamily;
 use super::{ApplicationFieldPresence, ApplicationMutationPreconditionTarget};
 
@@ -73,6 +74,7 @@ pub enum ApplicationSchemaMember {
         scalar_family: ScalarAspectType,
         value_type: String,
         unit: Option<String>,
+        frame: Option<String>,
         writable: bool,
         equality_queryable: bool,
     },
@@ -80,6 +82,7 @@ pub enum ApplicationSchemaMember {
         relation: String,
         from: String,
         to: String,
+        integrity: ApplicationRelationIntegrity,
     },
     PrincipalBinding {
         binding: String,

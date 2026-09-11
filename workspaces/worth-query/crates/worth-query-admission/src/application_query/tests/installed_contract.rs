@@ -10,7 +10,9 @@ fn installed_application_graph_uses_canonical_requirement_derivation() {
     let query = installed_query();
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let requirements = admitted_requirements(

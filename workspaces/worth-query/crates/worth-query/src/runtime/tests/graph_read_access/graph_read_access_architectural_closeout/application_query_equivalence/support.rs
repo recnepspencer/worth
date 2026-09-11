@@ -53,26 +53,25 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub Account in EquivalenceSchema);
-worth_query_entity!(pub Activity in EquivalenceSchema);
-worth_query_aspect!(pub AccountFacts in EquivalenceSchema, Account; identity = AspectIdentity(0x91611051), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub Identity in EquivalenceSchema, Account; identity = AspectIdentity(0x91611052), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ActivityFacts in EquivalenceSchema, Activity; identity = AspectIdentity(0x91611053), revision = AspectContractRevision(1),);
+worth_query_entity!(pub Account for EquivalenceSchema);
+worth_query_entity!(pub Activity for EquivalenceSchema);
+worth_query_aspect!(pub AccountFacts for EquivalenceSchema, Account; identity = AspectIdentity(0x91611051), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub Identity for EquivalenceSchema, Account; identity = AspectIdentity(0x91611052), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub ActivityFacts for EquivalenceSchema, Activity; identity = AspectIdentity(0x91611053), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub AccountId in EquivalenceSchema, Account, AccountFacts:
-    u64, read_only, equality
+    pub AccountId for EquivalenceSchema, Account, AccountFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub Id in EquivalenceSchema, Account, Identity:
-    String, read_only, equality
+    pub Id for EquivalenceSchema, Account, Identity:
+    String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub ActivitySequence in EquivalenceSchema, Activity, ActivityFacts:
-    u64, read_only, equality
+    pub ActivitySequence for EquivalenceSchema, Activity, ActivityFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
 );
 worth_query_relation!(
-    pub AccountActivity in EquivalenceSchema, Account => Activity
-);
+    pub AccountActivity in EquivalenceSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
 
 pub(super) struct ActivityParameters;
 pub(super) struct ActivityResult;
@@ -81,6 +80,22 @@ struct IdentityIdSlot;
 struct ActivitySlot;
 struct ActivitySequenceSlot;
 
+worth_query_declaration::worth_query_structured_value_binding!(
+    pub(super) ActivityParametersBinding for ActivityParameters {
+        identity: "worth.query.test.runtime.application-query-equivalence.activity-parameters.v1"
+    }
+);
+worth_query_declaration::worth_query_structured_value_binding!(
+    pub(super) ActivityResultBinding for ActivityResult {
+        identity: "worth.query.test.runtime.application-query-equivalence.activity-result.v1"
+    }
+);
+worth_query_declaration::worth_query_structured_value_binding!(
+    ActivityNestedResultBinding for () {
+        identity: "worth.query.test.runtime.application-query-equivalence.activity-nested-result.v1"
+    }
+);
+
 worth_query_declaration::worth_query_portable_type!(ActivityResult => "worth.query.test.runtime.application-query-equivalence.activity-result.v1");
 worth_query_declaration::worth_query_portable_type!(AccountIdSlot => "worth.query.test.runtime.application-query-equivalence.account-id-slot.v1");
 worth_query_declaration::worth_query_portable_type!(IdentityIdSlot => "worth.query.test.runtime.application-query-equivalence.identity-id-slot.v1");
@@ -88,10 +103,11 @@ worth_query_declaration::worth_query_portable_type!(ActivitySlot => "worth.query
 worth_query_declaration::worth_query_portable_type!(ActivitySequenceSlot => "worth.query.test.runtime.application-query-equivalence.activity-sequence-slot.v1");
 
 worth_query_application_query!(
-    pub(super) ActivityQuery in EquivalenceSchema,
-    parameters ActivityParameters,
-    result ActivityResult,
-    scope Account,
+    pub(super) ActivityQuery for EquivalenceSchema,
+    identity "worth.query.test.runtime.application-query-equivalence.activity-query.v1",
+    parameters ActivityParametersBinding,
+    result ActivityResultBinding,
+    scope Account => "Account",
     name "account_activity_equivalence"
 );
 
@@ -255,16 +271,20 @@ fn query_definition(
         _,
         _,
     >::new("id", Id::reference());
-    let nested =
-        ApplicationQueryResultShapeBuilder::<EquivalenceSchema, ActivityQuery, Activity, ()>::new(
-            Activity::reference(),
-        )
-        .field(activity_sequence);
+    let nested = ApplicationQueryResultShapeBuilder::<
+        EquivalenceSchema,
+        ActivityQuery,
+        Activity,
+        (),
+        ActivityNestedResultBinding,
+    >::new(Activity::reference())
+    .field(activity_sequence);
     let shape = ApplicationQueryResultShapeBuilder::<
         EquivalenceSchema,
         ActivityQuery,
         Account,
         ActivityResult,
+        ActivityResultBinding,
     >::new(Account::reference())
     .field(account_id)
     .field(identity_projection)

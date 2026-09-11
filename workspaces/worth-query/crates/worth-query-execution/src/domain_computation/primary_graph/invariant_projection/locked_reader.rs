@@ -3,8 +3,9 @@ use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
-    TypedApplicationReadableValue, TypedApplicationValue, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
+    ApplicationScalarValueBinding, ApplicationSchema, DeclaredApplicationFieldValue,
+    EqualityPredicate, WritePosture,
 };
 
 use super::work::WorthQueryInvariantProjectionWorkBudget;
@@ -215,7 +216,7 @@ where
         value: Value,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -225,17 +226,19 @@ where
                 field.field(),
             ));
         }
+        let value = Field::Binding::encode(&value).map_err(|_| {
+            WorthQueryEntityResolutionDenial::new(
+                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
+                field.field(),
+            )
+        })?;
         let truth = self.entity_resolution.at_snapshot(
             self.runtime,
             self.snapshot,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )?;
-        let (resolved, examined) = truth.resolve_with_work(
-            field.entity(),
-            field.aspect(),
-            field.field(),
-            value.into_foundational_value(),
-        );
+        let (resolved, examined) =
+            truth.resolve_with_work(field.entity(), field.aspect(), field.field(), value);
         self.work_budget.consume(1 + examined);
         self.work.record_lookup(examined);
         let resolved = resolved?;
@@ -267,7 +270,7 @@ where
         WorthQueryEntityResolutionDenial,
     >
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -286,7 +289,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<Value>
     where
-        Value: TypedApplicationReadableValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -310,7 +314,7 @@ where
             identity.kind,
             &locator,
         )
-        .and_then(|value| Value::from_foundational_value(&value))
+        .and_then(|value| Field::Binding::decode(&value).ok())
     }
 
     pub(super) fn identity_is_local<Entity>(

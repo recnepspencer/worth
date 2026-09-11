@@ -17,11 +17,13 @@ pub(super) struct QueryParameters;
 pub(super) struct QueryResult;
 struct QueryFieldSlot;
 
+crate::worth_query_structured_value_binding!(pub(super) QueryMarkerParametersBinding for QueryParameters { identity: "QueryParameters" });
+crate::worth_query_structured_value_binding!(pub(super) QueryMarkerResultBinding for QueryResult { identity: "worth.query.test.canonical-query-result.v1" });
 crate::worth_query_application_query!(
-    pub(super) QueryMarker in QuerySchema,
+    pub(super) QueryMarker for QuerySchema,
     identity "QueryMarker",
-    parameters QueryParameters => "QueryParameters",
-    result QueryResult => "worth.query.test.canonical-query-result.v1",
+    parameters QueryMarkerParametersBinding,
+    result QueryMarkerResultBinding,
     scope QueryEntity => "QueryEntity",
     name "query"
 );
@@ -30,6 +32,7 @@ worth_query_portable_type!(QueryFieldSlot => "worth.query.test.canonical-query-f
 
 impl crate::application_schema::DeclaredApplicationFieldValue for QueryField {
     type Value = u64;
+    type Binding = crate::application_schema::U64ApplicationValueBinding;
     const PRESENCE: crate::application_schema::ApplicationFieldPresence =
         crate::application_schema::ApplicationFieldPresence::Required;
 }
@@ -65,6 +68,7 @@ pub(super) fn application_query(output_name: &'static str) -> ApplicationSchemaM
         QueryMarker,
         QueryEntity,
         QueryResult,
+        QueryMarkerResultBinding,
     >::new(entity)
     .field(result_field)
     .build();

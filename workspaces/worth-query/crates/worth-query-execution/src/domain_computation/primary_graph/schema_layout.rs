@@ -109,9 +109,26 @@ impl WorthQueryPrimaryGraphLayout {
                 aspects,
             )?;
         }
-        for (relation, kind_id) in &relation_kinds {
-            registry =
-                register_relation(registry, &schema_id, schema_version_id, relation, *kind_id)?;
+        for member in schema.members() {
+            let worth_query_installation::facade::ApplicationSchemaMember::Relation {
+                relation,
+                from,
+                to,
+                integrity,
+            } = member
+            else {
+                continue;
+            };
+            registry = register_relation(
+                registry,
+                &schema_id,
+                schema_version_id,
+                relation,
+                required_kind(&relation_kinds, relation)?,
+                required_kind(&entity_kinds, from)?,
+                required_kind(&entity_kinds, to)?,
+                *integrity,
+            )?;
         }
         let provider_kind = next_provider_kind_id(
             existing_registry,

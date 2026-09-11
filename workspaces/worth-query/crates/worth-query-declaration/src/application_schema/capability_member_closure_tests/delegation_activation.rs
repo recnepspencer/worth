@@ -7,10 +7,10 @@ struct Identity;
 struct ActivationContextRelation;
 struct OtherCapability;
 struct OtherAction;
+declare_u64_field!(Identity, OtherAction);
 
-impl ApplicationOperationMarkerIdentity for ActivationOperation {
-    type Schema = Schema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<Schema> for ActivationOperation {
+    type InputBinding = UnitOperationInputBinding;
     const IDENTIFIER: &'static str = "Activate";
 }
 
@@ -189,7 +189,7 @@ fn second_activated_contract(
     context_relation: ApplicationCapabilityRelationBinding,
 ) -> ErasedContract {
     let target = ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(field::<OtherAction>("OtherAction"), 1_u64),
+        ApplicationCapabilityValueBinding::new(field::<OtherAction>("OtherAction"), encoded(1_u64)),
         relation::<ResourceRelation, Grant, Resource>("ResourceRelation", "Grant", "Resource"),
         ApplicationCapabilityRelationDimension::Bound(relation::<ScopedRelation, Grant, Resource>(
             "ScopedRelation",
@@ -197,7 +197,7 @@ fn second_activated_contract(
             "Resource",
         )),
         ApplicationCapabilityFieldDimension::bound(field::<Field>("Field")),
-        ApplicationCapabilityValueBinding::new(field::<Purpose>("Purpose"), 1_u64),
+        ApplicationCapabilityValueBinding::new(field::<Purpose>("Purpose"), encoded(1_u64)),
     );
     ApplicationCapabilityContractBuilder::new(
         ApplicationCapabilityRef::<Schema, OtherCapability>::from_schema_identifier(
@@ -269,4 +269,12 @@ fn link(relation: &str, from: &str, to: &str) -> ApplicationOperationProgramTarg
         from: from.to_owned(),
         to: to.to_owned(),
     }
+}
+
+fn encoded(
+    value: u64,
+) -> crate::application_schema::ApplicationEncodedScalarValue<
+    crate::application_schema::U64ApplicationValueBinding,
+> {
+    crate::application_schema::ApplicationEncodedScalarValue::try_new(value).unwrap()
 }

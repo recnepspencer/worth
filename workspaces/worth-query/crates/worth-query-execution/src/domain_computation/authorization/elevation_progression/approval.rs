@@ -100,7 +100,7 @@ where
         WorthQueryElevationApprovalAuthorizationDenial,
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
@@ -141,7 +141,7 @@ fn bind_approval<Schema, Capability, Operation, Input>(
 ) -> Result<WorthQueryElevationApprovalDraft, WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
     Input: 'static,
 {

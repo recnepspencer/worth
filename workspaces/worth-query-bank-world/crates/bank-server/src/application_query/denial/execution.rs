@@ -4,12 +4,11 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationContinuationDenialKind as QueryContinuation,
     WorthQueryApplicationLiveOpenDenialKind as QueryLive,
     WorthQueryApplicationOneShotDenialKind as QueryOneShot,
-    WorthQueryApplicationPreviewSessionDenialKind as QueryPreview,
     WorthQueryApplicationProjectionDenialKind as QueryProjection,
-    WorthQueryBoundedLaneDenialKind as QueryBounded,
+    WorthQueryProductBranchAdmissionDenial as QueryProductSelection,
 };
 
-use crate::{BankAuthorizationDenial, BankAuthorizationDenialKind, BankEntityResolutionDenialKind};
+use crate::{BankAuthorizationDenial, BankAuthorizationDenialKind};
 
 use super::admission::{admission, BankApplicationQueryAdmissionDenialKind};
 
@@ -17,9 +16,24 @@ use super::admission::{admission, BankApplicationQueryAdmissionDenialKind};
 pub enum BankApplicationPreviewSessionDenialKind {
     Cancelled,
     DeadlineExceeded,
-    CurrentTruthUnavailable,
-    SessionIdentityExhausted,
-    BridgeRejected,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BankProductSelectionDenialKind {
+    ObservationStatePoisoned,
+    OwnerUnavailable,
+    ForeignOwner,
+    RetiredBranch,
+    IncarnationChanged,
+    ObservationRejected,
+    ProductActivationUnavailable,
+    RelationalBasisUnavailable,
+    RelationalSnapshotUnavailable,
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    RetentionCapacityExhausted,
+    RetentionIdentityExhausted,
+    SnapshotIdentityExhausted,
+    BridgeSourceUnavailable,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -45,31 +59,10 @@ pub enum BankApplicationOneShotDenialKind {
     Cancelled,
     DeadlineExceeded,
     BasisUnavailable,
-    ExpiredBasis,
-    BasisReleaseFailed,
-    PredicateIndexUnavailable,
-    PredicateLookupOverflow,
-    ResultLimitExceeded,
-    CardinalityMismatch,
-    TraversalUnavailable,
-    ProjectionUnavailable,
-    Projection(BankApplicationProjectionDenialKind),
-    ResultBufferLimitExceeded,
-    WorkLimitExceeded,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum BankBoundedLaneDenialKind {
-    ForeignPlan,
-    StaleInstalledQuery,
-    StalePrincipal,
-    StaleScope,
-    StaleBasisScope(BankEntityResolutionDenialKind),
-    Authorization(BankAuthorizationDenialKind),
-    Cancelled,
-    DeadlineExceeded,
-    StalePreviewSession,
-    BasisUnavailable,
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    RetentionCapacityExhausted,
+    RetentionIdentityExhausted,
+    SnapshotIdentityExhausted,
     ExpiredBasis,
     BasisReleaseFailed,
     PredicateIndexUnavailable,
@@ -93,6 +86,9 @@ pub enum BankApplicationContinuationDenialKind {
     Cancelled,
     DeadlineExceeded,
     BasisUnavailable,
+    RetentionCapacityExhausted,
+    RetentionIdentityExhausted,
+    SnapshotIdentityExhausted,
     ExpiredBasis,
     BasisReleaseFailed,
     PredicateIndexUnavailable,
@@ -124,14 +120,29 @@ pub enum BankApplicationLiveOpenDenialKind {
     BridgeBasisRejected,
 }
 
-pub(super) const fn preview(kind: QueryPreview) -> BankApplicationPreviewSessionDenialKind {
-    use BankApplicationPreviewSessionDenialKind as Bank;
+pub(super) const fn product_selection(
+    kind: QueryProductSelection,
+) -> BankProductSelectionDenialKind {
+    use BankProductSelectionDenialKind as Bank;
     match kind {
-        QueryPreview::Cancelled => Bank::Cancelled,
-        QueryPreview::DeadlineExceeded => Bank::DeadlineExceeded,
-        QueryPreview::CurrentTruthUnavailable => Bank::CurrentTruthUnavailable,
-        QueryPreview::SessionIdentityExhausted => Bank::SessionIdentityExhausted,
-        QueryPreview::BridgeRejected => Bank::BridgeRejected,
+        QueryProductSelection::ObservationStatePoisoned => Bank::ObservationStatePoisoned,
+        QueryProductSelection::OwnerUnavailable => Bank::OwnerUnavailable,
+        QueryProductSelection::ForeignOwner => Bank::ForeignOwner,
+        QueryProductSelection::RetiredBranch => Bank::RetiredBranch,
+        QueryProductSelection::IncarnationChanged => Bank::IncarnationChanged,
+        QueryProductSelection::ObservationRejected => Bank::ObservationRejected,
+        QueryProductSelection::ProductActivationUnavailable => Bank::ProductActivationUnavailable,
+        QueryProductSelection::RelationalBasisUnavailable => Bank::RelationalBasisUnavailable,
+        QueryProductSelection::RelationalSnapshotUnavailable => Bank::RelationalSnapshotUnavailable,
+        QueryProductSelection::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => Bank::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        },
+        QueryProductSelection::RetentionCapacityExhausted => Bank::RetentionCapacityExhausted,
+        QueryProductSelection::RetentionIdentityExhausted => Bank::RetentionIdentityExhausted,
+        QueryProductSelection::SnapshotIdentityExhausted => Bank::SnapshotIdentityExhausted,
+        QueryProductSelection::BridgeSourceUnavailable => Bank::BridgeSourceUnavailable,
     }
 }
 
@@ -146,6 +157,14 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
         QueryOneShot::Cancelled => Bank::Cancelled,
         QueryOneShot::DeadlineExceeded => Bank::DeadlineExceeded,
         QueryOneShot::BasisUnavailable => Bank::BasisUnavailable,
+        QueryOneShot::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => Bank::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        },
+        QueryOneShot::RetentionCapacityExhausted => Bank::RetentionCapacityExhausted,
+        QueryOneShot::RetentionIdentityExhausted => Bank::RetentionIdentityExhausted,
+        QueryOneShot::SnapshotIdentityExhausted => Bank::SnapshotIdentityExhausted,
         QueryOneShot::ExpiredBasis => Bank::ExpiredBasis,
         QueryOneShot::BasisReleaseFailed => Bank::BasisReleaseFailed,
         QueryOneShot::PredicateIndexUnavailable => Bank::PredicateIndexUnavailable,
@@ -160,35 +179,6 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
     }
 }
 
-pub(super) const fn bounded(kind: QueryBounded) -> BankBoundedLaneDenialKind {
-    use BankBoundedLaneDenialKind as Bank;
-    match kind {
-        QueryBounded::ForeignPlan => Bank::ForeignPlan,
-        QueryBounded::StaleInstalledQuery => Bank::StaleInstalledQuery,
-        QueryBounded::StalePrincipal => Bank::StalePrincipal,
-        QueryBounded::StaleScope => Bank::StaleScope,
-        QueryBounded::StaleBasisScope(kind) => {
-            Bank::StaleBasisScope(crate::BankEntityResolutionDenial::from_query(kind).kind())
-        }
-        QueryBounded::Authorization(kind) => Bank::Authorization(authorization(kind)),
-        QueryBounded::Cancelled => Bank::Cancelled,
-        QueryBounded::DeadlineExceeded => Bank::DeadlineExceeded,
-        QueryBounded::StalePreviewSession => Bank::StalePreviewSession,
-        QueryBounded::BasisUnavailable => Bank::BasisUnavailable,
-        QueryBounded::ExpiredBasis => Bank::ExpiredBasis,
-        QueryBounded::BasisReleaseFailed => Bank::BasisReleaseFailed,
-        QueryBounded::PredicateIndexUnavailable => Bank::PredicateIndexUnavailable,
-        QueryBounded::PredicateLookupOverflow => Bank::PredicateLookupOverflow,
-        QueryBounded::ResultLimitExceeded => Bank::ResultLimitExceeded,
-        QueryBounded::CardinalityMismatch => Bank::CardinalityMismatch,
-        QueryBounded::TraversalUnavailable => Bank::TraversalUnavailable,
-        QueryBounded::ProjectionUnavailable => Bank::ProjectionUnavailable,
-        QueryBounded::Projection(kind) => Bank::Projection(projection(kind)),
-        QueryBounded::ResultBufferLimitExceeded => Bank::ResultBufferLimitExceeded,
-        QueryBounded::WorkLimitExceeded => Bank::WorkLimitExceeded,
-    }
-}
-
 pub(super) const fn continuation(kind: QueryContinuation) -> BankApplicationContinuationDenialKind {
     use BankApplicationContinuationDenialKind as Bank;
     match kind {
@@ -200,6 +190,9 @@ pub(super) const fn continuation(kind: QueryContinuation) -> BankApplicationCont
         QueryContinuation::Cancelled => Bank::Cancelled,
         QueryContinuation::DeadlineExceeded => Bank::DeadlineExceeded,
         QueryContinuation::BasisUnavailable => Bank::BasisUnavailable,
+        QueryContinuation::RetentionCapacityExhausted => Bank::RetentionCapacityExhausted,
+        QueryContinuation::RetentionIdentityExhausted => Bank::RetentionIdentityExhausted,
+        QueryContinuation::SnapshotIdentityExhausted => Bank::SnapshotIdentityExhausted,
         QueryContinuation::ExpiredBasis => Bank::ExpiredBasis,
         QueryContinuation::BasisReleaseFailed => Bank::BasisReleaseFailed,
         QueryContinuation::PredicateIndexUnavailable => Bank::PredicateIndexUnavailable,

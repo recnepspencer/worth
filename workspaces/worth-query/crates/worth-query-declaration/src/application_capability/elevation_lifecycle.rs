@@ -1,5 +1,5 @@
-use crate::application_schema::ApplicationOperationRef;
-use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
+use crate::application_schema::{ApplicationOperationRef, ApplicationStructuredValueBinding};
+use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{
     ApplicationCapabilityContextEntitySlotBinding, ApplicationCapabilityOperationBinding,
@@ -25,10 +25,7 @@ impl ApplicationCapabilityTransitionBinding {
     pub fn from_references<Schema, Capability, Operation, Input>(
         capability: ApplicationCapabilityRef<Schema, Capability>,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
-    ) -> Self
-    where
-        Input: WorthQueryPortableType,
-    {
+    ) -> Self {
         Self {
             capability: capability.name().to_string(),
             capability_type: capability.marker_identity(),
@@ -42,7 +39,8 @@ impl ApplicationCapabilityTransitionBinding {
         operation: ApplicationOperationRef<Schema, Operation, Input>,
     ) -> Self
     where
-        Input: ApplicationCapabilityLifecycleEffect<Schema, Operation> + WorthQueryPortableType,
+        Input: ApplicationCapabilityLifecycleEffect<Schema, Operation>,
+        <Input::PayloadBinding as ApplicationStructuredValueBinding>::Value: Send + Sync,
     {
         Self {
             capability: capability.name().to_string(),

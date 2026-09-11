@@ -298,6 +298,11 @@ fn committed(
     work: Option<BankMutationProjectionWork>,
 ) -> BankMutationOutcome {
     let status = match outcome {
+        BankMutationCommitOutcome::ProductStale(stale) => BankMutationStatus::ProductStale(stale),
+        BankMutationCommitOutcome::ProductUnpublished(unpublished) => {
+            BankMutationStatus::ProductUnpublished(unpublished)
+        }
+        BankMutationCommitOutcome::NoEffect(no_effect) => BankMutationStatus::NoEffect(no_effect),
         BankMutationCommitOutcome::Committed(receipt) => BankMutationStatus::Committed(receipt),
         BankMutationCommitOutcome::AlreadyCommitted(receipt) => {
             BankMutationStatus::AlreadyCommitted(receipt)
@@ -306,12 +311,14 @@ fn committed(
             BankMutationStatus::Stale { stale_fact_count }
         }
         BankMutationCommitOutcome::Cancelled => BankMutationStatus::Cancelled,
+        BankMutationCommitOutcome::TimedOut => BankMutationStatus::TimedOut,
         BankMutationCommitOutcome::Denied { kind, stage } => {
             return denied(BankMutationDenial::Commit { kind, stage }, work)
         }
         BankMutationCommitOutcome::Aborted => BankMutationStatus::Aborted,
-        BankMutationCommitOutcome::PartialEffect(evidence) => {
-            BankMutationStatus::PartialEffect(evidence)
+        BankMutationCommitOutcome::Deferred(deferred) => BankMutationStatus::Deferred(deferred),
+        BankMutationCommitOutcome::SettlementDeferred(deferred) => {
+            BankMutationStatus::SettlementDeferred(deferred)
         }
         BankMutationCommitOutcome::Indeterminate(evidence) => {
             BankMutationStatus::Indeterminate(evidence)
@@ -329,6 +336,9 @@ fn denied(
 
 fn map_admission_denial(denial: BankOperationAdmissionError) -> BankMutationDenial {
     match denial {
+        BankOperationAdmissionError::ProductSelection(denial) => {
+            BankMutationDenial::ProductSelection(denial)
+        }
         BankOperationAdmissionError::ScopeResolution(denial) => BankMutationDenial::Scope(denial),
         BankOperationAdmissionError::OperationInstallation(denial) => {
             BankMutationDenial::Installation(denial)

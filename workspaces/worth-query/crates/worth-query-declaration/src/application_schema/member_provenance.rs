@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+use super::{ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe};
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -42,6 +43,8 @@ impl DeclaredApplicationMemberMarker {
 /// owning [`super::ApplicationSchema::declaration`] implementation.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ApplicationSchemaMemberProvenance {
+    field_bindings: Vec<ApplicationFieldBindingRecipe>,
+    conflicting_field_binding: bool,
     operations: Vec<DeclaredApplicationMemberMarker>,
     effects: Vec<DeclaredApplicationMemberMarker>,
 }
@@ -49,7 +52,19 @@ pub struct ApplicationSchemaMemberProvenance {
 impl ApplicationSchemaMemberProvenance {
     #[doc(hidden)]
     pub fn is_empty(&self) -> bool {
-        self.operations.is_empty() && self.effects.is_empty()
+        self.field_bindings.is_empty() && self.operations.is_empty() && self.effects.is_empty()
+    }
+
+    pub(super) fn register_field_binding(&mut self, recipe: ApplicationFieldBindingRecipe) {
+        if let Some(existing) = self
+            .field_bindings
+            .iter()
+            .find(|existing| existing.locus() == recipe.locus())
+        {
+            self.conflicting_field_binding |= !existing.has_same_contract(&recipe);
+            return;
+        }
+        self.field_bindings.push(recipe);
     }
 
     pub(super) fn register_operation<Operation: 'static, Input: 'static>(
@@ -84,6 +99,31 @@ impl ApplicationSchemaMemberProvenance {
         };
         self.operations.sort_by(order);
         self.effects.sort_by(order);
+        self.field_bindings
+            .sort_by(|left, right| left.locus().cmp(right.locus()));
+    }
+
+    pub(super) const fn has_conflicting_field_binding(&self) -> bool {
+        self.conflicting_field_binding
+    }
+
+    pub(super) fn field_bindings_match(&self, members: &[super::ApplicationSchemaMember]) -> bool {
+        self.field_bindings
+            .iter()
+            .all(|recipe| members.iter().any(|member| recipe.matches_member(member)))
+    }
+
+    pub fn field_bindings(&self) -> &[ApplicationFieldBindingRecipe] {
+        &self.field_bindings
+    }
+
+    pub fn field_binding(
+        &self,
+        locus: &ApplicationFieldBindingLocus,
+    ) -> Option<&ApplicationFieldBindingRecipe> {
+        self.field_bindings
+            .iter()
+            .find(|recipe| recipe.locus() == locus)
     }
 
     #[doc(hidden)]

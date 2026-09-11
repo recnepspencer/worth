@@ -51,7 +51,9 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -178,7 +180,9 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             controls,
         )
         .unwrap();
@@ -229,7 +233,9 @@ fn invented_selector_contract_denies_domain_projection() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -286,7 +292,9 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();

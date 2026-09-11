@@ -6,7 +6,8 @@
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalFieldPath, FieldKey};
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, InstalledPreImageLocus, TypedApplicationValue,
+    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue,
+    InstalledPreImageLocus,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
@@ -78,7 +79,7 @@ impl WorthQueryRetainedPreImage {
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<&WorthQueryRetainedPreImageField>
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.fields.iter().find(|retained| {

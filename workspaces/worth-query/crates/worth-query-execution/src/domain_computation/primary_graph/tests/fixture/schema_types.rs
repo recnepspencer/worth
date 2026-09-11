@@ -1,7 +1,12 @@
 use super::*;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationExternalEffectPayload, ApplicationExternalEffectProtocol,
+    ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
+    ApplicationRetainedEffectBinding, ApplicationStructuredValueBinding,
+    ApplicationValueValidationDenial, StringApplicationValueBinding, U64ApplicationValueBinding,
+};
+use worth_query_declaration::facade::authentication::{
+    WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,
 };
 
 #[path = "exact_preimage_retention.rs"]
@@ -9,28 +14,27 @@ pub(super) mod exact_preimage_retention;
 #[path = "wrong_field_retention.rs"]
 pub(super) mod wrong_field_retention;
 
-worth_query_entity!(pub ExternalMapping in IdentityExecutionSchema);
-worth_query_entity!(pub Principal in IdentityExecutionSchema);
-worth_query_entity!(pub Account in IdentityExecutionSchema);
-worth_query_entity!(pub Activity in IdentityExecutionSchema);
-worth_query_aspect!(pub ExternalIdentity in IdentityExecutionSchema, ExternalMapping; identity = AspectIdentity(0x9161103a), revision = AspectContractRevision(1),);
+worth_query_entity!(pub ExternalMapping for IdentityExecutionSchema);
+worth_query_entity!(pub Principal for IdentityExecutionSchema);
+worth_query_entity!(pub Account for IdentityExecutionSchema);
+worth_query_entity!(pub Activity for IdentityExecutionSchema);
+worth_query_aspect!(pub ExternalIdentity for IdentityExecutionSchema, ExternalMapping; identity = AspectIdentity(0x9161103a), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub ExternalIdentityField in IdentityExecutionSchema, ExternalMapping, ExternalIdentity:
-    WorthQueryExternalPrincipalIdentity, read_only, equality
+    pub ExternalIdentityField for IdentityExecutionSchema, ExternalMapping, ExternalIdentity:
+    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
 );
-worth_query_aspect!(pub PrincipalIdentity in IdentityExecutionSchema, Principal; identity = AspectIdentity(0x9161103b), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PrincipalIdentity for IdentityExecutionSchema, Principal; identity = AspectIdentity(0x9161103b), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub PrincipalIdentityField in IdentityExecutionSchema, Principal, PrincipalIdentity:
-    u64, read_only, equality
+    pub PrincipalIdentityField for IdentityExecutionSchema, Principal, PrincipalIdentity:
+    u64 => U64ApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub MappingStatusField in IdentityExecutionSchema, ExternalMapping, ExternalIdentity:
-    WorthQueryPrincipalMappingStatus, read_write, equality
+    pub MappingStatusField for IdentityExecutionSchema, ExternalMapping, ExternalIdentity:
+    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
 );
 worth_query_relation!(
     pub MappingTarget in IdentityExecutionSchema,
-    ExternalMapping => Principal
-);
+    ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(
     pub IdentityBinding in IdentityExecutionSchema,
     mapping ExternalMapping {
@@ -40,47 +44,55 @@ worth_query_principal_binding!(
         principal_identity: PrincipalIdentityField
     }
 );
-worth_query_aspect!(pub AccountPolicy in IdentityExecutionSchema, Account; identity = AspectIdentity(0x9161103c), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AccountPolicy for IdentityExecutionSchema, Account; identity = AspectIdentity(0x9161103c), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub AccountIdentity in IdentityExecutionSchema, Account, AccountPolicy:
-    String, read_only, equality
+    pub AccountIdentity for IdentityExecutionSchema, Account, AccountPolicy:
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub AccountStatus in IdentityExecutionSchema, Account, AccountPolicy:
-    String, read_write, equality
+    pub AccountStatus for IdentityExecutionSchema, Account, AccountPolicy:
+    String => StringApplicationValueBinding, read_write, equality
 );
 worth_query_field!(
-    pub AccountLabel in IdentityExecutionSchema, Account, AccountPolicy:
-    String, read_write, equality
+    pub AccountLabel for IdentityExecutionSchema, Account, AccountPolicy:
+    String => StringApplicationValueBinding, read_write, equality
 );
 worth_query_field!(
-    pub AccountNote in IdentityExecutionSchema, Account, AccountPolicy:
-    optional String, read_write, equality
+    pub AccountNote for IdentityExecutionSchema, Account, AccountPolicy:
+    optional String => StringApplicationValueBinding, read_write, equality
 );
 worth_query_field!(
-    pub AccountScore in IdentityExecutionSchema, Account, AccountPolicy:
-    optional u64, read_write, no_equality
+    pub AccountScore for IdentityExecutionSchema, Account, AccountPolicy:
+    optional u64 => U64ApplicationValueBinding, read_write, no_equality
 );
-worth_query_aspect!(pub ActivityFacts in IdentityExecutionSchema, Activity; identity = AspectIdentity(0x9161103d), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub ActivityFacts for IdentityExecutionSchema, Activity; identity = AspectIdentity(0x9161103d), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub ActivityIdentity in IdentityExecutionSchema, Activity, ActivityFacts:
-    String, read_only, equality
+    pub ActivityIdentity for IdentityExecutionSchema, Activity, ActivityFacts:
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub ActivitySequence in IdentityExecutionSchema, Activity, ActivityFacts:
-    u64, read_only, no_equality
+    pub ActivitySequence for IdentityExecutionSchema, Activity, ActivityFacts:
+    u64 => U64ApplicationValueBinding, read_only, no_equality
 );
-worth_query_relation!(pub AccountOwner in IdentityExecutionSchema, Principal => Account);
-worth_query_relation!(pub AccountBlocked in IdentityExecutionSchema, Principal => Account);
-worth_query_relation!(pub AccountPrimaryActivity in IdentityExecutionSchema, Account => Activity);
-worth_query_relation!(pub AccountSecondaryActivity in IdentityExecutionSchema, Account => Activity);
-worth_query_relation!(pub AccountAllActivity in IdentityExecutionSchema, Account => Activity);
-worth_query_relation!(pub ActivityAccount in IdentityExecutionSchema, Activity => Account);
+worth_query_relation!(pub AccountOwner in IdentityExecutionSchema, Principal => Account; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub AccountBlocked in IdentityExecutionSchema, Principal => Account; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub AccountPrimaryActivity in IdentityExecutionSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub AccountSecondaryActivity in IdentityExecutionSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub AccountAllActivity in IdentityExecutionSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub ActivityAccount in IdentityExecutionSchema, Activity => Account; integrity = same_context_unbounded_retain_dangling);
 worth_query_ability!(pub ViewAccount scoped_to Account, in IdentityExecutionSchema);
 worth_query_ability!(pub EditAccount scoped_to Account, in IdentityExecutionSchema);
 worth_query_ability!(pub ManageOwnership scoped_to Principal, in IdentityExecutionSchema);
 worth_query_policy!(pub AccountAccessPolicy in IdentityExecutionSchema);
-worth_query_effect!(pub AccountActivityEffect(String) in IdentityExecutionSchema);
+worth_query_declaration::worth_query_structured_value_binding!(pub AccountActivityBinding for String { identity: "worth.rust.string" });
+impl ApplicationRetainedEffectBinding for AccountActivityBinding {
+    fn retained_bytes(value: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<Self::Value>())
+            .unwrap_or(u64::MAX)
+            .saturating_add(u64::try_from(value.capacity()).unwrap_or(u64::MAX))
+    }
+}
+worth_query_effect!(pub AccountActivityEffect for IdentityExecutionSchema, payload AccountActivityBinding);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RetainedStatusNotice(pub String);
@@ -88,27 +100,42 @@ worth_query_declaration::worth_query_portable_type!(
     RetainedStatusNotice => "worth.query.test.retained-status-notice.v1"
 );
 
-impl ApplicationEffectPayload for RetainedStatusNotice {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(self.0.len()).unwrap_or(u64::MAX)
+pub struct RetainedStatusNoticeBinding;
+
+impl ApplicationStructuredValueBinding for RetainedStatusNoticeBinding {
+    type Value = RetainedStatusNotice;
+
+    const IDENTITY_NAME: &'static str = "worth.query.test.retained-status-notice.v1";
+
+    fn validate(value: &Self::Value) -> Result<(), ApplicationValueValidationDenial> {
+        (!value.0.is_empty()).then_some(()).ok_or_else(|| {
+            ApplicationValueValidationDenial::rejected(
+                Self::IDENTITY,
+                "status notice must not be empty",
+            )
+        })
     }
 }
 
-impl ApplicationExternalEffectPayload for RetainedStatusNotice {
+impl ApplicationRetainedEffectBinding for RetainedStatusNoticeBinding {
+    fn retained_bytes(value: &Self::Value) -> u64 {
+        u64::try_from(value.0.len()).unwrap_or(u64::MAX)
+    }
+}
+
+impl ApplicationExternalEffectBinding for RetainedStatusNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
         BoundaryProtocolIdentity::new("test.status-retention"),
         BoundaryProtocolVersion::new(1),
     );
     const MAX_EXTERNAL_BYTES: u64 = 256;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
-        self.0.as_bytes().to_vec()
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
+        value.0.as_bytes().to_vec()
     }
 }
 
-worth_query_effect!(
-    pub RetainedStatusEffect(RetainedStatusNotice) in IdentityExecutionSchema
-);
+worth_query_effect!(pub RetainedStatusEffect for IdentityExecutionSchema, payload RetainedStatusNoticeBinding);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MutationFreeNotice(pub String);
@@ -116,27 +143,26 @@ worth_query_declaration::worth_query_portable_type!(
     MutationFreeNotice => "worth.query.test.mutation-free-notice.v1"
 );
 
-impl ApplicationEffectPayload for MutationFreeNotice {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(self.0.len()).unwrap_or(u64::MAX)
+worth_query_declaration::worth_query_structured_value_binding!(pub MutationFreeNoticeBinding for MutationFreeNotice { identity: "worth.query.test.mutation-free-notice.v1" });
+impl ApplicationRetainedEffectBinding for MutationFreeNoticeBinding {
+    fn retained_bytes(value: &Self::Value) -> u64 {
+        u64::try_from(value.0.len()).unwrap_or(u64::MAX)
     }
 }
 
-impl ApplicationExternalEffectPayload for MutationFreeNotice {
+impl ApplicationExternalEffectBinding for MutationFreeNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
         BoundaryProtocolIdentity::new("test.mutation-free"),
         BoundaryProtocolVersion::new(1),
     );
     const MAX_EXTERNAL_BYTES: u64 = 256;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
-        self.0.as_bytes().to_vec()
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
+        value.0.as_bytes().to_vec()
     }
 }
 
-worth_query_effect!(
-    pub MutationFreeExternalEffect(MutationFreeNotice) in IdentityExecutionSchema
-);
+worth_query_effect!(pub MutationFreeExternalEffect for IdentityExecutionSchema, payload MutationFreeNoticeBinding);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TouchAccountInput;
@@ -187,30 +213,22 @@ worth_query_declaration::worth_query_portable_type!(
     PatchAccountDraftInput => "worth.query.test.patch-account-draft-input.v1"
 );
 
-worth_query_operation!(
-    pub TouchAccountOperation(TouchAccountInput) in IdentityExecutionSchema
-);
-worth_query_operation!(
-    pub WrongFieldRetentionOperation(WrongFieldRetentionInput) in IdentityExecutionSchema
-);
-worth_query_operation!(
-    pub ExactStatusRetentionOperation(ExactStatusRetentionInput) in IdentityExecutionSchema
-);
-worth_query_operation!(
-    pub MultiFieldRetentionOperation(MultiFieldRetentionInput) in IdentityExecutionSchema
-);
-worth_query_operation!(
-    pub MultiTouchOperation(MultiTouchInput) in IdentityExecutionSchema
-);
-worth_query_operation!(
-    pub ChangeOwnershipOperation(ChangeOwnershipInput) in IdentityExecutionSchema
-);
-worth_query_operation!(
-    pub MutationFreeEmitOperation(MutationFreeEmitInput) in IdentityExecutionSchema
-);
-worth_query_operation!(
-    pub PatchAccountDraftOperation(PatchAccountDraftInput) in IdentityExecutionSchema
-);
+worth_query_declaration::worth_query_structured_value_binding!(pub TouchAccountInputBinding for TouchAccountInput { identity: "worth.query.test.touch-account-input.v1" });
+worth_query_operation!(pub TouchAccountOperation for IdentityExecutionSchema, input TouchAccountInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub WrongFieldRetentionInputBinding for WrongFieldRetentionInput { identity: "worth.query.test.wrong-field-retention-input.v1" });
+worth_query_operation!(pub WrongFieldRetentionOperation for IdentityExecutionSchema, input WrongFieldRetentionInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub ExactStatusRetentionInputBinding for ExactStatusRetentionInput { identity: "worth.query.test.exact-status-retention-input.v1" });
+worth_query_operation!(pub ExactStatusRetentionOperation for IdentityExecutionSchema, input ExactStatusRetentionInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub MultiFieldRetentionInputBinding for MultiFieldRetentionInput { identity: "worth.query.test.multi-field-retention-input.v1" });
+worth_query_operation!(pub MultiFieldRetentionOperation for IdentityExecutionSchema, input MultiFieldRetentionInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub MultiTouchInputBinding for MultiTouchInput { identity: "worth.query.test.multi-touch-input.v1" });
+worth_query_operation!(pub MultiTouchOperation for IdentityExecutionSchema, input MultiTouchInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub ChangeOwnershipInputBinding for ChangeOwnershipInput { identity: "worth.query.test.change-ownership-input.v1" });
+worth_query_operation!(pub ChangeOwnershipOperation for IdentityExecutionSchema, input ChangeOwnershipInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub MutationFreeEmitInputBinding for MutationFreeEmitInput { identity: "worth.query.test.mutation-free-emit-input.v1" });
+worth_query_operation!(pub MutationFreeEmitOperation for IdentityExecutionSchema, input MutationFreeEmitInputBinding);
+worth_query_declaration::worth_query_structured_value_binding!(pub PatchAccountDraftInputBinding for PatchAccountDraftInput { identity: "worth.query.test.patch-account-draft-input.v1" });
+worth_query_operation!(pub PatchAccountDraftOperation for IdentityExecutionSchema, input PatchAccountDraftInputBinding);
 worth_query_operation_requires!(TouchAccountOperation => [ViewAccount]);
 worth_query_operation_requires!(WrongFieldRetentionOperation => [ViewAccount]);
 worth_query_operation_requires!(ExactStatusRetentionOperation => [ViewAccount]);
@@ -250,6 +268,7 @@ pub(in crate::domain_computation::primary_graph) type InstalledIdentityBinding =
         ExternalMapping,
         Principal,
         u64,
+        U64ApplicationValueBinding,
     >;
 
 pub(in crate::domain_computation::primary_graph) struct IdentityWorld {

@@ -41,7 +41,7 @@ fn committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity() {
 }
 
 #[test]
-fn another_runtime_cannot_observe_a_receipts_committed_outbox() {
+fn another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_outbox() {
     let owner = dispatch_world("owner-runtime");
     owner.transport.under(FaultScript::Succeed, PATIENT);
     let receipt = owner.commit_notification(50);
@@ -53,6 +53,6 @@ fn another_runtime_cannot_observe_a_receipts_committed_outbox() {
             .world
             .runtime
             .observe_committed_dispatch_outbox(&receipt),
-        Err(BankCommittedDispatchOutboxReadDenial::ForeignRuntime)
+        Err(BankCommittedDispatchOutboxReadDenial::ExactCommitUnavailable)
     );
 }

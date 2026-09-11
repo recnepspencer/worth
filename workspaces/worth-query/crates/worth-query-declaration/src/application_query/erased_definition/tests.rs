@@ -24,11 +24,13 @@ struct Entity;
 struct Parameters;
 struct Result;
 
+crate::worth_query_structured_value_binding!(QueryParametersBinding for Parameters { identity: "worth.query.test.portable-query-parameters.v1" });
+crate::worth_query_structured_value_binding!(QueryResultBinding for Result { identity: "worth.query.test.portable-query-result.v1" });
 crate::worth_query_application_query!(
-    Query in Schema,
+    Query for Schema,
     identity "worth.query.test.portable-query.v1",
-    parameters Parameters => "worth.query.test.portable-query-parameters.v1",
-    result Result => "worth.query.test.portable-query-result.v1",
+    parameters QueryParametersBinding,
+    result QueryResultBinding,
     scope Entity => "worth.query.test.portable-query-scope.v1",
     name "portable_query"
 );
@@ -102,6 +104,7 @@ fn noncanonical_untrusted_sequences_are_preserved_and_fail_fresh_schema_readmiss
             major: 1,
             minor: 0,
             members,
+            contributions: Vec::new(),
         },
     );
 
@@ -167,8 +170,14 @@ fn disclosure_field_masks_must_match_the_typed_selector_contract() {
 
 fn typed_definition() -> ErasedApplicationQueryDefinition {
     let entity = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier("Entity");
-    let shape =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, Result>::new(entity).build();
+    let shape = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        Entity,
+        Result,
+        QueryResultBinding,
+    >::new(entity)
+    .build();
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(entity)
         .scope(entity)

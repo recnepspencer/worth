@@ -53,7 +53,8 @@ fn bounded_send_projection_rejects_accounting_revision_drift() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::AccountingRevisionMismatch)
@@ -76,7 +77,8 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     let cold_work = cold.work();
     let projected = cold.into_output().unwrap();
 
@@ -93,7 +95,8 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         warm.output().as_ref().unwrap().starting_balance(source),
         Some(expected)
@@ -113,7 +116,8 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         rebuilt_projection
             .output()
@@ -149,7 +153,8 @@ fn bounded_send_projection_rejects_ambiguous_recipient_ownership() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::AmbiguousRelation("PersonalOwner"))
@@ -197,7 +202,8 @@ fn bounded_send_projection_rejects_posting_with_two_accounts() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::Aggregate(
@@ -261,7 +267,12 @@ impl ProjectionHarness {
         bind_world(&mut graph);
         let projection = graph.retain_invariant_projection_authority();
         let runtime = graph
-            .publish_application_runtime(runtime, authority, installed_schema)
+            .publish_application_runtime(
+                runtime,
+                authority,
+                installed_schema,
+                worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(),
+            )
             .unwrap();
         Self {
             _runtime: runtime,

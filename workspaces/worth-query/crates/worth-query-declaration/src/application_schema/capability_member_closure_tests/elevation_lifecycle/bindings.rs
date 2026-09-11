@@ -1,4 +1,8 @@
 use super::*;
+use crate::application_capability::ApplicationCapabilityFieldBinding;
+use crate::application_schema::{
+    ApplicationFieldRef, EqualityPredicate, NoApplicationUnit, ReadOnly,
+};
 
 pub(super) struct Elevation;
 pub(super) struct ElevationFacts;
@@ -34,11 +38,21 @@ pub(super) struct ApproveCapability;
 pub(super) struct RevokeCapability;
 pub(super) struct CompleteReviewCapability;
 
+declare_u64_field!(
+    ElevationIdentity,
+    ElevationReason,
+    ElevationStatus,
+    ElevationNotBefore,
+    ElevationNotAfter,
+    ReviewIdentity,
+    ReviewKind,
+    ReviewStatus,
+);
+
 macro_rules! operation_identity {
     ($operation:ty => $identifier:literal) => {
-        impl ApplicationOperationMarkerIdentity for $operation {
-            type Schema = Schema;
-            type Input = ();
+        impl ApplicationOperationMarkerIdentity<Schema> for $operation {
+            type InputBinding = UnitOperationInputBinding;
             const IDENTIFIER: &'static str = $identifier;
         }
     };
@@ -56,23 +70,36 @@ operation_identity!(SwappedApproveOperation => "Request");
 pub(super) fn elevation_value(value: u64) -> ApplicationCapabilityValueBinding {
     ApplicationCapabilityValueBinding::new(
         elevation_field::<ElevationStatus>("ElevationStatus"),
-        value,
+        encoded(value),
     )
 }
 
 pub(super) fn review_value(value: u64) -> ApplicationCapabilityValueBinding {
-    ApplicationCapabilityValueBinding::new(review_field::<ReviewStatus>("ReviewStatus"), value)
+    ApplicationCapabilityValueBinding::new(
+        review_field::<ReviewStatus>("ReviewStatus"),
+        encoded(value),
+    )
 }
 
-pub(super) fn elevation_binding<Field>(name: &'static str) -> ApplicationCapabilityFieldBinding {
+pub(super) fn elevation_binding<
+    Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>,
+>(
+    name: &'static str,
+) -> ApplicationCapabilityFieldBinding {
     ApplicationCapabilityFieldBinding::from_reference(elevation_field::<Field>(name))
 }
 
-pub(super) fn review_binding<Field>(name: &'static str) -> ApplicationCapabilityFieldBinding {
+pub(super) fn review_binding<
+    Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>,
+>(
+    name: &'static str,
+) -> ApplicationCapabilityFieldBinding {
     ApplicationCapabilityFieldBinding::from_reference(review_field::<Field>(name))
 }
 
-pub(super) fn elevation_field<Field>(
+pub(super) fn elevation_field<
+    Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>,
+>(
     name: &'static str,
 ) -> ApplicationFieldRef<
     Schema,
@@ -87,7 +114,9 @@ pub(super) fn elevation_field<Field>(
     ApplicationFieldRef::from_schema_identifiers("Elevation", "ElevationFacts", name)
 }
 
-pub(super) fn review_field<Field>(
+pub(super) fn review_field<
+    Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>,
+>(
     name: &'static str,
 ) -> ApplicationFieldRef<
     Schema,
@@ -115,7 +144,7 @@ pub(super) fn context_slot<Slot, Entity>(
 
 pub(super) fn operation<Marker>(_: &'static str) -> ApplicationOperationRef<Schema, Marker, ()>
 where
-    Marker: ApplicationOperationMarkerIdentity<Schema = Schema, Input = ()>,
+    Marker: ApplicationOperationMarkerIdentity<Schema, InputBinding = UnitOperationInputBinding>,
 {
     ApplicationOperationRef::from_declaration()
 }
@@ -125,7 +154,8 @@ pub(super) fn transition_binding<CapabilityMarker, OperationMarker>(
     operation_name: &'static str,
 ) -> ApplicationCapabilityTransitionBinding
 where
-    OperationMarker: ApplicationOperationMarkerIdentity<Schema = Schema, Input = ()>,
+    OperationMarker:
+        ApplicationOperationMarkerIdentity<Schema, InputBinding = UnitOperationInputBinding>,
 {
     ApplicationCapabilityTransitionBinding::from_references(
         ApplicationCapabilityRef::<Schema, CapabilityMarker>::from_schema_identifier(capability),
@@ -138,7 +168,8 @@ pub(super) fn transition_contract<CapabilityMarker, OperationMarker>(
     operation_name: &'static str,
 ) -> crate::application_capability::ErasedApplicationCapabilityContract
 where
-    OperationMarker: ApplicationOperationMarkerIdentity<Schema = Schema, Input = ()>,
+    OperationMarker:
+        ApplicationOperationMarkerIdentity<Schema, InputBinding = UnitOperationInputBinding>,
 {
     ApplicationCapabilityContractBuilder::new(
         ApplicationCapabilityRef::<Schema, CapabilityMarker>::from_schema_identifier(capability),
@@ -153,4 +184,12 @@ where
     .build()
     .erased()
     .clone()
+}
+
+fn encoded(
+    value: u64,
+) -> crate::application_schema::ApplicationEncodedScalarValue<
+    crate::application_schema::U64ApplicationValueBinding,
+> {
+    crate::application_schema::ApplicationEncodedScalarValue::try_new(value).unwrap()
 }

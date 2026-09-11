@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding,
+};
 use worth_relational::facade::transactions::{
     AspectFieldPatch, CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch,
 };
@@ -268,14 +270,17 @@ fn grow_unrelated_accounts(world: &super::super::fixture::AuthorizationWorld, co
         |batch, ordinal| {
             let key = format!("unrelated-scale-{ordinal}");
             let fields = AspectFieldPatch::from(BTreeMap::from([
-                (identity.clone(), key.clone().into_foundational_value()),
+                (
+                    identity.clone(),
+                    StringApplicationValueBinding::encode(&key.clone()).unwrap(),
+                ),
                 (
                     status.clone(),
-                    "unrelated".to_owned().into_foundational_value(),
+                    StringApplicationValueBinding::encode(&"unrelated".to_owned()).unwrap(),
                 ),
                 (
                     label.clone(),
-                    "population".to_owned().into_foundational_value(),
+                    StringApplicationValueBinding::encode(&"population".to_owned()).unwrap(),
                 ),
             ]));
             batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {

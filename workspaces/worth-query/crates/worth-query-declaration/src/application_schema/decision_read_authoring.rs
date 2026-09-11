@@ -3,7 +3,7 @@ use super::field_reference::ApplicationFieldRef;
 use super::references::{ApplicationEntityRef, ApplicationOperationRef, ApplicationRelationRef};
 use super::{
     ApplicationOperationDecisionReadTarget, ApplicationSchemaDeclarationBuilder,
-    ApplicationSchemaMember, TypedApplicationValue,
+    ApplicationSchemaMember, DeclaredApplicationFieldValue,
 };
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -62,7 +62,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     ) -> Self
     where
         Field: OperationReads<Operation>,
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.decision_read(

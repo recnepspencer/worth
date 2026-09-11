@@ -344,7 +344,7 @@ pub(super) fn admitted_capability_access_with_governed_input(
     )
 }
 
-fn capability_input(
+pub(super) fn capability_input(
     caller_time: u64,
     governed_input_identity: CapabilityGovernedInputIdentity,
 ) -> CapabilityTouchInput {

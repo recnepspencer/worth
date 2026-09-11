@@ -21,12 +21,19 @@ use crate::schema::{
 };
 
 struct AccountIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountIdentitySlot => "AccountIdentitySlot");
 struct AccountDisplayNameSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountDisplayNameSlot => "AccountDisplayNameSlot");
 struct AccountKindSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountKindSlot => "AccountKindSlot");
 struct AccountStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountStatusSlot => "AccountStatusSlot");
 struct AccountRevisionSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountRevisionSlot => "AccountRevisionSlot");
 struct AccountPostingsSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountPostingsSlot => "AccountPostingsSlot");
 struct PostingAmountSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingAmountSlot => "PostingAmountSlot");
 
 type AccountIdentitySelector<Query> = ApplicationQueryResultFieldRef<
     Query,
@@ -106,14 +113,21 @@ type PostingAmountSelector<Query> = ApplicationQueryResultFieldRef<
     DeclaredApplicationUnit<UsdCurrency, USD>,
 >;
 
-pub(super) fn account_summary_shape<Query, Result>(
-) -> ApplicationQueryResultShapeBuilder<BankSchema, Query, Account, Result>
+pub(super) fn account_summary_shape<Query, Result, ShapeBinding>(
+) -> ApplicationQueryResultShapeBuilder<BankSchema, Query, Account, Result, ShapeBinding>
 where
-    Query: 'static,
+    Query: worth_query_decl::facade::application_query::ApplicationQueryMarkerIdentity<BankSchema>,
+    ShapeBinding: worth_query_decl::facade::application_schema::ApplicationStructuredValueBinding<
+        Value = Result,
+    >,
 {
-    let posting = ApplicationQueryResultShapeBuilder::<BankSchema, Query, Posting, ()>::new(
-        Posting::reference(),
-    )
+    let posting = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        Query,
+        Posting,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Posting::reference())
     .field(posting_amount());
     ApplicationQueryResultShapeBuilder::new(Account::reference())
         .field(account_identity())
@@ -128,7 +142,7 @@ pub(super) fn project_account_summary<Query>(
     row: &WorthQueryApplicationProjectionRow<'_, BankSchema, Query>,
 ) -> Result<AccountSummary, WorthQueryApplicationProjectionDenial>
 where
-    Query: 'static,
+    Query: worth_query_decl::facade::application_query::ApplicationQueryMarkerIdentity<BankSchema>,
 {
     let account = row.field(account_identity())?;
     let revision = row.field(account_revision())?;

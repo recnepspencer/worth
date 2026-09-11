@@ -39,6 +39,7 @@ pub struct NestedAccountResult {
     reverse_sequences: Vec<u64>,
 }
 worth_query_declaration::worth_query_portable_type!(NestedAccountResult => "worth.query.test.execution.nested.result.v1");
+worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 impl NestedAccountResult {
     pub(in crate::domain_computation::primary_graph::tests) const fn primary_sequence(
@@ -62,11 +63,14 @@ impl NestedAccountResult {
     }
 }
 
+worth_query_declaration::worth_query_structured_value_binding!(pub NestedAccountQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub NestedAccountQueryResultBinding for NestedAccountResult { identity: "worth.query.test.execution.nested.result.v1" });
 worth_query_application_query!(
-    pub NestedAccountQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result NestedAccountResult,
-    scope Account,
+    pub NestedAccountQuery for IdentityExecutionSchema,
+    identity "NestedAccountQuery",
+    parameters NestedAccountQueryParametersBinding,
+    result NestedAccountQueryResultBinding,
+    scope Account => "Account",
     name "nested_account"
 );
 
@@ -124,6 +128,7 @@ pub(super) fn nested_account_definition() -> ApplicationQueryDefinition<
         NestedAccountQuery,
         Account,
         NestedAccountResult,
+        NestedAccountQueryResultBinding,
     >::new(Account::reference())
     .relation(primary_activity(), primary)
     .relation(secondary_activity(), secondary)
@@ -162,7 +167,13 @@ fn nested_shape<
         worth_query_declaration::facade::application_schema::NoEqualityPredicate,
         worth_query_declaration::facade::application_schema::NoApplicationUnit,
     >,
-) -> ApplicationQueryResultShapeBuilder<IdentityExecutionSchema, NestedAccountQuery, Activity, ()> {
+) -> ApplicationQueryResultShapeBuilder<
+    IdentityExecutionSchema,
+    NestedAccountQuery,
+    Activity,
+    (),
+    NestedUnitResultBinding,
+> {
     ApplicationQueryResultShapeBuilder::new(Activity::reference()).field(field)
 }
 

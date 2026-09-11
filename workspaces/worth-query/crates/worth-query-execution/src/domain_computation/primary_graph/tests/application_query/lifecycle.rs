@@ -120,7 +120,9 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -177,7 +179,9 @@ fn cancellation_after_admission_releases_basis_before_projection() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -234,7 +238,9 @@ fn principal_revocation_after_product_admission_denies_before_projection() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -287,7 +293,9 @@ fn scope_revocation_after_product_admission_denies_before_projection() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();

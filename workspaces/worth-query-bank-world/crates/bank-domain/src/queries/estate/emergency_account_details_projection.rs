@@ -1,4 +1,4 @@
-use worth_query_decl::facade::application_schema::TypedApplicationReadableValue;
+use worth_query_decl::facade::application_schema::ApplicationReadableScalarValueBinding;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationDisclosed, WorthQueryApplicationOmission, WorthQueryApplicationProjection,
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
@@ -7,7 +7,7 @@ use worth_query_host::facade::primary_graph::{
 use crate::{
     estate::{BankDisclosure, RestrictedBankField},
     reads::EstateAccountView,
-    schema::BankSchema,
+    schema::{BankSchema, RestrictedBankFieldBinding},
 };
 
 use super::emergency_account_details::{
@@ -58,7 +58,8 @@ fn project_account(
 fn omission_value<T>(
     omission: WorthQueryApplicationOmission,
 ) -> Result<BankDisclosure<T>, WorthQueryApplicationProjectionDenial> {
-    let field = RestrictedBankField::from_foundational_value(omission.required_disclosure())
+    let field = RestrictedBankFieldBinding::decode(omission.required_disclosure())
+        .ok()
         .filter(|field| *field == RestrictedBankField::AccountDetails)
         .ok_or_else(|| {
             WorthQueryApplicationProjectionDenial::reject("emergency-account-details")

@@ -20,12 +20,19 @@ use crate::{
 use super::mandatory_review::EstateMandatoryReviewQuery;
 
 pub(super) struct EstateIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateIdentitySlot => "EstateIdentitySlot");
 pub(super) struct ReviewsSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewsSlot => "ReviewsSlot");
 pub(super) struct ReviewIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewIdentitySlot => "ReviewIdentitySlot");
 pub(super) struct ReviewKindSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewKindSlot => "ReviewKindSlot");
 pub(super) struct ReviewStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewStatusSlot => "ReviewStatusSlot");
 pub(super) struct ReviewPrincipalSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewPrincipalSlot => "ReviewPrincipalSlot");
 pub(super) struct ReviewPrincipalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewPrincipalIdentitySlot => "ReviewPrincipalIdentitySlot");
 
 macro_rules! selector {
     ($name:ident, $slot:ty, $entity:ty, $aspect:ty, $field:ty, $value:ty, $write:ty, $alias:literal) => {

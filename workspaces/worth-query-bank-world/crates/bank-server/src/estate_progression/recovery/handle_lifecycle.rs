@@ -61,8 +61,10 @@ impl BankIdentityRuntime {
                 NotifyDeathEstateOperation::reference(),
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
-        let access = self
-            .application_runtime()
+        let selected = self
+            .select_current_product()
+            .map_err(BankEstateProgressionDenial::from_product_selection)?;
+        let access = selected
             .admit_capability_access(principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let disclosure = self
@@ -90,8 +92,10 @@ impl BankIdentityRuntime {
                 DisburseEstateOperation::reference(),
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
-        let access = self
-            .application_runtime()
+        let selected = self
+            .select_current_product()
+            .map_err(BankEstateProgressionDenial::from_product_selection)?;
+        let access = selected
             .admit_capability_access(principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let disclosure = self

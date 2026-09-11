@@ -13,7 +13,7 @@ mod tests;
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, ApplicationSchema,
-    TypedApplicationSignedAggregateValue, WritePosture,
+    ApplicationSignedAggregateValueBinding, DeclaredApplicationFieldValue, WritePosture,
 };
 
 use super::{WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity};
@@ -87,12 +87,13 @@ where
         target: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<WorthQueryInvariantAggregate<Value>, WorthQueryInvariantAggregateDenial>
     where
-        Value: TypedApplicationSignedAggregateValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationSignedAggregateValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
         let plan = validated_plan::ValidatedAggregatePlan::validate(self, relation, field, target)?;
-        execution::execute(self, plan)
+        execution::execute::<Schema, Field::Binding>(self, plan)
     }
 }
 

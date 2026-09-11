@@ -79,7 +79,9 @@ fn admitted(
 ) -> crate::application_query::WorthQueryAdmittedApplicationQueryParameters {
     admit_application_query_parameters(
         query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), account),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), account)
+            .unwrap(),
     )
     .unwrap()
 }

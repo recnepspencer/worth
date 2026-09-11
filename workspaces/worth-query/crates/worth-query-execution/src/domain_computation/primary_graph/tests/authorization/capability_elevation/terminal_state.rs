@@ -1,10 +1,11 @@
-use worth_query_declaration::facade::application_schema::TypedApplicationReadableValue;
+use worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 use super::super::super::fixture::{
     live_scope, CapabilityElevationApprover, CapabilityElevationIdentity,
-    CapabilityElevationStatus, CapabilityElevationStatusField, CapabilityReviewIdentity,
-    CapabilityReviewStatus, CapabilityReviewStatusField, CapabilityReviewer,
+    CapabilityElevationStatus, CapabilityElevationStatusBinding, CapabilityElevationStatusField,
+    CapabilityReviewIdentity, CapabilityReviewStatus, CapabilityReviewStatusBinding,
+    CapabilityReviewStatusField, CapabilityReviewer,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
@@ -40,7 +41,7 @@ pub(super) fn elevation_status(world: &World) -> CapabilityElevationStatus {
         identity.entity_kind(),
         &locator,
     );
-    CapabilityElevationStatus::from_foundational_value(&value).unwrap()
+    CapabilityElevationStatusBinding::decode(&value).unwrap()
 }
 
 pub(super) fn review_status(world: &World) -> CapabilityReviewStatus {
@@ -56,7 +57,7 @@ pub(super) fn review_status(world: &World) -> CapabilityReviewStatus {
         .unwrap()
         .clone();
     let value = observed_field(&world.application, review, kind, &locator);
-    CapabilityReviewStatus::from_foundational_value(&value).unwrap()
+    CapabilityReviewStatusBinding::decode(&value).unwrap()
 }
 
 pub(super) fn has_exact_reviewer(world: &World, reviewer: EntityId) -> bool {

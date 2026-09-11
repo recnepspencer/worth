@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectFieldLocator;
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
     WorkerIntentBatch,
@@ -30,7 +30,7 @@ pub(in crate::domain_computation::primary_graph) fn revoke_current_capability(
     let locator = installed_field(world, field.entity(), field.aspect(), field.field());
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         locator,
-        CapabilityStatus::Revoked.into_foundational_value(),
+        super::CapabilityStatusBinding::encode(&CapabilityStatus::Revoked).unwrap(),
     )]));
     super::publish_relational_mutation(
         world,

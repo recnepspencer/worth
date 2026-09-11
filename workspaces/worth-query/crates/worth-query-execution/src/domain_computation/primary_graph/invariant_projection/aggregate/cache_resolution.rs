@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use worth_query_installation::facade::TypedApplicationSignedAggregateValue;
+use worth_query_installation::facade::ApplicationSignedAggregateValueBinding;
 
 use super::execution::AggregateWorkAccounting;
 use super::validated_plan::ValidatedAggregatePlan;
@@ -27,6 +27,7 @@ enum CacheOutcome {
 pub(super) struct CachedAggregate {
     aggregate: WorthQueryIncomingAggregate,
     target: worth_relational::facade::identity::EntityId,
+    field_member: String,
 }
 
 #[derive(Debug)]
@@ -50,6 +51,7 @@ pub(super) fn probe(
             CacheOutcome::Hit(CachedAggregate {
                 aggregate,
                 target: plan.target(),
+                field_member: plan.field_member().to_owned(),
             })
         }
         None => CacheOutcome::Miss(UncachedAggregatePlan { plan }),
@@ -67,18 +69,24 @@ impl AggregateCacheResolution {
 }
 
 impl CachedAggregate {
-    pub(super) fn complete<Value>(
+    pub(super) fn complete<Binding>(
         self,
         scope: &mut WorthQueryRealizedProjectionScope,
-    ) -> WorthQueryInvariantAggregate<Value>
+    ) -> Result<WorthQueryInvariantAggregate<Binding::Value>, WorthQueryInvariantAggregateDenial>
     where
-        Value: TypedApplicationSignedAggregateValue,
+        Binding: ApplicationSignedAggregateValueBinding,
     {
         scope.record(self.target);
-        WorthQueryInvariantAggregate {
-            value: Value::from_aggregate_i64(self.aggregate.sum),
+        let value = Binding::decode_aggregate(self.aggregate.sum).map_err(|_| {
+            super::denial(
+                super::WorthQueryInvariantAggregateDenialKind::InvalidScalar,
+                self.field_member,
+            )
+        })?;
+        Ok(WorthQueryInvariantAggregate {
+            value,
             source_count: self.aggregate.source_count,
-        }
+        })
     }
 }
 

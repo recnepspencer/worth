@@ -13,8 +13,8 @@ use worth_query_host::facade::{
     declaration::application_query::ApplicationQueryParameterSet,
     primary_graph::{
         WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
-        WorthQueryApplicationQueryControls, WorthQueryPrimaryGraphApplicationRuntime,
-        WorthQueryPrincipalResolutionMode,
+        WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+        WorthQueryProductQueryControls, WorthQuerySelectedProductOperation,
     },
     publication::domain_computation::{
         publish_application_result, WorthQueryPublishedApplicationResult,
@@ -68,8 +68,8 @@ impl BankAdmittedEstateEmergencyAccountDetailsHistorical<'_> {
     ) -> Result<BankEstateEmergencyAccountDetailsResult, BankApplicationQueryDenial> {
         let result = self
             .application
-            .execute_application_query_historical(self.plan)
-            .map_err(BankApplicationQueryDenial::from_historical_execution)?;
+            .execute_application_query_one_shot(self.plan)
+            .map_err(BankApplicationQueryDenial::from_execution)?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }
 }
@@ -80,8 +80,8 @@ impl BankAdmittedEstateEmergencyAccountDetailsPreview<'_> {
     ) -> Result<BankEstateEmergencyAccountDetailsResult, BankApplicationQueryDenial> {
         let result = self
             .application
-            .execute_application_query_preview(self.plan)
-            .map_err(BankApplicationQueryDenial::from_preview_execution)?;
+            .execute_application_query_one_shot(self.plan)
+            .map_err(BankApplicationQueryDenial::from_execution)?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }
 }
@@ -106,12 +106,12 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
     pub(crate) fn one_shot(
         self,
     ) -> Result<BankEstateEmergencyAccountDetailsResult, BankApplicationQueryDenial> {
-        let controls = WorthQueryApplicationQueryControls::current_one_shot(
-            self.controls.maximum_result_count(),
-            self.controls.maximum_work(),
-            self.controls.request(),
-        );
-        self.with_admitted(controls, |application, plan| {
+        let application = self.runtime.application_runtime();
+        let selected = application
+            .on_branch(application.current_world())
+            .select()
+            .map_err(BankApplicationQueryDenial::from_product_selection)?;
+        self.with_admitted(selected, |application, plan| {
             let result = application
                 .execute_application_query_one_shot(plan)
                 .map_err(BankApplicationQueryDenial::from_execution)?;
@@ -127,19 +127,10 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
             -> Result<Output, BankApplicationQueryDenial>,
     ) -> Result<Output, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
-        let basis = application
-            .admit_application_historical_basis(
-                self.approved.historical_read(),
-                self.controls.request(),
-            )
-            .map_err(BankApplicationQueryDenial::from_admission)?;
-        let controls = WorthQueryApplicationQueryControls::historical(
-            basis,
-            self.controls.maximum_result_count(),
-            self.controls.maximum_work(),
-            self.controls.request(),
-        );
-        self.with_admitted(controls, |application, plan| {
+        let selected = self
+            .approved
+            .select_approval_product(application, self.controls.maximum_work())?;
+        self.with_admitted(selected, |application, plan| {
             after_admission(BankAdmittedEstateEmergencyAccountDetailsHistorical {
                 application,
                 plan,
@@ -156,20 +147,15 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
             -> Result<Output, BankApplicationQueryDenial>,
     ) -> Result<Output, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
-        let controls = session.admit_controls(
-            application,
-            self.controls.maximum_result_count(),
-            self.controls.maximum_work(),
-            self.controls.request(),
-        )?;
-        self.with_admitted(controls, |application, plan| {
+        let selected = session.select(application, self.controls.maximum_work())?;
+        self.with_admitted(selected, |application, plan| {
             after_admission(BankAdmittedEstateEmergencyAccountDetailsPreview { application, plan })
         })
     }
 
     fn with_admitted<Output>(
         self,
-        controls: WorthQueryApplicationQueryControls<'_, BankSchema>,
+        selected: WorthQuerySelectedProductOperation<'_, BankSchema>,
         after_admission: impl for<'admitted> FnOnce(
             &'admitted WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
             EmergencyAccountDetailsPlan<'admitted>,
@@ -188,20 +174,20 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
                 ViewRestrictedEstateOperation::reference(),
             )
             .map_err(BankApplicationQueryDenial::from_capability_installation)?;
-        let capability_access = application
+        let capability_access = selected
             .admit_approved_elevation_access(
                 self.approved.query(),
                 self.principal.query(),
                 &capability,
                 self.request.capability_request(),
-                controls.request_scope(),
+                self.controls.request(),
             )
             .map_err(BankApplicationQueryDenial::from_capability_admission)?;
-        let scope = application
+        let scope = selected
             .resolve_entity(
                 EstateCaseIdentityField::reference(),
                 self.request.estate(),
-                controls.request_scope(),
+                self.controls.request(),
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .map_err(BankApplicationQueryDenial::from_scope_resolution)?;
@@ -211,13 +197,17 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
             BankPrincipalId,
             EstateCase,
         >::new(self.principal.query(), &scope);
-        let plan = application
+        let plan = selected
             .admit_governed_application_query(
                 &query,
                 &access,
                 capability_access,
                 ApplicationQueryParameterSet::<EstateEmergencyAccountDetailsQuery>::new(),
-                controls,
+                WorthQueryProductQueryControls::new(
+                    self.controls.maximum_result_count(),
+                    self.controls.maximum_work(),
+                    self.controls.request(),
+                ),
             )
             .map_err(BankApplicationQueryDenial::from_admission)?;
         after_admission(application, plan)

@@ -1,3 +1,4 @@
+use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::{
     worth_query_operation, worth_query_operation_creates, worth_query_operation_deletes,
     worth_query_operation_emits, worth_query_operation_expects_fact,
@@ -120,26 +121,33 @@ pub struct ReverseJournal {
     pub reason: ReversalReason,
 }
 
-worth_query_operation!(pub CreatePersonalAccountOperation(CreatePersonalAccount) in BankSchema);
-worth_query_operation!(pub CreateBusinessAccountOperation(CreateBusinessAccount) in BankSchema);
-worth_query_operation!(pub ApplyOpeningFundingOperation(ApplyOpeningFunding) in BankSchema);
-worth_query_operation!(pub DepositOperation(Deposit) in BankSchema);
-worth_query_operation!(pub WithdrawOperation(Withdraw) in BankSchema);
-worth_query_operation!(pub SendMoneyOperation(SendMoney) in BankSchema);
+worth_query_structured_value_binding!(pub CreatePersonalAccountInputBinding for CreatePersonalAccount { identity: "bank.operation.create-personal-account.input.v1" });
+worth_query_structured_value_binding!(pub CreateBusinessAccountInputBinding for CreateBusinessAccount { identity: "bank.operation.create-business-account.input.v1" });
+worth_query_structured_value_binding!(pub ApplyOpeningFundingInputBinding for ApplyOpeningFunding { identity: "bank.operation.apply-opening-funding.input.v1" });
+worth_query_structured_value_binding!(pub DepositInputBinding for Deposit { identity: "bank.operation.deposit.input.v1" });
+worth_query_structured_value_binding!(pub WithdrawInputBinding for Withdraw { identity: "bank.operation.withdraw.input.v1" });
+worth_query_structured_value_binding!(pub SendMoneyInputBinding for SendMoney { identity: "bank.operation.send-money.input.v1" });
+worth_query_structured_value_binding!(pub InitiateBusinessPaymentInputBinding for InitiateBusinessPayment { identity: "bank.operation.initiate-business-payment.input.v1" });
+worth_query_structured_value_binding!(pub ApprovePaymentInputBinding for ApprovePayment { identity: "bank.operation.approve-payment.input.v1" });
+worth_query_structured_value_binding!(pub RejectPaymentInputBinding for RejectPayment { identity: "bank.operation.reject-payment.input.v1" });
+worth_query_structured_value_binding!(pub GrantAccountAuthorizationInputBinding for GrantAccountAuthorization { identity: "bank.operation.grant-account-authorization.input.v1" });
+worth_query_structured_value_binding!(pub RevokeAccountAuthorizationInputBinding for RevokeAccountAuthorization { identity: "bank.operation.revoke-account-authorization.input.v1" });
+worth_query_structured_value_binding!(pub ReverseJournalInputBinding for ReverseJournal { identity: "bank.operation.reverse-journal.input.v1" });
+
+worth_query_operation!(pub CreatePersonalAccountOperation for BankSchema, input CreatePersonalAccountInputBinding);
+worth_query_operation!(pub CreateBusinessAccountOperation for BankSchema, input CreateBusinessAccountInputBinding);
+worth_query_operation!(pub ApplyOpeningFundingOperation for BankSchema, input ApplyOpeningFundingInputBinding);
+worth_query_operation!(pub DepositOperation for BankSchema, input DepositInputBinding);
+worth_query_operation!(pub WithdrawOperation for BankSchema, input WithdrawInputBinding);
+worth_query_operation!(pub SendMoneyOperation for BankSchema, input SendMoneyInputBinding);
 worth_query_operation_expects_version!(SendMoneyOperation => [AccountingRevision]);
 worth_query_operation_expects_fact!(SendMoneyOperation => [Status]);
-worth_query_operation!(
-    pub InitiateBusinessPaymentOperation(InitiateBusinessPayment) in BankSchema
-);
-worth_query_operation!(pub ApprovePaymentOperation(ApprovePayment) in BankSchema);
-worth_query_operation!(pub RejectPaymentOperation(RejectPayment) in BankSchema);
-worth_query_operation!(
-    pub GrantAccountAuthorizationOperation(GrantAccountAuthorization) in BankSchema
-);
-worth_query_operation!(
-    pub RevokeAccountAuthorizationOperation(RevokeAccountAuthorization) in BankSchema
-);
-worth_query_operation!(pub ReverseJournalOperation(ReverseJournal) in BankSchema);
+worth_query_operation!(pub InitiateBusinessPaymentOperation for BankSchema, input InitiateBusinessPaymentInputBinding);
+worth_query_operation!(pub ApprovePaymentOperation for BankSchema, input ApprovePaymentInputBinding);
+worth_query_operation!(pub RejectPaymentOperation for BankSchema, input RejectPaymentInputBinding);
+worth_query_operation!(pub GrantAccountAuthorizationOperation for BankSchema, input GrantAccountAuthorizationInputBinding);
+worth_query_operation!(pub RevokeAccountAuthorizationOperation for BankSchema, input RevokeAccountAuthorizationInputBinding);
+worth_query_operation!(pub ReverseJournalOperation for BankSchema, input ReverseJournalInputBinding);
 worth_query_operation_writes!(
     CreatePersonalAccountOperation => [
         AccountIdentity,

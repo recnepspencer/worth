@@ -1,6 +1,6 @@
 use crate::application_schema::{
-    ApplicationEffectPayload, ApplicationEffectRef, ApplicationFieldUnit, EqualityPredicate,
-    ReadOnly, TypedApplicationValue,
+    ApplicationEffectRef, ApplicationFieldUnit, ApplicationRetainedEffectBinding,
+    ApplicationScalarValueBinding, ApplicationStructuredValueBinding, EqualityPredicate, ReadOnly,
 };
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
 
@@ -15,13 +15,21 @@ pub trait ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>:
     WorthQueryPortableType + 'static
 {
     type Effect;
-    type Payload: ApplicationEffectPayload + WorthQueryPortableType + Clone;
-    type ScopeIdentity: TypedApplicationValue + WorthQueryPortableType;
-    type TargetIdentity: TypedApplicationValue + WorthQueryPortableType;
+    type PayloadBinding: ApplicationRetainedEffectBinding;
+    type ScopeIdentityBinding: ApplicationScalarValueBinding;
+    type TargetIdentityBinding: ApplicationScalarValueBinding;
 
-    fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Self::Payload>;
-    fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity;
-    fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity;
+    fn effect() -> ApplicationEffectRef<
+        Schema,
+        Self::Effect,
+        <Self::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+    >;
+    fn scope_identity(
+        payload: &<Self::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+    ) -> <Self::ScopeIdentityBinding as ApplicationScalarValueBinding>::Value;
+    fn target_identity(
+        payload: &<Self::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+    ) -> <Self::TargetIdentityBinding as ApplicationScalarValueBinding>::Value;
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -192,7 +200,7 @@ impl ApplicationQueryLiveCauseContract {
             Scope,
             ScopeAspect,
             ScopeField,
-            Binding::ScopeIdentity,
+            <Binding::ScopeIdentityBinding as ApplicationScalarValueBinding>::Value,
             ReadOnly,
             EqualityPredicate,
             ScopeUnit,
@@ -204,7 +212,7 @@ impl ApplicationQueryLiveCauseContract {
             Target,
             TargetAspect,
             TargetField,
-            Binding::TargetIdentity,
+            <Binding::TargetIdentityBinding as ApplicationScalarValueBinding>::Value,
             ReadOnly,
             EqualityPredicate,
             TargetUnit,
@@ -213,30 +221,38 @@ impl ApplicationQueryLiveCauseContract {
     ) -> Self
     where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+        ScopeField: crate::application_schema::RequiredApplicationFieldValue<
+            Value = <Binding::ScopeIdentityBinding as ApplicationScalarValueBinding>::Value,
+            Binding = Binding::ScopeIdentityBinding,
+        >,
+        TargetField: crate::application_schema::RequiredApplicationFieldValue<
+            Value = <Binding::TargetIdentityBinding as ApplicationScalarValueBinding>::Value,
+            Binding = Binding::TargetIdentityBinding,
+        >,
         ScopeUnit: ApplicationFieldUnit,
         TargetUnit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         ScopeSlot: WorthQueryPortableType,
         TargetSlot: WorthQueryPortableType,
     {
         Self {
             binding_type: Binding::PORTABLE_TYPE_IDENTITY,
             effect: Binding::effect().name().to_owned(),
-            payload_type: Binding::Payload::PORTABLE_TYPE_IDENTITY,
+            payload_type: Binding::PayloadBinding::IDENTITY,
             scope_slot_type: scope_identity.slot_key().slot_identity(),
             scope_field: (
                 scope_identity.entity().to_owned(),
                 scope_identity.aspect().to_owned(),
                 scope_identity.field().to_owned(),
             ),
-            scope_value_type: Binding::ScopeIdentity::PORTABLE_TYPE_IDENTITY,
+            scope_value_type: Binding::ScopeIdentityBinding::IDENTITY,
             target_slot_type: target_identity.slot_key().slot_identity(),
             target_field: (
                 target_identity.entity().to_owned(),
                 target_identity.aspect().to_owned(),
                 target_identity.field().to_owned(),
             ),
-            target_value_type: Binding::TargetIdentity::PORTABLE_TYPE_IDENTITY,
+            target_value_type: Binding::TargetIdentityBinding::IDENTITY,
             resources,
         }
     }

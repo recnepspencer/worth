@@ -95,38 +95,38 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub ExternalMapping in FinancialHostSchema);
-worth_query_entity!(pub Principal in FinancialHostSchema);
-worth_query_entity!(pub MarketObservation in FinancialHostSchema);
-worth_query_aspect!(pub ExternalIdentity in FinancialHostSchema, ExternalMapping; identity = AspectIdentity(0x9161101b), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PrincipalFacts in FinancialHostSchema, Principal; identity = AspectIdentity(0x9161101c), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub MarketIdentity in FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x9161101d), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub CurveFacts in FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x9161101e), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub VolatilityFacts in FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x9161101f), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PriceFacts in FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x91611020), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub RiskFacts in FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x91611021), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PortfolioFacts in FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x91611022), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub AuditFacts in FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x91611023), revision = AspectContractRevision(1),);
-worth_query_field!(pub ExternalIdentityField in FinancialHostSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryExternalPrincipalIdentity, read_only, equality);
-worth_query_field!(pub MappingStatusField in FinancialHostSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryPrincipalMappingStatus, read_write, equality);
-worth_query_field!(pub PrincipalIdentityField in FinancialHostSchema, Principal, PrincipalFacts: u64, read_only, equality);
-worth_query_field!(pub MarketIdentityField in FinancialHostSchema, MarketObservation, MarketIdentity: String, read_only, equality);
-worth_query_field!(pub MarketRevisionField in FinancialHostSchema, MarketObservation, MarketIdentity: u64, read_write, equality);
-worth_query_field!(pub MarketDueField in FinancialHostSchema, MarketObservation, MarketIdentity: u64, read_write, equality);
-worth_query_field!(pub MarketLifecycleField in FinancialHostSchema, MarketObservation, MarketIdentity: String, read_write, equality);
-worth_query_field!(pub MarketInputField in FinancialHostSchema, MarketObservation, MarketIdentity: String, read_write, equality);
-worth_query_field!(pub MarketGateField in FinancialHostSchema, MarketObservation, MarketIdentity: String, read_write, equality);
-worth_query_field!(pub CurvePartitionField in FinancialHostSchema, MarketObservation, CurveFacts: String, read_only, equality);
-worth_query_field!(pub CurveDetailField in FinancialHostSchema, MarketObservation, CurveFacts: String, read_only, equality);
-worth_query_field!(pub CurveZeroRateField in FinancialHostSchema, MarketObservation, CurveFacts: u64, read_write, equality);
-worth_query_field!(pub VolatilitySurfaceField in FinancialHostSchema, MarketObservation, VolatilityFacts: u64, read_only, equality);
-worth_query_field!(pub QuoteMidField in FinancialHostSchema, MarketObservation, PriceFacts: u64, read_write, equality);
-worth_query_field!(pub RiskValueField in FinancialHostSchema, MarketObservation, RiskFacts: u64, read_write, equality);
-worth_query_field!(pub PortfolioValueField in FinancialHostSchema, MarketObservation, PortfolioFacts: u64, read_write, equality);
-worth_query_field!(pub PortfolioDeskField in FinancialHostSchema, MarketObservation, PortfolioFacts: String, read_write, equality);
-worth_query_field!(pub PortfolioRankField in FinancialHostSchema, MarketObservation, PortfolioFacts: u64, read_write, equality);
-worth_query_field!(pub AuditLabelField in FinancialHostSchema, MarketObservation, AuditFacts: String, read_only, equality);
-worth_query_relation!(pub MappingTarget in FinancialHostSchema, ExternalMapping => Principal);
+worth_query_entity!(pub ExternalMapping for FinancialHostSchema);
+worth_query_entity!(pub Principal for FinancialHostSchema);
+worth_query_entity!(pub MarketObservation for FinancialHostSchema);
+worth_query_aspect!(pub ExternalIdentity for FinancialHostSchema, ExternalMapping; identity = AspectIdentity(0x9161101b), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PrincipalFacts for FinancialHostSchema, Principal; identity = AspectIdentity(0x9161101c), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub MarketIdentity for FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x9161101d), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub CurveFacts for FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x9161101e), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub VolatilityFacts for FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x9161101f), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PriceFacts for FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x91611020), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub RiskFacts for FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x91611021), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PortfolioFacts for FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x91611022), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AuditFacts for FinancialHostSchema, MarketObservation; identity = AspectIdentity(0x91611023), revision = AspectContractRevision(1),);
+worth_query_field!(pub ExternalIdentityField for FinancialHostSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryExternalPrincipalIdentity => declaration::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
+worth_query_field!(pub MappingStatusField for FinancialHostSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryPrincipalMappingStatus => declaration::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
+worth_query_field!(pub PrincipalIdentityField for FinancialHostSchema, Principal, PrincipalFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub MarketIdentityField for FinancialHostSchema, MarketObservation, MarketIdentity: String => declaration::application_schema::StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub MarketRevisionField for FinancialHostSchema, MarketObservation, MarketIdentity: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub MarketDueField for FinancialHostSchema, MarketObservation, MarketIdentity: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub MarketLifecycleField for FinancialHostSchema, MarketObservation, MarketIdentity: String => declaration::application_schema::StringApplicationValueBinding, read_write, equality);
+worth_query_field!(pub MarketInputField for FinancialHostSchema, MarketObservation, MarketIdentity: String => declaration::application_schema::StringApplicationValueBinding, read_write, equality);
+worth_query_field!(pub MarketGateField for FinancialHostSchema, MarketObservation, MarketIdentity: String => declaration::application_schema::StringApplicationValueBinding, read_write, equality);
+worth_query_field!(pub CurvePartitionField for FinancialHostSchema, MarketObservation, CurveFacts: String => declaration::application_schema::StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub CurveDetailField for FinancialHostSchema, MarketObservation, CurveFacts: String => declaration::application_schema::StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub CurveZeroRateField for FinancialHostSchema, MarketObservation, CurveFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub VolatilitySurfaceField for FinancialHostSchema, MarketObservation, VolatilityFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub QuoteMidField for FinancialHostSchema, MarketObservation, PriceFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub RiskValueField for FinancialHostSchema, MarketObservation, RiskFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub PortfolioValueField for FinancialHostSchema, MarketObservation, PortfolioFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub PortfolioDeskField for FinancialHostSchema, MarketObservation, PortfolioFacts: String => declaration::application_schema::StringApplicationValueBinding, read_write, equality);
+worth_query_field!(pub PortfolioRankField for FinancialHostSchema, MarketObservation, PortfolioFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub AuditLabelField for FinancialHostSchema, MarketObservation, AuditFacts: String => declaration::application_schema::StringApplicationValueBinding, read_only, equality);
+worth_query_relation!(pub MappingTarget in FinancialHostSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(
     pub FinancialPrincipalBinding in FinancialHostSchema,
     mapping ExternalMapping {
@@ -140,15 +140,17 @@ worth_query_principal_binding!(
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FinancialInput(pub String);
 worth_query_portable_type!(FinancialInput => "worth.query.test.certification.financial.input.v1");
+worth_query_host::facade::worth_query_structured_value_binding!(pub FinancialInputBinding for FinancialInput { identity: "worth.query.test.certification.financial.input.v1" });
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AmendMarketInput;
 worth_query_portable_type!(AmendMarketInput => "worth.query.test.certification.financial.amend_input.v1");
+worth_query_host::facade::worth_query_structured_value_binding!(pub AmendMarketInputBinding for AmendMarketInput { identity: "worth.query.test.certification.financial.amend_input.v1" });
 
-worth_query_operation!(pub ExecuteFinancial(FinancialInput) in FinancialHostSchema);
+worth_query_operation!(pub ExecuteFinancial for FinancialHostSchema, input FinancialInputBinding);
 worth_query_operation_reads!(ExecuteFinancial => [MarketIdentityField, MarketRevisionField, MarketLifecycleField, RiskValueField]);
 worth_query_operation_writes!(ExecuteFinancial => [MarketRevisionField, MarketLifecycleField, RiskValueField]);
-worth_query_operation!(pub AmendMarket(AmendMarketInput) in FinancialHostSchema);
+worth_query_operation!(pub AmendMarket for FinancialHostSchema, input AmendMarketInputBinding);
 worth_query_operation_reads!(AmendMarket => [MarketRevisionField, MarketDueField, MarketLifecycleField, MarketGateField, MarketInputField, CurveZeroRateField, QuoteMidField, RiskValueField, PortfolioValueField, PortfolioDeskField, PortfolioRankField]);
 worth_query_operation_writes!(AmendMarket => [MarketRevisionField, MarketDueField, MarketLifecycleField, MarketGateField, MarketInputField, CurveZeroRateField, QuoteMidField, RiskValueField, PortfolioValueField, PortfolioDeskField, PortfolioRankField]);
 
@@ -173,12 +175,15 @@ pub struct FinancialIntentResult {
     pub input: String,
 }
 worth_query_portable_type!(FinancialIntentResult => "worth.query.test.certification.financial.intent_result.v1");
+worth_query_host::facade::worth_query_structured_value_binding!(pub FinancialIntentParametersBinding for FinancialIntentParameters { identity: "FinancialIntentParameters" });
+worth_query_host::facade::worth_query_structured_value_binding!(pub FinancialIntentResultBinding for FinancialIntentResult { identity: "worth.query.test.certification.financial.intent_result.v1" });
 
 worth_query_application_query!(
-    pub FinancialIntentQuery in FinancialHostSchema,
-    parameters FinancialIntentParameters,
-    result FinancialIntentResult,
-    scope MarketObservation,
+    pub FinancialIntentQuery for FinancialHostSchema,
+    identity "FinancialIntentQuery",
+    parameters FinancialIntentParametersBinding,
+    result FinancialIntentResultBinding,
+    scope MarketObservation => "MarketObservation",
     name "financial_intent_query"
 );
 
@@ -202,13 +207,19 @@ fn financial_intent_query_definition() -> ApplicationQueryDefinition<
     FinancialIntentResult,
     MarketObservation,
 > {
-    let shape = ApplicationQueryResultShapeBuilder::new(MarketObservation::reference())
-        .field(identity_result())
-        .field(revision_result())
-        .field(due_result())
-        .field(lifecycle_result())
-        .field(input_result())
-        .build();
+    let shape = ApplicationQueryResultShapeBuilder::<
+        FinancialHostSchema,
+        FinancialIntentQuery,
+        MarketObservation,
+        FinancialIntentResult,
+        FinancialIntentResultBinding,
+    >::new(MarketObservation::reference())
+    .field(identity_result())
+    .field(revision_result())
+    .field(due_result())
+    .field(lifecycle_result())
+    .field(input_result())
+    .build();
     ApplicationQueryDefinitionBuilder::declare(FinancialIntentQuery::reference())
         .root(MarketObservation::reference())
         .scope(MarketObservation::reference())

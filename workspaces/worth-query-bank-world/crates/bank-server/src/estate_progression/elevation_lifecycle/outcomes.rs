@@ -1,9 +1,12 @@
 //! Bank-owned classifications for every estate elevation transition.
 
 use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDeferred, WorthQueryApplicationSettlementDeferred,
     WorthQueryElevationApprovalOutcome, WorthQueryElevationCloseOutcome,
     WorthQueryElevationRequestOutcome, WorthQueryMandatoryReviewOutcome,
+    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
 };
+use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
 use super::{
     BankApprovedEstateElevation, BankEstateMandatoryReview, BankRequestedEstateElevation,
@@ -14,23 +17,37 @@ use crate::{BankCommitDenialKind, BankCommitDenialStage};
 
 #[derive(Debug)]
 pub enum BankEstateElevationRequestOutcome {
+    ProductStale(WorthQueryProductStaleApplication),
+    ProductUnpublished(WorthQueryProductUnpublishedApplication),
+    NoEffect(WorthQueryApplicationNoEffectCause),
     Requested(BankRequestedEstateElevation),
     AlreadyRequested(BankRequestedEstateElevation),
     Stale {
         stale_fact_count: usize,
     },
     Cancelled,
+    TimedOut,
     Denied {
         kind: BankCommitDenialKind,
         stage: BankCommitDenialStage,
     },
     Aborted,
-    PartialEffect,
+    Deferred(WorthQueryApplicationCommitDeferred),
+    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate,
 }
 
 #[derive(Debug)]
 pub enum BankEstateElevationApprovalOutcome {
+    ProductStale(
+        WorthQueryProductStaleApplication,
+        BankRequestedEstateElevation,
+    ),
+    ProductUnpublished(WorthQueryProductUnpublishedApplication),
+    NoEffect(
+        WorthQueryApplicationNoEffectCause,
+        BankRequestedEstateElevation,
+    ),
     Approved(BankApprovedEstateElevation),
     AlreadyApproved(BankApprovedEstateElevation),
     Stale {
@@ -38,18 +55,29 @@ pub enum BankEstateElevationApprovalOutcome {
         requested: BankRequestedEstateElevation,
     },
     Cancelled(BankRequestedEstateElevation),
+    TimedOut,
     Denied {
         kind: BankCommitDenialKind,
         stage: BankCommitDenialStage,
         requested: BankRequestedEstateElevation,
     },
     Aborted(BankRequestedEstateElevation),
-    PartialEffect,
+    Deferred(WorthQueryApplicationCommitDeferred),
+    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate,
 }
 
 #[derive(Debug)]
 pub enum BankEstateElevationCloseOutcome {
+    ProductStale(
+        WorthQueryProductStaleApplication,
+        BankApprovedEstateElevation,
+    ),
+    ProductUnpublished(WorthQueryProductUnpublishedApplication),
+    NoEffect(
+        WorthQueryApplicationNoEffectCause,
+        BankApprovedEstateElevation,
+    ),
     Closed(BankEstateMandatoryReview),
     AlreadyClosed(BankEstateMandatoryReview),
     Stale {
@@ -57,18 +85,26 @@ pub enum BankEstateElevationCloseOutcome {
         approved: BankApprovedEstateElevation,
     },
     Cancelled(BankApprovedEstateElevation),
+    TimedOut,
     Denied {
         kind: BankCommitDenialKind,
         stage: BankCommitDenialStage,
         approved: BankApprovedEstateElevation,
     },
     Aborted(BankApprovedEstateElevation),
-    PartialEffect,
+    Deferred(WorthQueryApplicationCommitDeferred),
+    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate,
 }
 
 #[derive(Debug)]
 pub enum BankEstateMandatoryReviewOutcome {
+    ProductStale(WorthQueryProductStaleApplication, BankEstateMandatoryReview),
+    ProductUnpublished(WorthQueryProductUnpublishedApplication),
+    NoEffect(
+        WorthQueryApplicationNoEffectCause,
+        BankEstateMandatoryReview,
+    ),
     Reviewed(BankReviewedEstateElevation),
     AlreadyReviewed(BankReviewedEstateElevation),
     Stale {
@@ -76,19 +112,28 @@ pub enum BankEstateMandatoryReviewOutcome {
         mandatory: BankEstateMandatoryReview,
     },
     Cancelled(BankEstateMandatoryReview),
+    TimedOut,
     Denied {
         kind: BankCommitDenialKind,
         stage: BankCommitDenialStage,
         mandatory: BankEstateMandatoryReview,
     },
     Aborted(BankEstateMandatoryReview),
-    PartialEffect,
+    Deferred(WorthQueryApplicationCommitDeferred),
+    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate,
 }
 
 impl BankEstateElevationRequestOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationRequestOutcome) -> Self {
         match outcome {
+            WorthQueryElevationRequestOutcome::ProductStale(stale) => Self::ProductStale(stale),
+            WorthQueryElevationRequestOutcome::ProductUnpublished(unpublished) => {
+                Self::ProductUnpublished(unpublished)
+            }
+            WorthQueryElevationRequestOutcome::NoEffect(no_effect) => {
+                Self::NoEffect(no_effect.cause())
+            }
             WorthQueryElevationRequestOutcome::Requested(value) => {
                 Self::Requested(BankRequestedEstateElevation::from_query(value))
             }
@@ -99,12 +144,16 @@ impl BankEstateElevationRequestOutcome {
                 stale_fact_count: stale.stale_fact_count(),
             },
             WorthQueryElevationRequestOutcome::Cancelled => Self::Cancelled,
+            WorthQueryElevationRequestOutcome::TimedOut => Self::TimedOut,
             WorthQueryElevationRequestOutcome::Denied(denial) => Self::Denied {
                 kind: denial_kind(denial.kind()),
                 stage: denial_stage(denial.stage()),
             },
             WorthQueryElevationRequestOutcome::Aborted => Self::Aborted,
-            WorthQueryElevationRequestOutcome::PartialEffect => Self::PartialEffect,
+            WorthQueryElevationRequestOutcome::Deferred(deferred) => Self::Deferred(deferred),
+            WorthQueryElevationRequestOutcome::SettlementDeferred(deferred) => {
+                Self::SettlementDeferred(deferred)
+            }
             WorthQueryElevationRequestOutcome::Indeterminate => Self::Indeterminate,
         }
     }
@@ -113,6 +162,16 @@ impl BankEstateElevationRequestOutcome {
 impl BankEstateElevationApprovalOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationApprovalOutcome) -> Self {
         match outcome {
+            WorthQueryElevationApprovalOutcome::ProductStale(stale, requested) => {
+                Self::ProductStale(stale, BankRequestedEstateElevation::from_query(requested))
+            }
+            WorthQueryElevationApprovalOutcome::ProductUnpublished(unpublished) => {
+                Self::ProductUnpublished(unpublished)
+            }
+            WorthQueryElevationApprovalOutcome::NoEffect(no_effect, requested) => Self::NoEffect(
+                no_effect.cause(),
+                BankRequestedEstateElevation::from_query(requested),
+            ),
             WorthQueryElevationApprovalOutcome::Approved(value) => {
                 Self::Approved(BankApprovedEstateElevation::from_query(value))
             }
@@ -126,6 +185,7 @@ impl BankEstateElevationApprovalOutcome {
             WorthQueryElevationApprovalOutcome::Cancelled(requested) => {
                 Self::Cancelled(BankRequestedEstateElevation::from_query(requested))
             }
+            WorthQueryElevationApprovalOutcome::TimedOut => Self::TimedOut,
             WorthQueryElevationApprovalOutcome::Denied(denial, requested) => Self::Denied {
                 kind: denial_kind(denial.kind()),
                 stage: denial_stage(denial.stage()),
@@ -134,7 +194,10 @@ impl BankEstateElevationApprovalOutcome {
             WorthQueryElevationApprovalOutcome::Aborted(requested) => {
                 Self::Aborted(BankRequestedEstateElevation::from_query(requested))
             }
-            WorthQueryElevationApprovalOutcome::PartialEffect => Self::PartialEffect,
+            WorthQueryElevationApprovalOutcome::Deferred(deferred) => Self::Deferred(deferred),
+            WorthQueryElevationApprovalOutcome::SettlementDeferred(deferred) => {
+                Self::SettlementDeferred(deferred)
+            }
             WorthQueryElevationApprovalOutcome::Indeterminate => Self::Indeterminate,
         }
     }
@@ -143,6 +206,16 @@ impl BankEstateElevationApprovalOutcome {
 impl BankEstateElevationCloseOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationCloseOutcome) -> Self {
         match outcome {
+            WorthQueryElevationCloseOutcome::ProductStale(stale, approved) => {
+                Self::ProductStale(stale, BankApprovedEstateElevation::from_query(approved))
+            }
+            WorthQueryElevationCloseOutcome::ProductUnpublished(unpublished) => {
+                Self::ProductUnpublished(unpublished)
+            }
+            WorthQueryElevationCloseOutcome::NoEffect(no_effect, approved) => Self::NoEffect(
+                no_effect.cause(),
+                BankApprovedEstateElevation::from_query(approved),
+            ),
             WorthQueryElevationCloseOutcome::Closed(value) => {
                 Self::Closed(BankEstateMandatoryReview::from_query(value))
             }
@@ -156,6 +229,7 @@ impl BankEstateElevationCloseOutcome {
             WorthQueryElevationCloseOutcome::Cancelled(approved) => {
                 Self::Cancelled(BankApprovedEstateElevation::from_query(approved))
             }
+            WorthQueryElevationCloseOutcome::TimedOut => Self::TimedOut,
             WorthQueryElevationCloseOutcome::Denied(denial, approved) => Self::Denied {
                 kind: denial_kind(denial.kind()),
                 stage: denial_stage(denial.stage()),
@@ -164,7 +238,10 @@ impl BankEstateElevationCloseOutcome {
             WorthQueryElevationCloseOutcome::Aborted(approved) => {
                 Self::Aborted(BankApprovedEstateElevation::from_query(approved))
             }
-            WorthQueryElevationCloseOutcome::PartialEffect => Self::PartialEffect,
+            WorthQueryElevationCloseOutcome::Deferred(deferred) => Self::Deferred(deferred),
+            WorthQueryElevationCloseOutcome::SettlementDeferred(deferred) => {
+                Self::SettlementDeferred(deferred)
+            }
             WorthQueryElevationCloseOutcome::Indeterminate => Self::Indeterminate,
         }
     }
@@ -173,6 +250,16 @@ impl BankEstateElevationCloseOutcome {
 impl BankEstateMandatoryReviewOutcome {
     pub(crate) fn from_query(outcome: WorthQueryMandatoryReviewOutcome) -> Self {
         match outcome {
+            WorthQueryMandatoryReviewOutcome::ProductStale(stale, mandatory) => {
+                Self::ProductStale(stale, BankEstateMandatoryReview::from_query(mandatory))
+            }
+            WorthQueryMandatoryReviewOutcome::ProductUnpublished(unpublished) => {
+                Self::ProductUnpublished(unpublished)
+            }
+            WorthQueryMandatoryReviewOutcome::NoEffect(no_effect, mandatory) => Self::NoEffect(
+                no_effect.cause(),
+                BankEstateMandatoryReview::from_query(mandatory),
+            ),
             WorthQueryMandatoryReviewOutcome::Reviewed(value) => {
                 Self::Reviewed(BankReviewedEstateElevation::from_query(value))
             }
@@ -186,6 +273,7 @@ impl BankEstateMandatoryReviewOutcome {
             WorthQueryMandatoryReviewOutcome::Cancelled(mandatory) => {
                 Self::Cancelled(BankEstateMandatoryReview::from_query(mandatory))
             }
+            WorthQueryMandatoryReviewOutcome::TimedOut => Self::TimedOut,
             WorthQueryMandatoryReviewOutcome::Denied(denial, mandatory) => Self::Denied {
                 kind: denial_kind(denial.kind()),
                 stage: denial_stage(denial.stage()),
@@ -194,7 +282,10 @@ impl BankEstateMandatoryReviewOutcome {
             WorthQueryMandatoryReviewOutcome::Aborted(mandatory) => {
                 Self::Aborted(BankEstateMandatoryReview::from_query(mandatory))
             }
-            WorthQueryMandatoryReviewOutcome::PartialEffect => Self::PartialEffect,
+            WorthQueryMandatoryReviewOutcome::Deferred(deferred) => Self::Deferred(deferred),
+            WorthQueryMandatoryReviewOutcome::SettlementDeferred(deferred) => {
+                Self::SettlementDeferred(deferred)
+            }
             WorthQueryMandatoryReviewOutcome::Indeterminate => Self::Indeterminate,
         }
     }

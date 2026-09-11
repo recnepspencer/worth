@@ -1,4 +1,4 @@
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 
 use super::super::application_attempt::{authenticated_principal, idempotency};
 use super::super::fixture::capability::CapabilityStatusField;
@@ -56,7 +56,7 @@ fn revoke_parent(world: &super::super::fixture::AuthorizationWorld) {
         world,
         "capability-parent",
         field(world, CapabilityStatusField::reference()),
-        CapabilityStatus::Revoked.into_foundational_value(),
+        super::super::fixture::CapabilityStatusBinding::encode(&CapabilityStatus::Revoked).unwrap(),
     );
 }
 

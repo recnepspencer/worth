@@ -373,6 +373,11 @@ cross-feature proof gates before final certification:
   Relational basis/lifecycle and Signal services, then dedicated Runtime World
   composite history/currentness, then complete Query carriage, facade cutover,
   and hostile certification
+- `Milestone 9.17.4` hardens the application API after that certified foundation:
+  entry-owned value and intent bindings, explicit contributions, request-bound
+  execution, retained/page/live resources, installed domain handlers, exact
+  recovery, full Bank adoption, and primary invariant/bulk-construction proof;
+  it replaces application-owned Query pipelines before 9.18 begins
 - `Milestone 9.18` accepts tree-based semantic undo and redo as freshly
   admitted composite-history operations over exact source world commits and
   target product-branch heads; it replaces the provisional linear Phase 8
@@ -407,7 +412,7 @@ contracts required by physical integration:
   `Milestone 9.16.1.1` -> `Milestone 9.16.2` ->
   `Milestone 9.17.1` -> `Milestone 9.17.1.1` ->
   `Milestone 9.17.1.2` -> `Milestone 9.17.2` ->
-  `Milestone 9.17.3` ->
+  `Milestone 9.17.3` -> `Milestone 9.17.4` ->
   `Milestone 9.18` -> `Milestone 9.19` ->
   `Milestone 9.20` -> `Milestone 9.21` -> `Milestone 9.22` ->
   `Milestone 13`
@@ -5124,7 +5129,9 @@ authority boundary into:
 - [Milestone 9.17.3](./milestone-9.17.3.md): Query product-branch carriage,
   public facade, and end-to-end certification.
 
-The order is strict. The umbrella closes only after 9.17.3.
+The order is strict. The umbrella closes only after 9.17.3. The separate
+post-closure [9.17.4 application API hardening](./milestone-9.17.4.md) now
+follows that foundation before 9.18; it does not reopen the certified umbrella.
 
 ### Submilestone Sequence
 
@@ -5246,7 +5253,8 @@ history/live/inspection boundary, publishes the public product-branch
 workflow, deletes the Relational-only and ambient-Signal lane, and runs the
 cumulative hostile court through the real composition root. It permits
 existing-outbox dispatch only from performed composite publication in the live
-runtime. Its closure closes the umbrella and unlocks 9.18.
+runtime. Its closure closes the umbrella. The subsequently specified 9.17.4
+hardens consumer adoption before 9.18 extends the ordinary application API.
 
 The [9.17.3 specification](./milestone-9.17.3.md) requires the one-sealed-graph
 Signal-owned conditional service and complete installation/re-entry lifecycle
@@ -5349,13 +5357,77 @@ profiles are governed by the individual submilestone specifications;
 [test-requirements.md](./test-requirements.md) governs the shared evidence
 quality rules rather than serving as a suite-name registry.
 
+## Milestone 9.17.4: Application API Hardening
+
+### Goal
+
+Make typed application intent the ordinary Query experience over the certified
+9.17.3 runtime. Query owns reusable binding and execution; consumers supply
+domain meaning and explicitly registered handlers rather than copying the
+select/resolve/admit/execute/publish pipeline. No legacy compatibility layer
+or competing ordinary application language remains after cutover.
+
+### Specification And Scope
+
+The governing specification is
+[milestone-9.17.4.md](./milestone-9.17.4.md). It freezes the target call shapes,
+current-to-destination replacement table, owner boundaries, directory skeleton,
+documentation obligations, and six phases requiring certification:
+
+1. Pure-value bindings and explicit cross-crate contribution composition.
+2. Requests and current, retained, historical, paged, and live reads.
+3. Installed operation execution, primary candidate/domain integrity, exact
+   recovery, and complete Bank adoption.
+4. Admitted runtime-cardinality construction, geometry-shaped integrity and
+   bounded synchronous output-demand settlement.
+5. Existing `worth-ui-query-binding` and `crates/worth-server` consumer migration.
+6. Remaining audience closure and cumulative certification.
+
+The Bank application and real HTTP/user-node journeys complete before the
+geometry-shaped construction phase. The latter proves the public primary
+foundation without implementing the proprietary kernel. House M0 consumes its
+bounded synchronous group-demand contract; M3 extends it to transitive
+regeneration and off-thread numerical completion. Native Save/Open remains
+house M7E Query/Store work. No placeholder strategy supplies missing completion.
+Advanced access and correlated execution remain 9.19 and 9.20.
+
+Bank's provisional linear undo/redo commands and transport consumers retire
+in Phase 3 while accepted aftermath and recovery remain. 9.18 supplies the
+accepted tree-correction product. Capability/elevation admission is explicitly
+bound into the new entry; publication retention is an opt-in pre-effect lease,
+never an implicit cost attached to every descriptive commit receipt. Bank's
+broken bindings are repaired directly into the destination API, without a
+preliminary restoration of superseded public contracts.
+
+### Acceptance And Handoff
+
+Use Bank accounting, permission revocation during retained/live/paged reads,
+stale mutations, idempotency, losing-outbox publication, exact settlement,
+process transport, sibling progress, and cleanup to convict a facade which
+caches or reconstructs authority. A separate pure-value/contribution consumer
+proves lawful binding and actual primary cyclic construction, mandatory
+candidate-neighborhood invariants, and pre-allocation resource admission.
+1/10/100 geometry-shaped groups expose per-entity sessions or publications.
+
+Generation removes duplicate wiring, not explicit semantic identity or
+registration. Retained data does not retain permission. Prepared attempts
+carry one exact selection; mutation outcomes retain all actual effects and
+recovery custody. Preserve existing World/Signal ownership and reuse valid
+certification evidence and compiled binaries. Phase certification, commit, and
+push precede the next phase; the old CI pipeline is not reinstated.
+
+9.18 consumes this hardened request/handler/history/aftermath contract.
+9.19-9.22 extend it without another ordinary consumer language. The certified
+9.17 branching umbrella remains a completed predecessor.
+
 ## Milestone 9.18: Tree-Based Semantic Undo And Redo
 
 ### Goal
 
 Replace the provisional Milestone 9.16 linear undo/redo experiment with an
 accepted tree-based product over the composite history completed by Milestone
-9.17.3 under the Milestone 9.17 umbrella. Every
+9.17.3 under the Milestone 9.17 umbrella, through the application API hardened
+in 9.17.4. Every
 reversal or reapplication selects an exact source world commit and target
 product branch/head, re-enters current authority and policy, coordinates the
 required component plans, and publishes a new composite commit without
@@ -5395,7 +5467,8 @@ The governing milestone spec is
 
 - the completed Milestone 9.17 umbrella: 9.17.1 component authority and
   branch-local MVCC, 9.17.2 composite correspondence/publication/history, and
-  9.17.3 Query carriage and public product-branch authority
+  9.17.3 Query carriage and public product-branch authority, followed by
+  9.17.4 application bindings, request execution, and consumer cutover
 - Milestone 9.16 aftermath, retained-truth, external-effect, recovery, and
   publication contracts
 - original history, fresh authorization, and cert-only replay
@@ -5782,6 +5855,7 @@ answer is "store-gated" or "shared with another subsystem."
 | Installed graph contract integrity repair | Milestone 9.16.1.1 | Declaration-owned application aspect identity/revision; installed native schema catalog; typed entity/projection/relation reads; typed create/delete/write/link/unlink touches; typed reconciliation and correlation-family inspection | Installed operation inspection, graph-obligation selection, execution lowering, performed-evidence comparison, Host adoption, and successor package export consume one exact typed contract; no empty semantic-read posture, structured touch grammar, application contract reconstruction, or aftermath summary survives | Focused owner, Host-consumer, compile-boundary, and execution integration tests plus required repository checks |
 | Portable Query packages and fresh readmission | Milestone 9.16.2 | Stable identities and declaration-minted references extending the 9.16.1.1 application aspect/correlation identities; complete typed package records; bounded reconstruction and fresh Query validation; deterministic neutral archive; host-owned release envelope and signing boundary | Records, bytes, checksums, signatures, repositories, filenames, and release names remain descriptive; only fresh Query validation against independently expected identity can recover package meaning; no application state, provider, secret, proof, handle, callback, or physical topology enters the archive; warm execution performs no package work | Identity/provenance compiler evidence; exact export/reconstruction equality; record omission/duplication/reorder/cross-splice mutants; archive golden vectors, corruption, compatibility, and budget courts; same-name coexistence; release-tool, facade, docs, boundary, and residue certification |
 | In-memory composite runtime branching and branch-local MVCC | Milestone 9.17 umbrella: 9.17.1 owner bases/MVCC, 9.17.1.1 Relational service/lifecycle correction, 9.17.1.2 final owner-service/Signal-progress correction, 9.17.2 composite history/publication, 9.17.3 Query carriage/outbox gate/facade/certification | Owner-issued Relational/Signal bases; independently borrowable Relational and Signal owner services; lifecycle-total owner settlement and retention; branch-local MVCC; base Bridge-owned correspondence; dedicated Runtime World-owned single-parent composite commits and product-head comparison; Query-carried product-world affinity; live-runtime outbox admission bound to performed composite publication | Branch identities remain distinct; unrelated branches progress without whole-owner or composition locks; lost capabilities do not strand owner state; exact residency is independent of currentness; owner effects without product movement remain bounded and non-current; an owner-local outbox never dispatches after failed composite publication; application worlds remain memory-resident and no temporary physical-runtime abstraction is introduced | 9.17.1 owner-basis and publication-locality courts + 9.17.1.1 preparation/settlement independence, capability-loss recovery, exact-retention, lease-terminal, contention, feature, scheduled-proof, facade, and docs courts + 9.17.1.2 owner-bundle, same-branch, independent-progress, lifecycle, panic, capacity, facade, and scale courts + 9.17.2 identity, product-head comparison, retained-owner-effects, retention, ancestry, contention, and no-mixed-publication courts + 9.17.3 end-to-end shared-basis, component-divergence, same-head-race, substitution, lifecycle, outbox-gating, facade, compiler, docs, residue, and later cross-runtime semantic merge suites |
+| Application API hardening | Milestone 9.17.4 | Entry-owned bindings/contributions, capability/elevation requests, installed handlers, opt-in retained publication, page/live resources, exact recovery, Bank/UI/server adoption, candidate integrity, runtime-cardinality construction and bounded output demand | No cached permission or hidden pins; stable portable identity; actual owner validation; no erased partial effects, per-entity publications, consumer-owned phase pipeline or compatibility route | Bank process/authority/recovery courts, UI/server integration, cross-crate values, cyclic candidate/resource/demand courts, and preserved 9.17.3 occurrence/Signal/World evidence |
 | Tree-based semantic undo and redo | Milestone 9.18 | Exact source composite commit and target product branch/head, explicit per-component correction posture, installed inverse/compensation/reconciliation/reapplication contracts, applicability against intervening history, fresh Query admission, owner-local preparation, Runtime World coordinated publication, correction causality, and typed next actions | Reversal and reapplication create new composite commits; unchanged components retain exact bases; Signal reconciliation remains Signal-owned; history and alternatives remain intact; copied receipts and prior authority open no door; stale/conflicting divergence is typed before effects; external effects retain honest compensation/irreversibility posture; Query owns no history head | Milestone 9.18 composite-divergence, stale-head, component-basis, Signal-reconciliation, authority, compensation, external-effect, partial-preparation, zero-ordinary-work, facade, documentation, and residue certification + later cross-runtime merge/rebase/recovery suites |
 | Managed advanced access and verified footprints | Milestone 9.19 | Installed-query-bound search and access products, Milestone 9.10 requirement/inventory/plan extensions, lifecycle products, coverage/membership witnesses, exact refinement, and verified realized footprints | Search preserves capability, purpose, exact composite product-world basis, disclosure, cursor, recovery, and aftermath; membership remains complete under negative-space change; protected candidates do not leak; footprints narrow but never widen authority | Milestone 9.19 bank/geometry search, disclosure, no-N+1, membership, footprint, lifecycle, memory, alternate-provider, facade/docs, and prohibition certification + Milestone 13 parity |
 | Correlated paths and set execution | Milestone 9.20 | Typed heterogeneous path programs, admitted provider lowering, complete path dependencies, installed conflict relations, verified partitions, provider set operations, canonical reductions, and structural-cost evidence | Paths remain bounded and schema-typed; correlated reads consume one admitted graph plan; partitions are complete and conflict-free; bulk work is truly set-oriented; planning is not quadratic; unauthorized members are not processed or leaked | Milestone 9.20 chip/geometry/bank interpreter, no-N+1, partition-parity, slope, authority, facade/docs, and prohibition certification + Milestone 13 parity |
@@ -5894,6 +5968,7 @@ must gain a row in the same patch or the roadmap is incomplete.
 - [milestone-9.17.1.2.md](./milestone-9.17.1.2.md)
 - [milestone-9.17.2.md](./milestone-9.17.2.md)
 - [milestone-9.17.3.md](./milestone-9.17.3.md)
+- [milestone-9.17.4.md](./milestone-9.17.4.md)
 - [milestone-9.18.md](./milestone-9.18.md)
 - [milestone-9.19.md](./milestone-9.19.md)
 - [milestone-9.20.md](./milestone-9.20.md)

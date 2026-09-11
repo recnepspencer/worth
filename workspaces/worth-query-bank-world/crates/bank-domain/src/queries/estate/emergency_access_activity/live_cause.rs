@@ -1,16 +1,19 @@
 use worth_query_decl::facade::application_query::ApplicationQueryLiveCauseBinding;
+use worth_query_decl::facade::worth_query_portable_type;
 
 use crate::{
     estate::{EmergencyAccessId, EstateCaseId},
     schema::{
-        BankSchema, EmergencyAccess, EstateCase, EstateEmergencyAccessActivityEffect,
-        EstateEmergencyAccessActivityEvent,
+        BankSchema, EmergencyAccess, EmergencyAccessIdBinding, EstateCase, EstateCaseIdBinding,
+        EstateEmergencyAccessActivityEffect, EstateEmergencyAccessActivityEvent,
+        EstateEmergencyAccessActivityEventBinding,
     },
 };
 
 use super::EstateEmergencyAccessActivityQuery;
 
 pub struct EstateEmergencyAccessActivityLiveCause;
+worth_query_portable_type!(EstateEmergencyAccessActivityLiveCause => "EstateEmergencyAccessActivityLiveCause");
 
 impl
     ApplicationQueryLiveCauseBinding<
@@ -21,23 +24,23 @@ impl
     > for EstateEmergencyAccessActivityLiveCause
 {
     type Effect = EstateEmergencyAccessActivityEffect;
-    type Payload = EstateEmergencyAccessActivityEvent;
-    type ScopeIdentity = EstateCaseId;
-    type TargetIdentity = EmergencyAccessId;
+    type PayloadBinding = EstateEmergencyAccessActivityEventBinding;
+    type ScopeIdentityBinding = EstateCaseIdBinding;
+    type TargetIdentityBinding = EmergencyAccessIdBinding;
 
     fn effect() -> worth_query_decl::facade::application_schema::ApplicationEffectRef<
         BankSchema,
         Self::Effect,
-        Self::Payload,
+        EstateEmergencyAccessActivityEvent,
     > {
         EstateEmergencyAccessActivityEffect::reference()
     }
 
-    fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity {
+    fn scope_identity(payload: &EstateEmergencyAccessActivityEvent) -> EstateCaseId {
         payload.estate
     }
 
-    fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity {
+    fn target_identity(payload: &EstateEmergencyAccessActivityEvent) -> EmergencyAccessId {
         payload.access
     }
 }

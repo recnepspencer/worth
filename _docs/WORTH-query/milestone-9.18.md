@@ -5,7 +5,8 @@
 Replace Milestone 9.16's provisional linear current-head undo/redo experiment
 with an accepted tree-based correction product over the composite runtime-world
 history governed by [Milestone 9.17](./milestone-9.17.md) and completed through
-[Milestone 9.17.3](./milestone-9.17.3.md). Undo and redo
+[Milestone 9.17.3](./milestone-9.17.3.md), using the application contract hardened
+by [Milestone 9.17.4](./milestone-9.17.4.md). Undo and redo
 select exact committed occurrences and publish newly admitted composite commits
 on an exact product branch. They never erase history, move a hidden stack
 cursor, replay old authority, reinterpret a receipt as permission, or assume
@@ -28,7 +29,17 @@ publication while explicitly withholding product acceptance from its existing
 undo/redo lane. Milestone 9.17.1 supplies exact component bases and Relational
 branch-local MVCC; 9.17.2 supplies the product branch, composite single-parent
 history, and coordinated target-head authority; 9.17.3 supplies complete Query
-carriage and the public branch/history facade this milestone extends.
+carriage and public branch/history authority. Milestone 9.17.4 then supplies
+entry-owned bindings, fresh request execution, installed domain handlers, and
+the retained-history/recovery experience this milestone extends. Correction
+must use that same application entry, not restore caller-owned phase plumbing
+or the provisional API.
+
+9.17.4 retires Bank's provisional undo/redo server commands, HTTP routes,
+user-node actions and experimental-only tests together. Accepted aftermath
+inspection and owner recovery remain available. This milestone must install
+new tree-correction intents and complete Bank transport/user-node journeys;
+it cannot assume a supported linear correction route survived the cutover.
 
 ```text
 exact committed source occurrence

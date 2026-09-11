@@ -1,0 +1,9 @@
+[package]
+name = "worth-query-topology-entry"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+worth-query-consumer-values.workspace = true
+worth-query-decl.workspace = true

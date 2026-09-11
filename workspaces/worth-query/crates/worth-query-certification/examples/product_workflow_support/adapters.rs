@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant, SystemTime};
 
-use worth_query_host::facade::{admission, domain, primary_graph};
+use worth_query_host::facade::{admission, declaration, domain, primary_graph};
 
 use super::contract::TemporalReadyNode;
 use super::schema::{
@@ -50,7 +50,9 @@ impl
             row.identity, row.revision, row.input
         ))
         .map_err(projection_failure)?;
-        Ok(domain::WorthQueryTemporalIntentCandidate::active(
+        domain::WorthQueryTemporalIntentCandidate::active::<
+            declaration::application_schema::StringApplicationValueBinding,
+        >(
             identity,
             row.identity.clone(),
             row.revision,
@@ -58,11 +60,14 @@ impl
             TemporalInput(row.input.clone()),
             input_identity,
             idempotency,
-        ))
+        )
+        .map_err(|denial| projection_failure(format!("{denial:?}")))
     }
 }
 
-fn projection_failure(detail: &'static str) -> domain::WorthQueryTemporalIntentProjectionFailure {
+fn projection_failure(
+    detail: impl Into<String>,
+) -> domain::WorthQueryTemporalIntentProjectionFailure {
     domain::WorthQueryTemporalIntentProjectionFailure::new(
         domain::WorthQueryTemporalIntentProjectionFailureKind::InvalidIdentity,
         detail,

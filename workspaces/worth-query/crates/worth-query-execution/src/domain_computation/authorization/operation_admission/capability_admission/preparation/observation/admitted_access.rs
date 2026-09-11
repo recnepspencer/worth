@@ -261,7 +261,7 @@ where
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     where
         Schema: ApplicationSchema,
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
     {
         operation_progression::validate_capability_operation_authority(
             runtime,

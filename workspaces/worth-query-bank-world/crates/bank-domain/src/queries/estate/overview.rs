@@ -34,11 +34,14 @@ pub const fn estate_case(estate: EstateCaseId) -> EstateCaseOverviewRequest {
     EstateCaseOverviewRequest::new(estate)
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateCaseOverviewQueryParametersBinding for EstateCaseOverviewQueryParameters { identity: "EstateCaseOverviewQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateCaseOverviewQueryResultBinding for EstateCaseOverview { identity: "EstateCaseOverview" });
 worth_query_application_query!(
-    pub EstateCaseOverviewQuery in BankSchema,
-    parameters EstateCaseOverviewQueryParameters,
-    result EstateCaseOverview,
-    scope EstateCase,
+    pub EstateCaseOverviewQuery for BankSchema,
+    identity "EstateCaseOverviewQuery",
+    parameters EstateCaseOverviewQueryParametersBinding,
+    result EstateCaseOverviewQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_case_overview"
 );
 

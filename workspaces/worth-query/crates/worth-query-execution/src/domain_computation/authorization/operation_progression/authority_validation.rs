@@ -125,7 +125,7 @@ pub(super) fn validate_capability_operation<'a, Schema, Capability, Operation, I
 >
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     access.validate_operation_authority(runtime, operation, progression)?;

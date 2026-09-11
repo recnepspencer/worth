@@ -16,11 +16,17 @@ use crate::{
 use super::super::governance::EstateGovernanceQuery;
 
 pub(in crate::queries::estate) struct EstateIdSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateIdSlot => "EstateIdSlot");
 pub(in crate::queries::estate) struct EstateStageSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateStageSlot => "EstateStageSlot");
 pub(in crate::queries::estate) struct BeneficiarySlot;
+worth_query_decl::facade::worth_query_portable_type!(BeneficiarySlot => "BeneficiarySlot");
 pub(in crate::queries::estate) struct AssignmentIdSlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentIdSlot => "AssignmentIdSlot");
 pub(in crate::queries::estate) struct AssignmentRoleSlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentRoleSlot => "AssignmentRoleSlot");
 pub(in crate::queries::estate) struct AssignmentPrincipalSlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentPrincipalSlot => "AssignmentPrincipalSlot");
 
 macro_rules! selector {
     ($name:ident, $slot:ty, $entity:ty, $aspect:ty, $field:ty, $value:ty, $write:ty, $alias:literal) => {

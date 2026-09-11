@@ -56,7 +56,9 @@ pub(super) fn validate_member_identifiers(
                     validate_simple_identifier(unit)?;
                 }
             }
-            ApplicationSchemaMember::Relation { relation, from, to } => {
+            ApplicationSchemaMember::Relation {
+                relation, from, to, ..
+            } => {
                 validate_identifiers([relation, from, to])?;
             }
             ApplicationSchemaMember::PrincipalBinding {

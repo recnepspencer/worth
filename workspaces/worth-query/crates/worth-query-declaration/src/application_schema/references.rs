@@ -1,12 +1,14 @@
 use std::marker::PhantomData;
 
+use super::ApplicationRelationIntegrity;
+
 use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
 
-use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
+use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{
     ApplicationAspectMarkerIdentity, ApplicationEffectMarkerIdentity,
-    ApplicationOperationMarkerIdentity,
+    ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
 };
 
 macro_rules! named_reference {
@@ -64,7 +66,7 @@ named_reference!(ApplicationUnitRef, Schema, Unit);
 
 impl<Schema, Entity, Aspect> ApplicationAspectRef<Schema, Entity, Aspect>
 where
-    Aspect: ApplicationAspectMarkerIdentity<Schema = Schema, Entity = Entity>,
+    Aspect: ApplicationAspectMarkerIdentity<Schema, Entity>,
 {
     pub const fn identity(&self) -> AspectIdentity {
         Aspect::ASPECT_IDENTITY
@@ -130,6 +132,7 @@ pub struct ApplicationRelationRef<Schema, Relation, From, To> {
     name: &'static str,
     from: &'static str,
     to: &'static str,
+    integrity: ApplicationRelationIntegrity,
     _marker: PhantomData<fn() -> (Schema, Relation, From, To)>,
 }
 
@@ -150,13 +153,15 @@ impl<Schema, Relation, From, To> std::fmt::Debug
             .field("name", &self.name)
             .field("from", &self.from)
             .field("to", &self.to)
+            .field("integrity", &self.integrity)
             .finish_non_exhaustive()
     }
 }
 
 impl<Schema, Relation, From, To> PartialEq for ApplicationRelationRef<Schema, Relation, From, To> {
     fn eq(&self, other: &Self) -> bool {
-        (self.name, self.from, self.to) == (other.name, other.from, other.to)
+        (self.name, self.from, self.to, self.integrity)
+            == (other.name, other.from, other.to, other.integrity)
     }
 }
 
@@ -168,11 +173,13 @@ impl<Schema, Relation, From, To> ApplicationRelationRef<Schema, Relation, From, 
         name: &'static str,
         from: &'static str,
         to: &'static str,
+        integrity: ApplicationRelationIntegrity,
     ) -> Self {
         Self {
             name,
             from,
             to,
+            integrity,
             _marker: PhantomData,
         }
     }
@@ -187,6 +194,10 @@ impl<Schema, Relation, From, To> ApplicationRelationRef<Schema, Relation, From, 
 
     pub const fn to(&self) -> &'static str {
         self.to
+    }
+
+    pub const fn integrity(&self) -> ApplicationRelationIntegrity {
+        self.integrity
     }
 }
 
@@ -237,14 +248,14 @@ impl<Schema, Operation, Input> Eq for ApplicationOperationRef<Schema, Operation,
 
 impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
 where
-    Operation: ApplicationOperationMarkerIdentity<Schema = Schema, Input = Input>,
-    Input: WorthQueryPortableType,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
 {
     #[doc(hidden)]
     pub const fn from_declaration() -> Self {
         Self {
             name: Operation::IDENTIFIER,
-            input_identity: Input::PORTABLE_TYPE_NAME,
+            input_identity: Operation::InputBinding::IDENTITY_NAME,
             _membership: ApplicationOperationMembership(PhantomData),
             _marker: PhantomData,
         }
@@ -306,14 +317,14 @@ impl<Schema, Effect, Payload> Eq for ApplicationEffectRef<Schema, Effect, Payloa
 
 impl<Schema, Effect, Payload> ApplicationEffectRef<Schema, Effect, Payload>
 where
-    Effect: ApplicationEffectMarkerIdentity<Schema = Schema, Payload = Payload>,
-    Payload: WorthQueryPortableType,
+    Effect: ApplicationEffectMarkerIdentity<Schema>,
+    Effect::PayloadBinding: ApplicationStructuredValueBinding<Value = Payload>,
 {
     #[doc(hidden)]
     pub const fn from_declaration() -> Self {
         Self {
             name: Effect::IDENTIFIER,
-            payload_identity: Payload::PORTABLE_TYPE_NAME,
+            payload_identity: Effect::PayloadBinding::IDENTITY_NAME,
             _membership: ApplicationEffectMembership(PhantomData),
             _marker: PhantomData,
         }

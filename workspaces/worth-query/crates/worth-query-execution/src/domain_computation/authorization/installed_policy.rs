@@ -197,7 +197,7 @@ impl WorthQueryInstalledAuthorizationRegistry {
         self.capabilities.plan_by_identity(capability_identity)
     }
 
-    pub(in crate::domain_computation) fn elevation_lifecycle_operation<Operation>(
+    pub(in crate::domain_computation) fn elevation_lifecycle_operation<Schema, Operation>(
         &self,
         operation: &str,
         input_type: &str,
@@ -210,10 +210,10 @@ impl WorthQueryInstalledAuthorizationRegistry {
         (),
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
     {
         self.capabilities
-            .elevation_lifecycle_operation::<Operation>(operation, input_type)
+            .elevation_lifecycle_operation::<Schema, Operation>(operation, input_type)
     }
 
     pub(in crate::domain_computation) const fn capability_compilation(

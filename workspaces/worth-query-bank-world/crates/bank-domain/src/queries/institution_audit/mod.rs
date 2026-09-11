@@ -41,11 +41,14 @@ pub const fn institution_audit(institution: InstitutionId) -> InstitutionAuditRe
     InstitutionAuditRequest::new(institution)
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub InstitutionAuditQueryParametersBinding for InstitutionAuditQueryParameters { identity: "InstitutionAuditQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub InstitutionAuditQueryResultBinding for InstitutionAuditView { identity: "InstitutionAuditView" });
 worth_query_application_query!(
-    pub InstitutionAuditQuery in BankSchema,
-    parameters InstitutionAuditQueryParameters,
-    result InstitutionAuditView,
-    scope Institution,
+    pub InstitutionAuditQuery for BankSchema,
+    identity "InstitutionAuditQuery",
+    parameters InstitutionAuditQueryParametersBinding,
+    result InstitutionAuditQueryResultBinding,
+    scope Institution => "Institution",
     name "institution_audit"
 );
 

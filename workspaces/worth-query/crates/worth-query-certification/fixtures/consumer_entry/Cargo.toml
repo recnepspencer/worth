@@ -1,0 +1,21 @@
+[workspace]
+resolver = "2"
+members = [
+    "topology_entry",
+    "parameter_entry",
+    "consumer_root",
+    "hostile_foreign_schema",
+]
+default-members = ["consumer_root"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+worth-query-consumer-values = { path = "../consumer_values" }
+worth-query-topology-entry = { path = "topology_entry" }
+worth-query-parameter-entry = { path = "parameter_entry" }
+worth-query-decl = { path = "../../../worth-query-decl" }
+worth-query-host = { path = "../../../worth-query-host" }

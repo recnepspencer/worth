@@ -57,7 +57,9 @@ pub(super) fn assert_authoritative_value<Entity, Aspect, Field, Value, Write, Un
     >,
     value: Value,
 ) where
-    Value: worth_query_host::facade::declaration::application_schema::TypedApplicationValue,
+    Field: worth_query_host::facade::declaration::application_schema::DeclaredApplicationFieldValue<
+        Value = Value,
+    >,
     Write: worth_query_host::facade::declaration::application_schema::WritePosture,
     Unit: worth_query_host::facade::declaration::application_schema::ApplicationFieldUnit,
 {

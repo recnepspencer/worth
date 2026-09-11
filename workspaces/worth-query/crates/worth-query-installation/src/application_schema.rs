@@ -1,11 +1,17 @@
 mod canonical_identity;
 mod capability;
 mod compilation;
+mod contribution;
 mod denial;
 mod installed;
+mod installed_principal_binding;
 mod native_contract;
 mod principal_binding_match;
+mod value_binding;
 
+pub use contribution::{
+    WorthQueryInstalledApplicationContribution, WorthQueryInstalledApplicationContributionCatalog,
+};
 pub use denial::{
     WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledApplicationSchemaDenialKind,
 };
@@ -14,6 +20,9 @@ pub use native_contract::{
     WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,
     WorthQueryInstalledApplicationSchemaContractCatalog,
     WorthQueryInstalledApplicationSchemaContractCatalogCounters,
+};
+pub use value_binding::{
+    WorthQueryInstalledApplicationValueBinding, WorthQueryInstalledApplicationValueBindingCatalog,
 };
 
 pub(crate) use canonical_identity::derive_installed_schema_identity;
@@ -28,3 +37,4 @@ pub(crate) use native_contract::{
     WorthQueryApplicationSchemaContractCatalogDenial,
     WorthQueryApplicationSchemaContractCatalogDenialKind,
 };
+pub(crate) use value_binding::WorthQueryApplicationValueBindingInstallationDenialKind;

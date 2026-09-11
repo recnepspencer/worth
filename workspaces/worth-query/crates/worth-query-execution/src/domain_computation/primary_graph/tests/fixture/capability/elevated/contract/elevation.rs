@@ -6,23 +6,29 @@ use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityTransitionBinding, ApplicationCapabilityValidityDefinition,
     ApplicationCapabilityValidityTimeline, ApplicationCapabilityValueBinding,
 };
+use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
 
 use super::super::{
     ApproveCapabilityElevationOperation, ApproveElevationCapability, CapabilityElevationApprover,
     CapabilityElevationGrant, CapabilityElevationIdentity, CapabilityElevationNotAfter,
     CapabilityElevationNotBefore, CapabilityElevationReason, CapabilityElevationRequester,
     CapabilityElevationResource, CapabilityElevationReview, CapabilityElevationSlot,
-    CapabilityElevationStatus, CapabilityElevationStatusField, CapabilityReviewIdentity,
-    CapabilityReviewKind, CapabilityReviewKindField, CapabilityReviewResource,
-    CapabilityReviewSlot, CapabilityReviewStatus, CapabilityReviewStatusField, CapabilityReviewer,
-    CompleteCapabilityReviewOperation, CompleteElevationReviewCapability,
+    CapabilityElevationStatus, CapabilityElevationStatusBinding, CapabilityElevationStatusField,
+    CapabilityReviewIdentity, CapabilityReviewKind, CapabilityReviewKindBinding,
+    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewSlot,
+    CapabilityReviewStatus, CapabilityReviewStatusBinding, CapabilityReviewStatusField,
+    CapabilityReviewer, CompleteCapabilityReviewOperation, CompleteElevationReviewCapability,
     RequestCapabilityElevationOperation, RequestElevationCapability,
     RevokeCapabilityElevationOperation, RevokeElevationCapability,
 };
 
 pub(super) fn definition() -> ApplicationCapabilityElevationRule {
     let state = |value| {
-        ApplicationCapabilityValueBinding::new(CapabilityElevationStatusField::reference(), value)
+        ApplicationCapabilityValueBinding::new(
+            CapabilityElevationStatusField::reference(),
+            ApplicationEncodedScalarValue::<CapabilityElevationStatusBinding>::try_new(value)
+                .expect("fixture elevation status must encode"),
+        )
     };
     ApplicationCapabilityElevationRule::governed(
         ApplicationCapabilityElevationDefinition::new(
@@ -93,7 +99,10 @@ pub(super) fn definition() -> ApplicationCapabilityElevationRule {
                 ),
                 ApplicationCapabilityValueBinding::new(
                     CapabilityReviewKindField::reference(),
-                    CapabilityReviewKind::Elevation,
+                    ApplicationEncodedScalarValue::<CapabilityReviewKindBinding>::try_new(
+                        CapabilityReviewKind::Elevation,
+                    )
+                    .expect("fixture review kind must encode"),
                 ),
                 ApplicationCapabilityRelationBinding::from_reference(
                     CapabilityReviewResource::reference(),
@@ -106,11 +115,17 @@ pub(super) fn definition() -> ApplicationCapabilityElevationRule {
                 ),
                 ApplicationCapabilityValueBinding::new(
                     CapabilityReviewStatusField::reference(),
-                    CapabilityReviewStatus::Required,
+                    ApplicationEncodedScalarValue::<CapabilityReviewStatusBinding>::try_new(
+                        CapabilityReviewStatus::Required,
+                    )
+                    .expect("fixture review status must encode"),
                 ),
                 ApplicationCapabilityValueBinding::new(
                     CapabilityReviewStatusField::reference(),
-                    CapabilityReviewStatus::Completed,
+                    ApplicationEncodedScalarValue::<CapabilityReviewStatusBinding>::try_new(
+                        CapabilityReviewStatus::Completed,
+                    )
+                    .expect("fixture review status must encode"),
                 ),
             ),
         )

@@ -4,8 +4,12 @@ use std::cell::Cell;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectValue;
+use worth_query_declaration::facade::application_schema::{
+    I64ApplicationValueBinding, StringApplicationValueBinding, U64ApplicationValueBinding,
+};
 use worth_query_declaration::facade::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
+    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 use worth_query_declaration::{
     worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field,
@@ -29,31 +33,30 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-worth_query_entity!(pub AggregateExternalMapping in AggregateSchema);
-worth_query_entity!(pub AggregatePrincipal in AggregateSchema);
-worth_query_entity!(pub AggregateSource in AggregateSchema);
-worth_query_entity!(pub AggregateTarget in AggregateSchema);
-worth_query_aspect!(pub AggregateExternalIdentity in AggregateSchema, AggregateExternalMapping; identity = AspectIdentity(0x9161102f), revision = AspectContractRevision(1),);
+worth_query_entity!(pub AggregateExternalMapping for AggregateSchema);
+worth_query_entity!(pub AggregatePrincipal for AggregateSchema);
+worth_query_entity!(pub AggregateSource for AggregateSchema);
+worth_query_entity!(pub AggregateTarget for AggregateSchema);
+worth_query_aspect!(pub AggregateExternalIdentity for AggregateSchema, AggregateExternalMapping; identity = AspectIdentity(0x9161102f), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub AggregateExternalIdentityField in AggregateSchema,
+    pub AggregateExternalIdentityField for AggregateSchema,
     AggregateExternalMapping, AggregateExternalIdentity:
-    WorthQueryExternalPrincipalIdentity, read_only, equality
+    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
 );
 worth_query_field!(
-    pub AggregateMappingStatusField in AggregateSchema,
+    pub AggregateMappingStatusField for AggregateSchema,
     AggregateExternalMapping, AggregateExternalIdentity:
-    WorthQueryPrincipalMappingStatus, read_write, equality
+    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
 );
-worth_query_aspect!(pub AggregatePrincipalIdentity in AggregateSchema, AggregatePrincipal; identity = AspectIdentity(0x91611030), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AggregatePrincipalIdentity for AggregateSchema, AggregatePrincipal; identity = AspectIdentity(0x91611030), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub AggregatePrincipalIdentityField in AggregateSchema,
+    pub AggregatePrincipalIdentityField for AggregateSchema,
     AggregatePrincipal, AggregatePrincipalIdentity:
-    u64, read_only, equality
+    u64 => U64ApplicationValueBinding, read_only, equality
 );
 worth_query_relation!(
     pub AggregateMappingTarget in AggregateSchema,
-    AggregateExternalMapping => AggregatePrincipal
-);
+    AggregateExternalMapping => AggregatePrincipal; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(
     pub AggregateIdentityBinding in AggregateSchema,
     mapping AggregateExternalMapping {
@@ -63,24 +66,23 @@ worth_query_principal_binding!(
         principal_identity: AggregatePrincipalIdentityField
     }
 );
-worth_query_aspect!(pub SourceFacts in AggregateSchema, AggregateSource; identity = AspectIdentity(0x91611031), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub TargetFacts in AggregateSchema, AggregateTarget; identity = AspectIdentity(0x91611032), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub SourceFacts for AggregateSchema, AggregateSource; identity = AspectIdentity(0x91611031), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub TargetFacts for AggregateSchema, AggregateTarget; identity = AspectIdentity(0x91611032), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub SourceIdentity in AggregateSchema, AggregateSource, SourceFacts:
-    String, read_only, equality
+    pub SourceIdentity for AggregateSchema, AggregateSource, SourceFacts:
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub SourceAmount in AggregateSchema, AggregateSource, SourceFacts:
-    optional i64, read_write, no_equality
+    pub SourceAmount for AggregateSchema, AggregateSource, SourceFacts:
+    optional i64 => I64ApplicationValueBinding, read_write, no_equality
 );
 worth_query_field!(
-    pub TargetIdentity in AggregateSchema, AggregateTarget, TargetFacts:
-    String, read_only, equality
+    pub TargetIdentity for AggregateSchema, AggregateTarget, TargetFacts:
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_relation!(
     pub AggregateContribution in AggregateSchema,
-    AggregateSource => AggregateTarget
-);
+    AggregateSource => AggregateTarget; integrity = same_context_unbounded_retain_dangling);
 
 worth_query_application_schema! {
     pub schema AggregateSchema {

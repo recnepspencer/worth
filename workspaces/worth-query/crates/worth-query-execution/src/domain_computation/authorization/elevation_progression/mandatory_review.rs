@@ -84,7 +84,7 @@ where
         WorthQueryMandatoryReviewAuthorizationDenial,
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
@@ -116,7 +116,7 @@ fn bind_review<Schema, Capability, Operation, Input>(
 ) -> Result<WorthQueryMandatoryReviewDraft, WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
     Input: 'static,
 {

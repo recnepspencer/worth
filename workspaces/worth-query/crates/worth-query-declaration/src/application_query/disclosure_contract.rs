@@ -7,7 +7,8 @@ use super::{
 };
 use crate::application_capability::ApplicationCapabilityRef;
 use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, OptionalApplicationFieldValue, TypedApplicationValue,
+    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationScalarValueBinding, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
 };
 
 mod influence;
@@ -127,17 +128,17 @@ impl ApplicationQueryDisclosureContract {
         Write,
         Equality,
         Unit,
-        DisclosureValue,
+        DisclosureBinding,
     >(
         mut self,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        disclosure_value: DisclosureValue,
+        disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
         influence: ApplicationQueryInfluenceContract,
     ) -> Self
     where
-        Value: TypedApplicationValue + crate::portable_identity::WorthQueryPortableType,
+        Field: crate::application_schema::DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
-        DisclosureValue: TypedApplicationValue,
+        DisclosureBinding: ApplicationScalarValueBinding,
     {
         let field_key = FieldKey::new(field.field())
             .expect("typed application fields are valid Foundational keys");
@@ -168,7 +169,7 @@ impl ApplicationQueryDisclosureContract {
         Write,
         Equality,
         Unit,
-        DisclosureValue,
+        DisclosureBinding,
     >(
         mut self,
         selector: ApplicationQueryResultFieldRef<
@@ -183,14 +184,14 @@ impl ApplicationQueryDisclosureContract {
             Equality,
             Unit,
         >,
-        disclosure_value: DisclosureValue,
+        disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
         influence: ApplicationQueryInfluenceContract,
     ) -> Self
     where
-        Value: TypedApplicationValue + crate::portable_identity::WorthQueryPortableType,
+        Field: RequiredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
-        DisclosureValue: TypedApplicationValue,
-        Query: super::ApplicationQueryMarkerIdentity + 'static,
+        DisclosureBinding: ApplicationScalarValueBinding,
+        Query: super::ApplicationQueryMarkerIdentity<Schema> + 'static,
         Slot: crate::portable_identity::WorthQueryPortableType + 'static,
     {
         let field = FieldKey::new(selector.field())
@@ -204,7 +205,7 @@ impl ApplicationQueryDisclosureContract {
                 field: selector.field().to_owned(),
                 output_name: selector.output_name().to_owned(),
                 scalar_family: selector.scalar_family(),
-                value_type: Value::PORTABLE_TYPE_IDENTITY,
+                value_type: Field::Binding::IDENTITY,
                 presence: crate::application_schema::ApplicationFieldPresence::Required,
                 projection_mask: AspectMask::new([CanonicalFieldPath::single(field.clone())]),
                 diagnostic_mask: AspectMask::new([CanonicalFieldPath::single(field)]),
@@ -228,7 +229,7 @@ impl ApplicationQueryDisclosureContract {
         Write,
         Equality,
         Unit,
-        DisclosureValue,
+        DisclosureBinding,
     >(
         mut self,
         selector: ApplicationQueryOptionalResultFieldRef<
@@ -243,15 +244,14 @@ impl ApplicationQueryDisclosureContract {
             Equality,
             Unit,
         >,
-        disclosure_value: DisclosureValue,
+        disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
         influence: ApplicationQueryInfluenceContract,
     ) -> Self
     where
         Field: OptionalApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationValue + crate::portable_identity::WorthQueryPortableType,
         Unit: ApplicationFieldUnit,
-        DisclosureValue: TypedApplicationValue,
-        Query: super::ApplicationQueryMarkerIdentity + 'static,
+        DisclosureBinding: ApplicationScalarValueBinding,
+        Query: super::ApplicationQueryMarkerIdentity<Schema> + 'static,
         Slot: crate::portable_identity::WorthQueryPortableType + 'static,
     {
         let field = FieldKey::new(selector.field())
@@ -265,7 +265,7 @@ impl ApplicationQueryDisclosureContract {
                 field: selector.field().to_owned(),
                 output_name: selector.output_name().to_owned(),
                 scalar_family: selector.scalar_family(),
-                value_type: Value::PORTABLE_TYPE_IDENTITY,
+                value_type: Field::Binding::IDENTITY,
                 presence: crate::application_schema::ApplicationFieldPresence::Optional,
                 projection_mask: AspectMask::new([CanonicalFieldPath::single(field.clone())]),
                 diagnostic_mask: AspectMask::new([CanonicalFieldPath::single(field)]),
@@ -287,7 +287,7 @@ impl ApplicationQueryDisclosureContract {
         To,
         Direction,
         Cardinality,
-        DisclosureValue,
+        DisclosureBinding,
     >(
         mut self,
         selector: ApplicationQueryResultRelationRef<
@@ -300,14 +300,14 @@ impl ApplicationQueryDisclosureContract {
             Direction,
             Cardinality,
         >,
-        disclosure_value: DisclosureValue,
+        disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
         influence: ApplicationQueryInfluenceContract,
     ) -> Self
     where
         Direction: ApplicationQueryResultTraversal,
         Cardinality: ApplicationQueryResultRelationCardinality,
-        DisclosureValue: TypedApplicationValue,
-        Query: super::ApplicationQueryMarkerIdentity + 'static,
+        DisclosureBinding: ApplicationScalarValueBinding,
+        Query: super::ApplicationQueryMarkerIdentity<Schema> + 'static,
         Slot: crate::portable_identity::WorthQueryPortableType + 'static,
     {
         self.rules.push(ApplicationQueryDisclosureRule {

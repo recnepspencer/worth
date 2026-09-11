@@ -5,23 +5,38 @@ use crate::application_capability::{
 };
 use crate::application_schema::{
     ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationOperationMarkerIdentity,
-    ApplicationOperationProgramTarget, OperationEmits, WorthQueryPortableApplicationSchemaRecord,
+    ApplicationOperationProgramTarget, ApplicationRetainedEffectBinding, OperationEmits,
+    WorthQueryPortableApplicationSchemaRecord,
 };
 
 pub(crate) struct ActivityEffect;
 struct RejectingInput;
 worth_query_portable_type!(RejectingInput => "worth.query.test.rejecting-input");
+crate::worth_query_structured_value_binding!(
+    pub(crate) ActivityPayloadBinding for String {
+        identity: "worth.rust.string"
+    }
+);
+crate::worth_query_structured_value_binding!(
+    RejectingInputBinding for RejectingInput {
+        identity: "worth.query.test.rejecting-input"
+    }
+);
 struct RejectingRequestOperation;
 
-impl ApplicationEffectMarkerIdentity for ActivityEffect {
-    type Schema = Schema;
-    type Payload = String;
+impl ApplicationRetainedEffectBinding for ActivityPayloadBinding {
+    fn retained_bytes(value: &Self::Value) -> u64 {
+        std::mem::size_of::<String>() as u64 + value.capacity() as u64
+    }
+}
+
+impl ApplicationEffectMarkerIdentity<Schema> for ActivityEffect {
+    type PayloadBinding = ActivityPayloadBinding;
     const IDENTIFIER: &'static str = "ActivityEffect";
 }
 
-impl ApplicationOperationMarkerIdentity for RejectingRequestOperation {
-    type Schema = Schema;
-    type Input = RejectingInput;
+impl ApplicationOperationMarkerIdentity<Schema> for RejectingRequestOperation {
+    type InputBinding = RejectingInputBinding;
     const IDENTIFIER: &'static str = "RejectingRequest";
 }
 
@@ -42,26 +57,26 @@ impl OperationEmits<RejectingRequestOperation> for ActivityEffect {}
 
 impl ApplicationCapabilityLifecycleEffect<Schema, RequestOperation> for () {
     type Effect = ActivityEffect;
-    type Payload = String;
+    type PayloadBinding = ActivityPayloadBinding;
 
-    fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Self::Payload> {
+    fn effect() -> ApplicationEffectRef<Schema, Self::Effect, String> {
         ApplicationEffectRef::from_declaration()
     }
 
-    fn lifecycle_effect(&self) -> Option<Self::Payload> {
+    fn lifecycle_effect(&self) -> Option<String> {
         Some("estate:access".to_owned())
     }
 }
 
 impl ApplicationCapabilityLifecycleEffect<Schema, RejectingRequestOperation> for RejectingInput {
     type Effect = ActivityEffect;
-    type Payload = String;
+    type PayloadBinding = ActivityPayloadBinding;
 
-    fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Self::Payload> {
+    fn effect() -> ApplicationEffectRef<Schema, Self::Effect, String> {
         ApplicationEffectRef::from_declaration()
     }
 
-    fn lifecycle_effect(&self) -> Option<Self::Payload> {
+    fn lifecycle_effect(&self) -> Option<String> {
         None
     }
 }
@@ -176,6 +191,7 @@ fn portable_schema_carriage_strips_the_live_lifecycle_recipe() {
                     ResourceRelationPosture::Governed,
                 ),
             }],
+            contributions: Vec::new(),
         },
     );
     let binding = record

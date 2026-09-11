@@ -38,13 +38,14 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         )
         .unwrap();
     let request = request_scope();
+    let selected = fixture.runtime.select_current_product().unwrap();
 
     let wrong_purpose = EstateAction::ViewRestrictedEstate {
         estate: ESTATE,
         field: RestrictedBankField::CustomerIdentity,
         purpose: EstateCapabilityPurpose::LegalCompliance,
     };
-    let wrong_purpose_denial = application
+    let wrong_purpose_denial = selected
         .admit_capability_access(principal.query(), &capability, wrong_purpose, &request)
         .err()
         .expect("the wrong purpose must deny");
@@ -63,7 +64,7 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         purpose: EstateCapabilityPurpose::EstateAdministration,
     };
     assert_eq!(
-        application
+        selected
             .admit_capability_access(principal.query(), &capability, wrong_field, &request)
             .err()
             .expect("the wrong field must deny")
@@ -76,7 +77,7 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         purpose: EstateCapabilityPurpose::EstateAdministration,
     };
     assert_eq!(
-        application
+        selected
             .admit_capability_access(principal.query(), &capability, missing_resource, &request)
             .err()
             .expect("the missing resource must deny")
@@ -84,7 +85,7 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected
     );
     assert_eq!(
-        application
+        selected
             .admit_capability_access(
                 principal.query(),
                 &capability,
@@ -123,13 +124,14 @@ fn separation_of_duty_is_anchored_to_the_exact_action_authority() {
             RecognizeEstateExecutorOperation::reference(),
         )
         .unwrap();
+    let selected = fixture.runtime.select_current_product().unwrap();
 
     let self_recognition = EstateAction::RecognizeExecutor {
         estate: ESTATE,
         executor: EXECUTOR,
         authority: AUTHORITY,
     };
-    let self_recognition_denial = application
+    let self_recognition_denial = selected
         .admit_capability_access(
             principal.query(),
             &capability,
@@ -153,7 +155,7 @@ fn separation_of_duty_is_anchored_to_the_exact_action_authority() {
         executor: EXECUTOR,
         authority: OTHER_AUTHORITY,
     };
-    application
+    selected
         .admit_capability_access(
             principal.query(),
             &capability,
@@ -187,7 +189,8 @@ fn installed_capability_authority_is_runtime_affine() {
     let principal = target.authenticate();
     let denial = target
         .runtime
-        .application_runtime()
+        .select_current_product()
+        .unwrap()
         .admit_capability_access(
             principal.query(),
             &capability,
@@ -218,12 +221,13 @@ fn assert_wrong_account_denied() {
             FreezeEstateAccountOperation::reference(),
         )
         .unwrap();
+    let selected = fixture.runtime.select_current_product().unwrap();
     let action = EstateAction::FreezeAccount {
         estate: ESTATE,
         account: OTHER_ACCOUNT,
     };
     assert_eq!(
-        application
+        selected
             .admit_capability_access(principal.query(), &capability, action, &request_scope())
             .err()
             .expect("the wrong related account must deny")
@@ -247,6 +251,7 @@ fn assert_amount_over_ceiling_denied() {
             DisburseEstateOperation::reference(),
         )
         .unwrap();
+    let selected = fixture.runtime.select_current_product().unwrap();
     let amount = Money::<USD>::from_minor(1_001).unwrap();
     let action = EstateAction::DisburseEstate(EstateDisbursement {
         estate: ESTATE,
@@ -266,7 +271,7 @@ fn assert_amount_over_ceiling_denied() {
         ],
     });
     assert_eq!(
-        application
+        selected
             .admit_capability_access(principal.query(), &capability, action, &request_scope())
             .err()
             .expect("an amount over the grant ceiling must deny")

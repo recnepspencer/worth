@@ -13,6 +13,8 @@ use super::{
     IdentityExecutionSchema,
 };
 
+worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
+
 pub struct ForgedActivitySlot;
 pub struct ForgedSequenceSlot;
 worth_query_declaration::worth_query_portable_type!(ForgedActivitySlot => "worth.query.test.execution.forged_selector.activity_slot.v1");
@@ -22,11 +24,14 @@ worth_query_declaration::worth_query_portable_type!(ForgedSequenceSlot => "worth
 pub struct ForgedSelectorResult;
 worth_query_declaration::worth_query_portable_type!(ForgedSelectorResult => "worth.query.test.execution.forged_selector.result.v1");
 
+worth_query_declaration::worth_query_structured_value_binding!(pub ForgedSelectorQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub ForgedSelectorQueryResultBinding for ForgedSelectorResult { identity: "worth.query.test.execution.forged_selector.result.v1" });
 worth_query_application_query!(
-    pub ForgedSelectorQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result ForgedSelectorResult,
-    scope Account,
+    pub ForgedSelectorQuery for IdentityExecutionSchema,
+    identity "ForgedSelectorQuery",
+    parameters ForgedSelectorQueryParametersBinding,
+    result ForgedSelectorQueryResultBinding,
+    scope Account => "Account",
     name "forged_selector"
 );
 
@@ -62,11 +67,18 @@ pub(super) fn forged_selector_definition() -> ApplicationQueryDefinition<
         ForgedSelectorQuery,
         Activity,
         (),
+        NestedUnitResultBinding,
     >::new(Activity::reference())
     .field(declared_sequence());
-    let shape = ApplicationQueryResultShapeBuilder::new(Account::reference())
-        .relation(activity(), nested)
-        .build();
+    let shape = ApplicationQueryResultShapeBuilder::<
+        IdentityExecutionSchema,
+        ForgedSelectorQuery,
+        Account,
+        ForgedSelectorResult,
+        ForgedSelectorQueryResultBinding,
+    >::new(Account::reference())
+    .relation(activity(), nested)
+    .build();
     ApplicationQueryDefinitionBuilder::declare(ForgedSelectorQuery::reference())
         .root(Account::reference())
         .scope(Account::reference())

@@ -2,9 +2,7 @@ use std::collections::VecDeque;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_query_declaration::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationEffectRef,
-};
+use worth_query_declaration::facade::application_schema::ApplicationEffectRef;
 use worth_runtime_bridge::facade::BridgeManagedQueueOccupancy;
 
 use super::{
@@ -69,7 +67,7 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
         &Payload,
     )>
     where
-        Payload: ApplicationEffectPayload,
+        Payload: 'static,
     {
         let cause = self.pending.front()?;
         let batch = cause.batch.batch();
@@ -113,10 +111,7 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
     }
 }
 
-impl<Payload> WorthQueryLiveCauseQueue<Payload>
-where
-    Payload: ApplicationEffectPayload,
-{
+impl<Payload: 'static> WorthQueryLiveCauseQueue<Payload> {
     pub(in crate::domain_computation::primary_graph) fn fill<Schema, Effect>(
         &mut self,
         source: &WorthQueryLiveDeliverySource,

@@ -220,7 +220,8 @@ fn real_approved_elevation_cannot_enter_the_bank_disbursement_operation() {
 
     let denial = fixture
         .runtime
-        .application_runtime()
+        .select_current_product()
+        .unwrap()
         .admit_approved_elevation_access(
             approved.query(),
             requester.query(),

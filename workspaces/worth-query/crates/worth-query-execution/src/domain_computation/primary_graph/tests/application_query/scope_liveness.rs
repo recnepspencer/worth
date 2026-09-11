@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding,
+};
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
     WorkerIntentBatch,
@@ -44,7 +46,9 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .err()
@@ -78,7 +82,7 @@ fn change_account_status(
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         locator,
-        new_status.to_string().into_foundational_value(),
+        StringApplicationValueBinding::encode(&new_status.to_string()).unwrap(),
     )]));
     super::super::fixture::publish_relational_mutation(
         world,

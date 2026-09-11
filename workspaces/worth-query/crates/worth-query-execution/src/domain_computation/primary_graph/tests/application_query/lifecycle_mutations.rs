@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 
-use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::authentication::{
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
+};
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::{
     AspectFieldPatch, DeleteRelationIntent, EntityMutationIntent, MutationIntent,
@@ -23,7 +25,10 @@ pub(super) fn disable_mapping(world: &AuthorizationWorld, mapping_id: EntityId) 
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         layout.status_locator,
-        WorthQueryPrincipalMappingStatus::Disabled.into_foundational_value(),
+        WorthQueryPrincipalMappingStatusBinding::encode(
+            &WorthQueryPrincipalMappingStatus::Disabled,
+        )
+        .unwrap(),
     )]));
     super::super::fixture::publish_relational_mutation(
         world,

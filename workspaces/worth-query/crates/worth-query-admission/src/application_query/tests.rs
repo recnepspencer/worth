@@ -87,21 +87,20 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub Account in PlanningTestSchema);
-worth_query_entity!(pub Activity in PlanningTestSchema);
-worth_query_aspect!(pub AccountFacts in PlanningTestSchema, Account; identity = AspectIdentity(0x91611019), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ActivityFacts in PlanningTestSchema, Activity; identity = AspectIdentity(0x9161101a), revision = AspectContractRevision(1),);
+worth_query_entity!(pub Account for PlanningTestSchema);
+worth_query_entity!(pub Activity for PlanningTestSchema);
+worth_query_aspect!(pub AccountFacts for PlanningTestSchema, Account; identity = AspectIdentity(0x91611019), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub ActivityFacts for PlanningTestSchema, Activity; identity = AspectIdentity(0x9161101a), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub AccountId in PlanningTestSchema, Account, AccountFacts:
-    u64, read_only, equality
+    pub AccountId for PlanningTestSchema, Account, AccountFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub Sequence in PlanningTestSchema, Activity, ActivityFacts:
-    u64, read_only, equality
+    pub Sequence for PlanningTestSchema, Activity, ActivityFacts:
+    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
 );
 worth_query_relation!(
-    pub AccountActivity in PlanningTestSchema, Account => Activity
-);
+    pub AccountActivity in PlanningTestSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
 
 struct ActivityParameters;
 struct ActivityResult;
@@ -110,16 +109,33 @@ struct AccountIdSlot;
 struct SequenceSlot;
 struct ActivitySlot;
 
+worth_query_declaration::worth_query_structured_value_binding!(
+    ActivityParametersBinding for ActivityParameters {
+        identity: "worth.query.test.admission.activity-parameters.v1"
+    }
+);
+worth_query_declaration::worth_query_structured_value_binding!(
+    ActivityResultBinding for ActivityResult {
+        identity: "worth.query.test.admission.activity-result.v1"
+    }
+);
+worth_query_declaration::worth_query_structured_value_binding!(
+    ActivityNestedResultBinding for () {
+        identity: "worth.query.test.admission.activity-nested-result.v1"
+    }
+);
+
 worth_query_portable_type!(ActivityResult => "worth.query.test.admission.activity-result.v1");
 worth_query_portable_type!(AccountIdSlot => "worth.query.test.admission.account-id-slot.v1");
 worth_query_portable_type!(SequenceSlot => "worth.query.test.admission.sequence-slot.v1");
 worth_query_portable_type!(ActivitySlot => "worth.query.test.admission.activity-slot.v1");
 
 worth_query_application_query!(
-    ActivityQuery in PlanningTestSchema,
-    parameters ActivityParameters,
-    result ActivityResult,
-    scope Account,
+    ActivityQuery for PlanningTestSchema,
+    identity "worth.query.test.admission.activity-query.v1",
+    parameters ActivityParametersBinding,
+    result ActivityResultBinding,
+    scope Account => "Account",
     name "account_activity"
 );
 
@@ -133,7 +149,11 @@ fn query_reference() -> ApplicationQueryReference<
     ActivityQuery::reference()
 }
 
-fn account_parameter() -> ApplicationQueryParameterRef<ActivityQuery, AccountParameter, u64> {
+fn account_parameter() -> ApplicationQueryParameterRef<
+    ActivityQuery,
+    AccountParameter,
+    worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
+> {
     ApplicationQueryParameterRef::from_query_identifier("account")
 }
 
@@ -142,7 +162,9 @@ fn traversal_alone_adds_proof_support_and_wide_result_pressure() {
     let query = installed_query();
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let without_traversal = admitted_requirements(
@@ -171,12 +193,16 @@ fn parameter_values_change_selectivity_identity_without_changing_requirement_row
     let query = installed_query();
     let left = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let right = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 8_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 8_u64)
+            .unwrap(),
     )
     .unwrap();
     let left_requirements = admitted_requirements(
@@ -209,17 +235,23 @@ fn parameter_binding_identity_is_canonical_and_value_sensitive() {
     let query = installed_query();
     let left = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let equivalent = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let changed = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 8_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 8_u64)
+            .unwrap(),
     )
     .unwrap();
 
@@ -232,7 +264,9 @@ fn alternate_source_digest_does_not_split_one_installed_contract() {
     let query = installed_query();
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let application = admitted_requirements(
@@ -299,16 +333,20 @@ fn query_definition(
         ForwardResultTraversal,
         ManyResults,
     >::forward_many("activity", AccountActivity::reference());
-    let nested =
-        ApplicationQueryResultShapeBuilder::<PlanningTestSchema, ActivityQuery, Activity, ()>::new(
-            Activity::reference(),
-        )
-        .field(sequence);
+    let nested = ApplicationQueryResultShapeBuilder::<
+        PlanningTestSchema,
+        ActivityQuery,
+        Activity,
+        (),
+        ActivityNestedResultBinding,
+    >::new(Activity::reference())
+    .field(sequence);
     let shape = ApplicationQueryResultShapeBuilder::<
         PlanningTestSchema,
         ActivityQuery,
         Account,
         ActivityResult,
+        ActivityResultBinding,
     >::new(Account::reference())
     .field(account_id)
     .relation(activity_relation, nested)

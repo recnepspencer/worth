@@ -62,7 +62,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
-        tag @ 1..=5 => schema::decode(tag, input),
+        tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input),
         tag @ 6..=10 => capability::decode(tag, input, budget),
         tag @ 11..=18 => operation::decode(tag, input, budget),
         tag @ 19..=22 => authorization::decode(tag, input, budget),
@@ -71,11 +71,18 @@ pub(super) fn decode(
     }
 }
 
-pub(super) const fn member_tag(member: &ApplicationSchemaMember) -> u16 {
+pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
         ApplicationSchemaMember::Entity { .. } => 1,
         ApplicationSchemaMember::Aspect { .. } => 2,
+        ApplicationSchemaMember::Field { frame: Some(_), .. } => 25,
         ApplicationSchemaMember::Field { .. } => 3,
+        ApplicationSchemaMember::Relation { integrity, .. }
+            if *integrity
+                != worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling() =>
+        {
+            26
+        }
         ApplicationSchemaMember::Relation { .. } => 4,
         ApplicationSchemaMember::PrincipalBinding { .. } => 5,
         ApplicationSchemaMember::ApplicationQuery { .. } => 6,

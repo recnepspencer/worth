@@ -60,6 +60,7 @@ impl<
         PrincipalMapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         ScopeAspect,
         ScopeField,
         ScopeValue,
@@ -112,6 +113,7 @@ impl<
             PrincipalMapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
             Scope,
             ScopeAspect,
             ScopeField,
@@ -168,11 +170,17 @@ where
     PrincipalBinding: 'static,
     PrincipalMapping: 'static,
     Principal: 'static,
-    PrincipalIdentity: worth_query_installation::facade::TypedApplicationIdentityValue + 'static,
+    PrincipalIdentity: 'static,
+    PrincipalIdentityBinding:
+        worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+                Value = PrincipalIdentity,
+            > + 'static,
     ScopeAspect: 'static,
-    ScopeField: 'static,
-    ScopeValue:
-        worth_query_installation::facade::TypedApplicationValue + Clone + Send + Sync + 'static,
+    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>
+        + 'static,
+    ScopeField::Binding:
+        worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
+    ScopeValue: Clone + Send + Sync + 'static,
     ScopeWrite: worth_query_installation::facade::WritePosture + 'static,
     ScopeUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
     PrincipalSource: super::reconstruction_authority::WorthQueryTemporalPrincipalSource<Schema>,
@@ -193,32 +201,37 @@ where
     >,
     IntentEntity: 'static,
     IdentityAspect: 'static,
-    IdentityField: worth_query_installation::facade::OperationReads<ApplicationOperation> + 'static,
-    IdentityValue:
-        worth_query_installation::facade::TypedApplicationReadableValue + Clone + Send + 'static,
+    IdentityField: worth_query_installation::facade::OperationReads<ApplicationOperation>
+        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>
+        + 'static,
+    IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+        Value = IdentityValue,
+    >,
+    IdentityValue: Clone + Send + 'static,
     IdentityWrite: worth_query_installation::facade::WritePosture + 'static,
     IdentityUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
     RevisionAspect: 'static,
     RevisionField: worth_query_installation::facade::OperationReads<ApplicationOperation>
         + worth_query_installation::facade::OperationWrites<ApplicationOperation>
+        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = RevisionValue>
         + 'static,
-    RevisionValue: worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue
-        + worth_query_installation::facade::TypedApplicationReadableValue
-        + Clone
-        + Send
-        + 'static,
+    RevisionField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+            Value = RevisionValue,
+        > + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+    RevisionValue: Clone + Send + 'static,
     RevisionWrite: worth_query_installation::facade::WritableCapability + 'static,
     RevisionEquality: 'static,
     RevisionUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
     LifecycleAspect: 'static,
     LifecycleField: worth_query_installation::facade::OperationReads<ApplicationOperation>
         + worth_query_installation::facade::OperationWrites<ApplicationOperation>
+        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = LifecycleValue>
         + 'static,
-    LifecycleValue: worth_query_installation::facade::TypedApplicationReadableValue
-        + Clone
-        + Send
-        + Sync
-        + 'static,
+    LifecycleField::Binding:
+        worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+            Value = LifecycleValue,
+        >,
+    LifecycleValue: Clone + Send + Sync + 'static,
     LifecycleWrite: worth_query_installation::facade::WritableCapability + 'static,
     LifecycleEquality: 'static,
     LifecycleUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,

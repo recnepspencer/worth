@@ -17,12 +17,14 @@ pub(super) fn emergency_access_activity_shape() -> TypedApplicationQueryResultSh
     EstateEmergencyAccessActivityQuery,
     EstateCase,
     EstateEmergencyAccessActivity,
+    super::EstateEmergencyAccessActivityQueryResultBinding,
 > {
     let review = ApplicationQueryResultShapeBuilder::<
         BankSchema,
         EstateEmergencyAccessActivityQuery,
         MandatoryReview,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(MandatoryReview::reference())
     .field(review_id())
     .field(review_status());
@@ -31,6 +33,7 @@ pub(super) fn emergency_access_activity_shape() -> TypedApplicationQueryResultSh
         EstateEmergencyAccessActivityQuery,
         EmergencyAccess,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(EmergencyAccess::reference())
     .field(access_id())
     .field(access_reason())

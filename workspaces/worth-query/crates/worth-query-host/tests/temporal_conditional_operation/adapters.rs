@@ -69,8 +69,10 @@ impl
         .map_err(projection_failure)?;
         let due = domain::WorthQueryClockCoordinate::from_nanoseconds(row.due);
         let input = TemporalInput(row.input.clone());
-        Ok(match row.lifecycle.as_str() {
-            "active" => domain::WorthQueryTemporalIntentCandidate::active(
+        match row.lifecycle.as_str() {
+            "active" => domain::WorthQueryTemporalIntentCandidate::active::<
+                worth_query_host::facade::declaration::application_schema::StringApplicationValueBinding,
+            >(
                 identity,
                 row.identity.clone(),
                 row.revision,
@@ -79,7 +81,9 @@ impl
                 input_identity,
                 idempotency,
             ),
-            "cancelled" => domain::WorthQueryTemporalIntentCandidate::cancelled(
+            "cancelled" => domain::WorthQueryTemporalIntentCandidate::cancelled::<
+                worth_query_host::facade::declaration::application_schema::StringApplicationValueBinding,
+            >(
                 identity,
                 row.identity.clone(),
                 row.revision,
@@ -88,7 +92,9 @@ impl
                 input_identity,
                 idempotency,
             ),
-            _ => domain::WorthQueryTemporalIntentCandidate::completed(
+            _ => domain::WorthQueryTemporalIntentCandidate::completed::<
+                worth_query_host::facade::declaration::application_schema::StringApplicationValueBinding,
+            >(
                 identity,
                 row.identity.clone(),
                 row.revision,
@@ -97,7 +103,8 @@ impl
                 input_identity,
                 idempotency,
             ),
-        })
+        }
+        .map_err(|_| projection_failure("intent record identity must encode"))
     }
 }
 

@@ -29,7 +29,6 @@ use bank_server::{mutations, queries, BankMutationControls, BankMutationStatus, 
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls;
 use worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedApplicationCommitKind;
 use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationCommitAttemptReleasePosture;
 
@@ -278,7 +277,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
             key("cancelled"),
         ))
         .execute();
-    assert_eq!(cancelled.status(), &BankMutationStatus::Cancelled);
+    assert!(matches!(cancelled.status(), BankMutationStatus::Cancelled));
     assert_eq!(cancelled.metadata().projection_work(), None);
 
     let deadline = WorthQueryCancellationSource::new();
@@ -292,7 +291,10 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
             key("expired"),
         ))
         .execute();
-    assert_eq!(expired.status(), &BankMutationStatus::DeadlineExceeded);
+    assert!(matches!(
+        expired.status(),
+        BankMutationStatus::DeadlineExceeded
+    ));
 
     let denied = execute!(
         fixture,
@@ -367,11 +369,7 @@ fn account_activity(
         .runtime
         .account_activity(account)
         .as_principal(principal)
-        .execute(WorthQueryApplicationQueryControls::current_one_shot(
-            std::num::NonZeroUsize::new(128).unwrap(),
-            std::num::NonZeroUsize::new(8_192).unwrap(),
-            &request,
-        ))
+        .execute(BankReadControls::current(request, 128, 8_192).unwrap())
         .expect("account activity must be readable")
         .rows()[0]
         .entries()

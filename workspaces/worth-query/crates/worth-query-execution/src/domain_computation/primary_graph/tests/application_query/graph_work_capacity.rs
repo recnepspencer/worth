@@ -44,7 +44,9 @@ fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
         world.selected_product().admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_owned()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_owned())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
     };

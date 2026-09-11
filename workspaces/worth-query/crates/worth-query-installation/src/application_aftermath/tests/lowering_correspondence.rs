@@ -145,16 +145,17 @@ fn install_exact<Entity, Aspect, Field>(
 ) -> super::super::WorthQueryInstalledAftermathContract
 where
     Entity: worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity<
-        Schema = FixtureSchema,
+        FixtureSchema,
     >,
     Aspect: worth_query_declaration::facade::application_schema::ApplicationAspectMarkerIdentity<
-        Schema = FixtureSchema,
-        Entity = Entity,
+        FixtureSchema,
+        Entity,
     >,
     Field: worth_query_declaration::facade::application_schema::ApplicationFieldMarkerIdentity<
-        Schema = FixtureSchema,
-        Entity = Entity,
-        Aspect = Aspect,
+        FixtureSchema,
+        Entity,
+        Aspect,
+        Value = u64,
     >,
 {
     AftermathInstall::new(owner.clone(), "freeze-account")

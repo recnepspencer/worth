@@ -3,11 +3,12 @@ use bank_domain::{
     model::EmployeeRole,
     schema::{
         ApproveEstateEmergencyAccessCapability, ApproveEstateEmergencyAccessOperation,
-        CompleteEstateMandatoryReviewCapability, CompleteEstateMandatoryReviewOperation,
+        CapabilityGrantStatusBinding, CompleteEstateMandatoryReviewCapability,
+        CompleteEstateMandatoryReviewOperation, EmployeeRoleBinding,
         RecognizeEstateExecutorCapability, RecognizeEstateExecutorOperation,
         ReleaseEstateCapability, ReleaseEstateOperation, RequestEstateEmergencyAccessCapability,
-        RequestEstateEmergencyAccessOperation, ViewEstateAdministrationCapability,
-        ViewRestrictedEstateOperation,
+        RequestEstateEmergencyAccessOperation, RestrictedBankFieldBinding,
+        ViewEstateAdministrationCapability, ViewRestrictedEstateOperation,
     },
 };
 use worth_query_host::facade::{
@@ -15,7 +16,7 @@ use worth_query_host::facade::{
         application_capability::{
             ApplicationCapabilityDisclosureRule, ApplicationCapabilityGraphRule,
         },
-        application_schema::TypedApplicationValue,
+        application_schema::ApplicationScalarValueBinding,
     },
     domain::WorthQueryInstallationRuntimeIdentity,
 };
@@ -293,7 +294,7 @@ fn estate_contract_installs_exact_grant_currentness_meaning() {
     );
     assert_eq!(
         currentness.active_status().value(),
-        &CapabilityGrantStatus::Active.into_foundational_value()
+        &CapabilityGrantStatusBinding::encode(&CapabilityGrantStatus::Active).unwrap()
     );
     assert_eq!(
         currentness.validity().timeline(),
@@ -364,7 +365,7 @@ fn expected_values(
 ) -> Vec<worth_foundational::facade::AspectValue> {
     let mut values = fields
         .into_iter()
-        .map(TypedApplicationValue::into_foundational_value)
+        .map(|field| RestrictedBankFieldBinding::encode(&field).unwrap())
         .collect::<Vec<_>>();
     values.sort();
     values
@@ -375,7 +376,7 @@ fn expected_roles(
 ) -> Vec<worth_foundational::facade::AspectValue> {
     let mut values = roles
         .into_iter()
-        .map(TypedApplicationValue::into_foundational_value)
+        .map(|role| EmployeeRoleBinding::encode(&role).unwrap())
         .collect::<Vec<_>>();
     values.sort();
     values

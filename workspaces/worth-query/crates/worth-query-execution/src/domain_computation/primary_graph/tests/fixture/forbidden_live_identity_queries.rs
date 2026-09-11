@@ -8,14 +8,21 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
     ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, ApplicationScalarValueBinding,
+    ApplicationStructuredValueBinding, StringApplicationValueBinding,
+};
 use worth_query_declaration::worth_query_application_query;
 
 use super::application_queries::AccountSummaryParameters;
-use super::live_account_query::{LiveActivityEffect, LiveActivityEvent};
+use super::live_account_query::{LiveActivityEffect, LiveActivityEvent, LiveActivityEventBinding};
 use super::{
     Account, AccountAllActivity, AccountIdentity, AccountPolicy, Activity, ActivityFacts,
-    ActivityIdentity, CapabilityDisclosure, IdentityExecutionSchema, TouchAccountCapability,
+    ActivityIdentity, CapabilityDisclosure, CapabilityDisclosureBinding, IdentityExecutionSchema,
+    TouchAccountCapability,
 };
+
+worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 pub struct AccountIdentityParameter;
 pub struct AccountIdentitySlot;
@@ -30,19 +37,25 @@ worth_query_declaration::worth_query_portable_type!(ActivityIdentitySlot => "wor
 pub struct ForbiddenLiveIdentityResult;
 worth_query_declaration::worth_query_portable_type!(ForbiddenLiveIdentityResult => "worth.query.test.execution.forbidden_live.result.v1");
 
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenLiveScopeIdentityQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenLiveScopeIdentityQueryResultBinding for ForbiddenLiveIdentityResult { identity: "worth.query.test.execution.forbidden_live.result.v1" });
 worth_query_application_query!(
-    pub ForbiddenLiveScopeIdentityQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result ForbiddenLiveIdentityResult,
-    scope Account,
+    pub ForbiddenLiveScopeIdentityQuery for IdentityExecutionSchema,
+    identity "ForbiddenLiveScopeIdentityQuery",
+    parameters ForbiddenLiveScopeIdentityQueryParametersBinding,
+    result ForbiddenLiveScopeIdentityQueryResultBinding,
+    scope Account => "Account",
     name "forbidden_live_scope_identity"
 );
 
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenLiveTargetIdentityQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenLiveTargetIdentityQueryResultBinding for ForbiddenLiveIdentityResult { identity: "worth.query.test.execution.forbidden_live.result.v1" });
 worth_query_application_query!(
-    pub ForbiddenLiveTargetIdentityQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result ForbiddenLiveIdentityResult,
-    scope Account,
+    pub ForbiddenLiveTargetIdentityQuery for IdentityExecutionSchema,
+    identity "ForbiddenLiveTargetIdentityQuery",
+    parameters ForbiddenLiveTargetIdentityQueryParametersBinding,
+    result ForbiddenLiveTargetIdentityQueryResultBinding,
+    scope Account => "Account",
     name "forbidden_live_target_identity"
 );
 
@@ -75,13 +88,19 @@ pub(super) fn forbidden_live_target_identity_definition() -> ApplicationQueryDef
 }
 
 pub(in crate::domain_computation::primary_graph) fn forbidden_live_identity_parameters<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        IdentityExecutionSchema,
+    >,
 >() -> ApplicationQueryParameterSet<Query> {
-    ApplicationQueryParameterSet::new().bind(account_parameter::<Query>(), "account-1".to_owned())
+    ApplicationQueryParameterSet::new()
+        .bind(account_parameter::<Query>(), "account-1".to_owned())
+        .expect("fixture account identity must encode")
 }
 
 fn definition<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity + 'static,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+            IdentityExecutionSchema,
+        > + 'static,
     Cause,
 >(
     reference: worth_query_declaration::facade::application_query::ApplicationQueryReference<
@@ -101,25 +120,30 @@ fn definition<
     Account,
 >
 where
+    Query::ResultBinding: ApplicationStructuredValueBinding<Value = ForbiddenLiveIdentityResult>,
     Cause: ApplicationQueryLiveCauseBinding<
         IdentityExecutionSchema,
         Query,
         Account,
         Activity,
-        ScopeIdentity = String,
-        TargetIdentity = String,
+        ScopeIdentityBinding = StringApplicationValueBinding,
+        TargetIdentityBinding = StringApplicationValueBinding,
     >,
 {
-    let activity =
-        ApplicationQueryResultShapeBuilder::<IdentityExecutionSchema, Query, Activity, ()>::new(
-            Activity::reference(),
-        )
-        .field(activity_identity::<Query>());
+    let activity = ApplicationQueryResultShapeBuilder::<
+        IdentityExecutionSchema,
+        Query,
+        Activity,
+        (),
+        NestedUnitResultBinding,
+    >::new(Activity::reference())
+    .field(activity_identity::<Query>());
     let shape = ApplicationQueryResultShapeBuilder::<
         IdentityExecutionSchema,
         Query,
         Account,
         ForbiddenLiveIdentityResult,
+        Query::ResultBinding,
     >::new(Account::reference())
     .field(account_identity::<Query>())
     .relation(activities::<Query>(), activity)
@@ -130,27 +154,27 @@ where
     )
     .use_field_by(
         AccountIdentity::reference(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         scope_influence,
     )
     .use_field_by(
         ActivityIdentity::reference(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         target_influence,
     )
     .disclose_field_by(
         account_identity::<Query>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     )
     .disclose_relation_by(
         activities::<Query>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     )
     .disclose_field_by(
         activity_identity::<Query>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     );
     ApplicationQueryDefinitionBuilder::declare(reference)
@@ -201,23 +225,27 @@ macro_rules! live_cause {
             for $cause
         {
             type Effect = LiveActivityEffect;
-            type Payload = LiveActivityEvent;
-            type ScopeIdentity = String;
-            type TargetIdentity = String;
+            type PayloadBinding = LiveActivityEventBinding;
+            type ScopeIdentityBinding = StringApplicationValueBinding;
+            type TargetIdentityBinding = StringApplicationValueBinding;
 
             fn effect() -> worth_query_declaration::facade::application_schema::ApplicationEffectRef<
                 IdentityExecutionSchema,
                 Self::Effect,
-                Self::Payload,
+                LiveActivityEvent,
             > {
                 LiveActivityEffect::reference()
             }
 
-            fn scope_identity(payload: &Self::Payload) -> Self::ScopeIdentity {
+            fn scope_identity(
+                payload: &LiveActivityEvent,
+            ) -> <Self::ScopeIdentityBinding as ApplicationScalarValueBinding>::Value {
                 payload.account().to_owned()
             }
 
-            fn target_identity(payload: &Self::Payload) -> Self::TargetIdentity {
+            fn target_identity(
+                payload: &LiveActivityEvent,
+            ) -> <Self::TargetIdentityBinding as ApplicationScalarValueBinding>::Value {
                 payload.activity().to_owned()
             }
         }
@@ -234,13 +262,18 @@ live_cause!(
 );
 
 fn account_parameter<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
->() -> ApplicationQueryParameterRef<Query, AccountIdentityParameter, String> {
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        IdentityExecutionSchema,
+    >,
+>() -> ApplicationQueryParameterRef<Query, AccountIdentityParameter, StringApplicationValueBinding>
+{
     ApplicationQueryParameterRef::from_query_identifier("account")
 }
 
 fn account_identity<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        IdentityExecutionSchema,
+    >,
 >() -> ApplicationQueryResultFieldRef<
     Query,
     AccountIdentitySlot,
@@ -257,7 +290,9 @@ fn account_identity<
 }
 
 fn activity_identity<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        IdentityExecutionSchema,
+    >,
 >() -> ApplicationQueryResultFieldRef<
     Query,
     ActivityIdentitySlot,
@@ -274,7 +309,9 @@ fn activity_identity<
 }
 
 fn activities<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        IdentityExecutionSchema,
+    >,
 >() -> ApplicationQueryResultRelationRef<
     Query,
     ActivitiesSlot,
@@ -286,4 +323,10 @@ fn activities<
     ManyResults,
 > {
     ApplicationQueryResultRelationRef::forward_many("activities", AccountAllActivity::reference())
+}
+
+fn encoded_disclosure(
+    value: CapabilityDisclosure,
+) -> ApplicationEncodedScalarValue<CapabilityDisclosureBinding> {
+    ApplicationEncodedScalarValue::try_new(value).expect("fixture disclosure must encode")
 }

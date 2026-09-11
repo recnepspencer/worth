@@ -4,7 +4,8 @@ mod declaration;
 mod operations;
 
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationRef, ApplicationSchema,
+    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
+    ApplicationStructuredValueBinding,
 };
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
@@ -21,11 +22,8 @@ use declaration::{
 
 fn op<Operation>() -> ApplicationOperationRef<AftermathFixtureSchema, Operation, FixtureInput>
 where
-    Operation:
-        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
-                Schema = AftermathFixtureSchema,
-                Input = FixtureInput,
-            > + 'static,
+    Operation: ApplicationOperationMarkerIdentity<AftermathFixtureSchema> + 'static,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = FixtureInput>,
 {
     ApplicationOperationRef::from_declaration()
 }
@@ -57,12 +55,8 @@ fn installed_schema(
 
 fn aftermath_of<Operation>() -> WorthQueryInstalledAftermathContract
 where
-    Operation:
-        'static
-            + worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
-                Schema = AftermathFixtureSchema,
-                Input = FixtureInput,
-            >,
+    Operation: ApplicationOperationMarkerIdentity<AftermathFixtureSchema> + 'static,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = FixtureInput>,
 {
     installed_schema()
         .installed_operation(op::<Operation>())

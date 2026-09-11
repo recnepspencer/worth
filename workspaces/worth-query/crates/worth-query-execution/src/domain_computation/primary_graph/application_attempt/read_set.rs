@@ -3,8 +3,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
-    OperationReads, TypedApplicationValue, WorthQueryOperationGraphReadScope, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
+    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
+    WorthQueryOperationGraphReadScope, WritePosture,
 };
 
 use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
@@ -240,11 +241,16 @@ impl<Schema, Operation, Input, Scope, Phase>
         WorthQueryApplicationAttemptDenial,
     >
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let value = Field::Binding::encode(&value).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue,
+                field.field(),
+            )
+        })?;
         let resolved = self
             .lease
             .handle()
@@ -256,12 +262,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                         WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .and_then(|truth| {
-                        truth.resolve(
-                            field.entity(),
-                            field.aspect(),
-                            field.field(),
-                            value.into_foundational_value(),
-                        )
+                        truth.resolve(field.entity(), field.aspect(), field.field(), value)
                     })
             })
             .map_err(|_| {

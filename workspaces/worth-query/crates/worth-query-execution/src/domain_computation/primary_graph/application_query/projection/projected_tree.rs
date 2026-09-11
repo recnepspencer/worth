@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, OptionalApplicationFieldValue, TypedApplicationValue,
+    ApplicationFieldUnit, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
     WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphRelation,
 };
 use worth_relational::facade::identity::EntityId;
@@ -183,9 +183,9 @@ impl WorthQueryApplicationProjectedField {
         >,
     ) -> bool
     where
-        Value: TypedApplicationValue + WorthQueryPortableType,
+        Field: RequiredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.slot_key.as_ref() == &selector.slot_key()
@@ -219,9 +219,8 @@ impl WorthQueryApplicationProjectedField {
     ) -> bool
     where
         Field: OptionalApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationValue + WorthQueryPortableType,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.slot_key.as_ref() == &selector.slot_key()
@@ -291,7 +290,7 @@ impl WorthQueryApplicationProjectedRelation {
     where
         Direction: ApplicationQueryResultTraversal,
         Cardinality: ApplicationQueryResultRelationCardinality,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.slot_key.as_ref() == &selector.slot_key() && self.cardinality == selector.cardinality()

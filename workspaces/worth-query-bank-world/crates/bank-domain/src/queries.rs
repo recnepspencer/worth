@@ -10,6 +10,8 @@ mod payment_detail;
 mod payment_summary_projection;
 mod pending_payments;
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub(crate) UnitQueryResultBinding for () { identity: "worth.rust.unit" });
+
 pub use account_activity::{
     account_activity_definition, AccountActivityLiveCause, AccountActivityQuery,
     AccountActivityQueryParameters, AccountActivityQueryResult,

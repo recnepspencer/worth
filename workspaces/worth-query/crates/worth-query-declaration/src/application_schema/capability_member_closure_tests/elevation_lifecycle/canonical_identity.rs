@@ -71,5 +71,6 @@ fn schema_identity(contract: ErasedApplicationCapabilityContract) -> Application
             minor: 0,
         },
         &[ApplicationSchemaMember::ApplicationCapability { contract }],
+        &[],
     )
 }

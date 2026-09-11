@@ -7,18 +7,21 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
     TypedApplicationQueryResultShape,
 };
+use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
 use worth_query_declaration::worth_query_application_query;
 
 use super::application_queries::AccountSummaryParameters;
 use super::{
     Account, AccountAllActivity, AccountLabel, AccountNote, AccountPolicy, AccountStatus, Activity,
     ActivityFacts, ActivityIdentity, ActivitySequence, CapabilityDisclosure,
-    IdentityExecutionSchema, TouchAccountCapability,
+    CapabilityDisclosureBinding, IdentityExecutionSchema, TouchAccountCapability,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDisclosed, WorthQueryApplicationProjection,
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
 };
+
+worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 pub struct StatusSlot;
 pub struct LabelSlot;
@@ -60,11 +63,14 @@ impl GovernedAccountOmissionResult {
     }
 }
 
+worth_query_declaration::worth_query_structured_value_binding!(pub GovernedAccountOmissionQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub GovernedAccountOmissionQueryResultBinding for GovernedAccountOmissionResult { identity: "worth.query.test.execution.governed_omission.result.v1" });
 worth_query_application_query!(
-    pub GovernedAccountOmissionQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result GovernedAccountOmissionResult,
-    scope Account,
+    pub GovernedAccountOmissionQuery for IdentityExecutionSchema,
+    identity "GovernedAccountOmissionQuery",
+    parameters GovernedAccountOmissionQueryParametersBinding,
+    result GovernedAccountOmissionQueryResultBinding,
+    scope Account => "Account",
     name "governed_account_omission"
 );
 
@@ -100,12 +106,14 @@ fn governed_account_shape() -> TypedApplicationQueryResultShape<
     GovernedAccountOmissionQuery,
     Account,
     GovernedAccountOmissionResult,
+    GovernedAccountOmissionQueryResultBinding,
 > {
     let activity = ApplicationQueryResultShapeBuilder::<
         IdentityExecutionSchema,
         GovernedAccountOmissionQuery,
         Activity,
         (),
+        NestedUnitResultBinding,
     >::new(Activity::reference())
     .field(activity_identity())
     .field(activity_sequence());
@@ -114,6 +122,7 @@ fn governed_account_shape() -> TypedApplicationQueryResultShape<
         GovernedAccountOmissionQuery,
         Account,
         GovernedAccountOmissionResult,
+        GovernedAccountOmissionQueryResultBinding,
     >::new(Account::reference())
     .field(status())
     .field(label())
@@ -129,32 +138,32 @@ fn governed_account_disclosure() -> ApplicationQueryDisclosureContract {
     )
     .disclose_field_by(
         status(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
     .disclose_field_by(
         label(),
-        CapabilityDisclosure::PrivateLabel,
+        encoded_disclosure(CapabilityDisclosure::PrivateLabel),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
     .disclose_optional_field_by(
         note(),
-        CapabilityDisclosure::PrivateLabel,
+        encoded_disclosure(CapabilityDisclosure::PrivateLabel),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
     .disclose_relation_by(
         activities(),
-        CapabilityDisclosure::PrivateLabel,
+        encoded_disclosure(CapabilityDisclosure::PrivateLabel),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
     .disclose_field_by(
         activity_identity(),
-        CapabilityDisclosure::PrivateLabel,
+        encoded_disclosure(CapabilityDisclosure::PrivateLabel),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
     .disclose_field_by(
         activity_sequence(),
-        CapabilityDisclosure::PrivateLabel,
+        encoded_disclosure(CapabilityDisclosure::PrivateLabel),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
 }
@@ -272,4 +281,10 @@ fn activities() -> ApplicationQueryResultRelationRef<
     ManyResults,
 > {
     ApplicationQueryResultRelationRef::forward_many("activities", AccountAllActivity::reference())
+}
+
+fn encoded_disclosure(
+    value: CapabilityDisclosure,
+) -> ApplicationEncodedScalarValue<CapabilityDisclosureBinding> {
+    ApplicationEncodedScalarValue::try_new(value).expect("fixture disclosure must encode")
 }

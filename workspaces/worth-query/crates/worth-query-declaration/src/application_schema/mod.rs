@@ -14,12 +14,13 @@ mod canonical_operation_identity;
 mod capabilities;
 mod capability_identifier_validation;
 mod capability_member_closure;
+mod contribution;
 mod decision_read_authoring;
 mod declaration;
 mod declaration_denial;
 mod effect_authoring;
+mod effect_binding;
 mod effect_marker_identity;
-mod effect_payload;
 mod external_effect_correlation_family;
 mod external_effect_protocol;
 mod field_presence;
@@ -43,8 +44,10 @@ mod principal_binding_reference;
 mod query_member_closure;
 mod read_authoring;
 mod references;
+mod relation_integrity;
 mod schema_identity;
 mod schema_member;
+mod value_binding;
 mod values;
 
 #[cfg(test)]
@@ -60,13 +63,19 @@ mod external_effect_closure_tests;
 #[cfg(test)]
 mod field_presence_tests;
 #[cfg(test)]
+mod generic_marker_affinity_tests;
+#[cfg(test)]
 mod operation_contract_cardinality_tests;
 #[cfg(test)]
 mod portable_member_identity_tests;
 #[cfg(test)]
 mod preimage_canonical_identity_tests;
 #[cfg(test)]
+mod relation_integrity_tests;
+#[cfg(test)]
 mod stable_aspect_identity_tests;
+#[cfg(test)]
+mod value_binding_tests;
 
 pub use aspect_contract_identity::ApplicationAspectMarkerIdentity;
 pub use authoring_context::{
@@ -93,14 +102,20 @@ pub use capabilities::{
     OperationExpectsVersion, OperationLinks, OperationReads, OperationRequiresAbility,
     OperationUnlinks, OperationWrites, ReadOnly, ReadWrite, WritableCapability, WritePosture,
 };
+pub use contribution::{
+    ApplicationSchemaContribution, ApplicationSchemaContributionAuthoring,
+    ApplicationSchemaContributionDenial, ApplicationSchemaContributionIdentity,
+    ApplicationSchemaContributionMembership, ApplicationSchemaContributionProvenance,
+    ApplicationSchemaContributionRef,
+};
 pub use declaration::{
     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
     ErasedApplicationSchemaDeclaration,
 };
 pub use declaration_denial::ApplicationSchemaDeclarationDenial;
 pub use effect_authoring::{TypedEffectIntent, TypedEffectIntentBuilder};
+pub use effect_binding::{ApplicationExternalEffectBinding, ApplicationRetainedEffectBinding};
 pub use effect_marker_identity::ApplicationEffectMarkerIdentity;
-pub use effect_payload::{ApplicationEffectPayload, ApplicationExternalEffectPayload};
 pub use external_effect_correlation_family::WorthQueryExternalEffectCorrelationFamily;
 pub use external_effect_protocol::ApplicationExternalEffectProtocol;
 pub use field_presence::ApplicationFieldPresence;
@@ -142,14 +157,32 @@ pub use references::{
     ApplicationAbilityRef, ApplicationAspectRef, ApplicationEffectRef, ApplicationEntityRef,
     ApplicationOperationRef, ApplicationPolicyRef, ApplicationRelationRef, ApplicationUnitRef,
 };
+pub use relation_integrity::{
+    ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
+    ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
+};
 pub use schema_identity::ApplicationSchemaIdentity;
 pub use schema_member::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
     ApplicationSchemaMember,
 };
+pub use value_binding::{
+    ApplicationEncodedScalarValue, ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe,
+    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationSignedAggregateValueBinding, ApplicationStructuredValueBinding,
+    ApplicationUnitIdentity, ApplicationValueDecodeAvailable, ApplicationValueDecodeDenial,
+    ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable, ApplicationValueEncodeDenial,
+    ApplicationValueIdentityPosture, ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregatePosture,
+    ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial,
+    BoolApplicationValueBinding, ErasedApplicationSignedAggregateDecode,
+    ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
+    I64ApplicationValueBinding, InternedStringApplicationValueBinding,
+    StringApplicationValueBinding, U64ApplicationValueBinding,
+};
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
-    TypedApplicationIdentityValue, TypedApplicationReadableValue,
-    TypedApplicationSignedAggregateValue, TypedApplicationValue, TypedUnitApplicationValue,
 };
+pub use worth_foundational::facade::AspectValue as ApplicationValue;
 pub use worth_foundational::facade::{AspectContractRevision, AspectIdentity};

@@ -16,16 +16,7 @@ use super::relations::{
 };
 use super::BankSchema;
 
-pub(super) fn install_operation_program(
-    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
-) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
-    let schema = install_account_creation_program(schema);
-    let schema = install_money_programs(schema);
-    let schema = install_payment_program(schema);
-    install_authorization_program(schema)
-}
-
-fn install_account_creation_program(
+pub(super) fn install_account_creation_program(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
@@ -95,7 +86,7 @@ fn install_account_creation_program(
         )
 }
 
-fn install_money_programs(
+pub(super) fn install_money_programs(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
@@ -129,7 +120,7 @@ fn install_money_programs(
         )
 }
 
-fn install_payment_program(
+pub(super) fn install_payment_program(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
@@ -199,7 +190,7 @@ fn install_payment_program(
         )
 }
 
-fn install_authorization_program(
+pub(super) fn install_authorization_program(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema

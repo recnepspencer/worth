@@ -1,6 +1,7 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationExternalEffectPayload, ApplicationExternalEffectProtocol,
+    ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
+    ApplicationRetainedEffectBinding,
 };
 use worth_query_installation::facade::InstalledExternalEffectContract;
 
@@ -18,18 +19,19 @@ worth_query_declaration::worth_query_portable_type!(
     ExternalPayload => "worth.query.test.external-payload.v1"
 );
 
-impl ApplicationEffectPayload for ExternalPayload {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>() + self.0.capacity()).unwrap_or(u64::MAX)
+worth_query_declaration::worth_query_structured_value_binding!(ExternalPayloadBinding for ExternalPayload { identity: "worth.query.test.external-payload.v1" });
+impl ApplicationRetainedEffectBinding for ExternalPayloadBinding {
+    fn retained_bytes(value: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<Self::Value>() + value.0.capacity()).unwrap_or(u64::MAX)
     }
 }
 
-impl ApplicationExternalEffectPayload for ExternalPayload {
+impl ApplicationExternalEffectBinding for ExternalPayloadBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = EXTERNAL_PROTOCOL;
     const MAX_EXTERNAL_BYTES: u64 = 8;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
-        self.0.clone()
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
+        value.0.clone()
     }
 }
 
@@ -45,10 +47,9 @@ fn exact_installed_external_emission_yields_its_projected_bytes() {
 
 #[test]
 fn ordinary_emission_cannot_satisfy_an_external_contract() {
-    let batch = admitted(vec![WorthQueryApplicationEmission::new(
-        EFFECT,
-        ExternalPayload(b"notice".to_vec()),
-    )]);
+    let batch = admitted(vec![WorthQueryApplicationEmission::new::<
+        ExternalPayloadBinding,
+    >(EFFECT, ExternalPayload(b"notice".to_vec()))]);
 
     assert_eq!(
         batch.external_payload(&contract(EFFECT)),
@@ -101,13 +102,16 @@ fn contract(effect: &str) -> InstalledExternalEffectContract {
         effect: effect.to_owned(),
         rust_payload_type: <ExternalPayload as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY,
         protocol: EXTERNAL_PROTOCOL,
-        maximum_payload_bytes: ExternalPayload::MAX_EXTERNAL_BYTES,
+        maximum_payload_bytes: ExternalPayloadBinding::MAX_EXTERNAL_BYTES,
     }
 }
 
 fn external(effect: &'static str, bytes: &[u8]) -> WorthQueryApplicationEmission {
-    WorthQueryApplicationEmission::new_external(effect, ExternalPayload(bytes.to_vec()))
-        .expect("fixture projection stays within its declared bound")
+    WorthQueryApplicationEmission::new_external::<ExternalPayloadBinding>(
+        effect,
+        ExternalPayload(bytes.to_vec()),
+    )
+    .expect("fixture projection stays within its declared bound")
 }
 
 fn admitted(

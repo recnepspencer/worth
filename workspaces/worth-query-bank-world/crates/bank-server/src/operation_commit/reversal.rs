@@ -7,7 +7,6 @@ use crate::{BankAuthorizedProposal, BankIdentityRuntime};
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
 };
-use worth_query_host::facade::provisional_aftermath::WorthQueryUndoProgressionHandoff;
 
 type ReverseJournalEffectProgram = WorthQueryApplicationEffectProgram<
     BankSchema,
@@ -31,17 +30,6 @@ impl BankIdentityRuntime {
             .application_runtime()
             .compare_and_commit_application(program, idempotency)
             .into())
-    }
-
-    pub(crate) fn commit_materialized_reverse_journal_as_undo(
-        &self,
-        program: ReverseJournalEffectProgram,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        handoff: &WorthQueryUndoProgressionHandoff,
-    ) -> BankMutationCommitOutcome {
-        self.application_runtime()
-            .compare_and_commit_undo_application(program, idempotency, handoff)
-            .into()
     }
 
     pub(crate) fn materialize_reverse_journal(

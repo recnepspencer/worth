@@ -182,16 +182,22 @@ pub(super) fn prepare_capability_admission<
 >
 where
     Schema: ApplicationSchema,
-    Operation: 'static,
-    Input: ApplicationCapabilityRequest<Schema, Capability>
-        + worth_query_declaration::facade::portable_identity::WorthQueryPortableType
-        + 'static,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+    <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+    Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
     preflight::validate_static_authority(runtime, principal, capability)?;
     let installed = preflight::admit_installed_plan(runtime, capability, approved)?;
+    let operation = preflight::resolve_installed_operation(runtime, capability)?;
+    preflight::validate_input::<Schema, Operation, Input>(&input, &operation)?;
     let projection = preflight::project_request(&input, installed, capability, approved)?;
     let sample = preflight::sample_trusted_time(runtime, capability, installed)?;
-    let operation = preflight::resolve_installed_operation(runtime, capability)?;
     let operation_admission_identity = preflight::mint_operation_admission(capability)?;
     let graph_work = preflight::start_graph_work(
         runtime,

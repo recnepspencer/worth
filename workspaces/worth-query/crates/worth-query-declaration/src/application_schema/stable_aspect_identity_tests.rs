@@ -4,6 +4,7 @@ use worth_foundational::facade::{
 };
 
 use super::{ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember};
+use std::any::TypeId;
 
 crate::worth_query_application_schema! {
     schema StableAspectSchema {
@@ -18,14 +19,15 @@ crate::worth_query_application_schema! {
     }
 }
 
-crate::worth_query_entity!(Account in StableAspectSchema);
+crate::worth_query_entity!(Account for StableAspectSchema);
 crate::worth_query_aspect!(
-    AccountFacts in StableAspectSchema, Account;
+    AccountFacts for StableAspectSchema, Account;
     identity = AspectIdentity(0x9161_1f01),
     revision = AspectContractRevision(2),
 );
 crate::worth_query_field!(
-    Balance in StableAspectSchema, Account, AccountFacts: u64, read_only, equality
+    Balance for StableAspectSchema, Account, AccountFacts:
+    u64 => super::U64ApplicationValueBinding, read_only, equality
 );
 
 #[test]
@@ -52,12 +54,16 @@ fn authored_identity_and_revision_survive_reference_and_erasure() {
 }
 
 #[test]
-fn canonical_schema_v11_encodes_identity_then_revision_as_u64() {
+fn canonical_schema_v11_identity_is_frozen_for_legacy_equivalent_meaning() {
     let declaration = StableAspectSchema::declaration().unwrap();
     let sequence = declaration.identity().canonical_basis().payload();
     assert_eq!(
         sequence.version().as_str(),
         "worth-query-application-schema-v11"
+    );
+    assert_eq!(
+        canonical_entries_golden(sequence.entries()),
+        "header.major=u32:1\nheader.minor=u32:0\nheader.name=text:StableAspectSchema\nheader.owner=text:worth.test\nmember-count=u64:3\nmember[0].entity=text:Account\nmember[0].kind=text:entity\nmember[1].aspect=text:AccountFacts\nmember[1].entity=text:Account\nmember[1].identity=u64:2439061249\nmember[1].kind=text:aspect\nmember[1].revision=u64:2\nmember[2].aspect=text:AccountFacts\nmember[2].entity=text:Account\nmember[2].equality-queryable=bool:true\nmember[2].field=text:Balance\nmember[2].kind=text:field\nmember[2].presence=text:required\nmember[2].scalar-family=text:uint64\nmember[2].unit=null\nmember[2].value-type=text:worth.rust.u64\nmember[2].writable=bool:false"
     );
     let entries = sequence.entries();
     let identity = canonical_entry(entries, ".identity");
@@ -96,6 +102,34 @@ fn aspect_member_order_is_canonical() {
     assert_eq!(first.identity(), reordered.identity());
 }
 
+#[test]
+fn field_declaration_retains_the_exact_compiler_local_binding_recipe() {
+    let declaration = StableAspectSchema::declaration().unwrap();
+    let recipe = declaration
+        .member_provenance()
+        .field_bindings()
+        .first()
+        .expect("the field binding recipe is retained");
+
+    assert_eq!(recipe.locus().entity(), "Account");
+    assert_eq!(recipe.locus().aspect(), "AccountFacts");
+    assert_eq!(recipe.locus().field(), "Balance");
+    assert_eq!(recipe.binding_identity().as_str(), "worth.rust.u64");
+    assert_eq!(
+        recipe.binding_type(),
+        TypeId::of::<super::U64ApplicationValueBinding>()
+    );
+    assert_eq!(recipe.value_type(), TypeId::of::<u64>());
+    assert!(recipe.decode().is_some());
+    assert!(recipe.identity_capable());
+    assert!(recipe.signed_aggregate_decode().is_none());
+    assert_eq!(
+        (recipe.encode())(&42_u64).unwrap(),
+        super::ApplicationValue::UInt64(42)
+    );
+    assert!((recipe.validate())(&"wrong value type").is_err());
+}
+
 fn canonical_entry<'a>(
     entries: &'a [worth_foundational::facade::CanonicalBasisEntry],
     suffix: &str,
@@ -110,4 +144,33 @@ fn canonical_entry<'a>(
             _ => None,
         })
         .expect("the aspect canonical component is retained")
+}
+
+fn canonical_entries_golden(entries: &[worth_foundational::facade::CanonicalBasisEntry]) -> String {
+    entries
+        .iter()
+        .map(|entry| {
+            let CanonicalBasisLocus::Named(InternedString::Raw(locus)) = entry.locus() else {
+                panic!("schema identity golden requires named raw loci")
+            };
+            let value = match entry.value() {
+                CanonicalBasisValue::ExactText(InternedString::Raw(value)) => {
+                    format!("text:{value}")
+                }
+                CanonicalBasisValue::UnsignedInteger {
+                    width: CanonicalIntegerWidth::Bits32,
+                    value,
+                } => format!("u32:{value}"),
+                CanonicalBasisValue::UnsignedInteger {
+                    width: CanonicalIntegerWidth::Bits64,
+                    value,
+                } => format!("u64:{value}"),
+                CanonicalBasisValue::Bool(value) => format!("bool:{value}"),
+                CanonicalBasisValue::Null => "null".to_owned(),
+                value => panic!("unexpected schema identity golden value: {value:?}"),
+            };
+            format!("{locus}={value}")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }

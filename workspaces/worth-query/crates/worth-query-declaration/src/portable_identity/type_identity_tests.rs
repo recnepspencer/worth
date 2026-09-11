@@ -55,6 +55,7 @@ fn reconstructed_identity_reenters_through_fresh_schema_validation() {
                     1
                 )),
             }],
+            contributions: Vec::new(),
         },
     );
 

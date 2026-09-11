@@ -2,16 +2,16 @@ use bank_domain::{
     estate::{EmergencyAccessId, MandatoryReviewId},
     schema::{
         ApproveEstateEmergencyAccessOperation, BankSchema, CompleteEstateMandatoryReviewOperation,
-        EmergencyAccess, EmergencyAccessExpiresAtField, EmergencyAccessIdentityField,
-        EmergencyAccessIssuedAtField, EmergencyAccessReasonField, EmergencyAccessStatusField,
-        EmergencyApprover, EmergencyEstate, EmergencyGrant, EmergencyRequester, EmergencyReview,
-        EstateCase, MandatoryReview, MandatoryReviewIdentityField, MandatoryReviewKindField,
-        MandatoryReviewStatusField, ReviewEstate, ReviewPrincipal,
-        RevokeEstateEmergencyAccessOperation,
+        EmergencyAccess, EmergencyAccessExpiresAtField, EmergencyAccessIdBinding,
+        EmergencyAccessIdentityField, EmergencyAccessIssuedAtField, EmergencyAccessReasonField,
+        EmergencyAccessStatusField, EmergencyApprover, EmergencyEstate, EmergencyGrant,
+        EmergencyRequester, EmergencyReview, EstateCase, MandatoryReview, MandatoryReviewIdBinding,
+        MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField,
+        ReviewEstate, ReviewPrincipal, RevokeEstateEmergencyAccessOperation,
     },
 };
 use worth_query_host::facade::{
-    declaration::application_schema::{OperationReads, TypedApplicationReadableValue},
+    declaration::application_schema::{ApplicationReadableScalarValueBinding, OperationReads},
     primary_graph::{
         WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
         WorthQueryRequestedElevation,
@@ -27,12 +27,10 @@ type EstateIdentity = WorthQueryInvariantEntityIdentity<BankSchema, EstateCase>;
 pub(super) fn approval_lifecycle_identities(
     requested: &WorthQueryRequestedElevation,
 ) -> Result<(EmergencyAccessId, MandatoryReviewId), BankEstateLifecycleProjectionDenial> {
-    let access = EmergencyAccessId::from_foundational_value(requested.elevation_identity()).ok_or(
-        BankEstateLifecycleProjectionDenial::ReceiptIdentity("emergency access"),
-    )?;
-    let review = MandatoryReviewId::from_foundational_value(requested.review_identity()).ok_or(
-        BankEstateLifecycleProjectionDenial::ReceiptIdentity("mandatory review"),
-    )?;
+    let access = EmergencyAccessIdBinding::decode(requested.elevation_identity())
+        .map_err(|_| BankEstateLifecycleProjectionDenial::ReceiptIdentity("emergency access"))?;
+    let review = MandatoryReviewIdBinding::decode(requested.review_identity())
+        .map_err(|_| BankEstateLifecycleProjectionDenial::ReceiptIdentity("mandatory review"))?;
     Ok((access, review))
 }
 

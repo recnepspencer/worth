@@ -15,9 +15,13 @@ use crate::schema::{
 use super::customer_disclosure::EstateCustomerDisclosureQuery;
 
 pub(super) struct CustomerRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(CustomerRelationSlot => "CustomerRelationSlot");
 pub(super) struct CustomerIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(CustomerIdentitySlot => "CustomerIdentitySlot");
 pub(super) struct BeneficiariesRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(BeneficiariesRelationSlot => "BeneficiariesRelationSlot");
 pub(super) struct BeneficiaryIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(BeneficiaryIdentitySlot => "BeneficiaryIdentitySlot");
 
 pub(super) fn estate_customer() -> ApplicationQueryResultRelationRef<
     EstateCustomerDisclosureQuery,

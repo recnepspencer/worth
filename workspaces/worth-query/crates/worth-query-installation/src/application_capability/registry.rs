@@ -143,15 +143,17 @@ mod tests {
 
     struct Schema;
     struct Operation;
+    worth_query_declaration::worth_query_structured_value_binding!(
+        OperationInputBinding for () { identity: "worth.rust.unit" }
+    );
 
     worth_query_declaration::worth_query_capability!(
         Capability in Schema,
         identity "worth.query.test.capability.v1"
     );
 
-    impl ApplicationOperationMarkerIdentity for Operation {
-        type Schema = Schema;
-        type Input = ();
+    impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+        type InputBinding = OperationInputBinding;
         const IDENTIFIER: &'static str = "RetainedOperation";
     }
 

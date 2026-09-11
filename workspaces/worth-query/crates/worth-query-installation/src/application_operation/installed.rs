@@ -13,9 +13,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity,
+    ApplicationOperationMarkerIdentity, ApplicationSchema, ApplicationSchemaBindingIdentity,
+    ApplicationStructuredValueBinding,
 };
-use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 
 use super::contract_resolution::ability_requirements;
 use super::installed_contract_support::{
@@ -135,8 +135,9 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     ) -> Result<Self, WorthQueryApplicationOperationInstallationDenial>
     where
         Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: WorthQueryPortableType + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
     {
         let declaration =
             resolve_operation_declaration::<Schema, Operation, Input>(schema, operation)?;
@@ -157,8 +158,9 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     >
     where
         Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: WorthQueryPortableType + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
     {
         let declaration = resolve_operation_declaration::<Schema, Operation, Input>(
             schema,
@@ -198,7 +200,9 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     ) -> Result<Self, WorthQueryApplicationOperationInstallationDenial>
     where
         Schema: ApplicationSchema,
-        Input: WorthQueryPortableType,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
     {
         let operation = declaration.operation();
         let input_type = declaration.input_type();

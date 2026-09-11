@@ -33,7 +33,9 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
         world.selected_product().admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), status.to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), status.to_string())
+                .expect("fixture query parameter must encode"),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(maximum_results).unwrap(),
                 NonZeroUsize::new(maximum_work).unwrap(),

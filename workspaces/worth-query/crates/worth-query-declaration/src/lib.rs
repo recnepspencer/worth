@@ -18,7 +18,7 @@
 //! # pub struct ExampleSchema;
 //! # pub struct Account;
 //! worth_query_aspect!(
-//!     pub AccountFacts in ExampleSchema, Account;
+//!     pub AccountFacts for ExampleSchema, Account;
 //!     identity = AspectIdentity(0x9161_1001),
 //!     revision = AspectContractRevision(1),
 //! );
@@ -39,6 +39,8 @@ mod application_aftermath;
 mod application_capability;
 mod application_query;
 #[macro_use]
+mod application_contribution_macro;
+#[macro_use]
 mod application_query_macro;
 mod application_schema;
 mod authentication;
@@ -50,7 +52,13 @@ mod application_capability_macro;
 #[macro_use]
 mod application_schema_macro;
 #[macro_use]
+mod application_relation_macro;
+#[macro_use]
 mod application_operation_macro;
+#[macro_use]
+mod value_binding_macro;
+#[macro_use]
+mod structured_value_binding_macro;
 mod binding;
 mod branch;
 mod canonicalization;

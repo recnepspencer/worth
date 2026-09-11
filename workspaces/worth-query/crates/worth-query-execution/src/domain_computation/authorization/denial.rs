@@ -15,6 +15,7 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     MutationPreconditionRejected,
     CanonicalWorkDenied,
     TrustedTimeUnavailable,
+    InvalidOperationInput,
     CapabilityProjectionRejected,
     CapabilityGrantMissing,
     CapabilityAuthorizationMissing,

@@ -5,20 +5,25 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
     ApplicationQueryResultShapeBuilder,
 };
+use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
 use worth_query_declaration::worth_query_application_query;
 
 use super::application_queries::{
     label_result_field, status_result_field, AccountSummaryParameters, AccountSummaryResult,
 };
 use super::{
-    Account, AccountLabel, CapabilityDisclosure, IdentityExecutionSchema, TouchAccountCapability,
+    Account, AccountLabel, CapabilityDisclosure, CapabilityDisclosureBinding,
+    IdentityExecutionSchema, TouchAccountCapability,
 };
 
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenHiddenOrderingQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenHiddenOrderingQueryResultBinding for AccountSummaryResult { identity: "AccountSummaryResult" });
 worth_query_application_query!(
-    pub ForbiddenHiddenOrderingQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result AccountSummaryResult,
-    scope Account,
+    pub ForbiddenHiddenOrderingQuery for IdentityExecutionSchema,
+    identity "ForbiddenHiddenOrderingQuery",
+    parameters ForbiddenHiddenOrderingQueryParametersBinding,
+    result ForbiddenHiddenOrderingQueryResultBinding,
+    scope Account => "Account",
     name "forbidden_hidden_ordering"
 );
 
@@ -34,6 +39,7 @@ pub(super) fn forbidden_hidden_ordering_definition() -> ApplicationQueryDefiniti
         ForbiddenHiddenOrderingQuery,
         Account,
         AccountSummaryResult,
+        ForbiddenHiddenOrderingQueryResultBinding,
     >::new(Account::reference())
     .field(status_result_field::<ForbiddenHiddenOrderingQuery>())
     .field(label_result_field::<ForbiddenHiddenOrderingQuery>())
@@ -44,17 +50,17 @@ pub(super) fn forbidden_hidden_ordering_definition() -> ApplicationQueryDefiniti
     )
     .use_field_by(
         AccountLabel::reference(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
     .disclose_field_by(
         status_result_field::<ForbiddenHiddenOrderingQuery>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     )
     .disclose_field_by(
         label_result_field::<ForbiddenHiddenOrderingQuery>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     );
     ApplicationQueryDefinitionBuilder::declare(ForbiddenHiddenOrderingQuery::reference())
@@ -73,4 +79,10 @@ pub(super) fn forbidden_hidden_ordering_definition() -> ApplicationQueryDefiniti
         )
         .build()
         .unwrap()
+}
+
+fn encoded_disclosure(
+    value: CapabilityDisclosure,
+) -> ApplicationEncodedScalarValue<CapabilityDisclosureBinding> {
+    ApplicationEncodedScalarValue::try_new(value).expect("fixture disclosure must encode")
 }

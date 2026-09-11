@@ -65,6 +65,8 @@ pub enum BankCommittedDispatchOutboxReadDenial {
     WrongRecordKind,
     NotAuthoritative,
     ExactCommitUnavailable,
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    SnapshotIdentityExhausted,
     Malformed,
     CommitMismatch,
     RecordMismatch,
@@ -95,6 +97,12 @@ impl From<QueryDenial> for BankCommittedDispatchOutboxReadDenial {
             QueryDenial::WrongRecordKind => Self::WrongRecordKind,
             QueryDenial::NotAuthoritative => Self::NotAuthoritative,
             QueryDenial::ExactCommitUnavailable => Self::ExactCommitUnavailable,
+            QueryDenial::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            } => Self::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            },
+            QueryDenial::SnapshotIdentityExhausted => Self::SnapshotIdentityExhausted,
             QueryDenial::Malformed => Self::Malformed,
             QueryDenial::CommitMismatch => Self::CommitMismatch,
             QueryDenial::RecordMismatch => Self::RecordMismatch,

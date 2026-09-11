@@ -61,7 +61,7 @@ pub(in crate::domain_computation::authorization) fn progress_capability_operatio
 >
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
-    Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity,
+    Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>,
     Input: worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
         Schema,
         Capability,

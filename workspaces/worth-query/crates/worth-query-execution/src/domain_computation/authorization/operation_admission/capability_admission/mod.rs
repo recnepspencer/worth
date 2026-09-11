@@ -46,10 +46,14 @@ pub(in crate::domain_computation) fn admit_capability_access<
 >
 where
     Schema: ApplicationSchema,
-    Operation: 'static,
-    Input: ApplicationCapabilityRequest<Schema, Capability>
-        + worth_query_declaration::facade::portable_identity::WorthQueryPortableType
-        + 'static,
+    Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+            Schema,
+        > + 'static,
+    <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+    Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
     admit_request(request, capability.contract().operation())?;
     let prepared = prepare_capability_admission(

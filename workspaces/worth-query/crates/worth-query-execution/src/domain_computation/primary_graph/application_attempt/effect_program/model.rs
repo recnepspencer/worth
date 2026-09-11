@@ -5,11 +5,9 @@ use std::sync::Arc;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, PortableAspectContractBasis};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationExternalEffectPayload,
+    ApplicationExternalEffectBinding, ApplicationRetainedEffectBinding,
 };
-use worth_query_declaration::facade::portable_identity::{
-    WorthQueryPortableType, WorthQueryPortableTypeIdentity,
-};
+use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::transactions::EntityReference;
 
@@ -34,41 +32,43 @@ struct WorthQueryExternalPayloadProjection {
 }
 
 impl WorthQueryApplicationEmission {
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn new<Payload>(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn new<Binding>(
         effect: &'static str,
-        payload: Payload,
+        payload: Binding::Value,
     ) -> Self
     where
-        Payload: ApplicationEffectPayload + WorthQueryPortableType,
+        Binding: ApplicationRetainedEffectBinding,
+        Binding::Value: Send + Sync,
     {
-        let retained_bytes = payload.retained_bytes();
+        let retained_bytes = Binding::retained_bytes(&payload);
         Self {
             effect,
-            payload_type: Payload::PORTABLE_TYPE_IDENTITY,
-            payload_type_id: TypeId::of::<Payload>(),
+            payload_type: Binding::IDENTITY,
+            payload_type_id: TypeId::of::<Binding::Value>(),
             payload: Arc::new(payload),
             retained_bytes,
-            measure_retained_bytes: measure_retained_bytes::<Payload>,
+            measure_retained_bytes: measure_retained_bytes::<Binding>,
             external_payload: None,
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn new_external<Payload>(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn new_external<Binding>(
         effect: &'static str,
-        payload: Payload,
+        payload: Binding::Value,
     ) -> Result<Self, ()>
     where
-        Payload: ApplicationExternalEffectPayload + WorthQueryPortableType,
+        Binding: ApplicationExternalEffectBinding,
+        Binding::Value: Send + Sync,
     {
-        let bytes = payload.external_effect_bytes();
+        let bytes = Binding::external_effect_bytes(&payload);
         let encoded_len = u64::try_from(bytes.len()).map_err(|_| ())?;
-        if Payload::MAX_EXTERNAL_BYTES == 0 || encoded_len > Payload::MAX_EXTERNAL_BYTES {
+        if Binding::MAX_EXTERNAL_BYTES == 0 || encoded_len > Binding::MAX_EXTERNAL_BYTES {
             return Err(());
         }
-        let mut emission = Self::new(effect, payload);
+        let mut emission = Self::new::<Binding>(effect, payload);
         emission.external_payload = Some(WorthQueryExternalPayloadProjection {
             bytes: bytes.into(),
-            maximum_bytes: Payload::MAX_EXTERNAL_BYTES,
+            maximum_bytes: Binding::MAX_EXTERNAL_BYTES,
         });
         Ok(emission)
     }
@@ -123,7 +123,7 @@ impl WorthQueryApplicationEmission {
         >,
     ) -> Option<&Payload>
     where
-        Payload: ApplicationEffectPayload,
+        Payload: 'static,
     {
         (self.effect == effect.name())
             .then(|| self.payload.downcast_ref::<Payload>())
@@ -141,13 +141,13 @@ impl WorthQueryApplicationEmission {
     }
 }
 
-fn measure_retained_bytes<Payload>(payload: &(dyn Any + Send + Sync)) -> Option<u64>
+fn measure_retained_bytes<Binding>(payload: &(dyn Any + Send + Sync)) -> Option<u64>
 where
-    Payload: ApplicationEffectPayload,
+    Binding: ApplicationRetainedEffectBinding,
 {
     payload
-        .downcast_ref::<Payload>()
-        .map(ApplicationEffectPayload::retained_bytes)
+        .downcast_ref::<Binding::Value>()
+        .map(Binding::retained_bytes)
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedApplicationEmissionBatch {

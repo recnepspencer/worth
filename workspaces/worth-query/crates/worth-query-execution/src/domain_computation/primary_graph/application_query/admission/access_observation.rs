@@ -11,8 +11,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{
-    TypedApplicationValue, WorthQueryInstalledApplicationQuery,
+    ApplicationScalarValueBinding, WorthQueryInstalledApplicationQuery,
 };
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -61,10 +62,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     principal.binding(),
                 )
             })?;
-        let expected_external_identity = principal
-            .external_identity()
-            .clone()
-            .into_foundational_value();
+        let expected_external_identity =
+            WorthQueryExternalPrincipalIdentityBinding::encode(principal.external_identity())
+                .map_err(|_| {
+                    denial(
+                        WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
+                        principal.binding(),
+                    )
+                })?;
         let principal_currentness = WorthQueryPrincipalCurrentnessDependency::capture(
             session_identity,
             principal,

@@ -26,8 +26,12 @@ fn paired_protected_account_detail_worlds_publish_equal_complete_commit_surfaces
     let left = commit_freeze(&left, 31);
     let right = commit_freeze(&right, 31);
 
-    assert_eq!(left, right);
-    assert_eq!(left.publication(), right.publication());
+    // Each receipt carries its real World publication identity. Compare the
+    // Bank-visible semantics rather than pretending two Worlds share authority.
+    assert_eq!(
+        left.publication().inspect().kind(),
+        right.publication().inspect().kind()
+    );
     assert_eq!(left.changed_record_count(), right.changed_record_count());
     assert_eq!(left.emitted_effect_count(), right.emitted_effect_count());
     assert_eq!(
@@ -51,7 +55,6 @@ fn paired_protected_account_detail_worlds_publish_equal_complete_commit_surfaces
         left.performed_preimage_retention_work(),
         right.performed_preimage_retention_work()
     );
-    assert_eq!(format!("{left:?}"), format!("{right:?}"));
     assert_eq!(
         left.aftermath().posture(),
         Some(WorthQueryPublishedAftermathPosture::Reversible)

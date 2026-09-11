@@ -2,8 +2,11 @@ use std::any::{Any, TypeId};
 use std::cmp::Ordering;
 use std::sync::Arc;
 
-use crate::application_schema::{ApplicationEffectPayload, ApplicationEffectRef, OperationEmits};
-use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
+use crate::application_schema::{
+    ApplicationEffectRef, ApplicationRetainedEffectBinding, ApplicationStructuredValueBinding,
+    OperationEmits,
+};
+use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 /// Typed derivation of the one effect caused by an elevation lifecycle input.
 ///
@@ -12,11 +15,17 @@ use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIde
 /// independently authored emission to the framework-owned lifecycle program.
 pub trait ApplicationCapabilityLifecycleEffect<Schema, Operation>: 'static {
     type Effect: OperationEmits<Operation>;
-    type Payload: ApplicationEffectPayload + WorthQueryPortableType;
+    type PayloadBinding: ApplicationRetainedEffectBinding;
 
-    fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Self::Payload>;
+    fn effect() -> ApplicationEffectRef<
+        Schema,
+        Self::Effect,
+        <Self::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+    >;
 
-    fn lifecycle_effect(&self) -> Option<Self::Payload>;
+    fn lifecycle_effect(
+        &self,
+    ) -> Option<<Self::PayloadBinding as ApplicationStructuredValueBinding>::Value>;
 }
 
 #[derive(Clone)]
@@ -39,11 +48,12 @@ impl ApplicationCapabilityLifecycleEffectBinding {
     pub(super) fn from_input<Schema, Operation, Input>() -> Self
     where
         Input: ApplicationCapabilityLifecycleEffect<Schema, Operation>,
+        <Input::PayloadBinding as ApplicationStructuredValueBinding>::Value: Send + Sync,
     {
         Self {
             effect: Input::effect().name().to_string(),
             effect_type: Input::effect().name().to_string(),
-            payload_type: Input::Payload::PORTABLE_TYPE_IDENTITY,
+            payload_type: Input::PayloadBinding::IDENTITY,
             derive: Some(derive_from_input::<Schema, Operation, Input>),
         }
     }
@@ -185,25 +195,29 @@ fn derive_from_input<Schema, Operation, Input>(
 ) -> Option<DerivedApplicationCapabilityLifecycleEffect>
 where
     Input: ApplicationCapabilityLifecycleEffect<Schema, Operation>,
+    <Input::PayloadBinding as ApplicationStructuredValueBinding>::Value: Send + Sync,
 {
     let input = input.downcast_ref::<Input>()?;
     let payload = input.lifecycle_effect()?;
-    let retained_bytes = payload.retained_bytes();
+    let retained_bytes = Input::PayloadBinding::retained_bytes(&payload);
     Some(DerivedApplicationCapabilityLifecycleEffect {
         effect: Input::effect().name(),
-        payload_type: Input::Payload::PORTABLE_TYPE_IDENTITY,
-        payload_type_id: TypeId::of::<Input::Payload>(),
+        payload_type: Input::PayloadBinding::IDENTITY,
+        payload_type_id: TypeId::of::<
+            <Input::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+        >(),
         payload: Arc::new(payload),
         retained_bytes,
-        measure_retained_bytes: measure_retained_bytes::<Input::Payload>,
+        measure_retained_bytes: measure_retained_bytes::<Input::PayloadBinding>,
     })
 }
 
-fn measure_retained_bytes<Payload>(payload: &(dyn Any + Send + Sync)) -> Option<u64>
+fn measure_retained_bytes<Binding>(payload: &(dyn Any + Send + Sync)) -> Option<u64>
 where
-    Payload: ApplicationEffectPayload,
+    Binding: ApplicationRetainedEffectBinding,
+    Binding::Value: Send + Sync,
 {
     payload
-        .downcast_ref::<Payload>()
-        .map(ApplicationEffectPayload::retained_bytes)
+        .downcast_ref::<Binding::Value>()
+        .map(Binding::retained_bytes)
 }

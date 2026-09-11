@@ -9,7 +9,7 @@ use worth_query_host::facade::domain::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationPrincipalKeyDenial, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrincipalResolutionDenial,
+    WorthQueryPrincipalResolutionDenial, WorthQueryProductBranchAdmissionDenial,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -74,6 +74,7 @@ impl std::error::Error for BankAuthenticationBoundaryBuildError {}
 #[derive(Debug)]
 pub enum BankPrincipalAdmissionError {
     Authentication(WorthQueryAuthenticationDenial),
+    ProductSelection(WorthQueryProductBranchAdmissionDenial),
     Resolution(WorthQueryPrincipalResolutionDenial),
 }
 
@@ -81,6 +82,7 @@ impl std::fmt::Display for BankPrincipalAdmissionError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Authentication(error) => error.fmt(formatter),
+            Self::ProductSelection(error) => write!(formatter, "{error:?}"),
             Self::Resolution(error) => error.fmt(formatter),
         }
     }
@@ -90,6 +92,7 @@ impl std::error::Error for BankPrincipalAdmissionError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Authentication(error) => Some(error),
+            Self::ProductSelection(_) => None,
             Self::Resolution(error) => Some(error),
         }
     }

@@ -35,6 +35,7 @@ fn typed_field_member(entity: &str, aspect: &str, field: &str) -> ApplicationSch
                 .as_str()
                 .to_string(),
         unit: None,
+        frame: None,
         writable: false,
         equality_queryable: true,
     }

@@ -1,7 +1,8 @@
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    TypedApplicationReadableValue, WorthQueryTemporalIntentCandidate,
-    WorthQueryTemporalIntentRevisionValue, WritableCapability, WritePosture,
+    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationSchema, DeclaredApplicationFieldValue, OperationReads, OperationWrites,
+    WorthQueryTemporalIntentCandidate, WorthQueryTemporalIntentRevisionValue, WritableCapability,
+    WritePosture,
 };
 
 use super::{
@@ -23,15 +24,19 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityValue: TypedApplicationReadableValue,
+    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationWrites<Operation>,
-    RevisionValue: WorthQueryTemporalIntentRevisionValue,
+    RevisionField: OperationWrites<Operation>
+        + DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue>
+        + WorthQueryTemporalIntentRevisionValue,
     RevisionWrite: WritableCapability,
     RevisionUnit: ApplicationFieldUnit,
     LifecycleField: OperationWrites<Operation>,
-    LifecycleValue: worth_query_installation::facade::TypedApplicationValue,
+    LifecycleField: DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField::Binding: ApplicationScalarValueBinding<Value = LifecycleValue>,
     LifecycleWrite: WritableCapability,
     LifecycleUnit: ApplicationFieldUnit,
 {
@@ -45,9 +50,12 @@ where
     ) -> Result<WorthQueryTemporalReentryOutcome, String>
     where
         RevisionField: OperationReads<Operation>,
-        RevisionValue: TypedApplicationReadableValue + Clone,
+        RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
+        RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue> + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+        RevisionValue: Clone,
         LifecycleField: OperationReads<Operation>,
-        LifecycleValue: TypedApplicationReadableValue + Clone,
+        LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
+        LifecycleValue: Clone,
     {
         let reads = runtime
             .begin_projected_application_read_attempt(projected.admission, projected.projection)
@@ -68,7 +76,7 @@ where
         let next_revision = candidate
             .revision()
             .checked_add(1)
-            .and_then(RevisionValue::from_revision)
+            .and_then(RevisionField::Binding::from_revision)
             .ok_or_else(|| "temporal intent revision cannot advance".to_string())?;
         effects
             .write_field(&target, self.revision_field, next_revision)

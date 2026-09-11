@@ -14,6 +14,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     MutationPreconditionMismatch,
     AmbiguousRelation,
     UndeclaredEffect,
+    InvalidEffectValue,
     ForeignEffectTarget,
     DuplicateEffectKey,
     RetainedEffectBytesExceeded,

@@ -5,16 +5,27 @@ use crate::authentication::{
 };
 
 use super::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, EqualityPosture,
-    EqualityPredicate, ReadOnly, ReadWrite,
+    ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe, ApplicationFieldRef,
+    ApplicationFieldUnit, ApplicationIdentityScalarValueBinding, ApplicationRelationRef,
+    EqualityPosture, EqualityPredicate, ReadOnly, ReadWrite,
 };
 
-pub struct ApplicationPrincipalBindingRequirements<Schema, Mapping, Principal, PrincipalIdentity> {
+pub struct ApplicationPrincipalBindingRequirements<
+    Schema,
+    Mapping,
+    Principal,
+    PrincipalIdentity,
+    PrincipalIdentityBinding,
+> {
     pub mapping_identity: ApplicationPrincipalMappingIdentityRequirement<Schema, Mapping>,
     pub mapping_status: ApplicationPrincipalMappingStatusRequirement<Schema, Mapping>,
     pub target: ApplicationPrincipalTargetRequirement<Schema, Mapping, Principal>,
-    pub principal_identity:
-        ApplicationPrincipalIdentityRequirement<Schema, Principal, PrincipalIdentity>,
+    pub principal_identity: ApplicationPrincipalIdentityRequirement<
+        Schema,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >,
 }
 
 pub struct ApplicationPrincipalMappingIdentityRequirement<Schema, Mapping> {
@@ -101,16 +112,34 @@ impl<Schema, Mapping, Principal> ApplicationPrincipalTargetRequirement<Schema, M
     }
 }
 
-pub struct ApplicationPrincipalIdentityRequirement<Schema, Principal, PrincipalIdentity> {
+pub struct ApplicationPrincipalIdentityRequirement<
+    Schema,
+    Principal,
+    PrincipalIdentity,
+    PrincipalIdentityBinding,
+> {
     pub(super) aspect: &'static str,
     pub(super) field: &'static str,
-    _marker: PhantomData<fn() -> (Schema, Principal, PrincipalIdentity)>,
+    pub(super) scalar_family: worth_foundational::facade::ScalarAspectType,
+    pub(super) value_type: &'static str,
+    pub(super) binding_recipe: ApplicationFieldBindingRecipe,
+    _marker: PhantomData<
+        fn() -> (
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            PrincipalIdentityBinding,
+        ),
+    >,
 }
 
-impl<Schema, Principal, PrincipalIdentity>
-    ApplicationPrincipalIdentityRequirement<Schema, Principal, PrincipalIdentity>
-where
-    PrincipalIdentity: super::TypedApplicationValue,
+impl<Schema, Principal, PrincipalIdentity, PrincipalIdentityBinding>
+    ApplicationPrincipalIdentityRequirement<
+        Schema,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >
 {
     #[doc(hidden)]
     pub fn from_field<Aspect, Field, Unit>(
@@ -126,11 +155,21 @@ where
         >,
     ) -> Self
     where
+        Field: super::DeclaredApplicationFieldValue<
+            Value = PrincipalIdentity,
+            Binding = PrincipalIdentityBinding,
+        >,
+        PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
         Unit: ApplicationFieldUnit,
     {
         Self {
             aspect: field.aspect(),
             field: field.field(),
+            scalar_family: field.scalar_family(),
+            value_type: field.value_type_name(),
+            binding_recipe: ApplicationFieldBindingRecipe::of::<PrincipalIdentityBinding>(
+                ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
+            ),
             _marker: PhantomData,
         }
     }

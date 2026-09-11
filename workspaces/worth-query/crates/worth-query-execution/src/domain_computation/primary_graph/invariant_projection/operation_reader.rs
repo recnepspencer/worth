@@ -3,8 +3,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, ApplicationSchema,
-    EqualityPredicate, OperationReads, TypedApplicationReadableValue, TypedApplicationValue,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
+    ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
+    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
     WorthQueryOperationGraphReadContract, WritePosture,
 };
 
