@@ -305,6 +305,7 @@ fn health_revocation_fences_already_open_and_new_record_reads() {
     );
     let mut open = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             worth_store::physical_runtime::RecordReadLimits::new(
@@ -327,7 +328,7 @@ fn health_revocation_fences_already_open_and_new_record_reads() {
                     ServingRequiresInspection
     ));
     assert!(matches!(
-        serving.records().open(
+        serving.records().expect("read protection admission").open(
             record,
             worth_store::physical_runtime::RecordReadLimits::new(
                 worth_store::physical_runtime::RecordByteLimit::new(64).unwrap(),

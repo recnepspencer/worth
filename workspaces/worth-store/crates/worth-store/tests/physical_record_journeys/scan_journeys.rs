@@ -48,6 +48,7 @@ fn scan_batch_widths_converge_to_one_physical_sequence() {
 
     let mut first = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(3).unwrap()))
         .unwrap();
     let mut scratch = vec![0_u8; 32_000];
@@ -96,6 +97,7 @@ fn whole_extent_materialization_mutant_is_replaced_by_deferred_scan_payload() {
 
     let mut scan = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start())
         .unwrap();
     let mut scratch = vec![0_u8; 131_072];
@@ -112,6 +114,7 @@ fn whole_extent_materialization_mutant_is_replaced_by_deferred_scan_payload() {
 
     let mut read = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(logical_bytes as u32).unwrap()),
@@ -147,6 +150,7 @@ fn stale_foreign_and_out_of_range_cursors_fail_before_payload_read() {
     );
     let mut scan = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(1).unwrap()))
         .unwrap();
     let mut scratch = [0_u8; 16];
@@ -166,7 +170,11 @@ fn stale_foreign_and_out_of_range_cursors_fail_before_payload_read() {
         let mut bytes = valid.encode();
         bytes[offset] ^= 0x7f;
         let forged = ExternalRecordScanCursor::decode(bytes).unwrap();
-        let error = match serving.records().scan(RecordScanRequest::resume(forged)) {
+        let error = match serving
+            .records()
+            .expect("read protection admission")
+            .scan(RecordScanRequest::resume(forged))
+        {
             Ok(_) => panic!("forged scan cursor was admitted"),
             Err(error) => error,
         };
@@ -193,6 +201,7 @@ fn scratch_retry_preserves_position_and_counts_manifest_discovery_once() {
     );
     let mut scan = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(1).unwrap()))
         .unwrap();
     let error = match scan.read_next_into(&mut []) {
@@ -231,6 +240,7 @@ fn collect_scan_evidence(
 ) -> CollectedScan {
     let scan = serving
         .records()
+        .expect("read protection admission")
         .scan(
             RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(width).unwrap()),
         )
@@ -246,6 +256,7 @@ fn collect_resume(
 ) -> Vec<(worth_store::physical_runtime::PhysicalRecordId, Vec<u8>)> {
     let scan = serving
         .records()
+        .expect("read protection admission")
         .scan(
             RecordScanRequest::resume(cursor)
                 .with_batch_limit(RecordCountLimit::new(width).unwrap()),

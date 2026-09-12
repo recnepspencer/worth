@@ -24,7 +24,11 @@ fn cancelling_a_read_session_reports_unread_delivery_and_releases_its_leases() {
     let serving = serving_from_open(&root);
     let observer = serving.observer();
     let limits = RecordReadLimits::new(RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
-    let mut session = serving.records().open(record, limits).unwrap();
+    let mut session = serving
+        .records()
+        .expect("read protection admission")
+        .open(record, limits)
+        .unwrap();
     await_read_signal_cleanup(&serving);
     assert_eq!(observer.record_counters().read_sessions_live(), 1);
     let mut prefix = [0_u8; 5];
@@ -44,7 +48,11 @@ fn cancelling_a_read_session_reports_unread_delivery_and_releases_its_leases() {
     assert_eq!(observer.record_counters().read_sessions_live(), 0);
     assert_eq!(serving.media_counters(), media_before_cancel);
     let (bytes, _) = read_record(
-        serving.records().open(record, limits).unwrap(),
+        serving
+            .records()
+            .expect("read protection admission")
+            .open(record, limits)
+            .unwrap(),
         PAYLOAD.len(),
     );
     assert_eq!(bytes, PAYLOAD);

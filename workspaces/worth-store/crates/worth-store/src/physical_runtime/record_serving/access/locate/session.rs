@@ -9,7 +9,12 @@ impl RecordReadSession {
     /// Returns zero at end of record or when `target` is empty. The method
     /// never allocates an owning whole-record result.
     pub fn read_next(&mut self, target: &mut [u8]) -> Result<usize, RecordStreamFailure> {
+        let _call = self.admit_read_call()?;
         let runtime = self.require_healthy_runtime()?;
+        #[cfg(feature = "certification-test-authority")]
+        if let Some(pause) = &self.read_pause {
+            pause.arrive_and_wait();
+        }
         let identity = self.identity;
         if target.is_empty() {
             return Ok(0);
@@ -49,7 +54,12 @@ impl RecordReadSession {
     pub fn next_chunk(
         &mut self,
     ) -> Result<Option<PhysicalRecordChunkView<'_>>, RecordStreamFailure> {
+        let _call = self.admit_read_call()?;
         let runtime = self.require_healthy_runtime()?;
+        #[cfg(feature = "certification-test-authority")]
+        if let Some(pause) = &self.read_pause {
+            pause.arrive_and_wait();
+        }
         let identity = self.identity;
         let chunk = match &mut self.placement {
             ReadPlacement::Inline {
@@ -97,12 +107,29 @@ impl RecordReadSession {
         self.observation
     }
 
+    fn admit_read_call(
+        &self,
+    ) -> Result<crate::physical_runtime::instance::PhysicalExecutionCall, RecordStreamFailure> {
+        self.execution.admit_call().map_err(|_| {
+            RecordStreamFailure::during_read(
+                RecordStreamFailureKind::RuntimeReleased,
+                self.observation.payload_bytes(),
+            )
+        })
+    }
+
     fn require_healthy_runtime(
         &self,
     ) -> Result<
         std::sync::Arc<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
         RecordStreamFailure,
     > {
+        self.protection.require_live().map_err(|_| {
+            RecordStreamFailure::during_read(
+                RecordStreamFailureKind::RuntimeReleased,
+                self.observation.payload_bytes(),
+            )
+        })?;
         let runtime = self.runtime.upgrade().ok_or_else(|| {
             RecordStreamFailure::during_read(
                 RecordStreamFailureKind::RuntimeReleased,

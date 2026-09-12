@@ -1,11 +1,11 @@
 use super::{BlobCompactionDenial, BlobCompactionEquivalence, BlobCompactionRewritePlan};
 use crate::ChunkTreeRoot;
-use worth_store_physical_isolation::ReadDuringCompactionVerdict;
+use worth_store_physical_isolation::CompactionReadPlanCompletion;
 
 #[derive(Debug, Clone)]
 pub struct BlobCompactionPhysicalRewriteBinding {
     equivalence: BlobCompactionEquivalence,
-    verdict: ReadDuringCompactionVerdict,
+    read_plan_completion: CompactionReadPlanCompletion,
     expected_manifest_epoch: u64,
 }
 
@@ -13,16 +13,19 @@ impl BlobCompactionPhysicalRewriteBinding {
     pub(crate) fn admit(
         plan: &BlobCompactionRewritePlan,
         equivalence: BlobCompactionEquivalence,
-        verdict: ReadDuringCompactionVerdict,
+        read_plan_completion: CompactionReadPlanCompletion,
     ) -> Result<Self, BlobCompactionDenial> {
         let expected_manifest_epoch = physical_rewrite_manifest_epoch_for_root(
             equivalence.new_root(),
             plan.physical().protected().root().manifest_epoch().get(),
         );
         if !equivalence.matches_plan_basis(plan)
-            || verdict.proof().publication().delta().plan() != plan.physical()
-            || !verdict.post_cutover_reader_observed_new_epoch()
-            || verdict.proof().post_cutover_root().manifest_epoch().get() != expected_manifest_epoch
+            || read_plan_completion.publication().delta().plan() != plan.physical()
+            || read_plan_completion
+                .post_cutover_root()
+                .manifest_epoch()
+                .get()
+                != expected_manifest_epoch
         {
             return Err(BlobCompactionDenial::MixedChunkTreePublication {
                 counters: plan.counters().record_denial(),
@@ -30,7 +33,7 @@ impl BlobCompactionPhysicalRewriteBinding {
         }
         Ok(Self {
             equivalence,
-            verdict,
+            read_plan_completion,
             expected_manifest_epoch,
         })
     }
@@ -39,8 +42,8 @@ impl BlobCompactionPhysicalRewriteBinding {
         &self.equivalence
     }
 
-    pub const fn verdict(&self) -> &ReadDuringCompactionVerdict {
-        &self.verdict
+    pub const fn read_plan_completion(&self) -> &CompactionReadPlanCompletion {
+        &self.read_plan_completion
     }
 
     pub const fn expected_manifest_epoch(&self) -> u64 {

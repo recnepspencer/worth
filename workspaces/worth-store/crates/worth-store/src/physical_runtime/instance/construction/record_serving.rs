@@ -54,6 +54,7 @@ impl PhysicalRecordServingAssembly {
         self,
         work: &InstalledPhysicalWorkRuntime,
         durability: &ReopenedPhysicalDurabilityOwners,
+        read_protection: Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
     ) -> InstalledPhysicalRecordServing {
         let read = CanonicalRecordReadPort::new(
             &work.runtime,
@@ -116,6 +117,7 @@ impl PhysicalRecordServingAssembly {
             read,
             mutation,
             RecordPublicationFoundation {
+                read_protection,
                 idempotency: durability.durability.idempotency_authority(),
                 durability: durability.durability.observation(),
                 signal_profile: self.signal_profile,

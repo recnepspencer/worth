@@ -3,15 +3,15 @@ use worth_store_physical_isolation::CompactionInterlockFoundationalEvidence;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompactionInterlockObservation {
     no_mixed_root: bool,
-    old_reader_retained_old_structure: bool,
-    new_reader_observed_new_epoch: bool,
+    old_reachability_deferred: bool,
+    post_cutover_plan_matches_publication: bool,
     blocked_reclaim_until_release: bool,
     protected_ranges: u64,
     candidate_ranges: u64,
     range_comparisons: u64,
     overlapping_ranges: u64,
     copied_pages: u64,
-    publication_swaps: u64,
+    publication_plan_completions: u64,
     blocked_reclaims: u64,
 }
 
@@ -25,21 +25,21 @@ impl CompactionInterlockObservation {
         let counters = evidence.counters();
         if counters.candidate_ranges() == 0
             || counters.copied_pages() == 0
-            || counters.publication_swaps() == 0
+            || counters.publication_plan_completions() == 0
         {
             return None;
         }
         Some(Self {
             no_mixed_root: evidence.no_mixed_root(),
-            old_reader_retained_old_structure: evidence.old_reader_retained_old_structure(),
-            new_reader_observed_new_epoch: evidence.new_reader_observed_new_epoch(),
+            old_reachability_deferred: evidence.old_reachability_deferred(),
+            post_cutover_plan_matches_publication: evidence.post_cutover_plan_matches_publication(),
             blocked_reclaim_until_release: evidence.blocked_reclaim_until_release(),
             protected_ranges: counters.protected_ranges(),
             candidate_ranges: counters.candidate_ranges(),
             range_comparisons: counters.range_comparisons(),
             overlapping_ranges: counters.overlapping_ranges(),
             copied_pages: counters.copied_pages(),
-            publication_swaps: counters.publication_swaps(),
+            publication_plan_completions: counters.publication_plan_completions(),
             blocked_reclaims: counters.blocked_reclaims(),
         })
     }
@@ -48,12 +48,12 @@ impl CompactionInterlockObservation {
         self.no_mixed_root
     }
 
-    pub const fn old_reader_retained_old_structure(self) -> bool {
-        self.old_reader_retained_old_structure
+    pub const fn old_reachability_deferred(self) -> bool {
+        self.old_reachability_deferred
     }
 
-    pub const fn new_reader_observed_new_epoch(self) -> bool {
-        self.new_reader_observed_new_epoch
+    pub const fn post_cutover_plan_matches_publication(self) -> bool {
+        self.post_cutover_plan_matches_publication
     }
 
     pub const fn blocked_reclaim_until_release(self) -> bool {
@@ -80,8 +80,8 @@ impl CompactionInterlockObservation {
         self.copied_pages
     }
 
-    pub const fn publication_swaps(self) -> u64 {
-        self.publication_swaps
+    pub const fn publication_plan_completions(self) -> u64 {
+        self.publication_plan_completions
     }
 
     pub const fn blocked_reclaims(self) -> u64 {

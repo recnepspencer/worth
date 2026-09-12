@@ -11,6 +11,7 @@ pub struct CompactionDeferredReclaimQueue {
 
 #[derive(Debug, Clone)]
 pub struct DrainedCompactionReclaim {
+    publication: CompactionRewritePublication,
     released: ReleasedOldReachability,
     counters: CompactionReadInterlockCounters,
 }
@@ -84,6 +85,7 @@ impl CompactionDeferredReclaimQueue {
                 },
             )?;
         Ok(DrainedCompactionReclaim {
+            publication: self.publication,
             released,
             counters: self.counters,
         })
@@ -99,6 +101,12 @@ impl CompactionDeferredReclaimQueue {
 }
 
 impl DrainedCompactionReclaim {
+    pub(super) fn matches_publication(&self, publication: &CompactionRewritePublication) -> bool {
+        self.publication.delta().plan() == publication.delta().plan()
+            && self.publication.publication().old_root() == publication.publication().old_root()
+            && self.publication.publication().new_root() == publication.publication().new_root()
+    }
+
     const OWNER_CASE: super::CompactionOwnerCaseDeclaration =
         super::CompactionOwnerCaseDeclaration::declared_by_owner(
             super::CompactionOwnerCaseId::DrainReclaimAfterReadRelease,

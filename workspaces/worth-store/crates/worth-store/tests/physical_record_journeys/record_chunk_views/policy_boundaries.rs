@@ -21,7 +21,7 @@ fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
 
-    let denial = match serving.records().open(
+    let denial = match serving.records().expect("read protection admission").open(
         record,
         RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32 - 1).unwrap()),
     ) {
@@ -43,6 +43,7 @@ fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation
 
     let mut admitted = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),
@@ -82,7 +83,7 @@ fn public_extent_views_preserve_exact_over_pin_pressure_without_revoking_store_h
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
     let limits = RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap());
-    let reader = serving.records();
+    let reader = serving.records().expect("read protection admission");
     {
         let mut first = reader.open(record, limits).unwrap();
         let mut second = reader.open(record, limits).unwrap();

@@ -193,14 +193,14 @@ fn coalesced_transient_read_preserves_terminal_truth_and_store_health() {
         .physical_signal_observation()
         .unwrap()
         .aspect_invalidation_count();
-    let owner_reader = serving.records();
+    let owner_reader = serving.records().expect("read protection admission");
     let owner = std::thread::spawn(move || match owner_reader.open(record, limits) {
         Err(error) => error,
         Ok(_) => panic!("the scheduled owner fault unexpectedly succeeded"),
     });
     gate.wait_until_reached();
 
-    let waiter_reader = serving.records();
+    let waiter_reader = serving.records().expect("read protection admission");
     let waiter = std::thread::spawn(move || match waiter_reader.open(record, limits) {
         Err(error) => error,
         Ok(_) => panic!("the coalesced waiter unexpectedly succeeded"),
@@ -272,6 +272,7 @@ fn coalesced_transient_read_preserves_terminal_truth_and_store_health() {
 
     let mut retry = serving
         .records()
+        .expect("read protection admission")
         .open(record, limits)
         .expect("coalesced transient denial must leave Store health usable");
     let mut bytes = vec![0_u8; PAYLOAD.len()];
@@ -282,6 +283,7 @@ fn coalesced_transient_read_preserves_terminal_truth_and_store_health() {
     let hot_media_before = serving.media_counters();
     let hot = serving
         .records()
+        .expect("read protection admission")
         .open(record, limits)
         .expect("resolved bounded frame must remain hot");
     assert_eq!(

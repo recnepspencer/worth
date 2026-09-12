@@ -120,6 +120,7 @@ pub(super) fn reopener(root: &Path, evidence: std::path::PathBuf) {
     for (index, locator) in &rows {
         let mut read = serving
             .records()
+            .expect("read protection admission")
             .open_external(
                 *locator,
                 RecordReadLimits::new(RecordByteLimit::new(u32::MAX).unwrap()),
@@ -148,6 +149,7 @@ pub(super) fn reopener(root: &Path, evidence: std::path::PathBuf) {
 
     let mut scan = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start())
         .unwrap();
     let mut scratch = vec![0_u8; 131_072];

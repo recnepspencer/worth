@@ -24,7 +24,7 @@ fn compaction_cutover_with_a_live_lease_reopens_with_a_legal_precedence_path() {
     );
     apply(
         &mut model,
-        compose_compaction_action(CompactionVisibilityAction::AdmitRecoveryVisibility),
+        compose_compaction_action(CompactionVisibilityAction::ValidateReadPlanCutover),
     );
     apply(
         &mut model,
@@ -176,7 +176,7 @@ fn every_shared_action_is_composed_from_a_local_protocol_family() {
             slot: 3,
             generation: 9,
         }),
-        compose_compaction_action(CompactionVisibilityAction::AdmitRecoveryVisibility),
+        compose_compaction_action(CompactionVisibilityAction::ValidateReadPlanCutover),
         compose_durability_action(DurabilityRecoveryAction::Crash),
         compose_durability_action(DurabilityRecoveryAction::Reopen),
         compose_quarantine_state(QuarantineReadmissionState::Sealed),

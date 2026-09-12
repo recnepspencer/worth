@@ -1,4 +1,5 @@
-use worth_store_physical_isolation::{ChunkMigrationReadInterlockPlan, StablePhysicalReadReceipt};
+use worth_store::physical_runtime::stability::StablePhysicalReadReceipt;
+use worth_store_physical_isolation::ChunkMigrationReadInterlockPlan;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BlobPlacementMovementReadHold {

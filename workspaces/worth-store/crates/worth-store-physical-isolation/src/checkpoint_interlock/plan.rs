@@ -1,15 +1,15 @@
 use super::{CheckpointReadInterlockDenial, CheckpointRootEpochTransition};
-use crate::StablePhysicalReadReceipt;
+use crate::PhysicalReadPlanCompletionReceipt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckpointReadInterlockPlan {
-    pre_publication_read: StablePhysicalReadReceipt,
+    pre_publication_read: PhysicalReadPlanCompletionReceipt,
     transition: CheckpointRootEpochTransition,
 }
 
 impl CheckpointReadInterlockPlan {
     pub fn admit(
-        pre_publication_read: StablePhysicalReadReceipt,
+        pre_publication_read: PhysicalReadPlanCompletionReceipt,
         transition: CheckpointRootEpochTransition,
     ) -> Result<Self, CheckpointReadInterlockDenial> {
         let observed = pre_publication_read.read_plan_release().root();
@@ -28,7 +28,7 @@ impl CheckpointReadInterlockPlan {
         })
     }
 
-    pub const fn pre_publication_read(&self) -> StablePhysicalReadReceipt {
+    pub const fn pre_publication_read(&self) -> PhysicalReadPlanCompletionReceipt {
         self.pre_publication_read
     }
 

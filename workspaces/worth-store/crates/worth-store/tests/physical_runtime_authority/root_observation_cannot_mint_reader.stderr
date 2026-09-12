@@ -1,0 +1,7 @@
+error[E0277]: the trait bound `PhysicalRecordReader: From<PhysicalProtectedRootObservation>` is not satisfied
+ --> tests/physical_runtime_authority/root_observation_cannot_mint_reader.rs:4:10
+  |
+4 |     root.into()
+  |          ^^^^ the trait `From<PhysicalProtectedRootObservation>` is not implemented for `PhysicalRecordReader`
+  |
+  = note: required for `PhysicalProtectedRootObservation` to implement `Into<PhysicalRecordReader>`

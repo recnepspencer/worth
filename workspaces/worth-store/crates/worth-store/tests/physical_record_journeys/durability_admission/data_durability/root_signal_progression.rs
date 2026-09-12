@@ -134,6 +134,7 @@ fn root_candidate_signal_completion_precedes_replacement_and_current_root_advanc
     assert_eq!(completed.current_root().generation(), 2);
     let session = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(PAYLOAD.len() as u32).unwrap()),

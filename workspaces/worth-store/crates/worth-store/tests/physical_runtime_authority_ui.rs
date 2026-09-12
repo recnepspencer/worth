@@ -140,6 +140,8 @@ fn phase_eight_ordinary_mutation_outcomes_are_compile_bound() {
 }
 
 fn record_chunk_view_cases(cases: &trybuild::TestCases) {
+    cases.pass("tests/physical_runtime_authority/protected_record_reads_supported.rs");
+    cases.compile_fail("tests/physical_runtime_authority/root_observation_cannot_mint_reader.rs");
     cases.pass("tests/physical_runtime_authority/bounded_physical_record_access_examples.rs");
     cases.pass("tests/physical_runtime_authority/record_chunk_views_supported.rs");
     cases.compile_fail(

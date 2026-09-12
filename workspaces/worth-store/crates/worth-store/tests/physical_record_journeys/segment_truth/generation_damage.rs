@@ -29,7 +29,7 @@ fn checksum_valid_zero_generation_in_an_unrelated_slot_is_artifact_damage() {
     let reopened = success(open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability)
     }));
-    let error = match reopened.records().open(
+    let error = match reopened.records().expect("read protection admission").open(
         target,
         RecordReadLimits::new(RecordByteLimit::new(32).unwrap()),
     ) {
@@ -69,7 +69,7 @@ fn checksum_valid_zero_page_generation_is_artifact_damage() {
     let reopened = success(open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability)
     }));
-    let error = match reopened.records().open(
+    let error = match reopened.records().expect("read protection admission").open(
         target,
         RecordReadLimits::new(RecordByteLimit::new(32).unwrap()),
     ) {
@@ -113,7 +113,7 @@ fn checksum_valid_zero_page_owner_identities_are_artifact_damage() {
         let reopened = success(open_record_store!(media(&root), |durability| {
             PhysicalRecordOpen::new(format, access, durability)
         }));
-        let error = match reopened.records().open(
+        let error = match reopened.records().expect("read protection admission").open(
             target,
             RecordReadLimits::new(RecordByteLimit::new(32).unwrap()),
         ) {

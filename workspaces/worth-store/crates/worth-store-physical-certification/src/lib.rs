@@ -32,7 +32,6 @@ mod operational_recovery_replica_promotion_driver_tests;
 mod operational_recovery_trace;
 mod operational_recovery_yieldpoint;
 mod oracles;
-mod physical_isolation_entry;
 mod planning;
 mod pressure_harness;
 mod process_probe;
@@ -157,24 +156,6 @@ pub use oracles::{
     PhysicalProofOracle, PhysicalProofOracleKind, PhysicalProofOracleVerdict,
     PhysicalProofOracleVerdictKind, PostSwapReaderSeesNewRootOracle, ReusablePhysicalOracleFamily,
     TranscriptReplayOracle,
-};
-pub use physical_isolation_entry::{
-    admit_physical_isolation_entry, admit_physical_isolation_entry_checked,
-    reject_copied_recovery_fields_as_physical_isolation_entry,
-    reject_foundational_or_proof_projection_as_physical_isolation_entry,
-    reject_json_authority_as_physical_isolation_entry,
-    reject_live_runtime_state_as_physical_isolation_entry,
-    reject_semantic_snapshot_as_physical_isolation_entry,
-    reject_stale_recovery_readiness_as_physical_isolation_entry,
-    reject_terminal_projection_as_physical_isolation_entry,
-    require_rebound_recovery_readiness_for_physical_isolation_entry,
-    PhysicalIsolationAdmittedEntryRecipe, PhysicalIsolationEntryAdmission,
-    PhysicalIsolationEntryCheckedOutcome, PhysicalIsolationEntryDenial,
-    PhysicalIsolationEntryEvidence, PhysicalIsolationEntryFoundationalEvidence,
-    PhysicalIsolationEntryIdentity, PhysicalIsolationEntryProofProgression,
-    PhysicalIsolationEntryProofRequest, PhysicalIsolationEntryRebindRequired,
-    PhysicalIsolationEntryRequest, PhysicalIsolationLoweredEntryRecipe,
-    PhysicalIsolationResolvedEntryRecipe, PhysicalIsolationRootEpochBasis, RecoveryReadinessBasis,
 };
 pub use planning::{
     lower_physical_simulation_plan, reject_unresolved_simulation_plan_recipe,

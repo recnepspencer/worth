@@ -34,8 +34,8 @@ Most callers need these exports from `worth_store::physical_runtime`:
   admitted policy;
 - `MediaOwnedPhysicalRuntime::open_record_store(...)` to consume the open
   request and produce the serving Store outcome;
-- `ServingPhysicalRuntime::records()` and `PhysicalRecordReader::open(...)` to
-  start a `RecordReadSession`;
+- Fallible `ServingPhysicalRuntime::records()` to capture a protected root,
+  then `PhysicalRecordReader::open(...)` to start a `RecordReadSession`;
 - `RecordReadSession::{next_chunk, read_next}` for borrowed or bounded-copy
   access;
 - `ServingPhysicalRuntime::physical_allocations()` for successor physical
@@ -119,6 +119,32 @@ semantic snapshot, or form a complete blob. Those meanings remain owned by the
 successor that defines them.
 
 ## How It Executes
+
+### Physical Adapter Boundary
+
+Live byte adapters are exported from
+`worth_store::physical_runtime::stability`, not
+`worth_store_physical_isolation`. Use `PhysicalByteGuard::from_record_chunk`
+to bind an admitted lower read plan to a real Store chunk;
+`StablePhysicalReadExecution` checks the guard and security-scope bindings and
+owns the resulting byte-access counters and
+`StablePhysicalReadReceipt`. Ordinary execution evidence is current, freshly
+retained evidence, not replay-derived evidence.
+
+The page security-scope adapter consumes a decoded page-header witness and a
+manifest slot envelope. Before exposing bytes, execution checks the decoded
+header and exact page coordinates/generation and manifest slot owner against
+the guard scope. Equal generations alone are insufficient: a carrier from
+another segment, page, or slot returns `LogicalDecodeScopeCarrierMismatch`.
+
+Lower read planning remains in `worth_store_physical_isolation`.
+`StablePhysicalReadHandle::complete_plan()` returns only
+`PhysicalReadPlanCompletionReceipt`: local plan counters and release facts.
+It cannot be converted into Store byte execution evidence. B-tree and lower
+checkpoint/compaction interlocks consume that local completion without
+inventing a zero-byte Store execution.
+
+### Residency Admission
 
 1. Admit the physical record format.
 2. Declare every residency dimension with nonzero values.
@@ -253,6 +279,47 @@ handler reads the pre-effect basis without treating it as permission to retry.
 Append failures expose the same evidence through `RecordAppendError::pressure`.
 
 ## Reading Records Without Owning Them
+
+`records()` returns `Result<PhysicalRecordReader, PhysicalReadProtectionDenial>`.
+It registers protection and selects the root under the same publication lock.
+Later publications do not change that reader's membership: a record introduced
+after capture is `RecordNotFound` to the old reader, and a scan consumes the
+reader and continues against that exact root. This is physical root stability,
+not a Query or MVCC snapshot.
+
+Each acquisition reserves a slot, even when another reader protects the same
+root. Point sessions share their reader's registration and can outlive the
+parent; only the final reader/session release returns the slot. Ordinary
+acquisition and release do not walk the root's descendants or read media.
+
+```rust
+let reader = serving.records().expect("read protection admission");
+let root = reader.protected_root();
+let mut session = reader.open(record, limits).expect("record read admission");
+drop(reader); // The session still protects the captured root.
+let chunk = session.next_chunk().expect("stream progress");
+```
+
+Production callers handle acquisition and record-read failures separately.
+`ProtectionLimit` means all reader slots remain held; `RetainedRootLimit` means
+another distinct protected root cannot fit. Retrying requires a new acquisition
+after the blocking owners release. Configure both ceilings with
+`PhysicalReadProtectionPolicy::new(...)` and `with_read_protection_policy(...)`
+on initialization or open. Defaults are 64 acquisitions and 16 protected roots.
+Metadata is preallocated before initialization effects; failure is reported as
+`RecordBootstrapDenial::ReadProtectionUnavailable(MetadataUnavailable)`.
+
+`read_protection_observer()` reports live counts and can look up an issued
+`protected_root()` in the actual root index. Neither that observation nor a
+zero blocker count authorizes reads, retirement, or deletion.
+
+Close and abort stop new calls and drain already-admitted read calls through
+the existing execution gate, including warm reads that issue no physical I/O.
+Implicit runtime drop also revokes future access. Already borrowed chunk
+memory remains valid until its borrow ends. Explicit shutdown reports
+`RetainedUntilReadersRelease` when protection registrations survive shutdown;
+it does not falsely report those resources as drained. The observer can track
+their eventual release without retaining execution or publication authority.
 
 `PhysicalRecordReader::open` and `open_external` return a
 `RecordReadSession`. The session owns the read lifecycle, operation allocation,
@@ -526,8 +593,9 @@ the unit classification without embedding evidence in the denial enum.
 - Stable: admitted instance envelopes, bounded ordinary reads, borrowed chunk
   views, explicit bounded copies, Store-owned observation, typed read/append
   pressure, dirty-frame settlement, and bounded speculative work.
-- Stable: the only public logical read lease is `RecordReadSession`. There is
-  no owning whole-record convenience or direct pool-control API.
+- Stable: readers protect one captured physical root; `RecordReadSession`
+  retains that registration and at most one current frame. There is no owning
+  whole-record convenience or direct pool-control API.
 - Stable for physical adapters: exact Recovery, Scrub, Maintenance,
   Verification, and Blob allocations borrow the Store runtime and grant only
   bounded temporary-byte ownership.

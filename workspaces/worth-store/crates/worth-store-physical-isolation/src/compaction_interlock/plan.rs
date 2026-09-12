@@ -2,12 +2,12 @@ use super::{
     CompactionCandidateRangeSet, CompactionProtectedReferenceSet, CompactionReadInterlockCounters,
     CompactionReadInterlockDenial, CompactionSourceIntegrityAdmission,
 };
-use crate::{RootEpoch, StablePhysicalReadReceipt};
+use crate::{PhysicalReadPlanCompletionReceipt, RootEpoch};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CompactionSourceEvidencePosture {
     IntegrityClearedStableRead {
-        receipt: StablePhysicalReadReceipt,
+        receipt: PhysicalReadPlanCompletionReceipt,
         admission: CompactionSourceIntegrityAdmission,
     },
     Quarantined(CompactionSourceIntegrityAdmission),
@@ -20,7 +20,7 @@ pub struct CompactionSourceIntegrityEvidence {
 
 impl CompactionSourceIntegrityEvidence {
     pub fn from_stable_read_receipt_and_integrity_admission(
-        receipt: StablePhysicalReadReceipt,
+        receipt: PhysicalReadPlanCompletionReceipt,
         admission: CompactionSourceIntegrityAdmission,
     ) -> Result<Self, CompactionReadInterlockDenial> {
         let release = receipt.read_plan_release();
@@ -53,7 +53,7 @@ impl CompactionSourceIntegrityEvidence {
         self.posture
     }
 
-    pub const fn stable_read_receipt(self) -> Option<StablePhysicalReadReceipt> {
+    pub const fn stable_read_receipt(self) -> Option<PhysicalReadPlanCompletionReceipt> {
         match self.posture {
             CompactionSourceEvidencePosture::IntegrityClearedStableRead { receipt, .. } => {
                 Some(receipt)

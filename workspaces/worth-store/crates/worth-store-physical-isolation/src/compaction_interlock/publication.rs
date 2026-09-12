@@ -2,12 +2,12 @@ use super::{
     CompactionCutoverDelta, CompactionInterlockFoundationalEvidence,
     CompactionReadInterlockCounters, CompactionReadInterlockDenial,
 };
-use crate::PhysicalPublicationReceipt;
+use crate::PhysicalPublicationPlanCompletion;
 
 #[derive(Debug, Clone)]
 pub struct CompactionRewritePublication {
     delta: CompactionCutoverDelta,
-    publication: PhysicalPublicationReceipt,
+    publication: PhysicalPublicationPlanCompletion,
     counters: CompactionReadInterlockCounters,
 }
 
@@ -29,10 +29,10 @@ impl CompactionRewritePublication {
 
     pub fn publish_rewrite(
         delta: CompactionCutoverDelta,
-        publication: PhysicalPublicationReceipt,
+        publication: PhysicalPublicationPlanCompletion,
     ) -> Result<Self, CompactionReadInterlockDenial> {
         let delta = delta.bind_publication(&publication)?;
-        let counters = delta.plan().counters().with_publication_swap();
+        let counters = delta.plan().counters().with_publication_plan_completion();
         Ok(Self {
             delta,
             publication,
@@ -44,12 +44,36 @@ impl CompactionRewritePublication {
         &self.delta
     }
 
-    pub const fn publication(&self) -> &PhysicalPublicationReceipt {
+    pub const fn publication(&self) -> &PhysicalPublicationPlanCompletion {
         &self.publication
     }
 
     pub const fn counters(&self) -> CompactionReadInterlockCounters {
         self.counters
+    }
+
+    /// Plan the admitted candidate footprint against this publication's new
+    /// root. This is local planning, not a live Store reader or byte access.
+    pub fn plan_post_cutover_read(
+        &self,
+    ) -> Result<crate::StablePhysicalReadPlan, crate::PhysicalReadPlanAdmissionDenial> {
+        let authority = crate::admit_post_publication_read_stability_authority(&self.publication)
+            .expect("publication-derived local read authority is infallible");
+        let plan = self.delta.plan();
+        let candidates = plan.candidates();
+        let resident_bytes = plan
+            .source_integrity()
+            .stable_read_receipt()
+            .expect("admitted compaction retains its source completion")
+            .counters()
+            .resident_bytes();
+        crate::physical_read_plan::admit_known_footprint_read(
+            &authority,
+            self.publication.new_root(),
+            candidates.references().iter().copied(),
+            resident_bytes,
+            candidates.references().len(),
+        )
     }
 
     pub const fn foundational_evidence(&self) -> CompactionInterlockFoundationalEvidence {

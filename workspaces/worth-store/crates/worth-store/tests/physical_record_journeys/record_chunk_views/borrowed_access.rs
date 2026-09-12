@@ -24,6 +24,7 @@ fn inline_view_exposes_only_the_record_payload_and_observational_basis() {
     let copies_before = serving.residency_observation().counters();
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),
@@ -76,6 +77,7 @@ fn external_locator_view_retains_the_readmitted_record_basis_without_copying() {
     let copies_before = serving.residency_observation().counters();
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open_external(
             locator,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),
@@ -127,6 +129,7 @@ fn extent_views_stream_one_resident_frame_at_a_time_without_pool_copies() {
     let copies_before = serving.residency_observation().counters();
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),
@@ -206,6 +209,7 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
     );
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             published.settled_members()[0].record_id(0).unwrap(),
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),

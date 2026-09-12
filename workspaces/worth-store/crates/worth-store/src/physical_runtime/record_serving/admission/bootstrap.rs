@@ -66,6 +66,7 @@ impl BootstrapCatalogReadLimits {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecordBootstrapDenial {
+    ReadProtectionUnavailable(crate::physical_runtime::PhysicalReadProtectionDenial),
     IdentityEntropyUnavailable,
     ConfigurationMismatch,
     RecordFamilyAlreadyExists,

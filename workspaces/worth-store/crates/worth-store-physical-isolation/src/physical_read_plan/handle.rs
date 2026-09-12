@@ -1,5 +1,6 @@
 use super::{
-    PhysicalReadPlanAdmissionDenial, PhysicalReadPlanReleaseReceipt, StablePhysicalReadPlan,
+    PhysicalReadPlanAdmissionDenial, PhysicalReadPlanCompletionReceipt,
+    PhysicalReadPlanReleaseReceipt, StablePhysicalReadPlan,
 };
 use crate::CurrentGenerationPhysicalReference;
 
@@ -30,6 +31,12 @@ impl StablePhysicalReadHandle {
         } else {
             Err(PhysicalReadPlanAdmissionDenial::ExecutionTimeReferenceDiscovery)
         }
+    }
+
+    /// Complete local planning obligations without claiming byte execution.
+    pub fn complete_plan(self) -> PhysicalReadPlanCompletionReceipt {
+        let counters = self.plan.counters();
+        PhysicalReadPlanCompletionReceipt::new(self.release(), counters)
     }
 
     pub fn release(mut self) -> PhysicalReadPlanReleaseReceipt {

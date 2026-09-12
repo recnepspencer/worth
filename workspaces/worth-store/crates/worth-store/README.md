@@ -1,10 +1,24 @@
 # worth-store
 
-This is the thin public facade for the rebuilt Worth Store workspace.
+This is the public facade and physical runtime composition owner for the
+rebuilt Worth Store workspace. It owns live Store lifecycle and the adapters
+that join lower physical owners to a serving Store. Physical format, lower
+policy, and platform authority remain in their specialized crates.
 
-It should re-export stable public APIs and compose lower crates. It should not
-become the place where authority, physical format, recovery, compatibility,
-maintenance, or certification logic is implemented.
+## Protected Physical Reads
+
+`ServingPhysicalRuntime::records()` captures a protected physical root or
+returns a typed admission denial. Readers, sessions, and scans retain that
+root's protection; root observations cannot manufacture a reader.
+
+`physical_runtime::stability` owns the live chunk guard, security-scope
+propagation adapter, and `StablePhysicalReadExecution`. Its
+`StablePhysicalReadReceipt` carries actual execution counters plus lower plan
+completion. The lower `PhysicalReadPlanCompletionReceipt` alone proves no
+byte access and cannot be promoted to a byte-read receipt.
+
+See [_docs/worth-store/bounded-physical-record-access.md](../../../../_docs/worth-store/bounded-physical-record-access.md)
+for admission limits, borrowed-byte lifetime, shutdown, and adapter boundaries.
 
 ## Physical Durability And Checkpoints
 

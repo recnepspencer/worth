@@ -1,6 +1,6 @@
 use worth_proof::{AuthorityMarker, AuthorityWitness};
 
-use crate::{CompactionCutoverStabilityProof, PhysicalIsolationRootEpochBasis};
+use crate::PhysicalIsolationRootEpochBasis;
 
 #[derive(Debug, Clone)]
 pub struct PhysicalReadStabilityAuthority {
@@ -32,16 +32,8 @@ pub fn physical_read_stability_authority_for_certification_test(
     PhysicalReadStabilityAuthority::from_current_root(root)
 }
 
-pub fn admit_post_compaction_read_stability_authority(
-    proof: &CompactionCutoverStabilityProof,
-) -> Result<PhysicalReadStabilityAuthority, core::convert::Infallible> {
-    Ok(PhysicalReadStabilityAuthority::from_current_root(
-        proof.post_cutover_root(),
-    ))
-}
-
 pub fn admit_post_publication_read_stability_authority(
-    receipt: &crate::PhysicalPublicationReceipt,
+    receipt: &crate::PhysicalPublicationPlanCompletion,
 ) -> Result<PhysicalReadStabilityAuthority, core::convert::Infallible> {
     Ok(PhysicalReadStabilityAuthority::from_current_root(
         receipt.new_root(),

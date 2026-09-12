@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use worth_store_physical_format::PhysicalRecordSlot;
 use worth_store_physical_isolation::{
     CompactionProtectedReferenceSet, CurrentGenerationPhysicalReference,
-    PhysicalReadPlanAdmissionDenial, StablePhysicalReadExecution, StablePhysicalReadPlan,
+    PhysicalReadPlanAdmissionDenial, StablePhysicalReadPlan,
 };
 
 static NEXT_BTREE_READ_SOURCE_IDENTITY: AtomicU64 = AtomicU64::new(1);
@@ -127,8 +127,7 @@ impl BaselineBTreeReadSource {
         let observation = self
             .witness
             .execute_separator_directed_read(probe_slot, shape);
-        let stable_read =
-            StablePhysicalReadExecution::from_execution_ready_handle(handle).complete();
+        let stable_read = handle.complete_plan();
         observation.and_then(|observation| {
             StableBTreeLookupExecution::issue(
                 observation,

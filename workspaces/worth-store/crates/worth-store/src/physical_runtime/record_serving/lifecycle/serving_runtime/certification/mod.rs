@@ -5,6 +5,13 @@ mod root_completion;
 mod wal_durable;
 
 impl ServingPhysicalRuntime {
+    pub fn certification_pause_next_read_root_capture(
+        &self,
+        stage: crate::physical_runtime::certification::CertificationReadRootCaptureStage,
+    ) -> crate::physical_runtime::certification::CertificationReadRootCapturePauseGate {
+        self.parts.publication.pause_next_root_capture(stage)
+    }
+
     pub fn certification_record_submission(
         &self,
     ) -> crate::physical_runtime::certification::CertificationPhysicalRecordSubmission {

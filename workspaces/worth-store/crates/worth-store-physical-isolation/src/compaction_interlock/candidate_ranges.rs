@@ -7,6 +7,7 @@ use worth_store_physical_format::PhysicalGenerationOwner;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompactionCandidateRangeSet {
+    footprint_basis: crate::PhysicalReadProtectedFootprintBasis,
     ranges: ProtectedReferenceRangeSet,
     references: Vec<CurrentGenerationPhysicalReference>,
     owners: Vec<PhysicalGenerationOwner>,
@@ -39,6 +40,9 @@ impl CompactionCandidateRangeSet {
             Vec::<ProtectedReferenceRange>::with_capacity(protected.len()),
         );
         Ok(Self {
+            footprint_basis: crate::PhysicalReadProtectedFootprintBasis::from_references(
+                &protected,
+            ),
             ranges,
             references,
             owners,
@@ -64,6 +68,10 @@ impl CompactionCandidateRangeSet {
 
     pub const fn ranges(&self) -> &ProtectedReferenceRangeSet {
         &self.ranges
+    }
+
+    pub const fn footprint_basis(&self) -> crate::PhysicalReadProtectedFootprintBasis {
+        self.footprint_basis
     }
 
     pub fn references(&self) -> &[CurrentGenerationPhysicalReference] {

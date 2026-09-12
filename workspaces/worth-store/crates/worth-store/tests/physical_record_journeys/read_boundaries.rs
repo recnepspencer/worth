@@ -60,7 +60,7 @@ fn permissive_access_policy_cannot_expand_fixed_page_reads() {
         .drain_unpinned_clean_frames();
     let before = reopened.media_counters();
     assert!(matches!(
-        reopened.records().open_external(
+        reopened.records().expect("read protection admission").open_external(
             locator,
             RecordReadLimits::new(RecordByteLimit::new(1024).unwrap()),
         ),

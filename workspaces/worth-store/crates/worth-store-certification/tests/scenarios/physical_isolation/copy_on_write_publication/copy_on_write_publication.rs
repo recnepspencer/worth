@@ -1,30 +1,23 @@
-#[path = "crash_recovery.rs"]
-mod crash_recovery;
 use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
 use worth_store_test_support::harness::physical_isolation::publication as publication_support;
 
 use publication_support::{
-    admitted_copy_on_write_plan, execute_publication_recovery_replay, mismatched_release_receipt,
-    publication_inputs, publication_inputs_for_store, root_publication_validation,
+    admitted_copy_on_write_plan, mismatched_release_receipt, publication_inputs,
+    publication_inputs_for_store, root_publication_validation,
 };
 use support::current_generation_page_reference;
-use worth_foundational::{
-    FoundationalBoundaryEvidenceContinuityAttachmentScope, FoundationalBoundaryEvidenceReceiptKind,
-    FoundationalDiagnosticOutcomeKind, FoundationalDiagnosticRowFamily,
-};
-use worth_store_physical_isolation::PublicationCrashStage;
 use worth_store_physical_isolation::{
     AllocatorPublicationFence, CrashStableFreeReusePosture, NewRootPublicationProof,
     PhysicalIdentityReuse, PhysicalOrderingContract, PhysicalOrderingSite,
     PhysicalPublicationDenial, PhysicalPublicationIntent, PhysicalPublicationReadiness,
-    PhysicalPublicationReleasePosture, PublicationCrashRecoveryOutcome, PublicationLatchReadiness,
-    PublicationRootCandidate, RootSwapOrderingContract,
+    PhysicalPublicationReleasePosture, PublicationLatchReadiness, PublicationRootCandidate,
+    RootSwapOrderingContract,
 };
 
 #[test]
-fn copy_on_write_publication_preserves_old_reachability_and_publishes_new_root() {
+fn copy_on_write_plan_preserves_exact_root_and_release_correlation() {
     let inputs = publication_inputs();
-    let receipt = admitted_copy_on_write_plan(&inputs).complete();
+    let receipt = admitted_copy_on_write_plan(&inputs).complete_plan();
 
     assert_eq!(
         receipt.epochs().root().old().get(),
@@ -52,54 +45,7 @@ fn copy_on_write_publication_preserves_old_reachability_and_publishes_new_root()
     assert_eq!(receipt.counters().epoch_checks(), 1);
     assert_eq!(receipt.counters().ordering_checks(), 1);
     assert_eq!(receipt.counters().readiness_joins(), 1);
-    assert_eq!(receipt.counters().root_swaps(), 1);
 
-    for stage in [
-        PublicationCrashStage::BeforePublication,
-        PublicationCrashStage::DuringPublication,
-        PublicationCrashStage::AfterPublication,
-    ] {
-        let recovery_receipt = execute_publication_recovery_replay(stage);
-        let outcome =
-            PublicationCrashRecoveryOutcome::admit_recovery_receipt(&receipt, recovery_receipt)
-                .unwrap();
-        assert!(!outcome.mixed_tree());
-    }
-
-    let foundational = receipt
-        .lower_to_foundational_evidence()
-        .expect("publication receipt provenance is admissible");
-    assert_eq!(
-        foundational.executed_receipt().receipt_kind(),
-        FoundationalBoundaryEvidenceReceiptKind::Execution
-    );
-    assert_eq!(foundational.diagnostic_rows().len(), 1);
-    assert_eq!(
-        foundational.diagnostic_rows()[0].family(),
-        FoundationalDiagnosticRowFamily::ProvenanceReady
-    );
-    assert_eq!(
-        foundational.diagnostic_rows()[0].outcome_kind(),
-        FoundationalDiagnosticOutcomeKind::Accepted
-    );
-    assert_eq!(
-        foundational.lineage().subject().handle().get(),
-        inputs.new_root.epoch().get()
-    );
-    assert_eq!(
-        foundational
-            .lineage()
-            .related_subjects()
-            .unwrap()
-            .subjects()[0]
-            .handle()
-            .get(),
-        inputs.old_root.epoch().get()
-    );
-    assert_eq!(
-        foundational.continuity_scope(),
-        FoundationalBoundaryEvidenceContinuityAttachmentScope::ObjectLevel
-    );
     assert_eq!(
         receipt
             .admit_old_reachability_release(inputs.old_release)
@@ -116,9 +62,9 @@ fn copy_on_write_publication_preserves_old_reachability_and_publishes_new_root()
 }
 
 #[test]
-fn publication_exposes_post_swap_reader_root() {
+fn publication_plan_exposes_the_declared_successor_root() {
     let inputs = publication_inputs();
-    let publication = admitted_copy_on_write_plan(&inputs).complete();
+    let publication = admitted_copy_on_write_plan(&inputs).complete_plan();
 
     assert_eq!(
         publication.old_root().epoch().get(),
@@ -189,7 +135,7 @@ fn publication_denies_stale_epochs_and_weak_root_swap_ordering() {
         NewRootPublicationProof::from_root_validation(inputs.new_validation),
         PublicationLatchReadiness::declared_publish_latches_released_before_blocking_io(),
     );
-    let publication = lowered.join_readiness(readiness).unwrap().complete();
+    let publication = lowered.join_readiness(readiness).unwrap().complete_plan();
     assert_eq!(
         publication.ordering().ordering().strength(),
         worth_store_physical_isolation::PhysicalOrderingStrength::SequentiallyConsistent
@@ -255,7 +201,7 @@ fn identity_reuse_requires_allocator_publication_fence() {
         .unwrap()
         .join_readiness(readiness)
         .unwrap()
-        .complete();
+        .complete_plan();
     assert_eq!(
         receipt.release_posture(),
         PhysicalPublicationReleasePosture::IdentityReuseProtectedByAllocatorFence

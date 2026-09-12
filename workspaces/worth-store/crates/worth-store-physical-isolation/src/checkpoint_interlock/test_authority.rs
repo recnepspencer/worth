@@ -2,7 +2,7 @@ use super::{
     CheckpointPublicationReadmission, CheckpointPublicationStabilityProof,
     CheckpointReadInterlockPlan, CheckpointRootEpochTransition, ReadDuringCheckpointVerdict,
 };
-use crate::stable_read_execution::stable_physical_read_receipt_for_certification_root;
+use crate::physical_read_plan::read_plan_completion_for_certification_root;
 use crate::{
     epoch::{manifest_epoch_from_entry_seed, root_epoch_from_entry_seed},
     CheckpointPublicationIdentity, CheckpointPublicationRoot, CheckpointPublicationRootBasis,
@@ -41,8 +41,8 @@ pub fn read_during_checkpoint_verdict_for_certification_test() -> ReadDuringChec
             .expect("certification checkpoint readmission should admit");
     let transition = CheckpointRootEpochTransition::admit(old_root, readmission)
         .expect("certification checkpoint transition should admit");
-    let pre_read = stable_physical_read_receipt_for_certification_root(old_root, 64);
-    let post_read = stable_physical_read_receipt_for_certification_root(new_root, 64);
+    let pre_read = read_plan_completion_for_certification_root(old_root, 64);
+    let post_read = read_plan_completion_for_certification_root(new_root, 64);
     let plan = CheckpointReadInterlockPlan::admit(pre_read, transition)
         .expect("certification checkpoint plan should admit");
     let proof =

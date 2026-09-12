@@ -1,3 +1,4 @@
+use worth_store::physical_runtime::stability::stable_physical_read_receipt_for_certification_test;
 use worth_store_io_scheduler::{
     admit_background_pacing, blob_ingest_background_capacity_for_certification_test,
     foreground_reservation::admitted_point_read_reservation_for_certification_test,
@@ -8,7 +9,6 @@ use worth_store_io_scheduler::{
     BackgroundIdleCapacityLeaseRequest, BackgroundPacingOutcome, BackgroundResourceBudget,
     QueueSlot,
 };
-use worth_store_physical_isolation::stable_physical_read_receipt_for_certification_test;
 
 use crate::{BlobStreamingReadAdmission, BlobStreamingReadDenial};
 

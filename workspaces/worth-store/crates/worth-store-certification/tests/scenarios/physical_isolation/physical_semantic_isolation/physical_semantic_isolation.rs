@@ -2,7 +2,8 @@ use worth_foundational::{FoundationalBoundaryArtifactCategory, FoundationalBound
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::{
     history::{BranchId, CommitId},
-    snapshots::{SnapshotHandle, SnapshotId},
+    runtime::RelationalRuntimeBuilder,
+    snapshots::SnapshotId,
     transactions::TransactionId,
     visibility::{RelationalStoreCorrelationReference, RelationalStoreCorrelationReferenceKind},
 };
@@ -178,15 +179,20 @@ fn foundational_roles_preserve_semantic_and_physical_authority_boundaries() {
 
 #[test]
 fn relational_exports_are_semantic_diagnostics_not_store_authority() {
+    let runtime = RelationalRuntimeBuilder::new().build();
+    let branch = runtime
+        .branch_identity(&BranchId("main".to_owned()))
+        .unwrap();
+    let (_, basis) = runtime.observe_branch(&branch).unwrap();
+    let snapshot = runtime
+        .snapshots()
+        .snapshot_for_observation(&basis.observation())
+        .unwrap();
     let exports = [
         RelationalStoreCorrelationReference::transaction(10, TransactionId(1)),
         RelationalStoreCorrelationReference::branch(10, BranchId("main".to_string())),
         RelationalStoreCorrelationReference::snapshot(10, SnapshotId(2)),
-        RelationalStoreCorrelationReference::snapshot_handle(&SnapshotHandle::new(
-            3,
-            4,
-            BranchId("main".to_string()),
-        )),
+        RelationalStoreCorrelationReference::snapshot_handle(&snapshot),
         RelationalStoreCorrelationReference::projection(10, "projection/users"),
         RelationalStoreCorrelationReference::current_basis(10, "current-basis"),
         RelationalStoreCorrelationReference::commit(10, CommitId(5)),
@@ -201,6 +207,7 @@ fn relational_exports_are_semantic_diagnostics_not_store_authority() {
         assert_eq!(semantic.semantic_id(), export.semantic_id());
         assert!(!semantic.is_store_physical_stability_authority());
     }
+    runtime.snapshots().release_snapshot(&snapshot).unwrap();
 }
 
 fn semantic_visibility_references() -> Vec<SemanticVisibilityReference> {

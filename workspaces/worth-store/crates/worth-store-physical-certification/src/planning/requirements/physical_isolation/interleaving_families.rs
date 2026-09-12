@@ -154,6 +154,10 @@ fn physical_isolation_oracle_families() -> RequiredOracleFamilySet {
 fn compaction_counter_contracts(actor_step_count: u64) -> RequiredCounterContractSet {
     let mut contracts = base_physical_isolation_counter_contracts(actor_step_count);
     contracts.extend([
+        PhysicalCounterContract::exact(
+            CounterContractKind::CompactionPublicationPlanCompletions,
+            1,
+        ),
         positive_contract(CounterContractKind::BlockedReclaimAttempts),
         positive_contract(CounterContractKind::CompactionCandidateRanges),
         positive_contract(CounterContractKind::CopiedPages),
@@ -162,12 +166,9 @@ fn compaction_counter_contracts(actor_step_count: u64) -> RequiredCounterContrac
 }
 
 fn checkpoint_counter_contracts(actor_step_count: u64) -> RequiredCounterContractSet {
-    let mut contracts = base_physical_isolation_counter_contracts(actor_step_count);
-    contracts.push(PhysicalCounterContract::exact(
-        CounterContractKind::PublicationSwaps,
-        1,
-    ));
-    RequiredCounterContractSet::from_contracts(contracts)
+    RequiredCounterContractSet::from_contracts(base_physical_isolation_counter_contracts(
+        actor_step_count,
+    ))
 }
 
 fn reclaim_counter_contracts(actor_step_count: u64) -> RequiredCounterContractSet {
@@ -227,4 +228,23 @@ fn positive_contract(kind: CounterContractKind) -> PhysicalCounterContract {
 
 fn monotonic_contract(kind: CounterContractKind) -> PhysicalCounterContract {
     PhysicalCounterContract::monotonic(kind).expect("static monotonic counter contract is valid")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn local_compaction_completion_is_not_a_checkpoint_or_restart_requirement() {
+        let kind = CounterContractKind::CompactionPublicationPlanCompletions;
+        assert!(compaction_counter_contracts(3)
+            .iter()
+            .any(|contract| contract.kind() == kind));
+        for contracts in [
+            checkpoint_counter_contracts(3),
+            restart_counter_contracts(3),
+        ] {
+            assert!(!contracts.iter().any(|contract| contract.kind() == kind));
+        }
+    }
 }

@@ -1,4 +1,9 @@
 mod barrier;
+#[cfg(any(test, feature = "certification-authority"))]
+mod certification;
+mod completion;
+#[cfg(test)]
+mod completion_tests;
 mod counters;
 mod denial;
 mod footprint;
@@ -15,6 +20,14 @@ mod scratch;
 mod traversal;
 
 pub use barrier::PhysicalReadReachabilityBarrier;
+#[cfg(any(test, feature = "certification-authority"))]
+pub(crate) use certification::read_plan_completion_for_certification_root;
+#[cfg(any(test, feature = "certification-authority"))]
+pub use certification::{
+    stable_physical_read_plan_for_certification_seed,
+    stable_physical_read_plan_for_certification_test,
+};
+pub use completion::PhysicalReadPlanCompletionReceipt;
 pub use counters::ReadPlanCounterSnapshot;
 pub use denial::PhysicalReadPlanAdmissionDenial;
 pub use footprint::{

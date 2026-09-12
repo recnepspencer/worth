@@ -1,4 +1,3 @@
-use worth_store::physical_runtime::PhysicalRecordChunkView;
 use worth_store_physical_format::{
     PageGenerationCell, PhysicalGeneration, PhysicalGenerationOwner, PhysicalReference,
     PhysicalReferenceAdmissionWitness, SegmentGenerationCell,
@@ -115,16 +114,20 @@ impl CurrentGenerationPhysicalReference {
         self.reference.owner()
     }
 
-    pub fn for_record_chunk(chunk: &PhysicalRecordChunkView<'_>) -> Self {
-        Self::from_durable_owner(chunk.basis().physical_owner())
-            .expect("Store record chunks carry a generation-counted physical owner")
-    }
-
     pub(crate) const fn generation_counted_reference(self) -> GenerationCountedPhysicalReference {
         self.reference
     }
 
     pub(crate) fn from_durable_owner(owner: PhysicalGenerationOwner) -> Option<Self> {
+        GenerationCountedPhysicalReference::from_durable_owner(owner)?
+            .require_current_generation(owner.generation())
+            .ok()
+    }
+}
+
+impl GenerationCountedPhysicalReference {
+    /// Describe a canonical durable owner; this does not grant live runtime authority.
+    pub fn from_durable_owner(owner: PhysicalGenerationOwner) -> Option<Self> {
         use worth_store_physical_format::{
             PhysicalCellReuseDomain, PhysicalGenerationAuthority, PhysicalReferenceAuthority,
         };
@@ -173,6 +176,6 @@ impl CurrentGenerationPhysicalReference {
             }
             PhysicalCellReuseDomain::FreeSpaceReuse => return None,
         };
-        Some(Self::from_validated_reference(counted))
+        Some(counted)
     }
 }

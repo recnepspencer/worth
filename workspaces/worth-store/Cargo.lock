@@ -1321,6 +1321,7 @@ dependencies = [
  "worth-store-physical-backend",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
+ "worth-store-physical-isolation",
  "worth-store-security",
  "worth-store-wal",
 ]
@@ -1745,14 +1746,12 @@ dependencies = [
  "tempfile",
  "worth-foundational",
  "worth-proof",
- "worth-store",
  "worth-store-authority",
  "worth-store-budgets",
  "worth-store-contracts",
  "worth-store-physical-backend",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
- "worth-store-recovery-physics",
  "worth-store-security",
  "worth-store-wal",
 ]

@@ -285,6 +285,7 @@ fn multi_block_manifest_lookup_has_logarithmic_path_and_exact_parity() {
     for (index, expected) in payloads.iter().enumerate().rev() {
         let session = serving
             .records()
+            .expect("read protection admission")
             .open(
                 member.record_id(index).unwrap(),
                 RecordReadLimits::new(RecordByteLimit::new(100).unwrap()),
@@ -372,6 +373,7 @@ fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
         .is_file());
     let old_record = serving
         .records()
+        .expect("read protection admission")
         .open(
             first.settled_members()[0].record_id(0).unwrap(),
             RecordReadLimits::new(RecordByteLimit::new(32).unwrap()),
@@ -380,6 +382,7 @@ fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
     assert_eq!(read_record(old_record, 5).0, b"alpha");
     let appended = serving
         .records()
+        .expect("read protection admission")
         .open(
             second.settled_members()[0].record_id(0).unwrap(),
             RecordReadLimits::new(RecordByteLimit::new(32).unwrap()),

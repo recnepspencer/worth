@@ -51,7 +51,11 @@ fn ordinary_read_and_scan_select_their_exact_store_native_signal_partitions() {
         .len();
     let limits = RecordReadLimits::new(RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
     let (bytes, _) = read_record(
-        read_serving.records().open(record, limits).unwrap(),
+        read_serving
+            .records()
+            .expect("read protection admission")
+            .open(record, limits)
+            .unwrap(),
         PAYLOAD.len(),
     );
     assert_eq!(bytes, PAYLOAD);

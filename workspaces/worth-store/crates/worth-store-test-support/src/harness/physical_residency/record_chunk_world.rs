@@ -11,6 +11,7 @@ use super::PhysicalResidencyStoreWorld;
 
 #[derive(Debug)]
 pub enum PhysicalResidencyRecordWorldFailure {
+    ReadProtection(worth_store::physical_runtime::PhysicalReadProtectionDenial),
     EmptyPayload,
     PayloadTooLarge,
     Batch(RecordAppendDenial),
@@ -63,6 +64,7 @@ impl PhysicalResidencyStoreWorld {
         let mut session = self
             .serving()
             .records()
+            .map_err(PhysicalResidencyRecordWorldFailure::ReadProtection)?
             .open(
                 acknowledgment
                     .record_ids()

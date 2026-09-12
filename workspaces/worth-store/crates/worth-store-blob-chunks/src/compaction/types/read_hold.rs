@@ -1,17 +1,18 @@
-use worth_store_physical_isolation::StablePhysicalReadReceipt;
+use worth_store_physical_isolation::PhysicalReadPlanCompletionReceipt;
 
+/// Local read-plan posture; this value does not retain a live Store root.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BlobCompactionReadHold {
-    Released(StablePhysicalReadReceipt),
-    Active(StablePhysicalReadReceipt),
+    Released(PhysicalReadPlanCompletionReceipt),
+    Active(PhysicalReadPlanCompletionReceipt),
 }
 
 impl BlobCompactionReadHold {
-    pub const fn released(receipt: StablePhysicalReadReceipt) -> Self {
+    pub const fn released(receipt: PhysicalReadPlanCompletionReceipt) -> Self {
         Self::Released(receipt)
     }
 
-    pub const fn active(receipt: StablePhysicalReadReceipt) -> Self {
+    pub const fn active(receipt: PhysicalReadPlanCompletionReceipt) -> Self {
         Self::Active(receipt)
     }
 
@@ -19,7 +20,7 @@ impl BlobCompactionReadHold {
         matches!(self, Self::Active(_))
     }
 
-    pub(crate) const fn released_receipt(self) -> Option<StablePhysicalReadReceipt> {
+    pub(crate) const fn released_receipt(self) -> Option<PhysicalReadPlanCompletionReceipt> {
         match self {
             Self::Released(receipt) => Some(receipt),
             Self::Active(_) => None,

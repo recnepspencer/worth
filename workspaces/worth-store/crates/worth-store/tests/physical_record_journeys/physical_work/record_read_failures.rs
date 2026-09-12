@@ -50,7 +50,11 @@ fn denied_before_effect_read_releases_work_and_allows_same_runtime_retry() {
         .physical_signal_observation()
         .unwrap()
         .aspect_invalidation_count();
-    let failure = match serving.records().open(record, limits) {
+    let failure = match serving
+        .records()
+        .expect("read protection admission")
+        .open(record, limits)
+    {
         Ok(_) => panic!("a denied backend read must not construct a record session"),
         Err(failure) => failure,
     };
@@ -90,6 +94,7 @@ fn denied_before_effect_read_releases_work_and_allows_same_runtime_retry() {
     );
     let mut retry = serving
         .records()
+        .expect("read protection admission")
         .open(record, limits)
         .expect("transient backend denial must not revoke healthy Store truth");
     let mut bytes = vec![0_u8; PAYLOAD.len()];

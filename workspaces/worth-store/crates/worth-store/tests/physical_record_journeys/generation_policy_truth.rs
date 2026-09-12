@@ -106,6 +106,7 @@ fn multi_page_cow_preserves_untouched_page_generation_and_all_records() {
     for (index, payload) in first_payloads.iter().enumerate() {
         let session = reopened
             .records()
+            .expect("read protection admission")
             .open(
                 first.record_id(index).unwrap(),
                 RecordReadLimits::new(RecordByteLimit::new(3_000).unwrap()),
@@ -115,6 +116,7 @@ fn multi_page_cow_preserves_untouched_page_generation_and_all_records() {
     }
     let session = reopened
         .records()
+        .expect("read protection admission")
         .open(
             fourth.record_id(0).unwrap(),
             RecordReadLimits::new(RecordByteLimit::new(3_000).unwrap()),
@@ -215,6 +217,7 @@ fn segment_target_drift_opens_a_new_policy_honest_segment() {
     ] {
         let session = reopened
             .records()
+            .expect("read protection admission")
             .open(
                 record,
                 RecordReadLimits::new(RecordByteLimit::new(16).unwrap()),

@@ -1,3 +1,6 @@
+use worth_store::physical_runtime::stability::{
+    stable_physical_read_receipt_for_certification_test, StablePhysicalReadReceipt,
+};
 use worth_store_contracts::StableDigest;
 use worth_store_io_scheduler::foreground_reservation::{
     admitted_point_read_reservation_for_certification_test,
@@ -9,10 +12,9 @@ use worth_store_physical_format::{
 };
 use worth_store_physical_isolation::{
     physical_placement_movement_execution_for_certification_test,
-    stable_physical_read_plan_for_certification_test,
-    stable_physical_read_receipt_for_certification_test, ChunkMigrationReadInterlockPlan,
+    stable_physical_read_plan_for_certification_test, ChunkMigrationReadInterlockPlan,
     FutureChunkStabilityBasis, PhysicalChunkStabilityPlaceholder,
-    PhysicalPlacementMovementExecutionReceipt, StablePhysicalReadReceipt,
+    PhysicalPlacementMovementExecutionReceipt,
 };
 use worth_store_tiering::ColdPlacementState;
 

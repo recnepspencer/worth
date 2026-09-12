@@ -6,11 +6,6 @@ pub struct RootSwapOrderingContract {
     ordering: PhysicalOrderingContract,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AtomicPhysicalRootSwap {
-    ordering: RootSwapOrderingContract,
-}
-
 impl RootSwapOrderingContract {
     pub fn acquire_release_or_stronger() -> Self {
         Self {
@@ -27,16 +22,6 @@ impl RootSwapOrderingContract {
     }
 
     pub const fn ordering(self) -> PhysicalOrderingContract {
-        self.ordering
-    }
-}
-
-impl AtomicPhysicalRootSwap {
-    pub const fn new(ordering: RootSwapOrderingContract) -> Self {
-        Self { ordering }
-    }
-
-    pub const fn ordering(self) -> RootSwapOrderingContract {
         self.ordering
     }
 }

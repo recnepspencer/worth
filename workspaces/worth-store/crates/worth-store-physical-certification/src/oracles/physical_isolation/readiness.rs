@@ -55,7 +55,7 @@ impl PhysicalProofOracle for OldReaderSeesOldRootOracle {
         require_satisfied_read_interlock_fact(
             self.oracle_kind(),
             basis,
-            |observation| observation.old_reader_retained_old_structure(),
+            |observation| observation.old_reachability_deferred(),
             |observation| observation.old_reader_retained_old_root(),
         )
     }
@@ -77,7 +77,7 @@ impl PhysicalProofOracle for PostSwapReaderSeesNewRootOracle {
         require_satisfied_read_interlock_fact(
             self.oracle_kind(),
             basis,
-            |observation| observation.new_reader_observed_new_epoch(),
+            |observation| observation.post_cutover_plan_matches_publication(),
             |observation| observation.post_publication_reader_observed_new_epoch(),
         )
     }
@@ -108,6 +108,8 @@ fn require_satisfied_read_interlock_fact(
     compaction_predicate: impl FnOnce(CompactionInterlockObservation) -> bool,
     checkpoint_predicate: impl FnOnce(CheckpointInterlockObservation) -> bool,
 ) -> Result<PhysicalProofOracleVerdict, OracleDenial> {
+    // This family judges local readiness shape only. Its mandatory non-claim
+    // excludes live reader visibility, byte integrity, and actual retention.
     if let Some(observation) = basis.checkpoint_interlock() {
         if !checkpoint_predicate(observation) {
             return Err(OracleDenial::CheckpointInterlockObservationDenied { oracle });

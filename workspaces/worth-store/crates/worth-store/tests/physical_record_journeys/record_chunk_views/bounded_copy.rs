@@ -35,6 +35,7 @@ fn bounded_copy_streams_the_complete_larger_than_memory_record_with_exact_eviden
     let copies_before = serving.residency_observation().counters();
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),
@@ -96,6 +97,7 @@ fn bounded_copies_and_views_share_one_cursor_with_exact_copy_evidence() {
     let copies_before = serving.residency_observation().counters();
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),

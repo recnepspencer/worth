@@ -8,6 +8,7 @@ description = "Roadmap 2 S.7 native content-addressed blob and object chunk stor
 
 [features]
 certification-test-authority = [
+    "worth-store/certification-test-authority",
     "worth-store-io-scheduler/certification-test-authority",
     "worth-store-physical-backend/certification-test-authority",
     "worth-store-physical-isolation/certification-authority",
@@ -36,6 +37,7 @@ worth-store-wal.workspace = true
 worth-store.workspace = true
 
 [dev-dependencies]
+worth-store = { workspace = true, features = ["certification-test-authority"] }
 tempfile = "3"
 worth-store-aspect-native.workspace = true
 worth-store-offline-verifier.workspace = true

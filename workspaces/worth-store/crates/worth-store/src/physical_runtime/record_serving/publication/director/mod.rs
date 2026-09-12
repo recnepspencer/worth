@@ -64,6 +64,8 @@ pub(in crate::physical_runtime) struct RecordPublicationTerminalState {
 }
 
 pub(in crate::physical_runtime) struct RecordPublicationFoundation {
+    pub(in crate::physical_runtime) read_protection:
+        Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
     pub(in crate::physical_runtime) idempotency:
         crate::physical_runtime::durability::PhysicalMutationIdempotencyRuntimeAuthority,
     pub(in crate::physical_runtime) durability:
@@ -119,6 +121,7 @@ impl RecordPublicationDirector {
                 foundation.current_root.clone(),
                 foundation.previous_root,
                 foundation.free_space.clone(),
+                foundation.read_protection,
             ),
             residency: PhysicalResidencyWorkPort::new(
                 foundation.frame_ports,
@@ -153,6 +156,26 @@ impl RecordPublicationDirector {
 
     pub(in crate::physical_runtime) fn current_root(&self) -> DurablePhysicalRootManifest {
         self.root_owner.snapshot().0
+    }
+
+    pub(in crate::physical_runtime) fn capture_read_root(
+        &self,
+    ) -> Result<
+        (
+            DurablePhysicalRootManifest,
+            crate::physical_runtime::stability::PhysicalRootReadLease,
+        ),
+        crate::physical_runtime::PhysicalReadProtectionDenial,
+    > {
+        self.root_owner.capture_read_root()
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn pause_next_root_capture(
+        &self,
+        stage: crate::physical_runtime::certification::CertificationReadRootCaptureStage,
+    ) -> crate::physical_runtime::certification::CertificationReadRootCapturePauseGate {
+        self.root_owner.pause_next_capture_for_certification(stage)
     }
 
     pub(in crate::physical_runtime) fn residue(&self) -> RecordPublicationResidueObservation {

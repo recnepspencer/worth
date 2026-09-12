@@ -26,10 +26,12 @@ scoped_epoch!(ExtentEpoch);
 scoped_epoch!(PageEpoch);
 scoped_epoch!(ChunkEpoch);
 
+#[cfg(any(test, feature = "certification-authority"))]
 pub(crate) fn root_epoch_from_entry_seed(seed: u64) -> RootEpoch {
     RootEpoch::from_admitted_physical_basis(derive_physical_epoch(seed, "root", 0))
 }
 
+#[cfg(any(test, feature = "certification-authority"))]
 pub(crate) fn manifest_epoch_from_entry_seed(seed: u64) -> ManifestEpoch {
     ManifestEpoch::from_admitted_physical_basis(derive_physical_epoch(seed, "manifest", 0))
 }

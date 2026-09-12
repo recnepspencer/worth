@@ -26,6 +26,7 @@ mod resource_lifecycle;
 mod root_admission;
 mod runtime;
 mod shutdown;
+pub mod stability;
 mod work;
 
 pub use admission::{
@@ -238,6 +239,11 @@ pub use recovery_yieldpoint::{
 };
 pub use runtime::AdmittedPhysicalRuntime;
 pub use shutdown::{AbortedRuntime, ClosedRuntime};
+pub use stability::{
+    PhysicalProtectedRootObservation, PhysicalReadProtectionDenial,
+    PhysicalReadProtectionDisposition, PhysicalReadProtectionObservation,
+    PhysicalReadProtectionObserver, PhysicalReadProtectionPolicy, PhysicalReadProtectionShutdown,
+};
 pub use work::{
     AdmittedPhysicalWork, AdmittedPhysicalWorkAuthority, BlockedPhysicalWork,
     CompletedPhysicalCheckpointAction, CompletedPhysicalPublicationEffect,
@@ -314,6 +320,7 @@ pub mod certification {
     pub use super::certification_input::CertificationDurableMutationInput;
     pub use super::durability::{
         CertificationPhysicalMutationCheckpoint, CertificationPhysicalMutationPauseGate,
+        CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage,
     };
     pub use super::instance::{
         CertificationPhysicalClosePauseGate, CertificationPhysicalExecutionCheckpoint,

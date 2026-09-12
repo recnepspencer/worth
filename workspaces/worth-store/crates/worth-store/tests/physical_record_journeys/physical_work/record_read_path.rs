@@ -36,7 +36,11 @@ fn cold_read_carries_artifact_proof_so_hot_read_creates_no_physical_work() {
         .aspect_invalidation_count();
     let settled_before = serving.physical_work_observer().causal().records().len();
     let (cold_bytes, cold) = read_record(
-        serving.records().open(record, limits).unwrap(),
+        serving
+            .records()
+            .expect("read protection admission")
+            .open(record, limits)
+            .unwrap(),
         PAYLOAD.len(),
     );
     await_read_signal_cleanup(&serving);
@@ -46,7 +50,11 @@ fn cold_read_carries_artifact_proof_so_hot_read_creates_no_physical_work() {
     let settled_after_cold = serving.physical_work_observer().causal().records();
 
     let (hot_bytes, hot) = read_record(
-        serving.records().open(record, limits).unwrap(),
+        serving
+            .records()
+            .expect("read protection admission")
+            .open(record, limits)
+            .unwrap(),
         PAYLOAD.len(),
     );
     await_read_signal_cleanup(&serving);

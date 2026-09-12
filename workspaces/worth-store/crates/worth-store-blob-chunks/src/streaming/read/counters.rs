@@ -1,6 +1,6 @@
+use worth_store::physical_runtime::stability::StablePhysicalReadExecutionCounters;
 use worth_store_budgets::CounterEvidenceStrength;
 use worth_store_io_scheduler::BackgroundPacingCounterSnapshot;
-use worth_store_physical_isolation::StablePhysicalReadExecutionCounters;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BlobStreamingReadCounterSnapshot {

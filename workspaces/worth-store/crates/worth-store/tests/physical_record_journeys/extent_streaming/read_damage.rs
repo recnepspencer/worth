@@ -50,6 +50,7 @@ fn streamed_read_damage_retains_the_completed_logical_range() {
     );
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             published.settled_members()[0].record_id(0).unwrap(),
             RecordReadLimits::new(RecordByteLimit::new(40_000).unwrap()),

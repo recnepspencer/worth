@@ -85,7 +85,6 @@ fn base_physical_isolation_counter_contracts(
     vec![
         PhysicalCounterContract::exact(CounterContractKind::ActorStepExact, actor_step_count),
         PhysicalCounterContract::exact(CounterContractKind::ReplayIdentityExact, 1),
-        PhysicalCounterContract::exact(CounterContractKind::PublicationSwaps, 1),
         PhysicalCounterContract::profile_scoped(CounterContractKind::ProfileResourceEnvelope),
         bounded_contract(CounterContractKind::AllocationBytes, 64 * 1024),
         bounded_contract(CounterContractKind::PagePins, 8),

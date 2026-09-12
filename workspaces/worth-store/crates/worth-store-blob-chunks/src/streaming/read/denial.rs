@@ -1,3 +1,4 @@
+use worth_store::physical_runtime::stability::PhysicalReadExecutionDenial;
 use worth_store_budgets::CounterEvidenceStrength;
 use worth_store_io_scheduler::{
     foreground_reservation::{
@@ -5,7 +6,6 @@ use worth_store_io_scheduler::{
     },
     BackgroundIoPressureClass, BackgroundPacingDenial,
 };
-use worth_store_physical_isolation::PhysicalReadExecutionDenial;
 
 use super::super::allocation::BlobStreamingAllocationDenial;
 use crate::{

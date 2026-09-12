@@ -75,6 +75,11 @@ impl PhysicalRecordReader {
         mut self,
         request: RecordScanRequest,
     ) -> Result<PhysicalRecordScanSession, RecordScanError> {
+        let _call = self.execution.admit_call().map_err(|_| {
+            super::scan_observation::scan_error(RecordScanDenial::RecordStream(
+                super::super::RecordStreamFailureKind::RuntimeReleased,
+            ))
+        })?;
         let admission = request_admission::admit_scan_request(&mut self, request)?;
         let positioned = start_position::position_scan_start(
             &self,
@@ -101,6 +106,25 @@ impl PhysicalRecordScanSession {
         &mut self,
         scratch: &'scratch mut [u8],
     ) -> Result<RecordScanOutcome<'scratch>, RecordScanError> {
+        let _call = self
+            .reader
+            .execution
+            .admit_call()
+            .map_err(|_| RecordScanError {
+                denial: RecordScanDenial::RecordStream(
+                    super::super::RecordStreamFailureKind::RuntimeReleased,
+                ),
+                observation: self.total,
+            })?;
+        self.reader
+            .protection
+            .require_live()
+            .map_err(|_| RecordScanError {
+                denial: RecordScanDenial::RecordStream(
+                    super::super::RecordStreamFailureKind::RuntimeReleased,
+                ),
+                observation: self.total,
+            })?;
         let runtime = self.reader.runtime.upgrade().ok_or(RecordScanError {
             denial: RecordScanDenial::ServingRequiresInspection,
             observation: self.total,

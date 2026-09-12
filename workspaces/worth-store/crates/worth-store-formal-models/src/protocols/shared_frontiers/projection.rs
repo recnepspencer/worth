@@ -38,7 +38,7 @@ pub const fn compose_compaction_action(
     action: CompactionVisibilityAction,
 ) -> Option<SharedFrontierAction> {
     match action {
-        CompactionVisibilityAction::AdmitRecoveryVisibility => {
+        CompactionVisibilityAction::ValidateReadPlanCutover => {
             Some(SharedFrontierAction::CompactionCutover)
         }
         CompactionVisibilityAction::DeferReclaim => Some(SharedFrontierAction::ReclaimDeferred),

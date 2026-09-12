@@ -133,6 +133,7 @@ pub(super) fn reopener(root: &Path, encoded_locator: &str) {
     let locator = ExternalPhysicalRecordLocator::decode(unhex(encoded_locator)).unwrap();
     let record = serving
         .records()
+        .expect("read protection admission")
         .open_external(
             locator,
             RecordReadLimits::new(RecordByteLimit::new(1024).unwrap()),

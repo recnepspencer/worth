@@ -19,6 +19,7 @@ pub(in crate::physical_runtime) fn initialize(
     request: PhysicalRecordInitialization,
 ) -> RecordStoreInitializationOutcome {
     let PhysicalRecordInitialization {
+        read_protection,
         format,
         placement,
         access,
@@ -26,6 +27,21 @@ pub(in crate::physical_runtime) fn initialize(
         work_profile,
         durability,
     } = request;
+    let read_protection =
+        match crate::physical_runtime::stability::PhysicalReadProtectionOwner::admit(
+            read_protection,
+            runtime.runtime_identity(),
+            runtime.lifecycle_state(),
+        ) {
+            Ok(owner) => owner,
+            Err(reason) => {
+                return TransitionOutcome::denied(RecordStoreInitializationDenial::new(
+                    runtime,
+                    super::super::RecordBootstrapDenial::ReadProtectionUnavailable(reason),
+                ))
+                .into()
+            }
+        };
     let durability = match crate::physical_runtime::durability::bind_policy_to_runtime(
         durability,
         runtime.record_serving_media(),
@@ -99,7 +115,14 @@ pub(in crate::physical_runtime) fn initialize(
         runtime.root_protocol_counter_cells(),
         frame_ports.resident_integrity_counter_cells(),
     ) {
-        Ok(state) => initialize_serving(runtime, state, residency, work_profile, durability),
+        Ok(state) => initialize_serving(
+            runtime,
+            state,
+            residency,
+            work_profile,
+            durability,
+            read_protection,
+        ),
         Err(BootstrapTransitionFailure::Denied(reason)) => initialization_failed(
             runtime,
             RecordBootstrapFailure::PublishedRootReadmission(reason),
@@ -120,12 +143,28 @@ pub(in crate::physical_runtime) fn open(
     request: PhysicalRecordOpen,
 ) -> RecordStoreOpenOutcome {
     let PhysicalRecordOpen {
+        read_protection,
         format,
         access,
         residency: residency_policy,
         work_profile,
         durability,
     } = request;
+    let read_protection =
+        match crate::physical_runtime::stability::PhysicalReadProtectionOwner::admit(
+            read_protection,
+            runtime.runtime_identity(),
+            runtime.lifecycle_state(),
+        ) {
+            Ok(owner) => owner,
+            Err(reason) => {
+                return TransitionOutcome::denied(RecordStoreOpenDenial::new(
+                    runtime,
+                    super::super::RecordBootstrapDenial::ReadProtectionUnavailable(reason),
+                ))
+                .into()
+            }
+        };
     let durability = match crate::physical_runtime::durability::bind_policy_to_runtime(
         durability,
         runtime.record_serving_media(),
@@ -182,7 +221,14 @@ pub(in crate::physical_runtime) fn open(
         runtime.root_protocol_counter_cells(),
         frame_ports.resident_integrity_counter_cells(),
     ) {
-        Ok(state) => open_serving(runtime, state, residency, work_profile, durability),
+        Ok(state) => open_serving(
+            runtime,
+            state,
+            residency,
+            work_profile,
+            durability,
+            read_protection,
+        ),
         Err(failure) => open_failure(runtime, failure),
     }
 }
@@ -207,6 +253,7 @@ fn initialize_serving(
     residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
     work_profile: crate::physical_runtime::PhysicalWorkProfileDeclaration,
     durability: crate::physical_runtime::durability::PhysicalDurabilityRuntimeOwner,
+    read_protection: crate::physical_runtime::stability::PhysicalReadProtectionOwner,
 ) -> RecordStoreInitializationOutcome {
     let frontier = RecordAllocationFrontier::new(&state.free_space);
     let (termination, media, core) = runtime.into_record_serving_parts();
@@ -215,6 +262,7 @@ fn initialize_serving(
         .ports()
         .invalidate_integrity_validation_for_runtime_transition();
     match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
+        read_protection,
         termination,
         media,
         core,
@@ -235,6 +283,7 @@ fn open_serving(
     residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
     work_profile: crate::physical_runtime::PhysicalWorkProfileDeclaration,
     durability: crate::physical_runtime::durability::PhysicalDurabilityRuntimeOwner,
+    read_protection: crate::physical_runtime::stability::PhysicalReadProtectionOwner,
 ) -> RecordStoreOpenOutcome {
     let frontier = RecordAllocationFrontier::new(&state.free_space);
     let (termination, media, core) = runtime.into_record_serving_parts();
@@ -243,6 +292,7 @@ fn open_serving(
         .ports()
         .invalidate_integrity_validation_for_runtime_transition();
     match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
+        read_protection,
         termination,
         media,
         core,

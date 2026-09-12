@@ -17,21 +17,20 @@ ReleaseReader == /\ readers > 0 /\ readers' = readers - 1 /\ UNCHANGED <<lifecyc
 Reclaim == /\ lifecycle = "Visible" /\ readers = 0 /\ oldRetained /\ lifecycle' = "ReclaimEligible" /\ oldRetained' = FALSE /\ UNCHANGED <<publicationPrepared, tombstonePreserved, readers, visibleGeneration>>
 LowerRewrite == /\ lifecycle \in {"Idle", "Planned"} /\ lifecycle' = "Durable" /\ UNCHANGED <<publicationPrepared, oldRetained, tombstonePreserved, readers, visibleGeneration>>
 PublishRewrite == /\ lifecycle = "Durable" /\ lifecycle' = "Published" /\ publicationPrepared' = TRUE /\ UNCHANGED <<oldRetained, tombstonePreserved, readers, visibleGeneration>>
-AdmitRecoveryVisibility == /\ lifecycle = "Published" /\ lifecycle' = "Visible" /\ visibleGeneration' = visibleGeneration + 1 /\ UNCHANGED <<publicationPrepared, oldRetained, tombstonePreserved, readers>>
+ValidateReadPlanCutover == /\ lifecycle = "Published" /\ lifecycle' = "Visible" /\ visibleGeneration' = visibleGeneration + 1 /\ UNCHANGED <<publicationPrepared, oldRetained, tombstonePreserved, readers>>
 DeferReclaim == /\ lifecycle = "Visible" /\ readers > 0 /\ oldRetained /\ UNCHANGED vars
 DrainReclaimAfterReadRelease == /\ lifecycle = "Visible" /\ oldRetained /\ lifecycle' = "ReclaimEligible" /\ readers' = 0 /\ oldRetained' = FALSE /\ UNCHANGED <<publicationPrepared, tombstonePreserved, visibleGeneration>>
 DenyLsmOwnerCase == /\ lifecycle # "ReclaimEligible" /\ UNCHANGED vars
 DenyInPlaceOverwrite == /\ oldRetained /\ UNCHANGED vars
 DenyEarlyReclaim == /\ readers > 0 /\ oldRetained /\ UNCHANGED vars
 DenyStaleEpochReuse == /\ lifecycle # "ReclaimEligible" /\ UNCHANGED vars
-DenyBackendResidueCandidateSelection == /\ lifecycle \in {"Orphan", "RolledBack"} /\ UNCHANGED vars
 DenyLatchHierarchyInversion == /\ lifecycle \in {"Planned", "Writing", "Durable", "Published", "Visible"} /\ UNCHANGED vars
 DenyMixedRootRead == /\ lifecycle \in {"PublishAttempted", "Published"} /\ UNCHANGED vars
 
 Next == Plan \/ Write \/ Durable \/ AttemptPublish \/ Publish \/ CrashToOrphan \/ Rollback \/ Retry \/ ReleaseReader \/ Reclaim
-        \/ LowerRewrite \/ PublishRewrite \/ AdmitRecoveryVisibility \/ DeferReclaim
+        \/ LowerRewrite \/ PublishRewrite \/ ValidateReadPlanCutover \/ DeferReclaim
         \/ DrainReclaimAfterReadRelease \/ DenyLsmOwnerCase \/ DenyInPlaceOverwrite
-        \/ DenyEarlyReclaim \/ DenyStaleEpochReuse \/ DenyBackendResidueCandidateSelection
+        \/ DenyEarlyReclaim \/ DenyStaleEpochReuse
         \/ DenyLatchHierarchyInversion \/ DenyMixedRootRead
 Spec == Init /\ [][Next]_vars
 TypeOK == /\ lifecycle \in {"Idle", "Planned", "Writing", "Durable", "PublishAttempted", "Published", "Visible", "Orphan", "RolledBack", "ReclaimEligible"} /\ publicationPrepared \in BOOLEAN /\ oldRetained \in BOOLEAN /\ tombstonePreserved \in BOOLEAN /\ readers \in 0..1 /\ visibleGeneration \in Nat

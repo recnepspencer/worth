@@ -18,6 +18,7 @@ pub(super) fn complete_scan(
 ) -> RecordScanCounterSnapshot {
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .scan(
             RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(width).unwrap()),
         )

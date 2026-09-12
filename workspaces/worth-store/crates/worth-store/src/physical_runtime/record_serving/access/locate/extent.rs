@@ -38,6 +38,10 @@ impl PhysicalRecordReader {
         )?;
         observation.touched_extents = 1;
         Ok(RecordReadSession {
+            execution: self.execution.clone(),
+            #[cfg(feature = "certification-test-authority")]
+            read_pause: None,
+            protection: self.protection.clone(),
             placement: ReadPlacement::Extent(Box::new(ExtentReadState::new(
                 artifacts,
                 admitted.artifact,

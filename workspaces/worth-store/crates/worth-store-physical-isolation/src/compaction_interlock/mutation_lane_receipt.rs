@@ -1,8 +1,7 @@
 use super::{
-    CompactionCandidateRangeSet, CompactionCutoverStabilityProof, CompactionDeferredReclaimQueue,
-    CompactionProtectedReferenceSet, CompactionReadInterlockCounters,
-    CompactionReadInterlockDenial, CompactionReadInterlockPlan, CompactionRecoveryEvidence,
-    CompactionRewritePublication, CompactionSourceIntegrityEvidence,
+    CompactionCandidateRangeSet, CompactionDeferredReclaimQueue, CompactionProtectedReferenceSet,
+    CompactionReadInterlockCounters, CompactionReadInterlockDenial, CompactionReadInterlockPlan,
+    CompactionSourceIntegrityEvidence,
 };
 use crate::{LatchAcquisitionDenial, LatchDeniedBeforeWaitEvidence, RootEpoch};
 
@@ -50,7 +49,6 @@ define_compaction_mutation_outcomes!(
     InPlaceOverwriteDenied => PlanAdmitted,
     EarlyReclaimDenied => ReclaimDeferred,
     StaleEpochReuseDenied => PlanAdmitted,
-    BackendResidueCandidateSelectionDenied => PublicationCommitted,
     LatchHierarchyInversionDenied => PlanAdmitted,
     MixedRootReadDenied => PublicationCommitted,
 );
@@ -108,24 +106,6 @@ impl CompactionMutationLaneReceipt {
                 denial,
                 origin,
             }),
-            Err(denial) => Err(denial),
-        }
-    }
-
-    pub fn from_backend_residue_denial(
-        publication: CompactionRewritePublication,
-        recovery_evidence: CompactionRecoveryEvidence,
-    ) -> Result<Self, CompactionReadInterlockDenial> {
-        let origin = CompactionMutationLaneOrigin::from_plan(publication.delta().plan());
-        match CompactionCutoverStabilityProof::admit(publication, recovery_evidence) {
-            Ok(_) => Err(CompactionReadInterlockDenial::ExpectedMutationLaneDenialNotProduced),
-            Err(denial @ CompactionReadInterlockDenial::BackendResidueCandidateSelection(_)) => {
-                Ok(Self {
-                    kind: CompactionMutationLaneReceiptKind::BackendResidueCandidateSelectionDenied,
-                    denial,
-                    origin,
-                })
-            }
             Err(denial) => Err(denial),
         }
     }

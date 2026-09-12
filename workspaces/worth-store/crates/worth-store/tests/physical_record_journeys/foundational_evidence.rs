@@ -99,6 +99,7 @@ fn counter_receipt_rejects_missing_duplicate_and_mismatched_rows() {
         .drain_unpinned_clean_frames();
     let mut read = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(128).unwrap()),
@@ -133,6 +134,7 @@ fn counter_receipt_rejects_missing_duplicate_and_mismatched_rows() {
 
     let mut scan = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start())
         .unwrap();
     let completed = loop {

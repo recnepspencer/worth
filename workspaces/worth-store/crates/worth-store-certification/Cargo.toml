@@ -62,8 +62,8 @@ name = "s5_1_security_scope_admission_compile_fail"
 path = "tests/compile_fail/security/security_scope_admission_runner.rs"
 
 [[test]]
-name = "s5_physical_isolation_entry_compile_fail"
-path = "tests/compile_fail/physical_isolation/physical_isolation_entry_runner.rs"
+name = "recovery_read_authority_compile_fail"
+path = "tests/compile_fail/physical_isolation/recovery_read_authority_runner.rs"
 
 [[test]]
 name = "s5_tier_movement_future_chunk_compile_fail"

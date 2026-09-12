@@ -5,7 +5,7 @@ pub struct CompactionReadInterlockCounters {
     range_comparisons: u64,
     overlapping_ranges: u64,
     copied_pages: u64,
-    publication_swaps: u64,
+    publication_plan_completions: u64,
     blocked_reclaims: u64,
     epoch_retries: u64,
     denied_in_place_overwrites: u64,
@@ -28,7 +28,7 @@ impl CompactionReadInterlockCounters {
             range_comparisons,
             overlapping_ranges,
             copied_pages,
-            publication_swaps: 0,
+            publication_plan_completions: 0,
             blocked_reclaims: 0,
             epoch_retries: 0,
             denied_in_place_overwrites: 0,
@@ -38,8 +38,8 @@ impl CompactionReadInterlockCounters {
         }
     }
 
-    pub(crate) const fn with_publication_swap(mut self) -> Self {
-        self.publication_swaps += 1;
+    pub(crate) const fn with_publication_plan_completion(mut self) -> Self {
+        self.publication_plan_completions += 1;
         self
     }
 
@@ -78,8 +78,8 @@ impl CompactionReadInterlockCounters {
         self.copied_pages
     }
 
-    pub const fn publication_swaps(self) -> u64 {
-        self.publication_swaps
+    pub const fn publication_plan_completions(self) -> u64 {
+        self.publication_plan_completions
     }
 
     pub const fn blocked_reclaims(self) -> u64 {

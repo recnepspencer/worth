@@ -1,5 +1,10 @@
 use std::sync::Mutex;
 
+#[cfg(feature = "certification-test-authority")]
+mod capture_pause;
+#[cfg(feature = "certification-test-authority")]
+pub use capture_pause::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
+
 use worth_proof::NonEmpty;
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, RecordArtifactFile,
@@ -16,6 +21,9 @@ use crate::physical_runtime::{
 };
 
 pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
+    #[cfg(feature = "certification-test-authority")]
+    capture_pause: Mutex<Option<std::sync::Arc<capture_pause::ReadRootCapturePause>>>,
+    read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
     state: Mutex<PhysicalCurrentRootState>,
     transition: PhysicalRootPublicationTransitionOwner,
 }
@@ -61,8 +69,12 @@ impl PhysicalCurrentRootOwner {
         current_root: DurablePhysicalRootManifest,
         previous_root: Option<DurablePhysicalRootManifest>,
         free_space: DurableFreeSpaceManifestHeader,
+        read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
     ) -> Self {
         Self {
+            #[cfg(feature = "certification-test-authority")]
+            capture_pause: Mutex::new(None),
+            read_protection,
             state: Mutex::new(PhysicalCurrentRootState {
                 namespace_evidence:
                     crate::physical_runtime::PhysicalRootNamespaceDurabilityEvidence::ReopenedCurrentRoot {
@@ -79,11 +91,33 @@ impl PhysicalCurrentRootOwner {
     pub(in crate::physical_runtime) fn snapshot(
         &self,
     ) -> (DurablePhysicalRootManifest, DurableFreeSpaceManifestHeader) {
+        let state = self.lock_publication_state();
+        (state.current_root.clone(), state.free_space.clone())
+    }
+
+    pub(in crate::physical_runtime) fn capture_read_root(
+        &self,
+    ) -> Result<
+        (
+            DurablePhysicalRootManifest,
+            crate::physical_runtime::stability::PhysicalRootReadLease,
+        ),
+        crate::physical_runtime::PhysicalReadProtectionDenial,
+    > {
+        #[cfg(feature = "certification-test-authority")]
+        self.pause_capture_at(CertificationReadRootCaptureStage::BeforeRootLock);
         let state = self
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        (state.current_root.clone(), state.free_space.clone())
+        let root = state.current_root.clone();
+        #[cfg(feature = "certification-test-authority")]
+        self.pause_capture_at(
+            CertificationReadRootCaptureStage::AfterObservationBeforeRegistration,
+        );
+        let lease = self.read_protection.capture(&root)?;
+        drop(state);
+        Ok((root, lease))
     }
 
     pub(in crate::physical_runtime) fn begin(
@@ -91,10 +125,7 @@ impl PhysicalCurrentRootOwner {
         identity: PhysicalRootPublicationIdentity,
         source_root: DurablePhysicalRootManifest,
     ) -> Result<PhysicalRootPublicationTransition, PhysicalRootPublicationTransitionDenial> {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let state = self.lock_publication_state();
         self.transition
             .begin(identity, &state.current_root, source_root)
     }
@@ -103,10 +134,7 @@ impl PhysicalCurrentRootOwner {
         &self,
         durable: RootNamespaceDurablePhysicalMutationMembers,
     ) -> PhysicalCurrentRootAdvanceOutcome {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut state = self.lock_publication_state();
         let cause = validate_advance(&state.current_root, &durable);
         if let Some(cause) = cause {
             return PhysicalCurrentRootAdvanceOutcome::InspectionRequired(
@@ -164,6 +192,14 @@ impl PhysicalCurrentRootOwner {
             state.previous_root,
             state.namespace_evidence,
         )
+    }
+
+    fn lock_publication_state(&self) -> std::sync::MutexGuard<'_, PhysicalCurrentRootState> {
+        #[cfg(feature = "certification-test-authority")]
+        self.observe_publication_lock_wait();
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 

@@ -53,7 +53,7 @@ fn segment_filename_and_header_disagreement_is_denied_before_record_decode() {
         PhysicalRecordOpen::new(format, access, durability)
     }));
     assert!(matches!(
-        reopened.records().open(
+        reopened.records().expect("read protection admission").open(
             first,
             RecordReadLimits::new(RecordByteLimit::new(4_000).unwrap())
         ),
@@ -99,7 +99,7 @@ fn checksum_valid_slot_generation_drift_preserves_exact_read_observation() {
     let reopened = success(open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability)
     }));
-    let error = match reopened.records().open(
+    let error = match reopened.records().expect("read protection admission").open(
         record,
         RecordReadLimits::new(RecordByteLimit::new(32).unwrap()),
     ) {
@@ -144,7 +144,7 @@ fn checksum_valid_extent_generation_drift_is_stale_membership() {
     let reopened = success(open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability)
     }));
-    let error = match reopened.records().open(
+    let error = match reopened.records().expect("read protection admission").open(
         record,
         RecordReadLimits::new(RecordByteLimit::new(payload.len() as u32).unwrap()),
     ) {
@@ -323,7 +323,7 @@ fn exercise_routing_corruption(parent: &std::path::Path, corruption: RoutingCorr
     let reopened = success(open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability)
     }));
-    let error = match reopened.records().open(
+    let error = match reopened.records().expect("read protection admission").open(
         record,
         RecordReadLimits::new(RecordByteLimit::new(8).unwrap()),
     ) {

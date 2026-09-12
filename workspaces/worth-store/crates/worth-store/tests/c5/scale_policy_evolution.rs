@@ -79,6 +79,7 @@ pub(super) fn prove() {
     assert_eq!(
         serving
             .records()
+            .expect("read protection admission")
             .readmit_locator(locator)
             .into_result()
             .unwrap(),
@@ -103,6 +104,7 @@ pub(super) fn prove() {
     assert_eq!(
         reopened
             .records()
+            .expect("read protection admission")
             .readmit_locator(locator)
             .into_result()
             .unwrap(),

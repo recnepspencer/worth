@@ -29,6 +29,7 @@ struct SignalDisposed;
 struct ResidencyClosed;
 
 struct ShutdownProtocol<State, Terminate> {
+    read_protection: crate::physical_runtime::PhysicalReadProtectionShutdown,
     termination: LifecycleTerminationGuard,
     signal_owner: Option<PhysicalWorkSignalOwner>,
     executor: Option<PhysicalWorkExecutor>,
@@ -105,6 +106,7 @@ impl<Terminate> ShutdownProtocol<CheckpointDrained, Terminate> {
     ) -> Self {
         let PhysicalStoreInstanceParts {
             termination,
+            read_protection,
             work_admission: _work_admission,
             work_runtime,
             scheduler_admission: _scheduler_admission,
@@ -119,6 +121,7 @@ impl<Terminate> ShutdownProtocol<CheckpointDrained, Terminate> {
             residency,
             durability,
         } = parts;
+        let read_protection = read_protection.close();
         let (checkpoint, latest_checkpoint) = checkpoint.stop_and_drain().into_parts();
         let publication =
             crate::physical_runtime::record_serving::RecordPublicationDirector::stop_and_extract(
@@ -129,6 +132,7 @@ impl<Terminate> ShutdownProtocol<CheckpointDrained, Terminate> {
         let recovery_allocation = residency.recovery_allocation_admission();
         let protocol = Self {
             termination,
+            read_protection,
             signal_owner: None,
             executor: None,
             core,
@@ -341,6 +345,7 @@ impl<Terminate> ShutdownProtocol<ResidencyClosed, Terminate> {
             .record(super::PhysicalStoreClosePhase::MediaReleased);
         ServingShutdownOutcome {
             media,
+            read_protection: self.read_protection,
             records,
             mutation: self.mutation,
             checkpoint: self.checkpoint,
@@ -359,6 +364,7 @@ impl<State, Terminate> ShutdownProtocol<State, Terminate> {
     fn transition<Next>(self) -> ShutdownProtocol<Next, Terminate> {
         ShutdownProtocol {
             termination: self.termination,
+            read_protection: self.read_protection,
             signal_owner: self.signal_owner,
             executor: self.executor,
             core: self.core,

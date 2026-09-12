@@ -2,6 +2,7 @@ mod correlation;
 mod denial;
 mod foundational_roles;
 mod physical_read_stability_authority;
+mod root_epoch_basis;
 mod semantic_visibility_reference;
 
 pub use correlation::{
@@ -16,10 +17,10 @@ pub use foundational_roles::PhysicalSemanticBoundaryRoleEvidence;
 #[cfg(any(test, feature = "certification-authority"))]
 pub use physical_read_stability_authority::physical_read_stability_authority_for_certification_test;
 pub use physical_read_stability_authority::{
-    admit_post_compaction_read_stability_authority,
     admit_post_publication_read_stability_authority, PhysicalReadStabilityAuthority,
     PhysicalReadStabilityCorrelationBasis,
 };
+pub use root_epoch_basis::PhysicalIsolationRootEpochBasis;
 pub use semantic_visibility_reference::{
     SemanticVisibilityReference, SemanticVisibilityReferenceKind,
 };

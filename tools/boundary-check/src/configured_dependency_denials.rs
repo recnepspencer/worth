@@ -126,6 +126,45 @@ mod tests {
     use crate::config::{DependencyDenialConfig, DependencyTargetAllowlistConfig};
 
     #[test]
+    fn configured_isolation_fence_rejects_store_and_recovery_but_accepts_lower_format() {
+        let config: crate::config::Road1Config =
+            toml::from_str(include_str!("../config/road1.toml")).unwrap();
+        let rule = config
+            .dependency_denials
+            .iter()
+            .find(|rule| {
+                rule.sources
+                    .iter()
+                    .any(|source| source == "worth-store-physical-isolation")
+                    && rule
+                        .forbidden_targets
+                        .iter()
+                        .any(|target| target == "worth-store")
+            })
+            .expect("the checked-in configuration must fence isolation from Store");
+        for forbidden in [
+            "worth-store",
+            "worth-store-recovery-physics",
+            "worth-store-recovery-runtime",
+        ] {
+            let diagnostics = diagnostics_for_package(
+                "worth-store-physical-isolation",
+                "crates/worth-store-physical-isolation/Cargo.toml",
+                ["worth-store-physical-format", forbidden],
+                rule,
+            );
+            assert_eq!(diagnostics.len(), 1);
+            assert_eq!(
+                diagnostics[0].code().as_str(),
+                "BC2001_BAND_DEPENDENCY_VIOLATION"
+            );
+            assert!(diagnostics[0].message().contains(&format!(
+                "worth-store-physical-isolation must not depend on {forbidden}:"
+            )));
+        }
+    }
+
+    #[test]
     fn adding_a_forbidden_lower_to_operations_edge_emits_the_exact_boundary_diagnostic() {
         let rule = DependencyDenialConfig {
             workspace_manifest: "workspaces/worth-store/Cargo.toml".into(),

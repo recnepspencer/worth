@@ -40,6 +40,8 @@ struct PhysicalExecutionGate {
 struct PhysicalExecutionGateState {
     accepting: bool,
     active: usize,
+    #[cfg(feature = "certification-test-authority")]
+    drain_waiting: bool,
 }
 
 pub(in crate::physical_runtime) struct PhysicalExecutionCall {
@@ -64,6 +66,8 @@ impl PhysicalStoreWorkRuntime {
                 state: Mutex::new(PhysicalExecutionGateState {
                     accepting: true,
                     active: 0,
+                    #[cfg(feature = "certification-test-authority")]
+                    drain_waiting: false,
                 }),
                 changed: Condvar::new(),
             }),
@@ -98,11 +102,19 @@ impl PhysicalStoreWorkRuntime {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         while state.active != 0 {
+            #[cfg(feature = "certification-test-authority")]
+            {
+                state.drain_waiting = true;
+            }
             state = self
                 .gate
                 .changed
                 .wait(state)
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
+        }
+        #[cfg(feature = "certification-test-authority")]
+        {
+            state.drain_waiting = false;
         }
     }
 
@@ -115,6 +127,14 @@ impl PhysicalStoreWorkRuntime {
 }
 
 impl PhysicalWorkExecution {
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn read_call_drain_is_waiting(&self) -> bool {
+        self.gate
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .drain_waiting
+    }
     pub(in crate::physical_runtime) fn bind_projection_failure(
         &self,
         delta: PhysicalWorkAspectDelta,
@@ -169,13 +189,6 @@ impl PhysicalWorkExecution {
     pub(in crate::physical_runtime) fn admit_call(
         &self,
     ) -> Result<PhysicalExecutionCall, PhysicalWorkPreEffectDenial> {
-        let runtime = self
-            .runtime
-            .upgrade()
-            .ok_or(PhysicalWorkPreEffectDenial::AdmissionStopped)?;
-        if runtime.submission.generation() != self.generation {
-            return Err(PhysicalWorkPreEffectDenial::StaleGeneration);
-        }
         let mut state = self
             .gate
             .state
@@ -183,6 +196,15 @@ impl PhysicalWorkExecution {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         if !state.accepting {
             return Err(PhysicalWorkPreEffectDenial::AdmissionStopped);
+        }
+        // Stop/drain uses this same mutex. Never create an uncounted strong
+        // runtime reference while shutdown may consume the final owner.
+        let runtime = self
+            .runtime
+            .upgrade()
+            .ok_or(PhysicalWorkPreEffectDenial::AdmissionStopped)?;
+        if runtime.submission.generation() != self.generation {
+            return Err(PhysicalWorkPreEffectDenial::StaleGeneration);
         }
         state.active = state.active.saturating_add(1);
         drop(runtime);

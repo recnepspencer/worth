@@ -84,6 +84,12 @@ corruption-localization, quarantine, and offline-truth behavior. C.10 extends
 it with stable reads, epochs, reclaim, scheduled I/O, and maintenance
 interference. Neither successor owns a second recovery entry path.
 
+The former isolation entry adapter that hashed `RecoveryCompletion` fields
+into root epochs is retired. Completion and report values remain descriptive;
+they cannot become a physical root basis or capture a Store reader. C.10's
+ordinary `ServingPhysicalRuntime::records()` captures the live Store-owned
+root and registers its protection independently of recovery report fields.
+
 The direct process suite builds the writer, recoverer, and offline observer as
 separate executables, kills the writer or recoverer at production yieldpoints,
 and compares the resulting bytes from the independent observer. It runs

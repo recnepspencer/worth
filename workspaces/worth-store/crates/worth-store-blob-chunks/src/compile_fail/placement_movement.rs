@@ -22,7 +22,7 @@
 //! S.5 stable read receipts alone cannot satisfy S.7 movement execution:
 //! ```compile_fail
 //! use worth_store_blob_chunks::ExecutedBlobPlacementMovementReceipt;
-//! use worth_store_physical_isolation::StablePhysicalReadReceipt;
+//! use worth_store::physical_runtime::stability::StablePhysicalReadReceipt;
 //!
 //! fn requires_executed_movement(_: ExecutedBlobPlacementMovementReceipt) {}
 //! let stable_read: StablePhysicalReadReceipt = todo!();
@@ -31,7 +31,7 @@
 //! S.5 stable read receipts alone cannot satisfy S.7 movement read holds:
 //! ```compile_fail
 //! use worth_store_blob_chunks::BlobPlacementMovementReadHold;
-//! use worth_store_physical_isolation::StablePhysicalReadReceipt;
+//! use worth_store::physical_runtime::stability::StablePhysicalReadReceipt;
 //!
 //! fn requires_movement_read_hold(_: BlobPlacementMovementReadHold) {}
 //! let stable_read: StablePhysicalReadReceipt = todo!();

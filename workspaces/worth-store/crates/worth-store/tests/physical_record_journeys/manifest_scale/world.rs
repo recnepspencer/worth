@@ -187,6 +187,7 @@ fn observe_runtime_world(
     assert_eq!(
         serving
             .records()
+            .expect("read protection admission")
             .readmit_locator(seeded.locator)
             .into_result()
             .unwrap(),
@@ -217,6 +218,7 @@ fn observe_live_reads(
     let signal_before = serving.physical_signal_observation().unwrap();
     let session = serving
         .records()
+        .expect("read protection admission")
         .open(
             last,
             RecordReadLimits::new(RecordByteLimit::new(100).unwrap()),

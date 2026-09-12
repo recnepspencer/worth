@@ -180,10 +180,13 @@ fn open(
     worth_store::physical_runtime::RecordReadSession,
     worth_store::physical_runtime::RecordReadError,
 > {
-    serving.records().open_external(
-        locator,
-        RecordReadLimits::new(RecordByteLimit::new(RECORD_BYTES as u32).unwrap()),
-    )
+    serving
+        .records()
+        .expect("read protection admission")
+        .open_external(
+            locator,
+            RecordReadLimits::new(RecordByteLimit::new(RECORD_BYTES as u32).unwrap()),
+        )
 }
 
 fn assert_record(

@@ -16,6 +16,11 @@ pub(super) fn admit_scan_request(
     reader: &mut PhysicalRecordReader,
     request: RecordScanRequest,
 ) -> Result<AdmittedScanRequest, RecordScanError> {
+    reader.protection.require_live().map_err(|_| {
+        scan_error(RecordScanDenial::RecordStream(
+            crate::physical_runtime::RecordStreamFailureKind::RuntimeReleased,
+        ))
+    })?;
     let runtime = reader
         .runtime
         .upgrade()

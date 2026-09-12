@@ -306,7 +306,7 @@ impl PhysicalReadPlanFootprint {
 }
 
 impl PhysicalReadProtectedFootprintBasis {
-    fn from_references(references: &[ProtectedPhysicalReference]) -> Self {
+    pub(crate) fn from_references(references: &[ProtectedPhysicalReference]) -> Self {
         Self {
             protected_references: references.len() as u64,
             protected_ranges: 0,

@@ -2,6 +2,22 @@ root_manifest = "Cargo.toml"
 forbidden_root_prefixes = ["workspaces/"]
 
 [[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = ["worth-store-physical-isolation"]
+forbidden_targets = ["worth-store", "worth-store-recovery-physics", "worth-store-recovery-runtime"]
+guidance = "Isolation owns lower physical plans and local completion; Store owns live byte execution and Recovery owns reconstructed-product selection, never ordinary read authority"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store-physical-isolation/src"
+forbidden_identifiers = ["PhysicalIsolationEntryIdentity", "RecoveryReadinessBasis", "admit_physical_isolation_entry"]
+guidance = "C.10 retires report-derived isolation entry authority; root correlation must consume an already-issued physical root"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store-physical-certification/src"
+forbidden_identifiers = ["PhysicalIsolationEntryIdentity", "RecoveryReadinessBasis", "admit_physical_isolation_entry"]
+guidance = "C.10 removes synthetic readiness admission rather than relocating a report-to-root authority route into certification"
+
+[[dependency_denials]]
 workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-bridge"]
 forbidden_targets = ["worth-runtime-world"]

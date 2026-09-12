@@ -3,7 +3,8 @@ use worth_store_physical_format::{
     InMemoryPhysicalFormatModelDenial, PhysicalRecordSlot, PhysicalReference,
 };
 use worth_store_physical_isolation::{
-    CompactionProtectedReferenceSet, PhysicalReadPlanAdmissionDenial, StablePhysicalReadReceipt,
+    CompactionProtectedReferenceSet, PhysicalReadPlanAdmissionDenial,
+    PhysicalReadPlanCompletionReceipt,
 };
 
 use super::super::{BaselineBTreeExactCounterWitness, BaselineBTreeLookupCounterReceipt};
@@ -219,16 +220,16 @@ pub(in crate::strategy::btree::execution) fn exact_counters(
 pub(in crate::strategy::btree::execution) fn issue_counter_receipt(
     observation: &BaselineBTreeLookupObservation,
     plan_binding: &AccessPlanIdentity,
-    stable_read: StablePhysicalReadReceipt,
+    stable_read: PhysicalReadPlanCompletionReceipt,
 ) -> Result<BaselineBTreeLookupCounterReceipt, crate::CounterEnvelopeViolation> {
     BaselineBTreeLookupCounterReceipt::issue(
         plan_binding,
         exact_counters(observation),
-        stable_read.counters().plan_allocations(),
+        stable_read.counters().allocation_events(),
     )
 }
 
 pub(in crate::strategy::btree::execution) struct StableReadBindings {
-    pub(in crate::strategy::btree::execution) receipt: StablePhysicalReadReceipt,
+    pub(in crate::strategy::btree::execution) receipt: PhysicalReadPlanCompletionReceipt,
     pub(in crate::strategy::btree::execution) protected: CompactionProtectedReferenceSet,
 }

@@ -142,6 +142,7 @@ fn inline_source_and_delivery_copies_are_counted_at_the_actual_copy_seams() {
 
     let session = serving
         .records()
+        .expect("read protection admission")
         .open(
             member.record_id(0).unwrap(),
             RecordReadLimits::new(RecordByteLimit::new(13).unwrap()),

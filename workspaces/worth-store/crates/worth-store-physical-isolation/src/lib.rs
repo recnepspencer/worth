@@ -8,23 +8,6 @@
 //!     worth_store_physical_isolation::execute_admitted_compaction_rewrite_for_plan;
 //! ```
 //!
-//! A byte-guard scope derives its protected reference from the Store chunk.
-//! A caller cannot pair an unrelated reference with borrowed bytes:
-//!
-//! ```compile_fail
-//! use worth_store::physical_runtime::PhysicalRecordChunkView;
-//! use worth_store_physical_isolation::{
-//!     CurrentGenerationPhysicalReference, PhysicalByteGuardScope,
-//! };
-//!
-//! fn pair_unrelated_reference(
-//!     reference: CurrentGenerationPhysicalReference,
-//!     chunk: &PhysicalRecordChunkView<'_>,
-//! ) {
-//!     let _ = PhysicalByteGuardScope::for_record_chunk(reference, chunk);
-//! }
-//! ```
-//!
 //! Replica bootstrap cannot lease a caller-built raw source request. It must
 //! consume the cut resolved by Recovery Physics from independently reopened
 //! media:
@@ -46,7 +29,6 @@ extern crate self as worth_store_physical_isolation;
 
 mod backup_cut;
 mod blob_orphan_reclaim;
-mod byte_guard;
 mod checkpoint_interlock;
 mod compaction_interlock;
 mod epoch;
@@ -59,12 +41,9 @@ mod movable_stability;
 mod physical_read_plan;
 mod physical_semantic_boundary;
 mod publication;
-mod readiness;
 mod reclaim_reachability;
 mod recovery_source_lease;
 mod root_protocol;
-mod security_scope_propagation;
-mod stable_read_execution;
 
 pub use backup_cut::{
     abandon_backup_cut, prepare_backup_cut_abandonment, AdmittedBackupCut, BackupArtifactCoverage,
@@ -85,9 +64,6 @@ pub use blob_orphan_reclaim::{
     BlobOrphanReclaimDenial, BlobOrphanReclaimIdentity, BlobOrphanReclaimProof,
     BlobPartialChunkOrphan,
 };
-pub use byte_guard::{
-    ByteGuardReleaseReceipt, PhysicalByteGuard, PhysicalByteGuardDenial, PhysicalByteGuardScope,
-};
 #[cfg(any(test, feature = "certification-authority"))]
 pub use checkpoint_interlock::read_during_checkpoint_verdict_for_certification_test;
 pub use checkpoint_interlock::{
@@ -100,16 +76,15 @@ pub use checkpoint_interlock::{
 };
 pub use compaction_interlock::{
     compaction_owner_case_inventory, compaction_rewrite_scheduler_demand,
-    execute_read_during_compaction_cutover, CompactionCandidateRangeSet, CompactionCutoverDelta,
-    CompactionCutoverStabilityProof, CompactionCutoverState, CompactionDeferredReclaimQueue,
-    CompactionInterlockFoundationalEvidence, CompactionMutationLaneOrigin,
-    CompactionMutationLaneReceipt, CompactionMutationLaneReceiptKind,
+    CompactionCandidateRangeSet, CompactionCutoverDelta, CompactionCutoverState,
+    CompactionDeferredReclaimQueue, CompactionInterlockFoundationalEvidence,
+    CompactionMutationLaneOrigin, CompactionMutationLaneReceipt, CompactionMutationLaneReceiptKind,
     CompactionOwnerCaseDeclaration, CompactionOwnerCaseId, CompactionOwnerCaseObservation,
     CompactionProtectedReferenceSet, CompactionReadInterlockCounters,
-    CompactionReadInterlockDenial, CompactionReadInterlockPlan, CompactionRecoveryEvidence,
+    CompactionReadInterlockDenial, CompactionReadInterlockPlan, CompactionReadPlanCompletion,
     CompactionRewritePublication, CompactionSourceIntegrityAdmission,
     CompactionSourceIntegrityAdmissionDenial, CompactionSourceIntegrityEvidence,
-    DrainedCompactionReclaim, ReadDuringCompactionVerdict,
+    DrainedCompactionReclaim,
 };
 #[cfg(any(test, feature = "certification-authority"))]
 pub use epoch::next_root_epoch_for_certification;
@@ -139,7 +114,7 @@ pub use executed_isolation_evidence::{
 };
 pub use executed_isolation_evidence::{
     ExecutedIsolationBasis, ExecutedIsolationCounterKind, ExecutedIsolationEvidence,
-    ExecutedIsolationEvidenceDenial, ExecutedIsolationReceipts, IsolationInterferenceCounterName,
+    ExecutedIsolationEvidenceDenial, IsolationInterferenceCounterName,
     IsolationInterferenceSnapshot, IsolationInterferenceSnapshotRow,
     PhysicalIsolationCounterSnapshot,
 };
@@ -183,6 +158,7 @@ pub use movable_stability::{
     TierMovementStabilityCounterSnapshot, TierMovementStabilityDenial,
     TierMovementStabilityVerdict, UnsupportedTierMovementClaim, UnsupportedTierMovementRequest,
 };
+pub use physical_read_plan::PhysicalReadPlanCompletionReceipt;
 pub use physical_read_plan::{
     admit_seed_stable_read_plan, physical_epoch_vector_for_current_root,
     CompactProtectedReferenceSet, PhysicalReadPlanAdmissionDenial, PhysicalReadPlanFootprint,
@@ -197,9 +173,14 @@ pub use physical_read_plan::{
     ValidatedRootObservation,
 };
 #[cfg(any(test, feature = "certification-authority"))]
+pub use physical_read_plan::{
+    stable_physical_read_plan_for_certification_seed,
+    stable_physical_read_plan_for_certification_test,
+};
+#[cfg(any(test, feature = "certification-authority"))]
 pub use physical_semantic_boundary::physical_read_stability_authority_for_certification_test;
+pub use physical_semantic_boundary::PhysicalIsolationRootEpochBasis;
 pub use physical_semantic_boundary::{
-    admit_post_compaction_read_stability_authority,
     admit_post_publication_read_stability_authority,
     correlate_semantic_visibility_with_physical_snapshot,
     deny_semantic_visibility_as_physical_stability, PhysicalReadStabilityAuthority,
@@ -210,25 +191,15 @@ pub use physical_semantic_boundary::{
     SemanticVisibilityReferenceKind,
 };
 pub use publication::{
-    AllocatorPublicationFence, AtomicPhysicalRootSwap, CopyOnWritePublicationBinding,
-    CopyOnWritePublicationPlan, CrashStableFreeReusePosture, ExecutedPublicationRecoveryReceipt,
-    LoweredCopyOnWritePublicationPlan, ManifestPublicationEpoch, NewRootPublicationProof,
-    OldReachabilityPreservation, PhysicalIdentityReuse, PhysicalPublicationCounterSnapshot,
-    PhysicalPublicationDenial, PhysicalPublicationFoundationalEvidence, PhysicalPublicationIntent,
-    PhysicalPublicationIntentKind, PhysicalPublicationReadiness, PhysicalPublicationReceipt,
-    PhysicalPublicationReleasePosture, PublicationCrashRecoveryOutcome, PublicationCrashStage,
-    PublicationEpochPair, PublicationEpochReadiness, PublicationLatchReadiness,
-    PublicationRecoveryReplayInput, PublicationRootCandidate, PublicationRootSuccessorOwner,
-    RecoveredPublicationStructure, RecoveredPublicationStructureKind, ReleasedOldReachability,
-    RootPublicationEpoch, RootSwapOrderingContract, ValidatedPhysicalPublicationIntent,
-};
-pub use readiness::{
-    PhysicalIsolationAdmittedEntryRecipe, PhysicalIsolationEntryDenial,
-    PhysicalIsolationEntryEvidence, PhysicalIsolationEntryFoundationalEvidence,
-    PhysicalIsolationEntryIdentity, PhysicalIsolationEntryProofProgression,
-    PhysicalIsolationEntryProofRequest, PhysicalIsolationEntryRebindRequired,
-    PhysicalIsolationLoweredEntryRecipe, PhysicalIsolationResolvedEntryRecipe,
-    PhysicalIsolationRootEpochBasis, RecoveryReadinessBasis,
+    AllocatorPublicationFence, CopyOnWritePublicationBinding, CopyOnWritePublicationPlan,
+    CrashStableFreeReusePosture, LoweredCopyOnWritePublicationPlan, ManifestPublicationEpoch,
+    NewRootPublicationProof, OldReachabilityPreservation, PhysicalIdentityReuse,
+    PhysicalPublicationCounterSnapshot, PhysicalPublicationDenial, PhysicalPublicationIntent,
+    PhysicalPublicationIntentKind, PhysicalPublicationPlanCompletion, PhysicalPublicationReadiness,
+    PhysicalPublicationReleasePosture, PublicationEpochPair, PublicationEpochReadiness,
+    PublicationLatchReadiness, PublicationRootCandidate, PublicationRootSuccessorOwner,
+    ReleasedOldReachability, RootPublicationEpoch, RootSwapOrderingContract,
+    ValidatedPhysicalPublicationIntent,
 };
 pub use reclaim_reachability::{
     reject_backend_residue_as_reclaim_authority,
@@ -256,24 +227,4 @@ pub use root_protocol::{
     CheckpointPublicationRoot, CheckpointPublicationRootBasis, CurrentPhysicalRoot,
     CurrentPhysicalRootBasis, ManifestLocatorRoot, ManifestLocatorRootBasis, RecoveryRoot,
     RecoveryRootBasis, RootKindMismatchDenial,
-};
-pub use security_scope_propagation::{
-    preserve_secure_io_stable_read_scope, LogicalDecodeSecurityScopeEntry,
-    SecureIoStableReadDenial, SecureIoStableReadPreservation, StableReadObservedSecurityScope,
-    StableReadSecurityScopeCarrierBasis, StableReadSecurityScopePropagation,
-    StableReadSecurityScopePropagationCounters, StableReadSecurityScopePropagationDenial,
-    StableReadSecurityScopePropagationInput,
-};
-#[cfg(any(test, feature = "certification-authority"))]
-pub use stable_read_execution::{
-    stable_physical_read_plan_for_certification_seed,
-    stable_physical_read_plan_for_certification_test,
-    stable_physical_read_receipt_for_certification_test,
-};
-pub use stable_read_execution::{
-    ByteGuardedPhysicalRead, EpochRetryReceipt, PhysicalByteGuardAdmission,
-    PhysicalReadExecutionDenial, PhysicalReadIoAttempt, PhysicalReadIoPosture,
-    StablePhysicalReadEpochFreshnessOutcome, StablePhysicalReadExecution,
-    StablePhysicalReadExecutionCounters, StablePhysicalReadExecutionOutcome,
-    StablePhysicalReadFoundationalEvidence, StablePhysicalReadReceipt,
 };

@@ -41,6 +41,7 @@ fn later_extent_damage_through_a_view_revokes_health_and_releases_read_authority
     );
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),
@@ -107,6 +108,7 @@ fn cancelling_after_a_view_reports_unread_bytes_and_releases_the_held_frame() {
     let record = publication.settled_members()[0].record_id(0).unwrap();
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),
@@ -159,6 +161,7 @@ fn abort_during_extent_read_reports_runtime_release_without_accusing_bytes() {
     let record = publication.settled_members()[0].record_id(0).unwrap();
     let mut session = serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),

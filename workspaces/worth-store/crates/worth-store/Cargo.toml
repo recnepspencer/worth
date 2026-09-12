@@ -10,6 +10,7 @@ description = "Public Worth Store facade and owner of the physical runtime lifec
 default = []
 recovery-runtime-owner = ["worth-store-physical-backend/recovery-runtime-owner"]
 certification-test-authority = [
+    "worth-store-physical-isolation/certification-authority",
     "worth-store-buffer-pool/certification-test-authority",
     "worth-store-physical-backend/certification-test-authority",
     "worth-store-io-scheduler/certification-test-authority",
@@ -24,6 +25,7 @@ worth-store-io-scheduler.workspace = true
 worth-store-physical-backend = { workspace = true, features = ["store-runtime-owner"] }
 worth-store-physical-format.workspace = true
 worth-store-physical-integrity.workspace = true
+worth-store-physical-isolation.workspace = true
 worth-store-security.workspace = true
 worth-store-wal.workspace = true
 worth-proof = { path = "../../../../crates/worth-proof" }

@@ -122,8 +122,11 @@ impl ServingPhysicalRuntime {
         )
     }
 
-    /// Returns the facade for opening bounded record-read sessions.
-    pub fn records(&self) -> PhysicalRecordReader {
+    /// Atomically captures and protects the current root for this acquisition.
+    pub fn records(
+        &self,
+    ) -> Result<PhysicalRecordReader, crate::physical_runtime::PhysicalReadProtectionDenial> {
+        let (current_root, protection) = self.parts.publication.capture_read_root()?;
         let read = super::super::CanonicalRecordReadPort::new(
             &self.parts.work_runtime,
             self.parts.core.lifecycle_generation(),
@@ -140,11 +143,16 @@ impl ServingPhysicalRuntime {
         );
         let frame_ports = self.parts.residency.ports().clone();
         let writeback = mutation.frame_writeback_port(frame_ports.clone());
-        PhysicalRecordReader {
+        Ok(PhysicalRecordReader {
+            execution: crate::physical_runtime::instance::PhysicalStoreWorkRuntime::execution(
+                &self.parts.work_runtime,
+                self.parts.core.lifecycle_generation(),
+            ),
             store: self.store_identity(),
             format: self.parts.format,
             access: self.parts.access,
-            current_root: self.parts.publication.current_root(),
+            current_root,
+            protection,
             generation: self.parts.core.lifecycle_generation(),
             runtime: std::sync::Arc::downgrade(&self.parts.work_runtime),
             lifecycle: self.parts.record_owner.reader(),
@@ -154,7 +162,13 @@ impl ServingPhysicalRuntime {
                 writeback,
                 self.parts.core.lifecycle_state(),
             ),
-        }
+        })
+    }
+
+    pub fn read_protection_observer(
+        &self,
+    ) -> crate::physical_runtime::PhysicalReadProtectionObserver {
+        self.parts.read_protection.observer()
     }
 
     pub fn record_submission(&self) -> super::super::PhysicalRecordSubmission {

@@ -25,7 +25,7 @@ pub enum CounterContractKind {
     ProtectedReferences,
     Retries,
     BlockedReclaimAttempts,
-    PublicationSwaps,
+    CompactionPublicationPlanCompletions,
     ReplayedPages,
     CompactionCandidateRanges,
     CopiedPages,
@@ -162,7 +162,9 @@ pub(crate) fn counter_contract_kind_token(kind: CounterContractKind) -> &'static
         CounterContractKind::ProtectedReferences => "protected-references",
         CounterContractKind::Retries => "retries",
         CounterContractKind::BlockedReclaimAttempts => "blocked-reclaim-attempts",
-        CounterContractKind::PublicationSwaps => "publication-swaps",
+        CounterContractKind::CompactionPublicationPlanCompletions => {
+            "compaction-publication-plan-completions"
+        }
         CounterContractKind::ReplayedPages => "replayed-pages",
         CounterContractKind::CompactionCandidateRanges => "compaction-candidate-ranges",
         CounterContractKind::CopiedPages => "copied-pages",

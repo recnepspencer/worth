@@ -19,7 +19,7 @@ fn compaction_plan_admits_blob_owned_rewrite_basis() {
     assert_eq!(plan.counters().chunks_scanned(), 1);
     assert_eq!(plan.counters().references_transferred(), 1);
     assert_eq!(plan.counters().foreground_yields(), 0);
-    assert_eq!(plan.counters().physical().publication_swaps(), 0);
+    assert_eq!(plan.counters().physical().publication_plan_completions(), 0);
 }
 
 #[test]

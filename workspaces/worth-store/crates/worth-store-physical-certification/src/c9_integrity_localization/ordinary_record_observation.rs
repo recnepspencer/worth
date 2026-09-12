@@ -41,6 +41,7 @@ pub(super) fn require(
     for record in &request.records {
         let mut session = match serving
             .records()
+            .expect("the single-reader fixture must admit root protection")
             .open_external(record.locator(inventory.store.bytes()), limits)
         {
             Ok(session) => session,

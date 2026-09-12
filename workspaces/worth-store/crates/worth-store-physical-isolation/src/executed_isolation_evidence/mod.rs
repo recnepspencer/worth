@@ -5,6 +5,7 @@ mod denial;
 mod executed;
 mod interference_snapshot;
 mod profile;
+#[cfg(any(test, feature = "certification-authority"))]
 mod project_counters;
 
 pub use authority_denial::{
@@ -21,7 +22,7 @@ pub use authority_denial::{
 pub use basis::ExecutedIsolationBasis;
 pub use counter_snapshot::{ExecutedIsolationCounterKind, PhysicalIsolationCounterSnapshot};
 pub use denial::ExecutedIsolationEvidenceDenial;
-pub use executed::{ExecutedIsolationEvidence, ExecutedIsolationReceipts};
+pub use executed::ExecutedIsolationEvidence;
 pub use interference_snapshot::{
     IsolationInterferenceCounterName, IsolationInterferenceSnapshot,
     IsolationInterferenceSnapshotRow,

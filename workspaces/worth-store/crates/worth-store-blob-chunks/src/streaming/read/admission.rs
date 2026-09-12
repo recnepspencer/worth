@@ -1,9 +1,11 @@
+use worth_store::physical_runtime::stability::{
+    PhysicalReadExecutionDenial, StablePhysicalReadReceipt,
+};
 use worth_store_io_scheduler::foreground_reservation::{
     ForegroundIoLaneKind, ForegroundReservationAdmissionOutcome, ForegroundReservationReceipt,
     ForegroundReservationState,
 };
 use worth_store_io_scheduler::BackgroundPacingOutcome;
-use worth_store_physical_isolation::{PhysicalReadExecutionDenial, StablePhysicalReadReceipt};
 
 use super::classification::verification_pressure::{self, AdmittedBlobVerificationPressure};
 use crate::{BlobStreamingReadCounterSnapshot, BlobStreamingReadDenial};

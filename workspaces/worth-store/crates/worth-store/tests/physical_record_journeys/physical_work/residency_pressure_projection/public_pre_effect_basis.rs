@@ -51,9 +51,17 @@ fn public_read_pressure_retains_exact_pre_effect_basis() {
     let page_bytes = u64::from(format.declaration().page_size().bytes());
     let read_limits = RecordReadLimits::new(RecordByteLimit::new(16).unwrap());
 
-    let held = serving.records().open(first_record, read_limits).unwrap();
+    let held = serving
+        .records()
+        .expect("read protection admission")
+        .open(first_record, read_limits)
+        .unwrap();
     let before_read_denial = serving.media_counters();
-    let read_error = match serving.records().open(second_record, read_limits) {
+    let read_error = match serving
+        .records()
+        .expect("read protection admission")
+        .open(second_record, read_limits)
+    {
         Err(error) => error,
         Ok(_) => panic!("the second read must not spend the held read allocation"),
     };

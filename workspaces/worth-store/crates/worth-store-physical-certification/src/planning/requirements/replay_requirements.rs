@@ -54,7 +54,6 @@ pub(super) fn physical_isolation_checkpoint_publication_crash_replay_shape(
         counter_contracts: RequiredCounterContractSet::from_contracts([
             PhysicalCounterContract::exact(CounterContractKind::ActorStepExact, actor_step_count),
             PhysicalCounterContract::exact(CounterContractKind::ReplayIdentityExact, 1),
-            PhysicalCounterContract::exact(CounterContractKind::PublicationSwaps, 1),
             PhysicalCounterContract::profile_scoped(CounterContractKind::ProfileResourceEnvelope),
             bounded_contract(CounterContractKind::AllocationBytes, 64 * 1024),
             bounded_contract(CounterContractKind::PagePins, 8),

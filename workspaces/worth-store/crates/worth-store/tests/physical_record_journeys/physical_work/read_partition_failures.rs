@@ -275,6 +275,7 @@ fn retry(
         Workload::Scan => {
             let mut scan = serving
                 .records()
+                .expect("read protection admission")
                 .scan(
                     RecordScanRequest::from_start()
                         .with_batch_limit(RecordCountLimit::new(1).unwrap()),
@@ -295,7 +296,11 @@ fn retry(
 
 fn run_ordinary(serving: &ServingPhysicalRuntime, record: PhysicalRecordId) -> bool {
     let limits = RecordReadLimits::new(RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
-    let Ok(mut read) = serving.records().open(record, limits) else {
+    let Ok(mut read) = serving
+        .records()
+        .expect("read protection admission")
+        .open(record, limits)
+    else {
         return false;
     };
     let mut bytes = vec![0_u8; PAYLOAD.len()];
@@ -315,6 +320,7 @@ fn run_ordinary(serving: &ServingPhysicalRuntime, record: PhysicalRecordId) -> b
 fn run_scan(serving: &ServingPhysicalRuntime) -> bool {
     let Ok(mut scan) = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(1).unwrap()))
     else {
         return false;

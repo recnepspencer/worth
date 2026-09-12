@@ -47,6 +47,7 @@ pub(super) fn allocation_reader(root: &Path, encoded_locator: &str) {
     let observation = {
         let mut record = serving
             .records()
+            .expect("read protection admission")
             .open_external(
                 locator,
                 RecordReadLimits::new(RecordByteLimit::new(u32::MAX).unwrap()),
@@ -72,6 +73,7 @@ pub(super) fn extent_reader(root: &Path, encoded_locator: &str) {
     let locator = ExternalPhysicalRecordLocator::decode(unhex(encoded_locator)).unwrap();
     let mut record = serving
         .records()
+        .expect("read protection admission")
         .open_external(
             locator,
             RecordReadLimits::new(RecordByteLimit::new(u32::MAX).unwrap()),
@@ -120,11 +122,13 @@ pub(super) fn scale_allocation_reader(root: &Path, encoded_locator: &str) {
     let locator = ExternalPhysicalRecordLocator::decode(unhex(encoded_locator)).unwrap();
     let record = serving
         .records()
+        .expect("read protection admission")
         .readmit_locator(locator)
         .into_result()
         .unwrap();
     serving
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(100).unwrap()),

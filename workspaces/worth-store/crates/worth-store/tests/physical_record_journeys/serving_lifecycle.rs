@@ -115,7 +115,7 @@ fn record_owner_propagates_through_every_lifecycle_boundary() {
         .record_id(0)
         .expect("the completed singleton must expose its record identity");
     {
-        let reader = serving.records();
+        let reader = serving.records().expect("read protection admission");
         assert_eq!(observer.record_counters().readers_live(), 1);
         let session = reader
             .open(
@@ -130,6 +130,7 @@ fn record_owner_propagates_through_every_lifecycle_boundary() {
     {
         let scan = serving
             .records()
+            .expect("read protection admission")
             .scan(
                 RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(1).unwrap()),
             )
@@ -283,8 +284,8 @@ fn serving_concurrency_contract_is_enforced_at_runtime_boundaries() {
     let root = parent.path().join("store");
     let serving = serving_from_initialization(&root);
     let observer = serving.observer();
-    let first = serving.records();
-    let second = serving.records();
+    let first = serving.records().unwrap();
+    let second = serving.records().unwrap();
     assert_eq!(observer.record_counters().readers_live(), 2);
     assert_eq!(first.store_identity(), second.store_identity());
     drop((first, second));
@@ -311,6 +312,7 @@ fn physical_residency_serves_real_reads_and_candidate_writes() {
     let counters = serving.certification_frame_port_observer();
     let mut read = serving
         .records()
+        .expect("read protection admission")
         .open(
             first,
             RecordReadLimits::new(RecordByteLimit::new(64).unwrap()),
@@ -329,6 +331,7 @@ fn physical_residency_serves_real_reads_and_candidate_writes() {
     assert_eq!(second.current_root().generation(), 3);
     let mut retained_read = serving
         .records()
+        .expect("read protection admission")
         .open(
             second.settled_members()[0].record_id(0).unwrap(),
             RecordReadLimits::new(RecordByteLimit::new(64).unwrap()),

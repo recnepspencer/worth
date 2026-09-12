@@ -1,6 +1,9 @@
 #[path = "../scenarios/physical_isolation/copy_on_write_publication/copy_on_write_publication.rs"]
 mod copy_on_write_publication;
 
+#[path = "../scenarios/physical_isolation/compaction_plan_completion.rs"]
+mod compaction_plan_completion;
+
 #[path = "../scenarios/physical_isolation/epoch_scope_foundational_lowering/epoch_scope_foundational_lowering.rs"]
 mod epoch_scope_foundational_lowering;
 
@@ -9,9 +12,6 @@ mod latch_acquisition_order;
 
 #[path = "../scenarios/physical_isolation/latch_algorithm_shape/latch_algorithm_shape.rs"]
 mod latch_algorithm_shape;
-
-#[path = "../scenarios/physical_isolation/physical_isolation_entry/physical_isolation_entry.rs"]
-mod physical_isolation_entry;
 
 #[path = "../scenarios/physical_isolation/physical_semantic_isolation/physical_semantic_isolation.rs"]
 mod physical_semantic_isolation;

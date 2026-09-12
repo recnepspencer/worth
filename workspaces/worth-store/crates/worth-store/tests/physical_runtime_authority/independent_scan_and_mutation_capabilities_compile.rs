@@ -1,10 +1,10 @@
+use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, FilesystemMediaAdmission, ManifestEntryCapacity,
     PhysicalRecordAccessPolicy, PhysicalRecordFormatDeclaration, PhysicalRecordInitialization,
     PhysicalRecordPlacementPolicy, PhysicalRuntimeAdmission, PhysicalStore, RecordCountLimit,
     RecordScanRequest, SegmentPageCount,
 };
-use worth_proof::TransitionOutcome;
 use worth_store_physical_backend::FilesystemAccessPosture;
 
 #[path = "support/durability.rs"]
@@ -20,9 +20,7 @@ fn capabilities_typecheck() {
         .manifest_capacity(ManifestEntryCapacity::new(4).unwrap())
         .admit(format)
         .unwrap();
-    let access = PhysicalRecordAccessPolicy::builder()
-        .admit(format)
-        .unwrap();
+    let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
     let owner = PhysicalStore::admit(
         PhysicalRuntimeAdmission::new(
             std::env::temp_dir().join("worth-store-independent-scan-and-mutation"),
@@ -42,10 +40,7 @@ fn capabilities_typecheck() {
     let durability = durability::admitted(&media);
     let runtime = match media
         .initialize_record_store(PhysicalRecordInitialization::new(
-            format,
-            placement,
-            access,
-            durability,
+            format, placement, access, durability,
         ))
         .into_raw()
     {
@@ -54,10 +49,8 @@ fn capabilities_typecheck() {
     };
     let mut scan = runtime
         .records()
-        .scan(
-            RecordScanRequest::from_start()
-                .with_batch_limit(RecordCountLimit::new(1).unwrap()),
-        )
+        .expect("read protection admission")
+        .scan(RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(1).unwrap()))
         .unwrap();
     let _writer = runtime.record_submission();
     let mut scratch = [0_u8; 16];

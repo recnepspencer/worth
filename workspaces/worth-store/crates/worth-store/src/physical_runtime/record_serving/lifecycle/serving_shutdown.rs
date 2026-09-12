@@ -62,6 +62,8 @@ impl RecordServingTerminalObservation {
 }
 
 pub struct ServingShutdownOutcome<Terminal> {
+    pub(in crate::physical_runtime) read_protection:
+        crate::physical_runtime::PhysicalReadProtectionShutdown,
     pub(in crate::physical_runtime) media: MediaShutdownOutcome<Terminal>,
     pub(in crate::physical_runtime) records: RecordServingTerminalObservation,
     pub(in crate::physical_runtime) mutation: crate::physical_runtime::PhysicalMutationShutdown,
@@ -79,6 +81,9 @@ pub struct ServingShutdownOutcome<Terminal> {
 }
 
 impl<Terminal> ServingShutdownOutcome<Terminal> {
+    pub const fn read_protection(&self) -> crate::physical_runtime::PhysicalReadProtectionShutdown {
+        self.read_protection
+    }
     pub const fn terminal(&self) -> &Terminal {
         self.media.terminal()
     }

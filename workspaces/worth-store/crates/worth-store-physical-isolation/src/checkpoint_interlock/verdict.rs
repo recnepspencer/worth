@@ -1,5 +1,5 @@
 use super::{CheckpointPublicationStabilityProof, CheckpointReadInterlockDenial};
-use crate::StablePhysicalReadReceipt;
+use crate::PhysicalReadPlanCompletionReceipt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReadDuringCheckpointVerdict {
@@ -20,11 +20,11 @@ impl ReadDuringCheckpointVerdict {
         &self.proof
     }
 
-    pub const fn pre_publication_read(&self) -> StablePhysicalReadReceipt {
+    pub const fn pre_publication_read(&self) -> PhysicalReadPlanCompletionReceipt {
         self.proof.plan().pre_publication_read()
     }
 
-    pub const fn post_publication_read(&self) -> StablePhysicalReadReceipt {
+    pub const fn post_publication_read(&self) -> PhysicalReadPlanCompletionReceipt {
         self.proof.post_publication_read()
     }
 

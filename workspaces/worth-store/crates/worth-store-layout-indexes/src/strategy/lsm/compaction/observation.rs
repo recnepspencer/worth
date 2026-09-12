@@ -37,16 +37,14 @@ impl PublishedLsmCompaction {
 
     pub fn observe_reader_cutover(
         &self,
-        recovery: worth_store_physical_isolation::CompactionRecoveryEvidence,
-        pre_cutover_read: worth_store_physical_isolation::StablePhysicalReadReceipt,
-        post_cutover_read: worth_store_physical_isolation::StablePhysicalReadReceipt,
+        pre_cutover_read: worth_store_physical_isolation::PhysicalReadPlanCompletionReceipt,
+        post_cutover_read: worth_store_physical_isolation::PhysicalReadPlanCompletionReceipt,
     ) -> Result<
-        worth_store_physical_isolation::ReadDuringCompactionVerdict,
+        worth_store_physical_isolation::CompactionReadPlanCompletion,
         worth_store_physical_isolation::CompactionReadInterlockDenial,
     > {
-        worth_store_physical_isolation::execute_read_during_compaction_cutover(
+        worth_store_physical_isolation::CompactionReadPlanCompletion::from_publication(
             self.physical_compaction.clone(),
-            recovery,
             pre_cutover_read,
             post_cutover_read,
         )

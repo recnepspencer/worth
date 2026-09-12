@@ -5,7 +5,7 @@ pub enum CompactionCutoverState {
     PlanAdmitted,
     RewriteLowered,
     PublicationCommitted,
-    RecoveryVisibilityAdmitted,
+    ReadPlanCutoverValidated,
     ReclaimDeferred,
     Reclaimed,
     Denied,
@@ -15,13 +15,12 @@ pub enum CompactionCutoverState {
 pub enum CompactionOwnerCaseId {
     LowerRewrite,
     PublishRewrite,
-    AdmitRecoveryVisibility,
+    ValidateReadPlanCutover,
     DeferReclaim,
     DrainReclaimAfterReadRelease,
     InPlaceOverwriteDenied,
     EarlyReclaimDenied,
     StaleEpochReuseDenied,
-    BackendResidueCandidateSelectionDenied,
     LatchHierarchyInversionDenied,
     MixedRootReadDenied,
 }
@@ -31,7 +30,7 @@ impl CompactionOwnerCaseId {
         match self {
             Self::LowerRewrite => "physical.compaction.lower_rewrite",
             Self::PublishRewrite => "physical.compaction.publish_rewrite",
-            Self::AdmitRecoveryVisibility => "physical.compaction.admit_recovery_visibility",
+            Self::ValidateReadPlanCutover => "physical.compaction.validate_read_plan_cutover",
             Self::DeferReclaim => "physical.compaction.defer_reclaim",
             Self::DrainReclaimAfterReadRelease => {
                 "physical.compaction.drain_reclaim_after_read_release"
@@ -39,9 +38,6 @@ impl CompactionOwnerCaseId {
             Self::InPlaceOverwriteDenied => "physical.compaction.deny_in_place_overwrite",
             Self::EarlyReclaimDenied => "physical.compaction.deny_early_reclaim",
             Self::StaleEpochReuseDenied => "physical.compaction.deny_stale_epoch_reuse",
-            Self::BackendResidueCandidateSelectionDenied => {
-                "physical.compaction.deny_backend_residue"
-            }
             Self::LatchHierarchyInversionDenied => {
                 "physical.compaction.deny_latch_hierarchy_inversion"
             }

@@ -25,7 +25,7 @@ pub struct PhysicalCounterExecutionSources {
     range_comparisons: u64,
     overlapping_ranges: u64,
     copied_pages: u64,
-    publication_swaps: u64,
+    publication_plan_completions: u64,
     blocked_reclaims: u64,
     residency: PhysicalResidencyObservation,
     io: IoQueueCounterSnapshot,
@@ -62,7 +62,7 @@ impl PhysicalCounterExecutionSources {
             range_comparisons: compaction.range_comparisons(),
             overlapping_ranges: compaction.overlapping_ranges(),
             copied_pages: compaction.copied_pages(),
-            publication_swaps: compaction.publication_swaps(),
+            publication_plan_completions: compaction.publication_plan_completions(),
             blocked_reclaims: compaction.blocked_reclaims(),
             residency,
             io,
@@ -94,7 +94,7 @@ const fn is_compaction_counter(kind: CounterContractKind) -> bool {
         kind,
         CounterContractKind::ProtectedReferences
             | CounterContractKind::BlockedReclaimAttempts
-            | CounterContractKind::PublicationSwaps
+            | CounterContractKind::CompactionPublicationPlanCompletions
             | CounterContractKind::CompactionCandidateRanges
             | CounterContractKind::CopiedPages
     )
@@ -142,9 +142,9 @@ impl CompactionCounterSource {
         }
     }
 
-    const fn publication_swaps(self) -> u64 {
+    const fn publication_plan_completions(self) -> u64 {
         match self {
-            Self::Observed(observation) => observation.publication_swaps(),
+            Self::Observed(observation) => observation.publication_plan_completions(),
             Self::NoClaim => 0,
         }
     }
@@ -249,7 +249,9 @@ fn observed_counter_count(
         CounterContractKind::ProtectedReferences => sources.protected_ranges,
         CounterContractKind::Retries => 0,
         CounterContractKind::BlockedReclaimAttempts => sources.blocked_reclaims,
-        CounterContractKind::PublicationSwaps => sources.publication_swaps,
+        CounterContractKind::CompactionPublicationPlanCompletions => {
+            sources.publication_plan_completions
+        }
         CounterContractKind::ReplayedPages => 0,
         CounterContractKind::CompactionCandidateRanges => sources.compaction_candidate_ranges,
         CounterContractKind::CopiedPages => sources.copied_pages,

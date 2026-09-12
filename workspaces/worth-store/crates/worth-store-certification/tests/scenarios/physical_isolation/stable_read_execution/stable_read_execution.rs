@@ -17,12 +17,12 @@ use worth_foundational::{
     FoundationalDiagnosticRowFamily,
 };
 use worth_proof::TransitionOutcome;
-use worth_store_physical_format::PhysicalCellReuseDomain;
-use worth_store_physical_isolation::{
-    CurrentGenerationPhysicalReference, PhysicalByteGuard, PhysicalByteGuardDenial,
-    PhysicalByteGuardScope, PhysicalReadExecutionDenial, PhysicalReadIoAttempt,
-    PhysicalReadPlanRetryPosture, StablePhysicalReadExecution,
+use worth_store::physical_runtime::stability::{
+    PhysicalByteGuard, PhysicalByteGuardDenial, PhysicalByteGuardScope,
+    PhysicalReadExecutionDenial, PhysicalReadIoAttempt, StablePhysicalReadExecution,
 };
+use worth_store_physical_format::PhysicalCellReuseDomain;
+use worth_store_physical_isolation::PhysicalReadPlanRetryPosture;
 
 #[test]
 fn real_store_chunks_preserve_inline_and_top_level_extent_owners() {
@@ -60,7 +60,8 @@ fn execution_consumes_handle_admits_guard_and_releases_plan() {
     with_record_chunk("stable-read-execution", b"copy", |_serving, chunk| {
         let authority = physical_authority_from_complete_closeout();
         let root = current_root_from_authority(&authority);
-        let reference = CurrentGenerationPhysicalReference::for_record_chunk(&chunk);
+        let reference =
+            worth_store::physical_runtime::stability::current_reference_for_record_chunk(&chunk);
         let plan = admit_plan(&authority, root, protected_set([reference], 4), 8, 4);
         let footprint_basis = plan.footprint().declared_footprint_basis();
         let admitted_plan_allocations = plan.counters().allocation_events();
@@ -105,6 +106,17 @@ fn execution_consumes_handle_admits_guard_and_releases_plan() {
             FoundationalBoundaryEvidenceReceiptKind::Execution
         );
         assert!(foundational.executed_receipt().did_execute());
+        assert_eq!(
+            foundational.executed_receipt().locality(),
+            worth_foundational::FoundationalBoundaryEvidenceLocality::Current
+        );
+        assert_eq!(
+            foundational
+                .executed_receipt()
+                .provenance()
+                .freshness_posture(),
+            worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained
+        );
         assert_eq!(foundational.diagnostic_rows().len(), 1);
         assert_eq!(
             foundational.diagnostic_rows()[0].family(),
@@ -175,7 +187,10 @@ fn store_chunk_guard_rejects_mismatched_chunk_basis() {
         |_serving, expected| {
             let authority = physical_authority_from_complete_closeout();
             let root = current_root_from_authority(&authority);
-            let reference = CurrentGenerationPhysicalReference::for_record_chunk(&expected);
+            let reference =
+                worth_store::physical_runtime::stability::current_reference_for_record_chunk(
+                    &expected,
+                );
             let plan = admit_plan(&authority, root, protected_set([reference], 4), 8, 4);
             let mut execution = StablePhysicalReadExecution::from_execution_ready_handle(
                 plan.into_execution_ready_handle(),
@@ -276,7 +291,8 @@ fn ordinary_execution_denies_hidden_structural_latch_io() {
     with_record_chunk("stable-read-hidden-io", b"copy", |_serving, chunk| {
         let authority = physical_authority_from_complete_closeout();
         let root = current_root_from_authority(&authority);
-        let reference = CurrentGenerationPhysicalReference::for_record_chunk(&chunk);
+        let reference =
+            worth_store::physical_runtime::stability::current_reference_for_record_chunk(&chunk);
         let plan = admit_plan(&authority, root, protected_set([reference], 4), 8, 4);
         let handle = plan.into_execution_ready_handle();
         let scope = PhysicalByteGuardScope::for_record_chunk(&chunk);

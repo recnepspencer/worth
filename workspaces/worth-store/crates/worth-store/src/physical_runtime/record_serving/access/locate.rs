@@ -16,11 +16,15 @@ mod extent;
 #[path = "locate/failure_classification.rs"]
 pub(super) mod failure_classification;
 mod inline;
+#[cfg(feature = "certification-test-authority")]
+mod read_call_pause;
 mod session;
 pub use cancellation::RecordReadCancellation;
 #[cfg(test)]
 pub(in crate::physical_runtime) use failure_classification::assert_actual_lifecycle_manifest_denial_maps_without_damage;
 use failure_classification::manifest_failure;
+#[cfg(feature = "certification-test-authority")]
+pub use read_call_pause::CertificationPhysicalReadCallPauseGate;
 
 #[allow(
     clippy::large_enum_variant,
@@ -42,6 +46,10 @@ enum ReadPlacement {
 /// caller-provided buffer. A borrowed chunk cannot outlive or advance this
 /// session.
 pub struct RecordReadSession {
+    execution: crate::physical_runtime::PhysicalWorkExecution,
+    #[cfg(feature = "certification-test-authority")]
+    read_pause: Option<read_call_pause::PhysicalReadCallPause>,
+    protection: crate::physical_runtime::stability::PhysicalRootReadLease,
     placement: ReadPlacement,
     identity: RecordReadIdentity,
     observation: RecordReadObservation,
@@ -56,6 +64,10 @@ pub struct RecordReadSession {
 /// The reader exposes no pool, frame, pin, eviction, or source-loading
 /// authority.
 pub struct PhysicalRecordReader {
+    pub(in crate::physical_runtime::record_serving) execution:
+        crate::physical_runtime::PhysicalWorkExecution,
+    pub(in crate::physical_runtime::record_serving) protection:
+        crate::physical_runtime::stability::PhysicalRootReadLease,
     pub(in crate::physical_runtime::record_serving) store: StableStoreIdentity,
     pub(in crate::physical_runtime::record_serving) format: AdmittedPhysicalRecordFormat,
     pub(in crate::physical_runtime::record_serving) access: AdmittedRecordAccessPolicy,
@@ -70,6 +82,19 @@ pub struct PhysicalRecordReader {
 }
 
 impl PhysicalRecordReader {
+    fn admit_read_call(
+        &self,
+    ) -> Result<crate::physical_runtime::instance::PhysicalExecutionCall, RecordReadError> {
+        self.execution.admit_call().map_err(|_| {
+            RecordReadError::new(
+                RecordReadDenial::PhysicalWork(super::super::RecordReadWorkDenial::RuntimeReleased),
+                RecordReadObservation::default(),
+            )
+        })
+    }
+    pub fn protected_root(&self) -> crate::physical_runtime::PhysicalProtectedRootObservation {
+        self.protection.observation()
+    }
     /// Locates a record and opens a bounded read session.
     ///
     /// The caller-supplied limits are checked before payload streaming. A
@@ -79,7 +104,14 @@ impl PhysicalRecordReader {
         record: PhysicalRecordId,
         limits: RecordReadLimits,
     ) -> Result<RecordReadSession, RecordReadError> {
+        let _call = self.admit_read_call()?;
         let mut observation = RecordReadObservation::default();
+        self.protection.require_live().map_err(|_| {
+            RecordReadError::new(
+                RecordReadDenial::PhysicalWork(super::super::RecordReadWorkDenial::RuntimeReleased),
+                observation,
+            )
+        })?;
         let runtime = self.runtime.upgrade().ok_or_else(|| {
             RecordReadError::new(RecordReadDenial::ServingRequiresInspection, observation)
         })?;
@@ -144,6 +176,12 @@ impl PhysicalRecordReader {
         observation: RecordReadObservation,
         basis: super::super::PhysicalRecordPressureBasis,
     ) -> Result<worth_store_buffer_pool::OperationAllocationGrant, RecordReadError> {
+        self.protection.require_live().map_err(|_| {
+            RecordReadError::new(
+                RecordReadDenial::PhysicalWork(super::super::RecordReadWorkDenial::RuntimeReleased),
+                observation,
+            )
+        })?;
         self.residency
             .begin_operation(
                 worth_store_buffer_pool::PhysicalOperationAllocationScope::ForegroundRead,
@@ -204,6 +242,11 @@ impl PhysicalRecordReader {
         &self,
         locator: ExternalPhysicalRecordLocator,
     ) -> PhysicalLocatorReadmissionOutcome {
+        let Ok(_call) = self.admit_read_call() else {
+            return worth_proof::TransitionOutcome::denied(
+                super::super::PhysicalLocatorReadmissionDenial::CurrentRootUnavailable,
+            );
+        };
         super::super::access::readmission::readmit_locator(self, locator)
     }
 
@@ -213,6 +256,7 @@ impl PhysicalRecordReader {
         locator: ExternalPhysicalRecordLocator,
         limits: RecordReadLimits,
     ) -> Result<RecordReadSession, RecordReadError> {
+        let _call = self.admit_read_call()?;
         let mut observation = RecordReadObservation::default();
         let allocation = self.begin_read_allocation(observation)?;
         let readmitted =

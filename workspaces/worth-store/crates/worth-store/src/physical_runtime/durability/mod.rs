@@ -161,6 +161,8 @@ pub(in crate::physical_runtime) use publication::{
     PhysicalRootPublicationPreparationNotStartedCause, PhysicalRootPublicationTransition,
     PhysicalRootPublicationWorkPort, RootCandidateSynchronizationFailure,
 };
+#[cfg(feature = "certification-test-authority")]
+pub use publication::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
 pub use publication::{
     CompletedPhysicalRootPublication, IndeterminatePhysicalCurrentRootAdvance,
     IndeterminatePhysicalRootNamespaceDurability, IndeterminatePhysicalRootPublicationPreparation,

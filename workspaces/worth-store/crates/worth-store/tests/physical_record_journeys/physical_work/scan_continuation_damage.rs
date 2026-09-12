@@ -63,6 +63,7 @@ fn fail_first_continuation(
 ) -> (MediaCounterSnapshot, u64, usize) {
     let mut scan = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(1).unwrap()))
         .expect("the fault must occur after scan admission");
     assert_eq!(
@@ -175,6 +176,7 @@ fn calibrate() -> ScanCalibration {
     let after_open = identified_reads(&serving);
     let mut scan = serving
         .records()
+        .expect("read protection admission")
         .scan(RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(1).unwrap()))
         .unwrap();
     let after_scan_admission = identified_reads(&serving);

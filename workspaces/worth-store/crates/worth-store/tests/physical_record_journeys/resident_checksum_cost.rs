@@ -68,6 +68,7 @@ fn read_and_count_checksums(
     let before = certification_crc32c_invocations();
     let session = serving
         .records()
+        .expect("read protection admission")
         .open_external(
             locator,
             RecordReadLimits::new(RecordByteLimit::new(1_024).unwrap()),

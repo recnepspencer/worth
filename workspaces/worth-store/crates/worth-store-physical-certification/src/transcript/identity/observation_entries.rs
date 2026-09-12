@@ -153,12 +153,12 @@ fn compaction_interlock_entries(
             observation.no_mixed_root(),
         ),
         bool_entry(
-            "transcript.trace.compaction_interlock.old_reader_old_structure",
-            observation.old_reader_retained_old_structure(),
+            "transcript.trace.compaction_interlock.old_reachability_deferred",
+            observation.old_reachability_deferred(),
         ),
         bool_entry(
-            "transcript.trace.compaction_interlock.new_reader_new_epoch",
-            observation.new_reader_observed_new_epoch(),
+            "transcript.trace.compaction_interlock.post_cutover_plan_matches_publication",
+            observation.post_cutover_plan_matches_publication(),
         ),
         bool_entry(
             "transcript.trace.compaction_interlock.blocked_reclaim",
@@ -185,8 +185,8 @@ fn compaction_interlock_entries(
             observation.copied_pages(),
         ),
         count_entry(
-            "transcript.trace.compaction_interlock.publication_swaps",
-            observation.publication_swaps(),
+            "transcript.trace.compaction_interlock.publication_plan_completions",
+            observation.publication_plan_completions(),
         ),
         count_entry(
             "transcript.trace.compaction_interlock.blocked_reclaims",

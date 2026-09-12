@@ -7,7 +7,7 @@ use crate::planning::AccessPlanIdentity;
 #[derive(Debug, PartialEq, Eq)]
 pub struct StableBTreeLookupExecution {
     observation: BaselineBTreeLookupObservation,
-    stable_read: worth_store_physical_isolation::StablePhysicalReadReceipt,
+    stable_read: worth_store_physical_isolation::PhysicalReadPlanCompletionReceipt,
     protected: worth_store_physical_isolation::CompactionProtectedReferenceSet,
     current_materialization: crate::CurrentLayoutMaterialization,
     counter_receipt: super::super::BaselineBTreeLookupCounterReceipt,
@@ -31,7 +31,9 @@ impl StableBTreeLookupExecution {
         })
     }
 
-    pub const fn stable_read(&self) -> &worth_store_physical_isolation::StablePhysicalReadReceipt {
+    pub const fn read_plan_completion(
+        &self,
+    ) -> &worth_store_physical_isolation::PhysicalReadPlanCompletionReceipt {
         &self.stable_read
     }
 

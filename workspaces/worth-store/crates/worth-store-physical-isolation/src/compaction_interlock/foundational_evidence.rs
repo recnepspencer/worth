@@ -1,5 +1,6 @@
 use super::{
-    CompactionReadInterlockCounters, DrainedCompactionReclaim, ReadDuringCompactionVerdict,
+    CompactionReadInterlockCounters, CompactionReadInterlockDenial, CompactionReadPlanCompletion,
+    DrainedCompactionReclaim,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -7,8 +8,8 @@ pub struct CompactionInterlockFoundationalEvidence {
     counters: CompactionReadInterlockCounters,
     materialized_after_store_decision: bool,
     no_mixed_root: bool,
-    old_reader_retained_old_structure: bool,
-    new_reader_observed_new_epoch: bool,
+    old_reachability_deferred: bool,
+    post_cutover_plan_matches_publication: bool,
     blocked_reclaim_until_release: bool,
 }
 
@@ -18,30 +19,33 @@ impl CompactionInterlockFoundationalEvidence {
             counters,
             materialized_after_store_decision: true,
             no_mixed_root: false,
-            old_reader_retained_old_structure: false,
-            new_reader_observed_new_epoch: false,
+            old_reachability_deferred: false,
+            post_cutover_plan_matches_publication: false,
             blocked_reclaim_until_release: false,
         }
     }
 
-    pub fn after_executed_interlock(
-        verdict: &ReadDuringCompactionVerdict,
+    pub fn after_completed_plans_and_reclaim(
+        completion: &CompactionReadPlanCompletion,
         reclaim: &DrainedCompactionReclaim,
-    ) -> Self {
-        let proof = verdict.proof();
-        Self {
+    ) -> Result<Self, CompactionReadInterlockDenial> {
+        if !reclaim.matches_publication(completion.publication()) {
+            return Err(CompactionReadInterlockDenial::ReclaimPublicationMismatch);
+        }
+        Ok(Self {
             counters: reclaim.counters(),
             materialized_after_store_decision: true,
-            no_mixed_root: proof.pre_cutover_root().epoch() != proof.post_cutover_root().epoch(),
-            old_reader_retained_old_structure: verdict.pre_cutover_reader_retained_old_structure(),
-            new_reader_observed_new_epoch: verdict.post_cutover_reader_observed_new_epoch(),
+            no_mixed_root: completion.pre_cutover_root().epoch()
+                != completion.post_cutover_root().epoch(),
+            old_reachability_deferred: completion.old_reachability_deferred(),
+            post_cutover_plan_matches_publication: true,
             blocked_reclaim_until_release: reclaim.counters().blocked_reclaims() > 0
                 && reclaim.released().footprint_basis()
-                    == verdict
-                        .pre_cutover_read()
+                    == completion
+                        .pre_cutover_plan_completion()
                         .read_plan_release()
                         .footprint_basis(),
-        }
+        })
     }
 
     pub const fn counters(self) -> CompactionReadInterlockCounters {
@@ -56,12 +60,12 @@ impl CompactionInterlockFoundationalEvidence {
         self.no_mixed_root
     }
 
-    pub const fn old_reader_retained_old_structure(self) -> bool {
-        self.old_reader_retained_old_structure
+    pub const fn old_reachability_deferred(self) -> bool {
+        self.old_reachability_deferred
     }
 
-    pub const fn new_reader_observed_new_epoch(self) -> bool {
-        self.new_reader_observed_new_epoch
+    pub const fn post_cutover_plan_matches_publication(self) -> bool {
+        self.post_cutover_plan_matches_publication
     }
 
     pub const fn blocked_reclaim_until_release(self) -> bool {

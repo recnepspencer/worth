@@ -108,7 +108,11 @@ pub(super) fn read_record(
     index: usize,
 ) {
     let limits = RecordReadLimits::new(RecordByteLimit::new(RECORD_BYTES as u32).unwrap());
-    let mut record = serving.records().open(records[index], limits).unwrap();
+    let mut record = serving
+        .records()
+        .expect("read protection admission")
+        .open(records[index], limits)
+        .unwrap();
     let mut bytes = [0; RECORD_BYTES];
     assert_eq!(record.read_next(&mut bytes).unwrap(), RECORD_BYTES);
     assert!(bytes

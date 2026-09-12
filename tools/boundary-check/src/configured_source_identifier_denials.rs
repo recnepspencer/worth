@@ -189,6 +189,34 @@ mod tests {
     }
 
     #[test]
+    fn configured_isolation_entry_retirement_fences_both_former_producers() {
+        let config: crate::config::Road1Config =
+            toml::from_str(include_str!("../config/road1.toml")).unwrap();
+        for owner in [
+            "worth-store-physical-isolation",
+            "worth-store-physical-certification",
+        ] {
+            let root = format!("workspaces/worth-store/crates/{owner}/src");
+            let rule = config
+                .source_identifier_denials
+                .iter()
+                .find(|rule| rule.root == root)
+                .expect("retired entry producer fence");
+            assert_eq!(diagnostics_for_source(
+                "entry.rs",
+                "struct PhysicalIsolationEntryIdentity; struct RecoveryReadinessBasis; fn admit_physical_isolation_entry() {}",
+                rule,
+            ).len(), 3);
+            assert!(diagnostics_for_source(
+                "root_epoch_basis.rs",
+                "struct PhysicalIsolationRootEpochBasis;",
+                rule,
+            )
+            .is_empty());
+        }
+    }
+
+    #[test]
     fn rust_identifiers_are_rejected_without_matching_comments_or_strings() {
         assert_eq!(
             diagnostics_for_source(

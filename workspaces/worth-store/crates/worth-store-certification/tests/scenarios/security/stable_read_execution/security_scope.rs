@@ -2,6 +2,10 @@ use worth_foundational::{
     aspects, AspectContract, AspectKey, AspectValue, InternedString, ScalarAspectType,
 };
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::stability::{
+    LogicalDecodeSecurityScopeEntry, PhysicalByteGuardScope, StableReadSecurityScopePropagation,
+    StableReadSecurityScopePropagationInput,
+};
 use worth_store_aspect_native::{
     StoreAspectAuthorityInput, StoreAspectBoundaryFact, StoreAspectIdentity,
     StorePhysicalBoundaryWitness,
@@ -10,14 +14,11 @@ use worth_store_authority::{require_current_store_authority, StoreCurrentAuthori
 use worth_store_contracts::{StorePhysicalAuthorityWitness, ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
 use worth_store_physical_format::{
     PhysicalBinaryEncodingWitness, PhysicalDecodedHeader, PhysicalGeneration,
-    PhysicalGenerationAuthority, PhysicalHeaderAuthority, PhysicalPageHeader, PhysicalPageId,
-    PhysicalPageKind, PhysicalRecordSlot, PhysicalSecurityMetadataEnvelope, PhysicalSegmentId,
-    SegmentPageManifestEntry,
+    PhysicalGenerationAuthority, PhysicalGenerationOwner, PhysicalHeaderAuthority,
+    PhysicalHeaderDecodeWitness, PhysicalPageId, PhysicalPageKind, PhysicalRecordSlot,
+    PhysicalSecurityMetadataEnvelope, PhysicalSegmentId, SegmentPageManifestEntry,
 };
-use worth_store_physical_isolation::{
-    LogicalDecodeSecurityScopeEntry, PhysicalByteGuardScope, StablePhysicalReadHandle,
-    StableReadSecurityScopePropagation, StableReadSecurityScopePropagationInput,
-};
+use worth_store_physical_isolation::StablePhysicalReadHandle;
 use worth_store_security::{
     admit_store_security_scope, StoreCustodyPosture, StoreKeyVersionPosture,
     StoreLegacySecurityPosture, StoreSecurityMetadata, StoreSecurityScopeAdmissionRequest,
@@ -28,7 +29,7 @@ fn logical_decode_rejects_matching_guard_with_mismatched_carrier_basis_before_by
     use super::execution_support::with_record_chunk;
     use super::plan_admission::{admit_plan, protected_set};
     use super::support::current_root_from_authority;
-    use worth_store_physical_isolation::{
+    use worth_store::physical_runtime::stability::{
         PhysicalByteGuard, PhysicalReadExecutionDenial, StablePhysicalReadExecution,
     };
 
@@ -64,6 +65,100 @@ fn logical_decode_rejects_matching_guard_with_mismatched_carrier_basis_before_by
     });
 }
 
+#[test]
+fn same_generation_foreign_security_carriers_cannot_expose_guarded_bytes() {
+    use super::execution_support::with_record_chunk;
+    use super::plan_admission::{admit_plan, protected_set};
+    use super::support::current_root_from_authority;
+    use worth_store::physical_runtime::stability::{
+        PhysicalByteGuard, PhysicalReadExecutionDenial, StablePhysicalReadExecution,
+    };
+
+    with_record_chunk("carrier-exact-source", b"copy", |_serving, chunk| {
+        let authority = super::support::physical_authority_from_complete_closeout();
+        let scope = PhysicalByteGuardScope::for_record_chunk(&chunk);
+        let owner = scope.reference().owner();
+        let foreign_segment = segment(if owner.segment_id().unwrap().get() == 1 {
+            2
+        } else {
+            1
+        });
+        let foreign_page = page(if owner.page_id().unwrap().get() == 1 {
+            2
+        } else {
+            1
+        });
+        let foreign_slot = slot(if owner.slot().unwrap().get() == 1 {
+            2
+        } else {
+            1
+        });
+        let generations = PhysicalGenerationAuthority::for_canonical_physical_format();
+        let wrong_segment = generations
+            .slot_cell(
+                foreign_segment,
+                owner.page_id().unwrap(),
+                owner.slot().unwrap(),
+            )
+            .with_slot_generation(owner.generation())
+            .owner();
+        let wrong_page = generations
+            .slot_cell(
+                owner.segment_id().unwrap(),
+                foreign_page,
+                owner.slot().unwrap(),
+            )
+            .with_slot_generation(owner.generation())
+            .owner();
+        let wrong_slot = generations
+            .slot_cell(
+                owner.segment_id().unwrap(),
+                owner.page_id().unwrap(),
+                foreign_slot,
+            )
+            .with_slot_generation(owner.generation())
+            .owner();
+        let plan = admit_plan(
+            &authority,
+            current_root_from_authority(&authority),
+            protected_set([scope.reference()], 4),
+            8,
+            4,
+        );
+        let handle = plan.into_execution_ready_handle();
+        let denied_entries = [
+            (wrong_segment, owner),
+            (wrong_page, owner),
+            (owner, wrong_segment),
+            (owner, wrong_page),
+            (owner, wrong_slot),
+        ]
+        .map(|(page, manifest)| {
+            logical_decode_entry_for_sources(&handle, scope, page, manifest, "source-binding")
+        });
+        let valid =
+            logical_decode_entry_for_sources(&handle, scope, owner, owner, "source-binding");
+        let mut execution = StablePhysicalReadExecution::from_execution_ready_handle(handle);
+        let admission = execution.admit_byte_guard(scope).unwrap();
+        let guard = PhysicalByteGuard::from_record_chunk(admission, chunk).unwrap();
+        for entry in denied_entries {
+            assert!(matches!(
+                execution.read_guarded_bytes_with_security_scope(&guard, entry),
+                Err(PhysicalReadExecutionDenial::LogicalDecodeScopeCarrierMismatch { .. })
+            ));
+            assert_eq!(execution.counters().guarded_byte_reads(), 0);
+        }
+        assert_eq!(
+            execution
+                .read_guarded_bytes_with_security_scope(&guard, valid)
+                .unwrap()
+                .physical_bytes(),
+            b"copy"
+        );
+        assert_eq!(execution.counters().guarded_byte_reads(), 1);
+    });
+}
+
 pub fn logical_decode_entry_for_handle(
     handle: &StablePhysicalReadHandle,
     guard_scope: PhysicalByteGuardScope,
@@ -83,16 +178,42 @@ pub fn logical_decode_entry_for_handle_with_carrier_generation(
     carrier_generation: u64,
     identity: &str,
 ) -> LogicalDecodeSecurityScopeEntry {
+    let owner = guard_scope.reference().owner();
+    let carrier_owner = PhysicalGenerationAuthority::for_canonical_physical_format()
+        .slot_cell(
+            owner.segment_id().unwrap(),
+            owner.page_id().unwrap(),
+            owner.slot().unwrap(),
+        )
+        .with_slot_generation(generation(carrier_generation))
+        .owner();
+    logical_decode_entry_for_sources(handle, guard_scope, carrier_owner, carrier_owner, identity)
+}
+
+fn logical_decode_entry_for_sources(
+    handle: &StablePhysicalReadHandle,
+    guard_scope: PhysicalByteGuardScope,
+    page_owner: PhysicalGenerationOwner,
+    manifest_owner: PhysicalGenerationOwner,
+    identity: &str,
+) -> LogicalDecodeSecurityScopeEntry {
     let metadata = platform_page_metadata(identity);
-    let page = PhysicalSecurityMetadataEnvelope::page_header(
-        decoded_page_header(carrier_generation),
-        metadata,
-    );
+    let page_decode = decoded_page_header(page_owner);
+    let PhysicalDecodedHeader::Page(header) = page_decode.header() else {
+        panic!("page header");
+    };
+    let page = PhysicalSecurityMetadataEnvelope::page_header(header, metadata);
     let manifest = PhysicalSecurityMetadataEnvelope::segment_page_manifest_entry(
-        segment_page_entry(carrier_generation),
+        segment_page_entry(manifest_owner),
         metadata,
     );
-    let input = StableReadSecurityScopePropagationInput::new(handle, guard_scope, &page, &manifest);
+    let input = StableReadSecurityScopePropagationInput::new(
+        handle,
+        guard_scope,
+        &page,
+        page_decode,
+        &manifest,
+    );
     let propagation = match StableReadSecurityScopePropagation::protect(input) {
         TransitionOutcome::Success(propagation) => propagation,
         other => panic!("stable-read security scope should propagate: {other:?}"),
@@ -123,10 +244,10 @@ fn platform_page_metadata(identity: &str) -> StoreSecurityMetadata {
     )
 }
 
-fn decoded_page_header(generation_value: u64) -> PhysicalPageHeader {
+fn decoded_page_header(owner: PhysicalGenerationOwner) -> PhysicalHeaderDecodeWitness {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
-        .page_cell(segment(1), page(2))
-        .with_page_generation(generation(generation_value));
+        .page_cell(owner.segment_id().unwrap(), owner.page_id().unwrap())
+        .with_page_generation(owner.generation());
     let authority = PhysicalHeaderAuthority::for_canonical_physical_format(
         PhysicalBinaryEncodingWitness::physical_format_canonical().unwrap(),
     );
@@ -138,16 +259,17 @@ fn decoded_page_header(generation_value: u64) -> PhysicalPageHeader {
     let report = authority
         .decode_page_header(cell, &encoded, PhysicalPageKind::DataPage)
         .unwrap();
-    match report.witness().header() {
-        PhysicalDecodedHeader::Page(header) => header,
-        PhysicalDecodedHeader::Frame(_) => panic!("expected decoded page header"),
-    }
+    report.witness()
 }
 
-fn segment_page_entry(generation_value: u64) -> SegmentPageManifestEntry {
+fn segment_page_entry(owner: PhysicalGenerationOwner) -> SegmentPageManifestEntry {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
-        .slot_cell(segment(1), page(2), slot(3))
-        .with_slot_generation(generation(generation_value));
+        .slot_cell(
+            owner.segment_id().unwrap(),
+            owner.page_id().unwrap(),
+            owner.slot().unwrap(),
+        )
+        .with_slot_generation(owner.generation());
     SegmentPageManifestEntry::new(cell)
 }
 

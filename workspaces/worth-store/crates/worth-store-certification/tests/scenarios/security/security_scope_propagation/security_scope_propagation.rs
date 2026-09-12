@@ -5,6 +5,10 @@ use worth_foundational::{
     aspects, AspectContract, AspectKey, AspectValue, InternedString, ScalarAspectType,
 };
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::stability::{
+    PhysicalByteGuardScope, StableReadSecurityScopePropagation,
+    StableReadSecurityScopePropagationInput,
+};
 use worth_store_aspect_native::{
     StoreAspectAuthorityInput, StoreAspectBoundaryFact, StoreAspectIdentity,
     StorePhysicalBoundaryWitness,
@@ -12,15 +16,11 @@ use worth_store_aspect_native::{
 use worth_store_authority::{require_current_store_authority, StoreCurrentAuthorityWitness};
 use worth_store_contracts::{StorePhysicalAuthorityWitness, ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
 use worth_store_physical_format::{
-    PhysicalBinaryEncodingWitness, PhysicalDecodedHeader, PhysicalGeneration,
-    PhysicalGenerationAuthority, PhysicalHeaderAuthority, PhysicalPageHeader, PhysicalPageId,
-    PhysicalPageKind, PhysicalRecordSlot, PhysicalSecurityMetadataEnvelope, PhysicalSegmentId,
-    SegmentPageManifestEntry,
+    PhysicalBinaryEncodingWitness, PhysicalDecodedHeader, PhysicalGenerationAuthority,
+    PhysicalGenerationOwner, PhysicalHeaderAuthority, PhysicalHeaderDecodeWitness,
+    PhysicalPageKind, PhysicalSecurityMetadataEnvelope, SegmentPageManifestEntry,
 };
-use worth_store_physical_isolation::{
-    PhysicalByteGuardScope, StableReadSecurityScopePropagation,
-    StableReadSecurityScopePropagationInput,
-};
+
 use worth_store_security::{
     admit_store_security_scope, StoreAuthenticityRequirement, StoreAuthenticityRequirementClass,
     StoreCustodyPosture, StoreKeyScope, StoreKeyVersionPosture, StoreLegacySecurityPosture,
@@ -146,16 +146,17 @@ fn stable_read_scope_input(
     page_metadata: StoreSecurityMetadata,
     manifest_metadata: StoreSecurityMetadata,
 ) -> StableReadSecurityScopePropagationInput {
-    let generation = guard_scope.reference().generation().get();
-    let page = PhysicalSecurityMetadataEnvelope::page_header(
-        decoded_page_header(generation),
-        page_metadata,
-    );
+    let owner = guard_scope.reference().owner();
+    let page_decode = decoded_page_header(owner);
+    let PhysicalDecodedHeader::Page(header) = page_decode.header() else {
+        panic!("page header");
+    };
+    let page = PhysicalSecurityMetadataEnvelope::page_header(header, page_metadata);
     let manifest = PhysicalSecurityMetadataEnvelope::segment_page_manifest_entry(
-        segment_page_entry(generation),
+        segment_page_entry(owner),
         manifest_metadata,
     );
-    StableReadSecurityScopePropagationInput::new(handle, guard_scope, &page, &manifest)
+    StableReadSecurityScopePropagationInput::new(handle, guard_scope, &page, page_decode, &manifest)
 }
 
 fn with_stable_read_guard_scope<R>(
@@ -176,10 +177,10 @@ fn with_stable_read_guard_scope<R>(
     result
 }
 
-fn decoded_page_header(generation_value: u64) -> PhysicalPageHeader {
+fn decoded_page_header(owner: PhysicalGenerationOwner) -> PhysicalHeaderDecodeWitness {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
-        .page_cell(segment(1), page(2))
-        .with_page_generation(generation(generation_value));
+        .page_cell(owner.segment_id().unwrap(), owner.page_id().unwrap())
+        .with_page_generation(owner.generation());
     let authority = PhysicalHeaderAuthority::for_canonical_physical_format(
         PhysicalBinaryEncodingWitness::physical_format_canonical().unwrap(),
     );
@@ -191,33 +192,18 @@ fn decoded_page_header(generation_value: u64) -> PhysicalPageHeader {
     let report = authority
         .decode_page_header(cell, &encoded, PhysicalPageKind::DataPage)
         .unwrap();
-    match report.witness().header() {
-        PhysicalDecodedHeader::Page(header) => header,
-        PhysicalDecodedHeader::Frame(_) => panic!("expected decoded page header"),
-    }
+    report.witness()
 }
 
-fn segment_page_entry(generation_value: u64) -> SegmentPageManifestEntry {
+fn segment_page_entry(owner: PhysicalGenerationOwner) -> SegmentPageManifestEntry {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
-        .slot_cell(segment(1), page(2), slot(3))
-        .with_slot_generation(generation(generation_value));
+        .slot_cell(
+            owner.segment_id().unwrap(),
+            owner.page_id().unwrap(),
+            owner.slot().unwrap(),
+        )
+        .with_slot_generation(owner.generation());
     SegmentPageManifestEntry::new(cell)
-}
-
-fn segment(value: u64) -> PhysicalSegmentId {
-    PhysicalSegmentId::from_raw(value).unwrap()
-}
-
-fn page(value: u64) -> PhysicalPageId {
-    PhysicalPageId::from_raw(value).unwrap()
-}
-
-fn slot(value: u16) -> PhysicalRecordSlot {
-    PhysicalRecordSlot::from_raw(value).unwrap()
-}
-
-fn generation(value: u64) -> PhysicalGeneration {
-    PhysicalGeneration::from_raw(value).unwrap()
 }
 
 fn platform_page_metadata_with_key_version(

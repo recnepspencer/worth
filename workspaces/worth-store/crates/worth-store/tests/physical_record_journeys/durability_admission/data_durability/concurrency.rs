@@ -83,6 +83,7 @@ fn disjoint_data_effects_overlap_before_one_exact_group_root_publication() {
     }
     let seed_session = serving
         .records()
+        .expect("read protection admission")
         .open(
             seed,
             RecordReadLimits::new(RecordByteLimit::new(SEED.len() as u32).unwrap()),
@@ -100,6 +101,7 @@ fn disjoint_data_effects_overlap_before_one_exact_group_root_publication() {
     for (member, expected) in completed.settled_members().iter().zip([LEFT, RIGHT]) {
         let session = serving
             .records()
+            .expect("read protection admission")
             .open(
                 member.record_id(0).unwrap(),
                 RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),

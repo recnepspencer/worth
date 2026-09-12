@@ -1,3 +1,7 @@
+use worth_store::physical_runtime::stability::{
+    stable_physical_read_receipt_for_certification_test, PhysicalReadExecutionDenial,
+    StablePhysicalReadExecutionCounters,
+};
 use worth_store::physical_runtime::PhysicalOperationAllocationScope;
 use worth_store_budgets::CounterEvidenceStrength;
 use worth_store_io_scheduler::{
@@ -11,10 +15,7 @@ use worth_store_io_scheduler::{
     BackgroundIdleCapacityLeaseRequest, BackgroundPacingOutcome, BackgroundResourceBudget,
     QueueSlot,
 };
-use worth_store_physical_isolation::{
-    stable_physical_read_receipt_for_certification_test, PhysicalReadExecutionDenial,
-    StablePhysicalReadExecutionCounters,
-};
+
 use worth_store_security::StoreTenantScope;
 
 use crate::publication::test_support::publish_generation_with_bytes_and_chunk_size;

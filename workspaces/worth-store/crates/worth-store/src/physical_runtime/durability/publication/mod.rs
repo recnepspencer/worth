@@ -1,4 +1,8 @@
 mod current_root_owner;
+#[cfg(feature = "certification-test-authority")]
+pub use current_root_owner::{
+    CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage,
+};
 mod failure;
 mod identity;
 mod namespace_durability;

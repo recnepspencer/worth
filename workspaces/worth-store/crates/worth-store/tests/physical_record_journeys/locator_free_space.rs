@@ -44,6 +44,7 @@ fn locator_readmission_and_free_space_truth_survive_reopen() {
     assert_eq!(
         reopened
             .records()
+            .expect("read protection admission")
             .readmit_locator(locator)
             .into_result()
             .unwrap(),
@@ -55,6 +56,7 @@ fn locator_readmission_and_free_space_truth_survive_reopen() {
     assert_eq!(
         reopened
             .records()
+            .expect("read protection admission")
             .readmit_locator(ExternalPhysicalRecordLocator::decode(foreign).unwrap())
             .into_result(),
         Err(PhysicalLocatorReadmissionDenial::StoreIdentityMismatch)
@@ -64,6 +66,7 @@ fn locator_readmission_and_free_space_truth_survive_reopen() {
     assert_eq!(
         reopened
             .records()
+            .expect("read protection admission")
             .readmit_locator(ExternalPhysicalRecordLocator::decode(missing).unwrap())
             .into_result(),
         Err(PhysicalLocatorReadmissionDenial::RecordNotFound)
@@ -127,10 +130,13 @@ fn locator_readmission_damage_revokes_the_shared_serving_authority() {
         .physical_signal_observation()
         .unwrap()
         .aspect_invalidation_count();
-    let error = match reopened.records().open_external(
-        locator,
-        RecordReadLimits::new(RecordByteLimit::new(64).unwrap()),
-    ) {
+    let error = match reopened
+        .records()
+        .expect("read protection admission")
+        .open_external(
+            locator,
+            RecordReadLimits::new(RecordByteLimit::new(64).unwrap()),
+        ) {
         Ok(_) => panic!("damaged locator truth must not construct a read session"),
         Err(error) => error,
     };
@@ -167,7 +173,11 @@ fn locator_readmission_damage_revokes_the_shared_serving_authority() {
         PhysicalRecordOpen::new(format, access, durability)
     }));
     assert_eq!(
-        reopened.records().readmit_locator(locator).into_result(),
+        reopened
+            .records()
+            .expect("read protection admission")
+            .readmit_locator(locator)
+            .into_result(),
         Err(PhysicalLocatorReadmissionDenial::CurrentRootUnavailable)
     );
     assert_mutation_fenced(&reopened, placement);

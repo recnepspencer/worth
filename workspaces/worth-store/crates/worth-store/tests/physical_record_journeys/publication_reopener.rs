@@ -9,7 +9,7 @@ pub(super) fn run(root: &Path) {
     let recovery_count = serving.physical_recovery_obligations().len();
     let fenced = residue || recovery_count != 0;
     let records = if fenced {
-        let scan = serving.records().scan(
+        let scan = serving.records().expect("read protection admission").scan(
             RecordScanRequest::from_start().with_batch_limit(RecordCountLimit::new(17).unwrap()),
         );
         assert!(matches!(

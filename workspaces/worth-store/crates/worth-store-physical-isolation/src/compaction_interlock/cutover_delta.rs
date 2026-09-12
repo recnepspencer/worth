@@ -1,5 +1,5 @@
 use super::{CompactionReadInterlockDenial, CompactionReadInterlockPlan};
-use crate::{CurrentPhysicalRoot, PhysicalPublicationReceipt};
+use crate::{CurrentPhysicalRoot, PhysicalPublicationPlanCompletion};
 
 #[derive(Debug, Clone)]
 pub struct CompactionCutoverDelta {
@@ -66,7 +66,7 @@ impl CompactionCutoverDelta {
 
     pub(crate) fn bind_publication(
         self,
-        publication: &PhysicalPublicationReceipt,
+        publication: &PhysicalPublicationPlanCompletion,
     ) -> Result<Self, CompactionReadInterlockDenial> {
         if publication.old_root() != self.plan.protected().root()
             || publication.new_root() != self.rewritten_root

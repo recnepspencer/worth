@@ -14,8 +14,8 @@ pub(crate) const fn map_compaction_case(
     match owner_case {
         CompactionOwnerCaseId::LowerRewrite => CompactionVisibilityAction::LowerRewrite,
         CompactionOwnerCaseId::PublishRewrite => CompactionVisibilityAction::PublishRewrite,
-        CompactionOwnerCaseId::AdmitRecoveryVisibility => {
-            CompactionVisibilityAction::AdmitRecoveryVisibility
+        CompactionOwnerCaseId::ValidateReadPlanCutover => {
+            CompactionVisibilityAction::ValidateReadPlanCutover
         }
         CompactionOwnerCaseId::DeferReclaim => CompactionVisibilityAction::DeferReclaim,
         CompactionOwnerCaseId::DrainReclaimAfterReadRelease => {
@@ -27,9 +27,6 @@ pub(crate) const fn map_compaction_case(
         CompactionOwnerCaseId::EarlyReclaimDenied => CompactionVisibilityAction::DenyEarlyReclaim,
         CompactionOwnerCaseId::StaleEpochReuseDenied => {
             CompactionVisibilityAction::DenyStaleEpochReuse
-        }
-        CompactionOwnerCaseId::BackendResidueCandidateSelectionDenied => {
-            CompactionVisibilityAction::DenyBackendResidueCandidateSelection
         }
         CompactionOwnerCaseId::LatchHierarchyInversionDenied => {
             CompactionVisibilityAction::DenyLatchHierarchyInversion

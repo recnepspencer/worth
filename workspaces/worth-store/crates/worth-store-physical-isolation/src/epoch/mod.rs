@@ -17,9 +17,10 @@ pub use freshness::{
 };
 pub(crate) use kinds::{
     chunk_epoch_from_future_publication, extent_epoch_from_publication,
-    manifest_epoch_from_entry_seed, page_epoch_from_publication, root_epoch_from_entry_seed,
-    segment_epoch_from_publication,
+    page_epoch_from_publication, segment_epoch_from_publication,
 };
+#[cfg(any(test, feature = "certification-authority"))]
+pub(crate) use kinds::{manifest_epoch_from_entry_seed, root_epoch_from_entry_seed};
 pub use kinds::{ChunkEpoch, ExtentEpoch, ManifestEpoch, PageEpoch, RootEpoch, SegmentEpoch};
 
 #[cfg(any(test, feature = "certification-authority"))]

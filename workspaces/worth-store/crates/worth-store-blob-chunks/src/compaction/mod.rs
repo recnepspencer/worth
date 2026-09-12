@@ -5,7 +5,7 @@
 //! Compaction rewrite admission composes physical interlock, reachability, placement, and pacing
 //! evidence before rewrite execution:
 //!
-//! - **Stable-read evidence** enters through released [`BlobCompactionReadHold`] matched to
+//! - **Local read-plan completion** enters through released [`BlobCompactionReadHold`] matched to
 //!   [`CompactionReadInterlockPlan`].
 //! - **I/O execution authority** enters only when [`BlobCompactionIntentBasis`] consumes a
 //!   scheduler-issued `BackgroundIdleCapacityLease` for compaction rewrite. An unpaced basis is
@@ -26,6 +26,8 @@ mod transitions;
 mod types;
 mod verification;
 
+#[cfg(all(test, feature = "certification-test-authority"))]
+mod read_plan_binding_tests;
 #[cfg(all(test, feature = "certification-test-authority"))]
 pub(crate) mod test_support;
 #[cfg(all(test, feature = "certification-test-authority"))]

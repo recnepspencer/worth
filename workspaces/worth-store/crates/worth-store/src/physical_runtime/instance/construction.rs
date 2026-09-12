@@ -19,6 +19,8 @@ use super::{
 pub(in crate::physical_runtime) struct PhysicalStoreInstanceFoundation {
     pub(in crate::physical_runtime) termination:
         crate::physical_runtime::lifecycle::LifecycleTerminationGuard,
+    pub(in crate::physical_runtime) read_protection:
+        crate::physical_runtime::stability::PhysicalReadProtectionOwner,
     pub(in crate::physical_runtime) media: QualifiedFilesystemMedia,
     pub(in crate::physical_runtime) core: PhysicalRuntimeCore,
     pub(in crate::physical_runtime) bootstrap: RecordServingState,
@@ -32,6 +34,7 @@ pub(in crate::physical_runtime) struct PhysicalStoreInstanceFoundation {
 
 pub(in crate::physical_runtime) struct PhysicalStoreInstanceConstructionFailure {
     termination: crate::physical_runtime::lifecycle::LifecycleTerminationGuard,
+    read_protection: crate::physical_runtime::stability::PhysicalReadProtectionOwner,
     media: QualifiedFilesystemMedia,
     core: PhysicalRuntimeCore,
     residency: PhysicalResidencyOwner,
@@ -45,6 +48,7 @@ impl PhysicalStoreInstanceParts {
     ) -> Result<Self, PhysicalStoreInstanceConstructionFailure> {
         let PhysicalStoreInstanceFoundation {
             termination,
+            read_protection,
             media,
             core,
             bootstrap,
@@ -68,6 +72,7 @@ impl PhysicalStoreInstanceParts {
             Err(cause) => {
                 return Err(PhysicalStoreInstanceConstructionFailure {
                     termination,
+                    read_protection,
                     media,
                     core,
                     residency,
@@ -83,6 +88,7 @@ impl PhysicalStoreInstanceParts {
                 Err(failure) => {
                     return Err(PhysicalStoreInstanceConstructionFailure {
                         termination,
+                        read_protection,
                         media,
                         core,
                         residency,
@@ -104,10 +110,11 @@ impl PhysicalStoreInstanceParts {
             signal_profile,
             lifecycle_state,
         )
-        .install(&installed_work, &reopened);
+        .install(&installed_work, &reopened, read_protection.registry());
 
         Ok(Self {
             termination,
+            read_protection,
             work_admission: installed_work.admission,
             work_runtime: installed_work.runtime,
             scheduler_admission: installed_work.scheduler,
@@ -134,6 +141,7 @@ impl PhysicalStoreInstanceConstructionFailure {
         PhysicalSignalConstructionFailure,
     ) {
         let identity = self.core.runtime_identity();
+        let _read_protection = self.read_protection.close();
         let _residency = self.residency.close();
         drop(self.termination);
         drop(self.durability);

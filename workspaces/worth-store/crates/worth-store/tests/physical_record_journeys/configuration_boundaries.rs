@@ -136,6 +136,7 @@ fn extent_geometry_is_format_owned_and_survives_access_policy_narrowing() {
     }));
     let session = reopened
         .records()
+        .expect("read protection admission")
         .open(
             record,
             RecordReadLimits::new(RecordByteLimit::new(40_000).unwrap()),

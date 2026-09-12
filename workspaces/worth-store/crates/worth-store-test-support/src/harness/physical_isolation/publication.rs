@@ -3,17 +3,15 @@ use super::epoch_scope::{
     physical_authority_from_complete_closeout, physical_authority_from_complete_closeout_for_store,
 };
 use super::read_plan::{admit_plan, protected_set};
-use crate::harness::recovery::closeout as closeout_fixture;
 use worth_store_physical_format::{
     PhysicalGeneration, PhysicalGenerationAuthority, PhysicalReferenceAuthority,
     PhysicalRootReference, RootPublicationValidationWitness,
 };
 use worth_store_physical_isolation::{
-    CopyOnWritePublicationPlan, ExecutedPublicationRecoveryReceipt, NewRootPublicationProof,
-    OldReachabilityPreservation, PhysicalPublicationIntent, PhysicalPublicationReadiness,
-    PhysicalPublicationReceipt, PhysicalReadPlanReleaseReceipt, PublicationCrashStage,
-    PublicationLatchReadiness, PublicationRecoveryReplayInput, PublicationRootCandidate,
-    PublicationRootSuccessorOwner, RootSwapOrderingContract,
+    CopyOnWritePublicationPlan, NewRootPublicationProof, OldReachabilityPreservation,
+    PhysicalPublicationIntent, PhysicalPublicationReadiness, PhysicalReadPlanReleaseReceipt,
+    PublicationLatchReadiness, PublicationRootCandidate, PublicationRootSuccessorOwner,
+    RootSwapOrderingContract,
 };
 
 pub struct PublicationInputs {
@@ -41,29 +39,6 @@ pub fn publication_inputs_with_root_generation(reference_generation: u64) -> Pub
         physical_generation(reference_generation),
     )
     .unwrap();
-    publication_inputs_from_candidates(
-        old_authority,
-        old_candidate,
-        new_candidate,
-        reference_generation,
-    )
-}
-
-pub fn publication_inputs_for_successor_receipt(
-    previous: &PhysicalPublicationReceipt,
-    reference_generation: u64,
-) -> PublicationInputs {
-    let old_authority =
-        worth_store_physical_isolation::admit_post_publication_read_stability_authority(previous)
-            .expect("completed publication must issue the successor read authority");
-    let old_candidate =
-        PublicationRootCandidate::admit(previous.new_root(), previous.new_root_validation())
-            .expect("completed publication must issue a valid successor candidate");
-    let new_candidate = PublicationRootSuccessorOwner::plan(
-        old_candidate,
-        physical_generation(reference_generation),
-    )
-    .expect("successor publication candidate must advance the root");
     publication_inputs_from_candidates(
         old_authority,
         old_candidate,
@@ -160,23 +135,6 @@ pub fn mismatched_release_receipt(reference_generation: u64) -> PhysicalReadPlan
     )
     .into_execution_ready_handle()
     .release()
-}
-
-pub fn execute_publication_recovery_replay(
-    stage: PublicationCrashStage,
-) -> ExecutedPublicationRecoveryReceipt {
-    PublicationRecoveryReplayInput::from_crash_stage(stage).execute(recovery_replayed_frames())
-}
-
-pub fn execute_mixed_tree_recovery_replay() -> ExecutedPublicationRecoveryReceipt {
-    let replay = PublicationRecoveryReplayInput::mixed_tree_fault_attempt(
-        PublicationCrashStage::DuringPublication,
-    );
-    replay.execute(recovery_replayed_frames())
-}
-
-fn recovery_replayed_frames() -> usize {
-    closeout_fixture::recovery_completion().replayed_frames()
 }
 
 pub fn root_publication_validation(root: u64, generation: u64) -> RootPublicationValidationWitness {

@@ -1017,7 +1017,7 @@ permission to publish C.6 internals early.
 | [C.7 durability ordering](#c7-wal-checkpoint-root-publication-and-acknowledgment-join) | Store-composed dirty/writeback typestate and `PhysicalWritebackSettlement` identity, effect fate, recovery disposition, and Signal settlement | pool construction, frame-table or clean-transition control, or a durability decision inferred from dirty state; C.7 supplies WAL and durability policy | `record_serving/residency/dirty/`; the Store-owned `FrameWritebackPort` remains private and the successor typestate is not ordinarily exported before C.7 installs its adapter |
 | [C.8 fresh-process recovery](#c8-fresh-process-recovery-and-reopen) | `RecoveryPhysicalAllocation`, runtime/generation binding, and public physical effect-fate and recovery-disposition evidence | live pool contents, frame-table constructors, eviction control, or a hidden unlimited reconstruction mode | `worth-store-recovery-physics::RecoveryMemoryAllocation` consumes the runtime-borrowed Recovery allocation; reconstruction must enter through a future Recovery-owned port |
 | [C.9 physical integrity](#c9-physical-integrity-corruption-localization-and-offline-truth) | frame-owned exact-source admission and Verification/Scrub-scoped allocation | pool, pin, eviction, frame-loading, or integrity authority inferred from unverified bytes | Store's private resident admission binds validated results to the C.6 frame lifetime; scrub emits descriptive observations only |
-| [C.10 stable reads and scheduled I/O](#c10-stable-reads-scheduled-io-and-maintenance-interference) | lease-bound chunks, `PhysicalRecordPressureEvidence`, Maintenance-scoped allocation, and Store-composed scheduler-ready physical work | semantic MVCC, Query authority, direct scheduler ownership, or a second scheduler | `worth-store-physical-isolation::PhysicalByteGuard::from_record_chunk` owns the current lease adapter; future scheduling enters through the Store composition boundary |
+| [C.10 stable reads and scheduled I/O](#c10-stable-reads-scheduled-io-and-maintenance-interference) | lease-bound chunks, `PhysicalRecordPressureEvidence`, Maintenance-scoped allocation, and Store-composed scheduler-ready physical work | semantic MVCC, Query authority, direct scheduler ownership, or a second scheduler | `worth_store::physical_runtime::stability::PhysicalByteGuard::from_record_chunk` owns the live lease adapter; lower isolation retains local plan completion, and future scheduling enters through the Store composition boundary |
 | [C.11 layout, indexes, and native blobs](#c11-layout-index-and-native-blob-adoption) | `BlobPhysicalAllocation` and bounded `RecordReadSession` chunk streaming with Store/runtime/generation evidence | whole-blob materialization, pool control, or semantic liveness inferred from physical residency | `worth-store-blob-chunks::streaming` consumes exact Blob allocations and bounded source/observation streams; whole-object vector substitutes remain explicit denials |
 
 ## C.7: WAL, Checkpoint, Root Publication, And Acknowledgment Join
@@ -1341,6 +1341,31 @@ policy itself.
 
 ## C.10: Stable Reads, Scheduled I/O, And Maintenance Interference
 
+Engineering specification:
+[Stable reads and I/O coordination](physical-reconstruction-c10-isolation-and-io-coordination.md).
+It fixes the production test-case matrix, root-protection/retirement interlock,
+exact physical conflict scopes, bounded scheduler service and retained storage,
+record-preserving rewrite recovery, destination topology, and parallel-work
+start triggers. Its first implementation checkpoint is a protected ordinary
+reader surviving real root publication with exact membership and live-registration
+proof. Seven phases retain that path: scheduling includes capacity-starvation
+prevention; Phase 3 installs retention admission and pending-publication exclusion
+before rewrite effects; Phase 4 adds actual reclamation and pressure recovery.
+Each effect-bearing phase owns its lifecycle/recovery contract; later phases
+complete the combined interference, crash and handoff evidence.
+
+Phase 1's protected-reader checkpoint is implemented: `records()` acquires
+bounded, root-indexed protection under the sole publication owner's lock;
+descendant sessions retain it through final release. Deterministic capture/
+publication races and real cold-read/membership journeys cover that boundary.
+Isolation now supplies local planning contracts without Store/Recovery imports
+or synthetic publication execution/recovery receipts. Phase 2 next joins exact
+effect scopes and bounded class-aware dispatch to the existing scheduler.
+
+GitHub CI currently runs the Rust line-cap check only. C.10's focused,
+integration and release/manual test products remain direct implementation and
+closure obligations; authoring this spec does not restore automated CI jobs.
+
 ### Goal
 
 Join physical leases, epochs, latches, copy-on-write publication, reclaim
@@ -1352,8 +1377,9 @@ unbounded interference.
 
 This is physical isolation and I/O coordination, not semantic MVCC. It evolves
 the C.5.1 scheduler's resource policy; it does not create another scheduler,
-async lifecycle, completion registry, or effect route. A physical read plan
-proves that referenced bytes remain stable; it does not decide which semantic
+async lifecycle, completion registry, or effect route. A Store-issued protected
+reader retains its selected physical root; a lower local plan or completion is
+not live protection or byte-execution evidence. Neither decides which semantic
 version a user may observe. Physical concurrency is derived from exact artifact,
 range, publication, reclaim, and resource scopes. Branch labels and semantic
 writer generations are neither accepted inputs nor substitutes for those

@@ -17,6 +17,8 @@ use super::{PhysicalResidencyOwner, PhysicalSchedulerAdmissionOwner, PhysicalSto
 /// every lifecycle boundary handles it.
 pub(in crate::physical_runtime) struct PhysicalStoreInstanceParts {
     pub(in crate::physical_runtime) termination: LifecycleTerminationGuard,
+    pub(in crate::physical_runtime) read_protection:
+        crate::physical_runtime::stability::PhysicalReadProtectionOwner,
     pub(in crate::physical_runtime) work_admission: PhysicalWorkAdmissionAuthority,
     pub(in crate::physical_runtime) work_runtime: std::sync::Arc<PhysicalStoreWorkRuntime>,
     pub(in crate::physical_runtime) scheduler_admission: PhysicalSchedulerAdmissionOwner,

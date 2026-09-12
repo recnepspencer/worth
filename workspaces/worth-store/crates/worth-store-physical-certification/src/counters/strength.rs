@@ -57,7 +57,7 @@ const fn counter_strength_justification(kind: CounterContractKind) -> CounterStr
             CounterStrengthJustification::DeterministicEventStructure
         }
         CounterContractKind::ReplayIdentityExact => CounterStrengthJustification::ReplayIdentity,
-        CounterContractKind::PublicationSwaps => {
+        CounterContractKind::CompactionPublicationPlanCompletions => {
             CounterStrengthJustification::DeterministicEventStructure
         }
         CounterContractKind::BlobChunkCountExact | CounterContractKind::BlobLogicalBytesExact => {

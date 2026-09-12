@@ -76,7 +76,7 @@ fn ordinary_runtime_selects_and_executes_separator_directed_page_lookup() {
         worth_store_layout_indexes::LayoutMaterializationSourceKind::BTreeRoot(_),
     ));
     assert_eq!(
-        (*executed.stable_read())
+        (*executed.read_plan_completion())
             .read_plan_release()
             .protected_references_released(),
         3,

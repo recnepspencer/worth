@@ -4,7 +4,7 @@ use crate::compaction::transitions::publish_rewrite;
 use crate::compaction::types::{BlobCompactionIntent, BlobCompactionRewritePlan};
 use crate::{BlobCompactionDenial, BlobCompactionEquivalence};
 use worth_store_authority::StoreCurrentAuthorityWitness;
-use worth_store_physical_isolation::ReadDuringCompactionVerdict;
+use worth_store_physical_isolation::CompactionReadPlanCompletion;
 
 /// Store-owned blob compaction authority.
 ///
@@ -36,9 +36,9 @@ impl BlobCompactionAuthority {
         &self,
         plan: BlobCompactionRewritePlan,
         equivalence: BlobCompactionEquivalence,
-        verdict: ReadDuringCompactionVerdict,
+        read_plan_completion: CompactionReadPlanCompletion,
     ) -> Result<BlobCompactionRewriteExecution, BlobCompactionDenial> {
-        BlobCompactionRewriteExecution::from_plan(plan, equivalence, verdict)
+        BlobCompactionRewriteExecution::from_plan(plan, equivalence, read_plan_completion)
     }
 
     pub fn publish_rewrite(

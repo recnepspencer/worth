@@ -45,6 +45,7 @@ pub(super) fn reader(root: &Path) {
         let locator = ExternalPhysicalRecordLocator::decode(unhex(encoded)).unwrap();
         let mut record = serving
             .records()
+            .expect("read protection admission")
             .open_external(
                 locator,
                 RecordReadLimits::new(RecordByteLimit::new(1024).unwrap()),

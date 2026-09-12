@@ -45,7 +45,11 @@ fn partial_backend_read_is_denied_at_the_public_read_boundary_and_revokes_health
         .physical_signal_observation()
         .unwrap()
         .aspect_invalidation_count();
-    let failure = match serving.records().open(record, limits) {
+    let failure = match serving
+        .records()
+        .expect("read protection admission")
+        .open(record, limits)
+    {
         Ok(_) => panic!("a partial backend read must not construct a record session"),
         Err(failure) => failure,
     };
@@ -98,7 +102,7 @@ fn partial_backend_read_is_denied_at_the_public_read_boundary_and_revokes_health
         3
     );
     assert!(matches!(
-        serving.records().open(record, limits),
+        serving.records().expect("read protection admission").open(record, limits),
         Err(error) if error.denial() == RecordReadDenial::ServingRequiresInspection
     ));
     assert!(serving.close_plan().execute().requires_inspection());
@@ -134,7 +138,11 @@ fn truncated_segment_is_structural_damage_before_range_dispatch_and_revokes_heal
         .physical_signal_observation()
         .unwrap()
         .aspect_invalidation_count();
-    let failure = match serving.records().open(record, limits) {
+    let failure = match serving
+        .records()
+        .expect("read protection admission")
+        .open(record, limits)
+    {
         Ok(_) => panic!("a truncated admitted segment cannot produce a read session"),
         Err(failure) => failure,
     };

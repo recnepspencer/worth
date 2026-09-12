@@ -1,6 +1,6 @@
 use super::{
-    AtomicPhysicalRootSwap, PhysicalPublicationCounterSnapshot, PhysicalPublicationDenial,
-    PhysicalPublicationReadiness, PhysicalPublicationReceipt, RootSwapOrderingContract,
+    PhysicalPublicationCounterSnapshot, PhysicalPublicationDenial,
+    PhysicalPublicationPlanCompletion, PhysicalPublicationReadiness, RootSwapOrderingContract,
     ValidatedPhysicalPublicationIntent,
 };
 
@@ -15,7 +15,7 @@ pub struct LoweredCopyOnWritePublicationPlan {
 pub struct CopyOnWritePublicationPlan {
     intent: ValidatedPhysicalPublicationIntent,
     readiness: PhysicalPublicationReadiness,
-    atomic_swap: AtomicPhysicalRootSwap,
+    ordering: RootSwapOrderingContract,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,7 +85,7 @@ impl LoweredCopyOnWritePublicationPlan {
     ) -> Result<CopyOnWritePublicationPlan, PhysicalPublicationDenial> {
         let readiness = readiness.validate_for_intent(&self.intent)?;
         Ok(CopyOnWritePublicationPlan {
-            atomic_swap: AtomicPhysicalRootSwap::new(self.ordering),
+            ordering: self.ordering,
             intent: self.intent,
             readiness,
         })
@@ -105,19 +105,26 @@ impl CopyOnWritePublicationPlan {
         self.readiness
     }
 
-    pub const fn atomic_swap(&self) -> AtomicPhysicalRootSwap {
-        self.atomic_swap
+    pub const fn ordering(&self) -> RootSwapOrderingContract {
+        self.ordering
     }
 
-    /// Complete the admitted publication transition and issue its receipt.
+    /// Complete local publication planning. No root swap, I/O, durable
+    /// publication, live retention, or recovery is performed by this call.
     ///
-    /// The plan is consumed so callers cannot reuse the same admitted
-    /// transition as a second publication effect.
-    pub fn complete(self) -> PhysicalPublicationReceipt {
-        PhysicalPublicationReceipt::from_completed_plan(
+    /// ```
+    /// use worth_store_physical_isolation::{
+    ///     CopyOnWritePublicationPlan, PhysicalPublicationPlanCompletion,
+    /// };
+    /// fn finish(plan: CopyOnWritePublicationPlan) -> PhysicalPublicationPlanCompletion {
+    ///     plan.complete_plan()
+    /// }
+    /// ```
+    pub fn complete_plan(self) -> PhysicalPublicationPlanCompletion {
+        PhysicalPublicationPlanCompletion::from_completed_plan(
             self.binding(),
             self.readiness,
-            self.atomic_swap,
+            self.ordering,
         )
     }
 }

@@ -1,16 +1,16 @@
 use super::{CheckpointReadInterlockDenial, CheckpointReadInterlockPlan};
-use crate::{CurrentPhysicalRoot, StablePhysicalReadReceipt};
+use crate::{CurrentPhysicalRoot, PhysicalReadPlanCompletionReceipt};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckpointPublicationStabilityProof {
     plan: CheckpointReadInterlockPlan,
-    post_publication_read: StablePhysicalReadReceipt,
+    post_publication_read: PhysicalReadPlanCompletionReceipt,
 }
 
 impl CheckpointPublicationStabilityProof {
     pub fn from_plan_and_post_publication_read(
         plan: CheckpointReadInterlockPlan,
-        post_publication_read: StablePhysicalReadReceipt,
+        post_publication_read: PhysicalReadPlanCompletionReceipt,
     ) -> Result<Self, CheckpointReadInterlockDenial> {
         let observed = post_publication_read.read_plan_release().root();
         let expected = plan.transition().published_current_root();
@@ -44,7 +44,7 @@ impl CheckpointPublicationStabilityProof {
         &self.plan
     }
 
-    pub const fn post_publication_read(&self) -> StablePhysicalReadReceipt {
+    pub const fn post_publication_read(&self) -> PhysicalReadPlanCompletionReceipt {
         self.post_publication_read
     }
 
