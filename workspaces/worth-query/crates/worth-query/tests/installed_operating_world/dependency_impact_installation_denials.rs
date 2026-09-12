@@ -145,6 +145,7 @@ fn workspace_for(
                 vec![KindId::new(0x9140_1802)],
                 1,
             ),
+            std::num::NonZeroU64::new(4096).unwrap(),
         ));
     }
     let package = package.operation(operation);

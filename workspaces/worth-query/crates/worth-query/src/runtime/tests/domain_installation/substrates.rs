@@ -40,6 +40,7 @@ fn full_substrate_package() -> WorthQueryDomainPackage<InstalledDomain> {
                 vec![KindId::new(901)],
                 1,
             ),
+            std::num::NonZeroU64::new(4096).unwrap(),
         ))
         .declaration_family(
             WorthQueryDomainDeclarationFamilyDefinition::from_marker::<

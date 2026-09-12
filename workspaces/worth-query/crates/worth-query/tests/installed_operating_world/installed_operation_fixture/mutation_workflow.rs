@@ -253,6 +253,7 @@ fn mutation_invariant() -> domain::WorthQueryDomainInvariantDefinition {
             vec![KindId::new(0xff00_0002)],
             1,
         ),
+        std::num::NonZeroU64::new(4096).unwrap(),
     )
 }
 

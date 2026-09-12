@@ -24,6 +24,8 @@ impl CustomInvariantRule for CertificationBoundaryViolationRule {
             },
             display_name: Arc::from("Query Test Certification Violation"),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                access: worth_relational::facade::runtime::CustomInvariantAccessContract::default(),
                 execution_point: InvariantExecutionPoint::CertificationBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::PublicationCoherence),
                 cost_class: InvariantCostClass::Touched,

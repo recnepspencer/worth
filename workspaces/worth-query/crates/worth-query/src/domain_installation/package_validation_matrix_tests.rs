@@ -79,6 +79,7 @@ fn invariant(name: &str, minor: u32, relevant_kind: u32) -> WorthQueryDomainInva
             vec![KindId::new(100 + relevant_kind)],
             1,
         ),
+        std::num::NonZeroU64::new(4096).unwrap(),
     )
 }
 

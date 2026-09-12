@@ -23,6 +23,7 @@ struct InstalledRequiresOutgoingRelationsRule {
     relevant_entity_kinds: Vec<KindId>,
     required_relation_kinds: Vec<KindId>,
     traversal_depth: u16,
+    maximum_work_units: std::num::NonZeroU64,
 }
 
 #[derive(Clone, Debug)]
@@ -80,6 +81,7 @@ pub(super) fn compile_invariant_definition(
             relevant_entity_kinds: relevant_entity_kinds.clone(),
             required_relation_kinds: required_relation_kinds.clone(),
             traversal_depth: *traversal_depth,
+            maximum_work_units: definition.maximum_work_units(),
         },
     };
     CustomInvariantRegistration::new(rule).map_err(|error| {
@@ -101,6 +103,14 @@ impl CustomInvariantRule for InstalledRequiresOutgoingRelationsRule {
             },
             display_name: self.display_name.clone(),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: self.maximum_work_units,
+                access: worth_relational::facade::runtime::CustomInvariantAccessContract {
+                    read_entity_kinds: self.relevant_entity_kinds.clone(),
+                    read_relation_kinds: self.required_relation_kinds.clone(),
+                    affected_entity_kinds: self.relevant_entity_kinds.clone(),
+                    affected_relation_kinds: self.required_relation_kinds.clone(),
+                }
+                .canonicalize(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                 cost_class: InvariantCostClass::Touched,
@@ -158,15 +168,12 @@ impl CustomInvariantRule for InstalledRequiresOutgoingRelationsRule {
         {
             return Ok(CustomInvariantVerdict::Pass);
         }
-        let satisfies = scope
-            .visible_relevant_entities
-            .iter()
-            .all(|entity| self.visible_entity_satisfies(context, *entity));
-        Ok(if satisfies {
-            CustomInvariantVerdict::Pass
-        } else {
-            CustomInvariantVerdict::Violation
-        })
+        for entity in &scope.visible_relevant_entities {
+            if !self.visible_entity_satisfies(context, *entity)? {
+                return Ok(CustomInvariantVerdict::Violation);
+            }
+        }
+        Ok(CustomInvariantVerdict::Pass)
     }
 }
 
@@ -175,16 +182,17 @@ impl InstalledRequiresOutgoingRelationsRule {
         &self,
         context: &CustomInvariantExecutionContext<'_>,
         entity: EntityId,
-    ) -> bool {
+    ) -> Result<bool, CustomInvariantExecutionError> {
         let actual = context
             .relations()
-            .outgoing_relations_for_entity(entity)
+            .outgoing_relations_for_entity(entity)?
             .into_iter()
             .filter_map(|relation_id| context.relations().relation(relation_id))
             .map(|relation| relation.kind_id)
             .collect::<Vec<_>>();
-        self.required_relation_kinds
+        Ok(self
+            .required_relation_kinds
             .iter()
-            .all(|required| actual.contains(required))
+            .all(|required| actual.contains(required)))
     }
 }
