@@ -24,6 +24,7 @@ use crate::domain_computation::primary_graph::{
 struct CandidateOutputBinding {
     posture: WorthQueryApplicationOutputPosture,
     entity_name: String,
+    entity_type: TypeId,
     entity: EntityReference,
 }
 
@@ -49,6 +50,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         entity_name: &'static str,
     ) where
         Binding: 'static,
+        Entity: 'static,
         Action: action::Sealed,
     {
         self.binding_type = Some(TypeId::of::<Binding>());
@@ -115,6 +117,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Binding: 'static,
+        Entity: 'static,
         Action: action::Sealed,
     {
         validate_role_name(role.name)?;
@@ -162,6 +165,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
     ) where
         Binding: 'static,
+        Entity: 'static,
         Action: action::Sealed,
     {
         self.binding_type = Some(TypeId::of::<Binding>());
@@ -170,6 +174,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
             CandidateOutputBinding {
                 posture: Action::POSTURE,
                 entity_name: target.entity.clone(),
+                entity_type: TypeId::of::<Entity>(),
                 entity: target.reference.clone(),
             },
         );
@@ -184,6 +189,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Binding: 'static,
+        Entity: 'static,
         Action: action::Sealed,
     {
         self.validate_binding(role, target, program)?;
@@ -270,6 +276,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                     role,
                     CommittedOutputBinding {
                         posture: binding.posture,
+                        entity_type: binding.entity_type,
                         entity,
                     },
                 )

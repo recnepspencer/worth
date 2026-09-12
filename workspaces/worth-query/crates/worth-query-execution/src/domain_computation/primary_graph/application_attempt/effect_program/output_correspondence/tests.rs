@@ -14,6 +14,7 @@ struct Schema;
 struct Binding;
 struct ForeignBinding;
 struct Entity;
+struct WrongEntity;
 
 const PRESERVED: WorthQueryApplicationOutputRole<Binding, Entity, Preserve> =
     WorthQueryApplicationOutputRole::new("preserved");
@@ -172,6 +173,16 @@ fn owner_resolved_creation_projects_the_exact_typed_identity() {
     let committed = candidate.seal_with(|_| Some(assigned));
 
     assert_eq!(committed.entity(CREATED).unwrap().entity_id(), assigned);
+    assert_eq!(
+        committed
+            .entity(WorthQueryApplicationOutputRole::<
+                Binding,
+                WrongEntity,
+                Create,
+            >::new("created"))
+            .err(),
+        Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
+    );
 }
 
 fn existing_handle(

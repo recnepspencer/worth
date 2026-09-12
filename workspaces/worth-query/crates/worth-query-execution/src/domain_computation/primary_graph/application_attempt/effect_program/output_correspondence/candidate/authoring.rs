@@ -17,6 +17,7 @@ impl<Schema, Operation, Input, Scope>
         entity_name: &'static str,
     ) where
         Binding: 'static,
+        Entity: 'static,
         Action: action::Sealed,
     {
         self.output_correspondence
@@ -46,6 +47,7 @@ impl<Schema, Operation, Input, Scope>
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Binding: 'static,
+        Entity: 'static,
         Action: action::Sealed,
     {
         validate_role_name(role.name())?;

@@ -66,6 +66,7 @@ impl<Binding, Entity, Action> WorthQueryApplicationOutputRole<Binding, Entity, A
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CommittedOutputBinding {
     posture: WorthQueryApplicationOutputPosture,
+    entity_type: TypeId,
     entity: EntityId,
 }
 
@@ -86,6 +87,7 @@ impl WorthQueryApplicationOutputCorrespondence {
     >
     where
         Binding: 'static,
+        Entity: 'static,
         Action: action::Sealed,
     {
         if self.binding_type != Some(TypeId::of::<Binding>()) {
@@ -97,6 +99,9 @@ impl WorthQueryApplicationOutputCorrespondence {
             .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)?;
         if binding.posture != Action::POSTURE {
             return Err(WorthQueryApplicationOutputProjectionDenial::ActionMismatch);
+        }
+        if binding.entity_type != TypeId::of::<Entity>() {
+            return Err(WorthQueryApplicationOutputProjectionDenial::EntityMismatch);
         }
         Ok(WorthQueryApplicationOutputEntity {
             entity_id: binding.entity,
@@ -121,4 +126,5 @@ pub enum WorthQueryApplicationOutputProjectionDenial {
     MissingRole,
     ForeignBinding,
     ActionMismatch,
+    EntityMismatch,
 }

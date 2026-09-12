@@ -106,7 +106,10 @@ where
         &mut self,
         role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryPreserveOutput>,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial> {
+    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
+    where
+        Entity: 'static,
+    {
         self.candidate.bind_output(role, target)
     }
 
@@ -114,7 +117,10 @@ where
         &mut self,
         role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryCreateOutput>,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial> {
+    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
+    where
+        Entity: 'static,
+    {
         self.candidate.bind_output(role, target)
     }
 
@@ -122,7 +128,10 @@ where
         &mut self,
         role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryRetireOutput>,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial> {
+    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
+    where
+        Entity: 'static,
+    {
         self.candidate.bind_output(role, target)
     }
 }

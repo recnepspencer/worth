@@ -1,14 +1,14 @@
 use worth_query_consumer_values::{PlanarVertex, PlanarVertexReplacement};
 use worth_query_host::facade::{
     application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
-        WorthQueryApplicationRequestQueryDenial,
+        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestQueryDenial,
     },
     application_invariants::EntityId,
     primary_graph::{
         LineageEventKind, RecordStructuralChange, WorthQueryApplicationCommitReceipt,
-        WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-        WorthQueryEntityResolutionDenialKind, WorthQueryPreserveOutput, WorthQueryRetireOutput,
+        WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
+        WorthQueryCreateOutput, WorthQueryEntityResolutionDenialKind, WorthQueryPreserveOutput,
+        WorthQueryRetireOutput,
     },
 };
 use worth_query_topology_entry::{
@@ -52,6 +52,16 @@ pub(super) fn run(request: &Request<'_>) {
         >::new("replacement"))
         .unwrap()
         .entity_id();
+    assert_eq!(
+        correspondence
+            .entity(WorthQueryApplicationOutputRole::<
+                VertexReplacementBinding<ConsumerSchema>,
+                (),
+                WorthQueryCreateOutput,
+            >::new("replacement"))
+            .err(),
+        Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
+    );
     let deleted = correspondence
         .entity(WorthQueryApplicationOutputRole::<
             VertexReplacementBinding<ConsumerSchema>,
