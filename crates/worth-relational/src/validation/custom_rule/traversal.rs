@@ -205,9 +205,11 @@ impl<'runtime> BoundedStructuralTraversal<'runtime> {
                 .count_custom_invariant_traversal(0, relation_ids.len());
             for relation_id in relation_ids {
                 traversed_relations.insert(relation_id);
-                let Some(relation) = self.relations.relation(relation_id) else {
-                    continue;
-                };
+                let relation = self.relations.relation(relation_id).map_err(|error| {
+                    CustomInvariantTraversalError::new(format!(
+                        "custom invariant relation read failed: {error:?}"
+                    ))
+                })?;
                 let next_entity = match direction {
                     TraversalDirection::Outgoing => relation.target,
                     TraversalDirection::Incoming => relation.source,

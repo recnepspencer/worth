@@ -604,6 +604,36 @@ The handler contract has two meaningful capabilities:
   It cannot commit, select another source, execute an external effect, or
   disable required validators.
 
+**Required first-use relation reader (house M0).** Extend the existing public
+`worth_query_host::facade::primary_graph::DecisionReader` directly with
+`relations_from(relation, source)` and `related_one(relation, source)`.
+These names specify new API work; Pre-M0 certification does not claim they exist.
+The first method reads typed outgoing relations and records the whole adjacency
+dependency, including an empty result. The second requires exactly one target,
+returns its owner-observed schema-typed identity, and reports typed missing,
+multiplicity or read-admission failures. It honors declared cardinality, operation
+read permissions, owner/basis affinity and existing finite traversal budgets.
+Cardinality checking cannot justify unbounded materialization.
+
+Reuse the primary graph projection's existing `decision_relations_from` dependency
+capture and stale-comparison owner. Retain `DecisionReader::field` for tracked
+policy fields. The public reader composes both without consumer calls to
+`reader()`, manual fact registration, a domain wrapper or a private revision/hash
+registry. Implement in the existing primary-graph handler responsibility; expose
+through the current host audience facade. Extend its normal API documentation and
+compiling consumer example. No new package or basis-property framework is needed.
+
+The first consumer follows `ExtrusionFeature.tolerance_policy`, reads declared
+policy fields, and supplies a pure tolerance value to numerical work. Certify field
+change and equal-value policy retargeting between gather and publication: stale
+publication must be rejected, fresh consumption must observe the new policy, and
+retained reads must preserve the earlier occurrence. Deny malformed candidate
+cardinality through real integrity validation; use focused owner cases to exercise
+reader errors without manufacturing an invalid published World. Include unrelated
+policy progress and bounded work. Deleting either adjacency or field tracking must
+break its corresponding proof. This focused 9.17.4 piece ships and is pinned at
+house M0 first use; it does not wait for completion of every 9.17.4 phase.
+
 The binding-selected `OperationHandler<Binding>` contract has these required
 roles; associated types carry the operation's input, decision, and domain denial
 so an author does not repeat schema/scope/field generic tuples:
@@ -675,6 +705,287 @@ An expert may request an admitted preparation through
 attempt. It carries one selection and exposes explanation/cost, cancellation,
 and execution only. It does not expose constructors for intermediate authority
 or widen the operation. Ordinary `execute()` calls the same preparation path.
+
+### M0 required API closure
+
+The house's first-use slice requires all contracts in this section, including the
+writer and invariant ergonomics. Extend the existing owners rather than requiring
+CAD to recreate selection, tracking, installation or delivery. These are additional
+9.17.4 requirements beyond the certified Pre-M0 pin. Ship them in three coherent
+batches: typed operation access/source expectations; producer/conditional
+installation; demand/exact observation/cleanup and certification observations.
+Each public batch is certified and pushed before the house advances its pin and
+consumes it. Numerical domain work may proceed against frozen pure contracts.
+Full 9.17.4 audience migration is not a prerequisite for this first-use cut.
+
+**Relation result and denial contract.** The host `primary_graph` facade exposes
+these exact destination signatures (generic declaration/reference arguments retain
+their existing schema and operation-read bounds):
+
+| Method | Result |
+|---|---|
+| `DecisionReader::relations_from(relation, source)` | `Result<Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>, WorthQueryInvariantProjectionTraversalDenial>` |
+| `DecisionReader::related_one(relation, source)` | `Result<WorthQueryInvariantEntityIdentity<Schema, To>, WorthQueryInvariantProjectionTraversalDenial>` |
+
+Reuse the existing traversal denial type and its `RelationNotInstalled`,
+`UndeclaredDecisionTarget`, `ForeignIdentity`, `EndpointUnavailable` and
+`WorkBudgetExceeded` kinds. Add `CardinalityContractMismatch`, `MissingTarget`
+and `MultipleTargets` kinds. `related_one` requires declared exactly-one outgoing
+cardinality; a multivalued declaration with one current edge is not equivalent.
+Zero edges yields `MissingTarget`; two or more yields `MultipleTargets`; an edge
+whose target is not available at the selected basis yields `EndpointUnavailable`.
+Schema/operation mismatch remains a compiler denial where the existing typed
+references express it. Runtime affinity failures never degrade into an empty list.
+`relations_from` returns only a complete bounded result; exhaustion never returns
+a successful prefix. Empty success still records the adjacency dependency.
+`related_one` does not materialize unbounded adjacency to count it. Existing
+`checkpoint`/`HandlerInterruption` cancellation remains explicit in handler loops.
+Observed rows/identities retain read-basis affinity and grant no candidate or
+publication authority. Implement through the existing decision-read owner, then
+remove the ordinary CAD need to call `reader().decision_relations_from(...)`.
+
+**Observed-source edits.** Add typed source expectations to the ordinary mutation
+request/binding. Proposed caller form is `.expect_source(observed_source)` after
+`.mutate(intent)`; a binding that requires this input cannot execute without it.
+The value is an owner-projected, non-authoritative transport description of exact
+source identity and native generations. Query validates schema/install/model/branch
+and scope affinity, compares the relevant native source under fresh admission,
+and carries that expectation into the same compare-and-publish boundary as tracked
+execution reads. Bind the expectation into request/idempotency meaning. No local
+version counter, private source hash, equality-only comparison or whole-World head
+comparison may replace the declared source-local contract. A receipt/readiness
+summary alone is not retained read authority. Reuse native version/occurrence and
+precondition owners; fill their actual source-granularity gap if needed.
+
+At the Pre-M0 pin the ordinary mutation entry passes empty typed preconditions;
+forwarding an empty default does not satisfy this contract. A fresh execution read
+does not prove that the caller observed that version. Stale input, native-generation
+ABA, missing required expectation and foreign affinity have typed denial outcomes.
+An unrelated sibling edit must not fail the source-local expectation merely because
+the World head moved. Ordinary authorization and candidate validation still apply.
+
+**Source stamp contents and outcomes.** Add
+`WorthQueryObservedSource<Schema, Source>` as a non-authoritative, bounded observation
+value returned by the installed source projection; `Source` identifies that
+binding's declared source footprint. It carries:
+
+- application instance/installation generation and schema/source-contract identity;
+- model-root and source-entity native identities, including allocation generations;
+- World product branch identity and lifecycle incarnation, plus the exact selected
+  occurrence as provenance, not an expected-current-head comparison;
+- for each declared source aspect, its aspect identity/contract revision and the
+  native last-write version at that selected occurrence;
+- for each declared relation adjacency, its anchor/relation-kind/direction,
+  native structural-change revision and exact endpoint identities/generations;
+  declared target aspects carry their own native last-write versions.
+
+For extrusion this footprint contains parameters, frame/policy relations and their
+consumed values. Derived `realization` links and body output are excluded from the
+authored source stamp so publishing output does not invalidate its own source.
+Aspect contract revision describes schema meaning; it is not the last-write version.
+Entity allocation generation detects retirement/reuse; it is not an edit version.
+Adjacency revision must detect empty-to-nonempty-to-empty and retarget-and-back
+changes even when the current membership compares equal. Native aspect/structural
+versions must be read at the retained selected basis, never mixed with current
+owner counters. Where a versioned structural observation is missing, add it in the
+Relational owner and expose it through Query; no CAD counter or replay scan supplies it.
+
+Compare this complete source footprint at fresh admission and preserve it through
+publication's stale check. A transport may round-trip the observation, but parsing
+it grants no authority and cannot bypass owner comparison. Expose
+`WorthQuerySourceExpectationDenial` with a
+`WorthQuerySourceExpectationDenialKind` discriminator: `MissingExpectation`,
+`ForeignApplication`, `ForeignInstallation`, `ForeignSchema`, `ForeignModel`,
+`ForeignBranch`, `SourceRetired`, `SourceChanged`, `IncompleteFootprint`,
+`SourceContractMismatch` and `WorkBudgetExceeded` kinds. Invalid or incomplete
+payloads cannot be treated as an absent optional expectation. The installed edit
+binding requires an expectation before execute; preserve typed admission/commit
+outcomes for later authorization loss or concurrent publication conflict. Equal
+value ABA yields `SourceChanged`; an unrelated sibling-only edit does not.
+
+**Candidate writer.** Expose `create_entity`, `initialize_field`, `write_field`,
+`link`, `delete_entity` and `emit` directly on the existing `CandidateWriter`,
+alongside existing tracked-target resolution, unlink and output-role methods.
+Delegate to the single reserved effect-program owner. Preserve operation permission
+traits, program-affine handles, complete output roles, allocation/byte bounds and
+checkpoints. Query retains finish/publication control. The CAD consumer must not
+call `candidate()` for these ordinary construction verbs or introduce another
+builder. Prove rectangle/triangle cyclic construction and same-kind replacement,
+plus wrong-program handles, undeclared effects and over-capacity denial. This
+improves the caller surface; it does not replace the admitted candidate engine.
+
+**Candidate result, lifetime and emission contract.** Reuse
+`WorthQueryApplicationEffectEntity<Schema, Entity>` as the created/resolved target
+handle. `create_entity` returns `Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>`;
+`initialize_field`, `write_field`, `link`, `unlink`, `delete_entity`, `emit` and
+output-role binding return `Result<(), WorthQueryApplicationAttemptDenial>`.
+Arguments retain the existing typed entity/field/relation/effect references and
+operation permission bounds. `link` accepts the existing program-local relation
+key and both target handles; this key does not assign persistent identity.
+`initialize_field` accepts only a created target of this candidate;
+`write_field` accepts only an existing target resolved from completed decision
+reads and a field with `WritableCapability`; a created target is initialized through
+`initialize_field`. `delete_entity` also requires an existing target. Existing
+`checkpoint` returns `Result<(), HandlerInterruption>` for cancellation/deadline.
+
+These are owned program-affine handles, not newly promised borrow-lifetime brands.
+They are usable only during construction of their originating live candidate;
+retaining their Rust value after return, denial, finish or cancellation grants no
+usable authority. Consumers cannot construct/deserialize them. Every verb checks
+program identity and target kind; another candidate's handle returns
+`ForeignEffectTarget`, even in the same schema and process. Published entity
+references come from committed output correspondence, never from a created handle.
+Verb failure adds no partial logical effect; accounting may conservatively retain
+already charged work. Preserve `DuplicateEffectKey`, `UndeclaredEffect`,
+`InvalidEffectValue`, `CandidateCapacityExceeded`, `CandidateReservationExceeded`
+and `RetainedEffectBytesExceeded` distinctions, plus existing output-role denials.
+All candidate effects remain invisible until the whole admitted publication succeeds.
+
+`emit(effect_ref, payload)` stages one declared typed application effect payload in
+that same candidate. It requires `OperationEmits` and the installed retained-payload
+binding; validation and byte admission occur before retention. It neither calls
+subscribers nor changes graph truth by itself, and it performs no file/network
+operation or direct Signal invocation. Successful publication makes the emission
+available through the existing governed delivery owner; denial/cancellation emits
+nothing. Idempotent replay does not emit it again. Pending post-publication delivery
+retains its existing custody. External dispatch continues through its separately
+declared outbox/effect route; ordinary `emit` cannot claim external completion.
+
+**Typed invariant access.** Provide installed typed field/relation handles through
+`WorthQueryApplicationInvariantSchemaResolver::typed_field` and `typed_relation`
+(proposed methods). The Query-owned planner/context exposes typed `field` and
+`relations_from`/`relations_to` access using those handles and existing value-binding
+decoders. It checks owner affinity, declared access, native entity/relation kinds,
+work budgets and the selected proposed/committed view. Replace the public bare
+lower-context aliases where required with the owning Query adapter and migrate
+affected public consumers in that batch; retain the existing Relational scope and
+validation engines. No ordinary snapshot can masquerade as a candidate view.
+B-rep rules receive actual proposed fields/incidence and affected untouched
+neighbors. They do not repeat raw `AspectValue` decoding, field-path construction
+or relation-kind filtering. Foreign handles, undeclared reads, invalid candidate
+values and exhausted traversal deny through typed outcomes; numerical rules remain
+pure domain code. Demonstrate that mislowering the numerical candidate is detected
+by the actual installed rule and that omitting the rule changes acceptance.
+
+**Invariant view contract.** Installed handles retain exact schema installation,
+entity/relation kind, field locator, decoder and declared access contract internally.
+The Query-owned planner/context exposes `proposed()` and `committed()` read views.
+`proposed()` is the complete owner candidate overlay on its committed basis: it
+includes created/changed records, excludes candidate deletions, and includes the
+unchanged neighbors admitted by scope planning. `committed()` is the immutable
+before-image of that same candidate, not a fresh current read. A new candidate
+record is absent from the committed view. Neither view can be substituted with a
+constructor buffer or arbitrary ordinary snapshot.
+
+Typed `field(handle, entity)` returns `Result<Option<Binding::Value>,
+WorthQueryInvariantAccessDenial>`; `None` means a legally absent optional field.
+Missing required fields and unavailable entities are distinct denials. Typed
+`relations_from`/`relations_to` return complete bounded vectors of schema-typed
+read-only relation views, carrying endpoint and candidate/view affinity. Planner
+traversal admits the declared affected closure before evaluate; evaluation cannot
+silently extend that closure. New `WorthQueryInvariantAccessDenialKind` discriminates `WorthQueryInvariantAccessDenial`
+as
+`ForeignBinding`, `ForeignView`, `OutsideDeclaredAccess`, `OutsidePreparedScope`,
+`WrongEntityKind`, `EntityUnavailable`, `MissingRequiredField`, `InvalidValue`,
+`RelationNotInstalled` and `WorkBudgetExceeded`. A missing required datum, bad decode
+or truncated traversal is never an empty successful view or a passed invariant.
+
+Keep the existing `WorthQueryApplicationInvariantRule::prepare_scope`/`evaluate`
+progression and Relational enforcement. Query adapts its actual owner context and
+installed codecs once; migrate affected rule consumers from the bare lower-context
+aliases. Prove an unchanged neighbor invalidated by a local edit, deleted endpoints,
+created records, foreign handles, scope denial and exhausted work. Numerical rules
+consume admitted values/topology and return their domain verdict; they cannot mint
+a validation receipt or change which proposed graph was checked.
+
+**Producer and conditional installation.** Extend contribution configuration and
+`installation::in_memory` to admit producer/output-family bindings, installed
+applicability and required conditional bindings before exposing the runtime.
+The current no-conditional publication path cannot serve this installation.
+A producer binding associates a source selector, tracked dependencies/effects,
+complete output role, applicable operation bindings, resource/reuse policy and
+required invariant closure. For M0, owner admission selects exactly one of
+rectangle/triangle and initial/preserve variants. Missing or overlapping applicable
+variants deny; the application cannot choose an executor by inspecting the profile.
+Signal schedules the installed operation, Query admits its handler and World
+publishes its complete candidate. Reuse current predicate, conditional, Bridge
+routing and scheduling owners, with no host callback registry or parallel graph.
+
+The readiness conditional must observe body completion after derived publication.
+Source success alone leaves it pending. Installation registers the exact dependency
+routes once; Query/Bridge route the actual performed patch and retain pending
+work/recovery on interrupted delivery. No CAD dependency ordinal selection, receipt
+rebroadcast loop, synthetic clock advance or manual downstream invocation substitutes
+for real causal routing. Prove missing registration, ambiguous applicability,
+delayed delivery, sibling progress and both source/realization publications.
+
+**Registration results and selection failures.** Contribution setup adds typed
+`producer::<Binding>(provider)` and `conditional::<Binding>(configuration)` methods,
+returning `Result<(), WorthQueryPrimaryGraphInstallationDenial>`. Bindings own
+source/output contracts, applicability and associated provider types; configuration
+supplies implementations only for members of that exact contribution. Extend the
+existing denial kind with `MissingProducerBinding`, `DuplicateProducerBinding`,
+`MissingProducerProvider`, `ForeignProducerBinding`, `ProducerBindingMeaningMismatch`,
+`MissingConditionalBinding` and `DuplicateConditionalBinding`. Preserve existing
+missing/foreign handler and invariant denials rather than flattening them to strings.
+The in-memory constructor returns these through its existing `Contributions`
+terminal before `initial_state` and before runtime publication. Validation failures
+leave no published root or registered live routes; staged resources are released.
+
+M0 applicability is a finite declared table over profile kind and lifecycle posture,
+with exactly one required operation for every supported combination. Installation
+rejects uncovered supported cases as `MissingApplicableProducer` and overlapping
+cases as `AmbiguousApplicableProducer` in the same installation denial family.
+Dynamic demand selection returns those corresponding kinds through
+`WorthQueryOutputDemandDenial` if its admitted source has no unique applicable
+producer; it does not pick the first registration. A no-longer-admitted provider
+returns `ProducerUnavailable`. Unsupported source kinds retain their distinct
+domain unsupported outcome. Source drift after selection follows demand's
+`Superseded` contract. These errors cannot trigger caller-side executor selection,
+conditional omission, another installation path or a substitute local scheduler.
+
+**Exact observation and cleanup.** Finish the bounded demand contract below together
+with opt-in mutation publication retention and request-bound exact retained/live
+reads. Use the existing destination DX: mutation
+`.retain_publication(retention_limits)`, `request.read_after(&retained_publication)`,
+`request.at(&observation).query(intent)` and `request.query(intent).subscribe(controls)`.
+These proposed entry APIs reuse existing selection, disclosure, retention and live
+owners; they do not introduce competing `query.at` or `query.live` variants.
+Reserve requested retention before effects. A fresh source edit may instead start
+from an explicitly current request; choosing current must never silently replace
+an exact selection. The demand terminal carries a usable owner-retained selectable
+output occurrence for its fixed authored source; the read-only `request.at` context
+consumes that exact basis and fresh authorization. Display values remain non-authoritative.
+
+Return typed retention/resource denial, pending, superseded, overflow, cancellation
+and post-publication recovery states. Use the existing managed handle close outcomes
+and owner notifications for progress. Closing one interest preserves shared work
+needed by another. Shutdown stops admission, cancels uncommitted work, retains or
+settles performed publication custody, closes interests/read leases/conditionals
+and releases the runtime. The ordinary consumer never walks dependencies or polls
+latest to decide completeness. Prove a later source edit cannot alter the retained
+scene, an old pick cannot resolve to a coincidental new entity, and closing with
+queued commands/live reads leaves no unowned work.
+
+**Certification observations.** Expose the missing read-only M0 observations through
+the existing certification audience (`worth-query-replay`), using actual owner
+counters and scoped observations. Cover gathered rows/adjacency, candidate cardinality/
+bytes, invariant work, MVCC copied physical granules, index work, producer/delivery
+work and retained resources for 1/10/100 bodies and 0/1/2 readers. Diagnostics grant
+no mutation, selection or retention authority. Avoid private provider access from
+consumer tests and any CAD metrics registry. For each required metric, first identify and reuse its existing owner counter and
+scoped observation. Add a narrow observation only when that specific M0 measurement
+is otherwise impossible through the certification audience; no metrics framework,
+registry or duplicate counter series. Reuse compiled test binaries. Measured failures
+justify actual storage/index fixes; the spec does not prescribe a new storage engine.
+
+**Documentation and source homes.** Update the host README, Query AI_README,
+ordinary front door, graph-access/invariant guides and a compiling public consumer
+example with these calls, typed failures and cleanup. Public entry wrappers remain
+in `worth-query-publication/src/application_entry`; execution and authority remain
+in existing execution/installation owners. The destination additions below locate
+source expectations, registration, typed invariant access and certification. No
+new crate, generic basis-property framework or package-governance tooling is required.
 
 ### Actual candidate integrity and bulk construction
 
@@ -908,6 +1219,7 @@ worth-query-declaration/src/
     binding/{definition,input,scope,result}.rs N: one query's typed association
   application_operation/
     binding/{definition,input,handler}.rs       N: operation association
+    binding/source_expectation.rs              N M0: required native-source contract
     candidate/{cardinality,resources}.rs        N: declared ceilings
     invariant/{definition,neighborhood,enforcement}.rs N
   application_schema_macro.rs                 R: existing typed declaration lowering
@@ -934,9 +1246,6 @@ worth-query-installation/src/
   application_resources/profiles.rs           N: typed installed profile meanings
 worth-query-execution/src/domain_computation/primary_graph/
   application_entry/
-    request/{context,branch,controls}.rs        N: context, no cached admission
-    request/{capability,elevation}.rs           N/R: typed admission refinements
-    query/{execution,retained,continuation,live}.rs N/R: ordinary query entry
     mutation/{execution,preparation,outcome}.rs N/R: one operation executor
     mutation/publication_retention.rs          N: explicit pre-effect lease reservation
     history/{page,publication_read}.rs          N/R: bounded owner retention
@@ -945,8 +1254,15 @@ worth-query-execution/src/domain_computation/primary_graph/
     inspection/{catalog,support}.rs            N/R: governed derived discovery
     demand/{request,closure,settlement,interest}.rs N: M0 bounded synchronous group
     demand/{transitive_closure,deferred_progress}.rs S: house M3 extensions
+  application_contribution/{setup,producer,conditional}.rs E/R/N M0: complete registration
+  application_installation/                   E/R M0: conditional-capable composed root
+  application_attempt/source_expectation.rs   N M0: native source compare/admission
+  application_attempt/source_expectation/{observation,comparison,denial}.rs N M0
+  application_invariant/{typed_binding,typed_view}.rs N M0: owner-checked candidate access
   handler/
     decision/{reader,completion}.rs             N/R: projected reads and proof
+    decision_reads.rs                         E/R M0: direct relations and exact cardinality
+    decision_relation_denial.rs                N/R M0: existing traversal-denial extension
     candidate/{reservation,allocation,population}.rs N/R
     candidate/identity_correspondence.rs        N/R: co-committed output roles
     work/{budget,checkpoint}.rs                N/R: bounded cooperative work
@@ -962,16 +1278,24 @@ worth-query-execution/src/domain_computation/authorization/
   capability_registry/{delegation,elevation,elevation_lifecycle}.rs E/R
   {operation_admission,elevation_progression}.rs E/R: existing authorization owners
 worth-query-publication/src/                  E/R: existing result/terminal owners
+  application_entry/request.rs               E/R: borrowed context, no cached admission
+  application_entry/{query,mutation}/         E/R: current and exact audience requests
+  application_entry/mutation/source_expectation.rs N M0: required expectation input
+  application_entry/mutation/retention.rs     N M0: pre-effect owner retention request
+  application_entry/query/{retained,live}.rs  N M0: exact selected and managed read entry
+  application_entry/request/{capability,elevation}.rs N/R: typed refinements
 worth-query-decl/src/facade.rs                 R: declaration reexports
 worth-query-host/src/facade.rs                 R: semantic audience reexports
   [ordinary phase-constructor and provisional exports] D
-worth-query-replay/                           E: certification-only audience
+worth-query-replay/                           E/R: certification-only audience
+  src/application_cost.rs                    N M0: only otherwise-unavailable owner observations
 worth-query-certification/
   examples/{ordinary_application,retained_application,application_recovery}.rs N
   examples/ordinary_product_workflow.rs        R: migrated public experience
   examples/advanced_product_branching.rs       R: same owner path, advanced choices
   tests/application_api.rs                     N: one integration target
   tests/application_api/{bank_affinity,candidate_integrity,resource_cost,demand}.rs N
+  tests/application_api/{source_expectation,typed_invariant,producer_installation,exact_observation}.rs N M0
   fixtures/consumer_values/                   N: one tiny Query-free value crate
   fixtures/consumer_entry/                    N: separately compiled contribution
   [existing cumulative World/Signal courts]   E/R: reuse valid evidence
@@ -1118,6 +1442,10 @@ inherits a usable public read experience, not just owner tests.
 
 ### Phase 3: Operation Execution And Complete Bank Adoption
 
+The [M0 required API closure](#m0-required-api-closure) fixes the consumed operation,
+writer, invariant and installation contracts. Its first-use batches may ship before
+this full Bank phase closes; existing certification remains scoped to shipped work.
+
 Bind installed domain handlers and drive the complete mutation spine through
 request execution. Install relation integrity and domain invariants against the
 actual primary candidate, including complete affected neighborhoods, before
@@ -1141,6 +1469,10 @@ pass through its public product and process paths before moving on; CAD demand
 or off-thread workers are not prerequisites for this acceptance checkpoint.
 
 ### Phase 4: Bounded Graph Construction And Output Settlement
+
+Consume the [M0 required API closure](#m0-required-api-closure), including exact
+observation/retention and certification costs. A demand-only helper cannot certify
+this phase while its installation, source or read lifecycle still needs CAD plumbing.
 
 Extend the certified primary candidate/invariant boundary with actual runtime-
 cardinality reservation/allocation/population and cyclic geometry-shaped
@@ -1211,7 +1543,7 @@ Documentation ships with each public capability, not only during final cleanup.
 | Bank product/transport authors | `workspaces/worth-query-bank-world/docs/public-consumer-contract.md`, `banking-product-contract.md`, `process-transport.md` | Real current APIs, all operation families, continuation/live/recovery wire behavior, honest process evidence |
 | UI adapter authors | `workspaces/worth-ui/docs/query-binding.md`, `application-lifecycle.md`, and `workspaces/worth-ui/AI_README.md` | Current root/request ownership, projection isolation and live disposal, checked with real UI binding tests; AI reference stays free of migration narrative |
 | Server adapter authors | `crates/worth-server/docs/read-data.md`, `write-data.md`, `stream-results.md`, and `connect-another-backend.md` | Current typed product registration and transport adaptation, checked with affected direct/HTTP integration targets |
-| House platform consumers | Private `docs/house/query-platform.md`, `milestones.md`, `rust-ui-architecture.md` | M0 bounded demand/checkpoints, M3 transitive/deferred extension, explicit root/handle thread custody; no claim the dependency pin already provides the specified API |
+| House platform consumers | Private `docs/house/query-platform.md`, `milestones.md`, `rust-ui-architecture.md` | Required M0 operation/source/writer/invariant, producer/conditional, exact observation/demand/cleanup and cost APIs; later transitive/deferred handoffs retain their owning milestones; distinguish shipped pin from proposed methods |
 | Milestone implementers | This specification and `WORTH_query_roadmap.md`; 9.18 handoff | Replacement obligations and ordering; no claim that proposed APIs are already implemented |
 
 Guide snippets are included from or compiled alongside owning examples/tests.

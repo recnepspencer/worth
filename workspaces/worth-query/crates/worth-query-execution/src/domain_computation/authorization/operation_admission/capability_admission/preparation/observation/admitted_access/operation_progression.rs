@@ -207,6 +207,7 @@ where
         governed_input_identity,
         authorization_basis: WorthQueryOperationAuthorizationBasis::Capability { input },
         graph_work: revalidated.graph_work,
+        source_facts: Vec::new(),
         _marker: std::marker::PhantomData,
     })
 }

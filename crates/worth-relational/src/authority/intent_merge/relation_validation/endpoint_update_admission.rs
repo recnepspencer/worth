@@ -44,7 +44,7 @@ fn reject_endpoint_update_duplicate_identity(
         spec.kind_id,
         &spec.source,
         &BTreeSet::from([spec.target.clone()]),
-        Some(spec.relation_id),
+        &BTreeSet::from([spec.relation_id]),
     ) {
         return Err(CommitConflict::new(
             ConflictClass::DuplicateRelationIdentity {

@@ -159,7 +159,7 @@ pub(super) fn prepare_publication_phase(
     ) = publication.into_finalize().into_parts();
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
     let mut working_state = working_state;
-    apply_adjacency_deltas(&mut working_state, &adjacency_deltas);
+    apply_adjacency_deltas(&mut working_state, &adjacency_deltas, version_id);
     let clone_mode = working_state.clone_mode();
     let committed_partitions = working_state.into_partition_commits().1;
     runtime

@@ -146,6 +146,7 @@ macro_rules! worth_query_mutation_binding {
             type Principal = $Principal;
             type PrincipalIdentity = $PrincipalIdentity;
             type PrincipalIdentityBinding = $PrincipalIdentityBinding;
+            type SourceExpectation = $crate::facade::application_operation::NoApplicationMutationSource;
 
             const IDENTITY: &'static str = $identity;
             const HANDLER_IDENTITY: &'static str = $handler_identity;

@@ -5,6 +5,7 @@ use crate::application_schema::{
     ApplicationSchema, ApplicationStructuredValueBinding, EqualityPredicate, WritePosture,
 };
 
+use super::ApplicationMutationSourceExpectation;
 use super::{
     ApplicationMutationBindingDescriptor, ApplicationMutationOutputContract,
     ApplicationMutationPrincipalBindingContract, ApplicationMutationScopeBinding,
@@ -50,6 +51,7 @@ where
     type PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<
         Value = Self::PrincipalIdentity,
     >;
+    type SourceExpectation: ApplicationMutationSourceExpectation<Schema>;
 
     const IDENTITY: &'static str;
     const HANDLER_IDENTITY: &'static str;
@@ -93,6 +95,7 @@ where
             Self::DenialBinding,
             Self::Output,
             Self::IdempotencyKey,
+            Self::SourceExpectation,
             Schema,
         >(
             Self::IDENTITY,

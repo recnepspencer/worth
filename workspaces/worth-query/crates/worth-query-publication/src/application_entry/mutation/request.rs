@@ -2,16 +2,25 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent,
+    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationSourceExpectation,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub struct WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent> {
+pub struct WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+{
     pub(super) application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     pub(super) principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) scope: &'scope WorthQueryRequestScope,
     pub(super) intent: Intent,
+    pub(super) source: Option<
+        worth_query_execution::facade::primary_graph::WorthQueryObservedSource<
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+    >,
 }
 
 pub struct WorthQueryApplicationMutationRequestWithIdempotency<
@@ -47,7 +56,18 @@ where
             principal,
             scope,
             intent,
+            source: None,
         }
+    }
+
+    pub fn expect_source(
+        mut self,
+        source: worth_query_execution::facade::primary_graph::WorthQueryObservedSource<
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+    ) -> Self {
+        self.source = Some(source);
+        self
     }
 
     pub fn idempotency<'key>(

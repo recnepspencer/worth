@@ -57,6 +57,9 @@ fn rejected_adjacency_budget_never_consumes_the_denied_scan() {
     assert!(relations.outgoing_relations_for_entity(source).is_err());
     assert_eq!(work.consumed().get(), 1);
     assert!(work.exceeded());
-    assert!(relations.entity_kind(source).is_none());
+    assert_eq!(
+        relations.entity_kind(source),
+        Err(super::structural_views::StructuralReadError::WorkBudgetExceeded)
+    );
     assert_eq!(work.consumed().get(), 1);
 }

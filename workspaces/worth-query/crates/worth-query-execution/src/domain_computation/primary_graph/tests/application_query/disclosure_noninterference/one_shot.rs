@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDisclosureOutcome, WorthQueryApplicationDisclosureReceiptPosture,
     WorthQueryApplicationOneShotResult, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryOmissionPosture, WorthQueryPrincipalResolutionMode,
+    WorthQuerySourceExpectationDenialKind,
 };
 
 type GovernedResult =
@@ -38,6 +39,7 @@ struct ConsumerObservation {
     projected_field_count: usize,
     adjacency_list_read_count: usize,
     edge_scan_count: usize,
+    observed_source_debug: Vec<String>,
 }
 
 #[test]
@@ -50,6 +52,10 @@ fn protected_label_difference_is_absent_from_every_one_shot_observable() {
     assert_eq!(left.projected_field_count, 1);
     assert_eq!(left.adjacency_list_read_count, 0);
     assert_eq!(left.edge_scan_count, 0);
+    assert_eq!(
+        left.observed_source_debug,
+        vec!["WorthQueryObservedSource { .. }"]
+    );
     assert!(matches!(
         left.rows[0].status(),
         WorthQueryApplicationDisclosed::Disclosed(status) if status == "open"
@@ -108,6 +114,26 @@ fn protected_label_difference_is_absent_from_every_one_shot_observable() {
         .all(|decisions| decisions[0].slot() < decisions[1].slot()));
 }
 
+#[test]
+fn omitted_dependency_cannot_be_used_as_a_complete_source_expectation() {
+    let world = installed_capability_world_with_label("private");
+    world
+        .authorization_time
+        .script(vec![UNIX_EPOCH + Duration::from_secs(100); 32]);
+    let result = execute_result(&world);
+    let source = result
+        .observed_sources()
+        .first()
+        .expect("the selected row carries an opaque source observation");
+    let denial = source
+        .validate_completeness("GovernedAccountOmissionQuery")
+        .expect_err("an omitted declared dependency must not authorize a mutation");
+    assert_eq!(
+        denial.kind(),
+        WorthQuerySourceExpectationDenialKind::IncompleteFootprint
+    );
+}
+
 fn observe(label: &str) -> ConsumerObservation {
     let world = installed_capability_world_with_label(label);
     world
@@ -117,6 +143,10 @@ fn observe(label: &str) -> ConsumerObservation {
 }
 
 fn execute(world: &AuthorizationWorld) -> ConsumerObservation {
+    capture_observation(&execute_result(world))
+}
+
+fn execute_result(world: &AuthorizationWorld) -> GovernedResult {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
@@ -170,11 +200,10 @@ fn execute(world: &AuthorizationWorld) -> ConsumerObservation {
     assert_eq!(plan.graph_work_branch(), &capability_branch);
     assert!(plan.graph_work_capability_identity().is_some());
     assert!(plan.graph_work_decision_fact_count() >= 3);
-    let result = world
+    world
         .application
         .execute_application_query_one_shot(plan)
-        .unwrap();
-    capture_observation(&result)
+        .unwrap()
 }
 
 fn capture_observation(result: &GovernedResult) -> ConsumerObservation {
@@ -195,5 +224,10 @@ fn capture_observation(result: &GovernedResult) -> ConsumerObservation {
         projected_field_count: result.receipt().projected_field_count(),
         adjacency_list_read_count: result.receipt().adjacency_list_read_count(),
         edge_scan_count: result.receipt().edge_scan_count(),
+        observed_source_debug: result
+            .observed_sources()
+            .iter()
+            .map(|source| format!("{source:?}"))
+            .collect(),
     }
 }

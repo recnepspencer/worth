@@ -33,7 +33,7 @@ where
         >,
 {
     pub fn execute(
-        self,
+        mut self,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -41,7 +41,7 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        let prepared = super::authorization::prepare(&self)?;
+        let prepared = super::authorization::prepare(&mut self)?;
         let admission = prepared.admission;
         let idempotency = prepared.idempotency;
         if let Some(outcome) = self.resolve_idempotency(&admission, idempotency)? {

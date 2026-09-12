@@ -8,9 +8,10 @@ pub(crate) use projection::{
     relation_query_locus_comparison_key,
 };
 pub use projection::{
-    EntityProjectionRecord, EntityRecordProjection, ProjectionAspectFilter,
-    ProjectionAspectFilterMode, ProjectionAspectRequirement, ProjectionAspectScope,
-    RelationProjectionRecord, RelationRecordProjection, VisibilityProjectionView,
+    AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
+    EntityRecordProjection, ProjectionAspectFilter, ProjectionAspectFilterMode,
+    ProjectionAspectRequirement, ProjectionAspectScope, RelationProjectionRecord,
+    RelationRecordProjection, RelationalAdjacencyDirection, VisibilityProjectionView,
 };
 pub use reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedFrontierAdjacencyTruthRead,

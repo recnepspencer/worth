@@ -70,6 +70,11 @@ worth_query_application_contribution! {
                     Body::reference::<Schema>(),
                     Body::reference::<Schema>(),
                 )
+                .relation(
+                    UndeclaredPlanarRelation::reference::<Schema>(),
+                    Body::reference::<Schema>(),
+                    Body::reference::<Schema>(),
+                )
                 .invariant(planar_turn_invariant::<Schema>())
                 .entity(ExternalPrincipalMapping::reference::<Schema>())
                 .entity(Principal::reference::<Schema>())
@@ -86,12 +91,14 @@ worth_query_application_contribution! {
                 .operation_read_field(MutatePlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
                 .operation_read_field(MutatePlanar::reference::<Schema>(), PositionX::reference::<Schema>())
                 .operation_read_field(MutatePlanar::reference::<Schema>(), PositionY::reference::<Schema>())
+                .operation_read_relation(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
                 .operation_create(MutatePlanar::reference::<Schema>(), Body::reference::<Schema>())
                 .operation_write(MutatePlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
                 .operation_write(MutatePlanar::reference::<Schema>(), PositionX::reference::<Schema>())
                 .operation_write(MutatePlanar::reference::<Schema>(), PositionY::reference::<Schema>())
                 .operation_write(MutatePlanar::reference::<Schema>(), Length::reference::<Schema>())
                 .operation_link(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
+                .operation_unlink(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
                 .application_query(planar_query_definition::<Schema>())
                 .application_query_binding::<PlanarReadBinding<Schema>>()

@@ -44,8 +44,10 @@ impl ApplicationQueryLiveCauseBinding<PlanningTestSchema, ActivityQuery, Account
 {
     type Effect = PlanningLiveEffect;
     type PayloadBinding = PlanningLiveEventBinding;
-    type ScopeIdentity = u64;
-    type TargetIdentity = u64;
+    type ScopeIdentityBinding =
+        worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
+    type TargetIdentityBinding =
+        worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 
     fn effect() -> ApplicationEffectRef<
         PlanningTestSchema,
@@ -57,13 +59,13 @@ impl ApplicationQueryLiveCauseBinding<PlanningTestSchema, ActivityQuery, Account
 
     fn scope_identity(
         payload: &<Self::PayloadBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value,
-    ) -> Self::ScopeIdentity {
+    ) -> u64 {
         payload.account
     }
 
     fn target_identity(
         payload: &<Self::PayloadBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value,
-    ) -> Self::TargetIdentity {
+    ) -> u64 {
         payload.activity
     }
 }

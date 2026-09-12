@@ -1,5 +1,5 @@
 use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
-use crate::identity::data::{KindId, RelationId};
+use crate::identity::data::{KindId, RelationId, VersionId};
 
 use std::collections::BTreeMap;
 
@@ -17,6 +17,7 @@ pub(crate) struct AdjacencyEntries {
     current: Vec<RelationId>,
     current_by_kind: Option<Box<BTreeMap<KindId, Vec<RelationId>>>>,
     historical_by_kind: Option<Box<BTreeMap<KindId, Vec<RelationId>>>>,
+    structural_revision_by_kind: Option<Box<BTreeMap<KindId, VersionId>>>,
 }
 
 impl AdjacencySet {
@@ -25,6 +26,7 @@ impl AdjacencySet {
             current: Vec::with_capacity(policy.small_degree_inline_capacity),
             current_by_kind: None,
             historical_by_kind: None,
+            structural_revision_by_kind: None,
         };
         match policy.backend {
             AdjacencyBackend::InlineSmallDegreeAdjacency => Self::Inline(entries()),
@@ -32,11 +34,16 @@ impl AdjacencySet {
         }
     }
 
-    pub(crate) fn compressed_from_current(current: Vec<RelationId>) -> Self {
+    pub(crate) fn compressed_from_checkpoint(
+        current: Vec<RelationId>,
+        structural_revisions: Vec<(KindId, VersionId)>,
+    ) -> Self {
         Self::Compressed(AdjacencyEntries {
             current,
             current_by_kind: None,
             historical_by_kind: None,
+            structural_revision_by_kind: (!structural_revisions.is_empty())
+                .then(|| Box::new(structural_revisions.into_iter().collect())),
         })
     }
 
@@ -45,6 +52,16 @@ impl AdjacencySet {
         insert_sorted(&mut entries.current, relation_id);
         insert_kind_relation(&mut entries.current_by_kind, kind_id, relation_id);
         insert_kind_relation(&mut entries.historical_by_kind, kind_id, relation_id);
+    }
+
+    pub(crate) fn insert_at(
+        &mut self,
+        kind_id: KindId,
+        relation_id: RelationId,
+        version_id: VersionId,
+    ) {
+        self.insert(kind_id, relation_id);
+        self.index_structural_revision(kind_id, version_id);
     }
 
     pub(crate) fn reset_kind_buckets(&mut self) {
@@ -69,6 +86,15 @@ impl AdjacencySet {
         );
     }
 
+    pub(crate) fn index_structural_revision(&mut self, kind_id: KindId, version_id: VersionId) {
+        let revisions = self
+            .entries_mut()
+            .structural_revision_by_kind
+            .get_or_insert_with(|| Box::new(BTreeMap::new()));
+        let revision = revisions.entry(kind_id).or_insert(version_id);
+        *revision = (*revision).max(version_id);
+    }
+
     pub(crate) fn remove(&mut self, kind_id: KindId, relation_id: &RelationId) {
         let entries = self.entries_mut();
         remove_sorted(&mut entries.current, relation_id);
@@ -79,6 +105,37 @@ impl AdjacencySet {
         {
             remove_sorted(relations, relation_id);
         }
+    }
+
+    pub(crate) fn remove_at(
+        &mut self,
+        kind_id: KindId,
+        relation_id: &RelationId,
+        version_id: VersionId,
+    ) {
+        self.remove(kind_id, relation_id);
+        self.index_structural_revision(kind_id, version_id);
+    }
+
+    pub(crate) fn structural_revision(&self, kind_id: KindId) -> Option<VersionId> {
+        self.entries()
+            .structural_revision_by_kind
+            .as_deref()
+            .and_then(|revisions| revisions.get(&kind_id))
+            .copied()
+    }
+
+    pub(crate) fn structural_revisions(&self) -> Vec<(KindId, VersionId)> {
+        self.entries()
+            .structural_revision_by_kind
+            .as_deref()
+            .map(|revisions| {
+                revisions
+                    .iter()
+                    .map(|(&kind, &version)| (kind, version))
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     pub(crate) fn current_kind_slice(&self, kind_id: KindId) -> &[RelationId] {
@@ -153,6 +210,14 @@ impl AdjacencySet {
                         .sum::<u64>(),
                 );
             }
+        }
+        if let Some(revisions) = entries.structural_revision_by_kind.as_deref() {
+            bytes = bytes
+                .saturating_add(std::mem::size_of::<BTreeMap<KindId, VersionId>>() as u64)
+                .saturating_add(
+                    (revisions.len() as u64)
+                        .saturating_mul(std::mem::size_of::<(KindId, VersionId)>() as u64),
+                );
         }
         bytes
     }

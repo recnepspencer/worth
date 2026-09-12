@@ -250,11 +250,22 @@ impl CustomInvariantRule for ProposedAspectStateProbe {
     }
 }
 
-fn assert_proposed_status(state: Option<&AuthoritativeRecordAspectState>) {
+fn assert_proposed_status(
+    state: Result<
+        &AuthoritativeRecordAspectState,
+        worth_relational::facade::runtime::StructuralReadError,
+    >,
+) {
     assert_status(state, "Held");
 }
 
-fn assert_status(state: Option<&AuthoritativeRecordAspectState>, expected: &str) {
+fn assert_status(
+    state: Result<
+        &AuthoritativeRecordAspectState,
+        worth_relational::facade::runtime::StructuralReadError,
+    >,
+    expected: &str,
+) {
     let state = state.expect("custom view resolves the existing target");
     let aspect = AspectKey::new("status").expect("status aspect");
     let value = state.get(&aspect).expect("status aspect exists").view();
@@ -286,7 +297,13 @@ fn assert_snapshot_status(
         .iter()
         .find(|record| record.entity_id == entity_id)
         .expect("target remains in the branch snapshot");
-    assert_status(record.authoritative_aspect_state.as_ref(), expected);
+    assert_status(
+        record
+            .authoritative_aspect_state
+            .as_ref()
+            .ok_or(worth_relational::facade::runtime::StructuralReadError::RecordUnavailable),
+        expected,
+    );
 }
 
 fn validate_status_update(

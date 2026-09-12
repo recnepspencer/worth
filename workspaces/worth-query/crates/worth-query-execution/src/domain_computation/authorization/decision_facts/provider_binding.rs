@@ -40,17 +40,25 @@ impl WorthQueryProviderAuthorizationDecisionFacts {
         installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
         application: Vec<WorthQueryApplicationObservedFact>,
     ) -> Result<WorthQueryProviderDecisionFactBinding, ()> {
-        if installed_read_scopes.len() != application.len() {
+        if installed_read_scopes.len() > application.len() {
             return Err(());
         }
         let application_count = application.len();
+        let installed_count = installed_read_scopes.len();
         let retained_authorization_fact_count = 1usize.saturating_add(self.decisions.len());
+        let mut application = application;
+        let source_facts = application.split_off(installed_count);
         let facts = installed_read_scopes
             .into_iter()
             .zip(application)
             .map(|(read_scope, fact)| {
                 WorthQueryPrimaryGraphApplicationDecisionFact::application(read_scope, fact)
             })
+            .chain(
+                source_facts
+                    .into_iter()
+                    .map(WorthQueryPrimaryGraphApplicationDecisionFact::observed_source),
+            )
             .chain(std::iter::once(
                 WorthQueryPrimaryGraphApplicationDecisionFact::principal(self.principal),
             ))

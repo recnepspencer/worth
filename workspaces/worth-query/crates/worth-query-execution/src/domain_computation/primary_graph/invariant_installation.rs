@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
+mod schema_resolver;
+pub use schema_resolver::WorthQueryApplicationInvariantSchemaResolver;
+
 use worth_query_declaration::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationSchema, ApplicationSchemaBindingIdentity,
 };
@@ -20,71 +23,10 @@ use super::application_invariant::{
 type Factory<Schema> = Box<
     dyn for<'resolver> FnOnce(
             &WorthQueryApplicationInvariantSchemaResolver<'resolver, Schema>,
-        ) -> Result<Box<dyn ErasedApplicationInvariantRule>, String>
+        )
+            -> Result<Box<dyn ErasedApplicationInvariantRule<Schema>>, String>
         + Send,
 >;
-
-/// Borrowed, application-only view used while lowering one invariant factory.
-pub struct WorthQueryApplicationInvariantSchemaResolver<'layout, Schema> {
-    _schema: PhantomData<fn() -> Schema>,
-    layout: &'layout super::schema_layout::WorthQueryPrimaryGraphLayout,
-}
-
-impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
-    pub fn entity_kind<Entity>(
-        &self,
-        entity: worth_query_declaration::facade::application_schema::ApplicationEntityRef<
-            Schema,
-            Entity,
-        >,
-    ) -> Option<worth_relational::facade::identity::KindId> {
-        self.layout.entity_kind(entity.name())
-    }
-    pub fn relation<Relation, From, To>(
-        &self,
-        relation: worth_query_declaration::facade::application_schema::ApplicationRelationRef<
-            Schema,
-            Relation,
-            From,
-            To,
-        >,
-    ) -> Option<(
-        worth_relational::facade::identity::KindId,
-        worth_relational::facade::identity::KindId,
-        worth_relational::facade::identity::KindId,
-    )> {
-        let layout = self.layout.relation(relation.name())?;
-        Some((layout.kind, layout.from, layout.to))
-    }
-    pub fn field<
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit: worth_query_declaration::facade::application_schema::ApplicationFieldUnit,
-    >(
-        &self,
-        field: worth_query_declaration::facade::application_schema::ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
-    ) -> Option<(
-        worth_relational::facade::identity::KindId,
-        worth_foundational::facade::AspectFieldLocator,
-    )> {
-        self.layout
-            .field(field.entity(), field.aspect(), field.field())
-            .map(|layout| (layout.entity_kind, layout.locator.clone()))
-    }
-}
 
 pub struct WorthQueryApplicationInvariantFactories<Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
@@ -122,7 +64,7 @@ where
         }
     }
 
-    pub fn bind<Invariant, Rule: WorthQueryApplicationInvariantRule>(
+    pub fn bind<Invariant, Rule: WorthQueryApplicationInvariantRule<Schema>>(
         &mut self,
         installed: &WorthQueryInstalledApplicationInvariant<Schema, Invariant>,
         factory: impl for<'resolver> FnOnce(
@@ -151,7 +93,7 @@ where
             key,
             Box::new(move |resolver| {
                 factory(resolver)
-                    .map(|rule| Box::new(rule) as Box<dyn ErasedApplicationInvariantRule>)
+                    .map(|rule| Box::new(rule) as Box<dyn ErasedApplicationInvariantRule<Schema>>)
             }),
         );
         Ok(())
@@ -188,6 +130,7 @@ where
                 .expect("checked factory remains present");
             let resolver = WorthQueryApplicationInvariantSchemaResolver {
                 layout,
+                binding_identity: self.binding_identity.clone(),
                 _schema: PhantomData,
             };
             let rule = factory(&resolver).map_err(|detail| {
@@ -197,12 +140,14 @@ where
                 )
             })?;
             let descriptor = lower_descriptor(&installed, layout)?;
-            let registration = rule.into_registration(descriptor).map_err(|detail| {
-                denial(
-                    WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
-                    detail,
-                )
-            })?;
+            let registration = rule
+                .into_registration(descriptor, self.binding_identity.clone())
+                .map_err(|detail| {
+                    denial(
+                        WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
+                        detail,
+                    )
+                })?;
             if !is_mandatory_candidate_registration(&registration) {
                 return Err(denial(
                     WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryMeaningMismatch,

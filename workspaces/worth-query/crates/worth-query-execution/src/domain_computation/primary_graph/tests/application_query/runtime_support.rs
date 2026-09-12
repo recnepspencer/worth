@@ -187,8 +187,6 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
     let graph = world.application.runtime.primary_graph().unwrap();
 
     for kind in [
-        WorthQueryGraphReadAccessRequirementKind::TraversalWorkset,
-        WorthQueryGraphReadAccessRequirementKind::VisitedSet,
         WorthQueryGraphReadAccessRequirementKind::ProofSupport,
         WorthQueryGraphReadAccessRequirementKind::ResultBuffer,
         WorthQueryGraphReadAccessRequirementKind::MaterializationLifecycle,

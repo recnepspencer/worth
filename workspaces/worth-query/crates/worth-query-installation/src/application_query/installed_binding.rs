@@ -80,6 +80,13 @@ impl<Schema> WorthQueryInstalledApplicationSchema<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub fn installed_query_identity_by_name(
+        &self,
+        identifier: &str,
+    ) -> Option<&super::WorthQueryInstalledApplicationQueryIdentity> {
+        self.query_catalog.query_identity_by_name(identifier)
+    }
+
     pub fn installed_query_binding<Binding>(
         &self,
     ) -> Result<

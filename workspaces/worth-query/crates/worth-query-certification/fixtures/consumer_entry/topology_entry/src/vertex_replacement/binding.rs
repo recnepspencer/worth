@@ -27,6 +27,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Principal = Principal;
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
+    type SourceExpectation = ApplicationQueryMutationSource<crate::PlanarQuery>;
 
     const IDENTITY: &'static str = "worth.query.certification.vertex-replacement.v1";
     const HANDLER_IDENTITY: &'static str =

@@ -210,17 +210,19 @@ pub mod runtime {
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
     pub use crate::runtime::{
-        custom_invariant_inventory_digest, CompiledArtifactAuthorityStatus, CompiledArtifactError,
+        custom_invariant_inventory_digest, AdjacencyStructuralRevision,
+        AdjacencyStructuralRevisionDenial, CompiledArtifactAuthorityStatus, CompiledArtifactError,
         CompiledExecutionArtifact, ComplexityContract, ComplexityStatus, EntityProjectionRecord,
         EntityRecordProjection, InvariantAccess, RelationProjectionRecord,
-        RelationRecordProjection, RelationalInitialSchemaInstallation,
-        RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
-        RelationalInitialSchemaInstallationReceipt, RelationalPatchPositionReservationCounters,
-        RelationalPhase4ReferenceCostCounters, RelationalReplayRecord, RelationalRuntime,
-        RelationalRuntimeConfig, RelationalRuntimeForkDenial,
-        RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
-        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
-        SnapshotGuard, TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
+        RelationRecordProjection, RelationalAdjacencyDirection,
+        RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
+        RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
+        RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
+        RelationalReplayRecord, RelationalRuntime, RelationalRuntimeConfig,
+        RelationalRuntimeForkDenial, RelationalSchemaTransitionAdmissionDenial,
+        RelationalSchemaTransitionAdmissionDenialKind, ReplaySchemaVersion,
+        RuntimeComplexityCounters, SimulationAccess, SimulationAuthority, SnapshotGuard,
+        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
         VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{

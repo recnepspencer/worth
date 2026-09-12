@@ -43,4 +43,8 @@ impl WorthQueryProductBranchReadIdentity {
     pub fn composite_basis_identity(&self) -> &CompositeBasisKey {
         &self.basis
     }
+
+    pub(crate) fn same_branch_occurrence(&self, other: &Self) -> bool {
+        self.branch == other.branch && self.incarnation == other.incarnation
+    }
 }

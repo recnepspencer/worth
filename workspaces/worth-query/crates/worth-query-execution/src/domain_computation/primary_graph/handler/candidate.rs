@@ -15,6 +15,8 @@ use super::super::{
 };
 use super::invariant::HandlerInterruption;
 
+mod verbs;
+
 /// Borrow of the already-reserved candidate builder for one exact binding.
 pub struct CandidateWriter<'borrow, Schema, Binding>
 where
@@ -43,17 +45,6 @@ where
         >,
     ) -> Self {
         Self { candidate }
-    }
-
-    pub fn candidate(
-        &mut self,
-    ) -> &mut WorthQueryApplicationEffectProgramBuilder<
-        Schema,
-        Binding::Operation,
-        Binding::Input,
-        <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-    > {
-        self.candidate
     }
 
     pub fn checkpoint(&self) -> Result<(), HandlerInterruption> {

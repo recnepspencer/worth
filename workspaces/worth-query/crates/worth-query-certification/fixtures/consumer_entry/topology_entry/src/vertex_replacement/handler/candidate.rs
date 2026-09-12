@@ -28,11 +28,9 @@ pub(super) fn replace_vertex<Schema: TopologySchemaBinding>(
         .unlink(PlanarSuccessor::reference(), &retired, &next)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .candidate()
         .delete_entity(Body::reference(), &retired)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .candidate()
         .link(
             PlanarSuccessor::reference(),
             format!("replacement:{}:incoming", change.replacement.body_key),
@@ -41,7 +39,6 @@ pub(super) fn replace_vertex<Schema: TopologySchemaBinding>(
         )
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .candidate()
         .link(
             PlanarSuccessor::reference(),
             format!("replacement:{}:outgoing", change.replacement.body_key),
@@ -61,23 +58,18 @@ fn allocate_replacement<Schema: TopologySchemaBinding>(
     let key = WorthQueryApplicationEntityKey::new(&vertex.body_key)
         .map_err(HandlerExecutionDenial::new)?;
     let replacement = writer
-        .candidate()
         .create_entity(Body::reference(), key)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .candidate()
         .initialize_field(&replacement, BodyKey::reference(), vertex.body_key.clone())
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .candidate()
         .initialize_field(&replacement, PositionX::reference(), vertex.x)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .candidate()
         .initialize_field(&replacement, PositionY::reference(), vertex.y)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .candidate()
         .initialize_field(
             &replacement,
             Length::reference(),

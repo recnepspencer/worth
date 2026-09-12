@@ -83,11 +83,14 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         &result_buffer,
         tree.rows.raw_rows(),
         tree.rows.capacity(),
+        &tree.source_footprints,
+        tree.source_footprints.capacity(),
         plan.query.name(),
     )?;
     Ok(RawLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
+            source_footprints: tree.source_footprints,
             examined_candidates: selection
                 .examined_candidates
                 .saturating_add(target_lookup_work),

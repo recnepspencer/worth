@@ -6,6 +6,7 @@ mod principal_contract;
 mod scope;
 mod scope_contract;
 mod scope_resolution;
+mod source_expectation;
 
 pub use descriptor::{
     ApplicationMutationBindingDescriptor, ApplicationMutationHandlerMetadata,
@@ -29,6 +30,10 @@ pub use scope_contract::{
     ApplicationMutationScopeContract, ApplicationMutationScopeResolutionMode,
 };
 pub use scope_resolution::ApplicationMutationScopeResolution;
+pub use source_expectation::{
+    ApplicationMutationSourceExpectation, ApplicationQueryMutationSource,
+    NoApplicationMutationSource,
+};
 
 #[cfg(test)]
 mod tests;

@@ -3,7 +3,7 @@ use std::num::NonZeroUsize;
 use worth_query_admission::facade::graph_read_access::WorthQueryGraphReadBudget;
 
 const DEFAULT_INLINE_INDEX_BYTES: usize = 5_120;
-const DEFAULT_RESULT_BYTES_PER_ROOT: usize = 2_048;
+const DEFAULT_RESULT_BYTES_PER_ROOT: usize = 4_096;
 const DEFAULT_CONCURRENT_GRAPH_WORK: usize = 64;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -8,6 +8,7 @@ pub use crate::validation::data::{
     InvariantDecisionKind, InvariantDecisionRecord, InvariantExecutionPoint,
     InvariantFailureEffect, InvariantGroup, InvariantGroupSet, InvariantRegistration,
     InvariantReportedRule, InvariantRule, InvariantVerdict, PlannedRelationEndpointUpdate,
-    StructuralRelationRecord, StructuralRelationView,
+    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
+    StructuralRelationView,
 };
 pub use crate::validation::engine::InvariantExecutionResult;

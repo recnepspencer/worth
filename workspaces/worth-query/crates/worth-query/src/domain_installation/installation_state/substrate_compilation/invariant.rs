@@ -132,7 +132,7 @@ impl CustomInvariantRule for InstalledRequiresOutgoingRelationsRule {
                 planner
                     .relations()
                     .entity_kind(*entity_id)
-                    .is_some_and(|kind| self.relevant_entity_kinds.contains(&kind))
+                    .is_ok_and(|kind| self.relevant_entity_kinds.contains(&kind))
             })
             .collect::<Vec<_>>();
         let traversal = planner
@@ -187,7 +187,15 @@ impl InstalledRequiresOutgoingRelationsRule {
             .relations()
             .outgoing_relations_for_entity(entity)?
             .into_iter()
-            .filter_map(|relation_id| context.relations().relation(relation_id))
+            .map(|relation_id| {
+                context.relations().relation(relation_id).map_err(|error| {
+                    CustomInvariantExecutionError::new(format!(
+                        "required relation read failed: {error:?}"
+                    ))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
             .map(|relation| relation.kind_id)
             .collect::<Vec<_>>();
         Ok(self

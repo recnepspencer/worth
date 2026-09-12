@@ -165,9 +165,11 @@ pub struct CustomInvariantScopePlanner<'runtime> {
     aspect_states: StructuralAspectStateView<'runtime>,
     committed_aspect_states: StructuralAspectStateView<'runtime>,
     relations: StructuralRelationView<'runtime>,
+    committed_relations: StructuralRelationView<'runtime>,
     counts: StructuralCountView,
     traversal: BoundedStructuralTraversal<'runtime>,
     work: super::CustomInvariantWorkMeter,
+    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
 }
 
 impl<'runtime> CustomInvariantScopePlanner<'runtime> {
@@ -192,6 +194,8 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         let aspect_states =
             StructuralAspectStateView::new(state_view, work.clone(), access.clone());
         let relations = StructuralRelationView::new(state_view, work.clone(), access.clone());
+        let committed_relations =
+            StructuralRelationView::new(committed_state_view, work.clone(), access.clone());
         let counts = StructuralCountView::from_touched_scope(&touched);
         let traversal = BoundedStructuralTraversal::new(
             runtime.performance_access(),
@@ -211,9 +215,11 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
                 access,
             ),
             relations,
+            committed_relations,
             counts,
             traversal,
             work,
+            proposal_identity: observation.proposal_identity().cloned(),
         }
     }
 
@@ -246,6 +252,11 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         self.relations.clone()
     }
 
+    /// Read relation incidence from the immutable committed before-image.
+    pub fn committed_relations(&self) -> StructuralRelationView<'runtime> {
+        self.committed_relations.clone()
+    }
+
     pub fn counts(&self) -> StructuralCountView {
         self.counts
     }
@@ -256,5 +267,12 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
 
     pub(crate) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
         self.work.clone()
+    }
+
+    /// Identifies the exact candidate whose proposed and committed views are being planned.
+    pub fn proposal_affinity(&self) -> Option<(u64, u64)> {
+        self.proposal_identity
+            .as_ref()
+            .map(|identity| (identity.runtime_instance_id(), identity.ordinal()))
     }
 }

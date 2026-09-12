@@ -3,12 +3,16 @@ use std::sync::atomic::Ordering;
 use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationRequestExt, WorthQueryApplicationRequestMutationDenial,
+        WorthQueryApplicationRequestQueryDenial,
     },
     domain::WorthQueryInstalledApplicationSchema,
-    primary_graph::WorthQueryOperationAuthorizationDenialKind,
+    primary_graph::{
+        WorthQueryApplicationOneShotDenialKind, WorthQueryOperationAuthorizationDenialKind,
+    },
 };
 
 use super::{adjust, authentication, installation, read_y, source_version, ConsumerSchema};
+use worth_query_topology_entry::PlanarRead;
 
 pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
     foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>,
@@ -42,4 +46,35 @@ pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
     assert_eq!(source_version(&request), before);
     assert_eq!(read_y(&request, "anchor-a"), 1);
     assert_eq!(read_y(&request, "sibling-a"), 21);
+}
+
+pub(super) fn source_footprint_bytes_beyond_host_limit_are_denied(
+    foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>,
+) {
+    let world = installation::install_with_query_bytes(foreign, 1300);
+    let scope = authentication::request_scope();
+    let adapter = authentication::admit(world.application.installed_schema());
+    let principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &scope,
+    ))
+    .expect("the bounded host authenticates the same declared principal");
+    let request = world.application.request(&principal, &scope);
+    let outcome = request
+        .query(PlanarRead {
+            body_key: "anchor-a".to_owned(),
+        })
+        .execute();
+    let Err(denial) = outcome else {
+        panic!("the retained source footprint must obey the result-byte reservation")
+    };
+    let WorthQueryApplicationRequestQueryDenial::Execution(denial) = denial else {
+        panic!("source footprint bytes must deny at bounded execution: {denial:?}")
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded
+    );
+    assert_eq!(denial.subject(), "root/relation[0]/relation[0]/field[0]");
+    assert_eq!(world.application.result_buffer_observer().observe().retained_bytes(), 0);
 }

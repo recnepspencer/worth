@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use super::WorthQueryApplicationQueryAccessReceipt;
 
 /// Query-admitted consumer shape. Construction is private to completed query
@@ -23,8 +21,8 @@ use super::WorthQueryApplicationQueryAccessReceipt;
 /// ```
 pub struct WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
+    observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
     receipt: WorthQueryApplicationQueryAccessReceipt,
-    _query: PhantomData<fn() -> Query>,
 }
 
 impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
@@ -34,8 +32,20 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
     ) -> Self {
         Self {
             rows,
+            observed_sources: Vec::new(),
             receipt,
-            _query: PhantomData,
+        }
+    }
+
+    pub(super) fn new_with_sources(
+        rows: Vec<QueryResult>,
+        observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
+        receipt: WorthQueryApplicationQueryAccessReceipt,
+    ) -> Self {
+        Self {
+            rows,
+            observed_sources,
+            receipt,
         }
     }
 
@@ -49,7 +59,13 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
 
     /// Consumes the governed result at a downstream publication boundary.
     /// The receipt remains execution-owned and must be projected before drop.
-    pub fn into_parts(self) -> (Vec<QueryResult>, WorthQueryApplicationQueryAccessReceipt) {
-        (self.rows, self.receipt)
+    pub fn into_parts(
+        self,
+    ) -> (
+        Vec<QueryResult>,
+        Vec<super::WorthQueryObservedSource<Query>>,
+        WorthQueryApplicationQueryAccessReceipt,
+    ) {
+        (self.rows, self.observed_sources, self.receipt)
     }
 }

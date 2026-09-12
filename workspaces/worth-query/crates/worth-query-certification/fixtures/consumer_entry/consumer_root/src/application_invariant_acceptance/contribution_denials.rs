@@ -213,7 +213,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         setup.invariant(
             PositivePlanarTurn::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
-            |_| -> Result<PositiveTurnRule, String> {
+            |_| -> Result<PositiveTurnRule<Schema>, String> {
                 panic!("missing handler must be denied before invariant factory execution")
             },
         )
@@ -253,7 +253,7 @@ impl<Schema: ParameterSchemaBinding + TopologySchemaBinding>
             ForeignMember::Invariant => setup.invariant(
                 PositivePlanarTurn::reference(),
                 ApplicationInvariantExecutionPoint::CommitBoundary,
-                |_| -> Result<PositiveTurnRule, String> {
+                |_| -> Result<PositiveTurnRule<Schema>, String> {
                     panic!("foreign member factory must never execute")
                 },
             ),
@@ -265,6 +265,7 @@ fn topology_configuration(calls: &Arc<AtomicUsize>) -> TopologyConfiguration {
     TopologyConfiguration {
         setup_calls: Arc::clone(calls),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
+        invariant_probe: Arc::new(AtomicUsize::new(0)),
     }
 }
 

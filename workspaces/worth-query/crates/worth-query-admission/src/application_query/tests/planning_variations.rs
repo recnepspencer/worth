@@ -174,7 +174,7 @@ fn each_planning_dimension_changes_only_its_owned_evidence() {
         relation_row(&baseline).relation_direction(),
         relation_row(&reverse).relation_direction()
     );
-    assert_ne!(
+    assert_eq!(
         relation_row(&baseline).kind(),
         relation_row(&reverse).kind()
     );

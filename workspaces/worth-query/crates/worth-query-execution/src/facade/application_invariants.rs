@@ -1,9 +1,13 @@
 //! Installed domain rules and bounded proposed-state access for application hosts.
 
 pub use crate::domain_computation::primary_graph::application_invariant::{
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantExecutionError,
-    WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantRule,
-    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantVerdict,
+    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
+    WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantReadView,
+    WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantRelationBinding,
+    WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantScopePlanner,
+    WorthQueryApplicationInvariantVerdict, WorthQueryInvariantAccessDenial,
+    WorthQueryInvariantAccessDenialKind,
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,

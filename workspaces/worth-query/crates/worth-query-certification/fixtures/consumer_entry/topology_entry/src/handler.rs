@@ -45,6 +45,38 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
                     }
                 }
             }
+            PlanarOperation::RetargetSuccessor {
+                source_key,
+                previous_target_key,
+                replacement_target_key,
+            } => {
+                let source = match reader.resolve_entity(BodyKey::reference(), source_key.clone()) {
+                    Ok(entity) => entity,
+                    Err(error) => return HandlerResult::ExecutionDenied(error),
+                };
+                let previous = match reader
+                    .resolve_entity(BodyKey::reference(), previous_target_key.clone())
+                {
+                    Ok(entity) => entity,
+                    Err(error) => return HandlerResult::ExecutionDenied(error),
+                };
+                if let Err(error) =
+                    reader.resolve_entity(BodyKey::reference(), replacement_target_key.clone())
+                {
+                    return HandlerResult::ExecutionDenied(error);
+                }
+                match reader.related_one(PlanarSuccessor::reference(), &source) {
+                    Ok(target) if target == previous => {}
+                    Ok(_) => {
+                        return HandlerResult::DomainDenied(
+                            PlanarMutationDenial::UnexpectedSuccessor,
+                        )
+                    }
+                    Err(error) => {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+                    }
+                }
+            }
         }
         HandlerResult::Completed(())
     }
@@ -53,15 +85,17 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
         input: &PlanarMutation,
         _: &(),
     ) -> ApplicationCandidateRequirements {
-        let (creates, links, writes) = match &input.operation {
+        let (creates, links, unlinks, writes) = match &input.operation {
             PlanarOperation::CreateCycle(vertices) => (
                 vertices.len(),
                 vertices.len(),
+                0,
                 vertices.len().saturating_mul(4),
             ),
-            PlanarOperation::Adjust(adjustments) => (0, 0, adjustments.len()),
+            PlanarOperation::Adjust(adjustments) => (0, 0, 0, adjustments.len()),
+            PlanarOperation::RetargetSuccessor { .. } => (0, 1, 1, 0),
         };
-        requirements(creates, links, writes, 8192, input.validator_work)
+        requirements(creates, links, unlinks, writes, 8192, input.validator_work)
     }
     fn build_candidate(
         &self,
@@ -97,23 +131,18 @@ fn author<Schema: TopologySchemaBinding>(
                 let key = WorthQueryApplicationEntityKey::new(&vertex.body_key)
                     .map_err(HandlerExecutionDenial::new)?;
                 let entity = writer
-                    .candidate()
                     .create_entity(Body::reference(), key)
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .candidate()
                     .initialize_field(&entity, BodyKey::reference(), vertex.body_key.clone())
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .candidate()
                     .initialize_field(&entity, PositionX::reference(), vertex.x)
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .candidate()
                     .initialize_field(&entity, PositionY::reference(), vertex.y)
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .candidate()
                     .initialize_field(
                         &entity,
                         Length::reference(),
@@ -124,7 +153,6 @@ fn author<Schema: TopologySchemaBinding>(
             }
             for index in 0..allocated.len() {
                 writer
-                    .candidate()
                     .link(
                         PlanarSuccessor::reference(),
                         format!("successor:{}", vertices[index].body_key),
@@ -141,11 +169,37 @@ fn author<Schema: TopologySchemaBinding>(
                     .resolve_entity(BodyKey::reference(), adjustment.body_key.clone())
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .candidate()
                     .write_field(&entity, PositionY::reference(), adjustment.replacement_y)
                     .map_err(HandlerExecutionDenial::new)?;
             }
             Ok(adjustments.len())
+        }
+        PlanarOperation::RetargetSuccessor {
+            source_key,
+            previous_target_key,
+            replacement_target_key,
+        } => {
+            let source = writer
+                .resolve_entity(BodyKey::reference(), source_key.clone())
+                .map_err(HandlerExecutionDenial::new)?;
+            let previous = writer
+                .resolve_entity(BodyKey::reference(), previous_target_key.clone())
+                .map_err(HandlerExecutionDenial::new)?;
+            let replacement = writer
+                .resolve_entity(BodyKey::reference(), replacement_target_key.clone())
+                .map_err(HandlerExecutionDenial::new)?;
+            writer
+                .unlink(PlanarSuccessor::reference(), &source, &previous)
+                .map_err(HandlerExecutionDenial::new)?;
+            writer
+                .link(
+                    PlanarSuccessor::reference(),
+                    format!("retarget:{source_key}:{replacement_target_key}"),
+                    &source,
+                    &replacement,
+                )
+                .map_err(HandlerExecutionDenial::new)?;
+            Ok(0)
         }
     }
 }

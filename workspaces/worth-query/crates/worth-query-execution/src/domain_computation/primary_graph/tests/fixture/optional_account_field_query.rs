@@ -8,8 +8,8 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::worth_query_application_query;
 
 use super::{
-    Account, AccountIdentity, AccountNote, AccountPolicy, AccountScore, AccountSummaryParameters,
-    IdentityExecutionSchema,
+    Account, AccountAnnotation, AccountAnnotations, AccountIdentity, AccountNote, AccountPolicy,
+    AccountScore, AccountSummaryParameters, IdentityExecutionSchema,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
@@ -19,15 +19,18 @@ use crate::domain_computation::primary_graph::{
 pub struct AccountSlot;
 pub struct NoteSlot;
 pub struct ScoreSlot;
+pub struct AnnotationSlot;
 worth_query_declaration::worth_query_portable_type!(AccountSlot => "worth.query.test.execution.optional_account.account_slot.v1");
 worth_query_declaration::worth_query_portable_type!(NoteSlot => "worth.query.test.execution.optional_account.note_slot.v1");
 worth_query_declaration::worth_query_portable_type!(ScoreSlot => "worth.query.test.execution.optional_account.score_slot.v1");
+worth_query_declaration::worth_query_portable_type!(AnnotationSlot => "worth.query.test.execution.optional_account.annotation_slot.v1");
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OptionalAccountFieldResult {
     account: String,
     note: Option<String>,
     score: Option<u64>,
+    annotation: Option<String>,
 }
 worth_query_declaration::worth_query_portable_type!(OptionalAccountFieldResult => "worth.query.test.execution.optional_account.result.v1");
 
@@ -42,6 +45,10 @@ impl OptionalAccountFieldResult {
 
     pub const fn score(&self) -> Option<u64> {
         self.score
+    }
+
+    pub fn annotation(&self) -> Option<&str> {
+        self.annotation.as_deref()
     }
 }
 
@@ -73,13 +80,14 @@ pub(super) fn optional_account_field_definition() -> ApplicationQueryDefinition<
     .field(account())
     .optional_field(note())
     .optional_field(score())
+    .optional_field(annotation())
     .build();
     ApplicationQueryDefinitionBuilder::declare(OptionalAccountFieldQuery::reference())
         .root(Account::reference())
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 3))
+        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 4))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -102,6 +110,7 @@ impl WorthQueryApplicationProjection<IdentityExecutionSchema, OptionalAccountFie
             account: row.field(account())?,
             note: row.optional_field(note())?,
             score: row.optional_field(score())?,
+            annotation: row.optional_field(annotation())?,
         })
     }
 }
@@ -149,4 +158,19 @@ fn score() -> ApplicationQueryOptionalResultFieldRef<
     worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
     ApplicationQueryOptionalResultFieldRef::new("score", AccountScore::reference())
+}
+
+fn annotation() -> ApplicationQueryOptionalResultFieldRef<
+    OptionalAccountFieldQuery,
+    AnnotationSlot,
+    IdentityExecutionSchema,
+    Account,
+    AccountAnnotations,
+    AccountAnnotation,
+    String,
+    worth_query_declaration::facade::application_schema::ReadWrite,
+    worth_query_declaration::facade::application_schema::NoEqualityPredicate,
+    worth_query_declaration::facade::application_schema::NoApplicationUnit,
+> {
+    ApplicationQueryOptionalResultFieldRef::new("annotation", AccountAnnotation::reference())
 }

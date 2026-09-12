@@ -24,8 +24,6 @@ fn installed_application_graph_uses_canonical_requirement_derivation() {
 
     for kind in [
         WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
-        WorthQueryGraphReadAccessRequirementKind::TraversalWorkset,
-        WorthQueryGraphReadAccessRequirementKind::VisitedSet,
         WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
         WorthQueryGraphReadAccessRequirementKind::OrderingSupport,
         WorthQueryGraphReadAccessRequirementKind::ProofSupport,
@@ -34,6 +32,10 @@ fn installed_application_graph_uses_canonical_requirement_derivation() {
     ] {
         assert!(requirements.contains_kind(&kind), "missing {kind:?}");
     }
+    assert!(
+        !requirements.contains_kind(&WorthQueryGraphReadAccessRequirementKind::TraversalWorkset)
+    );
+    assert!(!requirements.contains_kind(&WorthQueryGraphReadAccessRequirementKind::VisitedSet));
     assert!(!requirements
         .contains_kind(&WorthQueryGraphReadAccessRequirementKind::LiveMaintenanceSupport));
     assert!(requirements

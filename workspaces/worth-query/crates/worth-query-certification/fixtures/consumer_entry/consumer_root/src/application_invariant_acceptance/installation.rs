@@ -14,6 +14,7 @@ use worth_query_topology_entry::{ConsumerPrincipalBinding, TopologyConfiguration
 pub(super) struct ConsumerWorld {
     pub(super) application: primary_graph::WorthQueryPrimaryGraphApplicationRuntime<ConsumerSchema>,
     pub(super) invariant_calls: Arc<AtomicUsize>,
+    pub(super) invariant_probe: Arc<AtomicUsize>,
 }
 
 pub(super) fn install(
@@ -26,13 +27,30 @@ pub(super) fn install_with_candidate_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
 ) -> ConsumerWorld {
+    install_with_resource_bytes(foreign, candidate_bytes, 4096)
+}
+
+pub(super) fn install_with_query_bytes(
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
+    query_bytes: usize,
+) -> ConsumerWorld {
+    install_with_resource_bytes(foreign, 8192, query_bytes)
+}
+
+fn install_with_resource_bytes(
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
+    candidate_bytes: u64,
+    query_bytes: usize,
+) -> ConsumerWorld {
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
+    let invariant_probe = Arc::new(AtomicUsize::new(0));
     let configuration = (
         TopologyConfiguration {
             setup_calls: Arc::clone(&topology_calls),
             invariant_calls: Arc::clone(&invariant_calls),
+            invariant_probe: Arc::clone(&invariant_probe),
         },
         Arc::clone(&parameter_calls),
     );
@@ -44,7 +62,13 @@ pub(super) fn install_with_candidate_bytes(
             4096,
         )
         .unwrap(),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::bounded(
+            4096,
+            query_bytes,
+            4096,
+            32,
+        )
+        .unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
     let application = installation::in_memory::<ConsumerSchema>(
@@ -73,6 +97,7 @@ pub(super) fn install_with_candidate_bytes(
     ConsumerWorld {
         application,
         invariant_calls,
+        invariant_probe,
     }
 }
 fn reject_foreign_invariant_factory(
@@ -95,7 +120,7 @@ fn reject_foreign_invariant_factory(
     let denial = factories
         .bind(
             &foreign_invariant,
-            |_| -> Result<PositiveTurnRule, String> {
+            |_| -> Result<PositiveTurnRule<ConsumerSchema>, String> {
                 panic!("a foreign installed handle must never invoke its factory")
             },
         )

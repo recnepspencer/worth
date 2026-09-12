@@ -128,6 +128,7 @@ pub struct PartitionCheckpointImage {
 pub struct DurableAdjacencyEntry {
     pub slot: u64,
     pub relations: Vec<RelationId>,
+    pub structural_revisions: Vec<(KindId, VersionId)>,
 }
 
 /// Versioned checkpoint payload for one exact immutable branch root.
@@ -152,7 +153,7 @@ pub struct DurableBranchRootImage {
 }
 
 impl DurableBranchRootImage {
-    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 1;
+    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 2;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

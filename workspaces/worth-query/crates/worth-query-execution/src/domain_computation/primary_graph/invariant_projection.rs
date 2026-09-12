@@ -371,6 +371,10 @@ impl<Schema, Relation, From, To> WorthQueryInvariantRelation<Schema, Relation, F
         &self.to
     }
 
+    pub fn into_to(self) -> WorthQueryInvariantEntityIdentity<Schema, To> {
+        self.to
+    }
+
     pub const fn relation_id(&self) -> RelationId {
         self.relation_id
     }

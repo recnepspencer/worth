@@ -19,6 +19,7 @@ use worth_query_host::facade::{
 pub struct TopologyConfiguration {
     pub setup_calls: Arc<AtomicUsize>,
     pub invariant_calls: Arc<AtomicUsize>,
+    pub invariant_probe: Arc<AtomicUsize>,
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -35,7 +36,11 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
             PositivePlanarTurn::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
             move |resolver| {
-                super::planar_invariant::resolve_rule(resolver, configuration.invariant_calls)
+                super::planar_invariant::resolve_rule(
+                    resolver,
+                    configuration.invariant_calls,
+                    configuration.invariant_probe,
+                )
             },
         )?;
         setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;

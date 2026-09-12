@@ -60,6 +60,27 @@ impl PlanarSuccessor {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct UndeclaredPlanarRelation;
+
+impl UndeclaredPlanarRelation {
+    pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
+    where
+        Schema: TopologySchemaBinding,
+    {
+        ApplicationRelationRef::from_schema_identifiers(
+            "UndeclaredPlanarRelation",
+            "Body",
+            "Body",
+            ApplicationRelationIntegrity::new(
+                ApplicationRelationEndpoints::same_context(false),
+                ApplicationRelationCardinality::new(None, None, None, None, None, None),
+                ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations,
+            ),
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PositivePlanarTurn;
 
 impl<Schema> ApplicationInvariantMarkerIdentity<Schema> for PositivePlanarTurn

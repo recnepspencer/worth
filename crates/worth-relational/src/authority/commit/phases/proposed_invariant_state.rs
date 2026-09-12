@@ -50,6 +50,7 @@ pub(crate) fn prepare_proposed_invariant_state(
     crate::authority::mutation::apply_adjacency_deltas(
         &mut proposed,
         &applied.effect.adjacency.deltas,
+        version_id,
     );
     Ok(proposed)
 }

@@ -260,7 +260,7 @@ fn invented_selector_contract_denies_domain_projection() {
 
 #[test]
 fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
-    let world = installed_authorization_world_with_label(&"x".repeat(25_000));
+    let world = installed_authorization_world_with_label(&"x".repeat(50_000));
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
@@ -320,5 +320,5 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
     assert!(observation.peak_observed_bytes() > 0);
     assert!(observation.peak_observed_bytes() <= result_buffer_limit);
     assert!(observation.peak_rejected_bytes() > result_buffer_limit);
-    assert!(observation.peak_rejected_bytes() >= 25_000);
+    assert!(observation.peak_rejected_bytes() >= 50_000);
 }

@@ -3,7 +3,7 @@ use worth_query_declaration::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
         ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, NoApplicationMutationOutputs,
+        ApplicationMutationFieldScope, NoApplicationMutationOutputs, NoApplicationMutationSource,
     },
     application_schema::{
         ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
@@ -97,6 +97,7 @@ macro_rules! mutation_binding {
             type Principal = FixtureEntity<MutationSchema>;
             type PrincipalIdentity = u64;
             type PrincipalIdentityBinding = U64ApplicationValueBinding;
+            type SourceExpectation = NoApplicationMutationSource;
 
             const IDENTITY: &'static str = $identity;
             const HANDLER_IDENTITY: &'static str = $handler_identity;

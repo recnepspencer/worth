@@ -1,4 +1,4 @@
-use crate::facade::transactions::{CreatedEntityRef, EntityReference, EntitySpec};
+use crate::facade::transactions::{CreatedEntityRef, EntityReference, EntitySpec, RelationSpec};
 use crate::tests::support::*;
 use crate::transactions::data::ConflictClass;
 
@@ -278,4 +278,51 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
         .entities()
         .iter()
         .all(|record| record.entity_id != old_source));
+}
+
+#[test]
+fn relation_identity_can_be_replaced_in_one_transaction() {
+    let runtime = runtime_with_test_schema();
+    let source = create_entity(&runtime, "source");
+    let target = create_entity(&runtime, "target");
+    let retired = create_relation(&runtime, source, target, "retired-edge");
+
+    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    txn.push_batch(
+        WorkerIntentBatch::new("replace-relation-identity")
+            .push(MutationIntent::Relation(RelationMutationIntent::Delete(
+                DeleteRelationIntent {
+                    relation_id: retired,
+                },
+            )))
+            .push(MutationIntent::Create(CreateIntent::Relation(
+                RelationSpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(2),
+                    client_key: crate::symbols::data::ClientKey::raw("replacement-edge"),
+                    source: EntityReference::Existing(source),
+                    target: EntityReference::Existing(target),
+                    fields: crate::transactions::data::AspectFieldPatch::default(),
+                },
+            ))),
+    )
+    .expect("test staging stays within configured resource budgets");
+
+    let outcome = txn
+        .commit(&runtime)
+        .expect("retiring an identity permits its same-transaction replacement");
+    let read = runtime
+        .read_truth()
+        .read_snapshot(&outcome.snapshot)
+        .expect("replacement snapshot should read");
+    let replacements = read
+        .relations()
+        .iter()
+        .filter(|record| {
+            record.kind.kind_id == KindId(2) && record.source == source && record.target == target
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(replacements.len(), 1);
+    assert_ne!(replacements[0].relation_id, retired);
 }

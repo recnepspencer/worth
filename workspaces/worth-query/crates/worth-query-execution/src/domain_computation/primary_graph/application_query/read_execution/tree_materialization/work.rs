@@ -84,6 +84,14 @@ impl ResultTreeWork {
         Ok(())
     }
 
+    pub(super) fn charge_source_observation(
+        &mut self,
+        units: usize,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.charge_work(units, subject)
+    }
+
     fn charge_work(
         &mut self,
         units: usize,

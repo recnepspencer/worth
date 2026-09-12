@@ -4,7 +4,8 @@ use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, 
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_structured_value_binding,
+    worth_query_operation_unlinks, worth_query_operation_writes,
+    worth_query_structured_value_binding,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -17,10 +18,11 @@ worth_query_structured_value_binding!(pub PlanarMutationInputBinding for PlanarM
 worth_query_structured_value_binding!(pub PlanarMutationResultBinding for PlanarAdjustmentResult { identity: "worth.query.certification.planar-mutation-result.v1" });
 worth_query_structured_value_binding!(pub PlanarMutationDenialBinding for PlanarMutationDenial { identity: "worth.query.certification.planar-mutation-denial.v1" });
 worth_query_operation!(pub MutatePlanar for Schema: TopologySchemaBinding, input PlanarMutationInputBinding);
-worth_query_operation_reads!(MutatePlanar => [BodyKey, PositionX, PositionY, Length]);
+worth_query_operation_reads!(MutatePlanar => [Body, BodyKey, PositionX, PositionY, Length, PlanarSuccessor]);
 worth_query_operation_writes!(MutatePlanar => [BodyKey, PositionX, PositionY, Length]);
 worth_query_operation_creates!(MutatePlanar => [Body]);
 worth_query_operation_links!(MutatePlanar => [PlanarSuccessor]);
+worth_query_operation_unlinks!(MutatePlanar => [PlanarSuccessor]);
 
 pub struct PlanarMutationBinding<Schema>(PhantomData<fn() -> Schema>);
 pub type PlanarMutationScope<Schema> = ApplicationMutationFieldScope<
@@ -52,10 +54,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Principal = Principal;
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
+    type SourceExpectation = NoApplicationMutationSource;
     const IDENTITY: &'static str = "worth.query.certification.planar-mutation.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(16, 16, 64, 8192, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(16, 16, 16, 64, 8192, 4096);
     fn idempotency_key_identity(key: &u64) -> [u8; 32] {
         super::mutation_identity::key_identity(*key)
     }
@@ -94,12 +97,13 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Planar
 pub const fn requirements(
     creates: usize,
     links: usize,
+    unlinks: usize,
     writes: usize,
     bytes: usize,
     work: usize,
 ) -> ApplicationCandidateRequirements {
     ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(creates, 0, links, 0, writes, 0),
+        ApplicationCandidateCardinalityCeiling::fixed(creates, 0, links, unlinks, writes, 0),
         ApplicationCandidateResourceCeiling::bounded(bytes, work),
     )
 }

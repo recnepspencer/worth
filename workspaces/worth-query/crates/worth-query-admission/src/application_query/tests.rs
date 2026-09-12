@@ -294,7 +294,7 @@ fn installed_query() -> worth_query_installation::facade::WorthQueryInstalledApp
     Account,
 > {
     installed_schema()
-        .application_query(query_reference())
+        .certification_query(query_reference())
         .unwrap()
 }
 

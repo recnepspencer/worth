@@ -10,6 +10,7 @@ use super::super::super::fixture::{
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDisclosed, WorthQueryApplicationProjectionDenialKind,
     WorthQueryApplicationQueryAccessContext, WorthQueryPrincipalResolutionMode,
+    WorthQuerySourceExpectationDenialKind,
 };
 
 #[test]
@@ -91,4 +92,13 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     }
     assert_eq!(result.receipt().ordering_comparison_count(), 1);
     assert_eq!(result.receipt().projected_field_count(), 4);
+    for source in result.observed_sources() {
+        let denial = source
+            .validate_completeness("GovernedHiddenOrderingQuery")
+            .expect_err("a protected internal ordering field cannot yield a complete source");
+        assert_eq!(
+            denial.kind(),
+            WorthQuerySourceExpectationDenialKind::IncompleteFootprint
+        );
+    }
 }

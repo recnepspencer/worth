@@ -17,6 +17,11 @@ pub struct PlanarVertex {
 pub enum PlanarOperation {
     CreateCycle(Vec<PlanarVertex>),
     Adjust(Vec<PlanarAdjustment>),
+    RetargetSuccessor {
+        source_key: String,
+        previous_target_key: String,
+        replacement_target_key: String,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -28,4 +33,5 @@ pub struct PlanarAdjustmentResult {
 pub enum PlanarMutationDenial {
     CycleNeedsThreeVertices,
     MissingCoordinate,
+    UnexpectedSuccessor,
 }

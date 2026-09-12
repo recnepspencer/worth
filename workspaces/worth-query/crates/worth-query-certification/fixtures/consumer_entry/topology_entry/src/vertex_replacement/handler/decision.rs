@@ -62,17 +62,13 @@ fn observe_incident_edges<Schema: TopologySchemaBinding>(
     reader: &mut DecisionReader<'_, '_, '_, Schema, VertexReplacementBinding<Schema>>,
 ) -> HandlerResult<(), PlanarReplacementDenial> {
     for edge in vertices.windows(2) {
-        let relations = match reader
-            .reader()
-            .decision_relations_from(PlanarSuccessor::reference(), &edge[0])
-        {
-            Ok(relations) => relations,
+        let successor = match reader.related_one(PlanarSuccessor::reference(), &edge[0]) {
+            Ok(successor) => successor,
             Err(error) => {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        // The installed successor contract requires exactly one outgoing edge.
-        if relations.len() != 1 || relations[0].to() != &edge[1] {
+        if successor != edge[1] {
             return HandlerResult::DomainDenied(PlanarReplacementDenial::UnexpectedSuccessor);
         }
         if let Err(error) = reader.reader().require_decision_relation(

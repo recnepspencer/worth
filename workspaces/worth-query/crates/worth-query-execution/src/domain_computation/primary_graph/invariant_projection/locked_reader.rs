@@ -46,6 +46,9 @@ pub enum WorthQueryInvariantProjectionTraversalDenialKind {
     UndeclaredDecisionTarget,
     ForeignIdentity,
     EndpointUnavailable,
+    CardinalityContractMismatch,
+    MissingTarget,
+    MultipleTargets,
     WorkBudgetExceeded,
 }
 
@@ -343,6 +346,33 @@ impl WorthQueryInvariantProjectionTraversalDenial {
             kind,
             relation: relation.into(),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn cardinality_contract_mismatch(
+        relation: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            WorthQueryInvariantProjectionTraversalDenialKind::CardinalityContractMismatch,
+            relation,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn missing_target(
+        relation: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            WorthQueryInvariantProjectionTraversalDenialKind::MissingTarget,
+            relation,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn multiple_targets(
+        relation: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            WorthQueryInvariantProjectionTraversalDenialKind::MultipleTargets,
+            relation,
+        )
     }
 }
 

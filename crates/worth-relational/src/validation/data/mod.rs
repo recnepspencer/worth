@@ -16,8 +16,8 @@ pub use custom_rule::{
     CustomInvariantPreparationError, CustomInvariantProvenance, CustomInvariantRegistration,
     CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
     CustomInvariantTouchedSummary, CustomInvariantTraversalSummary, CustomInvariantVerdict,
-    PlannedRelationEndpointUpdate, StructuralCountView, StructuralRelationRecord,
-    StructuralRelationView,
+    PlannedRelationEndpointUpdate, StructuralAspectStateView, StructuralCountView,
+    StructuralReadError, StructuralRelationRecord, StructuralRelationView,
 };
 pub(crate) use custom_rule::{
     CustomInvariantFailure, CustomInvariantFailureKind, CustomInvariantRuntimePhase,

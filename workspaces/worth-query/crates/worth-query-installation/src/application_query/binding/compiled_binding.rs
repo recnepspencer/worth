@@ -33,6 +33,12 @@ impl WorthQueryCompiledApplicationQueryBinding {
         Arc::clone(&self.query)
     }
 
+    pub(crate) fn query_identity(
+        &self,
+    ) -> &crate::application_query::WorthQueryInstalledApplicationQueryIdentity {
+        self.query.identity()
+    }
+
     pub(crate) fn scope(&self) -> &ApplicationQueryScopeContract {
         self.descriptor.scope()
     }

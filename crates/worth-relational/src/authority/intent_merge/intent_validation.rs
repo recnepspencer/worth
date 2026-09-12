@@ -1,6 +1,8 @@
 use crate::capabilities::{SchemaSource, StorageRead};
 use crate::runtime::RuntimeInstrumentation;
-use crate::transactions::data::{CommitConflict, CreateIntent, CreatedEntityRef, MutationIntent};
+use crate::transactions::data::{
+    CommitConflict, CreateIntent, CreatedEntityRef, MutationIntent, RelationMutationIntent,
+};
 use std::collections::BTreeSet;
 
 use super::entity_validation::validate_entity_intent;
@@ -12,6 +14,7 @@ pub(crate) fn validate_intent(
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
     created_entities: &BTreeSet<CreatedEntityRef>,
+    deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     intent: &MutationIntent,
 ) -> Result<(), CommitConflict> {
     validate_entity_intent(state, schema_source, intent)?;
@@ -21,9 +24,24 @@ pub(crate) fn validate_intent(
         default_cross_context_policy,
         instrumentation,
         created_entities,
+        deleted_relations,
         intent,
     )?;
     Ok(())
+}
+
+pub(crate) fn collect_deleted_relation_ids<'a>(
+    intents: impl IntoIterator<Item = &'a MutationIntent>,
+) -> BTreeSet<crate::identity::data::RelationId> {
+    intents
+        .into_iter()
+        .filter_map(|intent| match intent {
+            MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
+                Some(spec.relation_id)
+            }
+            _ => None,
+        })
+        .collect()
 }
 
 pub(crate) fn collect_created_entity_refs<'a>(

@@ -101,7 +101,7 @@ impl CustomInvariantRule for GraphSelectedStateProbe {
             context
                 .committed_aspect_states()
                 .entity_aspect_state(entity)
-                .is_some()
+                .is_ok()
         });
         Ok(if forbidden_is_visible {
             CustomInvariantVerdict::Violation

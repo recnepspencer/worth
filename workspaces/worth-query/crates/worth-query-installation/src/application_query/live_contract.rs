@@ -56,9 +56,7 @@ impl WorthQueryInstalledApplicationLiveContract {
                 definition.name(),
             )
         })?;
-        if projection_parent_path(target_identity.result_path())
-            != Some(continuation.collection_path())
-        {
+        if target_identity.parent_path() != continuation.collection_path() {
             return Err(installation_denial(
                 WorthQueryApplicationQueryInstallationDenialKind::LiveTargetIdentityNotInstalled,
                 target_identity.result_path(),
@@ -102,10 +100,6 @@ impl WorthQueryInstalledApplicationLiveContract {
     pub const fn resource_envelope(&self) -> &WorthQueryExecutionResourceEnvelope {
         &self.resource_envelope
     }
-}
-
-fn projection_parent_path(path: &str) -> Option<&str> {
-    path.rsplit_once('/').map(|(parent, _)| parent)
 }
 
 fn validate_effect_is_installed(
@@ -186,29 +180,4 @@ fn installation_denial(
     subject: impl Into<String>,
 ) -> WorthQueryApplicationQueryInstallationDenial {
     WorthQueryApplicationQueryInstallationDenial::new(kind, subject)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::projection_parent_path;
-
-    #[test]
-    fn target_field_is_bound_to_its_exact_collection_parent() {
-        assert_eq!(
-            projection_parent_path("root/relation[0]/field[1]"),
-            Some("root/relation[0]")
-        );
-    }
-
-    #[test]
-    fn nested_or_sibling_target_field_cannot_alias_the_collection() {
-        assert_ne!(
-            projection_parent_path("root/relation[0]/relation[0]/field[1]"),
-            Some("root/relation[0]")
-        );
-        assert_ne!(
-            projection_parent_path("root/relation[1]/field[1]"),
-            Some("root/relation[0]")
-        );
-    }
 }

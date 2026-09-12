@@ -88,6 +88,7 @@ pub struct ApplicationMutationBindingDescriptor {
     scope: ApplicationMutationScopeContract,
     principal: ApplicationMutationPrincipalBindingContract,
     candidates: ApplicationCandidateRequirements,
+    source_query_identifier: Option<String>,
 }
 
 impl ApplicationMutationBindingDescriptor {
@@ -100,6 +101,7 @@ impl ApplicationMutationBindingDescriptor {
         DenialBinding,
         Output,
         IdempotencyKey,
+        SourceExpectation,
         Schema,
     >(
         identity: &'static str,
@@ -119,6 +121,7 @@ impl ApplicationMutationBindingDescriptor {
         DenialBinding: ApplicationStructuredValueBinding,
         Output: ApplicationMutationOutputContract<Schema>,
         IdempotencyKey: 'static,
+        SourceExpectation: super::ApplicationMutationSourceExpectation<Schema>,
         Schema: crate::application_schema::ApplicationSchema,
     {
         let description = ApplicationMutationDescription::from_untrusted_parts(
@@ -168,6 +171,7 @@ impl ApplicationMutationBindingDescriptor {
             scope,
             principal,
             candidates,
+            source_query_identifier: SourceExpectation::QUERY_IDENTIFIER.map(str::to_owned),
         }
     }
 
@@ -245,5 +249,9 @@ impl ApplicationMutationBindingDescriptor {
 
     pub const fn candidates(&self) -> ApplicationCandidateRequirements {
         self.candidates
+    }
+
+    pub fn source_query_identifier(&self) -> Option<&str> {
+        self.source_query_identifier.as_deref()
     }
 }

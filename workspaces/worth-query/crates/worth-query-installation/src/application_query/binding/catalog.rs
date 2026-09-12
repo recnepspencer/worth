@@ -34,6 +34,16 @@ impl WorthQueryInstalledApplicationQueryCatalog {
         self.bindings.values().map(|binding| binding.descriptor())
     }
 
+    pub(crate) fn query_identity_by_name(
+        &self,
+        name: &str,
+    ) -> Option<&crate::application_query::WorthQueryInstalledApplicationQueryIdentity> {
+        self.bindings
+            .values()
+            .find(|binding| binding.descriptor().query_name() == name)
+            .map(|binding| binding.query_identity())
+    }
+
     #[cfg(any(test, feature = "certification-query-lookup"))]
     pub(crate) fn get_query(
         &self,

@@ -78,7 +78,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
         Invariant: ApplicationInvariantMarkerIdentity<Schema>,
-        Rule: WorthQueryApplicationInvariantRule,
+        Rule: WorthQueryApplicationInvariantRule<Schema>,
     {
         let installed = self
             .installed_schema

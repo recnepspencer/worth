@@ -18,7 +18,10 @@ pub use registration::{
 };
 pub use scope_planner::CustomInvariantScopePlanner;
 pub(crate) use scope_planner::PreparedCustomInvariantScope;
-pub use structural_views::{StructuralRelationRecord, StructuralRelationView};
+pub use structural_views::{
+    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
+    StructuralRelationView,
+};
 pub use traversal::CustomInvariantTraversalSummary;
 
 pub(crate) use registration::PreparedCustomInvariantExecution;

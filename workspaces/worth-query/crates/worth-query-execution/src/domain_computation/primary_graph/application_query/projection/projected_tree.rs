@@ -41,6 +41,8 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
 pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationProjectionNode
 {
     entity_id: EntityId,
+    source_path: Option<Arc<str>>,
+    source_dependencies_complete: bool,
     fields: Vec<WorthQueryApplicationProjectedField>,
     relations: Vec<WorthQueryApplicationProjectedRelation>,
 }
@@ -48,11 +50,15 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
 impl WorthQueryApplicationProjectionNode {
     pub(in crate::domain_computation::primary_graph::application_query) fn new(
         entity_id: EntityId,
+        source_path: Option<Arc<str>>,
+        source_dependencies_complete: bool,
         fields: Vec<WorthQueryApplicationProjectedField>,
         relations: Vec<WorthQueryApplicationProjectedRelation>,
     ) -> Self {
         Self {
             entity_id,
+            source_path,
+            source_dependencies_complete,
             fields,
             relations,
         }
@@ -62,6 +68,24 @@ impl WorthQueryApplicationProjectionNode {
         &self,
     ) -> EntityId {
         self.entity_id
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn result_path(
+        &self,
+    ) -> &str {
+        self.source_path.as_deref().unwrap_or("root")
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) const fn source_dependencies_complete(
+        &self,
+    ) -> bool {
+        self.source_dependencies_complete
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn relations(
+        &self,
+    ) -> &[WorthQueryApplicationProjectedRelation] {
+        &self.relations
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn field(
@@ -245,6 +269,12 @@ impl WorthQueryApplicationProjectedRelation {
         &self,
     ) -> &str {
         &self.result_path
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn slot_type(
+        &self,
+    ) -> &str {
+        &self.slot_type
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn rows(

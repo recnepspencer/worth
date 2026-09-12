@@ -22,6 +22,7 @@ struct WorthQueryIdempotencyScopeIdentity {
 pub struct WorthQueryApplicationIdempotencyBinding {
     key_identity: [u8; 32],
     intent_identity: [u8; 32],
+    source_identity: Option<[u8; 32]>,
     operation_identity: Option<[u8; 32]>,
     operation_scope_identity: Option<WorthQueryIdempotencyScopeIdentity>,
     precondition_identity: Option<[u8; 32]>,
@@ -35,6 +36,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity,
             intent_identity,
+            source_identity: None,
             operation_identity: None,
             operation_scope_identity: None,
             precondition_identity: None,
@@ -58,6 +60,7 @@ impl WorthQueryApplicationIdempotencyBinding {
 
     pub(in crate::domain_computation::primary_graph) fn intent_text(self) -> String {
         let mut encoded = encode_identity(self.intent_identity);
+        append_identity_slot(&mut encoded, "source", self.source_identity);
         append_identity_slot(&mut encoded, "operation", self.operation_identity);
         append_scope_slot(&mut encoded, self.operation_scope_identity);
         append_identity_slot(&mut encoded, "precondition", self.precondition_identity);
@@ -71,6 +74,14 @@ impl WorthQueryApplicationIdempotencyBinding {
         encoded
     }
 
+    pub const fn bind_source(mut self, source_identity: Option<&[u8; 32]>) -> Self {
+        self.source_identity = match source_identity {
+            Some(identity) => Some(*identity),
+            None => None,
+        };
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn bind_operation(
         self,
         operation_identity: &[u8; 32],
@@ -78,6 +89,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
             operation_identity: Some(*operation_identity),
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
@@ -96,6 +108,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: Some(WorthQueryIdempotencyScopeIdentity {
                 runtime_authority: binding.runtime_authority(),
@@ -128,6 +141,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: match precondition_identity {
@@ -147,6 +161,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
@@ -166,6 +181,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
@@ -185,6 +201,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,

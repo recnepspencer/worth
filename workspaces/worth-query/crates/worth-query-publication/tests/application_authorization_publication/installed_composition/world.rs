@@ -53,7 +53,7 @@ pub(crate) fn real_denial(scenario: CompositionScenario) -> WorthQueryOperationA
     let principal = selected
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

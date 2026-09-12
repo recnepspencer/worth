@@ -12,6 +12,10 @@ use worth_query_host::facade::{
     },
 };
 use worth_query_topology_entry::{PlanarMutation, PlanarRead};
+use worth_query_topology_entry::{
+    INVARIANT_PROBE_EVALUATION_EXPANSION, INVARIANT_PROBE_STANDARD,
+    INVARIANT_PROBE_UNDECLARED_ACCESS,
+};
 
 use super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
@@ -33,6 +37,7 @@ pub(crate) fn run(
 ) {
     super::contribution_denials::run();
     resource_profile::candidate_bytes_beyond_host_limit_are_denied(foreign);
+    resource_profile::source_footprint_bytes_beyond_host_limit_are_denied(foreign);
     let world = installation::install(foreign);
     super::discovery::verify(&world.application);
     let scope = authentication::request_scope();
@@ -46,12 +51,62 @@ pub(crate) fn run(
     assert_eq!(read_y(&request, "anchor-a"), 1);
     assert_eq!(read_y(&request, "sibling-a"), 21);
 
+    typed_invariant_access_is_bounded(&request, &world);
     typed_domain_denial_has_no_publication(&request, &world);
     insufficient_work_is_denied_before_owner(&request, &world);
     publication::create_and_reject_cycles(&request);
     actual_candidate_checks_untouched_neighbors(&request, &world);
+    let foreign_world = installation::install(foreign);
+    let foreign_scope = authentication::request_scope();
+    let foreign_adapter = authentication::admit(foreign_world.application.installed_schema());
+    let foreign_principal = authentication::block_on(foreign_adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &foreign_scope,
+    ))
+    .expect("the independent application authenticates its own principal");
+    let foreign_request = foreign_world
+        .application
+        .request(&foreign_principal, &foreign_scope);
+    output_correspondence::require_foreign_source(
+        &request,
+        output_correspondence::observed_source(&foreign_request, "anchor-a"),
+    );
     output_correspondence::run(&request);
-    println!("Pre-M0 public candidate journey passed: variable cyclic allocation, atomic publication/read, exact invariant denial, early work exhaustion, idempotency and untouched-neighbor closure");
+    println!("Pre-M0 public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, early work exhaustion, and idempotency");
+}
+
+fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation::ConsumerWorld) {
+    let before = source_version(request);
+    world
+        .invariant_probe
+        .store(INVARIANT_PROBE_UNDECLARED_ACCESS, Ordering::SeqCst);
+    require_invariant_access_failure(mutate(request, adjust("anchor-a", 2, 4096), 901));
+    world
+        .invariant_probe
+        .store(INVARIANT_PROBE_EVALUATION_EXPANSION, Ordering::SeqCst);
+    require_invariant_access_failure(mutate(request, adjust("anchor-a", 2, 4096), 902));
+    world
+        .invariant_probe
+        .store(INVARIANT_PROBE_STANDARD, Ordering::SeqCst);
+    assert_eq!(source_version(request), before);
+    assert_eq!(read_y(request, "anchor-a"), 1);
+}
+
+fn require_invariant_access_failure(outcome: MutationOutcome) {
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
+        denial,
+    )) = outcome
+    else {
+        panic!("an invariant access escape must deny publication: {outcome:?}")
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::CustomInvariantDenied
+    );
+    assert!(matches!(
+        denial.custom_invariant_denial(),
+        Some(WorthQueryCustomInvariantDenial::Failure { .. })
+    ));
 }
 
 fn typed_domain_denial_has_no_publication(

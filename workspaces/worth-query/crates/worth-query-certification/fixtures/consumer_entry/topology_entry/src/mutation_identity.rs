@@ -33,6 +33,16 @@ pub fn input_identity(input: &PlanarMutation) -> [u8; 32] {
                 );
             }
         }
+        PlanarOperation::RetargetSuccessor {
+            source_key,
+            previous_target_key,
+            replacement_target_key,
+        } => {
+            bytes.push(2);
+            text(&mut bytes, source_key);
+            text(&mut bytes, previous_target_key);
+            text(&mut bytes, replacement_target_key);
+        }
     }
     digest("input", bytes)
 }

@@ -68,6 +68,7 @@ where
         validate_scope(schema, descriptor)?;
         validate_principal(schema, descriptor)?;
         validate_outputs(schema, descriptor)?;
+        validate_source_query(schema, descriptor)?;
         let compiled = Arc::new(WorthQueryCompiledApplicationMutationBinding::new(
             descriptor.clone(),
         ));
@@ -81,6 +82,29 @@ where
         }
     }
     Ok(WorthQueryInstalledApplicationMutationCatalog { bindings })
+}
+
+fn validate_source_query<Schema>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    descriptor: &ApplicationMutationBindingDescriptor,
+) -> Result<(), WorthQueryApplicationOperationInstallationDenial>
+where
+    Schema: ApplicationSchema,
+{
+    let Some(identifier) = descriptor.source_query_identifier() else {
+        return Ok(());
+    };
+    if schema
+        .installed_query_binding_inventory()
+        .any(|query| query.query_name() == identifier)
+    {
+        Ok(())
+    } else {
+        Err(denial(
+            DenialKind::MutationSourceQueryNotInstalled,
+            descriptor.identity(),
+        ))
+    }
 }
 
 fn validate_identities(

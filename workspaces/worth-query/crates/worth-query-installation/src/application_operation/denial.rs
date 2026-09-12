@@ -12,6 +12,7 @@ pub enum WorthQueryApplicationOperationInstallationDenialKind {
     MutationBindingHandlerMeaningChanged,
     MutationBindingIdempotencyMeaningChanged,
     MutationBindingOutputMeaningChanged,
+    MutationSourceQueryNotInstalled,
     InvalidMutationBindingIdentity,
     InvalidMutationHandlerIdentity,
     InvalidMutationIdempotencyIdentity,
