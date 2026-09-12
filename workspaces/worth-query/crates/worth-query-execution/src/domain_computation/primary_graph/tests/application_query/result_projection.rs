@@ -28,7 +28,7 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -152,7 +152,7 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -210,7 +210,7 @@ fn invented_selector_contract_denies_domain_projection() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -269,7 +269,7 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

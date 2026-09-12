@@ -14,6 +14,7 @@ mod relations;
 mod values;
 
 pub use authentication::*;
+pub use contributions::{BankAccounts, BankEstate, BankPayments};
 pub use entities::*;
 pub use estate::*;
 pub use fields::*;

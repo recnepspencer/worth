@@ -1,6 +1,8 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignRuntime,
+    ContributionInventoryMismatch,
+    ContributionMemberMismatch,
     StaleInstalledSchema,
     AlreadyInstalled,
     BindingNotInstalled,
@@ -51,6 +53,16 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     AuthorizationPolicyRejected,
     RuntimeBridgeRejected,
     ConditionalBindingsRequired,
+    MissingMutationHandler,
+    DuplicateMutationHandler,
+    ForeignMutationHandler,
+    MutationHandlerMeaningMismatch,
+    MissingInvariantFactory,
+    DuplicateInvariantFactory,
+    ForeignInvariantFactory,
+    InvariantFactoryMeaningMismatch,
+    InvariantFactoryRejected,
+    InvariantInstallationReceiptMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

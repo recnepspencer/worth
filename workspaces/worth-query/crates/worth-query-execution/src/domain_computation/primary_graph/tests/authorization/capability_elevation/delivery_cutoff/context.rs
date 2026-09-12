@@ -95,7 +95,7 @@ pub(super) fn context(live: bool) -> ElevatedQueryContext {
     let query = world
         .application
         .installed_schema()
-        .application_query(ElevatedAccountActivityQuery::reference())
+        .certification_query(ElevatedAccountActivityQuery::reference())
         .unwrap();
     ElevatedQueryContext {
         world,

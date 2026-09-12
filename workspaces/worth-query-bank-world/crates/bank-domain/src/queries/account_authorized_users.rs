@@ -71,6 +71,23 @@ worth_query_application_query!(
     scope Account => "Account",
     name "account_authorized_users"
 );
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountAuthorizedUsersRequestBinding for AccountAuthorizedUsersRequest { identity: "AccountAuthorizedUsersRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub AccountAuthorizedUsersQueryBinding for AccountAuthorizedUsersRequest, schema BankSchema,
+    identity "worth.bank.account-authorized-users-query-binding.v1",
+    input AccountAuthorizedUsersRequestBinding,
+    query AccountAuthorizedUsersQuery,
+    parameters AccountAuthorizedUsersQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result AccountAuthorizedUsersQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope Account, crate::schema::Identity, crate::schema::AccountIdentity, AccountId,
+        ReadOnly, NoApplicationUnit,
+    field crate::schema::AccountIdentity::reference(),
+    value AccountAuthorizedUsersRequest::account,
+    limits results 1_024, work 100_000
+
+);
 
 struct AuthorizationsSlot;
 worth_query_decl::facade::worth_query_portable_type!(AuthorizationsSlot => "AuthorizationsSlot");

@@ -328,7 +328,7 @@ where
         let principal = product
             .resolve_authenticated_principal(
                 &self.principal_binding,
-                external,
+                &external,
                 &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )

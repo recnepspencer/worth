@@ -20,7 +20,7 @@ fn matching_prohibited_path_denies_only_through_bridge_decision_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

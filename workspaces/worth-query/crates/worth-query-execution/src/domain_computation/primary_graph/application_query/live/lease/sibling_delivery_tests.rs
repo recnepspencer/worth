@@ -20,7 +20,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .selected_product()
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -66,7 +66,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let source_query = world
         .application
         .installed_schema()
-        .application_query(LiveAccountActivityQuery::reference())
+        .certification_query(LiveAccountActivityQuery::reference())
         .unwrap();
     let mut source_live = world
         .selected_product()
@@ -102,7 +102,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let sibling_query = world
         .application
         .installed_schema()
-        .application_query(LiveAccountActivityQuery::reference())
+        .certification_query(LiveAccountActivityQuery::reference())
         .unwrap();
     let mut sibling_live = world
         .application

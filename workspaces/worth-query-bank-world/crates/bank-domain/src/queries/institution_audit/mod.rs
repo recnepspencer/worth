@@ -51,6 +51,25 @@ worth_query_application_query!(
     scope Institution => "Institution",
     name "institution_audit"
 );
+worth_query_decl::facade::worth_query_structured_value_binding!(pub InstitutionAuditRequestBinding for InstitutionAuditRequest { identity: "InstitutionAuditRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub InstitutionAuditQueryBinding for InstitutionAuditRequest, schema BankSchema,
+    identity "worth.bank.institution-audit-query-binding.v1",
+    input InstitutionAuditRequestBinding,
+    query InstitutionAuditQuery,
+    parameters InstitutionAuditQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result InstitutionAuditQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope Institution, crate::schema::InstitutionIdentity,
+        crate::schema::InstitutionIdentityField, InstitutionId,
+        worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::InstitutionIdentityField::reference(),
+    value InstitutionAuditRequest::institution,
+    limits results 1_024, work 100_000
+
+);
 
 pub fn institution_audit_definition() -> ApplicationQueryDefinition<
     BankSchema,

@@ -8,8 +8,9 @@ use worth_query_installation::facade::{
 use worth_relational::facade::transactions::EntityReference;
 
 use super::{
-    denial, WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOptionalFieldWrite, WorthQueryApplicationRealizedEffect,
+    denial, CandidateItemKind, WorthQueryApplicationEffectEntity,
+    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOptionalFieldWrite,
+    WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -48,6 +49,51 @@ impl<Schema, Operation, Input, Scope>
             ));
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
+        let matching_effect = self.effects.iter().find(|effect| {
+            matches!(
+                effect,
+                WorthQueryApplicationRealizedEffect::UpdateEntity {
+                    entity,
+                    entity_id: candidate,
+                    ..
+                } | WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+                    entity,
+                    entity_id: candidate,
+                    ..
+                } if entity == field.entity() && *candidate == entity_id
+            )
+        });
+        let replaced_representation_bytes = matching_effect.and_then(|effect| match effect {
+            WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. } => fields
+                .get(&locator)
+                .map(super::retained_representation::value),
+            WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { fields, .. } => fields
+                .get(&locator)
+                .and_then(|write| write.value.as_ref())
+                .map(super::retained_representation::value),
+            _ => None,
+        });
+        let retains_locator = replaced_representation_bytes.is_none();
+        let retained_representation_bytes =
+            super::retained_representation::field_entry(&locator, &value, retains_locator)
+                .and_then(|bytes| {
+                    bytes.checked_add(if matching_effect.is_none() {
+                        field.entity().len()
+                    } else {
+                        0
+                    })
+                })
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
+                        field.field(),
+                    )
+                })?;
+        self.charge_candidate_representation(
+            CandidateItemKind::Write,
+            retained_representation_bytes,
+            replaced_representation_bytes.unwrap_or(0),
+        )?;
         if let Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
             fields, ..
         }) = self.effects.iter_mut().find(|effect| {

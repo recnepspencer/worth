@@ -132,6 +132,9 @@ pub enum InvariantViolationFields {
         failure: CustomInvariantFailureKind,
         detail: String,
     },
+    CustomInvariantViolation {
+        identity: crate::validation::data::CustomInvariantSemanticIdentity,
+    },
     PartitionIsolation {
         contract_id: ContractId,
         relation_kind_id: KindId,

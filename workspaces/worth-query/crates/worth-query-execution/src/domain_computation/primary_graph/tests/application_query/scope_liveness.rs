@@ -21,7 +21,7 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

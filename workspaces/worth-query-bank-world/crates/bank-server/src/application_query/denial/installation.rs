@@ -7,6 +7,15 @@ use worth_query_host::facade::domain::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationQueryInstallationDenialKind {
+    BindingIdentityCollision,
+    BindingMeaningChanged,
+    BindingPrincipalMeaningChanged,
+    BindingQueryMeaningChanged,
+    BindingQueryNotInstalled,
+    BindingResultLimitIsZero,
+    BindingScopeMeaningChanged,
+    BindingWorkLimitIsZero,
+    InvalidBindingIdentity,
     QueryNotInstalled,
     QueryMeaningChanged,
     AuthorizationNotInstalled,
@@ -67,6 +76,15 @@ pub(super) const fn query_installation(
 ) -> BankApplicationQueryInstallationDenialKind {
     use BankApplicationQueryInstallationDenialKind as Bank;
     match kind {
+        QueryInstallation::BindingIdentityCollision => Bank::BindingIdentityCollision,
+        QueryInstallation::BindingMeaningChanged => Bank::BindingMeaningChanged,
+        QueryInstallation::BindingPrincipalMeaningChanged => Bank::BindingPrincipalMeaningChanged,
+        QueryInstallation::BindingQueryMeaningChanged => Bank::BindingQueryMeaningChanged,
+        QueryInstallation::BindingQueryNotInstalled => Bank::BindingQueryNotInstalled,
+        QueryInstallation::BindingResultLimitIsZero => Bank::BindingResultLimitIsZero,
+        QueryInstallation::BindingScopeMeaningChanged => Bank::BindingScopeMeaningChanged,
+        QueryInstallation::BindingWorkLimitIsZero => Bank::BindingWorkLimitIsZero,
+        QueryInstallation::InvalidBindingIdentity => Bank::InvalidBindingIdentity,
         QueryInstallation::QueryNotInstalled => Bank::QueryNotInstalled,
         QueryInstallation::QueryMeaningChanged => Bank::QueryMeaningChanged,
         QueryInstallation::AuthorizationNotInstalled => Bank::AuthorizationNotInstalled,

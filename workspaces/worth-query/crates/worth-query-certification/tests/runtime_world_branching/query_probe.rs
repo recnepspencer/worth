@@ -39,7 +39,7 @@ pub(super) fn read_across<Interleaved>(
     let query = world
         .application
         .installed_schema()
-        .application_query(TemporalIntentQuery::reference())
+        .certification_query(TemporalIntentQuery::reference())
         .expect("the installed ordinary query must remain available");
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();

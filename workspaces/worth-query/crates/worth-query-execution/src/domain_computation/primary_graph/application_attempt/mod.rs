@@ -47,10 +47,11 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationNoEffect,
-    WorthQueryApplicationNoEffectCause, WorthQueryApplicationSettlementDeferred,
-    WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,
-    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryCommittedProductPublication,
+    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommittedChanges,
+    WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
+    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
+    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
@@ -59,10 +60,14 @@ pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 pub(in crate::domain_computation::primary_graph) use effect_program::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
+    WorthQueryCandidateValidatorWorkAdmission,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEffectProgramBuilder,
+    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputCorrespondence,
+    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
+    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{

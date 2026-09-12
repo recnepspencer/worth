@@ -3,14 +3,15 @@ use super::*;
 #[test]
 fn equivalent_installed_queries_converge_and_identity_dimensions_do_not_alias() {
     let schema = installed_schema();
-    let left = schema.application_query(query_reference()).unwrap();
-    let equivalent = schema.application_query(query_reference()).unwrap();
+    let left = schema.certification_query(query_reference()).unwrap();
+    let equivalent = schema.certification_query(query_reference()).unwrap();
     let changed_order =
         definition(ApplicationQueryOrderingDirection::Ascending, "sequence").into_erased();
     let changed_shape =
         definition(ApplicationQueryOrderingDirection::Descending, "position").into_erased();
 
     assert_eq!(left.identity(), equivalent.identity());
+    assert!(left.shares_compiled_contract_with(&equivalent));
     assert_eq!(
         left.read_family_binding().identity(),
         equivalent.read_family_binding().identity()

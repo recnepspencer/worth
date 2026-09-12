@@ -29,7 +29,7 @@ fn governance_matches_only_the_managed_session_that_minted_it() {
         .world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
     let first = admit_plan(&context, &query, &access);
@@ -51,7 +51,7 @@ fn governance_matches_only_the_managed_session_that_minted_it() {
         .world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap();
     let foreign_access =
         WorthQueryApplicationQueryAccessContext::new(&foreign.principal, &foreign.account);
@@ -73,7 +73,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
         .world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
     let plan = admit_plan(&context, &query, &access);
@@ -81,7 +81,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
         .world
         .application
         .installed_schema()
-        .application_query(GovernedAccountOmissionQuery::reference())
+        .certification_query(GovernedAccountOmissionQuery::reference())
         .unwrap();
     let alternate_parameters =
         admit_application_query_parameters(&query, governed_live_account_parameters("account-2"))
@@ -209,7 +209,7 @@ fn resolve_principal(
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

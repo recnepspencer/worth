@@ -117,6 +117,11 @@ impl RelationalPreparationRuntime {
             mutation_sensitive.clone(),
             publication.clone(),
         ]);
+        let custom_invariant_execution_receipts =
+            super::custom_invariant_execution_receipt::collect_custom_invariant_execution_receipts(
+                [&commit_boundary, &mutation_sensitive, &publication],
+                &self.schema_contract_runtime.custom_invariant_registries,
+            );
         let strategy_commit_artifacts = strategy.as_ref().map(|strategy| {
             let validation_cost =
                 crate::commit_strategies::data::StrategyPreviewValidationCostSummary::new(
@@ -161,11 +166,13 @@ impl RelationalPreparationRuntime {
                 proposed_version,
                 proposal_identity: proposal_identity.clone(),
                 summary,
+                custom_invariant_execution_receipts,
             },
             proposal_identity,
             validated_against_commit,
             validated_against_version,
             validated_against_branch_version: basis.descriptor().truth_version(),
+            custom_invariant_generation: self.schema_contract_runtime.custom_invariant_generation,
             batch_count,
             strategy_commit_artifacts,
             strategy_bulk_mutation_batch,

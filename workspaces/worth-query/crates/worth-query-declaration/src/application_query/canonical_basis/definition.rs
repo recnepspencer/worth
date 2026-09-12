@@ -115,6 +115,14 @@ fn append_parameters(
                 parameter.scalar_family().canonical_name(),
             ),
             text(format!("{path}.value-type"), parameter.value_type()),
+            parameter.unit().map_or_else(
+                || null(format!("{path}.unit")),
+                |unit| text(format!("{path}.unit"), unit),
+            ),
+            parameter.frame().map_or_else(
+                || null(format!("{path}.frame")),
+                |frame| text(format!("{path}.frame"), frame),
+            ),
         ]);
     }
 }

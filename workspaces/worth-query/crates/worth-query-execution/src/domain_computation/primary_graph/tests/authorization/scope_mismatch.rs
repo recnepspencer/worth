@@ -21,7 +21,7 @@ fn explicit_scope_mismatch_preserves_its_exact_explanation_cause() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

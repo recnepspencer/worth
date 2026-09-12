@@ -611,8 +611,7 @@ internal_packages = [
 label = "worth-query-host::primary_graph"
 source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
 reexport = "worth_query_execution::facade::primary_graph"
-owner_source = "workspaces/worth-query/crates/worth-query-execution/src/facade.rs"
-namespace = "primary_graph"
+owner_source = "workspaces/worth-query/crates/worth-query-execution/src/facade/primary_graph.rs"
 
 [[rule_contracts.query_audience.facade_surfaces]]
 label = "worth-query-host::provisional_aftermath"

@@ -1,6 +1,8 @@
 use std::any::TypeId;
 
 use super::{ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe};
+use crate::application_operation::ApplicationMutationBindingDescriptor;
+use crate::application_query::ApplicationQueryBindingDescriptor;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -47,12 +49,18 @@ pub struct ApplicationSchemaMemberProvenance {
     conflicting_field_binding: bool,
     operations: Vec<DeclaredApplicationMemberMarker>,
     effects: Vec<DeclaredApplicationMemberMarker>,
+    mutation_bindings: Vec<ApplicationMutationBindingDescriptor>,
+    query_bindings: Vec<ApplicationQueryBindingDescriptor>,
 }
 
 impl ApplicationSchemaMemberProvenance {
     #[doc(hidden)]
     pub fn is_empty(&self) -> bool {
-        self.field_bindings.is_empty() && self.operations.is_empty() && self.effects.is_empty()
+        self.field_bindings.is_empty()
+            && self.operations.is_empty()
+            && self.effects.is_empty()
+            && self.mutation_bindings.is_empty()
+            && self.query_bindings.is_empty()
     }
 
     pub(super) fn register_field_binding(&mut self, recipe: ApplicationFieldBindingRecipe) {
@@ -91,6 +99,17 @@ impl ApplicationSchemaMemberProvenance {
             ));
     }
 
+    pub(super) fn register_query_binding(&mut self, descriptor: ApplicationQueryBindingDescriptor) {
+        self.query_bindings.push(descriptor);
+    }
+
+    pub(super) fn register_mutation_binding(
+        &mut self,
+        descriptor: ApplicationMutationBindingDescriptor,
+    ) {
+        self.mutation_bindings.push(descriptor);
+    }
+
     pub(super) fn normalize(&mut self) {
         let order = |left: &DeclaredApplicationMemberMarker,
                      right: &DeclaredApplicationMemberMarker| {
@@ -101,6 +120,10 @@ impl ApplicationSchemaMemberProvenance {
         self.effects.sort_by(order);
         self.field_bindings
             .sort_by(|left, right| left.locus().cmp(right.locus()));
+        self.query_bindings
+            .sort_by(|left, right| left.identity().cmp(right.identity()));
+        self.mutation_bindings
+            .sort_by(|left, right| left.identity().cmp(right.identity()));
     }
 
     pub(super) const fn has_conflicting_field_binding(&self) -> bool {
@@ -124,6 +147,27 @@ impl ApplicationSchemaMemberProvenance {
         self.field_bindings
             .iter()
             .find(|recipe| recipe.locus() == locus)
+    }
+
+    pub fn query_bindings(&self) -> &[ApplicationQueryBindingDescriptor] {
+        &self.query_bindings
+    }
+
+    pub fn mutation_bindings(&self) -> &[ApplicationMutationBindingDescriptor] {
+        &self.mutation_bindings
+    }
+
+    #[doc(hidden)]
+    pub fn admits_mutation_binding_operation(
+        &self,
+        descriptor: &ApplicationMutationBindingDescriptor,
+    ) -> bool {
+        self.operations.iter().any(|member| {
+            member.name == descriptor.operation_name()
+                && member.value_identity == *descriptor.input_identity()
+                && member.marker_type == descriptor.operation_type()
+                && member.value_type == descriptor.input_type()
+        })
     }
 
     #[doc(hidden)]

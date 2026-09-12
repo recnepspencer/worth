@@ -3,9 +3,9 @@ use worth_query_host::facade::admission::authenticated_principal::{
 };
 use worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationDenial;
 use worth_query_host::facade::domain::{
-    WorthQueryInstallationAdmissionDenial, WorthQueryInstalledApplicationSchemaDenial,
-    WorthQueryInstalledPackageIndexDenial, WorthQueryPortablePackageValidationDenial,
-    WorthQueryPrincipalBindingInstallationDenial,
+    WorthQueryApplicationOperationInstallationDenial, WorthQueryInstallationAdmissionDenial,
+    WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledPackageIndexDenial,
+    WorthQueryPortablePackageValidationDenial, WorthQueryPrincipalBindingInstallationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationPrincipalKeyDenial, WorthQueryPrimaryGraphInstallationDenial,
@@ -35,6 +35,7 @@ pub enum BankIdentityRuntimeBuildError {
     PrimaryGraph(WorthQueryPrimaryGraphInstallationDenial),
     WorldSeed(BankWorldSeedDenial),
     InstalledSchema(WorthQueryInstalledApplicationSchemaDenial),
+    InstalledOperation(WorthQueryApplicationOperationInstallationDenial),
     InstalledBinding(WorthQueryPrincipalBindingInstallationDenial),
 }
 
@@ -49,6 +50,7 @@ impl std::fmt::Display for BankIdentityRuntimeBuildError {
             Self::PrimaryGraph(error) => error.fmt(formatter),
             Self::WorldSeed(error) => error.fmt(formatter),
             Self::InstalledSchema(error) => error.fmt(formatter),
+            Self::InstalledOperation(error) => error.fmt(formatter),
             Self::InstalledBinding(error) => error.fmt(formatter),
         }
     }

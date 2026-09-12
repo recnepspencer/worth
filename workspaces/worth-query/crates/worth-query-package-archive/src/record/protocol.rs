@@ -1,7 +1,7 @@
 use worth_query_installation::facade::WorthQueryPortablePackageRecordFamily as Family;
 
 /// Current deterministic record-frame protocol version.
-pub const WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION: u16 = 1;
+pub const WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION: u16 = 2;
 pub(crate) const RECORD_FRAME_HEADER_BYTES: u64 = 2 + 2 + 4 + 4;
 
 pub(super) const fn family_tag(family: Family) -> u16 {

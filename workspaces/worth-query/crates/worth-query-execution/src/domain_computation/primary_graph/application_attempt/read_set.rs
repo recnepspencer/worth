@@ -25,6 +25,7 @@ use crate::domain_computation::primary_graph::{
 mod observation_admission;
 mod observations;
 mod projected_completion;
+mod relation_observation;
 
 pub struct WorthQueryApplicationReadAttempt<
     Schema,

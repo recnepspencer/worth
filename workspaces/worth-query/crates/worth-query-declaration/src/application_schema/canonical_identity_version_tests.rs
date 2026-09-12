@@ -7,7 +7,7 @@ use super::{
 use crate::facade::application_schema::{ApplicationFieldPresence, ApplicationRelationIntegrity};
 
 #[test]
-fn new_schema_axes_select_the_revised_identity_preimage() {
+fn schema_axes_use_the_current_complete_identity_preimage() {
     let framed = ApplicationSchemaMember::Field {
         entity: "Entity".to_owned(),
         aspect: "Aspect".to_owned(),
@@ -38,13 +38,13 @@ fn new_schema_axes_select_the_revised_identity_preimage() {
     ] {
         assert_eq!(
             identity.canonical_basis().payload().version().as_str(),
-            "worth-query-application-schema-v12"
+            "worth-query-application-schema-v13"
         );
     }
 }
 
 #[test]
-fn unchanged_relation_meaning_keeps_v11_while_no_self_edges_selects_v12() {
+fn relation_endpoint_policy_changes_current_canonical_meaning() {
     let relation = |integrity| ApplicationSchemaMember::Relation {
         relation: "Relation".to_owned(),
         from: "Entity".to_owned(),
@@ -73,11 +73,11 @@ fn unchanged_relation_meaning_keeps_v11_while_no_self_edges_selects_v12() {
     );
     assert_eq!(
         unchanged.canonical_basis().payload().version().as_str(),
-        "worth-query-application-schema-v11"
+        "worth-query-application-schema-v13"
     );
     assert_eq!(
         no_self_edges.canonical_basis().payload().version().as_str(),
-        "worth-query-application-schema-v12"
+        "worth-query-application-schema-v13"
     );
     assert_ne!(unchanged, no_self_edges);
 }

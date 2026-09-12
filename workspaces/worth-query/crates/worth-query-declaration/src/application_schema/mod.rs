@@ -1,4 +1,5 @@
 mod application_capability_authoring;
+mod application_mutation_authoring;
 mod application_query_authoring;
 mod aspect_contract_identity;
 mod authoring_context;
@@ -26,10 +27,12 @@ mod external_effect_protocol;
 mod field_presence;
 mod field_reference;
 mod identifier_validation;
+mod invariant;
 mod member_closure;
 mod member_identity_uniqueness;
 mod member_provenance;
 mod mutation_authoring;
+mod mutation_description_validation;
 mod mutation_intent_traits;
 mod mutation_precondition;
 mod mutation_precondition_authoring;
@@ -103,10 +106,10 @@ pub use capabilities::{
     OperationUnlinks, OperationWrites, ReadOnly, ReadWrite, WritableCapability, WritePosture,
 };
 pub use contribution::{
-    ApplicationSchemaContribution, ApplicationSchemaContributionAuthoring,
-    ApplicationSchemaContributionDenial, ApplicationSchemaContributionIdentity,
-    ApplicationSchemaContributionMembership, ApplicationSchemaContributionProvenance,
-    ApplicationSchemaContributionRef,
+    ApplicationSchemaComposition, ApplicationSchemaContribution,
+    ApplicationSchemaContributionAuthoring, ApplicationSchemaContributionDenial,
+    ApplicationSchemaContributionIdentity, ApplicationSchemaContributionMembership,
+    ApplicationSchemaContributionProvenance, ApplicationSchemaContributionRef,
 };
 pub use declaration::{
     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
@@ -121,6 +124,12 @@ pub use external_effect_protocol::ApplicationExternalEffectProtocol;
 pub use field_presence::ApplicationFieldPresence;
 pub use field_reference::{
     ApplicationEntityMarkerIdentity, ApplicationFieldMarkerIdentity, ApplicationFieldRef,
+};
+pub use invariant::{
+    ApplicationInvariantCostPosture, ApplicationInvariantDefinition,
+    ApplicationInvariantEnforcement, ApplicationInvariantExecutionPoint, ApplicationInvariantGroup,
+    ApplicationInvariantMarkerIdentity, ApplicationInvariantOperationalContract,
+    ApplicationInvariantRef, ApplicationInvariantScopeTarget, RelationalInvariantWorkBudget,
 };
 pub use member_provenance::ApplicationSchemaMemberProvenance;
 pub use mutation_authoring::{

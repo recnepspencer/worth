@@ -16,6 +16,10 @@ pub mod application_query {
     pub use crate::application_query::*;
 }
 
+pub mod application_operation {
+    pub use crate::application_operation::*;
+}
+
 pub mod authentication {
     pub use crate::authentication::*;
 }

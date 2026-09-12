@@ -208,7 +208,7 @@ fn resolve_principal(
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -236,7 +236,7 @@ fn installed_governed_query(world: &AuthorizationWorld) -> InstalledGovernedQuer
     world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap()
 }
 

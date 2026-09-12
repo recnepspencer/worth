@@ -95,7 +95,7 @@ impl FinancialCourtroomWorld {
                 &schema
                     .principal_binding(FinancialPrincipalBinding::reference())
                     .unwrap(),
-                external,
+                &external,
                 &request,
                 primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
             )

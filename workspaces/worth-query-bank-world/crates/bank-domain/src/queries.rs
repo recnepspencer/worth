@@ -13,24 +13,25 @@ mod pending_payments;
 worth_query_decl::facade::worth_query_structured_value_binding!(pub(crate) UnitQueryResultBinding for () { identity: "worth.rust.unit" });
 
 pub use account_activity::{
-    account_activity_definition, AccountActivityLiveCause, AccountActivityQuery,
-    AccountActivityQueryParameters, AccountActivityQueryResult,
+    account_activity, account_activity_definition, AccountActivityLiveCause, AccountActivityQuery,
+    AccountActivityQueryBinding, AccountActivityQueryParameters, AccountActivityQueryResult,
+    AccountActivityRequest,
 };
 pub use account_authorized_users::{
     account_authorized_users, account_authorized_users_definition, AccountAuthorizedUsersQuery,
-    AccountAuthorizedUsersQueryParameters, AccountAuthorizedUsersQueryResult,
-    AccountAuthorizedUsersRequest,
+    AccountAuthorizedUsersQueryBinding, AccountAuthorizedUsersQueryParameters,
+    AccountAuthorizedUsersQueryResult, AccountAuthorizedUsersRequest,
 };
 pub use account_detail::{
-    account_detail, account_detail_definition, AccountDetailQuery, AccountDetailQueryParameters,
-    AccountDetailRequest,
+    account_detail, account_detail_definition, AccountDetailQuery, AccountDetailQueryBinding,
+    AccountDetailQueryParameters, AccountDetailRequest,
 };
 pub use account_discovery::{
-    account_discovery_definition, accounts, AccountDiscoveryQuery, AccountDiscoveryQueryParameters,
-    AccountDiscoveryRequest,
+    account_discovery_definition, accounts, AccountDiscoveryQuery, AccountDiscoveryQueryBinding,
+    AccountDiscoveryQueryParameters, AccountDiscoveryRequest,
 };
 pub use account_summary::{
-    account_summary, account_summary_definition, AccountSummaryQuery,
+    account_summary, account_summary_definition, AccountSummaryQuery, AccountSummaryQueryBinding,
     AccountSummaryQueryParameters, AccountSummaryRequest,
 };
 pub use estate::{
@@ -40,28 +41,31 @@ pub use estate::{
     estate_emergency_account_details_definition, estate_governance_context,
     estate_governance_definition, estate_legal_compliance, estate_legal_compliance_definition,
     estate_mandatory_review_definition, estate_mandatory_reviews, EstateCaseOverviewQuery,
-    EstateCaseOverviewQueryParameters, EstateCaseOverviewRequest, EstateCustomerDisclosure,
-    EstateCustomerDisclosureQuery, EstateCustomerDisclosureQueryParameters,
-    EstateCustomerDisclosureRequest, EstateEmergencyAccessActivity,
-    EstateEmergencyAccessActivityItem, EstateEmergencyAccessActivityLiveCause,
-    EstateEmergencyAccessActivityQuery, EstateEmergencyAccessActivityQueryParameters,
+    EstateCaseOverviewQueryBinding, EstateCaseOverviewQueryParameters, EstateCaseOverviewRequest,
+    EstateCustomerDisclosure, EstateCustomerDisclosureQuery, EstateCustomerDisclosureQueryBinding,
+    EstateCustomerDisclosureQueryParameters, EstateCustomerDisclosureRequest,
+    EstateEmergencyAccessActivity, EstateEmergencyAccessActivityItem,
+    EstateEmergencyAccessActivityLiveCause, EstateEmergencyAccessActivityQuery,
+    EstateEmergencyAccessActivityQueryBinding, EstateEmergencyAccessActivityQueryParameters,
     EstateEmergencyAccessActivityRequest, EstateEmergencyAccountDetails,
-    EstateEmergencyAccountDetailsQuery, EstateEmergencyAccountDetailsQueryParameters,
-    EstateEmergencyAccountDetailsRequest, EstateGovernanceQuery, EstateGovernanceQueryParameters,
-    EstateGovernanceRequest, EstateLegalComplianceQuery, EstateLegalComplianceQueryParameters,
-    EstateLegalComplianceRequest, EstateLegalComplianceResult, EstateMandatoryReviewQuery,
+    EstateEmergencyAccountDetailsQuery, EstateEmergencyAccountDetailsQueryBinding,
+    EstateEmergencyAccountDetailsQueryParameters, EstateEmergencyAccountDetailsRequest,
+    EstateGovernanceQuery, EstateGovernanceQueryBinding, EstateGovernanceQueryParameters,
+    EstateGovernanceRequest, EstateLegalComplianceQuery, EstateLegalComplianceQueryBinding,
+    EstateLegalComplianceQueryParameters, EstateLegalComplianceRequest,
+    EstateLegalComplianceResult, EstateMandatoryReviewQuery, EstateMandatoryReviewQueryBinding,
     EstateMandatoryReviewQueryParameters, EstateMandatoryReviewRequest,
     EstateMandatoryReviewResult,
 };
 pub use institution_audit::{
     institution_audit, institution_audit_definition, InstitutionAuditQuery,
-    InstitutionAuditQueryParameters, InstitutionAuditRequest,
+    InstitutionAuditQueryBinding, InstitutionAuditQueryParameters, InstitutionAuditRequest,
 };
 pub use payment_detail::{
-    payment, payment_detail_definition, PaymentDetailQuery, PaymentDetailQueryParameters,
-    PaymentDetailRequest,
+    payment, payment_detail_definition, PaymentDetailQuery, PaymentDetailQueryBinding,
+    PaymentDetailQueryParameters, PaymentDetailRequest,
 };
 pub use pending_payments::{
     pending_payments, pending_payments_definition, PendingPaymentsQuery,
-    PendingPaymentsQueryParameters, PendingPaymentsRequest,
+    PendingPaymentsQueryBinding, PendingPaymentsQueryParameters, PendingPaymentsRequest,
 };

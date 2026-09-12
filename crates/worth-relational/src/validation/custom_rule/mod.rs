@@ -8,6 +8,9 @@ mod structural_views;
 mod tests;
 mod touched_scope_collection;
 mod traversal;
+#[cfg(test)]
+mod work_budget_tests;
+mod work_meter;
 
 pub use execution_context::{CustomInvariantExecutionContext, CustomInvariantProvenance};
 pub use registration::{
@@ -19,3 +22,4 @@ pub use structural_views::{StructuralRelationRecord, StructuralRelationView};
 pub use traversal::CustomInvariantTraversalSummary;
 
 pub(crate) use registration::PreparedCustomInvariantExecution;
+pub(crate) use work_meter::CustomInvariantWorkMeter;

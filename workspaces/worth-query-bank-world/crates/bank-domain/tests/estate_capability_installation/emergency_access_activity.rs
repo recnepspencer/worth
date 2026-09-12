@@ -1,6 +1,6 @@
 use bank_domain::{
     estate::{EmergencyAccessStatus, RestrictedBankField},
-    queries::EstateEmergencyAccessActivityQuery,
+    queries::EstateEmergencyAccessActivityQueryBinding,
     schema::{
         ApproveEstateEmergencyAccessCapability, ApproveEstateEmergencyAccessOperation,
         CompleteEstateMandatoryReviewCapability, CompleteEstateMandatoryReviewOperation,
@@ -106,9 +106,10 @@ fn emergency_view_installs_exact_resource_lifecycle_and_effect_meaning() {
 #[test]
 fn emergency_access_activity_installs_one_identity_across_all_five_lanes() {
     let (_index, bank) = installed_bank(WorthQueryInstallationRuntimeIdentity::fresh());
-    let query = bank
-        .application_query(EstateEmergencyAccessActivityQuery::reference())
+    let binding = bank
+        .installed_query_binding::<EstateEmergencyAccessActivityQueryBinding>()
         .unwrap();
+    let query = binding.query();
 
     let basis = query.basis_support();
     assert!(basis.current());
@@ -167,9 +168,10 @@ fn emergency_access_activity_installs_one_identity_across_all_five_lanes() {
 #[test]
 fn emergency_access_activity_installs_only_governed_lifecycle_disclosure() {
     let (_index, bank) = installed_bank(WorthQueryInstallationRuntimeIdentity::fresh());
-    let query = bank
-        .application_query(EstateEmergencyAccessActivityQuery::reference())
+    let binding = bank
+        .installed_query_binding::<EstateEmergencyAccessActivityQueryBinding>()
         .unwrap();
+    let query = binding.query();
     let disclosure = query.disclosure();
 
     assert_eq!(

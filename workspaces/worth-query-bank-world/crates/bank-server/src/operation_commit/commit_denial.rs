@@ -7,6 +7,11 @@ use worth_query_host::facade::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommitDenialKind {
     ProviderRejected,
+    CustomInvariantDenied,
+    CandidateValidatorWorkExceeded {
+        maximum_work: usize,
+        required_work: usize,
+    },
     ProductBasisStale,
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
@@ -53,6 +58,14 @@ pub(crate) const fn denial_kind(
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
         Query::ProviderRejected => BankCommitDenialKind::ProviderRejected,
+        Query::CustomInvariantDenied => BankCommitDenialKind::CustomInvariantDenied,
+        Query::CandidateValidatorWorkExceeded {
+            maximum_work,
+            required_work,
+        } => BankCommitDenialKind::CandidateValidatorWorkExceeded {
+            maximum_work,
+            required_work,
+        },
         Query::ProductBasisStale => BankCommitDenialKind::ProductBasisStale,
         Query::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,

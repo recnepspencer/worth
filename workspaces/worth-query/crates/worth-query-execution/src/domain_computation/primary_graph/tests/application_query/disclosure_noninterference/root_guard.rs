@@ -36,7 +36,7 @@ fn forbidden_root_guard_influence_denies_before_result_construction() {
         .world
         .application
         .installed_schema()
-        .application_query(ForbiddenRootGuardQuery::reference())
+        .certification_query(ForbiddenRootGuardQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -67,7 +67,7 @@ fn execute_governed_root_guard(label: &str) -> usize {
         .world
         .application
         .installed_schema()
-        .application_query(GovernedRootGuardQuery::reference())
+        .certification_query(GovernedRootGuardQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -106,7 +106,7 @@ fn root_guard_context(label: &str) -> RootGuardContext {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

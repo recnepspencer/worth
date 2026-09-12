@@ -7,6 +7,7 @@ impl WorthQueryPrimaryGraphProvider {
         graph: super::WorthQueryPrimaryGraphIntegrationHandle,
         fault_port: Arc<dyn super::fault_port::WorthQueryPrimaryGraphFaultPort>,
         maximum_concurrent_graph_work: std::num::NonZeroUsize,
+        candidate_resources: crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile,
     ) -> (
         Arc<crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor>,
         Arc<Self>,
@@ -15,6 +16,7 @@ impl WorthQueryPrimaryGraphProvider {
             graph,
             resource_support: super::resource_support::WorthQueryPrimaryGraphResourceSupport::install(
                 maximum_concurrent_graph_work,
+                candidate_resources,
             ),
             branch_commit_coordination: Default::default(),
             live_delivery: crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveDeliverySource::default(),

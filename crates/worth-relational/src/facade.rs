@@ -97,11 +97,12 @@ pub mod history {
         AspectHistoryCommitSpan, AspectHistoryDigest, AspectHistoryEntry,
         AspectHistoryLineageEventSpan, AspectHistoryOrigin, AspectHistoryQueryResult,
         AspectHistoryResolutionTrace, AspectResolutionContext, BranchCreateError,
-        BranchCreateErrorClass, BranchId, CommitId, CommittedVersionSummary,
-        HistoryAspectQueryTarget, HistoryDriftClass, HistoryRetentionClass,
-        HistoryShapeClassification, LineageAspectHistory, LineageAspectHistoryQueryResult,
-        LineageAspectResolutionDigest, MergeConflictRecord, MergeInspection, OrderedParentList,
-        RelationalCommitReceipt, RelationalMergeBranchBasisDenial, VersionGraphPolicy,
+        BranchCreateErrorClass, BranchId, CanonicalCommitEnvelope, CommitId,
+        CommittedVersionSummary, HistoryAspectQueryTarget, HistoryDriftClass,
+        HistoryRetentionClass, HistoryShapeClassification, LineageAspectHistory,
+        LineageAspectHistoryQueryResult, LineageAspectResolutionDigest, MergeConflictRecord,
+        MergeInspection, OrderedParentList, RelationalCommitReceipt,
+        RelationalMergeBranchBasisDenial, VersionGraphPolicy,
     };
     pub use crate::history::{HistoryAccess, HistoryAuthority};
     pub use crate::history::{
@@ -209,17 +210,17 @@ pub mod runtime {
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
     pub use crate::runtime::{
-        CompiledArtifactAuthorityStatus, CompiledArtifactError, CompiledExecutionArtifact,
-        ComplexityContract, ComplexityStatus, EntityProjectionRecord, EntityRecordProjection,
-        InvariantAccess, RelationProjectionRecord, RelationRecordProjection,
-        RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
-        RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
-        RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
-        RelationalReplayRecord, RelationalRuntime, RelationalRuntimeConfig,
-        RelationalRuntimeForkDenial, RelationalSchemaTransitionAdmissionDenial,
-        RelationalSchemaTransitionAdmissionDenialKind, ReplaySchemaVersion,
-        RuntimeComplexityCounters, SimulationAccess, SimulationAuthority, SnapshotGuard,
-        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
+        custom_invariant_inventory_digest, CompiledArtifactAuthorityStatus, CompiledArtifactError,
+        CompiledExecutionArtifact, ComplexityContract, ComplexityStatus, EntityProjectionRecord,
+        EntityRecordProjection, InvariantAccess, RelationProjectionRecord,
+        RelationRecordProjection, RelationalInitialSchemaInstallation,
+        RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
+        RelationalInitialSchemaInstallationReceipt, RelationalPatchPositionReservationCounters,
+        RelationalPhase4ReferenceCostCounters, RelationalReplayRecord, RelationalRuntime,
+        RelationalRuntimeConfig, RelationalRuntimeForkDenial,
+        RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
+        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
+        SnapshotGuard, TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
         VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{

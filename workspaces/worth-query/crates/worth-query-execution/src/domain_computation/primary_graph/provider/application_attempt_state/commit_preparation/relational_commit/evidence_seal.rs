@@ -19,6 +19,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
     retained_preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
     committed_dispatch_outbox: WorthQueryCommittedDispatchOutboxResolution,
+    committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
+    output_correspondence:
+        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
@@ -40,6 +43,9 @@ pub(super) fn seal(
         committed.attempt().dispatch_outbox(),
         committed.committed(),
     );
+    let output_correspondence = committed
+        .attempt()
+        .seal_output_correspondence(committed.committed());
     WorthQueryPrimaryGraphCommitEvidence {
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),
@@ -47,6 +53,8 @@ pub(super) fn seal(
         mutation_work,
         retained_preimage: committed.retained_preimage().cloned(),
         committed_dispatch_outbox,
+        output_correspondence,
+        committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     }
 }
 
@@ -99,5 +107,17 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self,
     ) -> &WorthQueryCommittedDispatchOutboxResolution {
         &self.committed_dispatch_outbox
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn committed_changes(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges {
+        &self.committed_changes
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn output_correspondence(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
+        &self.output_correspondence
     }
 }

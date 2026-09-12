@@ -315,6 +315,9 @@ fn committed(
         BankMutationCommitOutcome::Denied { kind, stage } => {
             return denied(BankMutationDenial::Commit { kind, stage }, work)
         }
+        BankMutationCommitOutcome::CustomInvariantDenied { denial, stage } => {
+            return denied(BankMutationDenial::CustomInvariant { denial, stage }, work)
+        }
         BankMutationCommitOutcome::Aborted => BankMutationStatus::Aborted,
         BankMutationCommitOutcome::Deferred(deferred) => BankMutationStatus::Deferred(deferred),
         BankMutationCommitOutcome::SettlementDeferred(deferred) => {

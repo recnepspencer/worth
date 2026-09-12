@@ -53,6 +53,23 @@ worth_query_application_query!(
     scope EstateCase => "EstateCase",
     name "estate_mandatory_reviews"
 );
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateMandatoryReviewRequestBinding for EstateMandatoryReviewRequest { identity: "EstateMandatoryReviewRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub EstateMandatoryReviewQueryBinding for EstateMandatoryReviewRequest, schema BankSchema,
+    identity "worth.bank.estate-mandatory-review-query-binding.v1",
+    input EstateMandatoryReviewRequestBinding,
+    query EstateMandatoryReviewQuery,
+    parameters EstateMandatoryReviewQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result EstateMandatoryReviewQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
+        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::EstateCaseIdentityField::reference(),
+    value EstateMandatoryReviewRequest::estate,
+    limits results 1_024, work 100_000
+);
 
 pub fn estate_mandatory_review_definition() -> ApplicationQueryDefinition<
     BankSchema,

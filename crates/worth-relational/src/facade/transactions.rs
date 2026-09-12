@@ -23,5 +23,9 @@ pub use crate::transactions::data::{
     TransactionCommitError, TransactionId, UndoRecord, UpdateEntityFieldsIntent,
     UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
-pub use crate::validation::data::InvariantViolationFields;
+pub use crate::validation::data::{
+    CustomInvariantFailureIdentity, CustomInvariantFailurePhase, CustomInvariantRuleId,
+    CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion, InvariantViolationFields,
+    ResultCustomInvariantFailureKind,
+};
 pub use worth_foundational::facade::AspectFieldLocator;

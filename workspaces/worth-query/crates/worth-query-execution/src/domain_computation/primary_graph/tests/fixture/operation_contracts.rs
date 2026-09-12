@@ -26,6 +26,7 @@ pub(super) fn install(
             TouchAccountOperation::reference(),
             AccountLabel::reference(),
         )
+        .operation_delete(TouchAccountOperation::reference(), Account::reference())
         .operation_emit(
             TouchAccountOperation::reference(),
             AccountActivityEffect::reference(),

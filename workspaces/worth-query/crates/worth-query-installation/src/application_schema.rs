@@ -5,6 +5,7 @@ mod contribution;
 mod denial;
 mod installed;
 mod installed_principal_binding;
+mod invariant;
 mod native_contract;
 mod principal_binding_match;
 mod value_binding;
@@ -16,6 +17,10 @@ pub use denial::{
     WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledApplicationSchemaDenialKind,
 };
 pub use installed::WorthQueryInstalledApplicationSchema;
+pub use invariant::{
+    WorthQueryInstalledApplicationInvariant, WorthQueryInstalledApplicationInvariantCatalog,
+    WorthQueryInstalledApplicationInvariantDescriptor,
+};
 pub use native_contract::{
     WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,
     WorthQueryInstalledApplicationSchemaContractCatalog,

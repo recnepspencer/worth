@@ -16,8 +16,8 @@ use worth_relational::facade::runtime::{
     CustomInvariantOperationalMetadata, CustomInvariantPreparationError,
     CustomInvariantRegistration, CustomInvariantRule, CustomInvariantScopePlanner,
     CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion, CustomInvariantVerdict,
-    InvariantCostClass, InvariantExecutionPoint, InvariantFailureEffect, InvariantGroupSet,
-    InvariantReportedRule,
+    InvariantCostClass, InvariantDecisionKind, InvariantExecutionPoint, InvariantFailureEffect,
+    InvariantGroupSet,
 };
 use worth_relational::facade::transactions::{
     planned_single_field_locator, AspectFieldPatch, EntityMutationIntent, MutationIntent,
@@ -52,7 +52,7 @@ impl ProbeEvidence {
 }
 
 #[test]
-fn custom_commit_boundary_reads_the_same_transaction_proposed_aspect_state() {
+fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_state() {
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
         .expect("Court Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
@@ -60,6 +60,7 @@ fn custom_commit_boundary_reads_the_same_transaction_proposed_aspect_state() {
     let evidence = ProbeEvidence::default();
     let registration = CustomInvariantRegistration::new(ProposedAspectStateProbe {
         evidence: evidence.clone(),
+        verdict: CustomInvariantVerdict::Pass,
     })
     .expect("proposed-state probe registers");
     let world = compile_supply_chain_baseline_with_custom_invariant(program, registration)
@@ -73,25 +74,99 @@ fn custom_commit_boundary_reads_the_same_transaction_proposed_aspect_state() {
         "Planned",
     );
     evidence.set_target(target);
-    let commit = commit_status_update(&world.runtime, BranchId("main".to_owned()), target);
-    let commit = commit.expect("custom rule sees the proposed status in both phases");
-    assert_snapshot_status(&world.runtime, &BranchId("main".to_owned()), target, "Held");
+    let branch_identity = world
+        .runtime
+        .branch_identity(&BranchId("main".to_owned()))
+        .expect("the committed branch has owner-issued identity");
+    let original_version = world
+        .runtime
+        .admit_branch_basis(&branch_identity)
+        .expect("the original committed basis is admissible")
+        .observation()
+        .version_id();
+    let proposal = validate_status_update(&world.runtime, BranchId("main".to_owned()), target)
+        .expect("custom rule sees the proposed and committed status in both phases");
 
     assert_eq!(evidence.prepared(), 1);
     assert_eq!(evidence.evaluated(), 1);
-    assert!(commit.invariant_executions().iter().any(|execution| {
-        execution.results().iter().any(|result| {
-            matches!(
-                &result.rule,
-                InvariantReportedRule::Custom(identity) if identity.rule_id.as_str() == RULE_ID
-            )
-        })
-    }));
+    let receipt = proposal
+        .custom_invariant_execution_receipts()
+        .iter()
+        .find(|receipt| receipt.rule_id().as_str() == RULE_ID)
+        .expect("candidate retains the exact custom execution receipt");
+    assert_eq!(
+        receipt.semantic_version(),
+        CustomInvariantSemanticVersion::new(1, 0)
+    );
+    assert_eq!(
+        receipt.execution_point(),
+        InvariantExecutionPoint::CommitBoundary
+    );
+    assert_eq!(receipt.verdict(), InvariantDecisionKind::Passed);
+    assert_eq!(
+        receipt.provenance().version_id,
+        proposal.invariant_evidence().proposed_version()
+    );
+    assert_eq!(receipt.provenance().current_version_id, original_version);
+    assert_ne!(receipt.provenance().version_id, original_version);
+    assert_eq!(
+        receipt.provenance().proposal_identity.as_ref(),
+        Some(proposal.proposal_identity())
+    );
+    assert!(receipt
+        .provenance()
+        .touched
+        .visible_entity_ids
+        .contains(&target));
+    assert!(receipt.provenance().traversal.remaining_frontier > 0);
+    assert!(receipt.provenance().traversal.remaining_steps > 0);
+    assert_eq!(receipt.provenance().traversal.max_depth, 32);
+}
+
+#[test]
+fn malformed_proposal_denial_preserves_custom_rule_identity() {
+    let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
+        .expect("Court Supply Chain definition is valid");
+    let program = CompiledSupplyChainProgram::compile(definition)
+        .expect("Court Supply Chain program compiles");
+    let evidence = ProbeEvidence::default();
+    let registration = CustomInvariantRegistration::new(ProposedAspectStateProbe {
+        evidence: evidence.clone(),
+        verdict: CustomInvariantVerdict::Violation,
+    })
+    .expect("proposed-state denial rule registers");
+    let world = compile_supply_chain_baseline_with_custom_invariant(program, registration)
+        .expect("baseline commits while the denial rule is inactive");
+
+    let target = world.handles.aurora_voyage().id;
+    evidence.set_target(target);
+    let denial = validate_status_update(&world.runtime, BranchId("main".to_owned()), target)
+        .expect_err("the malformed proposed status must be denied");
+
+    let TransactionCommitError::Conflict { error, .. } = denial else {
+        panic!("custom violation must deny as a typed conflict");
+    };
+    let worth_relational::facade::transactions::ConflictClass::InvariantViolation {
+        fields:
+            worth_relational::facade::transactions::InvariantViolationFields::CustomInvariantViolation {
+                identity,
+            },
+        ..
+    } = error.class
+    else {
+        panic!("custom violation must preserve its semantic identity");
+    };
+    assert_eq!(identity.rule_id.as_str(), RULE_ID);
+    assert_eq!(
+        identity.semantic_version,
+        CustomInvariantSemanticVersion::new(1, 0)
+    );
 }
 
 #[derive(Clone)]
 struct ProposedAspectStateProbe {
     evidence: ProbeEvidence,
+    verdict: CustomInvariantVerdict,
 }
 
 impl CustomInvariantRule for ProposedAspectStateProbe {
@@ -105,6 +180,18 @@ impl CustomInvariantRule for ProposedAspectStateProbe {
             },
             display_name: Arc::from("Phase 5 proposed aspect state probe"),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: std::num::NonZeroU64::new(1_000_000).unwrap(),
+                access: worth_relational::facade::runtime::CustomInvariantAccessContract {
+                    read_entity_kinds: vec![super::world::supply_chain::entity_kind_id(
+                        super::world::supply_chain::EntityKind::Voyage,
+                    )],
+                    read_relation_kinds: vec![],
+                    affected_entity_kinds: vec![super::world::supply_chain::entity_kind_id(
+                        super::world::supply_chain::EntityKind::Voyage,
+                    )],
+                    affected_relation_kinds: vec![],
+                }
+                .canonicalize(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::all(),
                 cost_class: InvariantCostClass::Touched,
@@ -147,11 +234,17 @@ impl CustomInvariantRule for ProposedAspectStateProbe {
                 .provenance()
                 .proposal_identity
                 .expect("custom execution carries the owner-issued proposal identity");
+            assert_eq!(
+                identity.proposed_version_id(),
+                context.version_id(),
+                "custom context must identify the candidate it evaluates"
+            );
             assert!(
-                identity.proposed_version_id().0 > context.version_id().0,
-                "proposal identity must name the new commit version"
+                identity.proposed_version_id().0 > context.current_version_id().0,
+                "the candidate version must follow its committed basis"
             );
             *self.evidence.evaluated.lock().expect("evaluated lock") += 1;
+            return Ok(self.verdict);
         }
         Ok(CustomInvariantVerdict::Pass)
     }
@@ -196,11 +289,11 @@ fn assert_snapshot_status(
     assert_status(record.authoritative_aspect_state.as_ref(), expected);
 }
 
-fn commit_status_update(
+fn validate_status_update(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     branch: BranchId,
     entity_id: EntityId,
-) -> Result<worth_relational::facade::transactions::CommitResult, TransactionCommitError> {
+) -> Result<worth_relational::facade::mvcc::ValidatedRelationalProposal, TransactionCommitError> {
     let identity = runtime
         .branch_identity(&branch)
         .expect("branch identity is owner-issued");
@@ -228,5 +321,5 @@ fn commit_status_update(
             )),
         )
         .unwrap();
-    transaction.commit(runtime)
+    transaction.validate(runtime)
 }

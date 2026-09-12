@@ -31,11 +31,32 @@ use crate::schema::{
     PostingPurpose, PostingValue, Purpose, UsdCurrency,
 };
 
+mod binding;
 mod live_cause;
+pub use binding::AccountActivityQueryBinding;
 pub use live_cause::AccountActivityLiveCause;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct AccountActivityQueryParameters;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct AccountActivityRequest {
+    account: AccountId,
+}
+
+impl AccountActivityRequest {
+    pub const fn new(account: AccountId) -> Self {
+        Self { account }
+    }
+
+    pub const fn account(self) -> AccountId {
+        self.account
+    }
+}
+
+pub const fn account_activity(account: AccountId) -> AccountActivityRequest {
+    AccountActivityRequest::new(account)
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AccountActivityQueryResult {
@@ -63,7 +84,6 @@ worth_query_application_query!(
     scope Account => "Account",
     name "account_activity"
 );
-
 struct AccountIdentitySlot;
 worth_query_decl::facade::worth_query_portable_type!(AccountIdentitySlot => "AccountIdentitySlot");
 struct AccountPostingsSlot;

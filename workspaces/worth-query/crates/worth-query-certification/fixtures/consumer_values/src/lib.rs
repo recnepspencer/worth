@@ -1,5 +1,15 @@
 #![forbid(unsafe_code)]
 
+mod planar_operation;
+mod planar_replacement;
+pub use planar_replacement::{
+    PlanarReplacementDenial, PlanarVertexReplacement, PlanarVertexReplacementResult,
+};
+
+pub use planar_operation::{
+    PlanarAdjustment, PlanarAdjustmentResult, PlanarMutationDenial, PlanarOperation, PlanarVertex,
+};
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PositiveLength(u64);
 

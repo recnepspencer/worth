@@ -2,8 +2,8 @@
 
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationSettlementDeferred, WorthQueryProductStaleApplication,
-    WorthQueryProductUnpublishedApplication,
+    WorthQueryApplicationSettlementDeferred, WorthQueryCustomInvariantDenial,
+    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
 };
 use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
@@ -27,6 +27,10 @@ pub enum BankMutationCommitOutcome {
     TimedOut,
     Denied {
         kind: BankCommitDenialKind,
+        stage: BankCommitDenialStage,
+    },
+    CustomInvariantDenied {
+        denial: WorthQueryCustomInvariantDenial,
         stage: BankCommitDenialStage,
     },
     Aborted,
@@ -74,10 +78,18 @@ impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
             },
             WorthQueryApplicationCommitOutcome::Cancelled => Self::Cancelled,
             WorthQueryApplicationCommitOutcome::TimedOut => Self::TimedOut,
-            WorthQueryApplicationCommitOutcome::Denied(denial) => Self::Denied {
-                kind: denial_kind(denial.kind()),
-                stage: denial_stage(denial.stage()),
-            },
+            WorthQueryApplicationCommitOutcome::Denied(denial) => {
+                match denial.custom_invariant_denial() {
+                    Some(custom) => Self::CustomInvariantDenied {
+                        denial: custom.clone(),
+                        stage: denial_stage(denial.stage()),
+                    },
+                    None => Self::Denied {
+                        kind: denial_kind(denial.kind()),
+                        stage: denial_stage(denial.stage()),
+                    },
+                }
+            }
             WorthQueryApplicationCommitOutcome::Aborted => Self::Aborted,
             WorthQueryApplicationCommitOutcome::Deferred(deferred) => Self::Deferred(deferred),
             WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {

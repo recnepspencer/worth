@@ -665,6 +665,7 @@ dependencies = [
  "worth-query-decl",
  "worth-query-execution",
  "worth-query-host",
+ "worth-query-installation",
  "worth-query-replay",
  "worth-relational",
  "worth-runtime-bridge",

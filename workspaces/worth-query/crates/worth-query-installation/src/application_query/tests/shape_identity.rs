@@ -83,10 +83,10 @@ pub(super) fn grouped_two_definition() -> ApplicationQueryDefinition<
 fn installed_identity_preserves_which_nested_branch_owns_each_field() {
     let schema = installed_schema();
     let one_then_two = schema
-        .application_query(GroupedOneQuery::reference())
+        .certification_query(GroupedOneQuery::reference())
         .unwrap();
     let two_then_one = schema
-        .application_query(GroupedTwoQuery::reference())
+        .certification_query(GroupedTwoQuery::reference())
         .unwrap();
 
     assert_ne!(

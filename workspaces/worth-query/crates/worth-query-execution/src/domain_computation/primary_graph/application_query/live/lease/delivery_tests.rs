@@ -34,7 +34,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -42,7 +42,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     let query = world
         .application
         .installed_schema()
-        .application_query(LiveAccountActivityQuery::reference())
+        .certification_query(LiveAccountActivityQuery::reference())
         .unwrap();
     let account = world
         .application
@@ -156,7 +156,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -168,7 +168,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            committer_external,
+            &committer_external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -176,7 +176,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap();
     let account = world
         .application
@@ -251,7 +251,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -263,7 +263,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            committer_external,
+            &committer_external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -271,7 +271,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap();
     let account = world
         .application

@@ -113,6 +113,7 @@ pub struct BoundedStructuralTraversal<'runtime> {
     relations: StructuralRelationView<'runtime>,
     performance: crate::performance::PerformanceAccess<'runtime>,
     budget: Mutex<TraversalBudgetSession>,
+    work: super::CustomInvariantWorkMeter,
 }
 
 impl<'runtime> BoundedStructuralTraversal<'runtime> {
@@ -120,11 +121,13 @@ impl<'runtime> BoundedStructuralTraversal<'runtime> {
         performance: crate::performance::PerformanceAccess<'runtime>,
         relations: StructuralRelationView<'runtime>,
         touched: &TouchedStructuralSet,
+        work: super::CustomInvariantWorkMeter,
     ) -> Self {
         Self {
             relations,
             performance,
             budget: Mutex::new(TraversalBudgetSession::from_touched_scope(touched)),
+            work,
         }
     }
 
@@ -163,6 +166,11 @@ impl<'runtime> BoundedStructuralTraversal<'runtime> {
             .expect("custom invariant traversal budget mutex must not be poisoned");
         let allowed_depth = budget.checked_depth(max_depth)?;
         budget.charge_frontier(seeds.len())?;
+        if !self.work.try_charge(seeds.len().max(1)) {
+            return Err(CustomInvariantTraversalError::new(
+                "custom invariant frontier exceeded its work budget",
+            ));
+        }
         self.performance
             .count_custom_invariant_traversal(seeds.len(), 0);
 
@@ -181,13 +189,18 @@ impl<'runtime> BoundedStructuralTraversal<'runtime> {
             }
             let relation_ids = match direction {
                 TraversalDirection::Outgoing => {
-                    self.relations.outgoing_relations_for_entity(entity_id)
+                    self.relations.outgoing_relations_for_entity(entity_id)?
                 }
                 TraversalDirection::Incoming => {
-                    self.relations.incoming_relations_for_entity(entity_id)
+                    self.relations.incoming_relations_for_entity(entity_id)?
                 }
             };
             budget.charge_step(relation_ids.len())?;
+            if !self.work.try_charge(relation_ids.len().max(1)) {
+                return Err(CustomInvariantTraversalError::new(
+                    "custom invariant traversal exceeded its work budget",
+                ));
+            }
             self.performance
                 .count_custom_invariant_traversal(0, relation_ids.len());
             for relation_id in relation_ids {

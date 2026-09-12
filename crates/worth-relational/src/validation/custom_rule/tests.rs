@@ -27,7 +27,12 @@ fn prepared_scope(
     observation: &InvariantObservation<'_>,
     merged_plan: Option<&MergedCommitPlan>,
 ) -> PreparedCustomInvariantScope {
-    PreparedCustomInvariantScope::capture(observation, runtime.current_version_id(), merged_plan)
+    PreparedCustomInvariantScope::capture(
+        observation,
+        runtime.current_version_id(),
+        merged_plan,
+        &super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
+    )
 }
 
 #[test]
@@ -45,6 +50,8 @@ fn custom_scope_planner_preserves_owner_selected_current_version() {
         selected_version,
         selected_version,
         &prepared_scope,
+        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(u64::MAX).unwrap()),
+        std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
     );
 
     assert_eq!(planner.version_id(), selected_version);
@@ -63,6 +70,8 @@ impl CustomInvariantRule for TestRule {
             },
             display_name: Arc::from("Test Rule"),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                access: crate::validation::data::CustomInvariantAccessContract::default(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                 cost_class: InvariantCostClass::Touched,
@@ -113,6 +122,8 @@ fn custom_registration_rejects_empty_ids() {
                 },
                 display_name: Arc::from("Empty"),
                 operational: CustomInvariantOperationalMetadata {
+                    maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                    access: crate::validation::data::CustomInvariantAccessContract::default(),
                     execution_point: InvariantExecutionPoint::CommitBoundary,
                     groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                     cost_class: InvariantCostClass::Touched,
@@ -155,6 +166,8 @@ fn traversal_budget_is_session_wide() {
         runtime.current_version_id(),
         runtime.current_version_id(),
         &prepared_scope,
+        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(u64::MAX).unwrap()),
+        std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
     );
 
     for _ in 0..8 {
@@ -196,7 +209,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
-    let planner = CustomInvariantScopePlanner::new(
+    let planner = test_scope_planner(
         &runtime,
         &observation,
         runtime.current_version_id(),
@@ -257,7 +270,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
-    let planner = CustomInvariantScopePlanner::new(
+    let planner = test_scope_planner(
         &runtime,
         &observation,
         runtime.current_version_id(),
@@ -293,7 +306,7 @@ fn touched_scope_tracks_planned_relation_deletes() {
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
-    let planner = CustomInvariantScopePlanner::new(
+    let planner = test_scope_planner(
         &runtime,
         &observation,
         runtime.current_version_id(),
@@ -327,7 +340,7 @@ fn touched_scope_tracks_planned_entity_deletes() {
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
-    let planner = CustomInvariantScopePlanner::new(
+    let planner = test_scope_planner(
         &runtime,
         &observation,
         runtime.current_version_id(),
@@ -343,4 +356,27 @@ fn touched_scope_tracks_planned_entity_deletes() {
             .planned_entity_delete_count,
         1
     );
+}
+
+fn test_scope_planner<'a>(
+    runtime: &'a crate::runtime::RelationalRuntime,
+    observation: &'a InvariantObservation<'a>,
+    version: crate::identity::data::VersionId,
+    prepared: &PreparedCustomInvariantScope,
+) -> CustomInvariantScopePlanner<'a> {
+    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
+    CustomInvariantScopePlanner::new_at_current_version(
+        &view,
+        observation,
+        version,
+        runtime.current_version_id(),
+        prepared,
+        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
+        Arc::new(crate::validation::data::CustomInvariantAccessContract {
+            read_entity_kinds: vec![KindId(1)],
+            read_relation_kinds: vec![KindId(2)],
+            affected_entity_kinds: vec![KindId(1)],
+            affected_relation_kinds: vec![KindId(2)],
+        }),
+    )
 }

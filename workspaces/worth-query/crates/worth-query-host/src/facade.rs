@@ -9,6 +9,10 @@ pub use worth_query_declaration::{
     worth_query_portable_type, worth_query_principal_binding, worth_query_relation,
     worth_query_structured_value_binding,
 };
+pub use worth_query_execution::facade::application_contribution;
+pub use worth_query_execution::facade::application_discovery;
+pub use worth_query_execution::facade::application_installation;
+pub use worth_query_execution::facade::application_invariants;
 pub use worth_query_execution::facade::convergence_epoch;
 pub use worth_query_execution::facade::installed;
 pub use worth_query_execution::facade::primary_graph;
@@ -23,3 +27,4 @@ pub use worth_query_installation::facade::{
 };
 pub use worth_query_installation::worth_query_conditional_node;
 pub use worth_query_publication::facade as publication;
+pub use worth_query_publication::facade::application_entry;

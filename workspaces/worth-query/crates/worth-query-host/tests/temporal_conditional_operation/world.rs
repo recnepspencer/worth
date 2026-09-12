@@ -11,6 +11,7 @@ use super::adapters::{
     IntentProjector, Invoker, PanicController, Predicate, PrincipalSource, ReplacementPredicate,
 };
 use super::contract::{self, TemporalReadyNode};
+use super::schema::current_read::TemporalIntentCurrentReadBinding;
 use super::schema::*;
 
 #[path = "world/amendment.rs"]
@@ -237,7 +238,7 @@ impl CourtroomWorld {
             .installed_operation(ExecuteTemporal::reference())
             .unwrap();
         let query = schema
-            .application_query(TemporalIntentQuery::reference())
+            .installed_query_binding::<TemporalIntentCurrentReadBinding>()
             .unwrap();
         let (clock_source, clock_control) = ClockSource::due();
         let conditional = runtime
@@ -251,7 +252,7 @@ impl CourtroomWorld {
             .bind_named_clock::<CourtroomClock, _>(clock_source)
             .unwrap()
             .bind_temporal_intent_projection(
-                query,
+                query.into_query(),
                 ApplicationQueryParameterSet::new(),
                 IntentProjector,
                 domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),

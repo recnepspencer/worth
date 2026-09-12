@@ -1,13 +1,16 @@
+#[path = "structural_selection/descriptor.rs"]
+mod descriptor;
+
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 
 use super::invariant_oracle_expectations::expected_supply_chain_branch;
 use super::world::supply_chain::{
     commit_branch_batch, compare, compile_supply_chain_baseline_with_custom_invariant,
-    head_for_supply_chain_branch, lower_supply_chain_production_delta, observe_supply_chain,
-    observe_supply_chain_snapshot, relation_kind_id, snapshot_for_supply_chain_identity,
-    BranchLabel, CompiledSupplyChainProgram, DeltaId, EntityKind, RelationKind, SupplyChainScale,
-    SupplyChainWorldDefinition,
+    entity_kind_id, head_for_supply_chain_branch, lower_supply_chain_production_delta,
+    observe_supply_chain, observe_supply_chain_snapshot, relation_kind_id,
+    snapshot_for_supply_chain_identity, BranchLabel, CompiledSupplyChainProgram, DeltaId,
+    EntityKind, RelationKind, SupplyChainScale, SupplyChainWorldDefinition,
 };
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::{EntityId, RelationId, VersionId};
@@ -289,18 +292,23 @@ macro_rules! assert_selected_views {
         assert_eq!(record.target, expected.target);
         assert!(relations
             .outgoing_relations_for_entity(expected.source)
+            .expect("selected adjacency stays within budget")
             .contains(&expected.relation));
         assert!(relations
             .incoming_relations_for_entity(expected.target)
+            .expect("selected adjacency stays within budget")
             .contains(&expected.relation));
         assert!(relations
             .all_relations_for_entity(expected.source)
+            .expect("selected adjacency stays within budget")
             .contains(&expected.relation));
         assert!(!relations
             .outgoing_relations_for_entity(expected.moved_source)
+            .expect("selected adjacency stays within budget")
             .contains(&expected.relation));
         assert!(!relations
             .incoming_relations_for_entity(expected.moved_target)
+            .expect("selected adjacency stays within budget")
             .contains(&expected.relation));
         let outgoing = traversal
             .walk_outgoing_from(&[expected.source], 1)
@@ -331,21 +339,7 @@ impl CustomInvariantRule for StructuralSelectionProbe {
     type Scope = ();
 
     fn descriptor(&self) -> CustomInvariantDescriptor {
-        CustomInvariantDescriptor {
-            identity: CustomInvariantSemanticIdentity {
-                rule_id: worth_relational::facade::runtime::CustomInvariantRuleId::new(
-                    Self::RULE_ID,
-                ),
-                semantic_version: CustomInvariantSemanticVersion::new(1, 0),
-            },
-            display_name: Arc::from("Supply Chain selected structural adjacency probe"),
-            operational: CustomInvariantOperationalMetadata {
-                execution_point: InvariantExecutionPoint::CommitBoundary,
-                groups: InvariantGroupSet::all(),
-                cost_class: InvariantCostClass::Touched,
-                failure_effect: InvariantFailureEffect::BlockCommit,
-            },
-        }
+        descriptor::selection_descriptor()
     }
 
     fn prepare_scope(

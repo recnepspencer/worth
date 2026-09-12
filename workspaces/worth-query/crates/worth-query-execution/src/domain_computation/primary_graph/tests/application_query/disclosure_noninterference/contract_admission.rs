@@ -68,7 +68,7 @@ fn result_disclosure_rule_cannot_open_a_predicate_read() {
         .world
         .application
         .installed_schema()
-        .application_query(ResultRulePredicateQuery::reference())
+        .certification_query(ResultRulePredicateQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -101,7 +101,7 @@ fn incomplete_result_contract_denies_before_result_construction() {
         .world
         .application
         .installed_schema()
-        .application_query(IncompleteDisclosureQuery::reference())
+        .certification_query(IncompleteDisclosureQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -132,7 +132,7 @@ fn forbidden_predicate_influence_denies_before_result_construction() {
         .world
         .application
         .installed_schema()
-        .application_query(ForbiddenInfluenceQuery::reference())
+        .certification_query(ForbiddenInfluenceQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -165,7 +165,7 @@ fn forbidden_ordering_influence_denies_before_result_construction() {
         .world
         .application
         .installed_schema()
-        .application_query(ForbiddenHiddenOrderingQuery::reference())
+        .certification_query(ForbiddenHiddenOrderingQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -196,7 +196,7 @@ fn forbidden_live_scope_influence_denies_before_result_construction() {
         .world
         .application
         .installed_schema()
-        .application_query(ForbiddenLiveScopeIdentityQuery::reference())
+        .certification_query(ForbiddenLiveScopeIdentityQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -227,7 +227,7 @@ fn forbidden_live_target_influence_denies_before_result_construction() {
         .world
         .application
         .installed_schema()
-        .application_query(ForbiddenLiveTargetIdentityQuery::reference())
+        .certification_query(ForbiddenLiveTargetIdentityQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -265,7 +265,7 @@ fn admission_context() -> AdmissionContext {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

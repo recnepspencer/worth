@@ -97,6 +97,12 @@ impl WorthQueryPendingApplicationCommitReceipt {
             aftermath_causality: self.aftermath_causality,
             expected_retry_session: None,
             performed_product_change: Some(performed_product_change),
+            committed_changes: self.provider.commit_evidence().committed_changes().clone(),
+            output_correspondence: self
+                .provider
+                .commit_evidence()
+                .output_correspondence()
+                .clone(),
         })
     }
 }

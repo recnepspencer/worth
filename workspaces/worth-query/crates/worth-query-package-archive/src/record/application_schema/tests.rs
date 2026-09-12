@@ -1,4 +1,6 @@
 mod fixture;
+mod invariant;
+mod mutation_description;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationRelationIntegrity, ApplicationSchemaMember,
@@ -259,7 +261,9 @@ fn decode_member(bytes: &[u8]) -> ApplicationSchemaMember {
 
 fn frame_payload(payload: &[u8]) -> Vec<u8> {
     let mut frame = Vec::with_capacity(12 + payload.len());
-    frame.extend_from_slice(&1_u16.to_be_bytes());
+    frame.extend_from_slice(
+        &crate::record::WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION.to_be_bytes(),
+    );
     frame.extend_from_slice(&8_u16.to_be_bytes());
     frame.extend_from_slice(&0_u32.to_be_bytes());
     frame.extend_from_slice(&u32::try_from(payload.len()).unwrap().to_be_bytes());

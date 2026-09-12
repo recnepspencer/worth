@@ -28,7 +28,7 @@ pub fn principal(
         .expect("the current product must be selectable")
         .resolve_authenticated_principal(
             &binding,
-            external,
+            &external,
             request,
             primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -85,7 +85,7 @@ pub fn read_selected<'runtime>(
     let query = world
         .runtime
         .installed_schema()
-        .application_query(TemporalIntentQuery::reference())
+        .certification_query(TemporalIntentQuery::reference())
         .expect("the application query must be installed");
     let admitted = selected
         .admit_application_query(

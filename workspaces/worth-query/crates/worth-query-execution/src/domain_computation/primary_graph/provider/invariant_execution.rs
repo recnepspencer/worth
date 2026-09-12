@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 mod material;
+mod receipt_closure;
+mod work_admission;
 use material::{ApplicationInvariantCandidateMaterial, ApplicationInvariantSemanticMaterial};
+use work_admission::admit_candidate_validator_work;
 
 use super::invariant_execution_failure::{
     map_transaction_admission_failure, map_transaction_staging_failure, map_validation_failure,
@@ -71,16 +74,18 @@ impl WorthQueryInvariantExecutionProvider for Arc<WorthQueryPrimaryGraphProvider
         let material = self.semantic_invariant_material(session)?;
         let load_evidence = execution.state_load_evidence();
         material.validate_load(&execution, load_evidence)?;
-        if !self
+        let attempts = self
             .attempts
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .has_invariant_approved_candidate(session)
-        {
-            return Err(missing_candidate_failure());
-        }
-        let semantic_work = u64::try_from(load_evidence.loaded_fact_locators().len())
-            .map_err(|_| owner_failure())?;
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let candidate = attempts
+            .approved_candidate(session)
+            .ok_or_else(missing_candidate_failure)?;
+        let semantic_work = receipt_closure::requirement_work(
+            candidate.invariant_evidence(),
+            execution.requirement(),
+            load_evidence.loaded_fact_locators().len(),
+        )?;
         let evidence = WorthQueryInvariantVerdictEvidence::new(
             execution.requirement().slot(),
             "relational-installed-invariant-authority",
@@ -207,14 +212,18 @@ impl WorthQueryPrimaryGraphProvider {
         session: WorthQueryProviderSessionView<'_>,
         material: ApplicationInvariantCandidateMaterial,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
-        let owner_work =
-            u64::try_from(material.semantic.expected.len()).map_err(|_| owner_failure())?;
+        let semantic_work = admit_candidate_validator_work(&material)?;
         let candidate = self.validate_relational_candidate(
             material.batch,
             &material.branch,
             &material.product,
             &material.application_touches,
             material.aftermath_causality.as_ref(),
+        )?;
+        let owner_work = receipt_closure::validate_receipt_closure(
+            candidate.invariant_evidence(),
+            &material.requirements,
+            semantic_work,
         )?;
         let touch_admission =
             super::application_touch_admission::admit_validated_application_touches(

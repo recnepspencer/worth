@@ -1,11 +1,19 @@
+mod candidate_reservation;
+mod candidate_retained_representation;
 mod conditional_definition;
 mod emission;
+mod entity_selection;
 mod model;
 mod optional_field_authoring;
 mod ordinary_field_authoring;
+pub(super) mod output_correspondence;
 mod relation_effects;
+mod reservation_charging;
 mod target_admission;
 
+#[cfg(test)]
+#[path = "effect_program/candidate_retained_representation_tests.rs"]
+mod candidate_retained_representation_tests;
 #[cfg(test)]
 mod external_payload_tests;
 #[cfg(test)]
@@ -41,11 +49,21 @@ use super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryProjectedApplicationMutation,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEntityIdentity, WorthQueryApplicationEntityKey,
-    WorthQueryInvariantMutationTarget,
+use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
+pub(in crate::domain_computation::primary_graph) use candidate_reservation::WorthQueryCandidateValidatorWorkAdmission;
+use candidate_reservation::{CandidateItemKind, WorthQueryCandidateReservation};
+use candidate_retained_representation as retained_representation;
+pub use output_correspondence::{
+    Create as WorthQueryCreateOutput, Preserve as WorthQueryPreserveOutput,
+    Retire as WorthQueryRetireOutput, WorthQueryApplicationOutputCorrespondence,
+    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
 };
 use target_admission::installed_contract_admits_program_target;
+use worth_query_declaration::facade::{
+    application_operation::ApplicationCandidateRequirements,
+    domain_computation::WorthQuerySemanticScaleAxis,
+};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -91,64 +109,67 @@ impl<Schema, Operation, Input, Scope>
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling,
             conditional_definition: None,
+            candidate_reservation: None,
+            output_correspondence: Default::default(),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn begin_reserved_effect_program(
+        self,
+        requested: ApplicationCandidateRequirements,
+        ceiling: ApplicationCandidateRequirements,
+    ) -> Result<
+        WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let envelope = self
+            .admission
+            .allowed_graph_contract()
+            .execution_strategy()
+            .expect("installed application operation has exactly one execution strategy")
+            .envelope();
+        let reservation = WorthQueryCandidateReservation::admit(
+            requested,
+            ceiling,
+            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
+            envelope.resource_ceiling(
+                WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
+            ),
+            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
+        )?;
+        let capacity = reservation.total_items();
+        let layout = Arc::clone(&self.lease.layout);
+        let emission_retained_bytes_ceiling =
+            envelope.resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
+        Ok(WorthQueryApplicationEffectProgramBuilder {
+            read_set: self,
+            layout,
+            program: Arc::new(()),
+            effects: Vec::with_capacity(capacity),
+            keys: BTreeSet::new(),
+            emission_retained_bytes: 0,
+            emission_retained_bytes_ceiling,
+            conditional_definition: None,
+            candidate_reservation: Some(reservation),
+            output_correspondence: Default::default(),
+        })
     }
 }
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn projected_entity<Entity>(
+    pub(in crate::domain_computation::primary_graph) fn handler_checkpoint(
         &self,
-        target: &WorthQueryInvariantMutationTarget<Schema, Entity>,
-    ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
-    {
-        let observed = self
-            .read_set
-            .facts
-            .iter()
-            .any(|fact| fact.touches_entity(target.entity_id));
-        if !observed {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                target.entity.as_ref(),
-            ));
-        }
-        Ok(WorthQueryApplicationEffectEntity {
-            reference: EntityReference::Existing(target.entity_id),
-            entity: target.entity.to_string(),
-            created_effect: None,
-            program: Arc::clone(&self.program),
-            _marker: PhantomData,
-        })
-    }
-
-    pub fn existing_entity<Entity>(
-        &self,
-        identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
-    ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
-    {
-        let observed = self
-            .read_set
-            .facts
-            .iter()
-            .any(|fact| fact.touches_entity(identity.entity_id()));
-        if identity.runtime_authority() != self.read_set.admission.runtime_authority()
-            || identity.binding_identity() != self.read_set.admission.binding_identity()
-            || !observed
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                identity.entity_name(),
-            ));
-        }
-        Ok(WorthQueryApplicationEffectEntity {
-            reference: EntityReference::Existing(identity.entity_id()),
-            entity: identity.entity_name().to_string(),
-            created_effect: None,
-            program: Arc::clone(&self.program),
-            _marker: PhantomData,
-        })
+    ) -> Result<
+        (),
+        worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
+    > {
+        self.read_set
+            .admission
+            .publication_request()
+            .interruption()
+            .map_or(Ok(()), Err)
     }
 
     pub fn create_entity<Entity>(
@@ -170,12 +191,21 @@ impl<Schema, Operation, Input, Scope>
             )
         })?;
         let key = key.into_string();
-        if !self.keys.insert((kind, key.clone())) {
+        if self.keys.contains(&(kind, key.clone())) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DuplicateEffectKey,
                 entity.name(),
             ));
         }
+        let retained_representation_bytes =
+            retained_representation::created_entity(&key, entity.name())
+                .ok_or_else(candidate_representation_denial)?;
+        self.charge_candidate_representation(
+            CandidateItemKind::Create,
+            retained_representation_bytes,
+            0,
+        )?;
+        self.keys.insert((kind, key.clone()));
         let reference =
             EntityReference::Created(worth_relational::facade::transactions::CreatedEntityRef {
                 partition_id: worth_relational::facade::identity::PartitionId::main(),
@@ -222,14 +252,35 @@ impl<Schema, Operation, Input, Scope>
             field: field.field().to_string(),
         })?;
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
-        let Some(WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. }) = target
-            .created_effect
-            .and_then(|ordinal| self.effects.get_mut(ordinal))
+        let Some(created_effect) = target.created_effect else {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
+                field.entity(),
+            ));
+        };
+        let Some(WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. }) =
+            self.effects.get(created_effect)
         else {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
                 field.entity(),
             ));
+        };
+        let retained_representation_bytes =
+            retained_representation::field_entry(&locator, &value, !fields.contains_key(&locator))
+                .ok_or_else(candidate_representation_denial)?;
+        let replaced_representation_bytes = fields
+            .get(&locator)
+            .map_or(0, retained_representation::value);
+        self.charge_candidate_representation(
+            CandidateItemKind::Write,
+            retained_representation_bytes,
+            replaced_representation_bytes,
+        )?;
+        let WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. } =
+            &mut self.effects[created_effect]
+        else {
+            unreachable!("validated created effect changed before field retention");
         };
         fields.insert(locator, value);
         Ok(())
@@ -253,6 +304,7 @@ impl<Schema, Operation, Input, Scope>
                 entity.name(),
             ));
         };
+        self.charge_candidate_item(CandidateItemKind::Delete)?;
         self.effects
             .push(WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id });
         Ok(())
@@ -273,12 +325,19 @@ impl<Schema, Operation, Input, Scope>
                     self.read_set.admission.operation(),
                 )
             })?;
+        self.output_correspondence.validate_effects(&self.effects)?;
+        let validator_work_admission = self.candidate_reservation.as_ref().map_or_else(
+            WorthQueryCandidateValidatorWorkAdmission::unreserved_internal,
+            WorthQueryCandidateReservation::validator_work_admission,
+        );
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self.read_set,
             effects: self.effects,
             emission_retained_bytes: self.emission_retained_bytes,
             emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
             conditional_definition: self.conditional_definition,
+            validator_work_admission,
+            output_correspondence: self.output_correspondence,
         })
     }
 
@@ -328,4 +387,11 @@ impl<Schema, Operation, Input, Scope>
                 )
             })
     }
+}
+
+fn candidate_representation_denial() -> WorthQueryApplicationAttemptDenial {
+    denial(
+        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
+        "candidate retained representation overflowed",
+    )
 }

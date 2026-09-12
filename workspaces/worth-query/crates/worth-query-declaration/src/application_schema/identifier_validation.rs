@@ -40,6 +40,52 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::ApplicationMutation { description } => {
+                super::mutation_description_validation::validate_identifiers(description)?;
+            }
+            ApplicationSchemaMember::ApplicationInvariant {
+                invariant,
+                major,
+                minor,
+                required_groups,
+                read_closure,
+                applicability,
+                provider,
+                execution_point,
+                enforcement,
+                ..
+            } => {
+                validate_simple_identifier(invariant)?;
+                if *major == 0 && *minor == 0 {
+                    return Err(ApplicationSchemaDeclarationDenial::InvalidIdentifier);
+                }
+                validate_simple_identifier(provider)?;
+                for target in read_closure.iter().chain(applicability) {
+                    let value = match target {
+                        super::ApplicationInvariantScopeTarget::Entity(value)
+                        | super::ApplicationInvariantScopeTarget::Relation(value) => value,
+                    };
+                    validate_simple_identifier(value)?;
+                }
+                let valid_enforcement = matches!(
+                    (execution_point, enforcement),
+                    (
+                        super::ApplicationInvariantExecutionPoint::CommitBoundary
+                            | super::ApplicationInvariantExecutionPoint::MutationSensitive,
+                        super::ApplicationInvariantEnforcement::BlockCommit
+                    ) | (
+                        super::ApplicationInvariantExecutionPoint::SnapshotPublication,
+                        super::ApplicationInvariantEnforcement::BlockPublication
+                    )
+                );
+                if required_groups.is_empty()
+                    || read_closure.is_empty()
+                    || applicability.is_empty()
+                    || !valid_enforcement
+                {
+                    return Err(ApplicationSchemaDeclarationDenial::InvalidIdentifier);
+                }
+            }
             ApplicationSchemaMember::Entity { entity } => validate_simple_identifier(entity)?,
             ApplicationSchemaMember::Aspect { entity, aspect, .. } => {
                 validate_identifiers([entity, aspect])?;

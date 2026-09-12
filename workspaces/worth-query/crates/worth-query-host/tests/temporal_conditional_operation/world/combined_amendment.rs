@@ -39,7 +39,7 @@ impl CourtroomWorld {
         let principal = selected
             .resolve_authenticated_principal(
                 &principal_binding,
-                external,
+                &external,
                 &request,
                 primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
             )

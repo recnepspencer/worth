@@ -70,10 +70,13 @@ fn installation_resolves_only_the_package_declared_typed_reference() {
     let changed_scope = ChangedScopeQuery::reference();
 
     for denial in [
-        schema.application_query(changed).err().unwrap(),
-        schema.application_query(changed_parameters).err().unwrap(),
-        schema.application_query(changed_result).err().unwrap(),
-        schema.application_query(changed_scope).err().unwrap(),
+        schema.certification_query(changed).err().unwrap(),
+        schema
+            .certification_query(changed_parameters)
+            .err()
+            .unwrap(),
+        schema.certification_query(changed_result).err().unwrap(),
+        schema.certification_query(changed_scope).err().unwrap(),
     ] {
         assert_eq!(
             denial.kind(),
@@ -81,7 +84,7 @@ fn installation_resolves_only_the_package_declared_typed_reference() {
         );
     }
     assert_eq!(
-        schema.application_query(missing).err().unwrap().kind(),
+        schema.certification_query(missing).err().unwrap().kind(),
         WorthQueryApplicationQueryInstallationDenialKind::QueryNotInstalled
     );
 }
@@ -92,7 +95,9 @@ fn installed_query_authority_is_exact_to_runtime_and_generation() {
     let current_schema = current
         .bind_application_schema(QueryTestSchema::declaration().unwrap())
         .unwrap();
-    let query = current_schema.application_query(query_reference()).unwrap();
+    let query = current_schema
+        .certification_query(query_reference())
+        .unwrap();
 
     let rebuilt_schema = current
         .rebuild()
@@ -131,7 +136,9 @@ fn installed_query_rejects_same_runtime_package_identity_drift() {
     let current_schema = current
         .bind_application_schema(QueryTestSchema::declaration().unwrap())
         .unwrap();
-    let query = current_schema.application_query(query_reference()).unwrap();
+    let query = current_schema
+        .certification_query(query_reference())
+        .unwrap();
     let drifted_schema = installed_index_with(runtime, true)
         .bind_application_schema(QueryTestSchema::declaration().unwrap())
         .unwrap();

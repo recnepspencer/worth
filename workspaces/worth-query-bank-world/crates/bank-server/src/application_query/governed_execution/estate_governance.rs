@@ -1,5 +1,7 @@
 use bank_domain::model::BankPrincipalId;
-use bank_domain::queries::{EstateGovernanceQuery, EstateGovernanceRequest};
+use bank_domain::queries::{
+    EstateGovernanceQuery, EstateGovernanceQueryBinding, EstateGovernanceRequest,
+};
 use bank_domain::reads::EstateGovernanceContext;
 use bank_domain::schema::{
     BankSchema, EstateCase, EstateCaseIdentityField, Principal, ViewEstateAdministrationCapability,
@@ -28,10 +30,12 @@ pub(crate) fn execute_estate_governance(
         .on_branch(application.current_world())
         .select()
         .map_err(BankApplicationQueryDenial::from_product_selection)?;
-    let query = application
+    let query_binding = application
         .installed_schema()
-        .application_query(EstateGovernanceQuery::reference())
+        .installed_query_binding::<EstateGovernanceQueryBinding>()
         .map_err(BankApplicationQueryDenial::from_installation)?;
+
+    let query = query_binding.query();
     let capability = application
         .installed_schema()
         .capability(
@@ -63,7 +67,7 @@ pub(crate) fn execute_estate_governance(
     >::new(principal.query(), &scope);
     let plan = selected
         .admit_governed_application_query(
-            &query,
+            query,
             &access,
             capability_access,
             ApplicationQueryParameterSet::<EstateGovernanceQuery>::new(),

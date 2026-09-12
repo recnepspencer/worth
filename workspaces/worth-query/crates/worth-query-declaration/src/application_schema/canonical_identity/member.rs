@@ -5,6 +5,8 @@ mod aftermath;
 mod authorization;
 mod capability;
 mod field;
+mod invariant;
+mod mutation_description;
 mod operation;
 mod principal_binding;
 mod schema;
@@ -14,16 +16,21 @@ pub(super) fn append_member(
     basis: &mut ApplicationSchemaCanonicalBasis,
     index: usize,
     member: &ApplicationSchemaMember,
-    revised: bool,
 ) {
     let prefix = format!("member[{index}]");
     match member {
+        ApplicationSchemaMember::ApplicationMutation { description } => {
+            mutation_description::append(basis, &prefix, description)
+        }
+        ApplicationSchemaMember::ApplicationInvariant { .. } => {
+            invariant::append(basis, &prefix, member)
+        }
         ApplicationSchemaMember::Entity { .. }
         | ApplicationSchemaMember::Aspect { .. }
         | ApplicationSchemaMember::Field { .. }
         | ApplicationSchemaMember::Relation { .. }
         | ApplicationSchemaMember::PrincipalBinding { .. } => {
-            schema::append_schema_member(basis, &prefix, member, revised)
+            schema::append_schema_member(basis, &prefix, member)
         }
         ApplicationSchemaMember::ApplicationQuery { .. }
         | ApplicationSchemaMember::ApplicationCapability { .. }

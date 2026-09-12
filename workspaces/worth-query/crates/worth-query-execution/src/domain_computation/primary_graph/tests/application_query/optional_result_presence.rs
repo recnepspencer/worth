@@ -32,7 +32,7 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -51,7 +51,7 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
     let query = world
         .application
         .installed_schema()
-        .application_query(OptionalAccountFieldQuery::reference())
+        .certification_query(OptionalAccountFieldQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let plan = world

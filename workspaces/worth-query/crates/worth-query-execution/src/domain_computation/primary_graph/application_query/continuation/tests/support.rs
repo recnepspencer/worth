@@ -63,7 +63,7 @@ impl ContinuationTestContext {
             .expect("the selected product branch remains admitted")
             .resolve_authenticated_principal(
                 &world.binding,
-                external,
+                &external,
                 &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
@@ -82,7 +82,7 @@ impl ContinuationTestContext {
         let query = world
             .application
             .installed_schema()
-            .application_query(LiveAccountActivityQuery::reference())
+            .certification_query(LiveAccountActivityQuery::reference())
             .unwrap();
         Self {
             world,

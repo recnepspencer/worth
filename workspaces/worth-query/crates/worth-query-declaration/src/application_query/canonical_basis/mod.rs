@@ -13,7 +13,7 @@ use worth_foundational::facade::{
 pub(in crate::application_query) use definition::prepare_definition_basis;
 
 pub const APPLICATION_QUERY_DOMAIN: &str = "worth-query.application-query";
-const APPLICATION_QUERY_RULE: &str = "worth-query-application-query-v2";
+const APPLICATION_QUERY_RULE: &str = "worth-query-application-query-v3";
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationQueryCanonicalArtifact {

@@ -24,7 +24,7 @@ use super::super::{
 };
 
 worth_query_application_contribution! {
-    pub(crate) contribution BankPayments in BankSchema {
+    pub contribution BankPayments in BankSchema {
         identity: "worth.bank.payments.v1",
         members: |schema| {
             let schema = install_payment_members(schema)
@@ -58,7 +58,9 @@ worth_query_application_contribution! {
                 .unit(UsdCurrency::reference())
                 .effect(AccountActivityEffect::reference())
                 .application_query(crate::queries::payment_detail_definition())
-                .application_query(crate::queries::pending_payments_definition());
+                .application_query_binding::<crate::queries::PaymentDetailQueryBinding>()
+                .application_query(crate::queries::pending_payments_definition())
+                .application_query_binding::<crate::queries::PendingPaymentsQueryBinding>();
             install_payment_operation_abilities(install_payment_ability_policies(schema))
         }
     }

@@ -28,6 +28,7 @@ pub(crate) use conditional_application_operation::complete_typed_package_fixture
 mod declaration_provenance;
 mod effect_fixture;
 mod field_references;
+mod mutation_binding;
 mod native_contract_catalog;
 mod operation_contracts;
 mod package_schema_identity;

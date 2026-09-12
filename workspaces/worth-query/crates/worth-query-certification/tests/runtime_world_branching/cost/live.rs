@@ -51,7 +51,7 @@ pub(crate) fn assert_graph_work_capacity_bounds() {
         let query = below
             .application
             .installed_schema()
-            .application_query(TemporalIntentLiveQuery::reference())
+            .certification_query(TemporalIntentLiveQuery::reference())
             .unwrap();
         let scope = live_scope(&below, root, &request);
         below
@@ -111,7 +111,7 @@ fn with_population<Result>(
             let query = world
                 .application
                 .installed_schema()
-                .application_query(TemporalIntentLiveQuery::reference())
+                .certification_query(TemporalIntentLiveQuery::reference())
                 .unwrap();
             let scope = live_scope(world, root, &request);
             world

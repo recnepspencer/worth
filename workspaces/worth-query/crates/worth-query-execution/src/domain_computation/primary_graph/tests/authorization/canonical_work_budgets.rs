@@ -23,7 +23,7 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

@@ -10,6 +10,8 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 mod authorization;
 mod capability;
+mod invariant;
+mod mutation_description;
 mod operation;
 mod schema;
 mod vocabulary;
@@ -18,6 +20,14 @@ pub(super) fn require_nesting_depth(
     member: &ApplicationSchemaMember,
     maximum_depth: u32,
 ) -> Result<(), Denial> {
+    if matches!(
+        member,
+        ApplicationSchemaMember::ApplicationInvariant { .. }
+            | ApplicationSchemaMember::ApplicationMutation { .. }
+    ) && maximum_depth < 2
+    {
+        return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
+    }
     capability::require_nesting_depth(member, maximum_depth)
 }
 
@@ -27,6 +37,10 @@ pub(super) fn write(
 ) -> Result<(), Denial> {
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::ApplicationMutation { description } => {
+            mutation_description::write(output, description)
+        }
+        ApplicationSchemaMember::ApplicationInvariant { .. } => invariant::write(output, member),
         ApplicationSchemaMember::Entity { .. }
         | ApplicationSchemaMember::Aspect { .. }
         | ApplicationSchemaMember::Field { .. }
@@ -67,12 +81,16 @@ pub(super) fn decode(
         tag @ 11..=18 => operation::decode(tag, input, budget),
         tag @ 19..=22 => authorization::decode(tag, input, budget),
         tag @ 23..=24 => vocabulary::decode(tag, input),
+        27 => invariant::decode(input, budget),
+        28 => mutation_description::decode(input, budget),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
 }
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ApplicationMutation { .. } => 28,
+        ApplicationSchemaMember::ApplicationInvariant { .. } => 27,
         ApplicationSchemaMember::Entity { .. } => 1,
         ApplicationSchemaMember::Aspect { .. } => 2,
         ApplicationSchemaMember::Field { frame: Some(_), .. } => 25,

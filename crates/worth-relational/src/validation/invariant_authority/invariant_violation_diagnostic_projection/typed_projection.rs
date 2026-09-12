@@ -297,6 +297,15 @@ impl InvariantViolationDiagnosticProjection<'_> {
                     ("detail", RelationalDiagnosticValue::string(*detail)),
                 ],
             ),
+            Self::CustomInvariantViolation { identity } => violation_diagnostic_object(
+                "custom_invariant_violation",
+                [(
+                    "identity",
+                    typed_value_helpers::custom_invariant_semantic_identity_diagnostic_value(
+                        identity,
+                    ),
+                )],
+            ),
             Self::PartitionIsolation {
                 contract_id,
                 relation_kind_id,

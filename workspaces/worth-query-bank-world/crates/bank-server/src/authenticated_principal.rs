@@ -1,5 +1,6 @@
 use bank_domain::model::BankPrincipalId;
 use bank_domain::schema::{BankSchema, Principal};
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryPrincipalAttribute;
 use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
 use worth_query_host::facade::primary_graph::WorthQueryAuthenticatedPrincipal;
@@ -8,6 +9,7 @@ use worth_query_host::facade::primary_graph::WorthQueryAuthenticatedPrincipal;
 /// the typed bank principal identity resolved from the same installed mapping.
 pub struct BankAuthenticatedPrincipal {
     principal_id: BankPrincipalId,
+    external: WorthQueryAuthenticatedExternalPrincipal<BankSchema>,
     query: WorthQueryAuthenticatedPrincipal<BankSchema, Principal, BankPrincipalId>,
 }
 
@@ -22,10 +24,12 @@ impl std::fmt::Debug for BankAuthenticatedPrincipal {
 impl BankAuthenticatedPrincipal {
     pub(crate) const fn new(
         principal_id: BankPrincipalId,
+        external: WorthQueryAuthenticatedExternalPrincipal<BankSchema>,
         query: WorthQueryAuthenticatedPrincipal<BankSchema, Principal, BankPrincipalId>,
     ) -> Self {
         Self {
             principal_id,
+            external,
             query,
         }
     }
@@ -35,11 +39,11 @@ impl BankAuthenticatedPrincipal {
     }
 
     pub fn external_identity(&self) -> &WorthQueryExternalPrincipalIdentity {
-        self.query.external_identity()
+        self.external.identity()
     }
 
     pub fn attributes(&self) -> &[WorthQueryPrincipalAttribute] {
-        self.query.attributes()
+        self.external.attributes()
     }
 
     pub const fn examined_candidate_count(&self) -> usize {
@@ -49,7 +53,11 @@ impl BankAuthenticatedPrincipal {
     /// Monotonic deadline after which this authentication cannot authorize
     /// new or retained work in the current process.
     pub fn authentication_valid_until(&self) -> std::time::Instant {
-        self.query.valid_until()
+        self.external.valid_until()
+    }
+
+    pub(crate) const fn external(&self) -> &WorthQueryAuthenticatedExternalPrincipal<BankSchema> {
+        &self.external
     }
 
     pub(crate) const fn query(

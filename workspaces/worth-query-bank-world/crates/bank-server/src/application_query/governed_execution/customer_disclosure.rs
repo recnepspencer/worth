@@ -1,6 +1,7 @@
 use bank_domain::model::BankPrincipalId;
 use bank_domain::queries::{
-    EstateCustomerDisclosure, EstateCustomerDisclosureQuery, EstateCustomerDisclosureRequest,
+    EstateCustomerDisclosure, EstateCustomerDisclosureQuery, EstateCustomerDisclosureQueryBinding,
+    EstateCustomerDisclosureRequest,
 };
 use bank_domain::schema::{
     BankSchema, EstateCase, EstateCaseIdentityField, Principal,
@@ -31,10 +32,12 @@ pub(crate) fn execute_estate_customer_disclosure(
         .on_branch(application.current_world())
         .select()
         .map_err(BankApplicationQueryDenial::from_product_selection)?;
-    let query = application
+    let query_binding = application
         .installed_schema()
-        .application_query(EstateCustomerDisclosureQuery::reference())
+        .installed_query_binding::<EstateCustomerDisclosureQueryBinding>()
         .map_err(BankApplicationQueryDenial::from_installation)?;
+
+    let query = query_binding.query();
     let capability = application
         .installed_schema()
         .capability(
@@ -66,7 +69,7 @@ pub(crate) fn execute_estate_customer_disclosure(
     >::new(principal.query(), &scope);
     let plan = selected
         .admit_governed_application_query(
-            &query,
+            query,
             &access,
             capability_access,
             ApplicationQueryParameterSet::<EstateCustomerDisclosureQuery>::new(),

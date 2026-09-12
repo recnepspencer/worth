@@ -25,7 +25,7 @@ pub(super) fn principal(
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &binding,
-            external,
+            &external,
             request,
             primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
         )

@@ -174,7 +174,7 @@ where
     let principal = selected
         .resolve_authenticated_principal(
             &access.principal_binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

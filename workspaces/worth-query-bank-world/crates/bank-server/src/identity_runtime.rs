@@ -15,6 +15,9 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticationAdapterAdmission, WorthQueryAuthenticationAudience,
     WorthQueryAuthenticationMethod, WorthQueryRequestScope,
 };
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
+};
 use worth_query_host::facade::declaration::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationStructuredValueBinding,
 };
@@ -64,6 +67,14 @@ pub struct BankIdentityRuntime {
 }
 
 impl BankIdentityRuntime {
+    pub fn request<'application, 'principal, 'scope>(
+        &'application self,
+        principal: &'principal BankAuthenticatedPrincipal,
+        scope: &'scope WorthQueryRequestScope,
+    ) -> WorthQueryApplicationRequest<'application, 'principal, 'scope, BankSchema> {
+        self.runtime.request(principal.external(), scope)
+    }
+
     pub fn install(
         seeds: impl IntoIterator<Item = BankPrincipalSeed>,
     ) -> Result<Self, BankIdentityRuntimeBuildError> {
@@ -139,13 +150,17 @@ impl BankIdentityRuntime {
         let query = selected
             .resolve_authenticated_principal(
                 &self.binding,
-                external,
+                &external,
                 scope,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .map_err(BankPrincipalAdmissionError::Resolution)?;
         let principal_id = *query.principal_identity();
-        Ok(BankAuthenticatedPrincipal::new(principal_id, query))
+        Ok(BankAuthenticatedPrincipal::new(
+            principal_id,
+            external,
+            query,
+        ))
     }
 
     pub fn validate(

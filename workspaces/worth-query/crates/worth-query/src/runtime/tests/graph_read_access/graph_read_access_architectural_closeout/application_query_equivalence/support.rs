@@ -141,7 +141,7 @@ pub(super) fn installed_application_query() -> WorthQueryInstalledApplicationQue
     .unwrap()
     .bind_application_schema(EquivalenceSchema::declaration().unwrap())
     .unwrap()
-    .application_query(query_reference())
+    .certification_query(query_reference())
     .unwrap()
 }
 

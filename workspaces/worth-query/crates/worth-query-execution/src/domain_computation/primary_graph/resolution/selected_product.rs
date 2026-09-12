@@ -20,7 +20,7 @@ where
             PrincipalIdentity,
             PrincipalIdentityBinding,
         >,
-        external: WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &WorthQueryRequestScope,
         mode: WorthQueryPrincipalResolutionMode,
     ) -> Result<

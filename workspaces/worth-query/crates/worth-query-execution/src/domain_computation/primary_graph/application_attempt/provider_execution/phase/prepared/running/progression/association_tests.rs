@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
     WorthQueryApplicationCommitPreparationRequest, WorthQueryRunningApplicationCommit,
 };
 use crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::{
-    retained_status_program, RetentionMutationBreadth,
+    retained_status_program, RetentionMutationBreadth, RETAINED_ACCOUNT_OUTPUT,
 };
 use crate::domain_computation::primary_graph::tests::application_attempt::{
     authenticated_principal, idempotency, resolved_account,
@@ -68,6 +68,15 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
     assert!(executed.is_same_authoritative_commit(&recovered));
     assert_eq!(executed.retained_preimage(), recovered.retained_preimage());
     assert_eq!(executed.dispatch_outbox(), recovered.dispatch_outbox());
+    let executed_output = executed
+        .output_correspondence()
+        .entity(RETAINED_ACCOUNT_OUTPUT)
+        .expect("fresh receipt must retain the bound output role");
+    let recovered_output = recovered
+        .output_correspondence()
+        .entity(RETAINED_ACCOUNT_OUTPUT)
+        .expect("idempotent receipt must recover the same output role");
+    assert_eq!(executed_output.entity_id(), recovered_output.entity_id());
     assert_eq!(executed.terminal().attempt_resources_released(), Some(true));
     assert_eq!(
         recovered.terminal().attempt_resources_released(),

@@ -2,11 +2,12 @@ use std::num::NonZeroUsize;
 
 use bank_domain::model::{AccountId, BankPrincipalId};
 use bank_domain::queries::{
-    AccountActivityLiveCause, AccountActivityQuery, AccountActivityQueryParameters,
-    AccountActivityQueryResult,
+    account_activity, AccountActivityLiveCause, AccountActivityQuery, AccountActivityQueryBinding,
+    AccountActivityQueryParameters, AccountActivityQueryResult,
 };
 use bank_domain::schema::{Account, AccountIdentity, BankSchema, Posting, Principal};
 use worth_query_host::facade::{
+    application_entry::WorthQueryApplicationRequestExt,
     declaration::application_query::ApplicationQueryParameterSet,
     domain::WorthQueryInstalledApplicationQuery,
     primary_graph::{
@@ -26,7 +27,7 @@ pub use output::{
     BankAccountActivityQueryResult,
 };
 
-use super::{execute_one_shot, BankApplicationQueryDenial, BankApplicationQueryInvocation};
+use super::BankApplicationQueryDenial;
 use crate::{
     BankApplicationLiveCloseOutcome, BankAuthenticatedPrincipal, BankCommitReceipt,
     BankIdentityRuntime, BankReadControls,
@@ -132,19 +133,15 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
         self,
         controls: BankReadControls,
     ) -> Result<BankAccountActivityQueryResult, BankApplicationQueryDenial> {
-        let query_controls = controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                AccountActivityQuery::reference(),
-                AccountIdentity::reference(),
-                self.account,
-                ApplicationQueryParameterSet::<AccountActivityQuery>::new(),
-                query_controls,
-                controls.request(),
-            ),
-        )
+        let result = self
+            .runtime
+            .application_runtime()
+            .request(self.principal.external(), controls.request())
+            .query(account_activity(self.account))
+            .limits(controls.maximum_result_count(), controls.maximum_work())
+            .execute()
+            .map_err(BankApplicationQueryDenial::from_request_query)?;
+        Ok(result)
     }
 
     pub fn page(
@@ -239,10 +236,12 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
         request: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<PreparedAccountActivity<'runtime, 'principal>, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
-        let query = application
+        let query_binding = application
             .installed_schema()
-            .application_query(AccountActivityQuery::reference())
+            .installed_query_binding::<AccountActivityQueryBinding>()
             .map_err(BankApplicationQueryDenial::from_installation)?;
+
+        let query = query_binding.into_query();
         let scope = selected
             .resolve_entity(
                 AccountIdentity::reference(),

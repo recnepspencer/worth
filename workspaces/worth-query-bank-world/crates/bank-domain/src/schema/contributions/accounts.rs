@@ -24,7 +24,7 @@ use super::super::{
 };
 
 worth_query_application_contribution! {
-    pub(crate) contribution BankAccounts in BankSchema {
+    pub contribution BankAccounts in BankSchema {
         identity: "worth.bank.accounts.v1",
         members: |schema| {
             let schema = install_account_members(schema)
@@ -37,6 +37,7 @@ worth_query_application_contribution! {
                 .ability(ServiceInstitutionAccount::reference())
                 .ability(AuditInstitution::reference())
                 .operation(without_external_effect_or_aftermath(CreatePersonalAccountOperation::reference()))
+                .application_mutation_binding::<CreatePersonalAccountMutationBinding>()
                 .operation(without_external_effect_or_aftermath(CreateBusinessAccountOperation::reference()))
                 .operation(without_external_effect_or_aftermath(GrantAccountAuthorizationOperation::reference()))
                 .operation(without_external_effect_or_aftermath(RevokeAccountAuthorizationOperation::reference()));
@@ -47,11 +48,17 @@ worth_query_application_contribution! {
                 .policy(AccountMutationScopePolicy::reference())
                 .policy(EmployeeScopePolicy::reference())
                 .application_query(crate::queries::account_authorized_users_definition())
+                .application_query_binding::<crate::queries::AccountAuthorizedUsersQueryBinding>()
                 .application_query(crate::queries::account_discovery_definition())
+                .application_query_binding::<crate::queries::AccountDiscoveryQueryBinding>()
                 .application_query(crate::queries::account_detail_definition())
+                .application_query_binding::<crate::queries::AccountDetailQueryBinding>()
                 .application_query(crate::queries::account_summary_definition())
+                .application_query_binding::<crate::queries::AccountSummaryQueryBinding>()
                 .application_query(crate::queries::account_activity_definition())
-                .application_query(crate::queries::institution_audit_definition());
+                .application_query_binding::<crate::queries::AccountActivityQueryBinding>()
+                .application_query(crate::queries::institution_audit_definition())
+                .application_query_binding::<crate::queries::InstitutionAuditQueryBinding>();
             install_account_operation_abilities(install_account_ability_policies(schema))
         }
     }

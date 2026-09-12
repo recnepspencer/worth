@@ -107,6 +107,15 @@ impl WorthQueryApplicationAttemptPhase {
         matches!(self.0, PhaseState::InvariantApproved { .. })
     }
 
+    pub(super) fn approved_candidate(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::ValidatedRelationalProposal> {
+        match &self.0 {
+            PhaseState::InvariantApproved { candidate, .. } => Some(candidate),
+            _ => None,
+        }
+    }
+
     pub(super) fn take_commit_ready(
         self,
     ) -> Option<(
@@ -180,6 +189,12 @@ impl WorthQueryApplicationAttemptState {
 
     pub(super) const fn phase_is_commit_ready(&self) -> bool {
         self.phase.is_commit_ready()
+    }
+
+    pub(super) fn approved_candidate(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::ValidatedRelationalProposal> {
+        self.phase.approved_candidate()
     }
 
     pub(super) fn take_commit_parts(

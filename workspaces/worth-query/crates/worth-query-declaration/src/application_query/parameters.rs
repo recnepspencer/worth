@@ -36,6 +36,8 @@ pub struct ApplicationQueryParameterDefinition {
     name: String,
     scalar_family: ScalarAspectType,
     value_type: crate::portable_identity::WorthQueryPortableTypeIdentity,
+    unit: Option<String>,
+    frame: Option<String>,
 }
 
 impl ApplicationQueryParameterDefinition {
@@ -43,11 +45,15 @@ impl ApplicationQueryParameterDefinition {
         name: String,
         scalar_family: ScalarAspectType,
         value_type: crate::portable_identity::WorthQueryPortableTypeIdentity,
+        unit: Option<String>,
+        frame: Option<String>,
     ) -> Self {
         Self {
             name,
             scalar_family,
             value_type,
+            unit,
+            frame,
         }
     }
 
@@ -63,6 +69,14 @@ impl ApplicationQueryParameterDefinition {
         self.value_type.as_str()
     }
 
+    pub fn unit(&self) -> Option<&str> {
+        self.unit.as_deref()
+    }
+
+    pub fn frame(&self) -> Option<&str> {
+        self.frame.as_deref()
+    }
+
     pub(super) fn typed<Query, Parameter, Binding>(
         parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
     ) -> Self
@@ -73,6 +87,8 @@ impl ApplicationQueryParameterDefinition {
             name: parameter.name().to_owned(),
             scalar_family: Binding::SCALAR_FAMILY,
             value_type: Binding::IDENTITY,
+            unit: Binding::UNIT.map(|unit| unit.as_str().to_owned()),
+            frame: Binding::FRAME.map(|frame| frame.as_str().to_owned()),
         }
     }
 }

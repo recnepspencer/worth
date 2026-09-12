@@ -24,7 +24,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
         .selected_product()
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -32,7 +32,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let query = world
         .application
         .installed_schema()
-        .application_query(LiveAccountActivityQuery::reference())
+        .certification_query(LiveAccountActivityQuery::reference())
         .unwrap();
     let account = world
         .selected_product()
@@ -112,7 +112,7 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         .selected_product()
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

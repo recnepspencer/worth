@@ -29,35 +29,39 @@ mod overview_shape;
 
 pub use customer_disclosure::{
     estate_customer_disclosure_definition, estate_customer_identity, EstateCustomerDisclosure,
-    EstateCustomerDisclosureQuery, EstateCustomerDisclosureQueryParameters,
-    EstateCustomerDisclosureRequest,
+    EstateCustomerDisclosureQuery, EstateCustomerDisclosureQueryBinding,
+    EstateCustomerDisclosureQueryParameters, EstateCustomerDisclosureRequest,
 };
 pub use emergency_access_activity::{
     estate_emergency_access_activity, estate_emergency_access_activity_definition,
     EstateEmergencyAccessActivity, EstateEmergencyAccessActivityItem,
     EstateEmergencyAccessActivityLiveCause, EstateEmergencyAccessActivityQuery,
-    EstateEmergencyAccessActivityQueryParameters, EstateEmergencyAccessActivityRequest,
+    EstateEmergencyAccessActivityQueryBinding, EstateEmergencyAccessActivityQueryParameters,
+    EstateEmergencyAccessActivityRequest,
 };
 pub use emergency_account_details::{
     estate_emergency_account_details, estate_emergency_account_details_definition,
     EstateEmergencyAccountDetails, EstateEmergencyAccountDetailsQuery,
-    EstateEmergencyAccountDetailsQueryParameters, EstateEmergencyAccountDetailsRequest,
+    EstateEmergencyAccountDetailsQueryBinding, EstateEmergencyAccountDetailsQueryParameters,
+    EstateEmergencyAccountDetailsRequest,
 };
 pub use governance::{
     estate_governance_context, estate_governance_definition, EstateGovernanceQuery,
-    EstateGovernanceQueryParameters, EstateGovernanceRequest,
+    EstateGovernanceQueryBinding, EstateGovernanceQueryParameters, EstateGovernanceRequest,
 };
 pub use legal_compliance::{
     estate_legal_compliance, estate_legal_compliance_definition, EstateLegalComplianceQuery,
-    EstateLegalComplianceQueryParameters, EstateLegalComplianceRequest,
+    EstateLegalComplianceQueryBinding, EstateLegalComplianceQueryParameters,
+    EstateLegalComplianceRequest,
 };
 pub use legal_compliance_projection::EstateLegalComplianceResult;
 pub use mandatory_review::{
     estate_mandatory_review_definition, estate_mandatory_reviews, EstateMandatoryReviewQuery,
-    EstateMandatoryReviewQueryParameters, EstateMandatoryReviewRequest,
+    EstateMandatoryReviewQueryBinding, EstateMandatoryReviewQueryParameters,
+    EstateMandatoryReviewRequest,
 };
 pub use mandatory_review_projection::EstateMandatoryReviewResult;
 pub use overview::{
     estate_case, estate_case_overview_definition, EstateCaseOverviewQuery,
-    EstateCaseOverviewQueryParameters, EstateCaseOverviewRequest,
+    EstateCaseOverviewQueryBinding, EstateCaseOverviewQueryParameters, EstateCaseOverviewRequest,
 };

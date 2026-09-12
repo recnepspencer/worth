@@ -28,8 +28,8 @@ pub(crate) use custom_rule::{
     CustomInvariantTraversalError, PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet,
 };
 pub use descriptor::{
-    CustomInvariantDescriptor, CustomInvariantOperationalMetadata, InvariantRuleDescriptor,
-    InvariantSemanticsClass, SupportedExecutionPoints,
+    CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantOperationalMetadata,
+    InvariantRuleDescriptor, InvariantSemanticsClass, SupportedExecutionPoints,
 };
 #[allow(unused_imports)]
 pub use execution::InvariantWitnessBasis;

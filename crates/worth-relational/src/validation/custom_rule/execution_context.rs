@@ -22,6 +22,7 @@ pub struct CustomInvariantExecutionContext<'runtime> {
     counts: StructuralCountView,
     traversal: BoundedStructuralTraversal<'runtime>,
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    work: super::CustomInvariantWorkMeter,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -34,6 +35,7 @@ pub struct CustomInvariantProvenance {
     pub traversal: CustomInvariantTraversalSummary,
     #[serde(skip)]
     pub proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    pub work_units: std::num::NonZeroU64,
 }
 
 impl<'runtime> CustomInvariantExecutionContext<'runtime> {
@@ -43,19 +45,27 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         version_id: VersionId,
         current_version_id: VersionId,
         prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
+        work: super::CustomInvariantWorkMeter,
+        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
     ) -> Self {
-        let state_view = InvariantStateView::new(
-            observation.enforcement_partition_access(),
-            observation.enforcement_version_id(version_id),
-        );
+        let version_id = observation.enforcement_version_id(version_id);
+        let state_view =
+            InvariantStateView::new(observation.enforcement_partition_access(), version_id);
         let committed_state_view =
             InvariantStateView::new(observation.committed_partition_access(), current_version_id);
-        let touched = prepared_scope.retain_touched();
-        let aspect_states = StructuralAspectStateView::new(state_view);
-        let relations = StructuralRelationView::new(state_view);
+        work.try_charge(1);
+        let touched =
+            prepared_scope.retain_restricted(&state_view, &committed_state_view, &access, &work);
+        let aspect_states =
+            StructuralAspectStateView::new(state_view, work.clone(), access.clone());
+        let relations = StructuralRelationView::new(state_view, work.clone(), access.clone());
         let counts = StructuralCountView::from_touched_scope(&touched);
-        let traversal =
-            BoundedStructuralTraversal::new(runtime.performance_access(), relations, &touched);
+        let traversal = BoundedStructuralTraversal::new(
+            runtime.performance_access(),
+            relations.clone(),
+            &touched,
+            work.clone(),
+        );
         let proposal_identity = observation.proposal_identity().cloned();
         Self {
             performance: runtime.performance_access(),
@@ -64,11 +74,16 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             current_version_id,
             touched,
             aspect_states,
-            committed_aspect_states: StructuralAspectStateView::new(committed_state_view),
+            committed_aspect_states: StructuralAspectStateView::new(
+                committed_state_view,
+                work.clone(),
+                access,
+            ),
             relations,
             counts,
             traversal,
             proposal_identity,
+            work,
         }
     }
 
@@ -93,16 +108,16 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
     }
 
     pub fn aspect_states(&self) -> StructuralAspectStateView<'runtime> {
-        self.aspect_states
+        self.aspect_states.clone()
     }
 
     /// Read the immutable committed basis that the proposed view is checked against.
     pub fn committed_aspect_states(&self) -> StructuralAspectStateView<'runtime> {
-        self.committed_aspect_states
+        self.committed_aspect_states.clone()
     }
 
     pub fn relations(&self) -> StructuralRelationView<'runtime> {
-        self.relations
+        self.relations.clone()
     }
 
     pub fn counts(&self) -> StructuralCountView {
@@ -122,6 +137,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             counts: self.counts,
             traversal: self.traversal.summary(),
             proposal_identity: self.proposal_identity.clone(),
+            work_units: self.work.consumed(),
         }
     }
 }

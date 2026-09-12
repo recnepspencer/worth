@@ -24,7 +24,7 @@ pub fn world_no_effect_retains_conditional_provenance() {
     let query = world
         .application
         .installed_schema()
-        .application_query(schema::TemporalIntentLiveQuery::reference())
+        .certification_query(schema::TemporalIntentLiveQuery::reference())
         .unwrap();
     let live = world
         .application
@@ -114,7 +114,7 @@ pub fn live_query_receives_conditional_world_publication() {
     let query = world
         .application
         .installed_schema()
-        .application_query(schema::TemporalIntentLiveQuery::reference())
+        .certification_query(schema::TemporalIntentLiveQuery::reference())
         .unwrap();
     let mut live = world
         .application

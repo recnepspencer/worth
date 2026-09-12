@@ -138,15 +138,15 @@ impl ApplicationExternalEffectBinding for RetainedStatusNoticeBinding {
 worth_query_effect!(pub RetainedStatusEffect for IdentityExecutionSchema, payload RetainedStatusNoticeBinding);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MutationFreeNotice(pub String);
+pub struct MutationFreeNotice(pub u8);
 worth_query_declaration::worth_query_portable_type!(
     MutationFreeNotice => "worth.query.test.mutation-free-notice.v1"
 );
 
 worth_query_declaration::worth_query_structured_value_binding!(pub MutationFreeNoticeBinding for MutationFreeNotice { identity: "worth.query.test.mutation-free-notice.v1" });
 impl ApplicationRetainedEffectBinding for MutationFreeNoticeBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(value.0.len()).unwrap_or(u64::MAX)
+    fn retained_bytes(_value: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<MutationFreeNotice>()).unwrap_or(u64::MAX)
     }
 }
 
@@ -158,7 +158,7 @@ impl ApplicationExternalEffectBinding for MutationFreeNoticeBinding {
     const MAX_EXTERNAL_BYTES: u64 = 256;
 
     fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
-        value.0.as_bytes().to_vec()
+        vec![value.0; usize::from(value.0)]
     }
 }
 
@@ -238,6 +238,7 @@ worth_query_operation_requires!(MultiTouchOperation => [ViewAccount, EditAccount
 worth_query_operation_requires!(ChangeOwnershipOperation => [ManageOwnership]);
 worth_query_operation_requires!(PatchAccountDraftOperation => [ViewAccount]);
 worth_query_operation_writes!(TouchAccountOperation => [AccountStatus, AccountLabel]);
+worth_query_declaration::worth_query_operation_deletes!(TouchAccountOperation => [Account]);
 worth_query_operation_writes!(WrongFieldRetentionOperation => [AccountLabel]);
 worth_query_operation_writes!(ExactStatusRetentionOperation => [AccountStatus, AccountLabel]);
 worth_query_operation_writes!(MultiFieldRetentionOperation => [AccountStatus, AccountLabel]);

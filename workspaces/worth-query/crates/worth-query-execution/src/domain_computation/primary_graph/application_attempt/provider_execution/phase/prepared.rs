@@ -107,6 +107,8 @@ struct WorthQueryProviderAttemptPreparation {
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    validator_work_admission: crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
@@ -142,6 +144,8 @@ where
         emission_retained_bytes,
         emission_retained_bytes_ceiling,
         conditional_definition,
+        validator_work_admission,
+        output_correspondence,
     } = program;
     let mut admission = read_set.admission;
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
@@ -174,6 +178,8 @@ where
                 emission_retained_bytes_ceiling,
                 preimage_demand,
                 conditional_definition,
+                validator_work_admission,
+                output_correspondence,
             },
             idempotency,
             aftermath_causality,
@@ -221,6 +227,8 @@ fn prepare_application_provider_attempt(
         preparation.emission_retained_bytes_ceiling,
         preparation.preimage_demand,
         preparation.conditional_definition,
+        preparation.validator_work_admission,
+        preparation.output_correspondence,
     )
     .map_err(|_| ())
 }

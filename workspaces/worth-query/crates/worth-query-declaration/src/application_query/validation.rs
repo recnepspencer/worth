@@ -80,10 +80,15 @@ fn validate_portable_identities(
         || !portable_identity_is_valid(definition.parameter_type())
         || !portable_identity_is_valid(definition.result_type())
         || !portable_identity_is_valid(definition.scope_type())
-        || definition
-            .parameters()
-            .iter()
-            .any(|parameter| !portable_identity_is_valid(parameter.value_type()))
+        || definition.parameters().iter().any(|parameter| {
+            !portable_identity_is_valid(parameter.value_type())
+                || parameter
+                    .unit()
+                    .is_some_and(|unit| !portable_identity_is_valid(unit))
+                || parameter
+                    .frame()
+                    .is_some_and(|frame| !portable_identity_is_valid(frame))
+        })
         || definition
             .root_paths()
             .iter()

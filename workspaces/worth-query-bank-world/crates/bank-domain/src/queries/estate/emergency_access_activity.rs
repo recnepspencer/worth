@@ -139,6 +139,23 @@ worth_query_application_query!(
     scope EstateCase => "EstateCase",
     name "estate_emergency_access_activity"
 );
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateEmergencyAccessActivityRequestBinding for EstateEmergencyAccessActivityRequest { identity: "EstateEmergencyAccessActivityRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub EstateEmergencyAccessActivityQueryBinding for EstateEmergencyAccessActivityRequest, schema BankSchema,
+    identity "worth.bank.estate-emergency-access-activity-query-binding.v1",
+    input EstateEmergencyAccessActivityRequestBinding,
+    query EstateEmergencyAccessActivityQuery,
+    parameters EstateEmergencyAccessActivityQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result EstateEmergencyAccessActivityQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
+        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::EstateCaseIdentityField::reference(),
+    value EstateEmergencyAccessActivityRequest::estate,
+    limits results 1_024, work 100_000
+);
 
 pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefinition<
     BankSchema,

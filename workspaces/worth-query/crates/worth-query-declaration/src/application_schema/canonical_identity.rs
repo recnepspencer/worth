@@ -8,8 +8,7 @@ use super::{
     ApplicationSchemaContributionProvenance, ApplicationSchemaIdentity, ApplicationSchemaMember,
 };
 
-const LEGACY_RULE_VERSION: &str = "worth-query-application-schema-v11";
-const REVISED_RULE_VERSION: &str = "worth-query-application-schema-v12";
+const RULE_VERSION: &str = "worth-query-application-schema-v13";
 
 pub(super) struct ApplicationSchemaCanonicalHeader<'a> {
     pub owner: &'a str,
@@ -41,7 +40,6 @@ pub(super) fn canonical_identity_with_limits(
     ),
     ApplicationSchemaCanonicalBasisBudgetDenial,
 > {
-    let revised = uses_revised_preimage(members, contributions);
     let contribution_entries = contribution_entry_capacity(contributions);
     let mut canonical = ApplicationSchemaCanonicalBasis::with_capacity_and_limits(
         members.len(),
@@ -53,22 +51,16 @@ pub(super) fn canonical_identity_with_limits(
     canonical.text("header.name", header.name);
     canonical.u32("header.major", header.major);
     canonical.u32("header.minor", header.minor);
-    if revised {
-        append_contributions(&mut canonical, contributions);
-    }
+    append_contributions(&mut canonical, contributions);
     canonical.usize("member-count", members.len());
     for (index, member) in members.iter().enumerate() {
-        append_member(&mut canonical, index, member, revised);
+        append_member(&mut canonical, index, member);
         if canonical.is_denied() {
             break;
         }
     }
-    let version = CanonicalizationRuleVersion::new(if revised {
-        REVISED_RULE_VERSION
-    } else {
-        LEGACY_RULE_VERSION
-    })
-    .expect("the schema identity rule is valid");
+    let version =
+        CanonicalizationRuleVersion::new(RULE_VERSION).expect("the schema identity rule is valid");
     let (entries, work) = canonical.into_entries()?;
     let basis = prepare_canonical_basis_sequence(version, APPLICATION_SCHEMA_DOMAIN, entries)
         .into_result()
@@ -105,21 +97,6 @@ fn append_contributions(
             );
         }
     }
-}
-
-fn uses_revised_preimage(
-    members: &[ApplicationSchemaMember],
-    contributions: &[ApplicationSchemaContributionProvenance],
-) -> bool {
-    !contributions.is_empty()
-        || members.iter().any(|member| match member {
-            ApplicationSchemaMember::Field { frame, .. } => frame.is_some(),
-            ApplicationSchemaMember::Relation { integrity, .. } => {
-                *integrity
-                    != super::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
-            }
-            _ => false,
-        })
 }
 
 mod member;

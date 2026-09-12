@@ -2,7 +2,7 @@ use bank_domain::{
     model::BankPrincipalId,
     queries::{
         EstateEmergencyAccessActivity, EstateEmergencyAccessActivityQuery,
-        EstateEmergencyAccessActivityQueryParameters,
+        EstateEmergencyAccessActivityQueryBinding, EstateEmergencyAccessActivityQueryParameters,
     },
     schema::{BankSchema, EstateCase, Principal},
 };
@@ -133,10 +133,12 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
             -> Result<Output, BankApplicationQueryDenial>,
     ) -> Result<Output, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
-        let query = application
+        let query_binding = application
             .installed_schema()
-            .application_query(EstateEmergencyAccessActivityQuery::reference())
+            .installed_query_binding::<EstateEmergencyAccessActivityQueryBinding>()
             .map_err(BankApplicationQueryDenial::from_installation)?;
+
+        let query = query_binding.query();
         let capability = application
             .installed_schema()
             .capability(
@@ -170,7 +172,7 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
             >::new(self.principal.query(), &scope);
         let plan = selected
             .admit_governed_application_query(
-                &query,
+                query,
                 &access,
                 capability_access,
                 ApplicationQueryParameterSet::<EstateEmergencyAccessActivityQuery>::new(),

@@ -30,7 +30,7 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -49,7 +49,7 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
     let query = world
         .application
         .installed_schema()
-        .application_query(ScopedAccountSummaryQuery::reference())
+        .certification_query(ScopedAccountSummaryQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
@@ -89,7 +89,7 @@ fn declared_root_paths_union_and_deduplicate_before_projection() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -108,7 +108,7 @@ fn declared_root_paths_union_and_deduplicate_before_projection() {
     let query = world
         .application
         .installed_schema()
-        .application_query(CrossRootQuery::reference())
+        .certification_query(CrossRootQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world

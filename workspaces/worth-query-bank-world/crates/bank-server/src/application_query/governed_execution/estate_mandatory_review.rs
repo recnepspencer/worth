@@ -1,7 +1,8 @@
 use bank_domain::{
     model::BankPrincipalId,
     queries::{
-        EstateMandatoryReviewQuery, EstateMandatoryReviewRequest, EstateMandatoryReviewResult,
+        EstateMandatoryReviewQuery, EstateMandatoryReviewQueryBinding,
+        EstateMandatoryReviewRequest, EstateMandatoryReviewResult,
     },
     schema::{
         BankSchema, EstateCase, EstateCaseIdentityField, Principal,
@@ -33,10 +34,12 @@ pub(crate) fn execute_estate_mandatory_review(
         .on_branch(application.current_world())
         .select()
         .map_err(BankApplicationQueryDenial::from_product_selection)?;
-    let query = application
+    let query_binding = application
         .installed_schema()
-        .application_query(EstateMandatoryReviewQuery::reference())
+        .installed_query_binding::<EstateMandatoryReviewQueryBinding>()
         .map_err(BankApplicationQueryDenial::from_installation)?;
+
+    let query = query_binding.query();
     let capability = application
         .installed_schema()
         .capability(
@@ -68,7 +71,7 @@ pub(crate) fn execute_estate_mandatory_review(
     >::new(principal.query(), &scope);
     let plan = selected
         .admit_governed_application_query(
-            &query,
+            query,
             &access,
             capability_access,
             ApplicationQueryParameterSet::<EstateMandatoryReviewQuery>::new(),

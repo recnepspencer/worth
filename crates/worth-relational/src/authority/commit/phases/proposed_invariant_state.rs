@@ -36,7 +36,7 @@ pub(crate) fn prepare_proposed_invariant_state(
         crate::runtime::RuntimeSubsystem::fork(&runtime.record_identity),
         None,
     );
-    apply_plan_to_working_state(
+    let applied = apply_plan_to_working_state(
         &mut proposed,
         &apply_plan,
         &mutation_config,
@@ -47,5 +47,9 @@ pub(crate) fn prepare_proposed_invariant_state(
         &mut record_allocations,
     )
     .map_err(TransactionCommitError::conflict)?;
+    crate::authority::mutation::apply_adjacency_deltas(
+        &mut proposed,
+        &applied.effect.adjacency.deltas,
+    );
     Ok(proposed)
 }

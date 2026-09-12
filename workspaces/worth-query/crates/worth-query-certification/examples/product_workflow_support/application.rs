@@ -55,7 +55,7 @@ impl ExampleApplication {
             .installed_operation(ExecuteTemporal::reference())
             .expect("the temporal operation must install");
         let query = schema
-            .application_query(TemporalIntentQuery::reference())
+            .certification_query(TemporalIntentQuery::reference())
             .expect("the temporal query must install");
         let (clock_source, clock_control) = ClockSource::due();
         let conditional = runtime

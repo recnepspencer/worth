@@ -11,6 +11,8 @@ pub enum ApplicationSchemaDeclarationDenial {
     InvalidContributionMemberOrdinal,
     OverlappingContributionClosure,
     IncompleteContributionClosure,
+    InvalidApplicationMutationDescription,
+    MissingApplicationMutationDependency,
     MissingEntity,
     MissingAspect,
     MissingUnit,

@@ -63,6 +63,19 @@ pub(super) fn map_compilation_denial(
             WorthQueryInstalledApplicationSchemaDenialKind::SchemaMeaningChanged,
             schema.to_string(),
         ),
+        ApplicationSchemaCompilationDenial::Query(denial) => {
+            let kind = match denial.kind() {
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalEntryBudgetExceeded => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalEntryBudgetExceeded,
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalEncodedByteBudgetExceeded => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalEncodedByteBudgetExceeded,
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalDigestSlotRejected => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalDigestSlotRejected,
+                _ => WorthQueryInstalledApplicationSchemaDenialKind::QueryInstallationDenied,
+            };
+            (kind, denial.subject().to_string())
+        }
+        ApplicationSchemaCompilationDenial::Operation(denial) => (
+            WorthQueryInstalledApplicationSchemaDenialKind::OperationInstallationDenied,
+            denial.operation().to_string(),
+        ),
         ApplicationSchemaCompilationDenial::ValueBinding(denial) => {
             let kind = match denial.kind() {
                 ValueBindingDenialKind::MissingBinding => {

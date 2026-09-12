@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+mod contribution;
 
 use worth_query_consumer_values::PositiveCount;
 use worth_query_decl::facade::{

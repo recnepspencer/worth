@@ -18,6 +18,7 @@ pub use commit_outcome::{
 };
 pub use commit_receipt::{
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
+    WorthQueryApplicationCommittedChanges,
 };
 pub(in crate::domain_computation::primary_graph) use commit_receipt::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,

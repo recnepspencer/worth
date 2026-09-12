@@ -119,10 +119,10 @@ worth_query_application_query!(
 fn nested_cardinality_changes_installed_graph_binding_and_planning_identity() {
     let schema = installed_schema();
     let optional = schema
-        .application_query(OptionalChildQuery::reference())
+        .certification_query(OptionalChildQuery::reference())
         .unwrap();
     let many = schema
-        .application_query(ManyChildrenQuery::reference())
+        .certification_query(ManyChildrenQuery::reference())
         .unwrap();
 
     assert_eq!(

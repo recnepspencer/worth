@@ -8,8 +8,8 @@ use worth_query_installation::facade::{
 };
 
 use super::{
-    WorthQueryApplicationQueryResourceProfile, WorthQueryExecutionRuntimeInstallation,
-    WorthQueryRuntimeAuthorityIdentity,
+    WorthQueryApplicationCandidateResourceProfile, WorthQueryApplicationQueryResourceProfile,
+    WorthQueryExecutionRuntimeInstallation, WorthQueryRuntimeAuthorityIdentity,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraph, WorthQueryPrimaryGraphIntegrationHandle,
@@ -26,6 +26,7 @@ pub struct WorthQueryExecutionRuntime {
     current_generation: Arc<AtomicU64>,
     primary_graph: Option<WorthQueryPrimaryGraph>,
     application_query_resources: WorthQueryApplicationQueryResourceProfile,
+    application_candidate_resources: WorthQueryApplicationCandidateResourceProfile,
 }
 
 /// Move-only construction authority for one execution runtime.
@@ -36,6 +37,7 @@ pub struct WorthQueryExecutionRuntimeInstaller {
     authority_identity: WorthQueryRuntimeAuthorityIdentity,
     installation_runtime: WorthQueryInstallationRuntimeIdentity,
     application_query_resources: WorthQueryApplicationQueryResourceProfile,
+    application_candidate_resources: WorthQueryApplicationCandidateResourceProfile,
 }
 
 impl WorthQueryExecutionRuntimeInstaller {
@@ -44,6 +46,8 @@ impl WorthQueryExecutionRuntimeInstaller {
             authority_identity: WorthQueryRuntimeAuthorityIdentity::mint(),
             installation_runtime: WorthQueryInstallationRuntimeIdentity::fresh(),
             application_query_resources: WorthQueryApplicationQueryResourceProfile::default(),
+            application_candidate_resources: WorthQueryApplicationCandidateResourceProfile::default(
+            ),
         }
     }
 
@@ -52,6 +56,14 @@ impl WorthQueryExecutionRuntimeInstaller {
         profile: WorthQueryApplicationQueryResourceProfile,
     ) -> Self {
         self.application_query_resources = profile;
+        self
+    }
+
+    pub fn application_candidate_resources(
+        mut self,
+        profile: WorthQueryApplicationCandidateResourceProfile,
+    ) -> Self {
+        self.application_candidate_resources = profile;
         self
     }
 
@@ -83,6 +95,7 @@ impl WorthQueryExecutionRuntimeInstaller {
                 installed_packages: Arc::new(installed_packages),
                 primary_graph: None,
                 application_query_resources: self.application_query_resources,
+                application_candidate_resources: self.application_candidate_resources,
             },
             retained_installation_runtime,
         ))
@@ -116,6 +129,12 @@ impl WorthQueryExecutionRuntime {
         &self,
     ) -> WorthQueryApplicationQueryResourceProfile {
         self.application_query_resources
+    }
+
+    pub const fn application_candidate_resource_profile(
+        &self,
+    ) -> WorthQueryApplicationCandidateResourceProfile {
+        self.application_candidate_resources
     }
 
     pub(crate) fn retain_primary_graph_integration_handle(

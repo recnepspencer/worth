@@ -101,7 +101,7 @@ fn context() -> (
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -120,7 +120,7 @@ fn context() -> (
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap();
     (world, principal, account, query, request)
 }

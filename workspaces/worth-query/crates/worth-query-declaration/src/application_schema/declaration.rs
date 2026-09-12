@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use super::aspect_contract_identity::ApplicationAspectMarkerIdentity;
-use super::authorization_policy::ApplicationAuthorizationPath;
 use super::capabilities::{ApplicationFieldUnit, EqualityPosture, WritePosture};
 use super::contribution::{
     ApplicationSchemaContributionIdentity, ApplicationSchemaContributionProvenance,
@@ -12,12 +11,13 @@ use super::field_reference::ApplicationFieldRef;
 use super::member_provenance::ApplicationSchemaMemberProvenance;
 use super::principal_binding_reference::ApplicationPrincipalBindingRef;
 use super::references::{
-    ApplicationAbilityRef, ApplicationAspectRef, ApplicationEffectRef, ApplicationEntityRef,
-    ApplicationOperationRef, ApplicationPolicyRef, ApplicationRelationRef, ApplicationUnitRef,
+    ApplicationAspectRef, ApplicationEffectRef, ApplicationEntityRef, ApplicationOperationRef,
+    ApplicationRelationRef, ApplicationUnitRef,
 };
 use super::schema_identity::ApplicationSchemaIdentity;
 use super::schema_member::ApplicationSchemaMember;
 
+mod authorization;
 mod finalization;
 
 pub trait ApplicationSchema: Sized + 'static {
@@ -160,6 +160,32 @@ pub struct ApplicationSchemaDeclarationBuilder<Schema> {
 }
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    pub fn invariant<Invariant>(
+        mut self,
+        definition: super::ApplicationInvariantDefinition<Schema, Invariant>,
+    ) -> Self
+    where
+        Invariant: super::ApplicationInvariantMarkerIdentity<Schema>,
+    {
+        let reference = definition.reference();
+        let operational = definition.operational();
+        self.members
+            .push(ApplicationSchemaMember::ApplicationInvariant {
+                invariant: reference.identifier().to_owned(),
+                major: reference.major(),
+                minor: reference.minor(),
+                execution_point: definition.execution_point(),
+                maximum_work_units: definition.work_budget().maximum_work_units(),
+                enforcement: operational.enforcement(),
+                required_groups: operational.required_groups().to_vec(),
+                read_closure: operational.read_closure().to_vec(),
+                applicability: operational.applicability().to_vec(),
+                provider: operational.provider().to_owned(),
+                cost_posture: operational.cost_posture(),
+            });
+        self
+    }
+
     #[cfg(test)]
     pub(crate) fn from_test_members(members: Vec<ApplicationSchemaMember>) -> Self {
         Self {
@@ -317,59 +343,6 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 principal_identity_scalar_family: binding.principal_identity_scalar_family(),
                 principal_identity_value_type: binding.principal_identity_value_type().to_string(),
             });
-        self
-    }
-
-    pub fn policy<Policy>(mut self, policy: ApplicationPolicyRef<Schema, Policy>) -> Self {
-        self.members.push(ApplicationSchemaMember::Policy {
-            policy: policy.name().to_string(),
-        });
-        self
-    }
-
-    pub fn ability<Ability, Scope>(
-        mut self,
-        ability: ApplicationAbilityRef<Schema, Ability, Scope>,
-    ) -> Self {
-        self.members.push(ApplicationSchemaMember::Ability {
-            ability: ability.name().to_string(),
-            scope_entity: ability.scope().to_string(),
-        });
-        self
-    }
-
-    pub fn operation_requires_ability<Operation, Input, Ability, Scope>(
-        mut self,
-        operation: ApplicationOperationRef<Schema, Operation, Input>,
-        ability: ApplicationAbilityRef<Schema, Ability, Scope>,
-    ) -> Self
-    where
-        Ability: super::capabilities::OperationRequiresAbility<Operation>,
-    {
-        self.members
-            .push(ApplicationSchemaMember::OperationAbility {
-                operation: operation.name().to_string(),
-                ability: ability.name().to_string(),
-                scope_entity: ability.scope().to_string(),
-            });
-        self
-    }
-
-    pub fn ability_policy<Ability, Scope, Policy>(
-        mut self,
-        ability: ApplicationAbilityRef<Schema, Ability, Scope>,
-        policy: ApplicationPolicyRef<Schema, Policy>,
-        paths: impl IntoIterator<Item = ApplicationAuthorizationPath>,
-    ) -> Self {
-        let mut paths = paths.into_iter().collect::<Vec<_>>();
-        paths.sort();
-        paths.dedup();
-        self.members.push(ApplicationSchemaMember::AbilityPolicy {
-            ability: ability.name().to_string(),
-            scope_entity: ability.scope().to_string(),
-            policy: policy.name().to_string(),
-            paths,
-        });
         self
     }
 

@@ -3,6 +3,10 @@ use std::sync::Arc;
 
 use super::compilation::CompiledApplicationSchema;
 use super::contribution::WorthQueryInstalledApplicationContributionCatalog;
+use super::invariant::{
+    resolve_installed_invariant, WorthQueryInstalledApplicationInvariant,
+    WorthQueryInstalledApplicationInvariantCatalog,
+};
 use super::native_contract::WorthQueryInstalledApplicationSchemaContractCatalog;
 use super::value_binding::WorthQueryInstalledApplicationValueBindingCatalog;
 use crate::application_ability::{
@@ -13,10 +17,14 @@ use crate::application_capability::{
     ApplicationCapabilityRegistry, WorthQueryInstalledApplicationCapability,
 };
 use crate::application_operation::{
+    binding::{
+        compile_application_mutation_catalog, WorthQueryInstalledApplicationMutationCatalog,
+    },
     ApplicationAuthorizationPolicyRegistry, WorthQueryApplicationOperationInstallationDenial,
     WorthQueryInstalledAbilityRequirement, WorthQueryInstalledApplicationOperation,
 };
 use crate::application_query::{
+    binding::{compile_application_query_catalog, WorthQueryInstalledApplicationQueryCatalog},
     WorthQueryApplicationQueryInstallationDenial, WorthQueryInstalledApplicationQuery,
 };
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
@@ -27,6 +35,7 @@ use crate::package::{
     WorthQueryPortableNativeAspectContractRecord,
 };
 use worth_foundational::facade::CanonicalDigestId;
+use worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor;
 use worth_query_declaration::facade::application_schema::{
     ApplicationAbilityRef, ApplicationEntityRef, ApplicationOperationMarkerIdentity,
     ApplicationOperationRef, ApplicationSchema, ApplicationSchemaAuthoringContext,
@@ -50,6 +59,9 @@ pub struct WorthQueryInstalledApplicationSchema<Schema> {
     portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
     portable_operation_contracts: Arc<Vec<WorthQueryPortableApplicationOperationContractRecord>>,
     installation_canonical_work: WorthQueryCanonicalWorkEvidence,
+    pub(crate) query_catalog: WorthQueryInstalledApplicationQueryCatalog,
+    pub(crate) mutation_catalog: WorthQueryInstalledApplicationMutationCatalog,
+    invariant_catalog: WorthQueryInstalledApplicationInvariantCatalog,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -68,8 +80,12 @@ impl<Schema> WorthQueryInstalledApplicationSchema<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(crate) fn from_compilation(compiled: CompiledApplicationSchema<Schema>) -> Self {
-        Self {
+    pub(crate) fn from_compilation(
+        compiled: CompiledApplicationSchema<Schema>,
+    ) -> Result<Self, super::ApplicationSchemaCompilationDenial> {
+        let invariant_catalog =
+            WorthQueryInstalledApplicationInvariantCatalog::compile(&compiled.schema);
+        let mut installed = Self {
             package_authority: compiled.package_authority,
             schema_name: compiled.schema_name,
             schema_identity: compiled.schema_identity,
@@ -82,8 +98,16 @@ where
             portable_native_contracts: compiled.portable_native_contracts,
             portable_operation_contracts: compiled.portable_operation_contracts,
             installation_canonical_work: compiled.installation_canonical_work,
+            query_catalog: WorthQueryInstalledApplicationQueryCatalog::default(),
+            mutation_catalog: WorthQueryInstalledApplicationMutationCatalog::default(),
+            invariant_catalog,
             _schema: compiled.marker,
-        }
+        };
+        installed.query_catalog = compile_application_query_catalog(&installed)
+            .map_err(super::ApplicationSchemaCompilationDenial::Query)?;
+        installed.mutation_catalog = compile_application_mutation_catalog(&installed)
+            .map_err(super::ApplicationSchemaCompilationDenial::Operation)?;
+        Ok(installed)
     }
 
     fn authoring_context(&self) -> ApplicationSchemaAuthoringContext {
@@ -124,6 +148,32 @@ where
         &self.schema
     }
 
+    pub fn invariants(&self) -> &WorthQueryInstalledApplicationInvariantCatalog {
+        &self.invariant_catalog
+    }
+
+    pub fn installed_invariant<Invariant>(
+        &self,
+        reference: worth_query_declaration::facade::application_schema::ApplicationInvariantRef<
+            Schema,
+            Invariant,
+        >,
+        execution_point: worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint,
+    ) -> Option<WorthQueryInstalledApplicationInvariant<Schema, Invariant>>
+    where
+        Invariant:
+            worth_query_declaration::facade::application_schema::ApplicationInvariantMarkerIdentity<
+                Schema,
+            >,
+    {
+        resolve_installed_invariant(
+            &self.invariant_catalog,
+            self.binding_identity(),
+            reference,
+            execution_point,
+        )
+    }
+
     /// Returns descriptive contribution ownership resolved against this exact
     /// installed declaration.
     pub fn contributions(&self) -> WorthQueryInstalledApplicationContributionCatalog<'_> {
@@ -140,10 +190,25 @@ where
         &self.value_binding_catalog
     }
 
+    /// Returns the exact mutation-binding inventory retained at installation.
+    #[doc(hidden)]
+    pub fn installed_mutation_binding_inventory(
+        &self,
+    ) -> impl ExactSizeIterator<Item = &ApplicationMutationBindingDescriptor> {
+        self.mutation_catalog.descriptors()
+    }
+
     pub(crate) fn retain_native_contracts(
         &self,
     ) -> Arc<WorthQueryInstalledApplicationSchemaContractCatalog> {
         Arc::clone(&self.native_contract_catalog)
+    }
+
+    /// Descriptive bindings available for fresh typed query admission.
+    pub fn installed_query_binding_inventory(
+        &self,
+    ) -> impl ExactSizeIterator<Item = &worth_query_declaration::facade::application_query::ApplicationQueryBindingDescriptor>{
+        self.query_catalog.descriptors()
     }
 
     pub(crate) fn portable_native_contracts(

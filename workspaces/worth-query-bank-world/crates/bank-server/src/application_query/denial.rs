@@ -17,14 +17,16 @@ pub use installation::{
     BankApplicationCapabilityInstallationDenialKind, BankApplicationQueryInstallationDenialKind,
 };
 
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial;
 use worth_query_host::facade::domain::{
-    WorthQueryApplicationCapabilityInstallationDenial, WorthQueryApplicationQueryInstallationDenial,
+    WorthQueryApplicationCapabilityInstallationDenial,
+    WorthQueryApplicationQueryInstallationDenial, WorthQueryApplicationQueryLimitDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationLiveOpenDenial,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationQueryAdmissionDenial,
     WorthQueryEntityResolutionDenial, WorthQueryOperationAuthorizationDenial,
-    WorthQueryProductBranchAdmissionDenial,
+    WorthQueryPrincipalResolutionDenialKind, WorthQueryProductBranchAdmissionDenial,
 };
 
 use crate::{BankAuthorizationDenial, BankEntityResolutionDenial};
@@ -69,6 +71,8 @@ pub enum BankApplicationQueryDenial {
     CapabilityInstallation(BankApplicationCapabilityInstallationDenialKind),
     CapabilityAdmission(BankAuthorizationDenial),
     ScopeResolution(BankEntityResolutionDenial),
+    PrincipalResolution(WorthQueryPrincipalResolutionDenialKind),
+    Limit(WorthQueryApplicationQueryLimitDenial),
     ProductSelection(BankProductSelectionDenialKind),
     HistoricalCommitUnavailable,
     PreviewSession(BankApplicationPreviewSessionDenialKind),
@@ -79,6 +83,30 @@ pub enum BankApplicationQueryDenial {
 }
 
 impl BankApplicationQueryDenial {
+    pub(crate) fn from_request_query(denial: WorthQueryApplicationRequestQueryDenial) -> Self {
+        match denial {
+            WorthQueryApplicationRequestQueryDenial::ProductSelection(denial) => {
+                Self::from_product_selection(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::BindingInstallation(denial) => {
+                Self::from_installation(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::Limit(denial) => Self::Limit(denial),
+            WorthQueryApplicationRequestQueryDenial::PrincipalResolution(denial) => {
+                Self::PrincipalResolution(denial.kind())
+            }
+            WorthQueryApplicationRequestQueryDenial::ScopeResolution(denial) => {
+                Self::from_scope_resolution(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::Admission(denial) => {
+                Self::from_admission(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::Execution(denial) => {
+                Self::from_execution(denial)
+            }
+        }
+    }
+
     pub(crate) fn from_installation(denial: WorthQueryApplicationQueryInstallationDenial) -> Self {
         Self::Installation(query_installation(denial.kind()))
     }

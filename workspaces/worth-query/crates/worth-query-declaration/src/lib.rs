@@ -37,11 +37,16 @@ mod portable_identity;
 mod portable_identity_macro;
 mod application_aftermath;
 mod application_capability;
+mod application_operation;
 mod application_query;
 #[macro_use]
 mod application_contribution_macro;
 #[macro_use]
 mod application_query_macro;
+#[macro_use]
+mod query_binding_macro;
+#[macro_use]
+mod mutation_binding_macro;
 mod application_schema;
 mod authentication;
 mod authoring;
@@ -51,6 +56,8 @@ mod application_aspect_macro;
 mod application_capability_macro;
 #[macro_use]
 mod application_schema_macro;
+#[macro_use]
+mod application_field_macro;
 #[macro_use]
 mod application_relation_macro;
 #[macro_use]

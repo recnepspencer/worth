@@ -1,10 +1,8 @@
 mod account_activity;
 mod denial;
-mod execution;
 mod governed_execution;
 mod live_output;
 mod preview_session;
-mod request;
 
 pub use account_activity::{
     BankAccountActivityContinuation, BankAccountActivityHistoricalResult,
@@ -21,7 +19,6 @@ pub use denial::{
     BankApplicationQueryParameterDenialKind, BankGraphReadPlanReviewDenialKind,
     BankProductSelectionDenialKind,
 };
-pub(crate) use execution::execute_one_shot;
 pub(crate) use governed_execution::{
     execute_estate_customer_disclosure, execute_estate_emergency_account_details,
     execute_estate_governance, execute_estate_legal_compliance, execute_estate_mandatory_review,
@@ -43,4 +40,3 @@ pub use live_output::{
     BankApplicationLiveProjectionDenial,
 };
 pub use preview_session::{BankPreviewSession, BankPreviewSessionDiscardReceipt};
-pub(crate) use request::BankApplicationQueryInvocation;

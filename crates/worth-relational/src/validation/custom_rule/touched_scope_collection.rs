@@ -14,6 +14,7 @@ use crate::validation::data::{
 pub(crate) fn collect_touched_structural_set(
     state_view: &InvariantStateView<'_>,
     merged_plan: Option<&MergedCommitPlan>,
+    work: &super::CustomInvariantWorkMeter,
 ) -> TouchedStructuralSet {
     let mut visible_entities = BTreeSet::new();
     let mut visible_relations = BTreeSet::new();
@@ -24,10 +25,14 @@ pub(crate) fn collect_touched_structural_set(
     let mut planned_relation_deletes = Vec::new();
     let mut planned_relation_endpoint_updates = Vec::new();
 
-    if let Some(ids) = state_view.touched_visible_entity_ids() {
+    if let Some(ids) =
+        state_view.touched_visible_entity_ids_with_budget(|units| work.try_charge(units))
+    {
         visible_entities.extend(ids);
     }
-    if let Some(ids) = state_view.touched_visible_relation_ids() {
+    if let Some(ids) =
+        state_view.touched_visible_relation_ids_with_budget(|units| work.try_charge(units))
+    {
         visible_relations.extend(ids);
     }
 
@@ -37,6 +42,9 @@ pub(crate) fn collect_touched_structural_set(
     // the complete selected relation boundary without enumerating the root.
     let touched_relation_ids = visible_relations.iter().copied().collect::<Vec<_>>();
     for relation_id in touched_relation_ids {
+        if !work.try_charge(1) {
+            break;
+        }
         if let Some(metadata) = state_view.relation_metadata(relation_id) {
             include_relation_metadata(&mut visible_entities, &mut touched_partitions, metadata);
         }
@@ -44,6 +52,9 @@ pub(crate) fn collect_touched_structural_set(
 
     if let Some(plan) = merged_plan {
         for intent in &plan.merged_intents {
+            if !work.try_charge(1) {
+                break;
+            }
             intent.seed_touched_partitions(&mut touched_partitions);
             match intent {
                 MutationIntent::Create(CreateIntent::Entity(spec)) => {
@@ -61,6 +72,9 @@ pub(crate) fn collect_touched_structural_set(
                     ));
                 }
                 MutationIntent::Create(CreateIntent::BulkEntities(spec)) => {
+                    if !work.try_charge(spec.client_keys.len()) {
+                        break;
+                    }
                     for client_key in spec.client_keys.iter() {
                         planned_entity_creates.push(PlannedEntityCreate::new(
                             spec.partition_id,
@@ -92,6 +106,9 @@ pub(crate) fn collect_touched_structural_set(
                     ));
                 }
                 MutationIntent::Create(CreateIntent::BulkRelations(spec)) => {
+                    if !work.try_charge(spec.client_keys.len()) {
+                        break;
+                    }
                     for ((source, target), client_key) in
                         spec.endpoints.iter().zip(spec.client_keys.iter())
                     {
@@ -164,6 +181,15 @@ pub(crate) fn collect_touched_structural_set(
 
     let seed_entities = visible_entities.iter().copied().collect::<Vec<_>>();
     for entity_id in seed_entities {
+        if !work.try_charge(1) {
+            break;
+        }
+        let raw = state_view
+            .relation_candidate_count(entity_id, true)
+            .saturating_add(state_view.relation_candidate_count(entity_id, false));
+        if !work.try_charge(raw.saturating_mul(3)) {
+            break;
+        }
         for relation_id in state_view.all_relations_for_entity(entity_id) {
             visible_relations.insert(relation_id);
             if let Some(metadata) = state_view.relation_metadata(relation_id) {

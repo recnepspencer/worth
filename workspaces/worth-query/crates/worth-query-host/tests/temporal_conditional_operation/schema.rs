@@ -128,6 +128,7 @@ worth_query_application_schema! {
                 .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentInputField::reference())
                 .operation_emit(AmendTemporalAndPublishDefinition::reference(), TemporalAmendmentEffect::reference())
                 .application_query(temporal_intent_query_definition())
+                .application_query_binding::<TemporalIntentCurrentReadBinding>()
                 .application_query(temporal_intent_live_query_definition())
         }
     }
@@ -282,6 +283,10 @@ worth_query_application_query!(
     scope TemporalIntent => "TemporalIntent",
     name "temporal_intent_query"
 );
+
+#[path = "schema/current_read.rs"]
+pub mod current_read;
+use current_read::TemporalIntentCurrentReadBinding;
 
 pub fn temporal_intent_query_definition() -> ApplicationQueryDefinition<
     TemporalHostSchema,

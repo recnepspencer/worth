@@ -24,6 +24,7 @@ pub(super) struct WorthQueryRegisteredProviderEffects {
     lowered: Vec<WorthQueryLoweredProviderEffect>,
     batch: WorkerIntentBatch,
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
+    output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
 }
 
 impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
@@ -51,6 +52,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         self,
         expected_emission_retained_bytes: u64,
         emission_retained_bytes_ceiling: u64,
+        output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     ) -> Result<WorthQueryRegisteredProviderEffects, WorthQueryApplicationAttemptDenial> {
         let (intents, emissions) = materialize_commit_projections(&self.lowered);
         let batch = intents.into_iter().fold(
@@ -69,6 +71,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
             lowered: self.lowered,
             batch,
             emissions,
+            output_correspondence,
         })
     }
 }
@@ -141,6 +144,7 @@ impl WorthQueryRegisteredProviderEffects {
                 lowered: self.lowered,
                 batch,
                 emissions: self.emissions,
+                output_correspondence: self.output_correspondence,
             },
             dispatch_outbox,
         ))
@@ -148,6 +152,13 @@ impl WorthQueryRegisteredProviderEffects {
 
     pub(super) fn into_emissions(self) -> WorthQueryAdmittedApplicationEmissionBatch {
         self.emissions
+    }
+
+    pub(super) fn seal_output_correspondence(
+        &self,
+        commit: &worth_relational::facade::transactions::CommitResult,
+    ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
+        self.output_correspondence.clone().seal(commit)
     }
 }
 

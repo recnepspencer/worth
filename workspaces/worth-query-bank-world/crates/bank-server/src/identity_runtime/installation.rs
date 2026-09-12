@@ -1,8 +1,8 @@
 use bank_domain::{
     model::BankPrincipalId,
     schema::{
-        BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
-        Principal,
+        BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
+        CreatePersonalAccountMutationBinding, ExternalPrincipalMapping, Principal,
     },
 };
 use worth_query_host::facade::{
@@ -23,7 +23,8 @@ use worth_query_host::facade::{
 use super::{BankGraphSeed, BankIdentityRuntime};
 use crate::{
     domain_package::bank_domain_package, error::BankIdentityRuntimeBuildError,
-    graph_bootstrap::bind_bank_world_with_estate, principal_seed::PreparedBankPrincipalSeed,
+    graph_bootstrap::bind_bank_world_with_estate, mutation_handlers::CreatePersonalAccountHandler,
+    principal_seed::PreparedBankPrincipalSeed,
 };
 
 type InstalledBankPrincipalBinding = WorthQueryInstalledPrincipalBinding<
@@ -144,6 +145,12 @@ fn prepare_seeded_primary_graph(
             super::product_world_resources::bank_product_world_resources(),
         )
         .map_err(BankIdentityRuntimeBuildError::PrimaryGraph)?;
+    let mutation = installed_schema
+        .installed_mutation_binding::<CreatePersonalAccountMutationBinding>()
+        .map_err(BankIdentityRuntimeBuildError::InstalledOperation)?;
+    graph
+        .install_handler(&mutation, CreatePersonalAccountHandler)
+        .map_err(BankIdentityRuntimeBuildError::PrimaryGraph)?;
     let binding = installed_schema
         .principal_binding(BankPrincipalBinding::reference())
         .map_err(BankIdentityRuntimeBuildError::InstalledBinding)?;
@@ -190,4 +197,73 @@ fn resolve_installed_principal_binding(
         .installed_schema()
         .principal_binding(BankPrincipalBinding::reference())
         .map_err(BankIdentityRuntimeBuildError::InstalledBinding)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
+    use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
+
+    #[test]
+    fn publication_denies_a_missing_mutation_handler() {
+        let (runtime, authority, installed_schema) = install_bank_execution_runtime().unwrap();
+        let graph = authority
+            .prepare_primary_graph(
+                &runtime,
+                &installed_schema,
+                super::super::product_world_resources::bank_product_world_resources(),
+            )
+            .unwrap();
+
+        let denial = graph
+            .publish_application_runtime(
+                runtime,
+                authority,
+                installed_schema,
+                SignalConditionalEvaluationBudget::development(),
+            )
+            .err()
+            .expect("the installed mutation inventory requires its handler");
+
+        assert_eq!(
+            denial.kind(),
+            WorthQueryPrimaryGraphInstallationDenialKind::MissingMutationHandler
+        );
+        assert_eq!(
+            denial.subject(),
+            CreatePersonalAccountMutationBinding::IDENTITY
+        );
+    }
+
+    #[test]
+    fn bootstrap_denies_a_duplicate_mutation_handler() {
+        let (runtime, authority, installed_schema) = install_bank_execution_runtime().unwrap();
+        let mut graph = authority
+            .prepare_primary_graph(
+                &runtime,
+                &installed_schema,
+                super::super::product_world_resources::bank_product_world_resources(),
+            )
+            .unwrap();
+        let mutation = installed_schema
+            .installed_mutation_binding::<CreatePersonalAccountMutationBinding>()
+            .unwrap();
+        graph
+            .install_handler(&mutation, CreatePersonalAccountHandler)
+            .unwrap();
+
+        let denial = graph
+            .install_handler(&mutation, CreatePersonalAccountHandler)
+            .unwrap_err();
+
+        assert_eq!(
+            denial.kind(),
+            WorthQueryPrimaryGraphInstallationDenialKind::DuplicateMutationHandler
+        );
+        assert_eq!(
+            denial.subject(),
+            CreatePersonalAccountMutationBinding::IDENTITY
+        );
+    }
 }

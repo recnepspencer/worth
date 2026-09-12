@@ -54,16 +54,16 @@ fn authored_identity_and_revision_survive_reference_and_erasure() {
 }
 
 #[test]
-fn canonical_schema_v11_identity_is_frozen_for_legacy_equivalent_meaning() {
+fn canonical_schema_current_identity_contains_all_description_axes() {
     let declaration = StableAspectSchema::declaration().unwrap();
     let sequence = declaration.identity().canonical_basis().payload();
     assert_eq!(
         sequence.version().as_str(),
-        "worth-query-application-schema-v11"
+        "worth-query-application-schema-v13"
     );
     assert_eq!(
         canonical_entries_golden(sequence.entries()),
-        "header.major=u32:1\nheader.minor=u32:0\nheader.name=text:StableAspectSchema\nheader.owner=text:worth.test\nmember-count=u64:3\nmember[0].entity=text:Account\nmember[0].kind=text:entity\nmember[1].aspect=text:AccountFacts\nmember[1].entity=text:Account\nmember[1].identity=u64:2439061249\nmember[1].kind=text:aspect\nmember[1].revision=u64:2\nmember[2].aspect=text:AccountFacts\nmember[2].entity=text:Account\nmember[2].equality-queryable=bool:true\nmember[2].field=text:Balance\nmember[2].kind=text:field\nmember[2].presence=text:required\nmember[2].scalar-family=text:uint64\nmember[2].unit=null\nmember[2].value-type=text:worth.rust.u64\nmember[2].writable=bool:false"
+        "contribution-count=u64:0\nheader.major=u32:1\nheader.minor=u32:0\nheader.name=text:StableAspectSchema\nheader.owner=text:worth.test\nmember-count=u64:3\nmember[0].entity=text:Account\nmember[0].kind=text:entity\nmember[1].aspect=text:AccountFacts\nmember[1].entity=text:Account\nmember[1].identity=u64:2439061249\nmember[1].kind=text:aspect\nmember[1].revision=u64:2\nmember[2].aspect=text:AccountFacts\nmember[2].entity=text:Account\nmember[2].equality-queryable=bool:true\nmember[2].field=text:Balance\nmember[2].frame=null\nmember[2].kind=text:field\nmember[2].presence=text:required\nmember[2].scalar-family=text:uint64\nmember[2].unit=null\nmember[2].value-type=text:worth.rust.u64\nmember[2].writable=bool:false"
     );
     let entries = sequence.entries();
     let identity = canonical_entry(entries, ".identity");

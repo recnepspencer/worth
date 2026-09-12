@@ -243,6 +243,16 @@ impl WorthQueryPrimaryGraphLayout {
         self.relation_kinds.get(relation)
     }
 
+    pub(super) fn field(
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<&WorthQueryPrimaryFieldLayout> {
+        self.fields
+            .get(&(entity.to_owned(), aspect.to_owned(), field.to_owned()))
+    }
+
     pub(in crate::domain_computation) fn is_application_entity_kind(&self, kind: KindId) -> bool {
         self.application_entity_kinds.contains(&kind)
     }

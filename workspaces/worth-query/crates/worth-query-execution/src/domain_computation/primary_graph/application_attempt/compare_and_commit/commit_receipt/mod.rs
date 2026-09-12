@@ -1,6 +1,8 @@
 //! Closed application commit receipt.
 
+mod committed_changes;
 mod construction;
+pub use committed_changes::WorthQueryApplicationCommittedChanges;
 mod pending;
 mod projection;
 mod publication_source;
@@ -15,7 +17,7 @@ use crate::domain_computation::application_aftermath::{
 
 use super::super::{
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitTerminalEvidence,
-    WorthQueryMutationPreconditionComparisonEvidence,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryMutationPreconditionComparisonEvidence,
 };
 
 pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingApplicationCommitReceipt;
@@ -54,6 +56,8 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) performed_product_change: Option<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >,
+    pub(super) committed_changes: WorthQueryApplicationCommittedChanges,
+    pub(super) output_correspondence: WorthQueryApplicationOutputCorrespondence,
 }
 
 impl Eq for WorthQueryApplicationCommitReceipt {}
@@ -83,6 +87,8 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             aftermath_causality: self.aftermath_causality.clone(),
             expected_retry_session: self.expected_retry_session.clone(),
             performed_product_change: None,
+            output_correspondence: self.output_correspondence.clone(),
+            committed_changes: self.committed_changes.clone(),
         }
     }
 }
@@ -126,6 +132,14 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn emitted_effect_count(&self) -> usize {
         self.emitted_effect_count
+    }
+
+    pub const fn committed_changes(&self) -> &WorthQueryApplicationCommittedChanges {
+        &self.committed_changes
+    }
+
+    pub const fn output_correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
+        &self.output_correspondence
     }
 
     pub(crate) fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {

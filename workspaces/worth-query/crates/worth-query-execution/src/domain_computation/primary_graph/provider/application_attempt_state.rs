@@ -14,6 +14,7 @@ mod commit_preparation;
 mod phase;
 mod registration;
 mod retained_basis;
+mod staged;
 use commit_completion::WorthQueryPreparedProviderApplicationAttempt;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::commit_prepared_application;
 pub(crate) use commit_preparation::WorthQueryRetainedPreImageSeal;
@@ -187,6 +188,13 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .is_some_and(WorthQueryApplicationAttemptState::phase_is_commit_ready)
     }
 
+    pub(super) fn approved_candidate(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+    ) -> Option<&worth_relational::facade::mvcc::ValidatedRelationalProposal> {
+        self.attempt_state(session)?.approved_candidate()
+    }
+
     fn take_commit_prepared(
         &mut self,
         session: WorthQueryProviderSessionView<'_>,
@@ -305,77 +313,6 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             return None;
         };
         state.admits_session(session).then_some(state)
-    }
-}
-
-impl WorthQueryStagedApplicationAttempt<'_> {
-    pub(super) fn overlay_identity(&self) -> &str {
-        self.overlay.identity()
-    }
-
-    pub(super) fn overlay_facts(&self) -> &[WorthQueryProposedFact] {
-        self.overlay.facts()
-    }
-
-    pub(super) fn expected_step_count(&self) -> usize {
-        self.attempt.expected_steps().len()
-    }
-
-    pub(super) fn batch(&self) -> &worth_relational::facade::transactions::WorkerIntentBatch {
-        self.attempt.batch()
-    }
-
-    pub(super) fn branch(&self) -> &worth_relational::facade::history::BranchId {
-        self.attempt.affinity().branch()
-    }
-
-    pub(super) fn product_publication(
-        &self,
-    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding
-    {
-        self.attempt.affinity().product_publication()
-    }
-
-    pub(super) fn decision_fact_count(&self) -> usize {
-        self.attempt.decision_fact_count()
-    }
-
-    pub(super) fn aftermath_causality(
-        &self,
-    ) -> Option<
-        &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
-    > {
-        self.attempt.aftermath_causality()
-    }
-
-    pub(super) fn application_graph_reads(
-        &self,
-    ) -> Option<&worth_query_installation::facade::WorthQueryOperationGraphReadContract> {
-        self.attempt
-            .affinity()
-            .provider_session()
-            .plan()
-            .application_graph_reads()
-    }
-
-    pub(super) fn application_touches(
-        &self,
-    ) -> Option<&worth_query_installation::facade::WorthQueryOperationTouchContract> {
-        self.attempt
-            .affinity()
-            .provider_session()
-            .plan()
-            .application_touches()
-    }
-
-    pub(super) fn application_read_touch_overlap(
-        &self,
-    ) -> Option<&worth_query_installation::facade::WorthQueryOperationReadTouchOverlapIndex> {
-        self.attempt
-            .affinity()
-            .provider_session()
-            .plan()
-            .application_read_touch_overlap()
     }
 }
 

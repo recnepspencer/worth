@@ -10,6 +10,7 @@ use crate::transactions::data::TransactionId;
 /// consume it, either through publication or explicit discard.
 pub struct PreparedRelationalCommitCandidate {
     runtime_instance_id: u64,
+    custom_invariant_generation: u64,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     transaction_id: TransactionId,
     branch_id: BranchId,
@@ -55,6 +56,7 @@ pub(crate) enum PreparedRelationalCandidateAdmissionStop {
 impl PreparedRelationalCommitCandidate {
     pub(crate) fn new(
         runtime_instance_id: u64,
+        custom_invariant_generation: u64,
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         transaction_id: TransactionId,
         branch_id: BranchId,
@@ -102,6 +104,7 @@ impl PreparedRelationalCommitCandidate {
             })?;
         Ok(Self {
             runtime_instance_id,
+            custom_invariant_generation,
             publication_binding,
             transaction_id,
             branch_id,
@@ -125,6 +128,10 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn runtime_instance_id(&self) -> u64 {
         self.runtime_instance_id
+    }
+
+    pub(crate) fn custom_invariant_generation(&self) -> u64 {
+        self.custom_invariant_generation
     }
 
     pub(crate) fn belongs_to_publication_owner(

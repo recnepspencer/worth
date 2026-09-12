@@ -57,11 +57,21 @@ impl RelationalPreparationOwnerBinding {
         }
     }
 
+    pub(crate) fn configuration_binding(&self) -> RelationalRuntimeConfigurationBinding {
+        self.configuration.clone()
+    }
+
     pub(crate) fn runtime_snapshot(&self) -> RelationalPreparationRuntime {
-        let configuration = self.configuration.snapshot();
+        self.runtime_snapshot_from(&self.configuration.snapshot())
+    }
+
+    pub(crate) fn runtime_snapshot_from(
+        &self,
+        configuration: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
-            config: configuration.config,
-            schema_contract_runtime: configuration.schema_contract_runtime,
+            config: Arc::clone(&configuration.config),
+            schema_contract_runtime: Arc::clone(&configuration.schema_contract_runtime),
             diagnostics: self.diagnostics.clone(),
             history: self.history.clone(),
             record_identity: self.record_identity.clone(),

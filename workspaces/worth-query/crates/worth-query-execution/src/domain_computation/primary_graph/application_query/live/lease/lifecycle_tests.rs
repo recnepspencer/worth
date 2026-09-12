@@ -53,7 +53,7 @@ mod tests {
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
                     &world.binding,
-                    external,
+                    &external,
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
@@ -81,7 +81,7 @@ mod tests {
                 .world
                 .application
                 .installed_schema()
-                .application_query(LiveAccountActivityQuery::reference())
+                .certification_query(LiveAccountActivityQuery::reference())
                 .unwrap();
             let account = self
                 .world

@@ -66,6 +66,10 @@ where
         conditional_evaluation_budget,
     } = input;
     validate_application_schema(&runtime, &installed_schema)?;
+    let mutation_projection = bootstrap.retain_invariant_projection_authority();
+    let mutation_handlers = bootstrap
+        .mutation_handlers
+        .seal(&installed_schema, bootstrap.graph.binding_identity())?;
     let authorization = compile_authorization(&bootstrap, &installed_schema)?;
     let graph = publish_application_graph(
         bootstrap,
@@ -82,6 +86,8 @@ where
         authorization,
         authorization_clock,
         Default::default(),
+        mutation_handlers,
+        mutation_projection,
     )
 }
 
@@ -109,6 +115,11 @@ where
         conditional_evaluation_budget,
     } = input;
     validate_application_schema(&runtime, &installed_schema)
+        .map_err(super::super::conditional_operation::publication_denial)?;
+    let mutation_projection = bootstrap.retain_invariant_projection_authority();
+    let mutation_handlers = bootstrap
+        .mutation_handlers
+        .seal(&installed_schema, bootstrap.graph.binding_identity())
         .map_err(super::super::conditional_operation::publication_denial)?;
     let expected = runtime
         .installed_packages()
@@ -148,6 +159,8 @@ where
         authorization,
         authorization_clock,
         Default::default(),
+        mutation_handlers,
+        mutation_projection,
     )
     .map_err(super::super::conditional_operation::publication_denial)?;
     conditional_operations.reconstruct_all(&application)?;
@@ -260,8 +273,12 @@ where
     let maximum_concurrent_graph_work = runtime
         .application_query_resource_profile()
         .maximum_concurrent_graph_work();
-    let (provider_anchor, primary_provider) =
-        WorthQueryPrimaryGraphProvider::install(graph, fault_port, maximum_concurrent_graph_work);
+    let (provider_anchor, primary_provider) = WorthQueryPrimaryGraphProvider::install(
+        graph,
+        fault_port,
+        maximum_concurrent_graph_work,
+        runtime.application_candidate_resource_profile(),
+    );
     let primary_graph_authority =
         super::graph_participation::install(&authority, truth_partition_role, provider_anchor)?;
     Ok(PublishedApplicationGraph {
@@ -308,6 +325,8 @@ fn assemble_application_runtime<Schema>(
     authorization_clock: WorthQueryRuntimeClock,
     conditional_operations:
         super::super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
+    mutation_handlers: super::super::handler::InstalledMutationHandlerRegistry<Schema>,
+    mutation_projection: super::super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
 ) -> Result<
     WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     WorthQueryPrimaryGraphInstallationDenial,
@@ -373,5 +392,7 @@ where
         next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
         external_effect_transport: std::sync::OnceLock::new(),
         recovery_handles,
+        mutation_handlers,
+        mutation_projection,
     })
 }

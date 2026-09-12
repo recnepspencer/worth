@@ -53,7 +53,7 @@ fn run() -> Result<(), NonCommitted> {
     let query = application
         .runtime
         .installed_schema()
-        .application_query(TemporalIntentQuery::reference())
+        .certification_query(TemporalIntentQuery::reference())
         .expect("the application query must be installed");
     let retained_read = selected
         .admit_application_query(

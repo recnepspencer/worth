@@ -157,6 +157,8 @@ impl CustomInvariantRule for SelectionRule {
             },
             display_name: Arc::from(self.rule_id),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                access: crate::validation::data::CustomInvariantAccessContract::default(),
                 execution_point: self.execution_point,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                 cost_class: self.cost_class,

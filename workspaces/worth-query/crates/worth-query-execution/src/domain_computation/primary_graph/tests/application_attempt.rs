@@ -265,7 +265,7 @@ pub(in crate::domain_computation::primary_graph) fn authenticated_principal(
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

@@ -4,7 +4,17 @@ pub use crate::domain_computation::{
     WorthQueryProductUnpublishedRecovery,
 };
 mod application_attempt;
+mod application_contribution;
+pub use application_contribution::{
+    WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
+    WorthQueryApplicationContributionTuple, WorthQueryConfiguredApplicationContributions,
+};
 mod application_branch;
+pub(crate) mod application_discovery;
+mod application_entry;
+pub(crate) mod application_installation;
+pub(crate) mod application_invariant;
+mod application_invariant_preparation;
 pub(crate) mod application_query;
 mod application_runtime;
 mod authenticated_principal;
@@ -20,9 +30,11 @@ mod entity_resolution_denial;
 mod exact_basis_access;
 mod freshness;
 mod granular_invalidation;
+mod handler;
 mod index_currency;
 mod index_refresh;
 mod initial_schema_denial;
+mod invariant_installation;
 mod invariant_projection;
 mod live_delivery;
 mod managed_bridge;
@@ -67,6 +79,8 @@ pub use crate::domain_computation::authorization::{
 pub use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
 };
+pub use invariant_installation::{WorthQueryApplicationInvariantFactories,
+    WorthQueryApplicationInvariantSchemaResolver};
 pub(in crate::domain_computation) use application_attempt::application_resource_request;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::{
     bind_mutation_preconditions, WorthQueryBoundMutationPreconditions,
@@ -96,11 +110,16 @@ pub use application_attempt::{
     WorthQueryApplicationNoEffectCause,
     WorthQueryApplicationCommitOutcomeIdentity,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
+    WorthQueryApplicationCommittedChanges,
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationSettlementDeferred,
     WorthQueryApplicationSettlementNextAction,
     WorthQueryApplicationCommitTerminalEvidence, WorthQueryApplicationCommitTerminalKind,
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
+    WorthQueryRetireOutput,
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationReadAttempt,
     WorthQueryApplicationStaleAttempt, WorthQueryApplicationUnresolvedCommitEvidence,
@@ -116,6 +135,11 @@ pub use application_attempt::{
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
     WorthQueryRequestedElevation, WorthQueryReviewedElevation,
+};
+pub use crate::domain_computation::WorthQueryCustomInvariantDenial;
+pub use application_entry::mutation::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
+    MutationHandlerExecutionDenial, OperationHandler,
 };
 pub use settlement_repair::WorthQueryApplicationSettlementRecoveryError;
 pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;

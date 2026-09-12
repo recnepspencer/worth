@@ -6,7 +6,10 @@ use worth_query_decl::facade::{
     worth_query_operation_unlinks, worth_query_operation_writes,
 };
 
+mod create_personal_account_binding;
 mod read_capabilities;
+
+pub use create_personal_account_binding::*;
 
 use crate::model::{
     AccountAuthorizationId, AccountId, AccountName, BankPrincipalId, BusinessId, CustomerRole,

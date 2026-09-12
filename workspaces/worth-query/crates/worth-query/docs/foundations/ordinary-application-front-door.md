@@ -85,8 +85,28 @@ typed declaration
     -> governed publication or legal recovery action
 ```
 
-For a product-bound read or mutation, the ordinary host route begins with one
-explicit World-owned branch selection:
+For a contribution-composed application, install with
+`worth_query_host::facade::application_installation::in_memory` and execute
+through a borrowed typed request:
+
+```rust,ignore
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+
+let request = application.request(&external_principal, &request_scope);
+let result = request.query(query_intent).execute()?;
+let outcome = request.mutate(mutation_intent).idempotency(command_id).execute();
+```
+
+The root lists contributions once. Entries own declarations, handler
+configuration, and invariant factories; installation checks their exact
+membership before publishing the application. The [host guide](../../../worth-query-host/README.md#contribution-composed-applications)
+and [public consumer](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
+show this construction. A borrowed request selects no World and caches no
+permission. Each execution performs selection, resolution, admission, and
+publication through the existing owners.
+
+Host integrations that explicitly own a selected product attempt can use the
+selection and admission surface:
 
 ```rust,ignore
 let branch = application.current_world();

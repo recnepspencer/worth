@@ -18,7 +18,8 @@ use crate::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationSettlementDeferred,
-    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
+    WorthQueryCustomInvariantDenial, WorthQueryProductStaleApplication,
+    WorthQueryProductUnpublishedApplication,
 };
 use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
@@ -32,6 +33,10 @@ pub enum BankMutationDenial {
     Preparation(BankCommitPreparationDenial),
     Commit {
         kind: BankCommitDenialKind,
+        stage: BankCommitDenialStage,
+    },
+    CustomInvariant {
+        denial: WorthQueryCustomInvariantDenial,
         stage: BankCommitDenialStage,
     },
     IdempotencyIntentDrift,

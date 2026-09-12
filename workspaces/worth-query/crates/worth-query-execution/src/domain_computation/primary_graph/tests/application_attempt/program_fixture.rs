@@ -69,7 +69,7 @@ pub(super) fn admitted_mutation_free_program(
     effects
         .emit_external(
             MutationFreeExternalEffect::reference(),
-            MutationFreeNotice("mutation-free".to_owned()),
+            MutationFreeNotice(13),
         )
         .unwrap();
     effects.finish().unwrap()

@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+mod application_invariant_acceptance;
+
 use worth_query_consumer_values::PositiveLength;
 use worth_query_decl::facade::application_schema::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
@@ -29,11 +31,22 @@ impl TopologySchemaBinding for ConsumerSchema {}
 impl ParameterSchemaBinding for ConsumerSchema {}
 
 fn main() {
+    // Match the execution stack provisioned by the public application examples.
+    std::thread::Builder::new()
+        .name("prem0-consumer".to_owned())
+        .stack_size(8 * 1024 * 1024)
+        .spawn(run)
+        .expect("the host provisions its application thread")
+        .join()
+        .expect("the public consumer journey completes");
+}
+
+fn run() {
     let declaration = ConsumerSchema::declaration()
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 2);
-    assert_eq!(declaration.erased().members().len(), 8);
+    assert_eq!(declaration.erased().members().len(), 54);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY
@@ -80,6 +93,7 @@ fn main() {
         .is_some());
 
     hostile_binding_identity_and_unit_cannot_preserve_schema_identity();
+    application_invariant_acceptance::run(&installed);
 }
 
 fn hostile_binding_identity_and_unit_cannot_preserve_schema_identity() {

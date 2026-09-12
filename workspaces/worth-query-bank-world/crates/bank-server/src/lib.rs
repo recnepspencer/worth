@@ -17,6 +17,7 @@ mod estate_progression;
 mod external_effect_transport;
 mod graph_bootstrap;
 mod identity_runtime;
+mod mutation_handlers;
 mod operation_admission;
 mod operation_commit;
 mod operation_proposals;

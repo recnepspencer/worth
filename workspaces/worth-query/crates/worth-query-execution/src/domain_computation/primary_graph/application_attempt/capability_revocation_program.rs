@@ -63,6 +63,9 @@ impl<Schema, Operation, Input, Scope>
                 emission_retained_bytes: 0,
                 emission_retained_bytes_ceiling,
                 conditional_definition: None,
+                validator_work_admission:
+                    super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+                output_correspondence: Default::default(),
             },
         })
     }

@@ -125,7 +125,7 @@ fn external_host_consumer_has_one_obligation_and_one_graph_read_planning_path() 
         .bind_application_schema(declaration)
         .expect("hostile-consumer schema should bind");
     let query = schema
-        .application_query(RecordQuery::reference())
+        .certification_query(RecordQuery::reference())
         .expect("hostile-consumer query should be installed");
 
     let adoption =

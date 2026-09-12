@@ -38,6 +38,13 @@ impl CustomInvariantRule for MaterializationWaveRule {
             },
             display_name: Arc::from("Perf Materialization Wave"),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                access: crate::validation::data::CustomInvariantAccessContract {
+                    read_entity_kinds: vec![crate::identity::data::KindId(1)],
+                    read_relation_kinds: vec![crate::identity::data::KindId(2)],
+                    affected_entity_kinds: vec![crate::identity::data::KindId(1)],
+                    affected_relation_kinds: vec![crate::identity::data::KindId(2)],
+                },
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                 cost_class: InvariantCostClass::Touched,

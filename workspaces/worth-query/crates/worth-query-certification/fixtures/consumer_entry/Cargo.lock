@@ -708,6 +708,7 @@ version = "0.0.0"
 dependencies = [
  "worth-query-consumer-values",
  "worth-query-decl",
+ "worth-query-host",
 ]
 
 [[package]]
@@ -717,6 +718,8 @@ dependencies = [
  "sha2",
  "worth-foundational",
  "worth-proof",
+ "worth-query-admission",
+ "worth-query-declaration",
  "worth-query-execution",
  "worth-query-installation",
  "worth-runtime-world",
@@ -726,8 +729,10 @@ dependencies = [
 name = "worth-query-topology-entry"
 version = "0.0.0"
 dependencies = [
+ "worth-foundational",
  "worth-query-consumer-values",
  "worth-query-decl",
+ "worth-query-host",
 ]
 
 [[package]]

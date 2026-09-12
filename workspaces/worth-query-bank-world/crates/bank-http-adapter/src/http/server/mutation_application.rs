@@ -239,7 +239,8 @@ fn mutation_denial(denial: &BankMutationDenial) -> BankHttpDenial {
         ),
         BankMutationDenial::Installation(_)
         | BankMutationDenial::Preparation(_)
-        | BankMutationDenial::Commit { .. } => {
+        | BankMutationDenial::Commit { .. }
+        | BankMutationDenial::CustomInvariant { .. } => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }
     }

@@ -10,8 +10,15 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
+    WorthQueryApplicationEntityIdentity, WorthQueryApplicationOutputRole,
+    WorthQueryAuthenticatedPrincipal, WorthQueryPreserveOutput,
 };
+
+pub(in crate::domain_computation::primary_graph) struct RetentionOutputBinding;
+
+pub(in crate::domain_computation::primary_graph) const RETAINED_ACCOUNT_OUTPUT:
+    WorthQueryApplicationOutputRole<RetentionOutputBinding, Account, WorthQueryPreserveOutput> =
+    WorthQueryApplicationOutputRole::new("retained-account");
 
 #[test]
 fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
@@ -318,7 +325,11 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .complete_projected_dependencies()
         .unwrap()
         .begin_effect_program();
+    effects.prepare_output_role_for_test(RETAINED_ACCOUNT_OUTPUT, "Account");
     let account = effects.existing_entity(account).unwrap();
+    effects
+        .bind_output(RETAINED_ACCOUNT_OUTPUT, &account)
+        .expect("retained account output belongs to this effect program");
     effects
         .write_field(&account, AccountStatus::reference(), replacement.to_owned())
         .unwrap();

@@ -54,6 +54,7 @@ impl WorthQuerySemanticScaleAxis {
 pub enum WorthQueryResourceDimension {
     ScratchBytes,
     TransientBytes,
+    CandidateRetainedRepresentationBytes,
     PeakResidentBytes,
     RetainedBytes,
     ReclaimableBytes,
@@ -74,9 +75,10 @@ pub enum WorthQueryResourceDimension {
 }
 
 impl WorthQueryResourceDimension {
-    pub const ALL: [Self; 19] = [
+    pub const ALL: [Self; 20] = [
         Self::ScratchBytes,
         Self::TransientBytes,
+        Self::CandidateRetainedRepresentationBytes,
         Self::PeakResidentBytes,
         Self::RetainedBytes,
         Self::ReclaimableBytes,
@@ -100,6 +102,7 @@ impl WorthQueryResourceDimension {
         match self {
             Self::ScratchBytes => "scratch-bytes",
             Self::TransientBytes => "transient-bytes",
+            Self::CandidateRetainedRepresentationBytes => "candidate-retained-representation-bytes",
             Self::PeakResidentBytes => "peak-resident-bytes",
             Self::RetainedBytes => "retained-bytes",
             Self::ReclaimableBytes => "reclaimable-bytes",

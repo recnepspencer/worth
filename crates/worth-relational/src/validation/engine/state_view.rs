@@ -31,6 +31,13 @@ impl<'state> InvariantStateView<'state> {
     pub(crate) fn touched_visible_entity_ids(
         &self,
     ) -> Option<Vec<crate::identity::data::EntityId>> {
+        self.touched_visible_entity_ids_with_budget(|_| true)
+    }
+
+    pub(crate) fn touched_visible_entity_ids_with_budget(
+        &self,
+        mut charge: impl FnMut(usize) -> bool,
+    ) -> Option<Vec<crate::identity::data::EntityId>> {
         let mut ids = Vec::new();
         let mut saw_any = false;
         let partition_ids = self.state.touched_partition_ids()?;
@@ -39,6 +46,9 @@ impl<'state> InvariantStateView<'state> {
             let Some(slots) = self.state.touched_entity_slots(partition_id) else {
                 continue;
             };
+            if !charge(slots.len()) {
+                return None;
+            }
             saw_any = true;
             for slot in slots {
                 let Some(metadata) = partition
@@ -234,6 +244,13 @@ impl<'state> InvariantStateView<'state> {
     pub(crate) fn touched_visible_relation_ids(
         &self,
     ) -> Option<Vec<crate::identity::data::RelationId>> {
+        self.touched_visible_relation_ids_with_budget(|_| true)
+    }
+
+    pub(crate) fn touched_visible_relation_ids_with_budget(
+        &self,
+        mut charge: impl FnMut(usize) -> bool,
+    ) -> Option<Vec<crate::identity::data::RelationId>> {
         let mut ids = Vec::new();
         let mut saw_any = false;
         let partition_ids = self.state.touched_partition_ids()?;
@@ -242,6 +259,9 @@ impl<'state> InvariantStateView<'state> {
             let Some(slots) = self.state.touched_relation_slots(partition_id) else {
                 continue;
             };
+            if !charge(slots.len()) {
+                return None;
+            }
             saw_any = true;
             for slot in slots {
                 let Some(metadata) =

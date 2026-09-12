@@ -31,8 +31,9 @@ pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExter
 /// Purpose-scoped application runtime published from one typed primary graph.
 ///
 /// Publishing consumes the raw execution root and its installation authority.
-/// The resulting value exposes principal admission but no provider-session,
-/// ordinary query, mutation, workflow, live, or replay authority.
+/// The resulting value exposes principal admission and installed-handler
+/// candidate construction, but no provider-session, commit, publication,
+/// workflow, live, or replay authority.
 ///
 /// ```compile_fail
 /// use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -102,6 +103,9 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
     /// Instance-local recovery-handle live set (Q8.9 / R8.29).
     pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
+    pub(super) mutation_handlers: super::handler::InstalledMutationHandlerRegistry<Schema>,
+    pub(super) mutation_projection:
+        super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
 }
 
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>

@@ -130,16 +130,16 @@ impl FinancialCourtroomWorld {
             .principal_binding(FinancialPrincipalBinding::reference())
             .unwrap();
         let curve_query = schema
-            .application_query(FinancialIntentQuery::reference())
+            .certification_query(FinancialIntentQuery::reference())
             .unwrap();
         let quote_query = schema
-            .application_query(FinancialIntentQuery::reference())
+            .certification_query(FinancialIntentQuery::reference())
             .unwrap();
         let portfolio_query = schema
-            .application_query(FinancialIntentQuery::reference())
+            .certification_query(FinancialIntentQuery::reference())
             .unwrap();
         let sibling_portfolio_query = schema
-            .application_query(FinancialIntentQuery::reference())
+            .certification_query(FinancialIntentQuery::reference())
             .unwrap();
 
         let mut graph = authority

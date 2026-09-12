@@ -1,9 +1,9 @@
 //! Declaration-audience surface: exact re-exports from declaration authority.
 
 pub use worth_query_declaration::facade::{
-    application_aftermath, application_capability, application_query, application_schema,
-    authentication, authoring, binding, branch, canonicalization, collection, diagnostics,
-    identity, identity_authority, portable_identity, schema_view, typed, validation,
+    application_aftermath, application_capability, application_operation, application_query,
+    application_schema, authentication, authoring, binding, branch, canonicalization, collection,
+    diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,
     view_declaration,
 };
 pub use worth_query_declaration::{
@@ -11,12 +11,13 @@ pub use worth_query_declaration::{
     worth_query_application_query, worth_query_application_schema, worth_query_aspect,
     worth_query_capability, worth_query_capability_context,
     worth_query_capability_context_entity_slot, worth_query_capability_provenance,
-    worth_query_effect, worth_query_entity, worth_query_field, worth_query_operation,
-    worth_query_operation_creates, worth_query_operation_deletes, worth_query_operation_emits,
-    worth_query_operation_expects_fact, worth_query_operation_expects_version,
-    worth_query_operation_links, worth_query_operation_reads, worth_query_operation_requires,
-    worth_query_operation_unlinks, worth_query_operation_writes, worth_query_policy,
-    worth_query_portable_type, worth_query_principal_binding, worth_query_relation,
+    worth_query_effect, worth_query_entity, worth_query_field, worth_query_mutation_binding,
+    worth_query_operation, worth_query_operation_creates, worth_query_operation_deletes,
+    worth_query_operation_emits, worth_query_operation_expects_fact,
+    worth_query_operation_expects_version, worth_query_operation_links,
+    worth_query_operation_reads, worth_query_operation_requires, worth_query_operation_unlinks,
+    worth_query_operation_writes, worth_query_policy, worth_query_portable_type,
+    worth_query_principal_binding, worth_query_query_binding, worth_query_relation,
     worth_query_structured_value_binding, worth_query_unit, worth_query_value_binding,
 };
 

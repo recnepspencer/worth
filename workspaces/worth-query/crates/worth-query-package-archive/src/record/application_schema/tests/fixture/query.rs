@@ -62,6 +62,8 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                 text("expected"),
                 ScalarAspectType::UInt64,
                 type_id("u64"),
+                Some(text("worth.units.metre.v1")),
+                Some(text("worth.frames.model.v1")),
             )],
             result_shape,
             root_paths: vec![root_path()],

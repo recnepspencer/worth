@@ -2,8 +2,9 @@ use worth_query_decl::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
     ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryParameterSet,
 };
-use worth_query_decl::facade::worth_query_application_query;
+use worth_query_decl::facade::{worth_query_application_query, worth_query_query_binding};
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionRow,
@@ -13,6 +14,7 @@ use crate::authorization::ViewAccount;
 use crate::model::AccountId;
 use crate::reads::AccountSummary;
 use crate::schema::{Account, BankSchema};
+use crate::schema::{AccountIdentity, Identity};
 
 use super::account_summary_projection::{account_summary_shape, project_account_summary};
 
@@ -47,6 +49,24 @@ worth_query_application_query!(
     result AccountSummaryQueryResultBinding,
     scope Account => "Account",
     name "account_summary"
+);
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountSummaryRequestBinding for AccountSummaryRequest { identity: "AccountSummaryRequest" });
+worth_query_query_binding!(
+    pub AccountSummaryQueryBinding for AccountSummaryRequest, schema BankSchema,
+    identity "worth.bank.account-summary-query-binding.v1",
+    input AccountSummaryRequestBinding,
+    query AccountSummaryQuery,
+    parameters AccountSummaryQueryParametersBinding => |_| ApplicationQueryParameterSet::new(),
+    result AccountSummaryQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope Account, Identity, AccountIdentity, AccountId,
+        worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field AccountIdentity::reference(),
+    value AccountSummaryRequest::account,
+    limits results 1_024, work 100_000
+
 );
 
 pub fn account_summary_definition() -> ApplicationQueryDefinition<

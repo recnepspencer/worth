@@ -65,6 +65,18 @@ impl CustomInvariantRule for GraphSelectedStateProbe {
             },
             display_name: Arc::from("Supply Chain graph selected-state probe"),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: std::num::NonZeroU64::new(1_000_000).unwrap(),
+                access: worth_relational::facade::runtime::CustomInvariantAccessContract {
+                    read_entity_kinds: vec![super::world::supply_chain::entity_kind_id(
+                        super::world::supply_chain::EntityKind::Vessel,
+                    )],
+                    read_relation_kinds: vec![],
+                    affected_entity_kinds: vec![super::world::supply_chain::entity_kind_id(
+                        super::world::supply_chain::EntityKind::Vessel,
+                    )],
+                    affected_relation_kinds: vec![],
+                }
+                .canonicalize(),
                 execution_point: InvariantExecutionPoint::GraphComposition,
                 groups: InvariantGroupSet::all(),
                 cost_class: InvariantCostClass::Touched,

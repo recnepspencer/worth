@@ -70,6 +70,89 @@ runtime can truthfully report that it can perform an action without proving
 that a particular application principal may request that action for a
 particular purpose and scope.
 
+## Installed Application Query Bindings
+
+An application query binding is the complete public contract for one typed
+read. `ApplicationQueryBinding<Schema>` associates the application input and
+its structured-value binding with the installed query, parameter and result
+bindings, exact principal mapping, scope resolution, stable binding identity,
+and finite result and work ceilings. `ApplicationQueryIntent<Schema>` carries
+only the request values needed to produce parameters and resolve scope.
+
+Applications normally declare both through `worth_query_query_binding!` and
+register the resulting binding on the application schema or a same-schema
+contribution:
+
+```rust
+worth_query_query_binding!(
+    pub AccountActivityBinding for AccountActivityRequest, schema BankSchema,
+    // exact input, query, parameter, result, principal, scope, and limit declarations
+    // ...
+);
+
+let schema = BankSchema::declaration()?
+    .application_query_binding::<AccountActivityBinding>()?;
+```
+
+Installation compiles that association as one contract. Runtime code that
+needs to inspect installed meaning uses
+`installed_schema.installed_query_binding::<AccountActivityBinding>()`; the
+returned value exposes the exact installed query, principal binding, scope,
+identity, and finite limits together.
+
+Ordinary application code enters through the host facade and supplies only an
+authenticated external principal, request scope, and typed intent:
+
+```rust
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+
+let request = application.request(&external_principal, &request_scope);
+let published = request
+    .query(AccountActivityRequest::new(account_id))
+    .execute()?;
+```
+
+Creating the borrowed request context reads no World state. Each `execute()`
+performs a fresh current-World selection, resolves the external principal
+through the binding's installed principal mapping, resolves scope, admits the
+installed query under its finite ceilings, executes it, and returns the real
+published result. `.limits(results, work)` may narrow installed ceilings; an
+attempt to widen either ceiling is denied before provider or basis work.
+
+## Contribution And Installation Boundary
+
+The application foundation supports independently compiled entry contributions
+for one root schema. `worth_query_application!` lists those contributions once
+and supplies `ApplicationSchemaComposition::Contributions`. Each entry declares
+members through `ApplicationSchemaContribution<Schema>` and implements
+`WorthQueryApplicationContribution<Schema>` with its own configuration type.
+The host supplies the corresponding configuration tuple to
+`facade::application_installation::in_memory(declaration, configuration, limits,
+initial_state)`. See the [host API guide](../../worth-query-host/README.md#contribution-composed-applications)
+for the call shape and the [public consumer](../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
+for executable definitions.
+
+Installation validates the exact contribution inventory before callbacks and
+restricts each setup to its installed members. Handler completeness and invariant
+installation precede the initial-state callback. The completed application owns
+handler configuration; numerical/domain values remain Query-free. Handlers use
+`decide`, `candidate_requirements`, and `build_candidate`, with separate candidate
+cardinality, representation-byte, and work bounds. Runtime-cardinality candidates
+are reserved before allocation and inspected together with affected neighbors.
+
+Borrowed requests support both `.query(intent).execute()` and
+`.mutate(intent).idempotency(key).execute()`. Every execution freshly selects and
+admits its operation. `application.discovery()` provides descriptive mutation,
+query, request-binding, and field metadata from installed declarations; it grants
+no execution authority or promise of current authorization.
+
+The public consumer demonstrates value binding, contribution configuration,
+complete in-memory installation, typed requests and handlers, bounded actual
+candidate validation, and discovery. Its vertex replacement also exercises
+preserve/create/retire output roles, immutable committed entity-change/lineage
+observations, rejected-candidate isolation, and idempotent receipt recovery.
+Milestone 9.17.4 remains open for its wider application API and consumer obligations.
+
 ## Core Laws
 
 ### Meaning is declared; authority is admitted

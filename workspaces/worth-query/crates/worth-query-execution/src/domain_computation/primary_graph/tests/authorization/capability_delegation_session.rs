@@ -49,7 +49,7 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedAccountOmissionQuery::reference())
+        .certification_query(GovernedAccountOmissionQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
 

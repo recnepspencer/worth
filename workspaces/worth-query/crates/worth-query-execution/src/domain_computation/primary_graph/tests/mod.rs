@@ -5,6 +5,7 @@ mod authorization;
 mod committed_publication;
 pub(in crate::domain_computation::primary_graph) mod fault_controller;
 pub(in crate::domain_computation) mod fixture;
+mod handler_registry_authority;
 mod hostile_resolution;
 mod index_refresh;
 mod invariant_projection;

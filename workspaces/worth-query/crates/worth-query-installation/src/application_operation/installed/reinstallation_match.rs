@@ -27,6 +27,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
         let Ok(compilation) = WorthQueryApplicationOperationCompilation::resolve(
             self.binding_identity.clone(),
             members,
+            self.mutation_bindings.as_ref(),
             &portable_contract,
             &self.operation,
             &self.input_type,

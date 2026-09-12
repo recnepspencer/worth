@@ -13,6 +13,14 @@ use crate::history::data::{BranchId, CommitId};
 use super::{history_recovery_validation, HistorySubsystem};
 
 impl HistorySubsystem {
+    /// Published branch truth closes initial installation even before settlement.
+    pub(crate) fn has_published_branch_basis(&self) -> bool {
+        self.branch_cells
+            .values()
+            .into_iter()
+            .any(|cell| !matches!(cell.observation().target(), FoundationalBranchTarget::Empty))
+    }
+
     pub(crate) fn rebuild_branch_head_version_index(&self) {
         let versions = self
             .branch_cells

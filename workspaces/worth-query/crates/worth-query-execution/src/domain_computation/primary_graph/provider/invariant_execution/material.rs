@@ -7,11 +7,13 @@ use super::super::application_attempt_state::WorthQueryStagedApplicationAttempt;
 
 pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) semantic: ApplicationInvariantSemanticMaterial,
+    pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
     pub(super) batch: worth_relational::facade::transactions::WorkerIntentBatch,
     pub(super) branch: worth_relational::facade::history::BranchId,
     pub(super) product:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     pub(super) decision_facts: usize,
+    pub(super) validator_work_admission: crate::domain_computation::primary_graph::application_attempt::WorthQueryCandidateValidatorWorkAdmission,
     pub(super) aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -34,10 +36,12 @@ impl ApplicationInvariantCandidateMaterial {
     ) -> Result<Self, WorthQueryInvariantExecutionFailure> {
         Ok(Self {
             semantic: ApplicationInvariantSemanticMaterial::from_staged(staged)?,
+            requirements: staged.invariant_requirements().to_vec(),
             batch: staged.batch().clone(),
             branch: staged.branch().clone(),
             product: staged.product_publication().clone(),
             decision_facts: staged.decision_fact_count(),
+            validator_work_admission: staged.validator_work_admission(),
             aftermath_causality: staged.aftermath_causality().cloned(),
             application_graph_reads: staged
                 .application_graph_reads()

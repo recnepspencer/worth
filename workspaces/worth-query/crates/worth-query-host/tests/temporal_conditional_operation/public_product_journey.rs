@@ -19,7 +19,7 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     let query = world
         .application
         .installed_schema()
-        .application_query(TemporalIntentQuery::reference())
+        .certification_query(TemporalIntentQuery::reference())
         .unwrap();
     let source = world
         .application

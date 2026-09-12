@@ -45,6 +45,22 @@ worth_query_application_query!(
     scope Principal => "Principal",
     name "account_discovery"
 );
+worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountDiscoveryRequestBinding for AccountDiscoveryRequest { identity: "AccountDiscoveryRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub AccountDiscoveryQueryBinding for AccountDiscoveryRequest, schema BankSchema,
+    identity "worth.bank.account-discovery-query-binding.v1",
+    input AccountDiscoveryRequestBinding,
+    query AccountDiscoveryQuery,
+    parameters AccountDiscoveryQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result AccountDiscoveryQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope Principal, crate::schema::PrincipalIdentity, crate::schema::PrincipalIdentityField,
+        crate::model::BankPrincipalId, ReadOnly, NoApplicationUnit,
+    principal_field crate::schema::PrincipalIdentityField::reference(),
+    limits results 1_024, work 100_000
+
+);
 
 pub fn account_discovery_definition() -> ApplicationQueryDefinition<
     BankSchema,

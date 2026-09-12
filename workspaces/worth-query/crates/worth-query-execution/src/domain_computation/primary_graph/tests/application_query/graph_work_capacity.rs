@@ -22,7 +22,7 @@ fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

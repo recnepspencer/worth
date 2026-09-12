@@ -11,7 +11,7 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &live_request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -68,7 +68,7 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -134,7 +134,7 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &cancellable_request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

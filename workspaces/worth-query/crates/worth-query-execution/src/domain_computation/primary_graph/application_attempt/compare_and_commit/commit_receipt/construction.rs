@@ -107,6 +107,8 @@ impl WorthQueryApplicationCommitReceipt {
             aftermath_causality: None,
             expected_retry_session,
             performed_product_change: None,
+            output_correspondence: provider.commit_evidence().output_correspondence().clone(),
+            committed_changes: provider.commit_evidence().committed_changes().clone(),
         }
     }
 

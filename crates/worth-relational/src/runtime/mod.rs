@@ -31,8 +31,9 @@ pub use crate::visibility::materialization::read_records::{
 };
 pub use crate::visibility::retention::VisibilityRetentionAuthority;
 pub use initial_schema_installation::{
-    RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
-    RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
+    custom_invariant_inventory_digest, RelationalInitialSchemaInstallation,
+    RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
+    RelationalInitialSchemaInstallationReceipt,
 };
 pub use interruption_counters::RelationalInterruptionCostCounters;
 #[cfg(any(test, feature = "test-operation-control"))]

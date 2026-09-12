@@ -29,6 +29,10 @@ macro_rules! worth_query_application {
             }
         }
 
+        impl $crate::facade::application_schema::ApplicationSchemaComposition for $Schema {
+            type Contributions = ($($Contribution,)+);
+        }
+
         impl $Schema {
             pub fn declaration() -> Result<
                 $crate::facade::application_schema::ApplicationSchemaDeclaration<Self>,

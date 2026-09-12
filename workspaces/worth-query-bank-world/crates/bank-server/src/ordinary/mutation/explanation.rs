@@ -92,7 +92,8 @@ fn denial_stage(denial: &BankMutationDenial) -> BankMutationExplanationStage {
         | BankMutationDenial::IdempotencyIntentDrift => BankMutationExplanationStage::Idempotency,
         BankMutationDenial::Proposal(_) => BankMutationExplanationStage::Projection,
         BankMutationDenial::Preparation(_) => BankMutationExplanationStage::EffectPreparation,
-        BankMutationDenial::Commit { stage, .. } => {
+        BankMutationDenial::Commit { stage, .. }
+        | BankMutationDenial::CustomInvariant { stage, .. } => {
             BankMutationExplanationStage::ProviderCommit(*stage)
         }
     }

@@ -5,6 +5,9 @@ version.workspace = true
 license.workspace = true
 description = "Portable domain package and installed identity authority for Worth Query."
 
+[features]
+certification-query-lookup = []
+
 [dependencies]
 getrandom = "0.4"
 hmac = "0.12"

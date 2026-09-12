@@ -1,5 +1,17 @@
 use std::sync::Arc;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryCustomInvariantDenial {
+    Violation {
+        identity: worth_relational::facade::transactions::CustomInvariantSemanticIdentity,
+    },
+    Failure {
+        identity: worth_relational::facade::transactions::CustomInvariantFailureIdentity,
+        phase: worth_relational::facade::transactions::CustomInvariantFailurePhase,
+        failure: worth_relational::facade::transactions::ResultCustomInvariantFailureKind,
+    },
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantExecutionDenialKind {
     InvariantNotInstalled,
@@ -8,8 +20,13 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     UndeclaredStateLoadFamily,
     StateLoadBudgetExceeded,
     ExecutionBudgetExceeded,
+    CandidateValidatorWorkExceeded {
+        maximum_work: usize,
+        required_work: usize,
+    },
     ProviderUnsupported,
     ProviderRejected,
+    CustomInvariantDenied,
     ProductBasisStale,
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
@@ -62,6 +79,7 @@ pub struct WorthQueryInvariantExecutionFailure {
     kind: WorthQueryInvariantExecutionDenialKind,
     posture: WorthQueryInvariantExecutionFailurePosture,
     detail: Arc<str>,
+    custom_invariant: Option<WorthQueryCustomInvariantDenial>,
 }
 
 impl WorthQueryInvariantExecutionFailure {
@@ -70,6 +88,7 @@ impl WorthQueryInvariantExecutionFailure {
             kind,
             posture: WorthQueryInvariantExecutionFailurePosture::Denied,
             detail: detail.into(),
+            custom_invariant: None,
         }
     }
 
@@ -81,6 +100,19 @@ impl WorthQueryInvariantExecutionFailure {
             kind,
             posture: WorthQueryInvariantExecutionFailurePosture::Exhausted,
             detail: detail.into(),
+            custom_invariant: None,
+        }
+    }
+
+    pub(crate) fn custom_invariant(
+        custom_invariant: WorthQueryCustomInvariantDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self {
+            kind: WorthQueryInvariantExecutionDenialKind::CustomInvariantDenied,
+            posture: WorthQueryInvariantExecutionFailurePosture::Denied,
+            detail: detail.into(),
+            custom_invariant: Some(custom_invariant),
         }
     }
 
@@ -94,5 +126,9 @@ impl WorthQueryInvariantExecutionFailure {
 
     pub fn posture(&self) -> WorthQueryInvariantExecutionFailurePosture {
         self.posture
+    }
+
+    pub fn custom_invariant_denial(&self) -> Option<&WorthQueryCustomInvariantDenial> {
+        self.custom_invariant.as_ref()
     }
 }

@@ -31,7 +31,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
     let query = world
         .application
         .installed_schema()
-        .application_query(TemporalIntentQuery::reference())
+        .certification_query(TemporalIntentQuery::reference())
         .unwrap();
     let source = world
         .application

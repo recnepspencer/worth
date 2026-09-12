@@ -119,7 +119,9 @@ fn write_parameter(
 ) -> Result<(), Denial> {
     output.text(value.name())?;
     foundational_aspect::write_scalar_type(output, value.scalar_family())?;
-    output.text(value.value_type())
+    output.text(value.value_type())?;
+    write_optional(output, value.unit(), |output, unit| output.text(unit))?;
+    write_optional(output, value.frame(), |output, frame| output.text(frame))
 }
 fn decode_parameter(
     input: &mut BinaryInput<'_>,
@@ -128,6 +130,8 @@ fn decode_parameter(
         input.text()?.to_owned(),
         foundational_aspect::decode_scalar_type(input)?,
         decode_type_identity(input)?,
+        decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
+        decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
     ))
 }
 

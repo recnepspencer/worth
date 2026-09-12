@@ -110,6 +110,14 @@ impl WorthQueryApplicationEmission {
         self.retained_bytes
     }
 
+    pub(super) fn candidate_retained_representation_bytes(&self) -> Option<usize> {
+        usize::try_from(self.retained_bytes).ok()?.checked_add(
+            self.external_payload
+                .as_ref()
+                .map_or(0, |payload| payload.bytes.len()),
+        )
+    }
+
     fn external_payload(&self) -> Option<&WorthQueryExternalPayloadProjection> {
         self.external_payload.as_ref()
     }
@@ -291,6 +299,10 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) validator_work_admission:
+        super::WorthQueryCandidateValidatorWorkAdmission,
+    pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
+        super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
 }
 
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
@@ -309,6 +321,9 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) emission_retained_bytes_ceiling: u64,
     pub(super) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    pub(super) candidate_reservation: Option<super::WorthQueryCandidateReservation>,
+    pub(super) output_correspondence:
+        super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
 }
 
 impl<Schema, Operation, Input, Scope>

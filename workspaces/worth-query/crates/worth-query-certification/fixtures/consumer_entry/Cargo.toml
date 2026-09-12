@@ -19,3 +19,31 @@ worth-query-topology-entry = { path = "topology_entry" }
 worth-query-parameter-entry = { path = "parameter_entry" }
 worth-query-decl = { path = "../../../worth-query-decl" }
 worth-query-host = { path = "../../../worth-query-host" }
+
+# Match the Query workspace's compilation profile so the external consumer can
+# reuse its owner artifacts without full-debug or optimized Query recompilation.
+[profile.dev]
+opt-level = 0
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.dev.package.worth-query]
+opt-level = 0
+[profile.dev.package.worth-query-decl]
+opt-level = 0
+[profile.dev.package.worth-query-host]
+opt-level = 0
+[profile.dev.package.worth-query-declaration]
+opt-level = 0
+[profile.dev.package.worth-query-installation]
+opt-level = 0
+[profile.dev.package.worth-query-package-archive]
+opt-level = 0
+[profile.dev.package.worth-query-admission]
+opt-level = 0
+[profile.dev.package.worth-query-execution]
+opt-level = 0
+[profile.dev.package.worth-query-publication]
+opt-level = 0

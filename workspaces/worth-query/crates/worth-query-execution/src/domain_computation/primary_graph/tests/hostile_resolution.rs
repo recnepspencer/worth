@@ -33,7 +33,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
             .selected_product()
             .resolve_authenticated_principal(
                 &enabled.binding,
-                unknown,
+                &unknown,
                 &scope,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
@@ -50,7 +50,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
             .selected_product()
             .resolve_authenticated_principal(
                 &disabled.binding,
-                disabled_external,
+                &disabled_external,
                 &disabled_scope,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
@@ -71,7 +71,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
             .selected_product()
             .resolve_authenticated_principal(
                 &enabled.binding,
-                cancelled_external,
+                &cancelled_external,
                 &cancelled_scope,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
@@ -87,7 +87,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
             .selected_product()
             .resolve_authenticated_principal(
                 &foreign.binding,
-                foreign_external,
+                &foreign_external,
                 &live_scope(),
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
@@ -108,7 +108,7 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
             .selected_product()
             .resolve_authenticated_principal(
                 &world.binding,
-                ambiguous,
+                &ambiguous,
                 &scope,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
@@ -124,7 +124,7 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
         .selected_product()
         .resolve_authenticated_principal(
             &fresh_world.binding,
-            external,
+            &external,
             &fresh_scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -149,7 +149,7 @@ fn application_principal_proof_expires_with_its_external_authentication() {
         .selected_product()
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -174,7 +174,7 @@ fn changed_typed_principal_identity_revokes_the_resolved_proof() {
         .selected_product()
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

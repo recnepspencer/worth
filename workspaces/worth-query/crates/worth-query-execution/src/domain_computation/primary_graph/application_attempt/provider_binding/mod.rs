@@ -28,6 +28,7 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
@@ -77,6 +78,8 @@ pub(super) fn prepare_provider_attempt(
     conditional_definition: Option<
         crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
     >,
+    validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    output_correspondence: super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(&facts, &effects);
     for effect in effects {
@@ -85,6 +88,7 @@ pub(super) fn prepare_provider_attempt(
     let completed = accumulator.finish(
         expected_emission_retained_bytes,
         emission_retained_bytes_ceiling,
+        output_correspondence,
     )?;
     Ok(WorthQueryPreparedApplicationProviderAttempt {
         installed_read_scopes,
@@ -92,6 +96,7 @@ pub(super) fn prepare_provider_attempt(
         effects: completed,
         preimage_demand,
         conditional_definition,
+        validator_work_admission,
     })
 }
 

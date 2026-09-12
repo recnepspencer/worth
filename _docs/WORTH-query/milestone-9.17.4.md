@@ -1,12 +1,35 @@
 # Milestone 9.17.4: Application API Hardening
 
-> **Status:** Phase 1 was certified on 2026-09-11. Phases 2-6 remain
-> unimplemented. Code below continues to define the complete destination API;
-> only Phase 1 surfaces are available at this revision.
+> **Status:** Phase 1 was certified on 2026-09-11. Phases 2-6 remain open.
+> The focused Pre-M0 application foundation was certified on 2026-09-12. It implements entry-local
+> value bindings, same-schema contribution configuration, complete in-memory
+> installation, borrowed typed requests and handlers, bounded actual candidate
+> validation, descriptive discovery, output correspondence, and committed
+> change observations. Its public consumer publishes cyclic planar groups and
+> replaces a vertex with preserve/create/retire roles and same-commit lineage.
+> Destination examples below also include wider APIs whose phase remains open.
 >
 > **Product posture:** One typed application experience over the certified
-> in-memory Query/Relational/Bridge/Signal/World runtime. This is a complete
-> consumer cutover, with no legacy API compatibility layer.
+> in-memory Query/Relational/Bridge/Signal/World runtime.
+
+The Pre-M0 public consumer uses a Query-free value package, two independently
+compiled contribution packages, and one application root. It exercises bounded
+cyclic allocation, actual candidate and untouched-neighbor validation, atomic
+publication/readback, preserve/create/retire output roles, native committed
+entity changes and same-commit lineage, exact denials, and idempotent recovery.
+The external wrong-schema build fails at its schema-binding trait boundary;
+owner proofs retain installation, stale-source, capacity, and authority checks.
+The affected Bank public create/read/recovery journey passes with ordinary and
+maximum-length names. Persistent Astra review cleared the final source and tests;
+normal boundary/context checks, scoped formatting and dirty line caps pass.
+
+Warm incremental builds measured on 2026-09-12 with the consumer workspace's
+shared Query target took 9.90s after touching the declaration crate, 3.22s after
+touching the topology entry, and 2.89s after touching the consumer root. Each
+measurement changed only the source timestamp; these measure invalidation and
+relink cost with compiled dependencies, not arbitrary semantic API changes.
+The entry touch rebuilt that entry and the root; the consumer touch rebuilt only
+the root. No Query dependency or generic bound enters the pure value package.
 
 ## Goal And Roadmap Placement
 
@@ -369,6 +392,24 @@ schema-derived types; installation verifies exact ownership and generation.
 Do not introduce a universal runtime schema-fragment merger or a registry of
 untyped references. Bank estate and the geometry-shaped fixture prove modular
 composition before the proprietary house adds CAD/building/MEP contributors.
+
+### Current foundation reference
+
+The current host constructor is
+`application_installation::in_memory(Schema::declaration()?, configuration,
+limits, initial_state)`. Its configuration is the tuple derived from the root's
+`ApplicationSchemaComposition::Contributions`; each entry configures only its
+installed members through `WorthQueryApplicationContributionSetup`. It validates
+contribution inventory before callbacks and handler/invariant completeness
+before initial state. Current limits compose World, candidate, query, and
+conditional resource profiles. The broader resource families in the destination
+contract below retain their phase obligations.
+
+The [host reference](../../workspaces/worth-query/crates/worth-query-host/README.md#contribution-composed-applications)
+and [two-entry public consumer](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
+show the implemented call shape. That consumer covers the focused foundation;
+it does not establish completion of Bank, UI/server, history/paging/live,
+workflow, recovery, or every remaining 9.17.4 obligation.
 
 ### Installation
 

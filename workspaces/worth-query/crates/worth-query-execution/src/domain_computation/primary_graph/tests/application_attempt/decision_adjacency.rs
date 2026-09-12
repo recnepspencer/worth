@@ -179,7 +179,7 @@ fn authenticated(
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -291,6 +291,12 @@ fn assert_membership_absent(
             reader
                 .decision_relations_from(AccountOwner::reference(), principal)
                 .unwrap();
+            let account = reader
+                .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                .unwrap();
+            reader
+                .require_decision_field(&account, AccountStatus::reference())
+                .unwrap();
         })
         .unwrap()
         .into_parts();
@@ -304,6 +310,16 @@ fn assert_membership_absent(
     else {
         panic!("the committed unlink must remove the exact membership");
     };
+    assert_eq!(
+        denial.kind(),
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
+    );
+    let mut candidate = reads.begin_effect_program();
+    let from = candidate.existing_entity(principal).unwrap();
+    let to = candidate.existing_entity(account).unwrap();
+    let denial = candidate
+        .unlink_observed(AccountOwner::reference(), &from, &to)
+        .expect_err("candidate authoring cannot reconstruct an unobserved edge");
     assert_eq!(
         denial.kind(),
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
@@ -349,10 +365,11 @@ fn unlink_program(
         .unwrap()
         .complete_projected_dependencies()
         .unwrap();
-    let observed = reads
-        .projected_relation(AccountOwner::reference(), principal, account)
-        .unwrap();
     let mut effects = reads.begin_effect_program();
-    effects.unlink(AccountOwner::reference(), observed).unwrap();
+    let from = effects.existing_entity(principal).unwrap();
+    let to = effects.existing_entity(account).unwrap();
+    effects
+        .unlink_observed(AccountOwner::reference(), &from, &to)
+        .unwrap();
     effects.finish().unwrap()
 }

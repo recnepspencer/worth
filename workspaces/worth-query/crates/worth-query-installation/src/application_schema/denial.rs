@@ -9,6 +9,8 @@ pub enum WorthQueryInstalledApplicationSchemaDenialKind {
     AdmissionIdentityChanged,
     AuthorityMismatch,
     CapabilityInstallationDenied,
+    QueryInstallationDenied,
+    OperationInstallationDenied,
     FieldBindingMissing,
     FieldBindingUnexpected,
     FieldBindingContractMismatch,

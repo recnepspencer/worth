@@ -53,6 +53,23 @@ worth_query_application_query!(
     scope EstateCase => "EstateCase",
     name "estate_legal_compliance"
 );
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateLegalComplianceRequestBinding for EstateLegalComplianceRequest { identity: "EstateLegalComplianceRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub EstateLegalComplianceQueryBinding for EstateLegalComplianceRequest, schema BankSchema,
+    identity "worth.bank.estate-legal-compliance-query-binding.v1",
+    input EstateLegalComplianceRequestBinding,
+    query EstateLegalComplianceQuery,
+    parameters EstateLegalComplianceQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result EstateLegalComplianceQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
+        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::EstateCaseIdentityField::reference(),
+    value EstateLegalComplianceRequest::estate,
+    limits results 1_024, work 100_000
+);
 
 pub fn estate_legal_compliance_definition() -> ApplicationQueryDefinition<
     BankSchema,

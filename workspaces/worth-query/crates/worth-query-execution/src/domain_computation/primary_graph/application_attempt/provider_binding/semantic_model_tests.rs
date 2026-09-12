@@ -7,6 +7,7 @@ use self::world::mixed_effect_world;
 use super::{prepare_provider_attempt, WorthQueryApplicationRealizedEffect};
 use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
 use crate::domain_computation::primary_graph::application_attempt::{
+    effect_program::WorthQueryCandidateValidatorWorkAdmission,
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObservedFact,
 };
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, RelationId};
@@ -22,6 +23,8 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
         world.retained_bytes,
         None,
         None,
+        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+        Default::default(),
     )
     .expect("complete mixed effect basis should lower");
 
@@ -39,6 +42,8 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
         world.retained_bytes,
         None,
         None,
+        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+        Default::default(),
     )
     .expect("complete mixed effect basis should lower");
     assert_eq!(observe(prepared), world.alternate_expected);
@@ -78,8 +83,18 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
             relation_id: second_relation,
         },
     ];
-    let prepared = prepare_provider_attempt(Vec::new(), facts, effects, 0, 0, None, None)
-        .expect("both relation deletes are authorized by the observed adjacency");
+    let prepared = prepare_provider_attempt(
+        Vec::new(),
+        facts,
+        effects,
+        0,
+        0,
+        None,
+        None,
+        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+        Default::default(),
+    )
+    .expect("both relation deletes are authorized by the observed adjacency");
 
     assert_eq!(prepared.effects.expected_steps().len(), 1);
 }

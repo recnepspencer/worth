@@ -31,7 +31,7 @@ fn current_installed_membership_mints_exact_operation_admission() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -129,7 +129,7 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -180,7 +180,7 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &denied_world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

@@ -1,3 +1,4 @@
+mod application_candidate_resources;
 mod application_query_resources;
 mod installation_authority;
 pub(crate) mod product_world;
@@ -7,6 +8,10 @@ mod runtime_root;
 #[cfg(test)]
 mod tests;
 
+pub use application_candidate_resources::{
+    WorthQueryApplicationCandidateResourceProfile,
+    WorthQueryApplicationCandidateResourceProfileDenial,
+};
 pub use application_query_resources::{
     WorthQueryApplicationQueryResourceProfile, WorthQueryApplicationQueryResourceProfileDenial,
 };

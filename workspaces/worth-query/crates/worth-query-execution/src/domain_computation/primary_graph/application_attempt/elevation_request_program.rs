@@ -65,6 +65,9 @@ impl<Schema, Operation, Input, Scope>
             emission_retained_bytes,
             emission_retained_bytes_ceiling,
             conditional_definition: None,
+            validator_work_admission:
+                super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+            output_correspondence: Default::default(),
         };
         validate_elevation_request_program(&program)?;
         Ok(WorthQueryElevationRequestProgram { program })

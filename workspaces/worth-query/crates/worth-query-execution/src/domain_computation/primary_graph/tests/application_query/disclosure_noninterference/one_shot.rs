@@ -125,7 +125,7 @@ fn execute(world: &AuthorizationWorld) -> ConsumerObservation {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -144,7 +144,7 @@ fn execute(world: &AuthorizationWorld) -> ConsumerObservation {
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedAccountOmissionQuery::reference())
+        .certification_query(GovernedAccountOmissionQuery::reference())
         .unwrap();
     let capability = admit_touch_account_capability(world, &principal, &request).unwrap();
     let capability_session = capability.graph_work_session_identity();

@@ -1,4 +1,5 @@
 mod closure;
+mod composition;
 mod definition;
 mod membership;
 mod provenance;
@@ -19,3 +20,5 @@ pub use membership::{
 };
 pub use provenance::ApplicationSchemaContributionProvenance;
 pub use schema_binding::ApplicationSchemaContribution;
+
+pub use composition::ApplicationSchemaComposition;

@@ -8,7 +8,6 @@ pub(super) fn append_schema_member(
     basis: &mut ApplicationSchemaCanonicalBasis,
     prefix: &str,
     member: &ApplicationSchemaMember,
-    revised: bool,
 ) {
     match member {
         ApplicationSchemaMember::Entity { entity } => {
@@ -27,9 +26,7 @@ pub(super) fn append_schema_member(
             basis.u64(format!("{prefix}.identity"), identity.0);
             basis.u64(format!("{prefix}.revision"), revision.0);
         }
-        ApplicationSchemaMember::Field { .. } => {
-            append_schema_field(basis, prefix, member, revised)
-        }
+        ApplicationSchemaMember::Field { .. } => append_schema_field(basis, prefix, member),
         ApplicationSchemaMember::Relation {
             relation,
             from,
@@ -40,9 +37,7 @@ pub(super) fn append_schema_member(
             basis.text(format!("{prefix}.relation"), relation);
             basis.text(format!("{prefix}.from"), from);
             basis.text(format!("{prefix}.to"), to);
-            if revised {
-                append_relation_integrity(basis, prefix, *integrity);
-            }
+            append_relation_integrity(basis, prefix, *integrity);
         }
         ApplicationSchemaMember::PrincipalBinding { .. } => {
             append_principal_binding(basis, prefix, member)

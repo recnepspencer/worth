@@ -2,7 +2,8 @@ use bank_domain::{
     model::BankPrincipalId,
     queries::{
         EstateEmergencyAccessActivity, EstateEmergencyAccessActivityLiveCause,
-        EstateEmergencyAccessActivityQuery, EstateEmergencyAccessActivityQueryParameters,
+        EstateEmergencyAccessActivityQuery, EstateEmergencyAccessActivityQueryBinding,
+        EstateEmergencyAccessActivityQueryParameters,
     },
     schema::{
         BankSchema, EmergencyAccess, EstateCase, EstateCaseIdentityField, Principal,
@@ -169,10 +170,12 @@ impl<'runtime, 'principal>
             .on_branch(application.current_world())
             .select()
             .map_err(BankApplicationQueryDenial::from_product_selection)?;
-        let query = application
+        let query_binding = application
             .installed_schema()
-            .application_query(EstateEmergencyAccessActivityQuery::reference())
+            .installed_query_binding::<EstateEmergencyAccessActivityQueryBinding>()
             .map_err(BankApplicationQueryDenial::from_installation)?;
+
+        let query = query_binding.into_query();
         let capability = application
             .installed_schema()
             .capability(

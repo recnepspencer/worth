@@ -11,7 +11,7 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

@@ -23,7 +23,9 @@ impl RelationalPreparationPort {
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         let _operation = self.admit_operation()?;
-        let runtime = self.binding.runtime_snapshot();
+        let configuration = self.binding.configuration_binding();
+        let epoch = configuration.operation();
+        let runtime = self.binding.runtime_snapshot_from(&epoch);
         let proposal = runtime
             .validate_branch_transaction(transaction)
             .map_err(attach_validation_rejection)?;
@@ -35,7 +37,9 @@ impl RelationalPreparationPort {
         proposal: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         let _operation = self.admit_operation()?;
-        let runtime = self.binding.runtime_snapshot();
+        let configuration = self.binding.configuration_binding();
+        let epoch = configuration.operation();
+        let runtime = self.binding.runtime_snapshot_from(&epoch);
         self.prepare_validated_proposal_inner(&runtime, proposal)
     }
 

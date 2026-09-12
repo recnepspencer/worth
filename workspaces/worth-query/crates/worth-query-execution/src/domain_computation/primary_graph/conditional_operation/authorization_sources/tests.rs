@@ -71,7 +71,7 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedAccountOmissionQuery::reference())
+        .certification_query(GovernedAccountOmissionQuery::reference())
         .unwrap();
     let capability = world
         .application

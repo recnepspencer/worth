@@ -26,7 +26,7 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -45,7 +45,7 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedHiddenOrderingQuery::reference())
+        .certification_query(GovernedHiddenOrderingQuery::reference())
         .unwrap();
     let capability = admit_touch_account_capability(&world, &principal, &request).unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);

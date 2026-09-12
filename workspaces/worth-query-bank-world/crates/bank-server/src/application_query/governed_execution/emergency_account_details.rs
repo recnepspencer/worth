@@ -2,7 +2,8 @@ use bank_domain::{
     model::BankPrincipalId,
     queries::{
         EstateEmergencyAccountDetails, EstateEmergencyAccountDetailsQuery,
-        EstateEmergencyAccountDetailsQueryParameters, EstateEmergencyAccountDetailsRequest,
+        EstateEmergencyAccountDetailsQueryBinding, EstateEmergencyAccountDetailsQueryParameters,
+        EstateEmergencyAccountDetailsRequest,
     },
     schema::{
         BankSchema, EstateCase, EstateCaseIdentityField, Principal,
@@ -163,10 +164,12 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
             -> Result<Output, BankApplicationQueryDenial>,
     ) -> Result<Output, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
-        let query = application
+        let query_binding = application
             .installed_schema()
-            .application_query(EstateEmergencyAccountDetailsQuery::reference())
+            .installed_query_binding::<EstateEmergencyAccountDetailsQueryBinding>()
             .map_err(BankApplicationQueryDenial::from_installation)?;
+
+        let query = query_binding.query();
         let capability = application
             .installed_schema()
             .capability(
@@ -199,7 +202,7 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
         >::new(self.principal.query(), &scope);
         let plan = selected
             .admit_governed_application_query(
-                &query,
+                query,
                 &access,
                 capability_access,
                 ApplicationQueryParameterSet::<EstateEmergencyAccountDetailsQuery>::new(),

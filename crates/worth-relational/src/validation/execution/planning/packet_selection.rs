@@ -28,23 +28,29 @@ where
         .cloned()
         .map(InvariantPacketRegistration::Native);
 
-    let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::capture(
-        request.observation(),
-        request.version_id(),
-        request.merged_plan(),
-    );
     let custom = runtime
         .schema_contract_runtime
         .custom_invariant_registries
         .iter()
         .filter(|registration| request.includes_custom_registration(registration))
         .map(|registration| {
+            let work = crate::validation::custom_rule::CustomInvariantWorkMeter::new(
+                registration.maximum_work_units(),
+            );
+            let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::capture(
+                request.observation(),
+                request.version_id(),
+                request.merged_plan(),
+                &work,
+            );
             let mut planner = CustomInvariantScopePlanner::new_at_current_version(
                 runtime,
                 request.observation(),
                 request.version_id(),
                 request.current_version_id(),
                 &prepared_scope,
+                work,
+                std::sync::Arc::new(registration.access_contract().clone()),
             );
             let prepared_execution = registration
                 .executable()

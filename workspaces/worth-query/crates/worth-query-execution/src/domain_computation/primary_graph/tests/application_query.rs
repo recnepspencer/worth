@@ -39,7 +39,7 @@ fn installed_query(
     world
         .application
         .installed_schema()
-        .application_query(AccountSummaryQuery::reference())
+        .certification_query(AccountSummaryQuery::reference())
         .unwrap()
 }
 
@@ -55,7 +55,7 @@ fn installed_governed_query(
     world
         .application
         .installed_schema()
-        .application_query(GovernedAccountSummaryQuery::reference())
+        .certification_query(GovernedAccountSummaryQuery::reference())
         .unwrap()
 }
 
@@ -71,7 +71,7 @@ fn installed_ordered_query(
     world
         .application
         .installed_schema()
-        .application_query(OrderedAccountSummaryQuery::reference())
+        .certification_query(OrderedAccountSummaryQuery::reference())
         .unwrap()
 }
 
@@ -87,7 +87,7 @@ fn installed_live_query(
     world
         .application
         .installed_schema()
-        .application_query(LiveAccountActivityQuery::reference())
+        .certification_query(LiveAccountActivityQuery::reference())
         .unwrap()
 }
 
@@ -103,7 +103,7 @@ fn installed_nested_query(
     world
         .application
         .installed_schema()
-        .application_query(NestedAccountQuery::reference())
+        .certification_query(NestedAccountQuery::reference())
         .unwrap()
 }
 
@@ -119,7 +119,7 @@ fn installed_forged_selector_query(
     world
         .application
         .installed_schema()
-        .application_query(ForgedSelectorQuery::reference())
+        .certification_query(ForgedSelectorQuery::reference())
         .unwrap()
 }
 
@@ -144,7 +144,7 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -222,7 +222,7 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -274,7 +274,7 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -351,7 +351,7 @@ fn path_bound_ordering_mechanism_opens_exact_plan_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

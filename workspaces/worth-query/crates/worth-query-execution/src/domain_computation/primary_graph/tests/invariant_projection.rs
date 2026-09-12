@@ -146,7 +146,7 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -196,7 +196,7 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

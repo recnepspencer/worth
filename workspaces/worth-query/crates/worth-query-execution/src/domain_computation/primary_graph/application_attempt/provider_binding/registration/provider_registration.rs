@@ -25,6 +25,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         Option<crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    validator_work_admission:
+        super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     live_delivery_reservation: Option<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
     >,
@@ -91,8 +93,21 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.effects.emissions().len()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn seal_output_correspondence(
+        &self,
+        commit: &worth_relational::facade::transactions::CommitResult,
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
+        self.effects.seal_output_correspondence(commit)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn decision_fact_count(&self) -> usize {
         self.decision_facts.decision_fact_count()
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn validator_work_admission(
+        &self,
+    ) -> super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission {
+        self.validator_work_admission
     }
 
     pub(in crate::domain_computation::primary_graph) const fn preimage_demand(
@@ -233,6 +248,7 @@ impl WorthQueryPrimaryGraphProvider {
             preimage_demand,
             aftermath_causality,
             conditional_definition,
+            validator_work_admission,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
@@ -272,6 +288,7 @@ impl WorthQueryPrimaryGraphProvider {
                 aftermath_causality,
                 dispatch_outbox,
                 conditional_definition,
+                validator_work_admission,
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,
             },

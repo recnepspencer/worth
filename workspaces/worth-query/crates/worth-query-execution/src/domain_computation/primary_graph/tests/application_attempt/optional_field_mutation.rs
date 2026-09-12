@@ -242,7 +242,7 @@ fn query(
     let query = world
         .application
         .installed_schema()
-        .application_query(OptionalAccountFieldQuery::reference())
+        .certification_query(OptionalAccountFieldQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(principal, &scope);
     let plan = world

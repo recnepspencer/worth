@@ -31,7 +31,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -50,7 +50,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let query = world
         .application
         .installed_schema()
-        .application_query(CrossRootQuery::reference())
+        .certification_query(CrossRootQuery::reference())
         .unwrap();
     let pinned = world.selected_product();
     change_account_status(&world, account.entity_id(), "closed");

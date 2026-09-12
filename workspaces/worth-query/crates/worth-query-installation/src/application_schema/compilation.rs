@@ -21,6 +21,7 @@ use crate::application_capability::{
 use crate::application_operation::{
     compile_authorization_policy_registry, ApplicationAuthorizationPolicyRegistry,
 };
+use crate::application_query::WorthQueryApplicationQueryInstallationDenial;
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
 use crate::installed_index::WorthQueryInstalledPackageAuthority;
 use crate::package::{
@@ -32,6 +33,8 @@ pub(crate) enum ApplicationSchemaCompilationDenial {
     Capability(WorthQueryApplicationCapabilityInstallationDenial),
     Canonical(CanonicalDigestDerivationDenial),
     Contribution(WorthQueryApplicationContributionCompilationDenial),
+    Query(WorthQueryApplicationQueryInstallationDenial),
+    Operation(crate::application_operation::WorthQueryApplicationOperationInstallationDenial),
     ValueBinding(WorthQueryApplicationValueBindingInstallationDenial),
 }
 

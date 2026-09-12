@@ -15,7 +15,7 @@ fn selected_data_stays_pinned_while_fresh_security_and_sibling_reads_progress() 
     let query = world
         .application
         .installed_schema()
-        .application_query(TemporalIntentQuery::reference())
+        .certification_query(TemporalIntentQuery::reference())
         .unwrap();
     let old = world
         .application
@@ -112,7 +112,7 @@ fn revoke_after_product_query_admission_denies_a_and_leaves_b_security_independe
     let query = world
         .application
         .installed_schema()
-        .application_query(TemporalIntentQuery::reference())
+        .certification_query(TemporalIntentQuery::reference())
         .unwrap();
     let source = world
         .application

@@ -7,6 +7,7 @@
 
 mod application_aftermath;
 mod application_authorization;
+mod application_entry;
 mod domain_computation;
 mod publication_digest;
 

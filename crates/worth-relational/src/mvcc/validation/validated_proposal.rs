@@ -16,6 +16,8 @@ pub struct RelationalMutationInvariantEvidence {
     pub(crate) proposed_version: VersionId,
     pub(crate) proposal_identity: super::proposal_identity::RelationalMutationProposalIdentity,
     pub(crate) summary: CommitValidationSummary,
+    pub(crate) custom_invariant_execution_receipts:
+        std::sync::Arc<[super::CustomInvariantExecutionReceipt]>,
 }
 
 impl RelationalMutationInvariantEvidence {
@@ -35,6 +37,10 @@ impl RelationalMutationInvariantEvidence {
 
     pub const fn summary(&self) -> CommitValidationSummary {
         self.summary
+    }
+
+    pub fn custom_invariant_execution_receipts(&self) -> &[super::CustomInvariantExecutionReceipt] {
+        &self.custom_invariant_execution_receipts
     }
 }
 
@@ -56,6 +62,7 @@ pub struct ValidatedRelationalProposal {
     pub(crate) validated_against_commit: Option<CommitId>,
     pub(crate) validated_against_version: VersionId,
     pub(crate) validated_against_branch_version: RelationalBranchVersion,
+    pub(crate) custom_invariant_generation: u64,
     pub(crate) batch_count: usize,
     pub(crate) strategy_commit_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
@@ -111,6 +118,10 @@ impl ValidatedRelationalProposal {
 
     pub fn validation_summary(&self) -> CommitValidationSummary {
         self.evidence.summary()
+    }
+
+    pub fn custom_invariant_execution_receipts(&self) -> &[super::CustomInvariantExecutionReceipt] {
+        self.evidence.custom_invariant_execution_receipts()
     }
 }
 

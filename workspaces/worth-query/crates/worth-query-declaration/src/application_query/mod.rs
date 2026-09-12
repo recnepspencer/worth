@@ -1,5 +1,6 @@
 mod authorization_requirement;
 mod basis_support;
+mod binding;
 mod canonical_basis;
 mod continuation;
 mod definition;
@@ -21,6 +22,12 @@ mod validation;
 
 pub use authorization_requirement::ApplicationQueryAuthorizationRequirement;
 pub use basis_support::ApplicationQueryBasisSupport;
+pub use binding::{
+    ApplicationQueryBinding, ApplicationQueryBindingDescriptor, ApplicationQueryBindingLimits,
+    ApplicationQueryFieldScope, ApplicationQueryIntent, ApplicationQueryPrincipalBindingContract,
+    ApplicationQueryPrincipalScope, ApplicationQueryScopeBinding, ApplicationQueryScopeContract,
+    ApplicationQueryScopeResolution, ApplicationQueryScopeResolutionMode,
+};
 pub use canonical_basis::ApplicationQueryCanonicalArtifact;
 pub use continuation::{
     ApplicationQueryContinuationTarget, WorthQueryPortableApplicationQueryContinuationParts,
@@ -83,3 +90,6 @@ pub use root_selection::{
 };
 pub(crate) use validation::validate_portable_application_query_freshly;
 pub use validation::ApplicationQueryDefinitionDenial;
+
+#[cfg(test)]
+mod parameter_dimensions_tests;

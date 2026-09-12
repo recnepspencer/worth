@@ -16,7 +16,7 @@ use crate::record::frame::{RecordFrameEncoding, WorthQueryPackageArchiveRecordDe
 fn complete_operation_contract_round_trips_every_payload_family_with_exact_work() {
     let record = fixture::complete_record();
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
-    let frozen_hex = include_str!("tests/application_operation_contract_v1.hex").trim();
+    let frozen_hex = include_str!("tests/application_operation_contract_v2.hex").trim();
     assert_eq!(encode_hex(&bytes), frozen_hex);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 12);
     let mut decoder =
@@ -26,6 +26,18 @@ fn complete_operation_contract_round_trips_every_payload_family_with_exact_work(
     assert_eq!(decoder.work().record_frames(), 1);
     assert_eq!(decoder.work().logical_bytes(), (bytes.len() - 12) as u64);
     assert_eq!(decoder.work().nested_entries(), 15);
+    let mut retired_frame = bytes;
+    retired_frame[..2].copy_from_slice(&1_u16.to_be_bytes());
+    let mut retired_decoder =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
+    assert_eq!(
+        retired_decoder
+            .decode_frame(&retired_frame)
+            .unwrap_err()
+            .kind(),
+        Kind::UnsupportedRecordVersion
+    );
+    assert_eq!(retired_decoder.work().record_frames(), 0);
 }
 
 fn encode_hex(bytes: &[u8]) -> String {

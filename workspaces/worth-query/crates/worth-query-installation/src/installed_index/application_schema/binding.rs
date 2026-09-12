@@ -65,9 +65,8 @@ impl WorthQueryInstalledPackageIndex {
             upstream_installation_work: self.installation_canonical_work(),
         })
         .map_err(|denial| map_compilation_denial(schema.name(), denial))?;
-        Ok(WorthQueryInstalledApplicationSchema::from_compilation(
-            compiled,
-        ))
+        WorthQueryInstalledApplicationSchema::from_compilation(compiled)
+            .map_err(|denial| map_compilation_denial(schema.name(), denial))
     }
 
     pub fn validate_application_schema<Schema>(

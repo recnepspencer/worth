@@ -15,7 +15,7 @@ fn admitted_external_identity_resolves_through_certified_index_and_freshness() {
         .selected_product()
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &scope,
             WorthQueryPrincipalResolutionMode::Certification,
         )
