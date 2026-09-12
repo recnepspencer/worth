@@ -7,6 +7,8 @@
 > validation, descriptive discovery, output correspondence, and committed
 > change observations. Its public consumer publishes cyclic planar groups and
 > replaces a vertex with preserve/create/retire roles and same-commit lineage.
+> Committed output projection also certifies exact entity-marker affinity:
+> a matching binding, role name, and action with the wrong entity is denied.
 > Destination examples below also include wider APIs whose phase remains open.
 >
 > **Product posture:** One typed application experience over the certified
@@ -17,6 +19,11 @@ compiled contribution packages, and one application root. It exercises bounded
 cyclic allocation, actual candidate and untouched-neighbor validation, atomic
 publication/readback, preserve/create/retire output roles, native committed
 entity changes and same-commit lineage, exact denials, and idempotent recovery.
+The corrective public revision `31ad82c285ef933e946e012aa3f4decd1c122911`
+retains the entity marker through candidate binding and commit sealing. Both
+the owner proof and public replacement journey require the exact
+`WorthQueryApplicationOutputProjectionDenial::EntityMismatch` for a wrong
+entity marker with the correct binding, role name, and action.
 The external wrong-schema build fails at its schema-binding trait boundary;
 owner proofs retain installation, stale-source, capacity, and authority checks.
 The affected Bank public create/read/recovery journey passes with ordinary and

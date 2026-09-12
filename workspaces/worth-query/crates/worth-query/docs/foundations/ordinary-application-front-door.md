@@ -105,6 +105,25 @@ show this construction. A borrowed request selects no World and caches no
 permission. Each execution performs selection, resolution, admission, and
 publication through the existing owners.
 
+Installed mutation handlers supply `decide`, `candidate_requirements`, and
+`build_candidate`. Query completes declared decision dependencies, reserves the
+candidate's finite cardinality and representation before allocation, and runs
+installed invariants against the actual candidate plus affected untouched
+neighbors under a separate work bound. Invalid candidates cannot publish.
+
+Committed receipts expose `output_correspondence()` for preserve/create/retire
+roles and `committed_changes()` for immutable structural and lineage
+observations from the same commit. Projecting `entity(role)` requires the exact
+binding, role name, action, and entity marker; substituting the entity marker
+returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` even when
+the other three match. These observations carry no new execution authority.
+The [public replacement proof](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/output_correspondence.rs)
+checks projection, readback, rejected-candidate isolation, and idempotent recovery.
+
+`application.discovery()` describes installed mutations, queries, request
+bindings, and fields, including units, scope, effects, and typed failures.
+Installed availability does not grant current permission.
+
 Host integrations that explicitly own a selected product attempt can use the
 selection and admission surface:
 
@@ -313,6 +332,10 @@ explains a transition; it does not perform the transition.
 
 ## Current Limits
 
+- The Pre-M0 contribution, request, handler, candidate, correspondence, and
+  discovery foundation is certified. Broader milestone 9.17.4 remains open;
+  this cut does not supply bounded output-group demand or deferred producer
+  completion.
 - Historical, preview, continuation, and live lanes are available only for an
   installed query whose declared support and current admission allow that lane.
 - Conditional providers and managed clocks are stable on the primary-graph

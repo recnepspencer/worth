@@ -86,13 +86,23 @@ availability. Availability describes installation; every execution still perform
 fresh authorization and currentness checks.
 
 Committed mutation receipts expose `output_correspondence()` and
-`committed_changes()`. The latter provides the exact `commit_reference()`, an
+`committed_changes()`. Output roles carry the binding, entity marker and
+preserve/create/retire action. `output_correspondence().entity(role)` checks
+those exact types and the role name against the committed association. It
+returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` for a
+different entity marker even when the binding, name and action match; foreign
+bindings, missing roles and action mismatches have their own typed denials.
+Role names describe correspondence; the platform resolves persistent identity.
+
+`committed_changes()` provides the exact `commit_reference()`, an
 `entity_changes()` iterator of `(EntityId, RecordStructuralChange)`, and native
 `lineage_events()`. Its constructor and canonical artifact are private; the view
 exposes no field payloads or mutation authority. The
 [replacement journey](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/output_correspondence.rs)
-demonstrates preserve/create/retire roles, same-commit lineage, readback, rejection,
-and receipt recovery.
+demonstrates preserve/create/retire roles, exact entity-affinity denial,
+same-commit lineage, readback, rejection, and receipt recovery. Receipt clones
+and idempotent recovery retain the observations without recreating the single-use
+performed product-change capability.
 
 The executable configuration and resource setup live in
 [consumer installation](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation.rs),

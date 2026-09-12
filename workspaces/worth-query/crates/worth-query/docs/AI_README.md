@@ -134,24 +134,84 @@ for executable definitions.
 
 Installation validates the exact contribution inventory before callbacks and
 restricts each setup to its installed members. Handler completeness and invariant
-installation precede the initial-state callback. The completed application owns
-handler configuration; numerical/domain values remain Query-free. Handlers use
-`decide`, `candidate_requirements`, and `build_candidate`, with separate candidate
-cardinality, representation-byte, and work bounds. Runtime-cardinality candidates
-are reserved before allocation and inspected together with affected neighbors.
+installation precede the initial-state callback. That callback borrows the
+unpublished typed graph and installed schema to seed initial state; successful
+construction returns `WorthQueryPrimaryGraphApplicationRuntime<Schema>`. The
+completed application owns handler configuration. Numerical and domain values
+remain Query-free.
+
+### Borrowed requests and installed handlers
 
 Borrowed requests support both `.query(intent).execute()` and
-`.mutate(intent).idempotency(key).execute()`. Every execution freshly selects and
-admits its operation. `application.discovery()` provides descriptive mutation,
-query, request-binding, and field metadata from installed declarations; it grants
-no execution authority or promise of current authorization.
+`.mutate(intent).idempotency(&key).execute()`. Constructing or retaining the
+request selects no World, retains no admission, and grants no permission. Every
+execution selects its current World once and carries that occurrence through
+principal and scope resolution, admission, execution, and publication.
 
-The public consumer demonstrates value binding, contribution configuration,
-complete in-memory installation, typed requests and handlers, bounded actual
-candidate validation, and discovery. Its vertex replacement also exercises
-preserve/create/retire output roles, immutable committed entity-change/lineage
-observations, rejected-candidate isolation, and idempotent receipt recovery.
-Milestone 9.17.4 remains open for its wider application API and consumer obligations.
+An installed mutation handler has three bounded roles:
+
+1. `decide` borrows a `DecisionReader` to obtain declared facts and produce a
+   domain decision. Query retains and completes the actual read dependencies.
+2. `candidate_requirements` describes the candidate's resource demand from the
+   input and decision. Query reserves it against the installed ceiling before
+   candidate allocation.
+3. `build_candidate` borrows a `CandidateWriter` over that reserved attempt.
+   Existing effect targets resolve from completed decision facts; created
+   handles belong to the same program. The writer binds effects and output
+   roles without selecting a new runtime basis.
+
+Candidate cardinality, retained representation bytes, and validator work are
+separate finite bounds. Runtime-cardinality construction can allocate a cyclic
+entity/relation group, but declaration-owned relation integrity and installed
+domain invariants inspect the actual candidate and its affected untouched
+neighbors before atomic publication. Domain prechecks or handler success cannot
+substitute for those invariant receipts. Checkpoints preserve cancellation and
+deadline outcomes; denied, cancelled, or invalid candidates do not publish.
+
+### Output correspondence and committed observations
+
+`WorthQueryApplicationOutputRole<Binding, Entity, Action>` names one declared
+semantic output. `CandidateWriter::preserve_output`, `create_output`, and
+`retire_output` associate the role with a program-affine typed target. The role
+name supplies no persistent identity. Relational resolves created identities
+and co-commits their structural changes and lineage.
+
+The committed receipt's `output_correspondence().entity(role)` projects the
+owner-resolved identity only when the binding, role name, action, and exact
+entity marker match the committed association. Projection reports
+`WorthQueryApplicationOutputProjectionDenial::{ForeignBinding, MissingRole,
+ActionMismatch, EntityMismatch}`. In particular, the same binding, role name,
+and create action with a different entity marker returns `EntityMismatch`;
+callers cannot relabel a committed identity by changing a generic argument.
+The projected entity identity is inspection evidence and still requires fresh
+admission for a later operation.
+
+The receipt's `committed_changes()` exposes an immutable
+`WorthQueryApplicationCommittedChanges` view: `commit_reference()` identifies
+the exact commit, `entity_changes()` iterates `(EntityId,
+RecordStructuralChange)`, and `lineage_events()` borrows native events from that
+same commit. The view carries no field payloads or mutation authority, and its
+canonical artifact and constructor stay private. Structural observations
+include framework entities; event order and numeric identity do not establish
+an entity-to-lineage association. Receipt clones and `AlreadyCommitted`
+recovery retain these observations. The receipt's performed product-change
+capability remains single-use and is not recreated by inspection or retry.
+
+### Discovery and support posture
+
+`application.discovery()` exposes `mutations()`, `queries()`,
+`query_requests()`, and `fields()` from installed declarations. These describe
+input/result bindings, units and frames, scope and effects, typed denial
+identities, and installed request-binding availability. Discovery grants no
+execution authority or promise of current authorization.
+
+The [public replacement journey](../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/output_correspondence.rs)
+demonstrates preserve/create/retire roles, exact entity-affinity denial,
+committed changes and same-commit lineage, readback, rejected-candidate
+isolation, and idempotent receipt recovery. This is the certified Pre-M0
+application foundation. Milestone 9.17.4 remains open for its wider application
+API, managed lifecycle, and consumer obligations; bounded output-group demand
+and deferred producer completion are not supplied by this foundation cut.
 
 ## Core Laws
 
@@ -1001,7 +1061,7 @@ zero means those concrete owners were released, not that a Drop hook published
 an expected answer. The probe carries no close or execution authority.
 
 See [Conditional Installed Operations](./domain-capabilities/conditional-installed-operations.md)
-and [Signal Compatibility Orchestration](./domain-capabilities/signal-compatibility-orchestration.md).
+and [Signal Orchestration](./domain-capabilities/signal-compatibility-orchestration.md).
 
 ## Workflows And Continuations
 
@@ -1134,7 +1194,7 @@ The Query support matrix is the runtime-owned source of support posture.
 Admission is the executable check. Callers may inspect support, but they cannot
 promote a report, matching digest, or provider presence into support.
 
-Installed operations also carry consumer-support requirements. Compatibility
+Installed operations also carry consumer-support requirements. Their
 admission binds one operation's requirements to one runtime support profile and
 returns either a pair-bound witness or a typed denial.
 
