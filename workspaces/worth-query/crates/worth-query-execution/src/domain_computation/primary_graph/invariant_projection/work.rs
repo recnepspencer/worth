@@ -10,8 +10,8 @@ pub struct WorthQueryInvariantProjectionWork {
     aggregate_cache_hits: usize,
     aggregate_rebuild_input_rows: usize,
     reconstructive_scans: usize,
-    output_lineage_ancestry_visits: usize,
-    output_lineage_commit_probes: usize,
+    output_lineage_source_selections: usize,
+    output_lineage_role_lookups: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -61,12 +61,12 @@ impl WorthQueryInvariantProjectionWork {
         self.aggregate_rebuild_input_rows
     }
 
-    pub const fn output_lineage_ancestry_visits(self) -> usize {
-        self.output_lineage_ancestry_visits
+    pub const fn output_lineage_source_selections(self) -> usize {
+        self.output_lineage_source_selections
     }
 
-    pub const fn output_lineage_commit_probes(self) -> usize {
-        self.output_lineage_commit_probes
+    pub const fn output_lineage_role_lookups(self) -> usize {
+        self.output_lineage_role_lookups
     }
 
     pub const fn provider_work_units(self) -> usize {
@@ -78,8 +78,8 @@ impl WorthQueryInvariantProjectionWork {
             + self.field_reads
             + self.aggregate_lookups
             + self.reconstructive_scans
-            + self.output_lineage_ancestry_visits
-            + self.output_lineage_commit_probes
+            + self.output_lineage_source_selections
+            + self.output_lineage_role_lookups
     }
 
     pub(super) fn record_lookup(&mut self, examined: usize) {
@@ -103,12 +103,12 @@ impl WorthQueryInvariantProjectionWork {
         self.aggregate_rebuild_input_rows += rebuild_rows;
     }
 
-    pub(super) fn record_output_lineage_ancestry(&mut self, visits: usize) {
-        self.output_lineage_ancestry_visits += visits;
+    pub(super) fn record_output_lineage_selection(&mut self) {
+        self.output_lineage_source_selections += 1;
     }
 
-    pub(super) fn record_output_lineage_lookup(&mut self, probes: usize) {
-        self.output_lineage_commit_probes += probes;
+    pub(super) fn record_output_lineage_role_lookup(&mut self) {
+        self.output_lineage_role_lookups += 1;
     }
 }
 

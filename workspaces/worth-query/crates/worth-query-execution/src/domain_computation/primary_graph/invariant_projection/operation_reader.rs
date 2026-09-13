@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
     ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
@@ -189,6 +190,10 @@ where
                 admission.allowed_graph_contract().projection_work_budget(),
                 product.relational_basis().clone(),
                 |reader| {
+                    reader.selected_product_occurrence =
+                        Some(product.observation().lifecycle_incarnation());
+                    reader.selected_product_generation =
+                        Some(product.observation().reference_generation().get());
                     let mut decision_facts = BTreeSet::new();
                     let mut operation_reader =
                         WorthQueryApplicationOperationInvariantProjectionReader {

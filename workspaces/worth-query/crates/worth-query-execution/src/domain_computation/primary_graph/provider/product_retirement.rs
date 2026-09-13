@@ -19,6 +19,11 @@ impl WorthQueryPrimaryGraphProvider {
     ) {
         self.live_delivery
             .retire_product_occurrence(branch, incarnation);
+        self.graph
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .release_occurrence(incarnation);
         loop {
             let retired = self
                 .completed_commit_evidence

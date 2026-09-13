@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputAction, WorthQueryApplicationOutputRole,
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
+use worth_query_installation::facade::ApplicationEntityRef;
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
@@ -15,7 +16,7 @@ where
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryPriorOutputDenial>
     where
         Binding: 'static,
-        Entity: 'static,
+        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
         Action: WorthQueryApplicationOutputAction,
     {
         let scope = self.operation_scope.as_ref().ok_or_else(|| {
@@ -24,56 +25,65 @@ where
                 role.name(),
             )
         })?;
-        let selected_commit = self.reader.selected_commit.ok_or_else(|| {
+        let occurrence = self.reader.selected_product_occurrence.ok_or_else(|| {
             WorthQueryPriorOutputDenial::new(
                 WorthQueryPriorOutputDenialKind::Unavailable,
                 role.name(),
             )
         })?;
-        if self.reader.output_lineage_ancestry.is_none() {
-            let ancestry = self
+        let generation = self.reader.selected_product_generation.ok_or_else(|| {
+            WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::Unavailable,
+                role.name(),
+            )
+        })?;
+        let binding_type = std::any::TypeId::of::<Binding>();
+        let selection_work = usize::from(
+            !self
                 .reader
-                .runtime
-                .history()
-                .ancestor_closure_by_commit_id_order(selected_commit);
-            if !self.reader.work_budget.can_afford(ancestry.len()) {
-                return Err(WorthQueryPriorOutputDenial::new(
-                    WorthQueryPriorOutputDenialKind::WorkBudgetExceeded,
-                    role.name(),
-                ));
-            }
-            self.reader.work_budget.consume(ancestry.len());
-            self.reader
-                .work
-                .record_output_lineage_ancestry(ancestry.len());
-            self.reader.output_lineage_ancestry = Some(ancestry);
-        }
-        let ancestry = self
-            .reader
-            .output_lineage_ancestry
-            .as_ref()
-            .expect("output lineage ancestry was initialized");
-        if !self.reader.work_budget.can_afford(ancestry.len()) {
+                .prior_output_bindings
+                .contains_key(&binding_type),
+        );
+        let required_work = selection_work + 1;
+        if !self.reader.work_budget.can_afford(required_work) {
             return Err(WorthQueryPriorOutputDenial::new(
                 WorthQueryPriorOutputDenialKind::WorkBudgetExceeded,
                 role.name(),
             ));
         }
+        if selection_work == 1 {
+            let correspondence = self
+                .reader
+                .output_lineage
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .resolve_binding::<Binding>(scope, occurrence, generation);
+            self.reader.work_budget.consume(1);
+            self.reader.work.record_output_lineage_selection();
+            let correspondence = correspondence.ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::Unavailable,
+                    role.name(),
+                )
+            })?;
+            self.reader
+                .prior_output_bindings
+                .insert(binding_type, correspondence);
+        }
+        self.reader.work_budget.consume(1);
+        self.reader.work.record_output_lineage_role_lookup();
         let resolution = self
             .reader
-            .output_lineage
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .resolve(ancestry, scope, role)?;
-        self.reader.work_budget.consume(resolution.commit_probes);
-        self.reader
-            .work
-            .record_output_lineage_lookup(resolution.commit_probes);
+            .prior_output_bindings
+            .get(&binding_type)
+            .expect("prior output binding was selected")
+            .entity(role)
+            .map_err(|denial| WorthQueryPriorOutputDenial::projection(role.name(), denial))?;
         let record = self
             .reader
             .runtime
             .read_truth()
-            .visible_entity_at_version(resolution.entity, self.reader.snapshot.version_id())
+            .visible_entity_at_version(resolution.entity_id(), self.reader.snapshot.version_id())
             .ok_or_else(|| {
                 WorthQueryPriorOutputDenial::new(
                     WorthQueryPriorOutputDenialKind::OutputUnavailable,
@@ -90,14 +100,31 @@ where
                     role.name(),
                 )
             })?;
-        self.reader.realized_scope.record(resolution.entity);
-        Ok(WorthQueryInvariantEntityIdentity {
-            entity_id: resolution.entity,
+        if entity != Entity::IDENTIFIER {
+            return Err(WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::EntityMismatch,
+                role.name(),
+            ));
+        }
+        self.reader.realized_scope.record(resolution.entity_id());
+        let identity = WorthQueryInvariantEntityIdentity {
+            entity_id: resolution.entity_id(),
             kind: record.kind.kind_id,
             entity: Arc::from(entity),
             authority_identity: self.reader.authority_identity,
             _marker: PhantomData,
-        })
+        };
+        self.require_decision_entity(
+            &identity,
+            ApplicationEntityRef::from_schema_identifier(Entity::IDENTIFIER),
+        )
+        .map_err(|_| {
+            WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::Unavailable,
+                role.name(),
+            )
+        })?;
+        Ok(identity)
     }
 
     pub const fn version(&self) -> worth_relational::facade::identity::VersionId {

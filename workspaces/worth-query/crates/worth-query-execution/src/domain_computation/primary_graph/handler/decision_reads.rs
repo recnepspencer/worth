@@ -1,4 +1,7 @@
-use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::{
+    application_operation::ApplicationMutationBinding,
+    application_schema::ApplicationEntityMarkerIdentity,
+};
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
     ApplicationRelationRef, ApplicationSchema, DeclaredApplicationFieldValue, EqualityPredicate,
@@ -23,7 +26,8 @@ where
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, HandlerExecutionDenial>
     where
         PriorBinding: 'static,
-        Entity: 'static,
+        Entity:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
         Action: super::super::WorthQueryApplicationOutputAction,
     {
         self.reader()

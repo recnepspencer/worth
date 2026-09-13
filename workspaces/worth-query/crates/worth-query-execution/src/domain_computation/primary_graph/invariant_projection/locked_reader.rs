@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::Arc;
@@ -39,8 +40,11 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
     pub(super) output_lineage:
         Arc<std::sync::Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>>,
-    pub(super) selected_commit: Option<worth_relational::facade::history::CommitId>,
-    pub(super) output_lineage_ancestry: Option<Vec<worth_relational::facade::history::CommitId>>,
+    pub(super) selected_product_occurrence:
+        Option<worth_runtime_world::facade::ProductBranchIncarnation>,
+    pub(super) selected_product_generation: Option<u64>,
+    pub(super) prior_output_bindings:
+        HashMap<std::any::TypeId, super::super::WorthQueryApplicationOutputCorrespondence>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -112,12 +116,6 @@ where
                 .snapshot_for_observation(&basis.observation())
                 .map_err(super::admission_denial::from_snapshot_admission_denial)
         })?;
-        let selected_commit = match basis.reference().target() {
-            worth_foundational::FoundationalBranchTarget::Empty => None,
-            worth_foundational::FoundationalBranchTarget::Basis(target) => Some(
-                worth_relational::facade::history::CommitId(target.selected_commit_id()),
-            ),
-        };
         let projected = self.graph.with_runtime_mut(|runtime| {
             catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
@@ -131,8 +129,9 @@ where
                     realized_scope: WorthQueryRealizedProjectionScope::default(),
                     aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
                     output_lineage: Arc::clone(&self.graph.output_lineage),
-                    selected_commit,
-                    output_lineage_ancestry: None,
+                    selected_product_occurrence: None,
+                    selected_product_generation: None,
+                    prior_output_bindings: HashMap::new(),
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);

@@ -84,10 +84,10 @@ pub struct WorthQueryApplicationOutputCorrespondence {
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
-    pub(in crate::domain_computation::primary_graph) fn belongs_to<Binding: 'static>(
+    pub(in crate::domain_computation::primary_graph) const fn binding_type(
         &self,
-    ) -> bool {
-        self.binding_type == Some(TypeId::of::<Binding>())
+    ) -> Option<TypeId> {
+        self.binding_type
     }
 
     pub fn entity<Binding, Entity, Action>(

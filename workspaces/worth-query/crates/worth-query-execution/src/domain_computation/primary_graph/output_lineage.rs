@@ -1,28 +1,32 @@
-//! Platform-owned semantic output correspondence at committed graph bases.
+//! Product-local semantic output correspondence owned by Query publication.
 
-use std::collections::BTreeMap;
+use std::any::TypeId;
+use std::collections::{BTreeMap, HashMap};
 
-use worth_relational::facade::{history::CommitId, identity::EntityId};
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    provider::WorthQueryPrimaryGraphCommittedApplication, WorthQueryApplicationOutputAction,
+    provider::WorthQueryPrimaryGraphCommittedApplication,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationOutputRole,
 };
 
-struct CommittedOutputLineage {
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
-    correspondence: WorthQueryApplicationOutputCorrespondence,
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SemanticSource {
+    runtime_authority: u64,
+    schema: ApplicationSchemaBindingIdentity,
+    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    output_binding: TypeId,
 }
 
 #[derive(Default)]
 pub(super) struct WorthQueryApplicationOutputLineage {
-    by_commit: BTreeMap<CommitId, CommittedOutputLineage>,
-}
-
-pub(super) struct WorthQueryPriorOutputResolution {
-    pub(super) entity: EntityId,
-    pub(super) commit_probes: usize,
+    by_source: HashMap<
+        SemanticSource,
+        HashMap<
+            worth_runtime_world::facade::ProductBranchIncarnation,
+            BTreeMap<u64, WorthQueryApplicationOutputCorrespondence>,
+        >,
+    >,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -44,64 +48,60 @@ pub struct WorthQueryPriorOutputDenial {
 impl WorthQueryApplicationOutputLineage {
     pub(super) fn record(&mut self, application: &WorthQueryPrimaryGraphCommittedApplication) {
         let evidence = application.commit_evidence();
-        let previous = self.by_commit.insert(
-            evidence.commit_reference().commit_id,
-            CommittedOutputLineage {
-                scope: evidence.operation_scope().clone(),
-                correspondence: evidence.output_correspondence().clone(),
-            },
-        );
+        let correspondence = evidence.output_correspondence();
+        let Some(output_binding) = correspondence.binding_type() else {
+            return;
+        };
+        let scope = evidence.operation_scope();
+        let head = application.product_publication().new_product_head();
+        let source = SemanticSource {
+            runtime_authority: scope.runtime_authority(),
+            schema: scope.binding_identity().clone(),
+            scope: scope.scope(),
+            output_binding,
+        };
+        let replaced = self
+            .by_source
+            .entry(source)
+            .or_default()
+            .entry(head.lifecycle_incarnation())
+            .or_default()
+            .insert(head.reference_generation().get(), correspondence.clone());
         assert!(
-            previous.is_none(),
-            "one commit may seal output lineage only once"
+            replaced.is_none(),
+            "one product generation may publish one output binding once"
         );
     }
 
-    pub(super) fn resolve<Binding, Entity, Action>(
+    pub(super) fn resolve_binding<Binding: 'static>(
         &self,
-        ancestry: &[CommitId],
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
-    ) -> Result<WorthQueryPriorOutputResolution, WorthQueryPriorOutputDenial>
-    where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
-    {
-        let mut commit_probes = 0;
-        for commit in ancestry.iter().rev() {
-            commit_probes += 1;
-            let Some(lineage) = self.by_commit.get(commit) else {
-                continue;
-            };
-            if !same_scope(&lineage.scope, scope) || !lineage.correspondence.belongs_to::<Binding>()
-            {
-                continue;
-            }
-            return lineage
-                .correspondence
-                .entity(role)
-                .map(|entity| WorthQueryPriorOutputResolution {
-                    entity: entity.entity_id(),
-                    commit_probes,
-                })
-                .map_err(|denial| WorthQueryPriorOutputDenial::projection(role.name(), denial));
-        }
-        Err(WorthQueryPriorOutputDenial::new(
-            WorthQueryPriorOutputDenialKind::MissingRole,
-            role.name(),
-        ))
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        generation: u64,
+    ) -> Option<WorthQueryApplicationOutputCorrespondence> {
+        let source = SemanticSource {
+            runtime_authority: scope.runtime_authority(),
+            schema: scope.binding_identity().clone(),
+            scope: scope.scope(),
+            output_binding: TypeId::of::<Binding>(),
+        };
+        self.by_source
+            .get(&source)?
+            .get(&occurrence)?
+            .range(..=generation)
+            .next_back()
+            .map(|(_, correspondence)| correspondence.clone())
     }
-}
 
-fn same_scope(
-    left: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
-    right: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
-) -> bool {
-    left.runtime_authority() == right.runtime_authority()
-        && left.binding_identity() == right.binding_identity()
-        && left.principal() == right.principal()
-        && left.scope() == right.scope()
+    pub(super) fn release_occurrence(
+        &mut self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) {
+        self.by_source.retain(|_, versions| {
+            versions.remove(&occurrence);
+            !versions.is_empty()
+        });
+    }
 }
 
 impl WorthQueryPriorOutputDenial {
@@ -120,7 +120,10 @@ impl WorthQueryPriorOutputDenial {
         }
     }
 
-    fn projection(role: &str, denial: WorthQueryApplicationOutputProjectionDenial) -> Self {
+    pub(super) fn projection(
+        role: &str,
+        denial: WorthQueryApplicationOutputProjectionDenial,
+    ) -> Self {
         let kind = match denial {
             WorthQueryApplicationOutputProjectionDenial::MissingRole => {
                 WorthQueryPriorOutputDenialKind::MissingRole
