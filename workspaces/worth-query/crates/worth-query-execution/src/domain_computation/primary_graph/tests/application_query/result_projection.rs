@@ -75,6 +75,11 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     assert_eq!(result.rows()[0].secondary_sequence(), Some(22));
     assert_eq!(result.rows()[0].all_sequences(), &[11, 22]);
     assert_eq!(result.rows()[0].reverse_sequences(), &[11, 22]);
+    let (primary, secondary, all, reverse) = result.rows()[0].activity_identities();
+    assert_eq!(secondary, Some(all[1]));
+    assert_eq!(primary, all[0]);
+    assert_eq!(reverse, all);
+    assert_ne!(all[0], all[1]);
     assert_eq!(result.receipt().projected_record_count(), 7);
     assert_eq!(result.receipt().projected_field_count(), 6);
     assert_eq!(result.receipt().adjacency_list_read_count(), 4);

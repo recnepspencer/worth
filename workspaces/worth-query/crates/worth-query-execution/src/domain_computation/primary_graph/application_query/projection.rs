@@ -11,6 +11,7 @@ use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationReadableScalarValueBinding, OptionalApplicationFieldValue,
     RequiredApplicationFieldValue, WritePosture,
 };
+use worth_relational::facade::identity::EntityId;
 
 mod disclosed;
 mod projected_tree;
@@ -85,6 +86,15 @@ impl WorthQueryApplicationProjectionDenial {
 }
 
 impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query> {
+    /// Returns the authorized graph identity represented by this projected row.
+    ///
+    /// Domain projectors can use this to distinguish repeated traversal of one
+    /// entity from traversal of distinct entities without inferring identity
+    /// from field values.
+    pub const fn entity_id(&self) -> EntityId {
+        self.node.entity_id()
+    }
+
     pub fn field<Slot, Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &self,
         selector: ApplicationQueryResultFieldRef<

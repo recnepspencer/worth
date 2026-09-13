@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::application_query::{
     disclosure::WorthQueryApplicationQueryGovernance,
     resource_lifecycle::WorthQueryApplicationResultBufferReservation,
 };
+use worth_relational::facade::identity::EntityId;
 
 pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationWorkingProjectionTree
 {
@@ -77,6 +78,12 @@ impl WorthQueryApplicationDisclosedProjectionTree {
 impl<'a> WorthQueryApplicationDisclosedProjectionNode<'a> {
     fn new(node: &'a WorthQueryApplicationProjectionNode) -> Self {
         Self { node }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) const fn entity_id(
+        &self,
+    ) -> EntityId {
+        self.node.entity_id()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn field(

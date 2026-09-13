@@ -119,6 +119,13 @@ installed query under its finite ceilings, executes it, and returns the real
 published result. `.limits(results, work)` may narrow installed ceilings; an
 attempt to widen either ceiling is denied before provider or basis work.
 
+Application result projectors receive only disclosure-admitted rows. A
+`WorthQueryApplicationProjectionRow` exposes `entity_id()` for domains that must
+distinguish repeated traversal of one graph entity from distinct entities; use
+that identity for topology membership and deduplication instead of inferring
+identity from projected field values. Relation accessors still expose only the
+children admitted by the installed query and disclosure policy.
+
 ## Contribution And Installation Boundary
 
 The application foundation supports independently compiled entry contributions
