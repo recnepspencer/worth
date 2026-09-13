@@ -62,13 +62,8 @@ fn install_with_resource_bytes(
             4096,
         )
         .unwrap(),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(
-            4096,
-            query_bytes,
-            4096,
-            32,
-        )
-        .unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, query_bytes, 4096, 32)
+            .unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
     let application = installation::in_memory::<ConsumerSchema>(

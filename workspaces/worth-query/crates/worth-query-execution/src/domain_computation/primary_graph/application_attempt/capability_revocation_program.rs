@@ -65,7 +65,8 @@ impl<Schema, Operation, Input, Scope>
                 conditional_definition: None,
                 validator_work_admission:
                     super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
-                output_correspondence: Default::default(),
+            output_correspondence: Default::default(),
+            retain_output_demand_observation: false,
             },
         })
     }

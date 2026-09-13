@@ -43,19 +43,22 @@ impl ConditionalRuntimeAffinity {
 pub(in crate::domain_computation::primary_graph) fn require_complete_binding_inventory<Schema>(
     expected: usize,
     bindings: &[Box<dyn WorthQueryPendingConditionalOperation<Schema>>],
+    output_readiness_count: usize,
 ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
     let unique = bindings
         .iter()
         .map(|binding| binding.binding_identity())
         .collect::<BTreeSet<_>>();
-    if bindings.len() == expected && unique.len() == expected {
+    if bindings.len().saturating_add(output_readiness_count) == expected
+        && unique.len().saturating_add(output_readiness_count) == expected
+    {
         Ok(())
     } else {
         Err(WorthQueryConditionalRuntimeInstallationDenial::new(
             WorthQueryConditionalRuntimeInstallationDenialKind::IncompleteBindingInventory,
             format!(
                 "expected {expected} exact conditional bindings, admitted {}",
-                unique.len()
+                unique.len().saturating_add(output_readiness_count)
             ),
         ))
     }

@@ -11,15 +11,23 @@ pub use composition::{
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
     WorthQueryApplicationConditionalProducerAccess,
-    WorthQueryInstalledApplicationConditionalRegistry,
+    WorthQueryInstalledApplicationConditionalRegistry, WorthQueryOutputReadinessContractBuilder,
+    WorthQueryOutputReadinessContractDenial,
 };
 pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
+pub(in crate::domain_computation::primary_graph) use producer::{
+    install_output_readiness_routes, PendingOutputReadiness, TypedPendingOutputReadiness,
+    WorthQueryInstalledOutputProducerRoutes, WorthQueryInstalledOutputReadinessRoutes,
+};
 pub use producer::{
+    WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemand,
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-    WorthQueryInstalledApplicationProducerRegistry, WorthQueryProducerApplicability,
+    WorthQueryInstalledApplicationProducerRegistry, WorthQueryOutputDemandAdvance,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
 };
 pub use setup::WorthQueryApplicationContributionSetup;

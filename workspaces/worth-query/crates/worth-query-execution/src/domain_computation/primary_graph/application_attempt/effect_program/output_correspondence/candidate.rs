@@ -44,6 +44,18 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn remap_created_partition(
+        mut self,
+        mutation_partition: worth_relational::facade::identity::PartitionId,
+    ) -> Self {
+        for binding in self.roles.values_mut() {
+            if let EntityReference::Created(created) = &mut binding.entity {
+                created.partition_id = mutation_partition;
+            }
+        }
+        self
+    }
+
     #[cfg(test)]
     pub(super) fn prepare_test_role<Binding, Entity, Action>(
         &mut self,

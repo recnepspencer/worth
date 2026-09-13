@@ -171,7 +171,13 @@ fn actual_candidate_checks_untouched_neighbors(
 ) {
     let calls = world.invariant_calls.load(Ordering::SeqCst);
     let valid = adjust("anchor-a", 2, 4096);
-    let outcome = mutate(request, valid.clone(), 10);
+    let source = output_correspondence::observed_source(request, &valid.scope_key);
+    let outcome = request
+        .mutate(valid.clone())
+        .expect_source(source.clone())
+        .idempotency(&10)
+        .execute()
+        .expect("the typed request reaches the actual mutation owner");
     let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
         panic!("the positive-turn adjustment must commit: {outcome:?}")
     };
@@ -181,7 +187,12 @@ fn actual_candidate_checks_untouched_neighbors(
     assert_eq!(read_y(request, "anchor-b"), 1);
     assert_eq!(read_y(request, "anchor-c"), 10);
 
-    let retry = mutate(request, valid, 10);
+    let retry = request
+        .mutate(valid)
+        .expect_source(source)
+        .idempotency(&10)
+        .execute()
+        .expect("the repeated typed request reaches idempotency resolution");
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(recovered) = retry else {
         panic!("the repeated command must recover its single committed publication")
     };
@@ -238,8 +249,10 @@ fn require_planar_violation<Denial: std::fmt::Debug, Result: std::fmt::Debug>(
 }
 
 fn mutate(request: &Request<'_>, input: PlanarMutation, key: u64) -> MutationOutcome {
+    let source = output_correspondence::observed_source(request, &input.scope_key);
     request
         .mutate(input)
+        .expect_source(source)
         .idempotency(&key)
         .execute()
         .expect("the typed request reaches the actual mutation owner")

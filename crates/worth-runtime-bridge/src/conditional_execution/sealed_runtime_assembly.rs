@@ -325,6 +325,21 @@ impl BridgeSealedRuntimeAssembly {
         self.runtime.execute(signal_basis, request, compute_context)
     }
 
+    pub fn execute_for_source_record(
+        &self,
+        signal_basis: &super::BridgeConditionalSignalBasisBinding,
+        request: super::BridgeConditionalExecutionRequest<'_>,
+        source_record: crate::relational_identity::RelationalBridgeRecordIdentityParts,
+        compute_context: &mut dyn std::any::Any,
+    ) -> Result<super::BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
+        self.runtime.execute_with_managed_source_record(
+            signal_basis,
+            request,
+            Some(source_record),
+            compute_context,
+        )
+    }
+
     pub fn reenter_retained_conditional_decision(
         &self,
         request: super::BridgeConditionalDecisionReentryRequest<'_>,

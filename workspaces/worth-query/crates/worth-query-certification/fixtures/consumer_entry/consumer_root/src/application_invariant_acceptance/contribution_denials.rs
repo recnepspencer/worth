@@ -1,5 +1,5 @@
-mod producer_denials;
 mod producer_contract_denials;
+mod producer_denials;
 
 use std::sync::{
     atomic::{AtomicUsize, Ordering},

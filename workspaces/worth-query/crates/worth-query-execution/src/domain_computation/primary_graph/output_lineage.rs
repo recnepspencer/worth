@@ -25,11 +25,16 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
         SemanticSource,
         HashMap<
             worth_runtime_world::facade::ProductBranchIncarnation,
-            BTreeMap<u64, Arc<WorthQueryApplicationOutputCorrespondence>>,
+            BTreeMap<u64, RecordedOutput>,
         >,
     >,
     origins: HashMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
     live_occurrences: HashSet<worth_runtime_world::facade::ProductBranchIncarnation>,
+}
+
+struct RecordedOutput {
+    correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    source_identity: Option<[u8; 32]>,
 }
 
 #[derive(Clone, Copy)]
@@ -61,6 +66,61 @@ pub struct WorthQueryPriorOutputDenial {
 }
 
 impl WorthQueryApplicationOutputLineage {
+    pub(super) fn source_posture_for_any_output_binding(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        generation: u64,
+        output_bindings: &[TypeId],
+        current_source_identity: [u8; 32],
+    ) -> WorthQueryOutputSourcePosture {
+        let mut retained_output = false;
+        for output_binding in output_bindings {
+            let source = SemanticSource {
+                runtime_authority,
+                schema: schema.clone(),
+                scope,
+                output_binding: *output_binding,
+            };
+            let Some(versions) = self.by_source.get(&source) else {
+                continue;
+            };
+            let mut coordinate = ProductCoordinate {
+                occurrence,
+                generation,
+            };
+            loop {
+                if versions.get(&coordinate.occurrence).is_some_and(|history| {
+                    history
+                        .range(..=coordinate.generation)
+                        .next_back()
+                        .is_some()
+                }) {
+                    let recorded = versions
+                        .get(&coordinate.occurrence)
+                        .and_then(|history| history.range(..=coordinate.generation).next_back())
+                        .map(|(_, recorded)| recorded)
+                        .expect("retained output was just found");
+                    if recorded.source_identity == Some(current_source_identity) {
+                        return WorthQueryOutputSourcePosture::Exact(*output_binding);
+                    }
+                    retained_output = true;
+                }
+                let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
+                    break;
+                };
+                coordinate = parent;
+            }
+        }
+        if retained_output {
+            WorthQueryOutputSourcePosture::Drifted
+        } else {
+            WorthQueryOutputSourcePosture::Absent
+        }
+    }
+
     pub(crate) fn register_fork(
         &mut self,
         source: &worth_runtime_world::facade::ProductBranchObservation,
@@ -106,7 +166,10 @@ impl WorthQueryApplicationOutputLineage {
             .or_default()
             .insert(
                 head.reference_generation().get(),
-                evidence.retain_output_correspondence(),
+                RecordedOutput {
+                    correspondence: evidence.retain_output_correspondence(),
+                    source_identity: evidence.idempotency().source_identity(),
+                },
             );
         assert!(
             replaced.is_none(),
@@ -146,7 +209,7 @@ impl WorthQueryApplicationOutputLineage {
             if let Some(correspondence) = versions
                 .get(&coordinate.occurrence)
                 .and_then(|history| history.range(..=coordinate.generation).next_back())
-                .map(|(_, correspondence)| correspondence.clone())
+                .map(|(_, recorded)| recorded.correspondence.clone())
             {
                 return Ok(WorthQueryPriorOutputBindingResolution {
                     correspondence: Some(correspondence),
@@ -187,6 +250,13 @@ impl WorthQueryApplicationOutputLineage {
         });
         self.origins.retain(|child, _| retained.contains(child));
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum WorthQueryOutputSourcePosture {
+    Absent,
+    Exact(TypeId),
+    Drifted,
 }
 
 impl WorthQueryPriorOutputDenial {

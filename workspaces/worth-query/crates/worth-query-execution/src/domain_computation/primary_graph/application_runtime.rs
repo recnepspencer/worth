@@ -1,4 +1,4 @@
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
@@ -18,7 +18,15 @@ use super::{
 };
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
+#[cfg(any(test, feature = "test-primary-graph-faults"))]
+mod certification_controls;
+mod certification_cost;
 mod external_dispatch_attempt;
+pub use certification_cost::{
+    WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
+    WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
+    WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
+};
 mod graph_participation;
 pub(in crate::domain_computation::primary_graph) mod installation;
 #[cfg(feature = "test-world-operation-control")]
@@ -108,8 +116,28 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
     pub(super) installed_producers:
         super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
+    pub(super) output_producer_routes:
+        super::application_contribution::WorthQueryInstalledOutputProducerRoutes,
+    pub(super) output_readiness_routes:
+        super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
+    pub(super) next_output_producer_attempt: AtomicU64,
+    pub(super) next_application_mutation_partition: AtomicU32,
+    pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
+}
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(super) fn issue_application_mutation_partition(
+        &self,
+    ) -> Option<worth_relational::facade::identity::PartitionId> {
+        self.next_application_mutation_partition
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+                current.checked_add(1)
+            })
+            .ok()
+            .map(worth_relational::facade::identity::PartitionId)
+    }
 }
 
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
@@ -274,52 +302,6 @@ where
         self.installed_conditionals.binding::<Binding>()
     }
 
-    /// Schedules one failure at the generic Query index-publication boundary.
-    #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub fn fail_next_index_publication_for_test(&self) {
-        self.primary_provider.fail_next_index_publication_for_test();
-    }
-
-    /// Observes the currently bound primary Bridge truth snapshot.
-    #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub fn primary_truth_snapshot_for_test(
-        &self,
-    ) -> Option<worth_runtime_bridge::facade::TruthSnapshotIdentity> {
-        self.primary_provider
-            .graph
-            .current_truth_snapshot(&super::primary_truth_branch_identity())
-    }
-
-    /// Inspects the real Relational snapshot count and current branch basis.
-    #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub fn relational_snapshot_state_for_test(
-        &self,
-    ) -> (
-        usize,
-        worth_relational::facade::branch::RelationalBranchBasisDescriptor,
-    ) {
-        self.primary_provider.graph.with_runtime_mut(|runtime| {
-            let active = runtime.retention().inspect_plan().active_snapshot_count;
-            let identity = runtime
-                .branch_identity(self.relational_branch_identity.branch_id())
-                .expect("the application branch remains owner registered");
-            let (_, basis) = runtime
-                .observe_branch(&identity)
-                .expect("the application branch remains owner observable");
-            (active, basis.descriptor().clone())
-        })
-    }
-
-    #[cfg(test)]
-    pub(crate) fn fail_next_durable_append_for_test(&self) {
-        self.primary_provider
-            .graph
-            .with_runtime_mut(|runtime| runtime.fail_next_durable_append_for_test());
-    }
-
     pub fn installed_schema(&self) -> &WorthQueryInstalledApplicationSchema<Schema> {
         &self.installed_schema
     }
@@ -363,18 +345,6 @@ where
 
     pub(in crate::domain_computation) fn graph_work_provider_identity(&self) -> &str {
         self.primary_graph_authority.provider_identity()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn provider_session_resource_count(&self) -> usize {
-        self.primary_provider.application_attempt_resource_count()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn application_attempt_work(
-        &self,
-    ) -> super::provider::WorthQueryApplicationAttemptWorkSnapshot {
-        self.primary_provider.application_attempt_work()
     }
 
     /// Closes ordinary live delivery without closing the authoritative graph.

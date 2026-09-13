@@ -9,8 +9,8 @@ use worth_relational::facade::{
 
 use super::prepared_scope::{ApplicationInvariantAdmission, ApplicationInvariantAdmissionAccess};
 use super::{
-    WorthQueryApplicationInvariantFieldBinding, WorthQueryInvariantAccessDenial,
-    WorthQueryInvariantAccessDenialKind,
+    WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind,
 };
 
 mod relation_reads;
@@ -34,6 +34,13 @@ impl<Schema, Entity> Clone for WorthQueryApplicationInvariantEntity<Schema, Enti
             posture: self.posture,
             _marker: PhantomData,
         }
+    }
+}
+
+impl<Schema, Entity> WorthQueryApplicationInvariantEntity<Schema, Entity> {
+    /// Returns the owner-issued identity shared by committed and proposed views.
+    pub const fn entity_id(&self) -> EntityId {
+        self.entity_id
     }
 }
 
@@ -191,6 +198,33 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
 }
 
 impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> {
+    /// Returns visible touched entities of the bound kind within the admitted scope.
+    pub fn touched_entities_of<Entity>(
+        &self,
+        entity: &WorthQueryApplicationInvariantEntityBinding<Schema, Entity>,
+    ) -> Result<
+        Vec<WorthQueryApplicationInvariantEntity<Schema, Entity>>,
+        WorthQueryInvariantAccessDenial,
+    > {
+        self.check_binding(&entity.binding_identity)?;
+        self.relations
+            .require_entity_kind(entity.entity_kind)
+            .map_err(|error| map_structural_error(error, "touched entity kind"))?;
+        let mut entities = Vec::new();
+        for entity_id in self.touched_entities.iter().copied() {
+            let kind = match self.relations.readable_entity_kind(entity_id) {
+                Ok(kind) => kind,
+                Err(StructuralReadError::RecordUnavailable) => continue,
+                Err(error) => return Err(map_structural_error(error, "touched entity")),
+            };
+            if kind == Some(entity.entity_kind) {
+                self.admission.entity(entity_id)?;
+                entities.push(self.entity(entity_id, entity.entity_kind));
+            }
+        }
+        Ok(entities)
+    }
+
     pub fn touched_entities<Entity, Value>(
         &self,
         field: &WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value>,

@@ -15,6 +15,9 @@ mod lifecycle_inventory;
 mod operation_invocation;
 mod pending_binding;
 mod predicate_admission;
+pub(in crate::domain_computation::primary_graph) use predicate_admission::{
+    prepare_dependency_conditional_installation, QueryConditionalComputeContext,
+};
 mod predicate_observation;
 mod publication;
 mod reconstruction_authority;

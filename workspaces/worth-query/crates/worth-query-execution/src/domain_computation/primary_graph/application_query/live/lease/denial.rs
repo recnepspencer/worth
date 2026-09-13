@@ -30,7 +30,6 @@ impl<
     >
     WorthQueryApplicationLiveLease<
         '_,
-        '_,
         Schema,
         Query,
         Parameters,

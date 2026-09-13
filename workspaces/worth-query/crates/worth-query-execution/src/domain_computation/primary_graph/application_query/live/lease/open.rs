@@ -92,7 +92,6 @@ where
     ) -> Result<
         WorthQueryApplicationLiveLease<
             'runtime,
-            'principal,
             Schema,
             Query,
             Parameters,
@@ -165,7 +164,6 @@ where
     ) -> Result<
         WorthQueryApplicationLiveLease<
             'runtime,
-            'principal,
             Schema,
             Query,
             Parameters,
@@ -256,7 +254,6 @@ where
     ) -> Result<
         WorthQueryApplicationLiveLease<
             'runtime,
-            'principal,
             Schema,
             Query,
             Parameters,
@@ -322,7 +319,6 @@ where
         Ok(WorthQueryApplicationLiveLease {
             runtime: self,
             query: request.query,
-            principal: request.principal,
             scope: request.scope,
             parameters: request.parameters,
             controls: request.controls,

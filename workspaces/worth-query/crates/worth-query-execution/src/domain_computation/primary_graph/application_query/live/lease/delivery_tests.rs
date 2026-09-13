@@ -90,7 +90,8 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         )
         .expect("the retained predecessor remains readable after its successor publishes");
 
-    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.poll() else {
+    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.next(&principal, &request)
+    else {
         panic!("the committed installed live cause must deliver");
     };
     assert_eq!(
@@ -215,7 +216,8 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .unwrap();
     let committed = commit_live_activity(&world, &committer, &request);
 
-    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.poll() else {
+    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.next(&principal, &request)
+    else {
         panic!("current governed authority must deliver the committed cause");
     };
     assert_eq!(
@@ -311,7 +313,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     commit_live_activity(&world, &committer, &request);
     revoke_current_capability(&world);
 
-    let outcome = lease.poll();
+    let outcome = lease.next(&principal, &request);
     let WorthQueryApplicationLiveOutcome::AuthorizationDenied(denial) = outcome else {
         let posture = match outcome {
             WorthQueryApplicationLiveOutcome::Delivered(_) => "delivered",

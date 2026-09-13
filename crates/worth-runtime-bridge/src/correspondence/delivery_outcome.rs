@@ -240,6 +240,10 @@ impl BridgeCorrespondenceDeliveryReceipt {
         self.conditional_transition.as_ref()
     }
 
+    pub const fn has_conditional_successor(&self) -> bool {
+        self.conditional_transition.is_some()
+    }
+
     pub const fn counters(&self) -> CorrespondenceDeliveryCounters {
         self.counters
     }

@@ -14,6 +14,7 @@ use crate::validation::data::{
 pub(crate) fn collect_touched_structural_set(
     state_view: &InvariantStateView<'_>,
     merged_plan: Option<&MergedCommitPlan>,
+    access: &crate::validation::data::CustomInvariantAccessContract,
     work: &super::CustomInvariantWorkMeter,
 ) -> TouchedStructuralSet {
     let mut visible_entities = BTreeSet::new();
@@ -183,6 +184,12 @@ pub(crate) fn collect_touched_structural_set(
     for entity_id in seed_entities {
         if !work.try_charge(1) {
             break;
+        }
+        if state_view
+            .entity_metadata(entity_id)
+            .is_some_and(|metadata| !access.affects_entity(metadata.kind_id))
+        {
+            continue;
         }
         let raw = state_view
             .relation_candidate_count(entity_id, true)

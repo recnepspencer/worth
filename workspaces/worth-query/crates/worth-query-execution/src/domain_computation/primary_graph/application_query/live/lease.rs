@@ -2,9 +2,9 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use worth_foundational::facade::AspectValue;
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
-#[cfg(test)]
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryRequestInterruption, WorthQueryRequestScope,
+};
 use worth_query_declaration::facade::{
     application_query::{ApplicationQueryLiveCauseBinding, ApplicationQueryParameterSet},
     application_schema::{
@@ -14,6 +14,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_runtime_bridge::facade::BridgeExecutionBasisTerminalDisposition;
 
+mod delivery_admission;
 mod denial;
 mod lifecycle;
 mod open;
@@ -45,7 +46,6 @@ use crate::domain_computation::{
 
 pub struct WorthQueryApplicationLiveLease<
     'runtime,
-    'principal,
     Schema,
     Query,
     Parameters,
@@ -60,7 +60,6 @@ pub struct WorthQueryApplicationLiveLease<
 {
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
-    principal: &'principal WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     parameters: ApplicationQueryParameterSet<Query>,
     controls: WorthQueryApplicationLiveControls,
@@ -80,7 +79,7 @@ pub struct WorthQueryApplicationLiveLease<
     queue: WorthQueryLiveCauseQueue<
         <Binding::PayloadBinding as ApplicationStructuredValueBinding>::Value,
     >,
-    _target: PhantomData<fn() -> (Target, Binding)>,
+    _target: PhantomData<fn() -> (Principal, PrincipalIdentity, Target, Binding)>,
     _thread_affinity: PhantomData<Rc<()>>,
 }
 
@@ -96,7 +95,6 @@ impl<
         Binding,
     >
     WorthQueryApplicationLiveLease<
-        '_,
         '_,
         Schema,
         Query,
@@ -126,10 +124,15 @@ where
         self.queue.buffered_cause_count()
     }
 
-    pub fn poll(&mut self) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+    pub fn next(
+        &mut self,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        request: &WorthQueryRequestScope,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         if self.basis.is_none() {
             return WorthQueryApplicationLiveOutcome::Closed;
         }
+        self.controls.replace_request(request.clone());
         if let Some(interruption) = self.controls.request().interruption() {
             if !self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
                 return WorthQueryApplicationLiveOutcome::Unavailable;
@@ -142,6 +145,9 @@ where
                     WorthQueryApplicationLiveOutcome::DeadlineExceeded
                 }
             };
+        }
+        if let Err(outcome) = self.admit_delivery_progress(principal) {
+            return outcome;
         }
         let fill = {
             let Some(basis) = self.basis.as_mut() else {
@@ -196,6 +202,7 @@ where
                 Err(_) => return WorthQueryApplicationLiveOutcome::Unavailable,
             };
         self.project_front(
+            principal,
             publication.clone(),
             product.retained_clone(),
             target_identity,
@@ -204,11 +211,12 @@ where
 
     fn project_front(
         &mut self,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
         product: crate::basis::WorthQueryProductObservationLease,
         target_identity: AspectValue,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        let access = WorthQueryApplicationQueryAccessContext::new(self.principal, &self.scope);
+        let access = WorthQueryApplicationQueryAccessContext::new(principal, &self.scope);
         let application_basis = match self
             .runtime
             .retain_product_application_basis(product.observation())
@@ -327,13 +335,6 @@ where
         } else {
             WorthQueryApplicationLiveCloseOutcome::Unavailable
         }
-    }
-
-    /// Test harness only: bind an already-settled request scope to the open
-    /// lease so deadline/cancellation poll outcomes are deterministic.
-    #[cfg(test)]
-    pub(crate) fn replace_request(&mut self, request: WorthQueryRequestScope) {
-        self.controls.replace_request(request);
     }
 }
 

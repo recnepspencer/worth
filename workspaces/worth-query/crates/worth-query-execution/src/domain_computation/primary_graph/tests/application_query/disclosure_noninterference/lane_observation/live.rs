@@ -56,7 +56,9 @@ pub(super) fn observe(
         .unwrap();
     let committed =
         commit_live_activity_with_label(context.world, context.committer, context.request, label);
-    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.poll() else {
+    let WorthQueryApplicationLiveOutcome::Delivered(update) =
+        lease.next(context.principal, context.request)
+    else {
         panic!("the symmetric live cause must produce one governed delivery");
     };
     assert_eq!(

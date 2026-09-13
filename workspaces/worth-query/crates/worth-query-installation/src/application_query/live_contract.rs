@@ -1,5 +1,8 @@
 use worth_query_declaration::facade::{
-    application_query::{ApplicationQueryLiveCauseContract, ErasedApplicationQueryDefinition},
+    application_query::{
+        ApplicationQueryLiveCauseContract, ApplicationQueryLiveTargetMode,
+        ErasedApplicationQueryDefinition,
+    },
     application_schema::{ApplicationSchemaMember, ErasedApplicationSchemaDeclaration},
     domain_computation::{
         WorthQueryCancellationSafePointFamily, WorthQueryExecutionMode,
@@ -23,7 +26,8 @@ pub struct WorthQueryInstalledApplicationLiveContract {
     payload_type: WorthQueryPortableTypeIdentity,
     scope_identity: WorthQueryInstalledGraphProjection,
     target_identity: WorthQueryInstalledGraphProjection,
-    collection_path: String,
+    target_mode: ApplicationQueryLiveTargetMode,
+    collection_path: Option<String>,
     resource_envelope: WorthQueryExecutionResourceEnvelope,
 }
 
@@ -50,25 +54,40 @@ impl WorthQueryInstalledApplicationLiveContract {
             live.target_field(),
             WorthQueryApplicationQueryInstallationDenialKind::LiveTargetIdentityNotInstalled,
         )?;
-        let continuation = continuation.ok_or_else(|| {
-            installation_denial(
-                WorthQueryApplicationQueryInstallationDenialKind::LiveTargetIdentityNotInstalled,
-                definition.name(),
-            )
-        })?;
-        if target_identity.parent_path() != continuation.collection_path() {
-            return Err(installation_denial(
-                WorthQueryApplicationQueryInstallationDenialKind::LiveTargetIdentityNotInstalled,
-                target_identity.result_path(),
-            ));
-        }
+        let collection_path = match live.target_mode() {
+            ApplicationQueryLiveTargetMode::Root => {
+                if target_identity.parent_path() != "root" {
+                    return Err(installation_denial(
+                        WorthQueryApplicationQueryInstallationDenialKind::LiveTargetIdentityNotInstalled,
+                        target_identity.result_path(),
+                    ));
+                }
+                None
+            }
+            ApplicationQueryLiveTargetMode::Collection => {
+                let continuation = continuation.ok_or_else(|| {
+                    installation_denial(
+                        WorthQueryApplicationQueryInstallationDenialKind::LiveTargetIdentityNotInstalled,
+                        definition.name(),
+                    )
+                })?;
+                if target_identity.parent_path() != continuation.collection_path() {
+                    return Err(installation_denial(
+                        WorthQueryApplicationQueryInstallationDenialKind::LiveTargetIdentityNotInstalled,
+                        target_identity.result_path(),
+                    ));
+                }
+                Some(continuation.collection_path().to_string())
+            }
+        };
         Ok(Some(Self {
             binding_type: live.binding_identity(),
             effect: live.effect().to_string(),
             payload_type: live.payload_identity(),
             scope_identity,
             target_identity,
-            collection_path: continuation.collection_path().to_string(),
+            target_mode: live.target_mode(),
+            collection_path,
             resource_envelope: compile_resource_envelope(live),
         }))
     }
@@ -93,8 +112,12 @@ impl WorthQueryInstalledApplicationLiveContract {
         &self.target_identity
     }
 
-    pub fn collection_path(&self) -> &str {
-        &self.collection_path
+    pub const fn target_mode(&self) -> ApplicationQueryLiveTargetMode {
+        self.target_mode
+    }
+
+    pub fn collection_path(&self) -> Option<&str> {
+        self.collection_path.as_deref()
     }
 
     pub const fn resource_envelope(&self) -> &WorthQueryExecutionResourceEnvelope {

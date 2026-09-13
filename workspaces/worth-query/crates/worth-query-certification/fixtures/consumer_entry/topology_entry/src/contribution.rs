@@ -1,6 +1,6 @@
 use super::{
-    PlanarHandler, PlanarMutationBinding, PositivePlanarTurn, TopologyContribution,
-    TopologySchemaBinding, InitialPlanarProducer, PreservePlanarProducer,
+    InitialPlanarProducer, InitialPlanarReadiness, PlanarHandler, PlanarMutationBinding,
+    PositivePlanarTurn, TopologyContribution, TopologySchemaBinding,
 };
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -31,9 +31,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        contracts
-            .producer::<InitialPlanarProducer<Schema>>()?
-            .producer::<PreservePlanarProducer<Schema>>()?;
+        contracts.producer::<InitialPlanarProducer<Schema>>()?;
+        contracts.conditional::<InitialPlanarReadiness<Schema>>()?;
         Ok(())
     }
 
@@ -55,7 +54,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         )?;
         setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
         setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider)?;
-        setup.producer::<PreservePlanarProducer<Schema>>(super::PreservePlanarProvider)?;
+        setup.conditional::<InitialPlanarReadiness<Schema>>(())?;
         setup.handler::<super::VertexReplacementBinding<Schema>, _>(super::VertexReplacementHandler)
     }
 }

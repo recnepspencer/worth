@@ -2,7 +2,7 @@ mod authoritative_truth;
 mod model;
 mod world;
 
-use self::model::observe;
+use self::model::{assert_created_partition, observe};
 use self::world::mixed_effect_world;
 use super::{prepare_provider_attempt, WorthQueryApplicationRealizedEffect};
 use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
@@ -16,6 +16,7 @@ use worth_relational::facade::identity::{EntityId, KindId, PartitionId, Relation
 fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
     let world = mixed_effect_world();
     let prepared = prepare_provider_attempt(
+        PartitionId::main(),
         Vec::new(),
         world.facts,
         world.effects,
@@ -25,6 +26,7 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
         None,
         WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
         Default::default(),
+        false,
     )
     .expect("complete mixed effect basis should lower");
 
@@ -35,6 +37,7 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
 fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
     let world = mixed_effect_world();
     let prepared = prepare_provider_attempt(
+        PartitionId::main(),
         Vec::new(),
         world.facts,
         world.alternate_effects,
@@ -44,9 +47,31 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
         None,
         WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
         Default::default(),
+        false,
     )
     .expect("complete mixed effect basis should lower");
     assert_eq!(observe(prepared), world.alternate_expected);
+}
+
+#[test]
+fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
+    let world = mixed_effect_world();
+    let prepared = prepare_provider_attempt(
+        PartitionId(7),
+        Vec::new(),
+        world.facts,
+        world.effects,
+        world.retained_bytes,
+        world.retained_bytes,
+        None,
+        None,
+        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+        Default::default(),
+        false,
+    )
+    .expect("complete mixed effect basis should lower into the issued partition");
+
+    assert_created_partition(prepared, PartitionId(7));
 }
 
 #[test]
@@ -84,6 +109,7 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         },
     ];
     let prepared = prepare_provider_attempt(
+        PartitionId::main(),
         Vec::new(),
         facts,
         effects,
@@ -93,6 +119,7 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         None,
         WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
         Default::default(),
+        false,
     )
     .expect("both relation deletes are authorized by the observed adjacency");
 

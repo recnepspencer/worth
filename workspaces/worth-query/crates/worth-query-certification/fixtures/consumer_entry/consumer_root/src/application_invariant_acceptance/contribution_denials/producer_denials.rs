@@ -16,19 +16,19 @@ use worth_query_host::facade::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
         WorthQueryApplicationContributionSetup, WorthQueryApplicationProducerBinding,
         WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-        WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+        WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
+        WorthQueryProducerLifecyclePosture,
     },
     application_installation,
     primary_graph::{
-        WorthQueryPrimaryGraphInstallationDenial,
-        WorthQueryPrimaryGraphInstallationDenialKind,
+        WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
     },
 };
 use worth_query_parameter_entry::{ParameterContribution, ParameterSchemaBinding};
 use worth_query_topology_entry::{
-    InitialPlanarProducer, InitialPlanarProvider, PlanarHandler, PlanarMutationBinding,
-    PlanarOutputFamily, PositivePlanarTurn, PositiveTurnRule, PreservePlanarProducer,
-    TopologyContribution, TopologySchemaBinding,
+    InitialPlanarProducer, InitialPlanarProvider, PlanarHandler, PlanarMutation,
+    PlanarMutationBinding, PlanarOutputFamily, PlanarReadResult, PositivePlanarTurn,
+    PositiveTurnRule, TopologyContribution, TopologySchemaBinding,
 };
 
 use super::{assert_contribution_denial, limits};
@@ -197,8 +197,22 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
 
 struct AmbiguousProvider;
 
-impl WorthQueryApplicationProducerProvider for AmbiguousProvider {
+impl<Schema: TopologySchemaBinding>
+    WorthQueryApplicationProducerProvider<Schema, AmbiguousProducer<Schema>> for AmbiguousProvider
+{
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.ambiguous-provider.v1";
+
+    fn operation_input(&self, source: &PlanarReadResult) -> PlanarMutation {
+        worth_query_topology_entry::planar_producer_input(source)
+    }
+
+    fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
+        worth_query_topology_entry::planar_source_key(source_identity)
+    }
+
+    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+        worth_query_topology_entry::planar_producer_resources()
+    }
 }
 
 struct AmbiguousProducer<Schema>(PhantomData<fn() -> Schema>);
@@ -207,7 +221,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     for AmbiguousProducer<Schema>
 {
     type Operation = PlanarMutationBinding<Schema>;
-    type Source = PlanarMutationBinding<Schema>;
     type OutputFamily = PlanarOutputFamily;
     type Provider = AmbiguousProvider;
 
@@ -267,11 +280,11 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
 
 fn declare_planar_producers<Schema: TopologySchemaBinding>(
     contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
-) -> Result<&mut WorthQueryApplicationContributionContracts<Schema>, WorthQueryPrimaryGraphInstallationDenial>
-{
-    contracts
-        .producer::<InitialPlanarProducer<Schema>>()?
-        .producer::<PreservePlanarProducer<Schema>>()
+) -> Result<
+    &mut WorthQueryApplicationContributionContracts<Schema>,
+    WorthQueryPrimaryGraphInstallationDenial,
+> {
+    contracts.producer::<InitialPlanarProducer<Schema>>()
 }
 
 fn install_topology_behavior<Schema: TopologySchemaBinding>(

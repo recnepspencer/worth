@@ -33,6 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     publication_recovery_reservation: Option<
         crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation,
     >,
+    retain_output_demand_observation: bool,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
@@ -138,10 +139,10 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.conditional_definition.take()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn reserve_live_delivery(
+    pub(in crate::domain_computation::primary_graph) fn reserve_successor_observations(
         &mut self,
         provider: &WorthQueryPrimaryGraphProvider,
-    ) -> Result<bool, &'static str> {
+    ) -> Result<(bool, bool), &'static str> {
         assert!(self.live_delivery_reservation.is_none());
         assert!(self.publication_recovery_reservation.is_none());
         let publication_recovery = provider.reserve_application_publication_recovery(
@@ -151,10 +152,11 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             self.affinity.product_publication().observation(),
             self.effects.emissions().retained_bytes(),
         )?;
-        let requires_observation = reservation.requires_successor_observation();
+        let live = reservation.requires_successor_observation();
+        let demand = self.retain_output_demand_observation;
         self.live_delivery_reservation = Some(reservation);
         self.publication_recovery_reservation = Some(publication_recovery);
-        Ok(requires_observation)
+        Ok((live, demand))
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_publication_recovery_reservation(
@@ -249,6 +251,7 @@ impl WorthQueryPrimaryGraphProvider {
             aftermath_causality,
             conditional_definition,
             validator_work_admission,
+            retain_output_demand_observation,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
@@ -291,6 +294,7 @@ impl WorthQueryPrimaryGraphProvider {
                 validator_work_admission,
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,
+                retain_output_demand_observation,
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

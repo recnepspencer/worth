@@ -109,6 +109,7 @@ struct WorthQueryProviderAttemptPreparation {
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     validator_work_admission: crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    retain_output_demand_observation: bool,
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
@@ -146,6 +147,7 @@ where
         conditional_definition,
         validator_work_admission,
         output_correspondence,
+        retain_output_demand_observation,
     } = program;
     let mut admission = read_set.admission;
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
@@ -180,6 +182,7 @@ where
                 conditional_definition,
                 validator_work_admission,
                 output_correspondence,
+                retain_output_demand_observation,
             },
             idempotency,
             aftermath_causality,
@@ -202,7 +205,11 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         Ok(authorization) => authorization,
         Err(outcome) => return terminal(outcome),
     };
-    let provider_attempt = match prepare_application_provider_attempt(provider) {
+    let Some(mutation_partition) = application.issue_application_mutation_partition() else {
+        return terminal(denied(DenialStage::ProposalBinding));
+    };
+    let provider_attempt = match prepare_application_provider_attempt(provider, mutation_partition)
+    {
         Ok(prepared) => prepared,
         Err(_) => return terminal(denied(DenialStage::ProposalBinding)),
     };
@@ -218,8 +225,10 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
 
 fn prepare_application_provider_attempt(
     preparation: WorthQueryProviderAttemptPreparation,
+    mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, ()> {
     prepare_provider_attempt(
+        mutation_partition,
         preparation.installed_read_scopes,
         preparation.facts,
         preparation.effects,
@@ -229,6 +238,7 @@ fn prepare_application_provider_attempt(
         preparation.conditional_definition,
         preparation.validator_work_admission,
         preparation.output_correspondence,
+        preparation.retain_output_demand_observation,
     )
     .map_err(|_| ())
 }

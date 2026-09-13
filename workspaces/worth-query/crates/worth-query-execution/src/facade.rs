@@ -50,6 +50,15 @@ pub mod runtime {
     };
 }
 
+/// Read-only owner observations for cert-band consumers.
+pub mod certification {
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
+        WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
+        WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
+    };
+}
+
 pub mod application_contribution;
 pub mod application_discovery;
 pub mod application_installation;

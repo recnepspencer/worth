@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalTru
 }
 
 impl WorthQueryConditionalTruthBasis {
-    pub(super) fn from_selected<Schema>(
+    pub(in crate::domain_computation::primary_graph) fn from_selected<Schema>(
         selected: crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
             Schema,
@@ -51,11 +51,13 @@ impl WorthQueryConditionalTruthBasis {
         Ok(Self::from_selected(selected.retain_selection()?))
     }
 
-    pub(super) fn snapshot(&self) -> &TruthSnapshotIdentity {
+    pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> &TruthSnapshotIdentity {
         &self.snapshot
     }
 
-    pub(super) fn signal_basis(&self) -> &worth_signal::facade::branch::AdmittedSignalBranchBasis {
+    pub(in crate::domain_computation::primary_graph) fn signal_basis(
+        &self,
+    ) -> &worth_signal::facade::branch::AdmittedSignalBranchBasis {
         self.product.signal_basis()
     }
 
@@ -73,11 +75,11 @@ impl WorthQueryConditionalTruthBasis {
         )
     }
 
-    fn snapshot_projection(&self) -> &str {
+    pub(in crate::domain_computation::primary_graph) fn snapshot_projection(&self) -> &str {
         self.snapshot_projection.terminal_projection_for_reporting()
     }
 
-    fn branch_projection(&self) -> &str {
+    pub(in crate::domain_computation::primary_graph) fn branch_projection(&self) -> &str {
         self.branch_projection.terminal_projection_for_reporting()
     }
 }

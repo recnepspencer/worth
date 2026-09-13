@@ -82,28 +82,30 @@ where
         .map_err(Denial::Graph)?;
     graph.mutation_handlers = handlers;
     initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
-    let (mut application, installed_conditionals) = if conditionals.is_empty() {
-        let application = graph
-            .publish_application_runtime(runtime, authority, installed, limits.conditionals)
-            .map_err(Denial::Publication)?;
-        (application, Default::default())
-    } else {
-        let mut publication = graph
-            .conditional_application_runtime_installation(
-                runtime,
-                authority,
-                installed,
-                limits.conditionals,
-            )
-            .map_err(Denial::ConditionalPublication)?;
-        let installed_conditionals = conditionals
-            .install_all(&producers, &mut publication)
-            .map_err(Denial::ConditionalPublication)?;
-        let application = publication
-            .publish()
-            .map_err(Denial::ConditionalPublication)?;
-        (application, installed_conditionals)
-    };
+    let (mut application, installed_conditionals) =
+        if conditionals.is_empty() && producers.is_empty() {
+            let application = graph
+                .publish_application_runtime(runtime, authority, installed, limits.conditionals)
+                .map_err(Denial::Publication)?;
+            (application, Default::default())
+        } else {
+            let mut publication = graph
+                .conditional_application_runtime_installation(
+                    runtime,
+                    authority,
+                    installed,
+                    limits.conditionals,
+                )
+                .map_err(Denial::ConditionalPublication)?;
+            publication.install_output_producers(producers.clone());
+            let installed_conditionals = conditionals
+                .install_all(&producers, &mut publication)
+                .map_err(Denial::ConditionalPublication)?;
+            let application = publication
+                .publish()
+                .map_err(Denial::ConditionalPublication)?;
+            (application, installed_conditionals)
+        };
     application.installed_producers = producers;
     application.installed_conditionals = installed_conditionals;
     Ok(application)

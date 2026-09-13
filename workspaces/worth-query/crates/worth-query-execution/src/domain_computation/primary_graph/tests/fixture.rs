@@ -137,10 +137,9 @@ pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
     installed_authorization_world, installed_authorization_world_with_label,
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
+    installed_two_principal_authorization_world,
 };
-pub(super) use world_installation::{
-    installed_two_principal_authorization_world, installed_world, installed_world_with_policy_fact,
-};
+pub(super) use world_installation::{installed_world, installed_world_with_policy_fact};
 
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_declaration::facade::authentication::{

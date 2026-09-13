@@ -16,7 +16,6 @@ impl<
     >
     WorthQueryApplicationLiveLease<
         '_,
-        '_,
         Schema,
         Query,
         Parameters,
@@ -94,7 +93,6 @@ impl<
         Binding,
     > Drop
     for WorthQueryApplicationLiveLease<
-        '_,
         '_,
         Schema,
         Query,

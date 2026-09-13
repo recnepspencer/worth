@@ -104,7 +104,7 @@ where
         let prepared =
             self.prepare_application_query_graph_work(query, &parameters, &controls, graph)?;
         validate_admission_request(controls.request_scope(), query.name())?;
-        let (basis_selection, controls) = controls.into_admission_parts();
+        let (basis_selection, security_product, controls) = controls.into_admission_parts();
         let basis = admit_application_query_basis(self, basis_selection)?;
         validate_admission_request(controls.request_scope(), query.name())?;
         let mut graph_work = self.start_application_query_graph_work(
@@ -114,11 +114,12 @@ where
             access,
             pending_governance.as_ref(),
             &basis,
+            &security_product,
             graph,
         )?;
         let authorities = self.admit_application_query_authorities(
             &mut graph_work,
-            &basis,
+            &security_product,
             query,
             access,
             &parameters,
@@ -141,6 +142,7 @@ where
             continuation_index_id: prepared.continuation_index_id,
             continuation_state: None,
             basis,
+            security_product,
             graph_work,
             authorization: authorities.authorization,
             authorization_work: authorities.authorization_work,
@@ -176,7 +178,7 @@ where
         }
         let plan =
             admit_application_query_graph_work(reviewed.work, &self.graph_work_resource_support())
-                .map_err(|_| graph_work_denial(query.name()))?;
+                .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         validate_one_shot_shape(query)?;
         let disclosure = compile_disclosure_contract(query, &graph.layout).map_err(|denial| {
             WorthQueryApplicationQueryAdmissionDenial::new(
@@ -226,7 +228,7 @@ where
             obligations,
             WorthQueryGraphWorkIntent::application_query_read(),
         )
-        .map_err(|_| graph_work_denial(query.name()))?;
+        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         let work = review_application_query_graph_work(
             selected,
             requirements,
@@ -236,7 +238,7 @@ where
                 controls,
             ),
         )
-        .map_err(|_| graph_work_denial(query.name()))?;
+        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         Ok(ReviewedApplicationQueryGraphWork {
             work,
             obligation_identity,
@@ -265,6 +267,7 @@ where
         >,
         pending_governance: Option<&WorthQueryPendingApplicationQueryGovernance>,
         basis: &super::super::basis::WorthQueryApplicationQueryBasisCustody,
+        security_product: &crate::basis::WorthQueryProductObservationLease,
         graph: &WorthQueryPrimaryGraph,
     ) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryApplicationQueryAdmissionDenial> {
         let capability_identity = pending_governance
@@ -288,10 +291,11 @@ where
             affinity,
             basis.identity(),
             basis.retained_product(),
+            security_product,
             self.graph_work_provider_identity(),
             graph.query_session_port(),
         )
-        .map_err(|_| graph_work_denial(query.name()))
+        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))
     }
 }
 

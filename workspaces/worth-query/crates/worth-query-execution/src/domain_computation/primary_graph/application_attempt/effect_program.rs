@@ -2,6 +2,7 @@ mod candidate_reservation;
 mod candidate_retained_representation;
 mod conditional_definition;
 mod emission;
+mod entity_creation;
 mod entity_selection;
 mod model;
 mod optional_field_authoring;
@@ -19,8 +20,7 @@ mod external_payload_tests;
 #[cfg(test)]
 mod outbox_persistence_tests;
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::marker::PhantomData;
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use worth_foundational::facade::AspectFieldLocator;
@@ -35,12 +35,13 @@ use worth_relational::facade::transactions::EntityReference;
 pub(in crate::domain_computation::primary_graph) use model::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
+pub(in crate::domain_computation::primary_graph::application_attempt) use model::{
+    WorthQueryApplicationCreationPartition, WorthQueryApplicationOptionalFieldWrite,
+    WorthQueryApplicationRealizedEffect,
+};
 pub use model::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEffectProgramBuilder,
-};
-pub(super) use model::{
-    WorthQueryApplicationOptionalFieldWrite, WorthQueryApplicationRealizedEffect,
 };
 
 use super::effect_validation::{canonical_key, denial};
@@ -112,6 +113,7 @@ impl<Schema, Operation, Input, Scope>
             conditional_definition: None,
             candidate_reservation: None,
             output_correspondence: Default::default(),
+            creation_partition: None,
         }
     }
 
@@ -153,6 +155,7 @@ impl<Schema, Operation, Input, Scope>
             conditional_definition: None,
             candidate_reservation: Some(reservation),
             output_correspondence: Default::default(),
+            creation_partition: None,
         })
     }
 }
@@ -171,62 +174,6 @@ impl<Schema, Operation, Input, Scope>
             .publication_request()
             .interruption()
             .map_or(Ok(()), Err)
-    }
-
-    pub fn create_entity<Entity>(
-        &mut self,
-        entity: ApplicationEntityRef<Schema, Entity>,
-        key: WorthQueryApplicationEntityKey<Schema, Entity>,
-    ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
-    where
-        Entity: OperationCreates<Operation>,
-    {
-        let target = ApplicationOperationProgramTarget::Create {
-            entity: entity.name().to_string(),
-        };
-        self.admit_program_target(&target)?;
-        let kind = self.layout.entity_kind(entity.name()).ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                entity.name(),
-            )
-        })?;
-        let key = key.into_string();
-        if self.keys.contains(&(kind, key.clone())) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DuplicateEffectKey,
-                entity.name(),
-            ));
-        }
-        let retained_representation_bytes =
-            retained_representation::created_entity(&key, entity.name())
-                .ok_or_else(candidate_representation_denial)?;
-        self.charge_candidate_representation(
-            CandidateItemKind::Create,
-            retained_representation_bytes,
-            0,
-        )?;
-        self.keys.insert((kind, key.clone()));
-        let reference =
-            EntityReference::Created(worth_relational::facade::transactions::CreatedEntityRef {
-                partition_id: worth_relational::facade::identity::PartitionId::main(),
-                kind_id: kind,
-                client_key: worth_relational::facade::symbols::ClientKey::raw(key.clone()),
-            });
-        let created_effect = self.effects.len();
-        self.effects
-            .push(WorthQueryApplicationRealizedEffect::CreateEntity {
-                kind,
-                key,
-                fields: BTreeMap::new(),
-            });
-        Ok(WorthQueryApplicationEffectEntity {
-            reference,
-            entity: entity.name().to_string(),
-            created_effect: Some(created_effect),
-            program: Arc::clone(&self.program),
-            _marker: PhantomData,
-        })
     }
 
     pub fn initialize_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
@@ -339,6 +286,7 @@ impl<Schema, Operation, Input, Scope>
             conditional_definition: self.conditional_definition,
             validator_work_admission,
             output_correspondence: self.output_correspondence,
+            retain_output_demand_observation: false,
         })
     }
 

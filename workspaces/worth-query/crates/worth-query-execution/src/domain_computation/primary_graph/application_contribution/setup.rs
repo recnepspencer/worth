@@ -1,4 +1,7 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryBinding, ApplicationQueryMarkerIdentity,
+};
 use worth_query_declaration::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity,
     ApplicationInvariantRef, ApplicationSchema, ApplicationSchemaMember,
@@ -69,7 +72,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
     where
         Binding: WorthQueryApplicationProducerBinding<Schema>,
     {
-        self.require_owned_mutation::<Binding::Source>()?;
+        self.require_owned_query::<<Binding::OutputFamily as super::WorthQueryProducerOutputFamily<Schema>>::Source>()?;
         self.require_owned_mutation::<Binding::Operation>()?;
         for requirement in Binding::REQUIRED_INVARIANTS {
             self.require_owned_invariant(*requirement)?;
@@ -95,6 +98,25 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
             )
         });
         if !operation_owned {
+            return Err(member_denial(Binding::IDENTITY));
+        }
+        Ok(())
+    }
+
+    fn require_owned_query<Binding>(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Binding: ApplicationQueryBinding<Schema>,
+    {
+        self.installed_schema
+            .installed_query_binding::<Binding>()
+            .map_err(|_| member_denial(Binding::IDENTITY))?;
+        let query_owned = self.contribution.members().any(|member| {
+            matches!(member,
+                ApplicationSchemaMember::ApplicationQuery { definition }
+                    if definition.query_type() == Binding::Query::QUERY_TYPE_NAME
+            )
+        });
+        if !query_owned {
             return Err(member_denial(Binding::IDENTITY));
         }
         Ok(())

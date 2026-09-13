@@ -89,7 +89,13 @@ impl WorthQueryCommittedProductPublication {
     pub(in crate::domain_computation::primary_graph) fn take_successor_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
-        self.receipt.take_successor_observation()
+        self.receipt.take_live_successor_observation()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_output_demand_observation(
+        &self,
+    ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
+        self.receipt.take_output_demand_observation()
     }
 }
 

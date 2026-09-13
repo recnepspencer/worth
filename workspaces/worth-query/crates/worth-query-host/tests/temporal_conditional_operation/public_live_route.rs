@@ -148,7 +148,7 @@ pub fn live_query_receives_conditional_world_publication() {
     let committed = courtroom_support::observe(&world);
     assert_eq!(committed.committed_operation_count(), 1);
     assert!(matches!(
-        live.poll(),
+        live.next(&principal, &request),
         primary_graph::WorthQueryApplicationLiveOutcome::Delivered(_)
     ));
     assert!(matches!(

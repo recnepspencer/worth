@@ -118,6 +118,8 @@ fn create_alpha(axes: &MixedEffectAxes) -> WorthQueryApplicationRealizedEffect {
         kind: axes.created_kind,
         key: "created-alpha".to_owned(),
         fields: values([(&axes.created_field, "born")]),
+        partition:
+            super::super::super::effect_program::WorthQueryApplicationCreationPartition::Issued,
     }
 }
 
@@ -126,6 +128,8 @@ fn create_beta(axes: &MixedEffectAxes) -> WorthQueryApplicationRealizedEffect {
         kind: axes.second_created_kind,
         key: "created-beta".to_owned(),
         fields: BTreeMap::new(),
+        partition:
+            super::super::super::effect_program::WorthQueryApplicationCreationPartition::Issued,
     }
 }
 

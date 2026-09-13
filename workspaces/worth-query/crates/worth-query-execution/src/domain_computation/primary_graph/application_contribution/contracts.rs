@@ -329,6 +329,7 @@ mod tests {
             binding_type: TypeId::of::<()>(),
             source_type: TypeId::of::<()>(),
             provider_type: TypeId::of::<()>(),
+            operation_binding_type: TypeId::of::<()>(),
         }
     }
 

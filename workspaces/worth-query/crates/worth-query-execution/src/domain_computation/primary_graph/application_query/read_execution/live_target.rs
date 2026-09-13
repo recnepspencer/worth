@@ -1,4 +1,5 @@
 use worth_foundational::facade::AspectValue;
+use worth_query_declaration::facade::application_query::ApplicationQueryLiveTargetMode;
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
 use worth_relational::facade::indexes::{
     BoundedEntityFieldLookupRequest, BoundedIndexParityMode, DerivedIndexGenerationId,
@@ -52,6 +53,31 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
     )?;
     let target = resolve_live_target(runtime, graph, plan, live, target_identity)?;
     let target_lookup_work = target.examined_entry_count;
+    let collection_selection = match live.target_mode() {
+        ApplicationQueryLiveTargetMode::Root => {
+            if selection.candidates.as_slice() != [target.entity_id] {
+                return Err(read_execution_denial(
+                    WorthQueryApplicationReadExecutionDenialKind::TargetIdentityNotFound,
+                    live.target_identity().result_path(),
+                ));
+            }
+            ResultTreeCollectionSelection::Complete
+        }
+        ApplicationQueryLiveTargetMode::Collection => {
+            let collection_path = live.collection_path().ok_or_else(|| {
+                read_execution_denial(
+                    WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable,
+                    plan.query.name(),
+                )
+            })?;
+            ResultTreeCollectionSelection::Targeted(
+                super::tree_materialization::TargetedCollectionChild {
+                    collection_path: collection_path.to_string(),
+                    child_entity_id: target.entity_id,
+                },
+            )
+        }
+    };
     let admitted_before_materialization = selection.work_units.saturating_add(target_lookup_work);
     let tree = materialize_result_tree(
         runtime,
@@ -64,12 +90,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
             .maximum_work()
             .get()
             .saturating_sub(admitted_before_materialization),
-        ResultTreeCollectionSelection::Targeted(
-            super::tree_materialization::TargetedCollectionChild {
-                collection_path: live.collection_path().to_string(),
-                child_entity_id: target.entity_id,
-            },
-        ),
+        collection_selection,
         &mut result_buffer,
     )?;
     let actual_work = admitted_before_materialization.saturating_add(tree.work_units);

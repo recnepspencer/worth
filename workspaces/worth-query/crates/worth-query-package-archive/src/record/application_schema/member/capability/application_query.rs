@@ -1,7 +1,8 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryContinuationTarget, ApplicationQueryLiveCauseContract,
-    ApplicationQueryLiveResourceContract, ApplicationQueryOrderingDirection,
-    ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
+    ApplicationQueryLiveResourceContract, ApplicationQueryLiveTargetMode,
+    ApplicationQueryOrderingDirection, ApplicationQueryOrderingTerm,
+    ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
     ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryContinuationParts,
     WorthQueryPortableApplicationQueryLiveCauseParts,
     WorthQueryPortableApplicationQueryOrderingParts, WorthQueryPortableApplicationQueryParts,
@@ -252,6 +253,10 @@ fn write_live_cause(
     output.text(aspect)?;
     output.text(field)?;
     output.text(value.target_value_type())?;
+    output.u8(match value.target_mode() {
+        ApplicationQueryLiveTargetMode::Root => 0,
+        ApplicationQueryLiveTargetMode::Collection => 1,
+    })?;
     let resources = value.resources();
     output.u64(resources.maximum_buffered_causes())?;
     output.u64(resources.maximum_work_per_delivery())?;
@@ -275,6 +280,11 @@ fn decode_live_cause(
             target_aspect: input.text()?.to_owned(),
             target_field: input.text()?.to_owned(),
             target_value_type: decode_type_identity(input)?,
+            target_mode: match input.u8()? {
+                0 => ApplicationQueryLiveTargetMode::Root,
+                1 => ApplicationQueryLiveTargetMode::Collection,
+                _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+            },
             resources: ApplicationQueryLiveResourceContract::bounded(
                 input.u64()?,
                 input.u64()?,

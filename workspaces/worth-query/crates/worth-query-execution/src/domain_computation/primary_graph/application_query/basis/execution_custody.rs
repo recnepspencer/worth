@@ -22,12 +22,6 @@ impl WorthQueryApplicationQueryBasisCustody {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn product(
-        &self,
-    ) -> &crate::basis::WorthQueryProductObservationLease {
-        &self.product
-    }
-
     pub(in crate::domain_computation::primary_graph::application_query) fn retained_product(
         &self,
     ) -> crate::basis::WorthQueryProductObservationLease {

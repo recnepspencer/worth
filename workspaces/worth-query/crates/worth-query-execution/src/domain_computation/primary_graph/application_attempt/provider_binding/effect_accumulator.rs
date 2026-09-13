@@ -16,6 +16,7 @@ use crate::domain_computation::WorthQueryProvisionalEffectStep;
 
 pub(super) struct WorthQueryProviderEffectAccumulator<'facts> {
     facts: &'facts [WorthQueryApplicationObservedFact],
+    mutation_partition: worth_relational::facade::identity::PartitionId,
     symbols: BTreeMap<EntityReference, Arc<str>>,
     lowered: Vec<WorthQueryLoweredProviderEffect>,
 }
@@ -25,16 +26,28 @@ pub(super) struct WorthQueryRegisteredProviderEffects {
     batch: WorkerIntentBatch,
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
     output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    mutation_partition: worth_relational::facade::identity::PartitionId,
 }
 
 impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
     pub(super) fn new(
         facts: &'facts [WorthQueryApplicationObservedFact],
         effects: &[WorthQueryApplicationRealizedEffect],
+        mutation_partition: worth_relational::facade::identity::PartitionId,
     ) -> Self {
+        let mutation_partition = effects
+            .iter()
+            .find_map(|effect| match effect {
+                WorthQueryApplicationRealizedEffect::CreateEntity { partition, .. } => {
+                    Some(partition.resolve(mutation_partition))
+                }
+                _ => None,
+            })
+            .unwrap_or(mutation_partition);
         Self {
             facts,
-            symbols: created_entity_symbols(effects),
+            mutation_partition,
+            symbols: created_entity_symbols(effects, mutation_partition),
             lowered: Vec::with_capacity(effects.len()),
         }
     }
@@ -43,7 +56,8 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         &mut self,
         effect: WorthQueryApplicationRealizedEffect,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let lowered = lower_provider_effect(self.facts, &self.symbols, effect)?;
+        let lowered =
+            lower_provider_effect(self.facts, &self.symbols, self.mutation_partition, effect)?;
         self.lowered.push(lowered);
         Ok(())
     }
@@ -71,7 +85,9 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
             lowered: self.lowered,
             batch,
             emissions,
-            output_correspondence,
+            output_correspondence: output_correspondence
+                .remap_created_partition(self.mutation_partition),
+            mutation_partition: self.mutation_partition,
         })
     }
 }
@@ -124,27 +140,31 @@ impl WorthQueryRegisteredProviderEffects {
     > {
         let idempotency = dispatch_basis.idempotency;
         let outcome_identity = dispatch_basis.outcome_identity;
+        let mutation_partition = self.mutation_partition;
         let mut batch = provider.bind_application_idempotency_intent(
             self.batch,
             idempotency,
             outcome_identity,
             emitted_effect_count,
+            mutation_partition,
         );
         if let Some(causality) = aftermath_causality {
             batch = provider.bind_application_aftermath_causality_intent(
                 batch,
                 causality,
                 outcome_identity,
+                mutation_partition,
             );
         }
         let (batch, dispatch_outbox) =
-            provider.bind_application_dispatch_outbox(batch, dispatch_basis)?;
+            provider.bind_application_dispatch_outbox(batch, dispatch_basis, mutation_partition)?;
         Ok((
             Self {
                 lowered: self.lowered,
                 batch,
                 emissions: self.emissions,
                 output_correspondence: self.output_correspondence,
+                mutation_partition,
             },
             dispatch_outbox,
         ))

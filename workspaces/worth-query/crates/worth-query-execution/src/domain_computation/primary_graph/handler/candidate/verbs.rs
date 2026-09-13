@@ -31,6 +31,19 @@ where
         self.candidate.create_entity(entity, key)
     }
 
+    pub fn create_entity_in_context<Entity, ContextEntity>(
+        &mut self,
+        context: &WorthQueryApplicationEffectEntity<Schema, ContextEntity>,
+        entity: ApplicationEntityRef<Schema, Entity>,
+        key: WorthQueryApplicationEntityKey<Schema, Entity>,
+    ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
+    where
+        Entity: OperationCreates<Binding::Operation>,
+    {
+        self.candidate
+            .create_entity_in_context(context, entity, key)
+    }
+
     pub fn initialize_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,

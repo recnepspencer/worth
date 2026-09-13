@@ -23,10 +23,11 @@ mod validation;
 pub use authorization_requirement::ApplicationQueryAuthorizationRequirement;
 pub use basis_support::ApplicationQueryBasisSupport;
 pub use binding::{
-    ApplicationQueryBinding, ApplicationQueryBindingDescriptor, ApplicationQueryBindingLimits,
-    ApplicationQueryFieldScope, ApplicationQueryIntent, ApplicationQueryPrincipalBindingContract,
-    ApplicationQueryPrincipalScope, ApplicationQueryScopeBinding, ApplicationQueryScopeContract,
-    ApplicationQueryScopeResolution, ApplicationQueryScopeResolutionMode,
+    ApplicationLiveQueryIntent, ApplicationQueryBinding, ApplicationQueryBindingDescriptor,
+    ApplicationQueryBindingLimits, ApplicationQueryFieldScope, ApplicationQueryIntent,
+    ApplicationQueryPrincipalBindingContract, ApplicationQueryPrincipalScope,
+    ApplicationQueryScopeBinding, ApplicationQueryScopeContract, ApplicationQueryScopeResolution,
+    ApplicationQueryScopeResolutionMode,
 };
 pub use canonical_basis::ApplicationQueryCanonicalArtifact;
 pub use continuation::{
@@ -52,7 +53,8 @@ pub use erased_definition::{
 pub use lane_eligibility::ApplicationQueryLaneEligibility;
 pub use live_cause::{
     ApplicationQueryLiveCauseBinding, ApplicationQueryLiveCauseContract,
-    ApplicationQueryLiveResourceContract, WorthQueryPortableApplicationQueryLiveCauseParts,
+    ApplicationQueryLiveResourceContract, ApplicationQueryLiveTargetMode,
+    WorthQueryPortableApplicationQueryLiveCauseParts,
 };
 pub use marker_identity::ApplicationQueryMarkerIdentity;
 pub use ordering::{

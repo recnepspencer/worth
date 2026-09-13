@@ -67,7 +67,10 @@ fn require_adjustment_commit(
     >,
 ) {
     assert!(
-        matches!(outcome, WorthQueryApplicationMutationOutcome::Committed { .. }),
+        matches!(
+            outcome,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
         "the ABA setup adjustment must publish: {outcome:?}"
     );
 }

@@ -84,7 +84,8 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
             .primary_provider
             .set_application_commit_causality_reservation_hook(None);
 
-        let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.poll() else {
+        let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.next(&principal, &request)
+        else {
             panic!("the lease linearized before World movement must receive its successor");
         };
         assert_eq!(

@@ -129,10 +129,12 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let committed =
         commit_live_activity_on_product(&world, &sibling, &principal, &request, "sibling", 229, 93);
     assert!(matches!(
-        source_live.poll(),
+        source_live.next(&principal, &request),
         WorthQueryApplicationLiveOutcome::Pending
     ));
-    let WorthQueryApplicationLiveOutcome::Delivered(update) = sibling_live.poll() else {
+    let WorthQueryApplicationLiveOutcome::Delivered(update) =
+        sibling_live.next(&principal, &request)
+    else {
         panic!("the sibling live partition must receive its own commit")
     };
     assert_eq!(

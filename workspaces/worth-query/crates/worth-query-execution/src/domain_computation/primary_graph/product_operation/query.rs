@@ -86,6 +86,71 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         )
     }
 
+    /// Admits a one-shot query whose authorization and truth bases differ.
+    /// The receiver is the freshly selected security product; `retained` is
+    /// the exact owner-retained product supplying query truth.
+    pub fn admit_retained_application_query<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        self,
+        retained: WorthQuerySelectedProductOperation<'runtime, Schema>,
+        query: &'runtime WorthQueryInstalledApplicationQuery<
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Scope,
+        >,
+        access: &WorthQueryApplicationQueryAccessContext<
+            'runtime,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        parameters: ApplicationQueryParameterSet<Query>,
+        controls: WorthQueryProductQueryControls<'runtime>,
+    ) -> Result<
+        WorthQueryAdmittedApplicationQueryPlan<
+            'runtime,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        WorthQueryApplicationQueryAdmissionDenial,
+    > {
+        let (application, security, _) = self.into_parts();
+        let (retained_application, product, application_basis) = retained.into_parts();
+        if !std::ptr::eq(application, retained_application) {
+            return Err(WorthQueryApplicationQueryAdmissionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+                query.name(),
+            ));
+        }
+        application.admit_application_query(
+            query,
+            access,
+            parameters,
+            WorthQueryApplicationQueryControls::retained_product_one_shot(
+                security,
+                product,
+                application_basis,
+                controls.maximum_results,
+                controls.maximum_work,
+                controls.request,
+            ),
+        )
+    }
+
     pub fn admit_application_query_continuation<
         Query,
         Parameters,

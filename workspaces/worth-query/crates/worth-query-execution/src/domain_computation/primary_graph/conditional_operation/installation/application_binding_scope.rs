@@ -39,6 +39,7 @@ where
         &mut self,
         binding: WorthQueryPortableApplicationConditionalOperationBinding,
         node_identity: String,
+        required_producers: Vec<String>,
     ) {
         assert!(
             self.application_binding_scope.is_none(),
@@ -48,6 +49,8 @@ where
             binding,
             node_identity,
             initial_binding_count: self.bindings.len(),
+            initial_readiness_count: self.output_readiness.len(),
+            required_producers,
         });
     }
 
@@ -58,7 +61,15 @@ where
             .application_binding_scope
             .take()
             .expect("an application conditional binding scope was begun");
-        if self.bindings.len() == scope.initial_binding_count.saturating_add(1) {
+        let bound = self
+            .bindings
+            .len()
+            .saturating_sub(scope.initial_binding_count)
+            + self
+                .output_readiness
+                .len()
+                .saturating_sub(scope.initial_readiness_count);
+        if bound == 1 {
             Ok(())
         } else {
             Err(denial(
@@ -176,6 +187,8 @@ mod tests {
             binding: binding("expected"),
             node_identity: "ready".into(),
             initial_binding_count: 0,
+            initial_readiness_count: 0,
+            required_producers: Vec::new(),
         };
         assert!(scope_matches(&scope, &binding("expected"), "ready"));
         assert!(!scope_matches(&scope, &binding("foreign"), "ready"));

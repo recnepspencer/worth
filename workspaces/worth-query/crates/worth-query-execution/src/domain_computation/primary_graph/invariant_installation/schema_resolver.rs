@@ -10,6 +10,28 @@ pub struct WorthQueryApplicationInvariantSchemaResolver<'layout, Schema> {
 }
 
 impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
+    /// Resolves one declared entity kind for typed invariant access.
+    pub fn typed_entity<Entity>(
+        &self,
+        entity: worth_query_declaration::facade::application_schema::ApplicationEntityRef<
+            Schema,
+            Entity,
+        >,
+    ) -> Option<
+        super::super::application_invariant::WorthQueryApplicationInvariantEntityBinding<
+            Schema,
+            Entity,
+        >,
+    > {
+        self.layout.entity_kind(entity.name()).map(|entity_kind| {
+            super::super::application_invariant::WorthQueryApplicationInvariantEntityBinding {
+                binding_identity: self.binding_identity.clone(),
+                entity_kind,
+                _marker: PhantomData,
+            }
+        })
+    }
+
     pub fn typed_relation<Relation, From, To>(
         &self,
         relation: worth_query_declaration::facade::application_schema::ApplicationRelationRef<

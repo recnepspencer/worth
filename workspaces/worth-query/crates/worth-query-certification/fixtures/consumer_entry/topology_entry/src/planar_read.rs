@@ -16,6 +16,7 @@ pub struct PlanarRead {
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PlanarReadResult {
+    pub body_key: String,
     pub y: PositiveLength,
 }
 pub struct PlanarReadParameters;
@@ -24,11 +25,13 @@ worth_query_structured_value_binding!(pub PlanarReadParametersBinding for Planar
 worth_query_structured_value_binding!(pub PlanarReadResultBinding for PlanarReadResult {identity:"worth.query.certification.planar-read-result.v1"});
 pub struct PlanarQuery;
 pub struct PositionYSlot;
+pub struct BodyKeySlot;
 pub struct PlanarSuccessorSlot;
 pub struct SuccessorPositionYSlot;
 pub struct SecondSuccessorSlot;
 pub struct SecondSuccessorPositionYSlot;
 worth_query_portable_type!(PositionYSlot => "worth.query.certification.planar-position-y-slot.v1");
+worth_query_portable_type!(BodyKeySlot => "worth.query.certification.planar-body-key-slot.v1");
 worth_query_portable_type!(PlanarSuccessorSlot => "worth.query.certification.planar-successor-slot.v1");
 worth_query_portable_type!(SuccessorPositionYSlot => "worth.query.certification.successor-position-y-slot.v1");
 worth_query_portable_type!(SecondSuccessorSlot => "worth.query.certification.second-successor-slot.v1");
@@ -67,6 +70,7 @@ pub fn planar_query_definition<Schema: TopologySchemaBinding>(
         PlanarReadResult,
         PlanarReadResultBinding,
     >::new(Body::reference())
+    .field(body_key_result())
     .field(position_y_result())
     .relation(planar_successor_result(), successor_shape)
     .build();
@@ -81,7 +85,7 @@ pub fn planar_query_definition<Schema: TopologySchemaBinding>(
     .scope(Body::reference())
     .result_shape(shape)
     .cardinality(ApplicationQueryCardinality::ExactlyOne)
-    .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(2, 2, 3))
+    .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(2, 2, 4))
     .disclosure(ApplicationQueryDisclosureContract::public())
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -125,12 +129,10 @@ fn second_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryR
     ForwardResultTraversal,
     ExactlyOneResult,
 > {
-    ApplicationQueryResultRelationRef::forward_one(
-        "second_successor",
-        PlanarSuccessor::reference(),
-    )
+    ApplicationQueryResultRelationRef::forward_one("second_successor", PlanarSuccessor::reference())
 }
-fn second_successor_position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
+fn second_successor_position_y_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<
     PlanarQuery,
     SecondSuccessorPositionYSlot,
     Schema,
@@ -165,9 +167,24 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, Plan
         row: &WorthQueryApplicationProjectionRow<'_, Schema, PlanarQuery>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
+            body_key: row.field(body_key_result())?,
             y: row.field(position_y_result())?,
         })
     }
+}
+fn body_key_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
+    PlanarQuery,
+    BodyKeySlot,
+    Schema,
+    Body,
+    PlanarPosition,
+    BodyKey,
+    String,
+    ReadOnly,
+    EqualityPredicate,
+    NoApplicationUnit,
+> {
+    ApplicationQueryResultFieldRef::new("body_key", BodyKey::reference())
 }
 pub struct PlanarReadBinding<Schema>(PhantomData<fn() -> Schema>);
 pub type PlanarReadScope<Schema> = ApplicationQueryFieldScope<

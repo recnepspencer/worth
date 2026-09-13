@@ -5,11 +5,12 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContractCatalog,
     WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
     WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,
-    WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-    WorthQueryConfiguredApplicationContributions,
+    WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
+    WorthQueryApplicationProducerProvider, WorthQueryConfiguredApplicationContributions,
     WorthQueryInstalledApplicationConditionalRegistry,
-    WorthQueryInstalledApplicationProducerRegistry, WorthQueryProducerApplicability,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryInstalledApplicationProducerRegistry, WorthQueryOutputReadinessContractBuilder,
+    WorthQueryOutputReadinessContractDenial, WorthQueryProducerApplicability,
+    WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
 };
 pub use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;

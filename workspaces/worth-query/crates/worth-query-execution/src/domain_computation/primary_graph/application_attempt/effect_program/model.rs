@@ -256,6 +256,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Worth
         kind: KindId,
         key: String,
         fields: BTreeMap<AspectFieldLocator, AspectValue>,
+        partition: WorthQueryApplicationCreationPartition,
     },
     UpdateEntity {
         entity: String,
@@ -303,6 +304,8 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         super::WorthQueryCandidateValidatorWorkAdmission,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation:
+        bool,
 }
 
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
@@ -324,6 +327,26 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) candidate_reservation: Option<super::WorthQueryCandidateReservation>,
     pub(super) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    pub(super) creation_partition: Option<WorthQueryApplicationCreationPartition>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph::application_attempt) enum WorthQueryApplicationCreationPartition
+{
+    Issued,
+    Context(worth_relational::facade::identity::PartitionId),
+}
+
+impl WorthQueryApplicationCreationPartition {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn resolve(
+        self,
+        issued: worth_relational::facade::identity::PartitionId,
+    ) -> worth_relational::facade::identity::PartitionId {
+        match self {
+            Self::Issued => issued,
+            Self::Context(partition) => partition,
+        }
+    }
 }
 
 impl<Schema, Operation, Input, Scope>
@@ -343,5 +366,12 @@ impl<Schema, Operation, Input, Scope>
         &self,
     ) -> crate::basis::WorthQueryProductBranch {
         self.read_set.lease.product().product_branch()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_output_demand_observation(
+        mut self,
+    ) -> Self {
+        self.retain_output_demand_observation = true;
+        self
     }
 }

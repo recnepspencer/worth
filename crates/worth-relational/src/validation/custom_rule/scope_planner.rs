@@ -20,6 +20,7 @@ impl PreparedCustomInvariantScope {
         observation: &InvariantObservation<'_>,
         version_id: VersionId,
         merged_plan: Option<&MergedCommitPlan>,
+        access: &crate::validation::data::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
     ) -> Self {
         let state_view = InvariantStateView::new(
@@ -30,6 +31,7 @@ impl PreparedCustomInvariantScope {
             touched: Arc::new(collect_touched_structural_set(
                 &state_view,
                 merged_plan,
+                access,
                 work,
             )),
         }

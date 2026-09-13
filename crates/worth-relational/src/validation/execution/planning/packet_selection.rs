@@ -41,6 +41,7 @@ where
                 request.observation(),
                 request.version_id(),
                 request.merged_plan(),
+                registration.access_contract(),
                 &work,
             );
             let mut planner = CustomInvariantScopePlanner::new_at_current_version(

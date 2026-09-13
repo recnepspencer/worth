@@ -17,6 +17,7 @@ mod installation;
 mod invariant_execution;
 mod invariant_execution_failure;
 mod mutation_work;
+mod output_readiness_fault;
 mod pending_application_publication;
 pub(in crate::domain_computation::primary_graph) use pending_application_publication::WorthQueryApplicationPublicationRecoveryReservation;
 mod product_retirement;
@@ -30,12 +31,9 @@ mod unpublished_idempotency;
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::unwind_recovery_inspection_count;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
 
-use std::sync::{Arc, Mutex};
-
 pub(super) use super::application_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryGraphIntegrationHandle;
 pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplication;
-#[cfg(test)]
 pub(crate) use application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
 pub(in crate::domain_computation) use application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
 #[cfg(test)]
@@ -58,6 +56,7 @@ pub(super) use session_commit::{
     WorthQueryCommittedDispatchOutboxBindingDenial, WorthQueryCommittedDispatchOutboxReceiptSeal,
     WorthQueryRetainedApplicationCommitBasis,
 };
+use std::sync::{Arc, Mutex};
 
 pub(crate) struct WorthQueryPrimaryGraphProvider {
     pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
@@ -172,12 +171,14 @@ impl WorthQueryPrimaryGraphProvider {
         idempotency: super::application_attempt::WorthQueryApplicationIdempotencyBinding,
         outcome_identity: super::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
         emitted_effect_count: u64,
+        mutation_partition: worth_relational::facade::identity::PartitionId,
     ) -> worth_relational::facade::transactions::WorkerIntentBatch {
         batch.push(idempotency::idempotency_create_intent(
             self.graph.layout.provider_idempotency(),
             idempotency,
             outcome_identity,
             emitted_effect_count,
+            mutation_partition,
         ))
     }
 
@@ -186,11 +187,13 @@ impl WorthQueryPrimaryGraphProvider {
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
         causality: &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         outcome_identity: super::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        mutation_partition: worth_relational::facade::identity::PartitionId,
     ) -> worth_relational::facade::transactions::WorkerIntentBatch {
         batch.push(aftermath_causality::aftermath_causality_create_intent(
             self.graph.layout.provider_aftermath_causality(),
             causality,
             outcome_identity,
+            mutation_partition,
         ))
     }
 
@@ -198,6 +201,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         mut batch: worth_relational::facade::transactions::WorkerIntentBatch,
         basis: dispatch_outbox::WorthQueryDispatchOutboxBasis<'_>,
+        mutation_partition: worth_relational::facade::identity::PartitionId,
     ) -> Result<
         (
             worth_relational::facade::transactions::WorkerIntentBatch,
@@ -213,6 +217,7 @@ impl WorthQueryPrimaryGraphProvider {
             crate::domain_computation::application_aftermath::bind_dispatch_outbox_create_intent(
                 Some(self.graph.layout.provider_dispatch_outbox()),
                 record.as_ref(),
+                mutation_partition,
             );
         if let Some((intent, _)) = &pending {
             batch = batch.push(intent.clone());
@@ -263,7 +268,6 @@ impl WorthQueryPrimaryGraphProvider {
         self.live_delivery.active_subscriber_count()
     }
 
-    #[cfg(test)]
     pub(super) fn application_attempt_work(&self) -> WorthQueryApplicationAttemptWorkSnapshot {
         self.application_attempt_work.snapshot()
     }
@@ -281,33 +285,6 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn observe_external_dispatch_admission(&self) {
         self.application_attempt_work
             .observe_external_dispatch_admission();
-    }
-
-    pub(super) fn take_lost_commit_response(&self) -> bool {
-        self.take_fault(fault_port::WorthQueryPrimaryGraphFault::LostCommitResponse)
-    }
-
-    pub(super) fn take_rejected_session_prepare(&self) -> bool {
-        self.take_fault(fault_port::WorthQueryPrimaryGraphFault::RejectedSessionPreparation)
-    }
-
-    pub(super) fn take_rejected_commit_before_transaction(&self) -> bool {
-        self.take_fault(fault_port::WorthQueryPrimaryGraphFault::RejectedCommitBeforeTransaction)
-    }
-
-    pub(super) fn take_failed_index_publication(&self) -> bool {
-        self.take_fault(fault_port::WorthQueryPrimaryGraphFault::FailedIndexPublication)
-    }
-
-    pub(super) fn take_failed_post_commit_snapshot(&self) -> bool {
-        self.take_fault(fault_port::WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot)
-    }
-
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub(super) fn fail_next_index_publication_for_test(&self) {
-        assert!(self
-            .fault_port
-            .schedule_for_test(fault_port::WorthQueryPrimaryGraphFault::FailedIndexPublication));
     }
 
     pub(super) fn observe_completed_application(
@@ -370,30 +347,6 @@ impl WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .retained_count()
-    }
-
-    pub(super) fn take_skipped_invariant_owner_execution(&self) -> bool {
-        self.take_fault(fault_port::WorthQueryPrimaryGraphFault::SkippedInvariantOwnerExecution)
-    }
-
-    pub(super) fn take_relational_invariant_violation(&self) -> bool {
-        self.take_fault(fault_port::WorthQueryPrimaryGraphFault::RelationalInvariantViolation)
-    }
-
-    #[cfg(test)]
-    pub(super) fn take_undeclared_application_touch(&self) -> bool {
-        self.take_fault(fault_port::WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch)
-    }
-
-    #[cfg(test)]
-    pub(super) fn take_panicked_pending_application_publication(&self) -> bool {
-        self.take_fault(
-            fault_port::WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication,
-        )
-    }
-
-    fn take_fault(&self, fault: fault_port::WorthQueryPrimaryGraphFault) -> bool {
-        self.fault_port.take(fault)
     }
 }
 

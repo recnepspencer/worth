@@ -24,6 +24,7 @@ pub enum WorthQueryApplicationQueryFreshness {
 
 pub struct WorthQueryApplicationQueryControls<'a, Schema> {
     basis: WorthQueryApplicationQueryBasis,
+    security_product: crate::basis::WorthQueryProductObservationLease,
     publication_product: Option<crate::basis::WorthQueryProductBranchLease>,
     lane: WorthQueryApplicationQueryLane,
     maximum_result_count: NonZeroUsize,
@@ -73,12 +74,37 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         let read = product.read_lease();
+        let security_product = read.retained_clone();
         Self {
             basis: WorthQueryApplicationQueryBasis::Selected {
                 product: read,
                 application_basis,
             },
+            security_product,
             publication_product: Some(product),
+            lane: WorthQueryApplicationQueryLane::OneShot,
+            maximum_result_count,
+            maximum_work,
+            request_scope,
+            _schema: PhantomData,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retained_product_one_shot(
+        security: crate::basis::WorthQueryProductBranchLease,
+        product: crate::basis::WorthQueryProductBranchLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
+        maximum_result_count: NonZeroUsize,
+        maximum_work: NonZeroUsize,
+        request_scope: &'a WorthQueryRequestScope,
+    ) -> Self {
+        Self {
+            basis: WorthQueryApplicationQueryBasis::Selected {
+                product: product.into_read_lease(),
+                application_basis,
+            },
+            security_product: security.into_read_lease(),
+            publication_product: None,
             lane: WorthQueryApplicationQueryLane::OneShot,
             maximum_result_count,
             maximum_work,
@@ -94,11 +120,13 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         maximum_work: NonZeroUsize,
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
+        let security_product = product.retained_clone();
         Self {
             basis: WorthQueryApplicationQueryBasis::Selected {
                 product,
                 application_basis,
             },
+            security_product,
             publication_product: None,
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: maximum_page_width,
@@ -115,11 +143,13 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         maximum_work: NonZeroUsize,
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
+        let security_product = product.retained_clone();
         Self {
             basis: WorthQueryApplicationQueryBasis::Selected {
                 product,
                 application_basis,
             },
+            security_product,
             publication_product: None,
             lane: WorthQueryApplicationQueryLane::Live,
             maximum_result_count: maximum_materialized_record_count,
@@ -161,6 +191,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         self,
     ) -> (
         WorthQueryApplicationQueryBasis,
+        crate::basis::WorthQueryProductObservationLease,
         WorthQueryAdmittedApplicationQueryControls<'a>,
     ) {
         let basis_deadline = Some(self.request_scope.deadline());
@@ -174,15 +205,17 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             maximum_work: self.maximum_work,
             request_scope: self.request_scope,
         };
-        (self.basis, admitted)
+        (self.basis, self.security_product, admitted)
     }
 
     pub(super) fn continuation_resume(
         product: crate::basis::WorthQueryProductObservationLease,
         controls: WorthQueryApplicationQueryResumeControls<'a>,
     ) -> Self {
+        let security_product = product.retained_clone();
         Self {
             basis: WorthQueryApplicationQueryBasis::RetainedContinuation { product },
+            security_product,
             publication_product: None,
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: controls.maximum_page_width,

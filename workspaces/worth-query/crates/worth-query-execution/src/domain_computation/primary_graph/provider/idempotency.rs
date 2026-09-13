@@ -45,6 +45,7 @@ pub(super) fn idempotency_create_intent(
     binding: WorthQueryApplicationIdempotencyBinding,
     outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,
     emitted_effect_count: u64,
+    mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> MutationIntent {
     let key = binding.key_text();
     let fields = BTreeMap::from([
@@ -66,7 +67,7 @@ pub(super) fn idempotency_create_intent(
         ),
     ]);
     MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-        partition_id: worth_relational::facade::identity::PartitionId::main(),
+        partition_id: mutation_partition,
         kind_id: layout.entity_kind,
         client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
             "worth-query-idempotency:{key}"

@@ -150,6 +150,14 @@ impl WorthQueryRequestScope {
             None
         }
     }
+
+    /// Returns whether both values describe the same admitted request.
+    /// Clones remain equivalent because they retain the same cancellation
+    /// source and exact deadline.
+    pub fn same_request(&self, other: &Self) -> bool {
+        self.deadline == other.deadline
+            && Arc::ptr_eq(&self.cancellation.state, &other.cancellation.state)
+    }
 }
 
 impl std::fmt::Debug for WorthQueryRequestScope {

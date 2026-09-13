@@ -20,7 +20,8 @@ mod typed_view;
 pub use access_denial::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind};
 pub(super) use registration::ErasedApplicationInvariantRule;
 pub use typed_binding::{
-    WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantRelationBinding,
+    WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantRelationBinding,
 };
 pub use typed_view::{
     WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,

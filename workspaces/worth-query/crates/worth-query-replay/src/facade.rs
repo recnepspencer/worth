@@ -3,9 +3,12 @@
 pub use worth_query::facade::certification::{
     admit_installed_historical_replay_basis, issue_query_certification_replay_capability,
     replay_installed_workflow, replay_installed_workflow_historical,
+    WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
+    WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
     WorthQueryCertificationReplayAdmissionDenial, WorthQueryCertificationReplayCapability,
     WorthQueryCertificationReplayCounters, WorthQueryCertificationReplayOutcome,
     WorthQueryCertificationReplayResult, WorthQueryCertificationReplayStop,
+    WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
     WorthQueryHistoricalReplayAdmission, WorthQueryHistoricalReplayAdmissionDenial,
     WorthQueryInstalledHistoricalReplayPath, WorthQueryReplayBasisRelationship,
 };

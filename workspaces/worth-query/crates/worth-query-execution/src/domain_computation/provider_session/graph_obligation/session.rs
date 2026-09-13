@@ -9,6 +9,8 @@ use super::{
     WorthQueryGraphReadOwnerPort, WorthQueryGraphWorkBranchAffinity,
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
 };
+
+mod affinity_access;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
@@ -72,6 +74,7 @@ pub(in crate::domain_computation) struct WorthQueryManagedGraphWorkSession {
     principal: EntityId,
     access: WorthQueryGraphWorkAccessContextAffinity,
     branch: WorthQueryGraphWorkBranchAffinity,
+    authorization_branch: WorthQueryGraphWorkBranchAffinity,
     basis: WorthQueryGraphWorkBasis,
     provider: String,
     plan: WorthQueryAdmittedGraphWorkPlan,
@@ -90,10 +93,13 @@ impl WorthQueryManagedGraphWorkSession {
         access: WorthQueryGraphWorkAccessContextAffinity,
         basis: &WorthQueryApplicationBasisIdentity,
         product: crate::basis::WorthQueryProductObservationLease,
+        authorization_product: &crate::basis::WorthQueryProductObservationLease,
         provider: &str,
         port: WorthQueryGraphReadOwnerPort,
     ) -> Result<Self, WorthQueryManagedGraphWorkSessionStartDenial> {
         let branch = WorthQueryGraphWorkBranchAffinity::from_query_basis(basis);
+        let authorization_branch =
+            WorthQueryGraphWorkBranchAffinity::from_product(authorization_product);
         let selected_product = match basis.selection() {
             crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(identity) => identity,
             crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Relational => {
@@ -115,6 +121,7 @@ impl WorthQueryManagedGraphWorkSession {
             principal,
             access,
             branch,
+            authorization_branch,
             WorthQueryGraphWorkBasis::Query {
                 identity: basis.clone(),
                 product,
@@ -148,6 +155,7 @@ impl WorthQueryManagedGraphWorkSession {
             subject_authority,
             principal,
             access,
+            branch.clone(),
             branch,
             WorthQueryGraphWorkBasis::Mutation(Some(lease)),
             provider,
@@ -164,6 +172,7 @@ impl WorthQueryManagedGraphWorkSession {
         principal: EntityId,
         access: WorthQueryGraphWorkAccessContextAffinity,
         branch: WorthQueryGraphWorkBranchAffinity,
+        authorization_branch: WorthQueryGraphWorkBranchAffinity,
         basis: WorthQueryGraphWorkBasis,
         provider: &str,
     ) -> Result<Self, WorthQueryManagedGraphWorkSessionStartDenial> {
@@ -184,6 +193,7 @@ impl WorthQueryManagedGraphWorkSession {
             principal,
             access,
             branch,
+            authorization_branch,
             basis,
             provider: provider.to_owned(),
             plan,
@@ -211,17 +221,6 @@ impl WorthQueryManagedGraphWorkSession {
         &self,
     ) -> worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity {
         self.plan.identity()
-    }
-
-    pub(in crate::domain_computation) const fn branch(&self) -> &WorthQueryGraphWorkBranchAffinity {
-        &self.branch
-    }
-
-    pub(in crate::domain_computation) fn admits_snapshot(
-        &self,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> bool {
-        self.branch.admits_snapshot(snapshot)
     }
 
     pub(in crate::domain_computation) fn mutation_snapshot(

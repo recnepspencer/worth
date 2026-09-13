@@ -11,7 +11,10 @@ use worth_query_host::facade::{
     },
 };
 
-use super::{adjust, authentication, installation, read_y, source_version, ConsumerSchema};
+use super::{
+    adjust, authentication, installation, output_correspondence::observed_source, read_y,
+    source_version, ConsumerSchema,
+};
 use worth_query_topology_entry::PlanarRead;
 
 pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
@@ -31,8 +34,10 @@ pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
     assert_eq!(read_y(&request, "anchor-a"), 1);
 
     // The ordinary world runs this exact adjustment with its 8192-byte host limit.
+    let input = adjust("anchor-a", 2, 4096);
     let outcome = request
-        .mutate(adjust("anchor-a", 2, 4096))
+        .mutate(input)
+        .expect_source(observed_source(&request, "anchor-a"))
         .idempotency(&10)
         .execute();
     let Err(WorthQueryApplicationRequestMutationDenial::Authorization(denial)) = outcome else {
@@ -51,7 +56,7 @@ pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
 pub(super) fn source_footprint_bytes_beyond_host_limit_are_denied(
     foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>,
 ) {
-    let world = installation::install_with_query_bytes(foreign, 1300);
+    let world = installation::install_with_query_bytes(foreign, 1400);
     let scope = authentication::request_scope();
     let adapter = authentication::admit(world.application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
@@ -76,5 +81,12 @@ pub(super) fn source_footprint_bytes_beyond_host_limit_are_denied(
         WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded
     );
     assert_eq!(denial.subject(), "root/relation[0]/relation[0]/field[0]");
-    assert_eq!(world.application.result_buffer_observer().observe().retained_bytes(), 0);
+    assert_eq!(
+        world
+            .application
+            .result_buffer_observer()
+            .observe()
+            .retained_bytes(),
+        0
+    );
 }

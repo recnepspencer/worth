@@ -121,6 +121,7 @@ const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::SkippedInvariantOwnerExecution => 1 << 4,
         WorthQueryPrimaryGraphFault::RelationalInvariantViolation => 1 << 5,
         WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot => 1 << 7,
+        WorthQueryPrimaryGraphFault::DelayedOutputReadinessDelivery => 1 << 9,
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
     }

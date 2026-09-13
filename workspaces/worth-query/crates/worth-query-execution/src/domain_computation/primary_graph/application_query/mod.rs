@@ -24,6 +24,7 @@ mod projection;
 mod read_execution;
 mod readiness;
 pub(crate) mod resource_lifecycle;
+mod retained_read;
 mod runtime_support;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
@@ -33,7 +34,9 @@ pub use access_receipt::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryOmissionPosture,
     WorthQueryApplicationQueryWorkEvidence,
 };
-pub use admitted_result::WorthQueryAdmittedDisclosedApplicationResult;
+pub use admitted_result::{
+    WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationOutputDemandDisclosure,
+};
 pub use authorization_work::WorthQueryApplicationAuthorizationWorkEvidence;
 #[cfg(test)]
 pub(crate) use basis::WorthQueryApplicationHistoricalRead;
@@ -83,3 +86,4 @@ pub use resource_lifecycle::{
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationResultBufferEvidence,
     WorthQueryApplicationResultBufferObservation, WorthQueryApplicationResultBufferObserver,
 };
+pub use retained_read::WorthQueryApplicationReadObservation;

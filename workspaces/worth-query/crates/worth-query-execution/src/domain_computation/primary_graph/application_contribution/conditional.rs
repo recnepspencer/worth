@@ -22,6 +22,10 @@ mod producer_access;
 pub use producer_access::WorthQueryApplicationConditionalProducerAccess;
 mod dependency;
 pub(super) use dependency::validate_required_producer;
+mod output_readiness_contract;
+pub use output_readiness_contract::{
+    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationConditionalPackageContract {
@@ -168,6 +172,7 @@ where
         installation.begin_application_binding_scope(
             declaration.contract.operation_binding(),
             declaration.contract.node_identity().to_owned(),
+            declaration.required_producers.clone(),
         );
         let installed = match Binding::install(self.configuration, &access, installation) {
             Ok(installed) => installed,

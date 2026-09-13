@@ -4,6 +4,14 @@ use worth_foundational::facade::AspectFieldLocator;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::KindId;
 
+/// Installed entity-kind access for one exact application schema binding.
+pub struct WorthQueryApplicationInvariantEntityBinding<Schema, Entity> {
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) _marker: PhantomData<fn() -> (Schema, Entity)>,
+}
+
 /// Installed field access for one exact application schema binding.
 pub struct WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value> {
     pub(in crate::domain_computation::primary_graph) binding_identity:

@@ -78,7 +78,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let entity_resolution = graph.retain_entity_resolution_context();
         let policy = graph.integration_handle().with_runtime_mut(|runtime| {
             let snapshot = security.snapshot_handle();
-            if !graph_work.admits_snapshot(snapshot) {
+            if !graph_work.admits_authorization_snapshot(snapshot) {
                 Err(denial(
                     WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable,
                     query.name(),

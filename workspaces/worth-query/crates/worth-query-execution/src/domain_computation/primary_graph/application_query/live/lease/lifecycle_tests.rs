@@ -10,10 +10,10 @@ mod tests {
 
     use crate::domain_computation::primary_graph::tests::{
         fixture::{
-            installed_authorization_world, live_account_parameters, Account, AccountIdentity,
-            AccountSummaryParameters, Activity, AuthorizationWorld, IdentityExecutionSchema,
-            LiveAccountActivityCause, LiveAccountActivityQuery, LiveAccountActivityResult,
-            Principal,
+            installed_two_principal_authorization_world, live_account_parameters, Account,
+            AccountIdentity, AccountSummaryParameters, Activity, AuthorizationWorld,
+            IdentityExecutionSchema, LiveAccountActivityCause, LiveAccountActivityQuery,
+            LiveAccountActivityResult, Principal,
         },
         live_delivery_support::commit_live_activity_with_identity,
     };
@@ -23,9 +23,8 @@ mod tests {
         WorthQueryAuthenticatedPrincipal, WorthQueryPrincipalResolutionMode,
     };
 
-    type TestLiveLease<'runtime, 'principal> = WorthQueryApplicationLiveLease<
+    type TestLiveLease<'runtime> = WorthQueryApplicationLiveLease<
         'runtime,
-        'principal,
         IdentityExecutionSchema,
         LiveAccountActivityQuery,
         AccountSummaryParameters,
@@ -45,7 +44,7 @@ mod tests {
 
     impl LiveContext {
         fn new(request: WorthQueryRequestScope) -> Self {
-            let world = installed_authorization_world(true);
+            let world = installed_two_principal_authorization_world(true);
             let external = world.authenticate("alice", Duration::from_secs(60), &request);
             let principal = world
                 .application
@@ -65,18 +64,35 @@ mod tests {
             }
         }
 
-        fn with_already_expired_deadline_after_open(&self, lease: &mut TestLiveLease<'_, '_>) {
+        fn already_expired_request(&self) -> WorthQueryRequestScope {
             let live_cancellation = WorthQueryCancellationSource::new();
-            // Instant deadline comparison is `now >= deadline`, so binding the
-            // current instant makes the next poll sample DeadlineExceeded
+            // Instant deadline comparison is `now >= deadline`, so the
+            // current instant makes the next delivery sample DeadlineExceeded
             // without sleeping or racing open.
-            lease.replace_request(WorthQueryRequestScope::new(
-                Instant::now(),
-                live_cancellation.token(),
-            ));
+            WorthQueryRequestScope::new(Instant::now(), live_cancellation.token())
         }
 
-        fn open(&self) -> TestLiveLease<'_, '_> {
+        fn principal(
+            &self,
+            identity: &str,
+        ) -> WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64> {
+            let external =
+                self.world
+                    .authenticate(identity, Duration::from_secs(60), &self.request);
+            self.world
+                .application
+                .select_product_branch(self.world.application.product_runtime().default_branch())
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &self.world.binding,
+                    &external,
+                    &self.request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        }
+
+        fn open(&self) -> TestLiveLease<'_> {
             let query = self
                 .world
                 .application
@@ -192,7 +208,7 @@ mod tests {
         let bridge = observer(&lease);
         cancellation.cancel();
         assert!(matches!(
-            lease.poll(),
+            lease.next(&context.principal, &context.request),
             WorthQueryApplicationLiveOutcome::Cancelled
         ));
         assert_terminal(
@@ -209,10 +225,10 @@ mod tests {
         let deadline_bridge = observer(&deadline_lease);
         // Live-lease deadlines still sample wall-clock Instant, not the Gate
         // 8.3 injectable runtime clock. Open under a non-expiring scope, then
-        // bind an already-expired deadline only to the poll phase under test.
-        deadline_context.with_already_expired_deadline_after_open(&mut deadline_lease);
+        // pass an already-expired deadline only to the delivery under test.
+        let expired_request = deadline_context.already_expired_request();
         assert!(matches!(
-            deadline_lease.poll(),
+            deadline_lease.next(&deadline_context.principal, &expired_request),
             WorthQueryApplicationLiveOutcome::DeadlineExceeded
         ));
         assert_terminal(
@@ -232,7 +248,7 @@ mod tests {
         let closed_bridge = observer(&closed);
         closed_context.close_source();
         assert!(matches!(
-            closed.poll(),
+            closed.next(&closed_context.principal, &closed_context.request),
             WorthQueryApplicationLiveOutcome::Closed
         ));
         assert_terminal(
@@ -248,7 +264,9 @@ mod tests {
         let mut overflow = overflow_context.open();
         let overflow_bridge = observer(&overflow);
         overflow_context.overflow_source();
-        let WorthQueryApplicationLiveOutcome::Overflow(missed) = overflow.poll() else {
+        let WorthQueryApplicationLiveOutcome::Overflow(missed) =
+            overflow.next(&overflow_context.principal, &overflow_context.request)
+        else {
             panic!("retention loss must terminalize as overflow");
         };
         assert_eq!(missed.missed_commit_batches(), 1);
@@ -272,7 +290,35 @@ mod tests {
         abandoned_context.assert_source_released();
     }
 
-    fn observer(lease: &TestLiveLease<'_, '_>) -> BridgeExecutionBasisLifecycleObserver {
+    #[test]
+    fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
+        let empty_context = LiveContext::new(
+            crate::domain_computation::primary_graph::tests::fixture::live_scope(),
+        );
+        let mut empty = empty_context.open();
+        let foreign = empty_context.principal("bob");
+        assert!(matches!(
+            empty.next(&foreign, &empty_context.request),
+            WorthQueryApplicationLiveOutcome::AuthorizationDenied(_)
+        ));
+        drop(empty);
+        empty_context.assert_source_released();
+
+        let overflow_context = LiveContext::new(
+            crate::domain_computation::primary_graph::tests::fixture::live_scope(),
+        );
+        let mut overflow = overflow_context.open();
+        overflow_context.overflow_source();
+        let foreign = overflow_context.principal("bob");
+        assert!(matches!(
+            overflow.next(&foreign, &overflow_context.request),
+            WorthQueryApplicationLiveOutcome::AuthorizationDenied(_)
+        ));
+        drop(overflow);
+        overflow_context.assert_source_released();
+    }
+
+    fn observer(lease: &TestLiveLease<'_>) -> BridgeExecutionBasisLifecycleObserver {
         let basis = lease.basis.as_ref().expect("open lease retains its basis");
         basis.bridge.lifecycle_observer()
     }

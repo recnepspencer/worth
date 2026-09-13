@@ -17,6 +17,7 @@ pub enum WorthQueryApplicationRequestQueryDenialKind {
     BindingInstallation,
     Limit,
     ProductSelection,
+    OutputSettlement,
     PrincipalResolution,
     ScopeResolution,
     Admission,
@@ -28,6 +29,7 @@ pub enum WorthQueryApplicationRequestQueryDenial {
     BindingInstallation(WorthQueryApplicationQueryInstallationDenial),
     Limit(WorthQueryApplicationQueryLimitDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
+    OutputSettlement(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
     PrincipalResolution(WorthQueryPrincipalResolutionDenial),
     ScopeResolution(WorthQueryEntityResolutionDenial),
     Admission(WorthQueryApplicationQueryAdmissionDenial),
@@ -43,6 +45,9 @@ impl WorthQueryApplicationRequestQueryDenial {
             Self::Limit(_) => WorthQueryApplicationRequestQueryDenialKind::Limit,
             Self::ProductSelection(_) => {
                 WorthQueryApplicationRequestQueryDenialKind::ProductSelection
+            }
+            Self::OutputSettlement(_) => {
+                WorthQueryApplicationRequestQueryDenialKind::OutputSettlement
             }
             Self::PrincipalResolution(_) => {
                 WorthQueryApplicationRequestQueryDenialKind::PrincipalResolution

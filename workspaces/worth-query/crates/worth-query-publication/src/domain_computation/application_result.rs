@@ -1,4 +1,5 @@
 use worth_query_execution::facade::primary_graph::WorthQueryAdmittedDisclosedApplicationResult;
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputDemandDisclosure;
 
 mod basis;
 mod disclosure;
@@ -26,8 +27,7 @@ pub use terminal_release::{
 /// projection. Publication performs no field-policy decision or redaction.
 pub struct WorthQueryPublishedApplicationResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
-    observed_sources:
-        Vec<worth_query_execution::facade::primary_graph::WorthQueryObservedSource<Query>>,
+    demand_disclosure: WorthQueryApplicationOutputDemandDisclosure<Query>,
     receipt: WorthQueryApplicationQueryPublicationReceipt,
 }
 
@@ -65,11 +65,10 @@ pub fn publish_application_result<Query, QueryResult>(
     admitted: WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult>,
 ) -> WorthQueryPublishedApplicationResult<Query, QueryResult> {
     let receipt = WorthQueryApplicationQueryPublicationReceipt::from_terminal(admitted.receipt());
-    let (rows, observed_sources, execution_receipt) = admitted.into_parts();
-    drop(execution_receipt);
+    let (rows, demand_disclosure) = admitted.into_parts();
     WorthQueryPublishedApplicationResult {
         rows,
-        observed_sources,
+        demand_disclosure,
         receipt,
     }
 }
@@ -86,7 +85,13 @@ impl<Query, QueryResult> WorthQueryPublishedApplicationResult<Query, QueryResult
     pub fn observed_sources(
         &self,
     ) -> &[worth_query_execution::facade::primary_graph::WorthQueryObservedSource<Query>] {
-        &self.observed_sources
+        self.demand_disclosure.observed_sources()
+    }
+
+    pub fn into_output_demand_disclosure(
+        self,
+    ) -> WorthQueryApplicationOutputDemandDisclosure<Query> {
+        self.demand_disclosure
     }
 
     pub fn into_rows(self) -> Vec<QueryResult> {

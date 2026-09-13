@@ -206,7 +206,7 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
     pub(super) primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
     pub(super) aggregate_projections:
         Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
-    pub(super) output_lineage:
+    pub(in crate::domain_computation::primary_graph) output_lineage:
         Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     pub(super) truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }

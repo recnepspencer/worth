@@ -1,7 +1,12 @@
-use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
-
+use super::operation_invocation::{
+    WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
+};
+use super::reconstruction_authority::{
+    WorthQueryTemporalPrincipalSource, WorthQueryTemporalReconstructionAccess,
+};
 use crate::domain_computation::primary_graph::application_runtime::installation::ApplicationRuntimePublication;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
@@ -9,18 +14,11 @@ use worth_query_installation::facade::{
     WorthQueryPortableApplicationConditionalOperationBinding, WorthQueryTemporalIntentProjector,
     WritableCapability, WritePosture,
 };
-
-use super::operation_invocation::{
-    WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
-};
-use super::reconstruction_authority::{
-    WorthQueryTemporalPrincipalSource, WorthQueryTemporalReconstructionAccess,
-};
-
 mod clock_handle;
 pub(in crate::domain_computation::primary_graph) use clock_handle::ConditionalClockLease;
 pub use clock_handle::WorthQueryConditionalClockHandle;
 mod denial;
+use denial::foreign_binding_denial;
 pub use denial::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
@@ -28,20 +26,26 @@ pub use denial::{
 mod pending_operation;
 pub(in crate::domain_computation::primary_graph) use pending_operation::WorthQueryPendingConditionalOperation;
 mod application_binding_scope;
-
+mod output_producer_installation;
+mod output_readiness;
+type InstalledOutputProducers<Schema> =
+    super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>;
 struct ApplicationConditionalBindingScope {
     binding: WorthQueryPortableApplicationConditionalOperationBinding,
     node_identity: String,
     initial_binding_count: usize,
+    initial_readiness_count: usize,
+    required_producers: Vec<String>,
 }
-
 pub struct WorthQueryConditionalApplicationRuntimeInstallation<Schema> {
     publication: ApplicationRuntimePublication<Schema>,
+    output_producers: InstalledOutputProducers<Schema>,
     binding_identities: BTreeSet<Arc<str>>,
     bindings: Vec<Box<dyn WorthQueryPendingConditionalOperation<Schema>>>,
+    output_readiness:
+        Vec<Box<dyn super::super::application_contribution::PendingOutputReadiness<Schema>>>,
     application_binding_scope: Option<ApplicationConditionalBindingScope>,
 }
-
 impl<Schema> WorthQueryConditionalApplicationRuntimeInstallation<Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -61,12 +65,13 @@ where
             })?;
         Ok(Self {
             publication,
+            output_producers: Default::default(),
             binding_identities: BTreeSet::new(),
             bindings: Vec::new(),
+            output_readiness: Vec::new(),
             application_binding_scope: None,
         })
     }
-
     pub fn bind_temporal_operation<
         ApplicationOperation,
         Input,
@@ -325,7 +330,6 @@ where
             marker: PhantomData,
         })
     }
-
     pub fn publish(
         self,
     ) -> Result<
@@ -335,9 +339,10 @@ where
         super::super::application_runtime::installation::publish_application_runtime_with_conditionals(
             self.publication,
             self.bindings,
+            self.output_readiness,
+            &self.output_producers,
         )
     }
-
     fn validate_temporal_binding<
         ApplicationOperation,
         Input,
@@ -388,13 +393,4 @@ where
             .validate_installed_query(binding.query())
             .map_err(|denial| foreign_binding_denial(denial.subject()))
     }
-}
-
-fn foreign_binding_denial(
-    subject: impl Into<String>,
-) -> WorthQueryConditionalRuntimeInstallationDenial {
-    WorthQueryConditionalRuntimeInstallationDenial::new(
-        WorthQueryConditionalRuntimeInstallationDenialKind::ForeignBinding,
-        subject,
-    )
 }

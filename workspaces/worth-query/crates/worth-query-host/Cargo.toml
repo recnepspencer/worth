@@ -6,6 +6,10 @@ license.workspace = true
 description = "Query host audience facade over the production authority graph."
 publish = false
 
+[features]
+test-output-delivery-faults = ["worth-query-execution/test-primary-graph-faults"]
+test-world-operation-control = ["worth-query-execution/test-world-operation-control"]
+
 [dependencies]
 worth-query-admission = { path = "../worth-query-admission" }
 worth-query-declaration = { path = "../worth-query-declaration" }

@@ -128,3 +128,17 @@ where
 
     fn into_scope(self) -> <Self::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding;
 }
+
+/// A query intent whose installed declaration admits bounded live delivery.
+pub trait ApplicationLiveQueryIntent<Schema>: ApplicationQueryIntent<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    type Target: 'static;
+    type LiveCause: crate::application_query::ApplicationQueryLiveCauseBinding<
+        Schema,
+        <Self::Binding as ApplicationQueryBinding<Schema>>::Query,
+        <<Self::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
+        Self::Target,
+    >;
+}

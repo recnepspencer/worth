@@ -54,6 +54,12 @@ impl WorthQueryApplicationIdempotencyBinding {
         &self.intent_identity
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn source_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.source_identity
+    }
+
     pub(in crate::domain_computation::primary_graph) fn key_text(self) -> String {
         encode_identity(self.key_identity)
     }

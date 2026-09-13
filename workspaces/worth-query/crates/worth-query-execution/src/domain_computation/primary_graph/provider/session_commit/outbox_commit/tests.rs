@@ -64,11 +64,13 @@ fn commit_only_other_outbox() -> CommittedOutboxResolutionEvidence {
     let (_, requested) = bind_dispatch_outbox_create_intent(
         Some(provider.graph.layout.provider_dispatch_outbox()),
         Some(&record(1)),
+        worth_relational::facade::identity::PartitionId::main(),
     )
     .expect("requested outbox create binds");
     let (committed_intent, committed_pending) = bind_dispatch_outbox_create_intent(
         Some(provider.graph.layout.provider_dispatch_outbox()),
         Some(&record(2)),
+        worth_relational::facade::identity::PartitionId::main(),
     )
     .expect("committed outbox create binds");
     provider.graph.with_runtime_mut(|runtime| {

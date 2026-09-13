@@ -62,6 +62,7 @@ pub struct WorthQueryApplicationOneShotDenial {
 pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
     observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
+    request_affinity: super::admitted_result::WorthQueryApplicationQueryRequestAffinity,
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
 
@@ -372,6 +373,7 @@ impl<Query, QueryResult> WorthQueryApplicationOneShotResult<Query, QueryResult> 
         super::WorthQueryAdmittedDisclosedApplicationResult::new_with_sources(
             self.rows,
             self.observed_sources,
+            self.request_affinity,
             self.receipt,
         )
     }

@@ -6,6 +6,12 @@ use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIde
 
 use super::{ApplicationQueryMarkerIdentity, ApplicationQueryResultFieldRef};
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationQueryLiveTargetMode {
+    Root,
+    Collection,
+}
+
 /// Domain-owned interpretation of one committed effect as a live-query cause.
 ///
 /// The binding type is identity-bearing query meaning. Query invokes these
@@ -76,6 +82,7 @@ pub struct ApplicationQueryLiveCauseContract {
     target_slot_type: WorthQueryPortableTypeIdentity,
     target_field: (String, String, String),
     target_value_type: WorthQueryPortableTypeIdentity,
+    target_mode: ApplicationQueryLiveTargetMode,
     resources: ApplicationQueryLiveResourceContract,
 }
 
@@ -94,6 +101,7 @@ pub struct WorthQueryPortableApplicationQueryLiveCauseParts {
     pub target_aspect: String,
     pub target_field: String,
     pub target_value_type: WorthQueryPortableTypeIdentity,
+    pub target_mode: ApplicationQueryLiveTargetMode,
     pub resources: ApplicationQueryLiveResourceContract,
 }
 
@@ -109,6 +117,7 @@ impl ApplicationQueryLiveCauseContract {
             target_slot_type: parts.target_slot_type,
             target_field: (parts.target_entity, parts.target_aspect, parts.target_field),
             target_value_type: parts.target_value_type,
+            target_mode: parts.target_mode,
             resources: parts.resources,
         }
     }
@@ -173,6 +182,10 @@ impl ApplicationQueryLiveCauseContract {
         self.target_value_type.as_str()
     }
 
+    pub const fn target_mode(&self) -> ApplicationQueryLiveTargetMode {
+        self.target_mode
+    }
+
     pub const fn resources(&self) -> ApplicationQueryLiveResourceContract {
         self.resources
     }
@@ -218,6 +231,7 @@ impl ApplicationQueryLiveCauseContract {
             TargetUnit,
         >,
         resources: ApplicationQueryLiveResourceContract,
+        target_mode: ApplicationQueryLiveTargetMode,
     ) -> Self
     where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
@@ -253,6 +267,7 @@ impl ApplicationQueryLiveCauseContract {
                 target_identity.field().to_owned(),
             ),
             target_value_type: Binding::TargetIdentityBinding::IDENTITY,
+            target_mode,
             resources,
         }
     }

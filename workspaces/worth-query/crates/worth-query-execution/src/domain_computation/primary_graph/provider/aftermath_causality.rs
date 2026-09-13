@@ -37,6 +37,7 @@ pub(super) fn aftermath_causality_create_intent(
     layout: &WorthQueryAftermathCausalityLayout,
     pending: &WorthQueryPendingAftermathCausality,
     outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,
+    mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> MutationIntent {
     let key = pending.key();
     let fields = BTreeMap::from([
@@ -62,7 +63,7 @@ pub(super) fn aftermath_causality_create_intent(
         ),
     ]);
     MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-        partition_id: worth_relational::facade::identity::PartitionId::main(),
+        partition_id: mutation_partition,
         kind_id: layout.entity_kind,
         client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
             "worth-query-aftermath-causality:{key}"

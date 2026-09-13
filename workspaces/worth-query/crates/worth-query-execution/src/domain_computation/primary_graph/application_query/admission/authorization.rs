@@ -34,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     >(
         &self,
         graph_work: &mut WorthQueryManagedGraphWorkSession,
-        basis: &super::super::basis::WorthQueryApplicationQueryBasisCustody,
+        security_product: &crate::basis::WorthQueryProductObservationLease,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         access: &WorthQueryApplicationQueryAccessContext<
             '_,
@@ -67,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ),
         )
         .map_err(|kind| governance_denial(kind, query.name()))?;
-        let security = self.admit_product_security_basis(basis.product())
+        let security = self.admit_product_security_basis(security_product)
             .map_err(|denial| WorthQueryApplicationQueryAdmissionDenial::from_authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
                     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial), query.name(),

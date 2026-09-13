@@ -235,7 +235,76 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             TargetAspect,
             TargetField,
             TargetUnit,
-        >(scope_identity, target_identity, resources));
+        >(
+            scope_identity,
+            target_identity,
+            resources,
+            super::super::ApplicationQueryLiveTargetMode::Collection,
+        ));
+        self
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn live_root_by<
+        Binding,
+        ScopeSlot,
+        ScopeAspect,
+        ScopeField,
+        ScopeUnit,
+        TargetSlot,
+        TargetAspect,
+        TargetField,
+        TargetUnit,
+    >(
+        mut self,
+        scope_identity: ApplicationQueryResultFieldRef<
+            Query, ScopeSlot, Schema, Scope, ScopeAspect, ScopeField,
+            <Binding::ScopeIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
+            crate::application_schema::ReadOnly, crate::application_schema::EqualityPredicate, ScopeUnit,
+        >,
+        target_identity: ApplicationQueryResultFieldRef<
+            Query, TargetSlot, Schema, Scope, TargetAspect, TargetField,
+            <Binding::TargetIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
+            crate::application_schema::ReadOnly, crate::application_schema::EqualityPredicate, TargetUnit,
+        >,
+        resources: ApplicationQueryLiveResourceContract,
+    ) -> Self
+    where
+        Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Scope>,
+        ScopeField: crate::application_schema::RequiredApplicationFieldValue<
+            Value = <Binding::ScopeIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
+            Binding = Binding::ScopeIdentityBinding,
+        >,
+        TargetField: crate::application_schema::RequiredApplicationFieldValue<
+            Value = <Binding::TargetIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
+            Binding = Binding::TargetIdentityBinding,
+        >,
+        ScopeUnit: ApplicationFieldUnit,
+        TargetUnit: ApplicationFieldUnit,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        ScopeSlot: WorthQueryPortableType,
+        TargetSlot: WorthQueryPortableType,
+    {
+        self.definition.live_cause = Some(ApplicationQueryLiveCauseContract::typed::<
+            Schema,
+            Query,
+            Scope,
+            Scope,
+            Binding,
+            ScopeSlot,
+            ScopeAspect,
+            ScopeField,
+            ScopeUnit,
+            TargetSlot,
+            TargetAspect,
+            TargetField,
+            TargetUnit,
+        >(
+            scope_identity,
+            target_identity,
+            resources,
+            super::super::ApplicationQueryLiveTargetMode::Root,
+        ));
         self
     }
 

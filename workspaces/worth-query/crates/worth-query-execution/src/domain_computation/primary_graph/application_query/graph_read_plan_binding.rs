@@ -43,6 +43,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) continuation_index_id: Option<DerivedIndexId>,
     pub(super) continuation_state: Option<WorthQueryAdmittedContinuationState>,
     pub(super) basis: WorthQueryApplicationQueryBasisCustody,
+    pub(super) security_product: crate::basis::WorthQueryProductObservationLease,
     pub(super) graph_work:
         crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(super) authorization:

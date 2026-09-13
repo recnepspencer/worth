@@ -120,6 +120,21 @@ impl WorthQueryApplicationOutputCorrespondence {
             _marker: PhantomData,
         })
     }
+
+    pub(in crate::domain_computation::primary_graph) fn entity_for_binding_role<
+        Binding: 'static,
+    >(
+        &self,
+        role: &str,
+    ) -> Result<EntityId, WorthQueryApplicationOutputProjectionDenial> {
+        if self.binding_type != Some(TypeId::of::<Binding>()) {
+            return Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding);
+        }
+        self.roles
+            .get(role)
+            .map(|binding| binding.entity)
+            .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)
+    }
 }
 
 pub struct WorthQueryApplicationOutputEntity<Binding, Entity, Action> {

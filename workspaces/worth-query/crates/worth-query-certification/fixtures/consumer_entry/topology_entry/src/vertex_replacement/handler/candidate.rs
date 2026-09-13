@@ -21,7 +21,7 @@ pub(super) fn replace_vertex<Schema: TopologySchemaBinding>(
     let next = writer
         .projected_entity(&next)
         .map_err(HandlerExecutionDenial::new)?;
-    let replacement = allocate_replacement(&change.replacement, writer)?;
+    let replacement = allocate_replacement(&change.replacement, &anchor, writer)?;
     bind_correspondence(writer, &anchor, &replacement, &retired)?;
     writer
         .unlink(PlanarSuccessor::reference(), &anchor, &retired)
@@ -55,12 +55,13 @@ pub(super) fn replace_vertex<Schema: TopologySchemaBinding>(
 
 fn allocate_replacement<Schema: TopologySchemaBinding>(
     vertex: &worth_query_consumer_values::PlanarVertex,
+    context: &WorthQueryApplicationEffectEntity<Schema, Body>,
     writer: &mut CandidateWriter<'_, Schema, VertexReplacementBinding<Schema>>,
 ) -> Result<WorthQueryApplicationEffectEntity<Schema, Body>, HandlerExecutionDenial> {
     let key = WorthQueryApplicationEntityKey::new(&vertex.body_key)
         .map_err(HandlerExecutionDenial::new)?;
     let replacement = writer
-        .create_entity(Body::reference(), key)
+        .create_entity_in_context(context, Body::reference(), key)
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .initialize_field(&replacement, BodyKey::reference(), vertex.body_key.clone())

@@ -25,12 +25,16 @@ use super::installation::{
 };
 use super::predicate_observation::QueryTemporalPredicateProvider;
 
+mod output_readiness_installation;
 mod providers;
+mod readiness_provider;
+pub(in crate::domain_computation::primary_graph) use output_readiness_installation::prepare_dependency_conditional_installation;
 pub(in crate::domain_computation::primary_graph) use providers::QueryConditionalComputeContext;
 use providers::{
     QueryConditionalComputeProvider, QueryConditionalComputeSemanticContract,
     QueryHostOutputComparator,
 };
+use readiness_provider::QueryOutputReadinessPredicate;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn prepare_temporal_predicate_installation<
@@ -245,6 +249,44 @@ fn lower_temporal_contract(
             dependency_count: declaration.dependencies().len(),
             condition_dependency_ordinals: (0..declaration.dependencies().len()).collect(),
             condition: BridgeConditionalCondition::TemporalWake,
+            dependency_comparator: lower_dependency_comparator(declaration.dependency_comparator()),
+            output_comparator: lower_output_comparator(declaration.output_equivalence()),
+            artifact_reuse: lower_artifact_reuse(declaration.artifact_reuse_equivalence()),
+        },
+    ))
+}
+
+fn lower_dependency_contract(
+    declaration: &WorthQueryPortableConditionalNodeDeclaration,
+) -> Result<BridgeConditionalContract, WorthQueryConditionalRuntimeInstallationDenial> {
+    if declaration.dependencies().is_empty() {
+        return Err(bridge_denial(
+            "output readiness conditional has no declared dependency",
+        ));
+    }
+    let condition_dependency_ordinals = declaration
+        .condition()
+        .dependencies()
+        .iter()
+        .map(|condition_dependency| {
+            declaration
+                .dependencies()
+                .iter()
+                .position(|dependency| dependency == condition_dependency)
+                .ok_or_else(|| bridge_denial("readiness condition dependency was not declared"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if condition_dependency_ordinals.is_empty() {
+        return Err(bridge_denial(
+            "output readiness condition has no declared observation dependency",
+        ));
+    }
+    Ok(BridgeConditionalContract::new(
+        BridgeConditionalContractParts {
+            identity: Arc::from(declaration.identity()),
+            dependency_count: declaration.dependencies().len(),
+            condition_dependency_ordinals,
+            condition: BridgeConditionalCondition::RuntimePredicate,
             dependency_comparator: lower_dependency_comparator(declaration.dependency_comparator()),
             output_comparator: lower_output_comparator(declaration.output_equivalence()),
             artifact_reuse: lower_artifact_reuse(declaration.artifact_reuse_equivalence()),

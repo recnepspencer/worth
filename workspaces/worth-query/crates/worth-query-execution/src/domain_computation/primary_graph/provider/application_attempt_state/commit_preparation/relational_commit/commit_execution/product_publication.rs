@@ -24,9 +24,11 @@ pub(super) fn publish(
     let idempotency = attempt.idempotency();
     let recovery = product.recovery();
     let disposition = provider.unpublished_idempotency_disposition();
-    let successor_observation_requested = attempt
-        .reserve_live_delivery(provider)
+    let (retain_live_observation, retain_output_demand_observation) = attempt
+        .reserve_successor_observations(provider)
         .map_err(|_| capacity_exhausted())?;
+    let successor_observation_requested =
+        retain_live_observation || retain_output_demand_observation;
     let Some(change) = attempt.take_conditional_definition() else {
         let prepared = product
             .prepare_relational_candidate(candidate, &request, successor_observation_requested)
@@ -35,6 +37,8 @@ pub(super) fn publish(
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
             product.root_identity(),
             recovery_handle.clone(),
+            retain_live_observation,
+            retain_output_demand_observation,
         );
         let reservation = provider
             .reserve_unpublished_application_idempotency(
@@ -99,6 +103,8 @@ pub(super) fn publish(
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
             product.root_identity(),
             recovery_handle.clone(),
+            retain_live_observation,
+            retain_output_demand_observation,
         );
         let reservation = provider
             .reserve_unpublished_application_idempotency(

@@ -2,7 +2,8 @@
 
 pub use crate::domain_computation::primary_graph::application_invariant::{
     WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantExecutionError,
+    WorthQueryApplicationInvariantFieldBinding,
     WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantReadView,
     WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantRelationBinding,
     WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantScopePlanner,

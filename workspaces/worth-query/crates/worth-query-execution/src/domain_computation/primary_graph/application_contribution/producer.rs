@@ -1,17 +1,27 @@
-use std::any::{Any, TypeId};
-use std::collections::BTreeMap;
-use std::marker::PhantomData;
-use std::sync::Arc;
-
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationOutputContract,
+    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationQueryMutationSource,
 };
+use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
+use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{
-    WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
+mod demand;
+pub use demand::{
+    WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind, WorthQuerySelectedApplicationProducer,
+};
+mod execution;
+use execution::{InstalledProducerExecutor, TypedInstalledProducer};
+mod readiness;
+pub(in crate::domain_computation::primary_graph) use readiness::{
+    evaluate_output_readiness, install_output_readiness_routes, PendingOutputReadiness,
+    TypedPendingOutputReadiness, WorthQueryInstalledOutputReadinessRoutes,
+};
+mod scheduling;
+pub(in crate::domain_computation::primary_graph) use scheduling::{
+    schedule_output_producer, WorthQueryInstalledOutputProducerRoutes,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -46,9 +56,30 @@ impl WorthQueryProducerApplicability {
     }
 }
 
-pub trait WorthQueryProducerOutputFamily: Sized + 'static {
+pub trait WorthQueryProducerOutputFamily<Schema>: Sized + 'static
+where
+    Schema: ApplicationSchema,
+{
+    type Source: ApplicationQueryBinding<Schema>;
+
     const IDENTITY: &'static str;
     const SUPPORTED: &'static [WorthQueryProducerApplicability];
+
+    fn profile_kind(
+        source: &<<Self::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+    ) -> &'static str;
+}
+
+/// Typed request for one installed output family from one authored source.
+pub trait WorthQueryApplicationOutputDemand<Schema>: Sized + 'static
+where
+    Schema: ApplicationSchema,
+{
+    type OutputFamily: WorthQueryProducerOutputFamily<Schema>;
+
+    fn source_intent(
+        &self,
+    ) -> <<Self::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Input;
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -57,6 +88,29 @@ pub struct WorthQueryProducerInvariantRequirement {
     major: u16,
     minor: u16,
     execution_point: ApplicationInvariantExecutionPoint,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryProducerDemandResources {
+    work: usize,
+    retained_bytes: usize,
+}
+
+impl WorthQueryProducerDemandResources {
+    pub const fn new(work: usize, retained_bytes: usize) -> Self {
+        Self {
+            work,
+            retained_bytes,
+        }
+    }
+
+    pub const fn work(self) -> usize {
+        self.work
+    }
+
+    pub const fn retained_bytes(self) -> usize {
+        self.retained_bytes
+    }
 }
 
 impl WorthQueryProducerInvariantRequirement {
@@ -91,18 +145,50 @@ impl WorthQueryProducerInvariantRequirement {
     }
 }
 
-pub trait WorthQueryApplicationProducerProvider: Send + Sync + 'static {
+pub trait WorthQueryApplicationProducerProvider<Schema, Binding>: Send + Sync + 'static
+where
+    Schema: ApplicationSchema,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+{
     const SEMANTIC_IDENTITY: &'static str;
+
+    fn operation_input(
+        &self,
+        source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+    ) -> <Binding::Operation as ApplicationMutationBinding<Schema>>::Input;
+
+    fn idempotency_key(
+        &self,
+        source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+        source_identity: &[u8; 32],
+    ) -> <Binding::Operation as ApplicationMutationBinding<Schema>>::IdempotencyKey;
+
+    fn demand_resources(
+        &self,
+        source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+    ) -> WorthQueryProducerDemandResources;
 }
 
 pub trait WorthQueryApplicationProducerBinding<Schema>: Sized + 'static
 where
     Schema: ApplicationSchema,
+    Self::Operation: ApplicationMutationBinding<
+        Schema,
+        SourceExpectation = ApplicationQueryMutationSource<
+            <<Self::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query,
+        >,
+    >,
+    <Self::Operation as ApplicationMutationBinding<Schema>>::Input:
+        ApplicationMutationIntent<Schema, Binding = Self::Operation> + Clone + Send + Sync,
+    <Self::Operation as ApplicationMutationBinding<Schema>>::ScopeBinding:
+        ApplicationMutationScopeResolution<
+            Schema,
+            <Self::Operation as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
+        >,
 {
     type Operation: ApplicationMutationBinding<Schema>;
-    type Source: ApplicationMutationBinding<Schema>;
-    type OutputFamily: WorthQueryProducerOutputFamily;
-    type Provider: WorthQueryApplicationProducerProvider;
+    type OutputFamily: WorthQueryProducerOutputFamily<Schema>;
+    type Provider: WorthQueryApplicationProducerProvider<Schema, Self>;
 
     const IDENTITY: &'static str;
     const OUTPUT_ROLE: &'static str;
@@ -112,227 +198,6 @@ where
     const REUSE_POLICY: &'static str;
 }
 
-#[derive(Clone)]
-pub(super) struct DeclaredProducerBinding {
-    pub(super) owner: String,
-    pub(super) identity: String,
-    pub(super) source_selector: String,
-    pub(super) output_family: String,
-    pub(super) output_roles: Vec<String>,
-    pub(super) output_role: String,
-    pub(super) operation: String,
-    pub(super) provider_identity: String,
-    pub(super) applicability: Vec<WorthQueryProducerApplicability>,
-    pub(super) supported: Vec<WorthQueryProducerApplicability>,
-    pub(super) required_invariants: Vec<WorthQueryProducerInvariantRequirement>,
-    pub(super) resource_policy: String,
-    pub(super) reuse_policy: String,
-    pub(super) binding_type: TypeId,
-    pub(super) source_type: TypeId,
-    pub(super) provider_type: TypeId,
-}
-
-impl DeclaredProducerBinding {
-    pub(super) fn of<Schema, Binding>(owner: &str) -> Self
-    where
-        Schema: ApplicationSchema,
-        Binding: WorthQueryApplicationProducerBinding<Schema>,
-    {
-        Self {
-            owner: owner.to_owned(),
-            identity: Binding::IDENTITY.to_owned(),
-            source_selector: Binding::Source::IDENTITY.to_owned(),
-            output_family: Binding::OutputFamily::IDENTITY.to_owned(),
-            output_roles: <Binding::Operation as ApplicationMutationBinding<Schema>>::Output::ROLES
-                .iter()
-                .map(|role| role.name().to_owned())
-                .collect(),
-            output_role: Binding::OUTPUT_ROLE.to_owned(),
-            operation: Binding::Operation::IDENTITY.to_owned(),
-            provider_identity: Binding::Provider::SEMANTIC_IDENTITY.to_owned(),
-            applicability: Binding::APPLICABILITY.to_vec(),
-            supported: Binding::OutputFamily::SUPPORTED.to_vec(),
-            required_invariants: Binding::REQUIRED_INVARIANTS.to_vec(),
-            resource_policy: Binding::RESOURCE_POLICY.to_owned(),
-            reuse_policy: Binding::REUSE_POLICY.to_owned(),
-            binding_type: TypeId::of::<Binding>(),
-            source_type: TypeId::of::<Binding::Source>(),
-            provider_type: TypeId::of::<Binding::Provider>(),
-        }
-    }
-
-    fn meaning_matches<Schema, Binding>(&self) -> bool
-    where
-        Schema: ApplicationSchema,
-        Binding: WorthQueryApplicationProducerBinding<Schema>,
-    {
-        let expected = Self::of::<Schema, Binding>(&self.owner);
-        self.identity == expected.identity
-            && self.source_selector == expected.source_selector
-            && self.output_family == expected.output_family
-            && self.output_roles == expected.output_roles
-            && self.output_role == expected.output_role
-            && self.operation == expected.operation
-            && self.provider_identity == expected.provider_identity
-            && self.applicability == expected.applicability
-            && self.supported == expected.supported
-            && self.required_invariants == expected.required_invariants
-            && self.resource_policy == expected.resource_policy
-            && self.reuse_policy == expected.reuse_policy
-            && self.binding_type == expected.binding_type
-            && self.source_type == expected.source_type
-            && self.provider_type == expected.provider_type
-    }
-}
-
-#[derive(Clone)]
-struct InstalledProducerProvider {
-    declaration: DeclaredProducerBinding,
-    value: Arc<dyn Any + Send + Sync>,
-}
-
-pub struct WorthQueryInstalledApplicationProducerRegistry<Schema> {
-    entries: BTreeMap<String, InstalledProducerProvider>,
-    marker: PhantomData<fn() -> Schema>,
-}
-
-impl<Schema> Clone for WorthQueryInstalledApplicationProducerRegistry<Schema> {
-    fn clone(&self) -> Self {
-        Self {
-            entries: self.entries.clone(),
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<Schema> Default for WorthQueryInstalledApplicationProducerRegistry<Schema> {
-    fn default() -> Self {
-        Self {
-            entries: BTreeMap::new(),
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<Schema> WorthQueryInstalledApplicationProducerRegistry<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn provider<Binding>(&self) -> Option<Arc<Binding::Provider>>
-    where
-        Binding: WorthQueryApplicationProducerBinding<Schema>,
-    {
-        self.entries
-            .get(Binding::IDENTITY)
-            .filter(|entry| entry.declaration.meaning_matches::<Schema, Binding>())
-            .and_then(|entry| {
-                Arc::clone(&entry.value)
-                    .downcast::<Binding::Provider>()
-                    .ok()
-            })
-    }
-}
-
-pub(super) struct PendingProducerRegistry<Schema> {
-    declared: BTreeMap<String, DeclaredProducerBinding>,
-    providers: BTreeMap<String, Arc<dyn Any + Send + Sync>>,
-    marker: PhantomData<fn() -> Schema>,
-}
-
-impl<Schema> PendingProducerRegistry<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub(super) fn new(declared: BTreeMap<String, DeclaredProducerBinding>) -> Self {
-        Self {
-            declared,
-            providers: BTreeMap::new(),
-            marker: PhantomData,
-        }
-    }
-
-    pub(super) fn register<Binding>(
-        &mut self,
-        owner: &str,
-        provider: Binding::Provider,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Binding: WorthQueryApplicationProducerBinding<Schema>,
-    {
-        let declared = self
-            .declared
-            .get(Binding::IDENTITY)
-            .ok_or_else(|| denial(DenialKind::ForeignProducerBinding, Binding::IDENTITY))?;
-        if declared.owner != owner {
-            return Err(denial(
-                DenialKind::ForeignProducerBinding,
-                Binding::IDENTITY,
-            ));
-        }
-        if !declared.meaning_matches::<Schema, Binding>() {
-            return Err(denial(
-                DenialKind::ProducerBindingMeaningMismatch,
-                Binding::IDENTITY,
-            ));
-        }
-        if self.providers.contains_key(Binding::IDENTITY) {
-            return Err(denial(
-                DenialKind::DuplicateProducerBinding,
-                Binding::IDENTITY,
-            ));
-        }
-        self.providers
-            .insert(Binding::IDENTITY.to_owned(), Arc::new(provider));
-        Ok(())
-    }
-
-    pub(super) fn seal(
-        self,
-    ) -> Result<
-        WorthQueryInstalledApplicationProducerRegistry<Schema>,
-        WorthQueryPrimaryGraphInstallationDenial,
-    > {
-        let missing = self
-            .declared
-            .keys()
-            .find(|identity| !self.providers.contains_key(*identity));
-        if let Some(identity) = missing {
-            return Err(denial(DenialKind::MissingProducerProvider, identity));
-        }
-        let entries = self
-            .declared
-            .into_iter()
-            .map(|(identity, declaration)| {
-                let value = self
-                    .providers
-                    .get(&identity)
-                    .expect("complete provider inventory checked")
-                    .clone();
-                (identity, InstalledProducerProvider { declaration, value })
-            })
-            .collect();
-        Ok(WorthQueryInstalledApplicationProducerRegistry {
-            entries,
-            marker: PhantomData,
-        })
-    }
-
-    pub(super) fn validate_complete(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        if let Some(identity) = self
-            .declared
-            .keys()
-            .find(|identity| !self.providers.contains_key(*identity))
-        {
-            Err(denial(DenialKind::MissingProducerProvider, identity))
-        } else {
-            Ok(())
-        }
-    }
-}
-
-fn denial(
-    kind: DenialKind,
-    subject: impl Into<String>,
-) -> WorthQueryPrimaryGraphInstallationDenial {
-    WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
-}
+mod registry;
+pub use registry::WorthQueryInstalledApplicationProducerRegistry;
+pub(super) use registry::{DeclaredProducerBinding, PendingProducerRegistry};

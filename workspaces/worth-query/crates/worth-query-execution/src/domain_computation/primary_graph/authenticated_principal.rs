@@ -2,7 +2,8 @@ use std::marker::PhantomData;
 use std::time::Instant;
 
 use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryPrincipalAttribute,
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryAuthenticationAdapterIdentity,
+    WorthQueryPrincipalAttribute,
 };
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryExternalPrincipalIdentity,
@@ -68,6 +69,7 @@ impl<Schema, Principal, PrincipalIdentity> std::fmt::Debug
 /// ```
 pub struct WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
     external_identity: WorthQueryExternalPrincipalIdentity,
+    adapter_identity: WorthQueryAuthenticationAdapterIdentity,
     attributes: Vec<WorthQueryPrincipalAttribute>,
     valid_until: Instant,
     application_principal:
@@ -101,6 +103,7 @@ impl<Schema, Principal, PrincipalIdentity>
     ) -> Self {
         Self {
             external_identity: external.identity().clone(),
+            adapter_identity: external.adapter_identity().clone(),
             attributes: external.attributes().to_vec(),
             valid_until: external.valid_until(),
             application_principal: WorthQueryApplicationPrincipalIdentity {
@@ -130,6 +133,10 @@ impl<Schema, Principal, PrincipalIdentity>
 
     pub fn external_identity(&self) -> &WorthQueryExternalPrincipalIdentity {
         &self.external_identity
+    }
+
+    pub fn adapter_identity(&self) -> &WorthQueryAuthenticationAdapterIdentity {
+        &self.adapter_identity
     }
 
     pub fn attributes(&self) -> &[WorthQueryPrincipalAttribute] {

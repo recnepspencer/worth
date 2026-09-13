@@ -48,6 +48,11 @@ where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
+    let request_affinity =
+        super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity::new(
+            plan.principal,
+            plan.controls.request_scope(),
+        );
     let source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
     let request = plan.controls.request_scope();
     let basis_identity = plan.basis.identity().clone();
@@ -130,6 +135,7 @@ where
     Ok(WorthQueryApplicationOneShotResult {
         rows,
         observed_sources,
+        request_affinity,
         receipt,
     })
 }
