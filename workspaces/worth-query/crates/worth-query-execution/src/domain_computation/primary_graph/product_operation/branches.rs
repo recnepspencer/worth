@@ -35,7 +35,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
 impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'runtime, Schema> {
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
-        self.branches.fork(source)
+        let commit_lane = self
+            .application
+            .primary_provider
+            .application_branch_commit_lane_for_occurrence(source.occurrence());
+        self.branches.fork(source).with_application_lifecycle(
+            std::sync::Arc::clone(&self.application.primary_provider.graph.output_lineage),
+            commit_lane,
+        )
     }
 
     pub fn recovery_page(

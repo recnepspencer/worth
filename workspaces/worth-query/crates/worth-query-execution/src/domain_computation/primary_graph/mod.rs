@@ -49,7 +49,7 @@ mod managed_bridge;
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod observations;
 mod ordinary_read;
-mod output_lineage;
+pub(crate) mod output_lineage;
 mod principal_key;
 pub(crate) mod product_activation;
 mod product_operation;
@@ -108,6 +108,7 @@ pub(in crate::domain_computation) use application_attempt::{
 pub(crate) use application_attempt::WorthQueryRetainedGovernedInput;
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryRetainedPreImageSeal;
+pub(crate) use provider::WorthQueryApplicationBranchCommitLane;
 pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;
 pub(in crate::domain_computation) use provider::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;

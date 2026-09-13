@@ -57,7 +57,7 @@ pub struct WorthQueryApplicationCommitReceipt {
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >,
     pub(super) committed_changes: WorthQueryApplicationCommittedChanges,
-    pub(super) output_correspondence: WorthQueryApplicationOutputCorrespondence,
+    pub(super) output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
 }
 
 impl Eq for WorthQueryApplicationCommitReceipt {}
@@ -138,8 +138,8 @@ impl WorthQueryApplicationCommitReceipt {
         &self.committed_changes
     }
 
-    pub const fn output_correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
-        &self.output_correspondence
+    pub fn output_correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
+        self.output_correspondence.as_ref()
     }
 
     pub(crate) fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {

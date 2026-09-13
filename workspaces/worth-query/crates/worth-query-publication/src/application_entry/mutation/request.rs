@@ -15,6 +15,7 @@ where
     pub(super) application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     pub(super) principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) scope: &'scope WorthQueryRequestScope,
+    pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     pub(super) intent: Intent,
     pub(super) source: Option<
         worth_query_execution::facade::primary_graph::WorthQueryObservedSource<
@@ -49,12 +50,14 @@ where
         application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &'scope WorthQueryRequestScope,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
         intent: Intent,
     ) -> Self {
         Self {
             application,
             principal,
             scope,
+            branch,
             intent,
             source: None,
         }

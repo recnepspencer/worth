@@ -14,6 +14,7 @@ pub struct WorthQueryApplicationRequest<'application, 'principal, 'scope, Schema
     pub(super) application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     pub(super) principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) scope: &'scope WorthQueryRequestScope,
+    pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
 }
 
 pub trait WorthQueryApplicationRequestExt<Schema>
@@ -41,6 +42,7 @@ where
             application: self,
             principal,
             scope,
+            branch: self.current_world(),
         }
     }
 }
@@ -50,6 +52,15 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Targets all operations built from this request at one exact World product occurrence.
+    pub fn on_branch(
+        mut self,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+    ) -> Self {
+        self.branch = branch;
+        self
+    }
+
     pub fn query<Intent>(
         &self,
         intent: Intent,
@@ -57,7 +68,13 @@ where
     where
         Intent: ApplicationQueryIntent<Schema>,
     {
-        WorthQueryApplicationQueryRequest::new(self.application, self.principal, self.scope, intent)
+        WorthQueryApplicationQueryRequest::new(
+            self.application,
+            self.principal,
+            self.scope,
+            self.branch,
+            intent,
+        )
     }
 
     pub fn mutate<Intent>(
@@ -71,6 +88,7 @@ where
             self.application,
             self.principal,
             self.scope,
+            self.branch,
             intent,
         )
     }

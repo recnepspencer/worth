@@ -103,8 +103,8 @@ impl WorthQueryInvariantProjectionWork {
         self.aggregate_rebuild_input_rows += rebuild_rows;
     }
 
-    pub(super) fn record_output_lineage_selection(&mut self) {
-        self.output_lineage_source_selections += 1;
+    pub(super) fn record_output_lineage_selection(&mut self, lookups: usize) {
+        self.output_lineage_source_selections += lookups;
     }
 
     pub(super) fn record_output_lineage_role_lookup(&mut self) {

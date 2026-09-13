@@ -3,7 +3,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputAction, WorthQueryApplicationOutputRole,
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
-use worth_query_installation::facade::ApplicationEntityRef;
+use worth_query_installation::facade::{
+    ApplicationEntityRef, ApplicationOperationDecisionReadTarget,
+};
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
@@ -19,6 +21,15 @@ where
         Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
         Action: WorthQueryApplicationOutputAction,
     {
+        self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Entity {
+            entity: Entity::IDENTIFIER.to_owned(),
+        })
+        .map_err(|_| {
+            WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::UndeclaredDecisionTarget,
+                role.name(),
+            )
+        })?;
         let scope = self.operation_scope.as_ref().ok_or_else(|| {
             WorthQueryPriorOutputDenial::new(
                 WorthQueryPriorOutputDenialKind::Unavailable,
@@ -38,29 +49,40 @@ where
             )
         })?;
         let binding_type = std::any::TypeId::of::<Binding>();
-        let selection_work = usize::from(
-            !self
-                .reader
-                .prior_output_bindings
-                .contains_key(&binding_type),
-        );
-        let required_work = selection_work + 1;
-        if !self.reader.work_budget.can_afford(required_work) {
+        let selection_needed = !self
+            .reader
+            .prior_output_bindings
+            .contains_key(&binding_type);
+        if !self.reader.work_budget.can_afford(1) {
             return Err(WorthQueryPriorOutputDenial::new(
                 WorthQueryPriorOutputDenialKind::WorkBudgetExceeded,
                 role.name(),
             ));
         }
-        if selection_work == 1 {
-            let correspondence = self
+        if selection_needed {
+            let selection = self
                 .reader
                 .output_lineage
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .resolve_binding::<Binding>(scope, occurrence, generation);
-            self.reader.work_budget.consume(1);
-            self.reader.work.record_output_lineage_selection();
-            let correspondence = correspondence.ok_or_else(|| {
+                .resolve_binding::<Binding>(
+                    scope,
+                    occurrence,
+                    generation,
+                    self.reader.work_budget.remaining().saturating_sub(1),
+                )
+                .map_err(|_| {
+                    self.reader.work_budget.mark_exceeded();
+                    WorthQueryPriorOutputDenial::new(
+                        WorthQueryPriorOutputDenialKind::WorkBudgetExceeded,
+                        role.name(),
+                    )
+                })?;
+            self.reader.work_budget.consume(selection.source_lookups);
+            self.reader
+                .work
+                .record_output_lineage_selection(selection.source_lookups);
+            let correspondence = selection.correspondence.ok_or_else(|| {
                 WorthQueryPriorOutputDenial::new(
                     WorthQueryPriorOutputDenialKind::Unavailable,
                     role.name(),

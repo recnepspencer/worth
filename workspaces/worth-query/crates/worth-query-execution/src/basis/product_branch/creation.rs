@@ -18,6 +18,12 @@ pub struct WorthQueryProductBranchFork<'runtime> {
     runtime: &'runtime WorthQueryProductRuntime,
     source: WorthQueryProductBranch,
     intent: Option<WorthQueryProductBranchForkIntent>,
+    output_lineage: Option<std::sync::Arc<std::sync::Mutex<
+        crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
+    >>>,
+    application_commit_lane: Option<std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitLane,
+    >>,
 }
 
 #[derive(Debug)]
@@ -35,11 +41,27 @@ impl<'runtime> WorthQueryProductBranches<'runtime> {
             runtime: self.runtime,
             source,
             intent: None,
+            output_lineage: None,
+            application_commit_lane: None,
         }
     }
 }
 
 impl WorthQueryProductBranchFork<'_> {
+    pub(crate) fn with_application_lifecycle(
+        mut self,
+        output_lineage: std::sync::Arc<std::sync::Mutex<
+            crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
+        >>,
+        application_commit_lane: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitLane,
+        >,
+    ) -> Self {
+        self.output_lineage = Some(output_lineage);
+        self.application_commit_lane = Some(application_commit_lane);
+        self
+    }
+
     pub fn components(
         mut self,
         choose: impl FnOnce(WorthQueryProductBranchComponents) -> WorthQueryProductBranchComponents,
@@ -51,14 +73,20 @@ impl WorthQueryProductBranchFork<'_> {
     }
 
     pub fn create(self) -> Result<WorthQueryProductBranch, WorthQueryProductBranchCreateError> {
-        let components = self
-            .intent
+        let Self {
+            runtime,
+            source,
+            intent,
+            output_lineage,
+            application_commit_lane,
+        } = self;
+        let _coordination = application_commit_lane.as_ref().map(|lane| lane.enter());
+        let components = intent
             .ok_or(WorthQueryProductBranchCreateError::ComponentsIncomplete)?
             .components();
         let relational = component_plan(components.relational())?;
         let signal = component_plan(components.signal())?;
-        let ordinal = self
-            .runtime
+        let ordinal = runtime
             .reserve_public_branch_ordinal()
             .ok_or(WorthQueryProductBranchCreateError::IdentityExhausted)?;
         let product_name = format!("query-product-{ordinal}");
@@ -90,25 +118,31 @@ impl WorthQueryProductBranchFork<'_> {
             ProductBranchCreationPlans::new(relational, signal),
         )
         .expect("generated Query product branch names satisfy World limits");
-        let source = self
-            .runtime
-            .admit_product_occurrence(self.source.occurrence())
+        let source = runtime
+            .admit_product_occurrence(source.occurrence())
             .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
         let cancellation = RuntimeWorldCancellationSource::new();
-        match self
-            .runtime
+        match runtime
             .create_product_branch(&source, intent, &cancellation.token())
             .map_err(WorthQueryProductBranchCreateError::Creation)?
         {
-            RuntimeWorldBranchCreationOutcome::Performed(observation) => Ok(
-                WorthQueryProductBranch::from_occurrence(observation.lifecycle_incarnation()),
-            ),
+            RuntimeWorldBranchCreationOutcome::Performed(observation) => {
+                if let Some(output_lineage) = output_lineage {
+                    output_lineage
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .register_fork(source.observation(), &observation);
+                }
+                Ok(WorthQueryProductBranch::from_occurrence(
+                    observation.lifecycle_incarnation(),
+                ))
+            }
             RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => {
                 Err(WorthQueryProductBranchCreateError::ProductUnpublished(
                     super::WorthQueryProductBranchCreationRecovery::new(
                         effects,
-                        self.runtime.owner.recovery_port(),
-                        self.runtime.clone(),
+                        runtime.owner.recovery_port(),
+                        runtime.clone(),
                     ),
                 ))
             }

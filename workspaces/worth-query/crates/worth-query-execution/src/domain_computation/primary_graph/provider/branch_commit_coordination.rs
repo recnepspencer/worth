@@ -10,12 +10,12 @@ pub(super) struct WorthQueryApplicationBranchCommitCoordinator {
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationBranchCommitLane {
+pub(crate) struct WorthQueryApplicationBranchCommitLane {
     occurrence: ProductBranchIncarnation,
     transition: Mutex<()>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
+pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
     occurrence: ProductBranchIncarnation,
     _guard: MutexGuard<'lane, ()>,
 }
@@ -56,9 +56,7 @@ impl WorthQueryApplicationBranchCommitCoordinator {
 }
 
 impl WorthQueryApplicationBranchCommitLane {
-    pub(in crate::domain_computation) fn enter(
-        &self,
-    ) -> WorthQueryApplicationBranchCommitCoordination<'_> {
+    pub(crate) fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
         WorthQueryApplicationBranchCommitCoordination {
             occurrence: self.occurrence,
             _guard: self

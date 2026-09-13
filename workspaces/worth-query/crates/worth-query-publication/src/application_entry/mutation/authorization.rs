@@ -55,7 +55,7 @@ where
     let selected = request
         .request
         .application
-        .on_branch(request.request.application.current_world())
+        .on_branch(request.request.branch)
         .select()
         .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
     let principal = selected

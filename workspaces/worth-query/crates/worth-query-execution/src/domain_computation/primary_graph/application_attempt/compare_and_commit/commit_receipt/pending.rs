@@ -101,8 +101,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
             output_correspondence: self
                 .provider
                 .commit_evidence()
-                .output_correspondence()
-                .clone(),
+                .retain_output_correspondence(),
         })
     }
 }

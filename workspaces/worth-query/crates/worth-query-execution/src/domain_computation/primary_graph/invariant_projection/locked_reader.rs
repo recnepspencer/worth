@@ -44,7 +44,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
         Option<worth_runtime_world::facade::ProductBranchIncarnation>,
     pub(super) selected_product_generation: Option<u64>,
     pub(super) prior_output_bindings:
-        HashMap<std::any::TypeId, super::super::WorthQueryApplicationOutputCorrespondence>,
+        HashMap<std::any::TypeId, Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
     _schema: PhantomData<fn() -> Schema>,
 }
 

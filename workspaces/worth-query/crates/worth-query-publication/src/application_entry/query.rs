@@ -22,6 +22,7 @@ pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, S
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
     scope: &'scope WorthQueryRequestScope,
+    branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     intent: Intent,
     limits: Option<(NonZeroUsize, NonZeroUsize)>,
 }
@@ -36,12 +37,14 @@ where
         application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &'scope WorthQueryRequestScope,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
         intent: Intent,
     ) -> Self {
         Self {
             application,
             principal,
             scope,
+            branch,
             intent,
             limits: None,
         }
@@ -91,7 +94,7 @@ where
         };
         let selected = self
             .application
-            .on_branch(self.application.current_world())
+            .on_branch(self.branch)
             .select()
             .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
         let principal = selected

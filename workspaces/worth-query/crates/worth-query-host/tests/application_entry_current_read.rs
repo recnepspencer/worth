@@ -93,3 +93,33 @@ fn reusable_request_executes_fresh_published_reads_through_installed_principal_b
         "each attempt must resolve the authenticated proof through the installed binding"
     );
 }
+
+#[test]
+fn request_targets_the_selected_product_occurrence() {
+    let world = CourtroomWorld::publish("ready");
+    let scope = world::request_scope();
+    let authentication = world::admit_identity_adapter(world.application.installed_schema());
+    let external = block_on(authentication.authenticate((), &scope)).unwrap();
+    let parent = world.application.current_world();
+    let child = world
+        .application
+        .branches()
+        .fork(parent)
+        .components(|components| components.fork_relational().reuse_exact_signal_basis())
+        .create()
+        .expect("the retained product forks");
+
+    world
+        .change_input_on_branch(parent, "parent-only")
+        .require_committed()
+        .expect("the parent advances independently");
+
+    let inherited = world
+        .application
+        .request(&external, &scope)
+        .on_branch(child)
+        .query(TemporalIntentReadRequest::new("intent-1"))
+        .execute()
+        .expect("the request selects the exact child occurrence");
+    assert_eq!(inherited.rows()[0].input, "payload");
+}

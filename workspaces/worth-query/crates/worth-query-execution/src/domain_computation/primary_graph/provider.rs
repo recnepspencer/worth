@@ -81,7 +81,7 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
 }
 
-pub(in crate::domain_computation) use branch_commit_coordination::{
+pub(crate) use branch_commit_coordination::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryApplicationBranchCommitLane,
 };
 

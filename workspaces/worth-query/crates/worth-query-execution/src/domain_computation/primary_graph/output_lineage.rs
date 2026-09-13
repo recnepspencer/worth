@@ -1,7 +1,8 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
 use std::any::TypeId;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
@@ -19,14 +20,27 @@ struct SemanticSource {
 }
 
 #[derive(Default)]
-pub(super) struct WorthQueryApplicationOutputLineage {
+pub(crate) struct WorthQueryApplicationOutputLineage {
     by_source: HashMap<
         SemanticSource,
         HashMap<
             worth_runtime_world::facade::ProductBranchIncarnation,
-            BTreeMap<u64, WorthQueryApplicationOutputCorrespondence>,
+            BTreeMap<u64, Arc<WorthQueryApplicationOutputCorrespondence>>,
         >,
     >,
+    origins: HashMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
+    live_occurrences: HashSet<worth_runtime_world::facade::ProductBranchIncarnation>,
+}
+
+#[derive(Clone, Copy)]
+struct ProductCoordinate {
+    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    generation: u64,
+}
+
+pub(super) struct WorthQueryPriorOutputBindingResolution {
+    pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
+    pub(super) source_lookups: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -36,6 +50,7 @@ pub enum WorthQueryPriorOutputDenialKind {
     ActionMismatch,
     EntityMismatch,
     OutputUnavailable,
+    UndeclaredDecisionTarget,
     WorkBudgetExceeded,
 }
 
@@ -46,14 +61,37 @@ pub struct WorthQueryPriorOutputDenial {
 }
 
 impl WorthQueryApplicationOutputLineage {
+    pub(crate) fn register_fork(
+        &mut self,
+        source: &worth_runtime_world::facade::ProductBranchObservation,
+        destination: &worth_runtime_world::facade::ProductBranchObservation,
+    ) {
+        let source = ProductCoordinate {
+            occurrence: source.lifecycle_incarnation(),
+            generation: source.reference_generation().get(),
+        };
+        let destination = destination.lifecycle_incarnation();
+        self.live_occurrences.insert(source.occurrence);
+        self.live_occurrences.insert(destination);
+        assert!(
+            self.origins.insert(destination, source).is_none(),
+            "one product occurrence may be registered as a fork once"
+        );
+    }
+
     pub(super) fn record(&mut self, application: &WorthQueryPrimaryGraphCommittedApplication) {
         let evidence = application.commit_evidence();
         let correspondence = evidence.output_correspondence();
+        let scope = evidence.operation_scope();
+        let head = application.product_publication().new_product_head();
+        let coordinate = ProductCoordinate {
+            occurrence: head.lifecycle_incarnation(),
+            generation: head.reference_generation().get(),
+        };
+        self.live_occurrences.insert(coordinate.occurrence);
         let Some(output_binding) = correspondence.binding_type() else {
             return;
         };
-        let scope = evidence.operation_scope();
-        let head = application.product_publication().new_product_head();
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
@@ -66,7 +104,10 @@ impl WorthQueryApplicationOutputLineage {
             .or_default()
             .entry(head.lifecycle_incarnation())
             .or_default()
-            .insert(head.reference_generation().get(), correspondence.clone());
+            .insert(
+                head.reference_generation().get(),
+                evidence.retain_output_correspondence(),
+            );
         assert!(
             replaced.is_none(),
             "one product generation may publish one output binding once"
@@ -78,29 +119,73 @@ impl WorthQueryApplicationOutputLineage {
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
-    ) -> Option<WorthQueryApplicationOutputCorrespondence> {
+        maximum_source_lookups: usize,
+    ) -> Result<WorthQueryPriorOutputBindingResolution, ()> {
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
             output_binding: TypeId::of::<Binding>(),
         };
-        self.by_source
-            .get(&source)?
-            .get(&occurrence)?
-            .range(..=generation)
-            .next_back()
-            .map(|(_, correspondence)| correspondence.clone())
+        let Some(versions) = self.by_source.get(&source) else {
+            return Ok(WorthQueryPriorOutputBindingResolution {
+                correspondence: None,
+                source_lookups: 1,
+            });
+        };
+        let mut coordinate = ProductCoordinate {
+            occurrence,
+            generation,
+        };
+        let mut source_lookups = 0;
+        loop {
+            source_lookups += 1;
+            if source_lookups > maximum_source_lookups {
+                return Err(());
+            }
+            if let Some(correspondence) = versions
+                .get(&coordinate.occurrence)
+                .and_then(|history| history.range(..=coordinate.generation).next_back())
+                .map(|(_, correspondence)| correspondence.clone())
+            {
+                return Ok(WorthQueryPriorOutputBindingResolution {
+                    correspondence: Some(correspondence),
+                    source_lookups,
+                });
+            }
+            let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
+                return Ok(WorthQueryPriorOutputBindingResolution {
+                    correspondence: None,
+                    source_lookups,
+                });
+            };
+            coordinate = parent;
+        }
     }
 
     pub(super) fn release_occurrence(
         &mut self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) {
+        self.live_occurrences.remove(&occurrence);
+        let mut retained = self.live_occurrences.clone();
+        let mut frontier = retained.iter().copied().collect::<Vec<_>>();
+        while let Some(child) = frontier.pop() {
+            if let Some(parent) = self
+                .origins
+                .get(&child)
+                .map(|coordinate| coordinate.occurrence)
+            {
+                if retained.insert(parent) {
+                    frontier.push(parent);
+                }
+            }
+        }
         self.by_source.retain(|_, versions| {
-            versions.remove(&occurrence);
+            versions.retain(|indexed, _| retained.contains(indexed));
             !versions.is_empty()
         });
+        self.origins.retain(|child, _| retained.contains(child));
     }
 }
 
