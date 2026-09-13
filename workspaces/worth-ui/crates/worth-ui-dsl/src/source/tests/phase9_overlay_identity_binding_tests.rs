@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 #[path = "phase9_overlay_identity_binding_tests/declared_regions.rs"]
 mod declared_regions;
+#[path = "phase9_overlay_identity_binding_tests/surface_scrim.rs"]
+mod surface_scrim;
 
 use crate::{
     UiAppearanceAspect, UiAppearanceCell, UiAppearancePartitionAuthoring, UiAppearanceRole,

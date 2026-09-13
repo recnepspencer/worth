@@ -100,13 +100,11 @@ impl UiMountedAppearanceFrameState {
             .map(super::super::appearance::resolved_opacity)
     }
 
-    pub(super) fn has_surface_paint_for_instance(
+    pub(super) fn retained_surface(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    ) -> bool {
-        self.members
-            .retained_projection_for_instance(instance)
-            .is_some_and(super::super::appearance::has_surface_paint)
+    ) -> Option<&worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic> {
+        self.members.retained_surface(instance)
     }
 
     pub(in crate::mounting::projection) fn matches_geometry_input(

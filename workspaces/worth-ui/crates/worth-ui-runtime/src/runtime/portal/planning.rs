@@ -38,7 +38,12 @@ pub(super) fn prepare(
     let below = viewport_bottom - (bounds.y() + bounds.height() + gap);
     let above = bounds.y() - gap - viewport_top;
     let desired_height = f32::from(policy.maximum_height());
-    let (side, available_height) = if below >= desired_height {
+    let (side, available_height) = if policy.centered() {
+        (
+            super::UiPortalPlacementSide::Centered,
+            viewport.height() - margin * 2.0,
+        )
+    } else if below >= desired_height {
         (super::UiPortalPlacementSide::Below, below)
     } else if above >= desired_height || above > below {
         (super::UiPortalPlacementSide::Above, above)
@@ -56,11 +61,16 @@ pub(super) fn prepare(
     }
     let minimum_x = viewport.x() + margin;
     let maximum_x = viewport.x() + viewport.width() - margin - width;
-    let x = bounds.x().clamp(minimum_x, maximum_x);
+    let x = if policy.centered() {
+        viewport.x() + (viewport.width() - width) * 0.5
+    } else {
+        bounds.x().clamp(minimum_x, maximum_x)
+    };
     let y = match side {
         super::UiPortalPlacementSide::Below => bounds.y() + bounds.height() + gap,
         super::UiPortalPlacementSide::Above => bounds.y() - gap - height,
         super::UiPortalPlacementSide::ViewportFit => viewport_top,
+        super::UiPortalPlacementSide::Centered => viewport.y() + (viewport.height() - height) * 0.5,
     };
     let depth = match (request.parent(), parent) {
         (None, _) => 0,
@@ -72,11 +82,22 @@ pub(super) fn prepare(
             .checked_add(1)
             .ok_or(super::UiPortalPlacementDenial::LayerDepthExhausted)?,
     };
+    let paint_bounds = if let Some(content) = request.content_bounds() {
+        super::UiPresentedPortalBounds::new(
+            x + content.paint.x() - content.layout.x(),
+            y + content.paint.y() - content.layout.y(),
+            width + content.paint.width() - content.layout.width(),
+            height + content.paint.height() - content.layout.height(),
+        )
+    } else {
+        super::UiPresentedPortalBounds::new(x, y, width, height)
+    };
     Ok(Some(super::UiPreparedPortalPlacement::planned(
         anchor.presentation(),
         bounds,
         viewport,
         super::UiPresentedPortalBounds::new(x, y, width, height),
+        paint_bounds,
         side,
         super::UiPortalLayerIdentity::planned(request.portal(), request.parent(), depth),
         request.shielding(),

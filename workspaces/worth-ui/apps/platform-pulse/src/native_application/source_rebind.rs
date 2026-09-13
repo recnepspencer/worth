@@ -89,7 +89,6 @@ impl PlatformPulseApplicationRuntime {
                 publish_source_rebind(
                     &self.publisher,
                     &mut self.visual_identity,
-                    &mut self.product_story,
                     shell,
                     source,
                     receipt,
@@ -102,9 +101,6 @@ impl PlatformPulseApplicationRuntime {
                     ),
                     SourceRebindPublicationFailure::Visual(denial) => {
                         self.fail_visual_identity(denial)
-                    }
-                    SourceRebindPublicationFailure::ProductCopy(denial) => {
-                        self.fail(PlatformPulseTerminalError::ProductCopy(denial), Ok(()))
                     }
                 });
             }
@@ -141,7 +137,6 @@ impl PlatformPulseApplicationRuntime {
         if let Err(failure) = publish_source_rebind(
             &self.publisher,
             &mut self.visual_identity,
-            &mut self.product_story,
             shell,
             source,
             receipt,
@@ -153,9 +148,6 @@ impl PlatformPulseApplicationRuntime {
                     Err(error),
                 ),
                 SourceRebindPublicationFailure::Visual(denial) => self.fail_visual_identity(denial),
-                SourceRebindPublicationFailure::ProductCopy(denial) => {
-                    self.fail(PlatformPulseTerminalError::ProductCopy(denial), Ok(()))
-                }
             }
         }
     }
@@ -170,13 +162,11 @@ enum SourceRebindPublicationFailure {
         crate::lifecycle_observation_publication::PlatformPulseObservationPublicationDenial,
     ),
     Visual(crate::visual_identity_execution::PlatformPulseVisualExecutionDenial),
-    ProductCopy(worth_ui_native_platform::UiNativeApplicationProgramDenial),
 }
 
 fn publish_source_rebind(
     publisher: &crate::lifecycle_observation_publication::PlatformPulseObservationPublisher,
     visual_identity: &mut crate::visual_identity_execution::PlatformPulseVisualIdentityExecution,
-    product_story: &mut super::product_story::PlatformPulseProductStory,
     shell: &mut worth_ui::facade::app::WorthUiNativeApplicationShell,
     source: worth_ui::facade::source::WorthUiSourcePackageRevision,
     receipt: worth_ui::facade::rebind::UiRebindReceipt,
@@ -195,10 +185,7 @@ fn publish_source_rebind(
     visual_identity
         .compare_after_rebind(shell, receipt, presentation_tick, std::time::Instant::now())
         .map_err(SourceRebindPublicationFailure::Visual)?;
-    product_story
-        .publish_source(shell, source.sequence())
-        .and_then(|()| product_story.refresh_runtime(shell))
-        .map_err(SourceRebindPublicationFailure::ProductCopy)
+    Ok(())
 }
 
 #[cfg(test)]

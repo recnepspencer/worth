@@ -13,6 +13,9 @@ use worth_ui_host_contract::{
     UiSemanticSurfaceIdentity,
 };
 
+#[path = "nonempty/gradient.rs"]
+mod gradient;
+
 struct FixtureIds {
     surface: UiSemanticSurfaceIdentity,
     presentation: UiMountedPresentationAttemptIdentity,
@@ -226,6 +229,7 @@ fn frame_with(
         UiOverlayPlacementReceipt::from_runtime_overlay_order(7, backdrop_ordinal).unwrap();
     let backdrop = UiMountedBackdropMechanic::complete_from_runtime_mounting(
         UiMountedBackdropCompletionInput {
+            motion_target: None,
             identity: ids.backdrop.clone(),
             semantic_surface: ids.surface,
             placement,
@@ -268,10 +272,11 @@ fn surface(
     issuer: UiMountedNodeReceiptIssuer,
     instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     bounds: UiAppearanceAllocationBounds,
-    color: UiMountedAppearanceColor,
+    color: impl Into<worth_ui_host_contract::UiMountedSurfaceFill>,
 ) -> UiMountedSurfaceAppearanceMechanic {
     UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
             issuer,
             node_receipt: issuer.receipt_for(instance),
             bounds,
@@ -285,7 +290,7 @@ fn surface(
             ),
             border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
             border_omissions: Box::new([]),
-            paint: UiMountedSurfacePaint::Fill(color),
+            paint: UiMountedSurfacePaint::Fill(color.into()),
             opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
                 .unwrap(),

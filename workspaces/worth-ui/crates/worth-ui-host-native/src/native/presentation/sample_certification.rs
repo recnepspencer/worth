@@ -102,7 +102,7 @@ pub fn certify_portal_sample_replay(
         &crate::native::text_atlas::UiNativeTextAtlas::new(),
     )
     .map_err(|_| UiNativePortalSampleReplayCertificationDenial::InvalidReplay)?;
-    let published = raster_damage_for_basis(portal.bounds(), basis)
+    let published = raster_damage_for_basis(portal.paint_bounds(), basis)
         .map_err(|_| UiNativePortalSampleReplayCertificationDenial::InvalidRasterBasis)?
         .ok_or(UiNativePortalSampleReplayCertificationDenial::InvalidRasterBasis)?;
     let [left, top, width, _] = published.physical_bounds();

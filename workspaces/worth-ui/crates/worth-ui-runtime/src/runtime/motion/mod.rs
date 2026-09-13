@@ -1,7 +1,9 @@
 mod census;
 mod declaration;
 mod overlay_export;
+mod prepared_entrance;
 mod produced_fact;
+pub(crate) use prepared_entrance::UiPreparedMotionEntrance;
 mod rebind;
 mod receipt;
 mod retarget;

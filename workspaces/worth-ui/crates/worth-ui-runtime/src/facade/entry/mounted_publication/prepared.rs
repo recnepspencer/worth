@@ -16,12 +16,18 @@ impl WorthUiActiveApplicationSession {
 
     pub(crate) fn present_prepared_portal_frame_internal(
         &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
+        mut frame: crate::mounting::UiPreparedMountedFrame,
         proposal: &crate::runtime::session::UiStagedPortalProposalTransaction,
         retain_exit: bool,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> UiMountedFrameOutcome {
+        frame
+            .bind_motion_entrance(
+                self.mounted
+                    .prepare_motion_entrance(proposal.prepared_motion_entrance()),
+            )
+            .expect("the Portal proposal was derived from this prepared frame");
         let (transition, stage, staged_motion) = proposal.overlay_appearance_sources();
         let overlays = self.prepare_overlay_appearance_sources_for_portal_transition(
             transition,
@@ -36,13 +42,16 @@ impl WorthUiActiveApplicationSession {
 
     pub(in crate::facade::entry) fn present_prepared_observed_frame(
         &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
+        mut frame: crate::mounting::UiPreparedMountedFrame,
         observation: &intent_consequence_observation::WorthUiPreparedConsequenceObservationCommit,
         proposal: Option<&crate::runtime::session::UiStagedPortalProposalTransaction>,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> Result<UiMountedFrameOutcome, crate::runtime::rebind::UiRebindPreparationDenial> {
         observation.validate(self, &frame)?;
+        frame.bind_motion_entrance(self.mounted.prepare_motion_entrance(
+            proposal.and_then(|proposal| proposal.prepared_motion_entrance()),
+        ))?;
         let overlays = match proposal {
             Some(proposal) => {
                 let (transition, stage, motion) = proposal.overlay_appearance_sources();

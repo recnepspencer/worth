@@ -15,6 +15,19 @@ pub(super) struct UiPresentationTrackState {
 }
 
 impl UiPresentationTrackState {
+    pub(super) fn accept_published_entrance(
+        &mut self,
+        sample: super::UiPresentationMotionSampleReceipt,
+    ) {
+        assert_eq!(
+            self.current,
+            Some(sample),
+            "the physically accepted entrance matches the installed initial sample"
+        );
+        self.presented_geometry = self.current_geometry;
+        self.presented = true;
+    }
+
     pub(super) fn new(
         track: crate::runtime::motion::UiCommittedMotionTrack,
         start_tick: Option<u64>,

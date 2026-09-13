@@ -245,6 +245,10 @@ fn parse_value(
             reference_span,
         });
     }
+    let gradient = cursor.take_word("linear_gradient");
+    if gradient && !cursor.peek_word("token") {
+        return Err("linear_gradient requires a theme token".to_owned().into());
+    }
     if cursor.take_word("token") {
         cursor.expect_symbol(WorthUiSourceTokenKind::LeftParen)?;
         let slot = UiThemeSlotIdentity::new(cursor.word()?.to_owned())
@@ -252,7 +256,14 @@ fn parse_value(
         cursor.advance();
         cursor.expect_symbol(WorthUiSourceTokenKind::RightParen)?;
         return Ok(ParsedValue {
-            value: UiAppearanceCellValue::theme_slot(slot, aspect.value_kind()),
+            value: UiAppearanceCellValue::theme_slot(
+                slot,
+                if gradient {
+                    UiThemeValueKind::LinearGradient
+                } else {
+                    aspect.value_kind()
+                },
+            ),
             reference_span: None,
         });
     }
@@ -260,6 +271,7 @@ fn parse_value(
     cursor.advance();
     let expected_literal = match aspect.value_kind() {
         UiThemeValueKind::Color => "transparent-color",
+        UiThemeValueKind::LinearGradient => "transparent-gradient",
         UiThemeValueKind::Opacity => "transparent-opacity",
         UiThemeValueKind::LogicalLength => "transparent-length",
         UiThemeValueKind::CornerRadii => "transparent-radius",

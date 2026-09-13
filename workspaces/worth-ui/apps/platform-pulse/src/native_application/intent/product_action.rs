@@ -55,7 +55,7 @@ impl PlatformPulseApplicationRuntime {
                 .query_lifecycle
                 .as_mut()
                 .expect("prepared Pulse retains its Query lifecycle");
-            let status = format!("ACTION {}", action_input_revision.value());
+            let status = "Deployed";
             let action = if query_denial_requested {
                 query.execute_denied_action(status)
             } else {

@@ -1,10 +1,9 @@
 use worth_ui_host_contract::{
-    UiMountedAllocationProjection, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
-    UiMountedCoordinateSpace, UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+    UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
 };
 
 use super::UiMountedProjectionFrameOwner;
-use crate::mounting::projection::appearance::UiMountedAppearanceClip;
 
 /// Viewport geometry of the painted surface of an appearance-only instance:
 /// the target accepted Motion addresses when the instance owns no paint command.
@@ -32,48 +31,28 @@ impl UiMountedProjectionFrameOwner {
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> Option<UiMountedAppearanceSurfaceSampleGeometry> {
-        if !self.appearance.has_surface_paint_for_instance(instance) {
-            return None;
-        }
-        let geometry = self
-            .projection
-            .semantic
-            .node(instance)?
-            .completed_appearance_geometry();
-        let allocation = match geometry.allocation {
-            UiMountedAllocationProjection::Known { bounds, .. }
-            | UiMountedAllocationProjection::PortalAnchorObservation { bounds, .. } => bounds,
-            UiMountedAllocationProjection::Omitted(_) => return None,
-        };
-        let clip = match geometry.clip {
-            UiMountedAppearanceClip::Unclipped => allocation,
-            UiMountedAppearanceClip::Ancestor(clip) => {
-                canonical_clip(clip, allocation.coordinate_space())?
-            }
-            UiMountedAppearanceClip::Suppressed | UiMountedAppearanceClip::Unresolved(_) => {
-                return None
-            }
-        };
+        let surface = self.appearance.retained_surface(instance)?;
+        let visual = surface.visual_bounds();
+        let bounds = canonical_box(visual.x(), visual.y(), visual.width(), visual.height())?;
+        let clip = surface.clip();
+        let clip = canonical_box(clip.x(), clip.y(), clip.width(), clip.height())?;
         Some(UiMountedAppearanceSurfaceSampleGeometry {
-            bounds: allocation.intersection(clip)?,
+            bounds: bounds.intersection(clip)?,
             clip,
         })
     }
 }
 
-/// Appearance clips quantize the allocation's own coordinates, so they read
-/// back in the allocation's space.
-fn canonical_clip(
-    clip: worth_ui_host_contract::UiAppearanceClip,
-    coordinate_space: UiMountedCoordinateSpace,
-) -> Option<UiMountedCanonicalBox> {
+/// Use the admitted mechanic's quantized, presented geometry. Both hosts
+/// interpret appearance mechanics in viewport coordinates, including Portal children.
+fn canonical_box(x: i32, y: i32, width: u32, height: u32) -> Option<UiMountedCanonicalBox> {
     let units = UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT as f32;
     UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: clip.x() as f32 / units,
-        y: clip.y() as f32 / units,
-        width: clip.width() as f32 / units,
-        height: clip.height() as f32 / units,
-        coordinate_space,
+        x: x as f32 / units,
+        y: y as f32 / units,
+        width: width as f32 / units,
+        height: height as f32 / units,
+        coordinate_space: UiMountedCoordinateSpace::Viewport,
     })
     .ok()
 }

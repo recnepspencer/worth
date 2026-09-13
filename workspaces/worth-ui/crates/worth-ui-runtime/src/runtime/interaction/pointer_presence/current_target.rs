@@ -32,6 +32,16 @@ pub(crate) struct UiPointerPresenceAppearanceOwnerSnapshot {
     reason = "Gate 0 seals pointer-presence snapshots before role resolution"
 )]
 impl UiPointerPresenceAppearanceOwnerSnapshot {
+    pub(crate) fn same_appearance_dependencies(&self, other: &Self) -> bool {
+        self.primary_by_surface == other.primary_by_surface
+            && self.postures.len() == other.postures.len()
+            && self
+                .postures
+                .iter()
+                .zip(other.postures.iter())
+                .all(|(before, current)| before.appearance_dependency_eq(*current))
+    }
+
     pub(crate) const fn owner_revision(&self) -> u64 {
         self.owner_revision
     }

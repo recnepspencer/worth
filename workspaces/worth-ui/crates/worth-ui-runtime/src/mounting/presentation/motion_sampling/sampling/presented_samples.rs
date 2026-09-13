@@ -1,15 +1,6 @@
 use super::{same_surface_binding, UiMountedMotionSampler};
 
 impl UiMountedMotionSampler {
-    pub(crate) fn current_sample_for(
-        &self,
-        mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Option<super::super::UiPresentationMotionSampleReceipt> {
-        self.current_sample_for_with_work(mounted_instance, presentation)
-            .0
-    }
-
     pub(in crate::mounting) fn current_sample_for_with_work(
         &self,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -21,7 +12,7 @@ impl UiMountedMotionSampler {
         let mut considered = 0;
         let mut matches = self.tracks.values().filter_map(|state| {
             considered += 1;
-            if !state.presented {
+            if !state.presented || state.track.target().is_portal_contents() {
                 return None;
             }
             let sample = state.current?;

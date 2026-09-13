@@ -115,7 +115,9 @@ fn surface_attribution(
 ) -> Option<Attribution> {
     let color = match surface.paint() {
         UiMountedSurfacePaint::Fill(fill) | UiMountedSurfacePaint::FillAndBorder { fill, .. } => {
-            *fill
+            // This legacy attribution is representative, not a spatial pixel
+            // observation. Exact pixels come from the raster/readback path.
+            fill.sample([0.0, 0.0, 1.0, 1.0], [0.5, 0.5])
         }
         UiMountedSurfacePaint::Border { color, .. } => *color,
     };

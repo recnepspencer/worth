@@ -21,6 +21,7 @@ mod opacity_transport;
 mod outline_clipping;
 mod overlay;
 mod paint_order;
+mod reconstruction;
 struct NodeIds {
     frame: UiMountedFrameIdentity,
     issuer: UiMountedNodeReceiptIssuer,
@@ -73,6 +74,7 @@ fn node_input_for(
     let projection =
         UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 11, 3).unwrap();
     let node = UiMountedAppearanceNodeInput {
+        surface_geometry: worth_ui_host_contract::UiSurfaceGeometry::default(),
         geometry_input: None,
         issuer,
         semantic_surface: surface,
@@ -87,9 +89,7 @@ fn node_input_for(
         radii,
         surface_border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
         surface_border_omissions: Box::new([]),
-        surface_paint: Some(UiMountedSurfacePaint::Fill(
-            UiMountedAppearanceColor::from_straight_srgba(color),
-        )),
+        surface_paint: Some(UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba(color).into())),
         outline: include_outline.then_some(UiMountedAppearanceOutlineInput {
             geometry: outline,
             color: UiMountedAppearanceColor::from_straight_srgba([4, 5, 6, 255]),
@@ -168,7 +168,7 @@ pub(crate) fn mounted_sidecar_with_retained_facts_for_test(
     node.appearance_opacity = UiMountedAppearanceOpacity::ONE;
     node.motion_opacity = None;
     node.surface_paint = Some(UiMountedSurfacePaint::Fill(
-        UiMountedAppearanceColor::from_straight_srgba([1, 2, 3, 255]),
+        UiMountedAppearanceColor::from_straight_srgba([1, 2, 3, 255]).into(),
     ));
     input.overlay.portal_revision = 0;
     input.overlay.backdrop_revision = 0;
@@ -327,57 +327,6 @@ fn paint_change_is_mechanical_and_semantic_change_can_still_suppress_output() {
     assert_eq!(
         ids.surface,
         sidecar.current().unwrap().frame().semantic_surface()
-    );
-}
-
-#[test]
-fn reconstruction_rebuilds_from_current_receipt_without_semantic_replay() {
-    let (input, ids) = node_input([12, 34, 56, 255], 7, true);
-    let (successor, successor_ids) = node_input_for([12, 34, 56, 255], 7, true, Some(&ids));
-    let mut sidecar = UiMountedAppearanceSidecar::default();
-    sidecar.mount(input).unwrap();
-
-    let work = sidecar
-        .reconstruct(successor)
-        .expect("current receipt should rebuild retained appearance facts");
-    let manifest = work
-        .predecessor_manifest()
-        .expect("reconstruction keeps the retained predecessor manifest");
-    let retained_identities = sidecar
-        .current()
-        .unwrap()
-        .records()
-        .iter()
-        .map(|record| record.identity().clone())
-        .collect::<Vec<_>>();
-
-    assert_eq!(
-        work.posture(),
-        UiMountedAppearanceWorkPosture::Reconstruction
-    );
-    assert_eq!(work.predecessor(), Some(ids.frame));
-    assert_eq!(work.successor().frame(), successor_ids.frame);
-    assert_eq!(
-        manifest.mechanic_identities(),
-        retained_identities.as_slice()
-    );
-    assert_eq!(
-        manifest.overlay_order(),
-        work.successor().overlay_order().bottom_to_top()
-    );
-    assert!(work.changes().is_empty());
-    assert!(work.damage().is_empty());
-    assert!(!work.order_changed());
-    assert_eq!(
-        sidecar
-            .current()
-            .unwrap()
-            .record(&UiMountedAppearanceMechanicIdentity::Surface(
-                successor_ids.instance,
-            ))
-            .unwrap()
-            .node_receipt(),
-        Some(successor_ids.receipt)
     );
 }
 

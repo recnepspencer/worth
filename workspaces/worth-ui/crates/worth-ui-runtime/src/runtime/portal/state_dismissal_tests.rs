@@ -8,6 +8,9 @@ use super::{
     UiPortalServiceRequest,
 };
 
+#[path = "state_dismissal_tests/anchor_activation.rs"]
+mod anchor_activation;
+
 #[test]
 fn escape_and_anchor_loss_dismiss_nested_portals_in_topmost_order() {
     let mut state = state();

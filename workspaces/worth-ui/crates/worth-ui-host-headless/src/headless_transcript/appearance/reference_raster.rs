@@ -30,10 +30,19 @@ pub(crate) fn compose(frame: &UiMountedAppearanceFrame) -> Option<UiMountedAppea
             return None;
         };
         match mechanic {
-            UiMountedAppearanceMechanic::PortalSurface(surface) => layers.push((
-                surface_color(surface.surface().paint()),
-                surface.surface().opacity(),
-            )),
+            UiMountedAppearanceMechanic::PortalSurface(surface) => {
+                // A custom mask has no universal interior color. Call the spatial
+                // reference with a concrete point instead of reporting solid paint.
+                if surface.surface().geometry()
+                    != &worth_ui_host_contract::UiSurfaceGeometry::RoundedRectangle
+                {
+                    return None;
+                }
+                layers.push((
+                    surface_color(surface.surface().paint()),
+                    surface.surface().opacity(),
+                ));
+            }
             UiMountedAppearanceMechanic::Backdrop(backdrop) => {
                 layers.push((backdrop.background(), backdrop.opacity()))
             }
@@ -82,11 +91,13 @@ pub(crate) fn has_issued_participants(frame: &UiMountedAppearanceFrame) -> bool 
 
 fn surface_color(paint: &UiMountedSurfacePaint) -> UiMountedAppearanceColor {
     match paint {
-        UiMountedSurfacePaint::Fill(color) => *color,
+        UiMountedSurfacePaint::Fill(fill) => fill.sample([0.0, 0.0, 1.0, 1.0], [0.5, 0.5]),
         UiMountedSurfacePaint::Border { .. } => {
             UiMountedAppearanceColor::from_straight_srgba([0; 4])
         }
-        UiMountedSurfacePaint::FillAndBorder { fill, .. } => *fill,
+        UiMountedSurfacePaint::FillAndBorder { fill, .. } => {
+            fill.sample([0.0, 0.0, 1.0, 1.0], [0.5, 0.5])
+        }
     }
 }
 
@@ -104,6 +115,7 @@ mod tests {
         let surface = worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic::
             complete_from_runtime_mounting(
                 worth_ui_host_contract::UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
                     issuer,
                     node_receipt: issuer.receipt_for(instance),
                     bounds,
@@ -116,9 +128,7 @@ mod tests {
                     ),
                     border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
                     border_omissions: Box::new([]),
-                    paint: UiMountedSurfacePaint::Fill(
-                        UiMountedAppearanceColor::from_straight_srgba(color),
-                    ),
+                    paint: UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba(color).into()),
                     opacity: worth_ui_host_contract::UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
                     projection: worth_ui_host_contract::UiMountedNodeAppearanceAttribution::
                         from_runtime_mounting(issuer, 1, 1)
@@ -151,6 +161,7 @@ mod tests {
         let backdrop = worth_ui_host_contract::UiMountedBackdropMechanic::
             complete_from_runtime_mounting(
                 worth_ui_host_contract::UiMountedBackdropCompletionInput {
+                    motion_target: None,
                     identity: identity.clone(),
                     semantic_surface: surface,
                     placement,

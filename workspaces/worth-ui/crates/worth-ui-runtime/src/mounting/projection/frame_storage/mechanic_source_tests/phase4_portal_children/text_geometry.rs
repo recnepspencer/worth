@@ -46,6 +46,7 @@ fn partial_clip_changes_foreground_without_color_change_or_foreign_work() {
     candidate.semantic.insert_node(node);
     let changed = world.frame(&[0, 1], Some(&candidate));
     let current = changed.appearance_text_candidates(child).unwrap();
+    assert_presented_text_clip(&changed, child, Some([50.0, 30.0]));
     assert_eq!(current.len(), 2);
     for (old, new) in original.iter().zip(&current) {
         assert_eq!(new.clip_bounds().width(), 50.0);

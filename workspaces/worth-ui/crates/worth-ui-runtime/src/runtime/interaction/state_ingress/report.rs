@@ -79,11 +79,16 @@ pub(super) fn process(
         mounted,
         generation,
     );
+    let mut transitions = emission::emit_pointer(state, pointer, generation);
+    // Outside presses are Portal input even when shielding admits no hit
+    // target. They must not manufacture a Pressed or Activate for that target.
+    if !admission.denied() {
+        transitions.extend(emission::outside_press(core, report));
+    }
     let ignored = !admission.denied()
         && pointer_presence_transition.is_none()
-        && pointer.is_empty()
+        && transitions.is_empty()
         && draft.is_empty();
-    let mut transitions = emission::emit_pointer(state, pointer, core, generation);
     transitions.extend(emission::emit_draft(state, draft));
     UiInteractionReportOutcome {
         targeting_work,

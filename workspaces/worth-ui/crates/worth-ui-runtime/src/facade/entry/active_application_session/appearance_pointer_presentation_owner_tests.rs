@@ -1,3 +1,5 @@
+#[path = "appearance_pointer_presentation_owner_tests/consequence_predecessor.rs"]
+mod consequence_predecessor;
 #[path = "appearance_pointer_presentation_owner_tests/motion_index.rs"]
 mod motion_index;
 #[path = "appearance_pointer_presentation_owner_tests/query_work.rs"]

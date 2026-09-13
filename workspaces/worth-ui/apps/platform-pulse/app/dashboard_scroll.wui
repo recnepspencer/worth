@@ -1,0 +1,6 @@
+component platform.pulse.component.health_content {
+  region platform.pulse.mosaic.region.service_list { sizing platform.pulse.mosaic.sizing.dashboard_list; }
+}
+component platform.pulse.component.activity_content {
+  region platform.pulse.mosaic.region.activity_list { sizing platform.pulse.mosaic.sizing.dashboard_list; }
+}

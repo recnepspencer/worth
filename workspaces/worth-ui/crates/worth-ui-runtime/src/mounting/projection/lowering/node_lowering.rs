@@ -94,15 +94,15 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             } else {
                 None
             };
-        let (component_id, portal_child_owner, surface_paint_order) = plan_index
+        let (component_id, portal_child_owner, surface_paint_order, surface_geometry, portal_surface_appearance) = plan_index
             .and_then(|index| self.plan.ordinary_meaning(index))
             .and_then(|meaning| match meaning.as_ref() {
                 crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Component(
                     component,
-                ) => Some((component.descriptor().id().clone(), component.portal_child_owner().cloned(), component.surface_paint_order())),
+                ) => Some((component.descriptor().id().clone(), component.portal_child_owner().cloned(), component.surface_paint_order(), component.descriptor().surface_geometry().clone(), component.descriptor().portal_surface_appearance())),
                 _ => None,
             })
-            .map_or((None, None, None), |(component, owner, order)| (Some(component), owner, order));
+            .map_or((None, None, None, Default::default(), true), |(component, owner, order, geometry, portal_paint)| (Some(component), owner, order, geometry, portal_paint));
         let participation = super::lower_participation(
             graph_node.participation_posture(),
             semantic_text.is_some() || graph_node.has_appearance_attachment(),
@@ -130,6 +130,8 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             appearance_clip,
             surface_paint_posture,
             surface_paint_order,
+            surface_geometry,
+            portal_surface_appearance,
             has_appearance_attachment: graph_node.has_appearance_attachment(),
             clip_ancestry_entries,
             text_source_lookups,

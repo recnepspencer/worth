@@ -26,7 +26,7 @@ fn portal_motion_modality_complete_ap07_journey() {
     });
     super::captured_geometry::assert_restored_geometry_damage(&world);
     super::captured_geometry::assert_restored_capture(&world);
-    super::captured_geometry::release_target_and_evaluate(&mut world, 4);
+    super::captured_geometry::release_target(&mut world, 4, true);
     super::focus_modality::exercise_window_focus(&mut world, 5);
     world.open_inspecting_frame(1, "overlay.menu", None, 19, |frame| {
         super::focus_modality::assert_inactive_portal_selection(frame);
@@ -34,7 +34,7 @@ fn portal_motion_modality_complete_ap07_journey() {
     super::focus_modality::assert_inactive_publication(&world);
     super::captured_geometry::press_target(&mut world, 6);
     let child = world.open(2, "overlay.child", Some(parent), 20);
-    super::captured_geometry::release_target_and_evaluate(&mut world, 7);
+    super::captured_geometry::release_target(&mut world, 7, false);
     super::hostile_protocol::close_owner_snapshot(&mut world);
     world.sample(world.surfaces[0], 1, 31, 0);
     world.sample(world.surfaces[0], 71, 33, 57_343);

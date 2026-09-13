@@ -9,8 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "workspaces/worth-ui/contracts/milestone-3.16-protocol.json"
 EXPECTED_LIVE = {
-    "protocol_floor": 7, "protocol_current": 7, "mounted_frame": 6,
-    "mounted_presentation": 6, "text": 4, "observation": 7,
+    "protocol_floor": 9, "protocol_current": 9, "mounted_frame": 8,
+    "mounted_presentation": 8, "text": 4, "observation": 7,
     "measurement": 5, "solicited_effect": 1,
     "native_profile": "worth-ui-windows-dx12-v2",
 }

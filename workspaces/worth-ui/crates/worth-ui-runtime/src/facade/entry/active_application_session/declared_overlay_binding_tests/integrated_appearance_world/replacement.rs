@@ -281,7 +281,7 @@ fn replacement(reject_first: bool, declaration_shift: i8) {
         })
         .expect("the active Portal owns its surface paint");
     assert!(
-        matches!(portal.paint(), UiMountedSurfacePaint::FillAndBorder { fill, .. }
+        matches!(portal.paint(), UiMountedSurfacePaint::FillAndBorder { fill: worth_ui_host_contract::UiMountedSurfaceFill::Solid(fill), .. }
         if fill.straight_srgba() == [192, 64, 32, 128])
     );
     let _ = world.session.shutdown();

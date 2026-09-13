@@ -9,26 +9,7 @@ pub(super) fn qualify_layout(
     bounds: worth_ui_host_contract::UiMountedCanonicalBox,
     formatting: super::formatting::UiMountedSemanticTextRowFormatting<'_>,
 ) -> Result<UiMountedTextQualification, UiMountedProjectionDenial> {
-    let width = logical_millipoints(bounds.width())?;
-    let height = logical_millipoints(bounds.height())?;
-    let line_height = formatting.line_height_millipoints().unwrap_or(18_000);
-    let constraints = worth_ui_text::UiTextParagraphConstraints::new(
-        worth_ui_text::UiTextParagraphConstraintsInput {
-            language: Arc::from("und"),
-            base_direction: worth_ui_text::UiTextBaseDirection::Auto,
-            wrap: worth_ui_text::UiTextWrap::UnicodeWord,
-            alignment: worth_ui_text::UiTextAlignment::Start,
-            overflow: worth_ui_text::UiTextOverflow::Clip,
-            font_size_millipoints: 14_000,
-            width_millipoints: width,
-            line_height_millipoints: line_height,
-            letter_spacing_millipoints: 0,
-            word_spacing_millipoints: 0,
-            tab_interval_millipoints: 56_000,
-            maximum_lines: height.div_ceil(line_height).max(1),
-        },
-    )
-    .ok_or(UiMountedProjectionDenial::SemanticTextShapeMismatch)?;
+    let constraints = paragraph_constraints(bounds, formatting)?;
     let (styles, foregrounds) = formatting.materialize(source, &constraints)?;
     let input = worth_ui_text::UiTextParagraphAdmissionInput {
         source: Arc::clone(source),
@@ -51,6 +32,30 @@ pub(super) fn qualify_layout(
         layout,
         foregrounds,
     })
+}
+
+pub(super) fn paragraph_constraints(
+    bounds: worth_ui_host_contract::UiMountedCanonicalBox,
+    formatting: super::formatting::UiMountedSemanticTextRowFormatting<'_>,
+) -> Result<worth_ui_text::UiTextParagraphConstraints, UiMountedProjectionDenial> {
+    let width = logical_millipoints(bounds.width())?;
+    let height = logical_millipoints(bounds.height())?;
+    let line_height = formatting.line_height_millipoints().unwrap_or(18_000);
+    worth_ui_text::UiTextParagraphConstraints::new(worth_ui_text::UiTextParagraphConstraintsInput {
+        language: Arc::from("und"),
+        base_direction: worth_ui_text::UiTextBaseDirection::Auto,
+        wrap: worth_ui_text::UiTextWrap::UnicodeWord,
+        alignment: formatting.alignment(),
+        overflow: worth_ui_text::UiTextOverflow::Clip,
+        font_size_millipoints: 14_000,
+        width_millipoints: width,
+        line_height_millipoints: line_height,
+        letter_spacing_millipoints: 0,
+        word_spacing_millipoints: 0,
+        tab_interval_millipoints: 56_000,
+        maximum_lines: height.div_ceil(line_height).max(1),
+    })
+    .ok_or(UiMountedProjectionDenial::SemanticTextShapeMismatch)
 }
 
 pub(super) struct UiMountedTextQualification {

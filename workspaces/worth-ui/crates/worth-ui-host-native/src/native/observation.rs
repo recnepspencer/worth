@@ -5,6 +5,8 @@ use worth_ui_host_contract::{
 #[path = "observation/graphics.rs"]
 mod graphics;
 pub use graphics::UiNativeGraphicsObservation;
+#[path = "observation/attribution_basis.rs"]
+mod attribution_basis;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiNativePresentationObservation {

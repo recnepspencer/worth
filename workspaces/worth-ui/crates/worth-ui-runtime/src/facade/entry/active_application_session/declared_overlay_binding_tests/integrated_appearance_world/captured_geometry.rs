@@ -60,7 +60,7 @@ pub(super) fn assert_moved_capture(world: &World) {
 
 pub(super) fn evaluate_target_operability(world: &mut World, first_sequence: u64) {
     press_target(world, first_sequence);
-    release_target_and_evaluate(world, first_sequence + 1);
+    release_target(world, first_sequence + 1, true);
 }
 
 pub(super) fn press_target(world: &mut World, sequence: u64) {
@@ -93,7 +93,7 @@ pub(super) fn press_target(world: &mut World, sequence: u64) {
     assert_eq!(posture.target(), world.instances[1]);
 }
 
-pub(super) fn release_target_and_evaluate(world: &mut World, sequence: u64) {
+pub(super) fn release_target(world: &mut World, sequence: u64, activation_expected: bool) {
     let presentation = world
         .session
         .mounted
@@ -121,6 +121,13 @@ pub(super) fn release_target_and_evaluate(world: &mut World, sequence: u64) {
             crate::facade::interaction::UiInteractionTransition::Semantic(value) => Some(value),
             _ => None,
         });
+    if !activation_expected {
+        assert!(
+            semantic.is_none(),
+            "opening the modal prevents the captured background press from activating on release"
+        );
+        return;
+    }
     let interaction = semantic.expect("press/release produces the authored activation interaction");
     assert_eq!(interaction.target().mounted_instance(), world.instances[1]);
     let crate::facade::intent::UiIntentRouteResolution::Product(route) = world

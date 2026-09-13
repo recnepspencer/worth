@@ -3,8 +3,12 @@ use worth_ui_host_contract::{
     UiMountedSurfaceBorderSide, UiMountedSurfacePaint,
 };
 
+mod content_geometry;
 #[path = "surface_pipeline/raster_operation.rs"]
 mod raster_operation;
+#[path = "surface_pipeline/storage.rs"]
+mod storage;
+use content_geometry::NativeSurfaceGeometry;
 
 use super::antialiasing::{
     coverage_from_signed_distance, rounded_signed_distance, UiNativeAnalyticCoverage,
@@ -45,11 +49,12 @@ pub(crate) struct UiNativeSurfaceSample {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiNativeSurfacePrimitive {
     allocation: UiNativePhysicalRect,
+    geometry: NativeSurfaceGeometry,
     clip: UiNativePhysicalPixelRect,
     radii: [i64; 4],
     border_width: i64,
     paint_kind: UiNativeSurfacePaintKind,
-    fill_color: Option<UiMountedAppearanceColor>,
+    fill: Option<worth_ui_host_contract::UiMountedSurfaceFill>,
     border_color: Option<UiMountedAppearanceColor>,
     opacity: u16,
     border_edges: UiMountedSurfaceBorderEdges,
@@ -80,7 +85,7 @@ impl UiNativeSurfacePipeline {
         let clip = super::geometry::UiNativePhysicalRect::from_clip(mechanic.clip(), scale)?
             .pixel_bounds();
         let radii = physical_radii(mechanic.radii().corners(), scale)?;
-        let (paint_kind, fill_color, border_color, border_width) = match mechanic.paint() {
+        let (paint_kind, fill, border_color, border_width) = match mechanic.paint() {
             UiMountedSurfacePaint::Fill(color) => {
                 (UiNativeSurfacePaintKind::Fill, Some(*color), None, 0)
             }
@@ -105,12 +110,20 @@ impl UiNativeSurfacePipeline {
             ),
         };
         Ok(UiNativeSurfacePrimitive {
+            geometry: NativeSurfaceGeometry::prepare(
+                mechanic.geometry(),
+                scale,
+                [
+                    (allocation.right - allocation.left) as f64 / 1_000_000.0,
+                    (allocation.bottom - allocation.top) as f64 / 1_000_000.0,
+                ],
+            )?,
             allocation,
             clip,
             radii,
             border_width,
             paint_kind,
-            fill_color,
+            fill,
             border_color,
             opacity: mechanic.opacity().units(),
             border_edges: mechanic.border_edges(),
@@ -134,11 +147,12 @@ impl UiNativeSurfacePipeline {
     ) -> UiNativeSurfacePrimitive {
         UiNativeSurfacePrimitive {
             allocation: outline.outer(),
+            geometry: NativeSurfaceGeometry::Rectangle,
             clip: outline.clip(),
             radii: outline.outer_radii(),
             border_width: outline.width(),
             paint_kind: UiNativeSurfacePaintKind::Border,
-            fill_color: None,
+            fill: None,
             border_color: Some(outline.color()),
             opacity: outline.opacity(),
             border_edges: UiMountedSurfaceBorderEdges::ALL,
@@ -183,45 +197,6 @@ impl UiNativeSurfacePrimitive {
         }))
     }
 
-    pub(super) fn raster_storage(&self) -> Box<[f32]> {
-        let mut storage = Vec::with_capacity(28 + self.border_omissions.len() * 4);
-        storage.extend(self.allocation_edges_pixels());
-        storage.extend([
-            self.clip.left as f32,
-            self.clip.top as f32,
-            self.clip.right as f32,
-            self.clip.bottom as f32,
-        ]);
-        storage.extend(self.radii.map(micros_to_pixels));
-        storage.extend(color_vector(self.fill_color));
-        storage.extend(color_vector(self.border_color));
-        storage.extend([
-            micros_to_pixels(self.border_width),
-            f32::from(self.opacity) / f32::from(u16::MAX),
-            match self.paint_kind {
-                UiNativeSurfacePaintKind::Fill => 1.0,
-                UiNativeSurfacePaintKind::Border => 2.0,
-                UiNativeSurfacePaintKind::FillAndBorder => 3.0,
-            },
-            f32::from(border_edge_bits(self.border_edges)),
-        ]);
-        storage.extend([self.border_omissions.len() as f32, 0.0, 0.0, 0.0]);
-        storage.extend(self.border_omissions.iter().flat_map(|omission| {
-            [
-                match omission.side {
-                    UiMountedSurfaceBorderSide::Top => 0.0,
-                    UiMountedSurfaceBorderSide::Right => 1.0,
-                    UiMountedSurfaceBorderSide::Bottom => 2.0,
-                    UiMountedSurfaceBorderSide::Left => 3.0,
-                },
-                micros_to_pixels(omission.start),
-                micros_to_pixels(omission.end),
-                0.0,
-            ]
-        }));
-        storage.into_boxed_slice()
-    }
-
     fn allocation_edges_pixels(&self) -> [f32; 4] {
         [
             micros_to_pixels(self.allocation.left),
@@ -249,8 +224,30 @@ impl UiNativeSurfacePrimitive {
             return UiNativeSurfaceSample {
                 fill_coverage: zero,
                 border_coverage: zero,
-                fill_color: self.fill_color,
+                fill_color: self.fill.map(|fill| {
+                    fill.sample(
+                        self.allocation_edges_pixels().map(f64::from),
+                        [pixel_x as f64 + 0.5, pixel_y as f64 + 0.5],
+                    )
+                }),
                 border_color: self.border_color,
+                opacity: self.opacity,
+            };
+        }
+        if let Some(coverage) = self.geometry.coverage(
+            [pixel_x as f64 + 0.5, pixel_y as f64 + 0.5],
+            self.allocation_edges_pixels().map(f64::from),
+        ) {
+            return UiNativeSurfaceSample {
+                fill_coverage: UiNativeAnalyticCoverage::from_fraction(coverage),
+                border_coverage: zero,
+                fill_color: self.fill.map(|fill| {
+                    fill.sample(
+                        self.allocation_edges_pixels().map(f64::from),
+                        [pixel_x as f64 + 0.5, pixel_y as f64 + 0.5],
+                    )
+                }),
+                border_color: None,
                 opacity: self.opacity,
             };
         }
@@ -292,7 +289,12 @@ impl UiNativeSurfacePrimitive {
                 UiNativeSurfacePaintKind::Fill | UiNativeSurfacePaintKind::FillAndBorder => outer,
             },
             border_coverage,
-            fill_color: self.fill_color,
+            fill_color: self.fill.map(|fill| {
+                fill.sample(
+                    self.allocation_edges_pixels().map(f64::from),
+                    [pixel_x as f64 + 0.5, pixel_y as f64 + 0.5],
+                )
+            }),
             border_color: self.border_color,
             opacity: self.opacity,
         }

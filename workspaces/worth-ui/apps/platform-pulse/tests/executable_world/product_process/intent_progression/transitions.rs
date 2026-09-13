@@ -224,7 +224,7 @@ impl<'a> IntentJourney<'a, FirstHeld> {
         let sequence =
             observation::await_intent_input(self.world, 2, Operability::Ready, Gate::Released)?;
         self.evidence.record_sequence(sequence);
-        self.record_query_completion(self.state.attempt, 1, 2, "ACTION 1")?;
+        self.record_query_completion(self.state.attempt, 1, 2, "Deployed")?;
         self.record_refresh()?;
         self.visible_completed(self.action.region())?;
         self.advance_action("observe-first-consequence")?;
@@ -342,7 +342,7 @@ impl<'a> IntentJourney<'a, FreshConfirmationPending> {
         let sequence = observation::await_executor_started(self.world, admitted.value)?;
         self.evidence.record_provider_start();
         self.evidence.record_sequence(sequence);
-        self.record_query_completion(admitted.value, 4, 2, "ACTION 4")?;
+        self.record_query_completion(admitted.value, 4, 2, "Deployed")?;
         self.evidence.record_second_attempt(admitted.value);
         self.record_refresh()?;
         self.visible_completed(self.action.region())?;

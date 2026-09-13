@@ -45,6 +45,8 @@ mod appearance_state;
 #[path = "retained_draw_list/appearance_surface_sample.rs"]
 mod appearance_surface_sample;
 mod attribution;
+#[path = "retained_draw_list/backdrop_sample.rs"]
+mod backdrop_sample;
 #[path = "retained_draw_list/raster_command.rs"]
 mod raster_command;
 #[path = "retained_draw_list/render_order.rs"]

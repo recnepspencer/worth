@@ -137,9 +137,12 @@ fn backdrop_input(
             .ok_or(UiMountedAppearanceLoweringDenial::NodeProjectionUnavailable)?,
         appearance_opacity: opacity,
         motion_opacity: None,
-        motion_target: row
-            .motion()
-            .map(|motion| motion.portal().owner().mounted_instance_identity()),
+        motion_target: row.motion().map(|motion| {
+            worth_ui_host_contract::UiMountedPortalPresentationAffinity::from_runtime_mounting(
+                motion.portal().owner().mounted_instance_identity(),
+                motion.portal().diagnostic_value(),
+            )
+        }),
         attribution,
         semantic_digest,
     })

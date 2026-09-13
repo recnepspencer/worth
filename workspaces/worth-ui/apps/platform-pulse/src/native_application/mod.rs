@@ -84,30 +84,6 @@ struct PlatformPulsePendingQueryAction {
 }
 
 impl PlatformPulseApplicationRuntime {
-    fn refresh_product_story(&mut self, shell: &mut WorthUiNativeApplicationShell) -> bool {
-        match self.product_story.refresh_runtime(shell) {
-            Ok(()) => true,
-            Err(denial) => {
-                self.fail(PlatformPulseTerminalError::ProductCopy(denial), Ok(()));
-                false
-            }
-        }
-    }
-
-    fn publish_source_story(
-        &mut self,
-        shell: &mut WorthUiNativeApplicationShell,
-        sequence: u64,
-    ) -> bool {
-        match self.product_story.publish_source(shell, sequence) {
-            Ok(()) => true,
-            Err(denial) => {
-                self.fail(PlatformPulseTerminalError::ProductCopy(denial), Ok(()));
-                false
-            }
-        }
-    }
-
     fn publish_query_denial_story(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,

@@ -308,6 +308,7 @@ pub(in crate::native::presentation) fn portal_for_owner_at_order(
             ),
             anchor_bounds: viewport_box(4.0, 4.0, 4.0, 4.0),
             bounds: viewport_box(10.0, 0.0, 30.0, 20.0),
+            paint_bounds: viewport_box(10.0, 0.0, 30.0, 20.0),
             clip_bounds: viewport_box(15.0, 0.0, 10.0, 20.0),
             color: UiMountedRgba8::new(220, 40, 20, 255),
             layer_semantic_order: semantic_order,

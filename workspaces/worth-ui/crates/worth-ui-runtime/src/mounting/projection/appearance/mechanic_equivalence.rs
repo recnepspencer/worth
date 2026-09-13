@@ -9,7 +9,8 @@ pub(super) fn same_physical_output(
             UiMountedAppearanceMechanic::Surface(left),
             UiMountedAppearanceMechanic::Surface(right),
         ) => {
-            left.bounds() == right.bounds()
+            left.geometry() == right.geometry()
+                && left.bounds() == right.bounds()
                 && left.clip() == right.clip()
                 && left.surface_paint_order() == right.surface_paint_order()
                 && left.portal_group() == right.portal_group()
@@ -69,6 +70,7 @@ pub(super) fn same_physical_output(
                 && left.extent() == right.extent()
                 && left.clip() == right.clip()
                 && left.background() == right.background()
+                && left.motion_target() == right.motion_target()
                 && left.opacity() == right.opacity()
         }
         _ => false,

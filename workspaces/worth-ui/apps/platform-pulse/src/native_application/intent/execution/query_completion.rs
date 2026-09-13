@@ -46,7 +46,7 @@ impl PlatformPulseApplicationRuntime {
             self.fail_visual_identity(denial);
             return false;
         }
-        self.admit_query_predecessor(receipt) && self.refresh_product_story(shell)
+        self.admit_query_predecessor(receipt)
     }
 
     fn take_completed_query_action(

@@ -18,7 +18,7 @@ mod portal_geometry;
 mod reconstruction;
 mod resolved_node_source;
 mod style;
-pub(in crate::mounting::projection) use style::{has_surface_paint, resolved_opacity};
+pub(in crate::mounting::projection) use style::resolved_opacity;
 mod surface;
 mod text_foreground;
 mod text_geometry;

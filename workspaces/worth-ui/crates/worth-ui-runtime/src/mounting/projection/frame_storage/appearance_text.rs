@@ -25,7 +25,11 @@ impl UiMountedProjectionFrame {
         }
         let candidates = self.raw_appearance_text_candidates(instance)?;
         if !candidates.iter().any(|candidate| {
-            candidate.slot() == worth_ui_host_contract::UiSemanticTextSlot::Posture
+            if text.requires_lifecycle_caption() {
+                candidate.slot() == worth_ui_host_contract::UiSemanticTextSlot::Posture
+            } else {
+                candidate.slot() != worth_ui_host_contract::UiSemanticTextSlot::Posture
+            }
         }) {
             return Err(UiMountedAppearanceOutputDenial::TextCandidate(
                 super::super::UiMountedProjectionDenial::AppearanceTextCandidatesUnavailable,
@@ -63,7 +67,7 @@ impl UiMountedProjectionFrame {
             .into_iter()
             .filter(|span| retained.contains(span))
             .collect();
-        let candidates = self.clip_appearance_text_candidates(instance, candidates)?;
+        let candidates = self.clip_appearance_text_candidates(candidates)?;
         let mut visible: std::collections::HashMap<_, Vec<_>> =
             adopted.iter().map(|span| (*span, Vec::new())).collect();
         for candidate in &candidates {
@@ -96,7 +100,7 @@ impl UiMountedProjectionFrame {
         instance: UiMountedInstanceIdentity,
     ) -> Result<Vec<UiMountedSemanticTextMechanic>, UiMountedAppearanceOutputDenial> {
         let candidates = self.raw_appearance_text_candidates(instance)?;
-        self.clip_appearance_text_candidates(instance, candidates)
+        self.clip_appearance_text_candidates(candidates)
     }
 
     fn raw_appearance_text_candidates(
@@ -115,43 +119,11 @@ impl UiMountedProjectionFrame {
 
     fn clip_appearance_text_candidates(
         &self,
-        instance: UiMountedInstanceIdentity,
         candidates: Vec<UiMountedSemanticTextMechanic>,
     ) -> Result<Vec<UiMountedSemanticTextMechanic>, UiMountedAppearanceOutputDenial> {
-        let node = self
-            .semantic
-            .node(instance)
-            .ok_or(UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable)?;
-        let geometry = node.completed_appearance_geometry();
-        use crate::mounting::projection::appearance::UiMountedAppearanceClip as Clip;
-        if let Clip::Unresolved(denial) = geometry.clip {
-            return Err(UiMountedAppearanceOutputDenial::AncestorClip(denial));
-        }
-        if geometry.clip == Clip::Suppressed {
-            return Ok(Vec::new());
-        }
         candidates
             .into_iter()
-            .map(|candidate| {
-                let presented = match geometry.portal_presentation {
-                    Some((portal, source_anchor)) => {
-                        candidate.presented_within_portal(portal, source_anchor)
-                    }
-                    None => Ok(Some(candidate)),
-                };
-                presented
-                    .and_then(|candidate| match (candidate, geometry.clip) {
-                        (Some(candidate), Clip::Ancestor(clip)) => {
-                            candidate.clipped_to_appearance_ancestor(clip)
-                        }
-                        (candidate, _) => Ok(candidate),
-                    })
-                    .map_err(|denial| {
-                        UiMountedAppearanceOutputDenial::TextCandidate(
-                            super::super::UiMountedProjectionDenial::SemanticTextCompletion(denial),
-                        )
-                    })
-            })
+            .map(|candidate| self.present_semantic_text_row(candidate))
             .collect::<Result<Vec<_>, _>>()
             .map(|rows| rows.into_iter().flatten().collect())
     }

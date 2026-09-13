@@ -47,6 +47,7 @@ pub(crate) enum WorthUiBackdropMotionSource {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum WorthUiBackdropPlacementSource {
     AboveSurfaceContent,
+    ImmediatelyAboveSurfaceContent,
     ImmediatelyBeforePortal(Box<str>),
     ImmediatelyAfterPortal(Box<str>),
     ImmediatelyBeforeBackdrop(Box<str>),
@@ -257,6 +258,9 @@ fn parse_placement(cursor: &mut Cursor<'_>) -> Result<WorthUiBackdropPlacementSo
     cursor.advance();
     match direction.as_str() {
         "above_surface_content" => Ok(WorthUiBackdropPlacementSource::AboveSurfaceContent),
+        "immediately_above_surface_content" => {
+            Ok(WorthUiBackdropPlacementSource::ImmediatelyAboveSurfaceContent)
+        }
         "immediately_before" | "immediately_after" => {
             let before = direction == "immediately_before";
             let anchor_kind = cursor.word()?.to_owned();

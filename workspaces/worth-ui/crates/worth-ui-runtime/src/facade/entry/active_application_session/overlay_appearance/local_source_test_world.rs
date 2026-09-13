@@ -102,7 +102,7 @@ impl SourceWorld {
             .iter()
             .take(32)
             .map(|portal| {
-                UiMotionTargetIdentity::from_family_owner(
+                UiMotionTargetIdentity::from_portal_owner(
                     surfaces[0],
                     portal.owner().mounted_instance_identity(),
                     portal.diagnostic_value(),

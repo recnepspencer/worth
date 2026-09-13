@@ -57,6 +57,7 @@ impl PlatformPulseApplicationRuntime {
                 );
             }
         };
+
         match shell.advance_native_intent_executions(reading) {
             UiIntentExecutionAdvanceOutcome::Stopped(stop) => {
                 self.fail(
@@ -75,6 +76,7 @@ impl PlatformPulseApplicationRuntime {
                     );
                 }
                 let transitions = report.into_transitions();
+
                 progress = progress.saturating_add(transitions.len());
                 locally_progressed |= transitions
                     .iter()
@@ -154,11 +156,24 @@ impl PlatformPulseApplicationRuntime {
             self.fail_intent_settlement("completed transition omitted its consequence handle");
             return false;
         };
+        let Some(target) = self
+            .intent_evidence_index
+            .target_for_execution(attempt, idempotency)
+        else {
+            self.fail_intent_settlement("completed intent omitted its retained feedback target");
+            return false;
+        };
+        if let Err(denial) = self.product_story.prepare_completed_feedback(shell, target) {
+            self.fail_intent_settlement(format!("completed feedback admission failed: {denial:?}"));
+            return false;
+        }
         self.presentation_tick = self.presentation_tick.saturating_add(1);
+
         let outcome = shell.begin_managed_native_intent_consequence_publication(
             consequence,
             self.presentation_tick,
         );
+
         match outcome {
             Ok(WorthUiNativeManagedIntentConsequencePublicationOutcome::Published(receipt)) => self
                 .finish_intent_consequence_publication(shell, attempt, idempotency, kind, receipt),

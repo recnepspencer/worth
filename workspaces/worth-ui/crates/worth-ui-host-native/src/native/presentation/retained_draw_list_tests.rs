@@ -169,6 +169,7 @@ impl DrawListWorld {
                 ),
                 anchor_bounds: bounds,
                 bounds,
+                paint_bounds: bounds,
                 color,
                 layer_semantic_order,
                 layer_depth: 0,

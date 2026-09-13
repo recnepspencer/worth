@@ -20,7 +20,7 @@ fn appearance_refresh_composes_the_exact_physically_accepted_command_sample() {
         .current_presentation_for_surface(surface)
         .unwrap();
     let target =
-        UiMotionTargetIdentity::from_family_owner(surface, command.mounted_instance(), 801);
+        UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 801);
     install(&mut session, target, original, 801, false, None);
     present(&mut session, &host, surface, 1, 2);
     present(&mut session, &host, surface, 56, 3);
@@ -76,7 +76,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
         .current_presentation_for_surface(surface)
         .unwrap();
     let target =
-        UiMotionTargetIdentity::from_family_owner(surface, command.mounted_instance(), 811);
+        UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 811);
     install(&mut session, target, original, 811, false, None);
     assert_eq!(
         session
@@ -248,7 +248,7 @@ fn appearance_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
         .current_presentation_for_surface(surface)
         .unwrap();
     let target =
-        UiMotionTargetIdentity::from_family_owner(surface, command.mounted_instance(), 821);
+        UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 821);
     install(&mut session, target, original, 821, false, None);
     let graph = session
         .graph()

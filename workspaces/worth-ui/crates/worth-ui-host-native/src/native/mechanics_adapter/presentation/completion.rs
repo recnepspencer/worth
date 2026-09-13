@@ -34,6 +34,11 @@ pub(super) fn completed(
         ),
     );
     crate::native::capture::record_completed_view(state, view, epoch);
+    crate::native::presentation::appearance::cursor::accept_cursor(
+        state,
+        view.attempt(),
+        crate::native::presentation::appearance::cursor::completed_cursor(view),
+    );
     #[cfg(feature = "certification-support")]
     state.apply_completed_qualified_derived_state_loss(key);
     outcome

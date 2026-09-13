@@ -16,3 +16,4 @@ pub use slot_catalog::{
     UiThemeSlotCatalog, UiThemeSlotCatalogDenial, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
     UiThemeSlotSuccessorCompatibility,
 };
+mod value_digest;

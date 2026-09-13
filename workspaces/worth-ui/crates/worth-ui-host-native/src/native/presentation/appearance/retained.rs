@@ -4,6 +4,8 @@ use damage::{map_index_denial, record_damage, record_overlay_order_damage};
 #[path = "retained/capacity.rs"]
 mod capacity;
 use capacity::{family_capacity, family_slot};
+#[path = "retained/backdrop_motion.rs"]
+mod backdrop_motion;
 #[path = "retained/order_query.rs"]
 mod order_query;
 #[path = "retained/replay.rs"]
@@ -67,6 +69,10 @@ pub(crate) struct UiNativeAppearanceRetained {
         BTreeSet<UiNativeAppearanceCommandKey>,
     >,
     overlay_order: Option<UiNativeAppearanceCommandKey>,
+    backdrop_keys_by_portal: BTreeMap<
+        (worth_ui_host_contract::UiMountedInstanceIdentity, u64),
+        BTreeSet<UiNativeAppearanceCommandKey>,
+    >,
     order: UiNativeRetainedOrder<UiNativeAppearanceCommandKey>,
     damage_index: UiNativeDamageIndex<UiNativeAppearanceCommandKey>,
     damage_bounds: BTreeMap<UiNativeAppearanceCommandKey, UiNativeAppearanceDamageRect>,
@@ -83,6 +89,7 @@ impl UiNativeAppearanceRetained {
             commands: BTreeMap::new(),
             identities: BTreeMap::new(),
             text_keys_by_paint_command: HashMap::new(),
+            backdrop_keys_by_portal: BTreeMap::new(),
             overlay_order: None,
             order: UiNativeRetainedOrder::initial([])
                 .expect("the empty staged retained order is always admissible"),
@@ -146,6 +153,7 @@ impl UiNativeAppearanceRetained {
         }
         self.next_key = next_key;
         let text_commands = text_paint_commands(&command);
+        self.index_backdrop_motion(key, &command);
         self.identities.insert(identity, key);
         self.commands.insert(key, command);
         if family == UiNativeAppearanceCommandFamily::OverlayOrder {
@@ -237,6 +245,8 @@ impl UiNativeAppearanceRetained {
             .map(text_paint_commands)
             .unwrap_or_default();
         let new_text_commands = text_paint_commands(&command);
+        self.remove_backdrop_motion(key);
+        self.index_backdrop_motion(key, &command);
         self.commands.insert(key, command);
         self.remove_text_key(key, &old_text_commands);
         for identity in new_text_commands {
@@ -308,6 +318,7 @@ impl UiNativeAppearanceRetained {
         let identity = command.identity();
         let family = command.family();
         let text_commands = text_paint_commands(command);
+        self.remove_backdrop_motion(key);
         self.commands.remove(&key);
         if family == UiNativeAppearanceCommandFamily::OverlayOrder {
             self.overlay_order = None;

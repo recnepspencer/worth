@@ -49,9 +49,21 @@ impl UiMountedRetainedAppearanceVisualMechanic {
             | UiMountedAppearanceMechanic::Backdrop(_) => return None,
         };
         let (paint_alpha, uniform_fill) = match surface.paint() {
-            UiMountedSurfacePaint::Fill(fill) => (fill.straight_srgba()[3], true),
+            UiMountedSurfacePaint::Fill(fill) => (
+                fill.colors()
+                    .map(|color| color.straight_srgba()[3])
+                    .into_iter()
+                    .max()
+                    .unwrap(),
+                matches!(fill, worth_ui_host_contract::UiMountedSurfaceFill::Solid(_)),
+            ),
             UiMountedSurfacePaint::FillAndBorder { fill, border, .. } => (
-                fill.straight_srgba()[3].max(border.straight_srgba()[3]),
+                fill.colors()
+                    .map(|color| color.straight_srgba()[3])
+                    .into_iter()
+                    .max()
+                    .unwrap()
+                    .max(border.straight_srgba()[3]),
                 false,
             ),
             UiMountedSurfacePaint::Border { color, .. } => (color.straight_srgba()[3], false),

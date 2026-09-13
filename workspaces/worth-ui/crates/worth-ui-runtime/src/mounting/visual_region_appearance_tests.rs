@@ -9,7 +9,7 @@ fn rounded_and_border_coverage_cannot_claim_uniform_rectangular_opacity() {
     // inward border paints the edge but leaves (16,16) transparent. Neither
     // shape permits a single opaque rectangle to occlude the lower surface.
     for (paint, radius) in [
-        (UiMountedSurfacePaint::Fill(opaque), 8),
+        (UiMountedSurfacePaint::Fill(opaque.into()), 8),
         (
             UiMountedSurfacePaint::Border {
                 color: opaque,
@@ -19,7 +19,7 @@ fn rounded_and_border_coverage_cannot_claim_uniform_rectangular_opacity() {
         ),
         (
             UiMountedSurfacePaint::FillAndBorder {
-                fill: clear,
+                fill: clear.into(),
                 border: opaque,
                 inward_width: length(1),
             },
@@ -37,12 +37,12 @@ fn rounded_and_border_coverage_cannot_claim_uniform_rectangular_opacity() {
         );
     }
     assert_eq!(
-        paint_basis(UiMountedSurfacePaint::Fill(opaque), 0)
+        paint_basis(UiMountedSurfacePaint::Fill(opaque.into()), 0)
             .unwrap()
             .alpha(),
         Some(255)
     );
-    assert!(paint_basis(UiMountedSurfacePaint::Fill(clear), 0).is_none());
+    assert!(paint_basis(UiMountedSurfacePaint::Fill(clear.into()), 0).is_none());
 }
 
 fn length(points: i32) -> UiAppearanceLogicalLength {
@@ -58,6 +58,7 @@ fn paint_basis(paint: UiMountedSurfacePaint, radius: i32) -> Option<UiMountedApp
     let bounds = UiAppearanceAllocationBounds::new(0, 0, extent, extent).unwrap();
     let surface = UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
             issuer,
             node_receipt: issuer.receipt_for(instance),
             bounds,

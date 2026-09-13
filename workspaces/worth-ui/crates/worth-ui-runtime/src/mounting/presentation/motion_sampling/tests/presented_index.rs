@@ -3,6 +3,47 @@ use crate::mounting::presented_hit_index::UiPresentedHitIndex;
 use crate::mounting::spatial_index::UiMountedSpatialBudget;
 
 #[test]
+fn closed_portal_motion_cannot_hide_its_stationary_anchor() {
+    let ordinary = World::new();
+    let portal = World {
+        target: crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
+            ordinary.target.semantic_surface(),
+            ordinary.target.mounted_instance(),
+            ordinary.target.owner_key(),
+        ),
+        presentation: ordinary.presentation,
+    };
+    assert_ne!(ordinary.target, portal.target);
+    let mut sampler = UiMountedMotionSampler::default();
+    let mut index = UiPresentedHitIndex::default();
+    let base = crate::mounting::UiPresentedHitTestRow::from_mounted(
+        crate::mounting::UiMountedHitTestPresentation::for_test(
+            ordinary.hit_test_row([20.0, 10.0, 24.0, 12.0]),
+        ),
+    );
+    index.replace_base(base.mounted_instance(), Some(base));
+    sampler.install(portal.exit_receipt(303)).unwrap();
+    commit_tick(&mut sampler, 1, ordinary.presentation);
+    commit_tick(&mut sampler, 500, ordinary.presentation);
+    index.apply_motion(&sampler, ordinary.presentation, &[portal.target]);
+    assert_eq!(
+        at(&index, &ordinary, [30.0, 16.0]),
+        [base.mounted_instance()]
+    );
+    assert!(sampler
+        .current_sample_for_with_work(base.mounted_instance(), ordinary.presentation)
+        .0
+        .is_none());
+    assert!(sampler
+        .current_sample_for_target(portal.target, ordinary.presentation)
+        .is_some());
+    sampler.install(ordinary.exit_receipt(304)).unwrap();
+    commit_tick(&mut sampler, 501, ordinary.presentation);
+    index.apply_motion(&sampler, ordinary.presentation, &[ordinary.target]);
+    assert!(at(&index, &ordinary, [30.0, 16.0]).is_empty());
+}
+
+#[test]
 fn indexed_motion_preserves_baseline_clip_retained_versions_and_committed_only_updates() {
     let world = World::new();
     let mut sampler = UiMountedMotionSampler::default();

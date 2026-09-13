@@ -1,4 +1,18 @@
 impl super::UiMountedGraphReplacementSuccessor {
+    pub(crate) fn scroll_region_geometry(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+        slot: usize,
+    ) -> Option<(
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+        worth_ui_host_contract::UiMountedCanonicalBox,
+        worth_ui_host_contract::UiMountedCanonicalBox,
+    )> {
+        self.occurrence_geometry
+            .scroll_region_geometry(surface, target, slot)
+    }
+
     pub(crate) fn layout_validation_identity(&self) -> &crate::mounting::UiMountedIdentityState {
         &self.identity
     }
@@ -36,6 +50,7 @@ impl super::UiMountedGraphReplacementSuccessor {
     pub(crate) fn replace_candidate_occurrence_geometry(
         &mut self,
         batch: crate::mounting::UiMountedSurfaceGeometryBatch,
+        scroll: Option<&mut crate::runtime::scroll::UiScrollRuntimeState>,
     ) -> Result<
         crate::mounting::UiMountedLayoutCompletionReceipt,
         crate::mounting::UiMountedOccurrenceGeometryDenial,
@@ -52,6 +67,16 @@ impl super::UiMountedGraphReplacementSuccessor {
         let (changed, region_rows, region_lookups, seam_rows, seam_adjacencies) = self
             .occurrence_geometry
             .replace_surface(&self.identity, batch)?;
+        let mut changed = changed.into_vec();
+        if let Some(scroll) = scroll {
+            changed.extend(
+                self.occurrence_geometry
+                    .restore_scroll_geometry(surface, &self.identity, scroll)?
+                    .into_vec(),
+            );
+        }
+        changed.sort_unstable();
+        changed.dedup();
         if !changed.is_empty() {
             self.identity
                 .mark_occurrence_geometry_changed(&changed)

@@ -120,7 +120,8 @@ pub(super) fn assert_unpublished_surface_with_pointer(
     assert_eq!(
         mechanic.paint(),
         &worth_ui_host_contract::UiMountedSurfacePaint::Fill(
-            worth_ui_host_contract::UiMountedAppearanceColor::from_straight_srgba(expected_color),
+            worth_ui_host_contract::UiMountedAppearanceColor::from_straight_srgba(expected_color)
+                .into()
         )
     );
     assert_eq!(

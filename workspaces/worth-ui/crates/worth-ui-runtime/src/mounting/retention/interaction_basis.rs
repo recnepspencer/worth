@@ -85,6 +85,28 @@ impl UiPresentedHitTestBasis {
 }
 
 impl UiPresentedHitTestRow {
+    pub(in crate::mounting) fn with_prepared_entrance(
+        self,
+        entrance: crate::runtime::motion::UiPreparedMotionEntrance,
+    ) -> Self {
+        let (Some(source), Some(initial)) = entrance.geometry() else {
+            return self;
+        };
+        Self {
+            bounds: portal_motion::transform_presented_components(
+                self.bounds,
+                source,
+                initial.components(),
+            ),
+            clip_bounds: portal_motion::transform_presented_components(
+                self.clip_bounds,
+                source,
+                initial.components(),
+            ),
+            ..self
+        }
+    }
+
     pub(in crate::mounting) fn from_mounted(
         presentation: crate::mounting::UiMountedHitTestPresentation,
     ) -> Self {
@@ -209,7 +231,7 @@ impl UiPresentedHitTestRow {
 fn portal_motion_target(
     portal: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
 ) -> crate::runtime::motion::UiMotionTargetIdentity {
-    crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+    crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
         portal.surface(),
         portal.owner(),
         portal.portal_identity(),

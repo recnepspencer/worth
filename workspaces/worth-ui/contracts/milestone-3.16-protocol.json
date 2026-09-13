@@ -1,9 +1,9 @@
 {
   "live": {
-    "protocol_floor": 7,
-    "protocol_current": 7,
-    "mounted_frame": 6,
-    "mounted_presentation": 6,
+    "protocol_floor": 9,
+    "protocol_current": 9,
+    "mounted_frame": 8,
+    "mounted_presentation": 8,
     "text": 4,
     "observation": 7,
     "measurement": 5,

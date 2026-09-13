@@ -257,6 +257,7 @@ impl MountedPresentationWorld {
                     ),
                 anchor_bounds: bounds,
                 bounds,
+                paint_bounds: bounds,
                 color: spec.color,
                 layer_semantic_order: (spec.x as u32) / 40,
                 layer_depth: 0,

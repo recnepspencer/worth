@@ -1,11 +1,15 @@
 #[path = "integrated_appearance_world/authored.rs"]
 mod authored;
+#[path = "integrated_appearance_world/backdrop_role_succession.rs"]
+mod backdrop_role_succession;
 #[path = "integrated_appearance_world/captured_geometry.rs"]
 mod captured_geometry;
 #[path = "integrated_appearance_world/content_entry.rs"]
 mod content_entry;
 #[path = "integrated_appearance_world/content_recovery.rs"]
 mod content_recovery;
+#[path = "integrated_appearance_world/entrance_publication.rs"]
+mod entrance_publication;
 #[path = "integrated_appearance_world/focus_modality.rs"]
 mod focus_modality;
 #[path = "integrated_appearance_world/geometry.rs"]
@@ -14,6 +18,8 @@ mod geometry;
 mod hostile_protocol;
 #[path = "integrated_appearance_world/locality.rs"]
 mod locality;
+#[path = "integrated_appearance_world/modal_pointer_shielding.rs"]
+mod modal_pointer_shielding;
 #[path = "integrated_appearance_world/motion.rs"]
 mod motion;
 #[path = "integrated_appearance_world/motion_reconstruction.rs"]

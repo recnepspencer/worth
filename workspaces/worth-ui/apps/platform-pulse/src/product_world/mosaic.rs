@@ -7,6 +7,8 @@ pub enum PlatformPulseMosaicRegion {
     StatusBand,
     ServiceTile,
     NativeTile,
+    ServiceList,
+    ActivityList,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -19,6 +21,7 @@ pub enum PlatformPulseMosaicSurface {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PlatformPulseMosaicSizing {
+    DashboardList,
     Viewport,
     Masthead,
     EvidenceRail,
@@ -27,7 +30,7 @@ pub enum PlatformPulseMosaicSizing {
 }
 
 impl PlatformPulseMosaicRegion {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 9] = [
         Self::Viewport,
         Self::Masthead,
         Self::EvidenceRail,
@@ -35,6 +38,8 @@ impl PlatformPulseMosaicRegion {
         Self::StatusBand,
         Self::ServiceTile,
         Self::NativeTile,
+        Self::ServiceList,
+        Self::ActivityList,
     ];
 
     pub const fn id(self) -> &'static str {
@@ -45,6 +50,8 @@ impl PlatformPulseMosaicRegion {
             Self::ServiceStage => "platform.pulse.mosaic.region.service_stage",
             Self::StatusBand => "platform.pulse.mosaic.region.status_band",
             Self::ServiceTile => "platform.pulse.mosaic.region.service_tile",
+            Self::ServiceList => "platform.pulse.mosaic.region.service_list",
+            Self::ActivityList => "platform.pulse.mosaic.region.activity_list",
             Self::NativeTile => "platform.pulse.mosaic.region.native_tile",
         }
     }
@@ -64,7 +71,8 @@ impl PlatformPulseMosaicSurface {
 }
 
 impl PlatformPulseMosaicSizing {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
+        Self::DashboardList,
         Self::Viewport,
         Self::Masthead,
         Self::EvidenceRail,
@@ -74,6 +82,7 @@ impl PlatformPulseMosaicSizing {
 
     pub const fn id(self) -> &'static str {
         match self {
+            Self::DashboardList => "platform.pulse.mosaic.sizing.dashboard_list",
             Self::Viewport => "platform.pulse.mosaic.sizing.viewport",
             Self::Masthead => "platform.pulse.mosaic.sizing.masthead",
             Self::EvidenceRail => "platform.pulse.mosaic.sizing.evidence_rail",
@@ -84,6 +93,7 @@ impl PlatformPulseMosaicSizing {
 
     pub const fn named_measurement(self) -> Option<(&'static str, u32)> {
         match self {
+            Self::DashboardList => Some(("platform.pulse.measurement.dashboard_list_height", 269)),
             Self::Viewport | Self::ServiceStage => None,
             Self::Masthead => Some(("platform.pulse.measurement.masthead_height", 56)),
             Self::EvidenceRail => Some(("platform.pulse.measurement.evidence_width", 216)),

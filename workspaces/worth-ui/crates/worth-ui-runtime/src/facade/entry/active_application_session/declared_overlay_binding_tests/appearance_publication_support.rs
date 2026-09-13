@@ -180,7 +180,7 @@ fn appearance_overlay_session_with_component_role_and_region(
     (session, observer)
 }
 
-fn component_role() -> worth_ui_dsl::UiAppearanceRoleDeclaration {
+pub(super) fn component_role() -> worth_ui_dsl::UiAppearanceRoleDeclaration {
     use worth_ui_dsl::*;
     UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("overlay.content").unwrap())
         .applies_to_component(UiDslComponentReference::new("workspace.component.overlay").unwrap())
@@ -301,7 +301,7 @@ pub(super) fn open_portal(
     portal
 }
 
-fn theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabilities {
+pub(super) fn theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabilities {
     use crate::capability::*;
     let slots = [
         (

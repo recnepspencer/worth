@@ -181,20 +181,6 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
                         Ok(()),
                     );
                 } else {
-                    if let Some(sequence) = self
-                        .initial_source
-                        .as_ref()
-                        .map(worth_ui::facade::source::WorthUiSourcePackageRevision::sequence)
-                    {
-                        let mut shell = self.take_runtime_shell();
-                        let published = self.publish_source_story(&mut shell, sequence)
-                            && self.refresh_product_story(&mut shell);
-                        self.shell = Some(shell);
-                        if !published {
-                            let directive = self.native_runtime_directive();
-                            return Ok((self.take_runtime_shell(), directive));
-                        }
-                    }
                     let layout = super::layout::publish_native_layout(
                         self.shell
                             .as_mut()

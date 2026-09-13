@@ -217,7 +217,7 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
 
     fn presentation_attribution(
         &self,
-        observed: &worth_ui_host_native::UiNativePresentationObservation,
+        observed: &worth_ui_host_native::UiNativeRetainedFrameObservation,
     ) -> Option<worth_ui_host_native::UiNativeClientPresentationAttribution> {
         self.shell
             .as_ref()

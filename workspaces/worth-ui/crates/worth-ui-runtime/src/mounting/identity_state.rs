@@ -194,6 +194,10 @@ impl UiMountedIdentityState {
             .snapshot(self.semantic_revision, self.binding_revision)
     }
 
+    pub(crate) fn projection_changes_pending(&self) -> bool {
+        !self.pending_projection_changes.is_empty()
+    }
+
     pub(crate) fn projection_changes_for_surfaces(
         &self,
         surfaces: &[UiSemanticSurfaceIdentity],

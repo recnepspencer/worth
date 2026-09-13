@@ -109,6 +109,7 @@ fn portal_input(
         ),
         anchor_bounds: canonical_box(88.0, 160.0, 96.0, 40.0, UiMountedCoordinateSpace::Viewport),
         bounds,
+        paint_bounds: bounds,
         clip_bounds,
         color: UiMountedRgba8::new(246, 247, 249, 255),
         layer_semantic_order: 2_000,
@@ -151,7 +152,7 @@ fn retained_portal_equivalence_excludes_lineage_but_rejects_physical_changes() {
         UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(advanced).unwrap()
     ));
 
-    let mut variants = [baseline; 6];
+    let mut variants = [baseline; 7];
     variants[0].color = UiMountedRgba8::new(245, 247, 249, 255);
     variants[1].bounds = canonical_box(
         101.0,
@@ -165,14 +166,80 @@ fn retained_portal_equivalence_excludes_lineage_but_rejects_physical_changes() {
     variants[3].layer_semantic_order += 1;
     variants[4].lifecycle = UiMountedPortalOverlayLifecyclePosture::Closing;
     variants[5].shielding = UiMountedPortalInputShielding::ModalSurface;
+    variants[6].paint_bounds = canonical_box(
+        64.0,
+        164.0,
+        352.0,
+        392.0,
+        UiMountedCoordinateSpace::Viewport,
+    );
     for variant in variants {
-        assert!(!row.same_retained_paint_meaning(
-            UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(variant).unwrap()
-        ));
+        let changed =
+            UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(variant).unwrap();
+        assert!(!row.same_retained_paint_meaning(changed));
+        assert_ne!(row.semantic_digest(), changed.semantic_digest());
     }
 }
 
 mod clipping;
+
+#[test]
+fn portal_shadow_allocation_translates_and_clips_in_paint_space() {
+    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let body = canonical_box(
+        100.0,
+        200.0,
+        280.0,
+        320.0,
+        UiMountedCoordinateSpace::Viewport,
+    );
+    let paint = canonical_box(
+        64.0,
+        164.0,
+        352.0,
+        392.0,
+        UiMountedCoordinateSpace::Viewport,
+    );
+    let mut input = portal_input(frame, surface, binding, body, paint);
+    input.paint_bounds = paint;
+    let portal = UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(input).unwrap();
+    assert_eq!(
+        portal.schema().revision(),
+        2,
+        "body and paint bounds use the new row schema"
+    );
+    let mut inconsistent = input;
+    inconsistent.paint_bounds = canonical_box(
+        101.0,
+        200.0,
+        279.0,
+        320.0,
+        UiMountedCoordinateSpace::Viewport,
+    );
+    assert_eq!(
+        UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(inconsistent),
+        Err(crate::UiMountedPortalOverlayCompletionDenial::PaintBoundsDoNotCoverBody)
+    );
+    let source = canonical_box(
+        88.0,
+        160.0,
+        352.0,
+        392.0,
+        UiMountedCoordinateSpace::HostSurface,
+    );
+    let projected =
+        super::portal_child_geometry::project(source, source, portal, portal.anchor_bounds())
+            .unwrap()
+            .unwrap();
+    assert_eq!(portal.bounds(), body);
+    assert_eq!(projected.bounds, paint);
+    assert_eq!(
+        projected.clip, paint,
+        "finite shadow support is not clipped to its caster"
+    );
+}
 
 fn canonical_box(
     x: f32,

@@ -214,6 +214,7 @@ mod tests {
                 ),
                 anchor_bounds: bounds,
                 bounds,
+                paint_bounds: bounds,
                 color: UiMountedRgba8::new(0, 0, 0, 255),
                 layer_semantic_order: 0,
                 layer_depth: 0,

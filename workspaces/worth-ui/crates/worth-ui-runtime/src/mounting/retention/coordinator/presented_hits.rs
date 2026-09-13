@@ -50,6 +50,10 @@ impl UiMountedFrameRetentionCoordinator {
             .ok_or(UiPresentedFrameBasisDenial::Unknown)?;
         evidence.classify(presentation, None, None)?;
         let basis = evidence.visual_region_basis(presentation.binding());
+        let floor = basis.modal_input_floor(presentation.binding(), work);
+        if !basis.admits_modal_input(instance, floor) {
+            return Err(UiPresentedFrameBasisDenial::InstanceNotPresented);
+        }
         let (row, probes) = basis
             .presented_hits
             .for_instance(presentation.binding(), instance);
@@ -136,6 +140,25 @@ impl UiMountedFrameRetentionCoordinator {
             .presented_hits
             .at_point(presentation.binding(), point, budget)
             .map_err(UiPresentedPointLookupDenial::Query)?;
+        let floor = basis.modal_input_floor(presentation.binding(), &mut query.work);
+        query
+            .rows
+            .retain(|row| basis.admits_modal_input(row.mounted_instance(), floor));
+        if let Some(surface) = query.rows.first().map(|row| row.mounted().surface()) {
+            let current = authority.surface_evidence(surface).ok_or(
+                UiPresentedPointLookupDenial::Presentation(UiPresentedFrameBasisDenial::Expired),
+            )?;
+            if current.frame() != evidence.frame() {
+                // A retained event keeps its observed geometry, but cannot
+                // regain input authority behind a newly accepted modal.
+                let current_basis = current.visual_region_basis(presentation.binding());
+                let current_floor =
+                    current_basis.modal_input_floor(presentation.binding(), &mut query.work);
+                query.rows.retain(|row| {
+                    current_basis.admits_modal_input(row.mounted_instance(), current_floor)
+                });
+            }
+        }
         for row in &mut query.rows {
             let (reattributed, probes) = row.reattributed(evidence.receipts());
             *row = reattributed;

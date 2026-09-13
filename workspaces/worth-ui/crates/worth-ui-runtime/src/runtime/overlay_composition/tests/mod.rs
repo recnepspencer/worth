@@ -1,4 +1,5 @@
 mod support;
+mod surface_scrim;
 
 #[path = "capacity.rs"]
 mod capacity;

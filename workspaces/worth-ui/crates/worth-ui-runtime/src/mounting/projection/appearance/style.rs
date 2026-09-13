@@ -1,6 +1,6 @@
 pub(super) struct ResolvedNodeStyle {
     pub(super) radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii,
-    pub(super) fill: Option<worth_ui_host_contract::UiMountedAppearanceColor>,
+    pub(super) fill: Option<worth_ui_host_contract::UiMountedSurfaceFill>,
     pub(super) border: Option<(
         worth_ui_host_contract::UiMountedAppearanceColor,
         worth_ui_host_contract::UiAppearanceLogicalLength,
@@ -8,26 +8,6 @@ pub(super) struct ResolvedNodeStyle {
     pub(super) outline: Option<worth_ui_dsl::UiThemeOutline>,
     pub(super) foreground: Option<worth_ui_host_contract::UiMountedAppearanceColor>,
     pub(super) opacity: worth_ui_host_contract::UiMountedAppearanceOpacity,
-}
-
-/// Whether the projection paints a surface at all: a supported background
-/// fill or border stroke.
-pub(in crate::mounting::projection) fn has_surface_paint(
-    projection: &crate::runtime::appearance::UiAppearanceProjection,
-) -> bool {
-    projection.aspects().iter().any(|aspect| {
-        aspect.support() == crate::runtime::appearance::UiAppearanceSupportPosture::Supported
-            && matches!(
-                (aspect.aspect(), aspect.value()),
-                (
-                    worth_ui_dsl::UiAppearanceAspect::Background,
-                    worth_ui_dsl::UiThemeValue::Color(_)
-                ) | (
-                    worth_ui_dsl::UiAppearanceAspect::Border,
-                    worth_ui_dsl::UiThemeValue::SolidStroke(_)
-                )
-            )
-    })
 }
 
 pub(super) fn resolve(
@@ -57,7 +37,22 @@ pub(super) fn resolve(
             (
                 worth_ui_dsl::UiAppearanceAspect::Background,
                 worth_ui_dsl::UiThemeValue::Color(color),
-            ) => style.fill = Some(mounted_color(color)),
+            ) => style.fill = Some(mounted_color(color).into()),
+            (
+                worth_ui_dsl::UiAppearanceAspect::Background,
+                worth_ui_dsl::UiThemeValue::LinearGradient(gradient),
+            ) => {
+                style.fill = Some(
+                    worth_ui_host_contract::UiMountedSurfaceFill::LinearGradient(
+                        worth_ui_host_contract::UiMountedLinearGradient::new(
+                            gradient.start(),
+                            gradient.end(),
+                            gradient.colors().map(mounted_color),
+                        )
+                        .expect("admitted gradient endpoints are distinct"),
+                    ),
+                )
+            }
             (
                 worth_ui_dsl::UiAppearanceAspect::Border,
                 worth_ui_dsl::UiThemeValue::SolidStroke(stroke),

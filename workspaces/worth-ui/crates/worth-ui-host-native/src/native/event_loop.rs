@@ -20,6 +20,7 @@ mod failure;
 mod finish;
 mod finish_capture;
 mod finish_cleanup;
+mod native_input;
 mod observation_clock;
 mod physical_clock;
 pub use physical_clock::UiNativeObservationClock;

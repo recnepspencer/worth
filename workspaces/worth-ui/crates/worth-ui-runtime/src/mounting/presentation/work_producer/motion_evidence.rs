@@ -21,6 +21,67 @@ pub(super) struct UiCommandMotionUpdate {
     sample: UiPresentationMotionSampleReceipt,
 }
 
+#[derive(Clone)]
+pub(super) struct UiPreparedEntranceAcceptance {
+    entrance: crate::runtime::motion::UiPreparedMotionEntrance,
+    commands: Box<[(UiMountedPaintCommandIdentity, UiCommandMotionAcceptance)]>,
+}
+
+impl UiMountedPresentationState {
+    pub(super) fn retain_entrance_acceptance(
+        &mut self,
+        entrance: crate::runtime::motion::UiPreparedMotionEntrance,
+        changes: &[worth_ui_host_contract::UiMountedPresentationSampleChange],
+    ) -> Result<(), worth_ui_host_contract::UiHostSurfacePresentationDenial> {
+        let commands = changes
+            .iter()
+            .map(|change| {
+                self.motion_slot(change.command()).cloned().map(|slot| (change.command(), slot))
+                .ok_or(worth_ui_host_contract::UiHostSurfacePresentationDenial::MalformedProjection)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        self.entrance_acceptance = Some(UiPreparedEntranceAcceptance {
+            entrance,
+            commands: commands.into_boxed_slice(),
+        });
+        Ok(())
+    }
+
+    pub(in crate::mounting::presentation) fn accept_entrance(
+        &mut self,
+        sample: UiPresentationMotionSampleReceipt,
+    ) -> Result<bool, UiCommandMotionAcceptanceDenial> {
+        let Some(prepared) = self.entrance_acceptance.as_ref() else {
+            return Ok(false);
+        };
+        let entrance = prepared.entrance;
+        if entrance.track() != sample.track()
+            || entrance.target() != sample.target()
+            || entrance.frame() != sample.presentation_basis().frame()
+            || sample.opacity_units() != 0
+            || entrance.geometry().0.map(|geometry| geometry.components())
+                != sample.base_geometry().map(|geometry| geometry.components())
+            || entrance.geometry().1.map(|geometry| geometry.components())
+                != sample.geometry().map(|geometry| geometry.components())
+        {
+            return Err(UiCommandMotionAcceptanceDenial::SampleBasis);
+        }
+        let updates = prepared
+            .commands
+            .iter()
+            .map(|(command, slot)| UiCommandMotionUpdate {
+                command: *command,
+                slot: slot.clone(),
+                sample,
+            })
+            .collect();
+        UiPreparedCommandMotionAcceptance::new(updates)
+            .accept(self, sample.presentation_basis())?;
+        self.entrance_acceptance = None;
+        Ok(true)
+    }
+}
+
 /// Prepared before host effects; dropping it changes no accepted evidence.
 #[derive(Default)]
 pub(in crate::mounting::presentation) struct UiPreparedCommandMotionAcceptance {

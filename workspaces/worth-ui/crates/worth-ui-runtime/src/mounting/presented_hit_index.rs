@@ -132,9 +132,11 @@ impl UiPresentedHitIndex {
             }
             let (row, probes) = self.rows.get_with_probes(&target.mounted_instance());
             work.map_key_probes += probes;
-            if row.is_some_and(|row| {
-                row.base.portal_motion_target().is_none() && !row.base.owns_presented_portal()
-            }) {
+            if !target.is_portal_contents()
+                && row.is_some_and(|row| {
+                    row.base.portal_motion_target().is_none() && !row.base.owns_presented_portal()
+                })
+            {
                 selected.insert(target.mounted_instance());
             }
         }
@@ -156,6 +158,41 @@ impl UiPresentedHitIndex {
                 &mut work,
                 self.rows.insert_with_work(
                     instance,
+                    Record {
+                        effective,
+                        ..record
+                    },
+                ),
+            );
+        }
+        work
+    }
+
+    pub(in crate::mounting) fn prepare_motion_entrance(
+        &mut self,
+        entrance: crate::runtime::motion::UiPreparedMotionEntrance,
+    ) -> UiHitTestSpatialWork {
+        let mut work = UiHitTestSpatialWork::default();
+        let (members, probes) = self.portal_targets.get_with_probes(&entrance.target());
+        work.map_key_probes += probes;
+        let Some(members) = members.cloned() else {
+            return work;
+        };
+        for instance in members.iter() {
+            work.motion_members_visited += 1;
+            let (record, probes) = self.rows.get_with_probes(instance);
+            work.map_key_probes += probes;
+            let record = *record.expect("Portal target members retain their hit rows");
+            work.motion_rows_projected += 1;
+            let effective = Some(record.base.with_prepared_entrance(entrance));
+            if record.effective == effective {
+                continue;
+            }
+            self.update_partition(record.base, record.effective, effective, 0, &mut work);
+            record_map(
+                &mut work,
+                self.rows.insert_with_work(
+                    *instance,
                     Record {
                         effective,
                         ..record

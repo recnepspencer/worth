@@ -1,5 +1,7 @@
 #[path = "declared_overlay_binding_tests/allocation_succession.rs"]
 mod allocation_succession;
+#[path = "declared_overlay_binding_tests/appearance_child_composition.rs"]
+mod appearance_child_composition;
 #[path = "declared_overlay_binding_tests/appearance_publication_support.rs"]
 mod appearance_publication_support;
 #[path = "declared_overlay_binding_tests/appearance_region_clip.rs"]

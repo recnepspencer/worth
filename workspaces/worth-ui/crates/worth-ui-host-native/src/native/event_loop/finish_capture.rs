@@ -38,12 +38,7 @@ pub(super) fn capture<Client: UiNativeEventLoopClient>(
         client_attribution: application
             .client
             .as_ref()
-            .zip(
-                state
-                    .last_retained_frame
-                    .as_ref()
-                    .and_then(|frame| frame.presentation()),
-            )
+            .zip(state.last_retained_frame.as_ref())
             .and_then(|(client, observed)| client.presentation_attribution(observed)),
         effect_posture: state.lifecycle.effect_posture(),
         host_peak_census: state.compiler_total_peak(),

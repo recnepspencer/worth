@@ -38,7 +38,7 @@ pub(super) fn issue(
         {
             return Err(UiHostSurfacePresentationDenial::StalePredecessor);
         }
-        let candidate = prepared.state;
+        let mut candidate = prepared.state;
         let mut work = match prepared.origin {
             CandidateOrigin::Initial => {
                 candidate.issue_initial(authority.presentation(), surface.projection())
@@ -64,8 +64,17 @@ pub(super) fn issue(
             } => candidate.issue_reconstruction(authority.presentation(), &projection, predecessor),
         };
         work.bind_layout_owner(surface.projection_owner());
-        let appearance_sample_overrides =
+        let mut appearance_sample_overrides =
             candidate.appearance_motion_overrides(frame.appearance_changed_instances());
+        if let Some(entrance) = frame.motion_entrance() {
+            let initial = candidate.prepare_motion_entrance(entrance)?;
+            appearance_sample_overrides.retain(|sample| {
+                !initial
+                    .iter()
+                    .any(|initial| initial.command() == sample.command())
+            });
+            appearance_sample_overrides.extend(initial);
+        }
         work.bind_appearance(
             frame.appearance_projection(),
             presentation,

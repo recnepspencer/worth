@@ -37,7 +37,9 @@ pub(super) fn complete(
         context.presentation_async.as_deref_mut(),
     ) {
         Ok(posture) => posture,
-        Err(uncertainty) => return Some(uncertainty),
+        Err(uncertainty) => {
+            return Some(uncertainty);
+        }
     };
     context.progress.superseded |= posture
         == super::super::presented_semantic_settlement::PresentedSemanticPosture::Superseded;

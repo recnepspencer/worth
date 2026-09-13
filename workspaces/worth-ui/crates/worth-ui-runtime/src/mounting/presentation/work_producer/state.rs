@@ -2,6 +2,9 @@
 mod appearance_targets;
 #[path = "state/command_view.rs"]
 mod command_view;
+#[cfg(test)]
+#[path = "state/retained_order_tests.rs"]
+mod retained_order_tests;
 pub(super) use appearance_targets::UiMountedAppearanceSurfaceSampleTarget;
 
 use worth_ui_host_contract::{
@@ -10,7 +13,7 @@ use worth_ui_host_contract::{
     UiMountedProjectionView,
 };
 
-use crate::runtime::persistent_index::{UiPersistentOrdMap, UiPersistentOrder};
+use crate::runtime::persistent_index::{UiPersistentOrdMap, UiPersistentOrdSet, UiPersistentOrder};
 
 #[derive(Clone)]
 pub(crate) struct UiMountedPresentationState {
@@ -34,6 +37,7 @@ pub(crate) struct UiMountedPresentationState {
     >,
     portal_motion_groups: super::portal_motion_groups::UiMountedPortalMotionGroups,
     instance_order: UiPersistentOrder<worth_ui_host_contract::UiMountedInstanceIdentity>,
+    presented_instances: UiPersistentOrdSet<worth_ui_host_contract::UiMountedInstanceIdentity>,
     command_order: UiPersistentOrdMap<PresentationOrderKey, UiMountedPaintCommandIdentity>,
     pub(super) order_integrity: UiMountedPaintOrderIntegrity,
     pub(super) auxiliary: UiMountedPresentationAuxiliaryState,
@@ -41,6 +45,7 @@ pub(crate) struct UiMountedPresentationState {
     pub(super) node_changes:
         std::sync::Arc<[worth_ui_host_contract::UiMountedPresentationNodeChange]>,
     pub(super) projection_rows_materialized: u64,
+    pub(super) entrance_acceptance: Option<super::motion_evidence::UiPreparedEntranceAcceptance>,
 }
 
 type PresentationOrderKey = (u32, u64, usize);
@@ -52,22 +57,41 @@ impl UiMountedPresentationState {
         self.requirement.semantic_surface()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn from_projection(
         projection: &UiMountedProjectionView,
         requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
         predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
     ) -> Self {
         let mut instance_order = UiPersistentOrder::default();
+        for node in projection.nodes() {
+            instance_order
+                .append(node.mounted_instance())
+                .expect("projection nodes are unique");
+        }
+        Self::from_projection_in_authored_order(
+            projection,
+            requirement,
+            predecessor,
+            instance_order,
+        )
+    }
+
+    pub(in crate::mounting::presentation) fn from_projection_in_authored_order(
+        projection: &UiMountedProjectionView,
+        requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
+        predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
+        instance_order: UiPersistentOrder<worth_ui_host_contract::UiMountedInstanceIdentity>,
+    ) -> Self {
         let mut command_order = UiPersistentOrdMap::default();
         let command_indices = projection.retained_command_indices();
         let retained_commands = projection.retained_paint_commands();
         let commands_by_instance = projection.retained_commands_by_instance();
         let mut persistent_commands = UiPersistentOrdMap::default();
+        let mut presented_instances = UiPersistentOrdSet::default();
         for node in projection.nodes() {
             let instance = node.mounted_instance();
-            instance_order
-                .append(instance)
-                .expect("projection nodes are unique");
+            presented_instances.insert(instance);
             let commands = commands_by_instance
                 .get(&instance)
                 .into_iter()
@@ -104,6 +128,7 @@ impl UiMountedPresentationState {
             );
         Self {
             predecessor,
+            entrance_acceptance: None,
             frame: projection.frame(),
             requirement,
             rebound_from_binding: None,
@@ -114,6 +139,7 @@ impl UiMountedPresentationState {
             appearance_surfaces: UiPersistentOrdMap::default(),
             portal_motion_groups,
             instance_order,
+            presented_instances,
             command_order,
             order_integrity: projection.retained_order_integrity(),
             auxiliary: UiMountedPresentationAuxiliaryState::from_runtime_mounting(projection),
@@ -136,6 +162,7 @@ impl UiMountedPresentationState {
         requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
     ) -> Self {
         let mut successor = predecessor.clone();
+        successor.entrance_acceptance = None;
         successor.predecessor = source.predecessor();
         successor.frame = source.frame().frame_identity();
         successor.requirement = requirement;
@@ -150,9 +177,7 @@ impl UiMountedPresentationState {
         {
             successor.remove_bundle(*instance);
         }
-        successor.instance_order = source
-            .frame()
-            .presentation_instance_order(requirement.semantic_surface(), requirement.binding());
+        successor.instance_order = source.frame().presentation_authored_order();
         let mut insertions = source
             .changed_instances()
             .iter()
@@ -187,6 +212,7 @@ impl UiMountedPresentationState {
                 commands.as_ref(),
                 affinity,
                 requirement.semantic_surface(),
+                false,
             );
         }
         successor.effects = source
@@ -202,12 +228,24 @@ impl UiMountedPresentationState {
             .into_iter()
             .filter(|change| match change {
                 worth_ui_host_contract::UiMountedPresentationNodeChange::Remove(instance) => {
-                    predecessor.instance_order.position(*instance).is_some()
+                    predecessor.presented_instances.contains(instance)
                 }
                 worth_ui_host_contract::UiMountedPresentationNodeChange::Upsert(_) => true,
             })
             .collect::<Vec<_>>()
             .into();
+        for change in successor.node_changes.iter() {
+            match change {
+                worth_ui_host_contract::UiMountedPresentationNodeChange::Remove(instance) => {
+                    successor.presented_instances.remove(instance);
+                }
+                worth_ui_host_contract::UiMountedPresentationNodeChange::Upsert(node) => {
+                    successor
+                        .presented_instances
+                        .insert(node.mounted_instance());
+                }
+            }
+        }
         let mut lane_candidate = successor.auxiliary.clone();
         source
             .frame()

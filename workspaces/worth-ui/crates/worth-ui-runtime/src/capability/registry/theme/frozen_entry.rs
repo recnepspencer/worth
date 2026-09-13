@@ -1,3 +1,4 @@
+use super::value_digest::{fold, fold_theme_value};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FrozenAppearanceThemeCapabilities {
     catalog: super::UiThemeSlotCatalog,
@@ -173,47 +174,6 @@ fn terminal_slot<'a>(
             .expect("admitted catalogs retain every alias target");
     }
     current.identity()
-}
-
-fn fold(mut digest: u64, value: u64) -> u64 {
-    digest ^= value;
-    digest.wrapping_mul(0x0000_0100_0000_01b3)
-}
-
-fn fold_theme_value(digest: u64, value: worth_ui_dsl::UiThemeValue) -> u64 {
-    use worth_ui_dsl::UiThemeValue;
-    match value {
-        UiThemeValue::Color(color) => color
-            .channels()
-            .into_iter()
-            .fold(digest, |d, v| fold(d, u64::from(v))),
-        UiThemeValue::Opacity(opacity) => fold(digest, u64::from(opacity.units())),
-        UiThemeValue::LogicalLength(length) => fold(digest, length.subpixels() as u64),
-        UiThemeValue::CornerRadii(radii) => radii
-            .corners()
-            .into_iter()
-            .fold(digest, |d, v| fold(d, v.subpixels() as u64)),
-        UiThemeValue::SolidStroke(stroke) => {
-            let color = stroke
-                .color()
-                .channels()
-                .into_iter()
-                .fold(digest, |d, v| fold(d, u64::from(v)));
-            fold(color, stroke.width().subpixels() as u64)
-        }
-        UiThemeValue::SolidOutline(outline) => {
-            let stroke = outline.stroke();
-            let color = stroke
-                .color()
-                .channels()
-                .into_iter()
-                .fold(digest, |d, v| fold(d, u64::from(v)));
-            fold(
-                fold(color, stroke.width().subpixels() as u64),
-                outline.offset().subpixels() as u64,
-            )
-        }
-    }
 }
 
 #[cfg(test)]

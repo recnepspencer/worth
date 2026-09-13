@@ -1,0 +1,169 @@
+appearance role platform.pulse.appearance.activity_card applies_to platform.pulse.component.activity_card {
+  background use token(theme.platform_pulse.raised_surface)
+  radius use token(theme.platform_pulse.radius.r12)
+  border use token(theme.platform_pulse.border.card)
+}
+component platform.pulse.component.activity_card {
+  appearance { role platform.pulse.appearance.activity_card }
+}
+appearance role platform.pulse.appearance.activity_heading applies_to platform.pulse.component.activity_heading {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.activity_heading {
+  appearance { role platform.pulse.appearance.activity_heading }
+}
+appearance role platform.pulse.appearance.activity_rail applies_to platform.pulse.component.activity_rail {
+  background use token(theme.platform_pulse.structural_rule)
+}
+component platform.pulse.component.activity_rail {
+  appearance { role platform.pulse.appearance.activity_rail }
+}
+appearance role platform.pulse.appearance.activity_dot_0 applies_to platform.pulse.component.activity_dot_0 {
+  background use token(theme.platform_pulse.positive)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.activity_dot_0 {
+  appearance { role platform.pulse.appearance.activity_dot_0 }
+}
+appearance role platform.pulse.appearance.activity_title_0 applies_to platform.pulse.component.activity_title_0 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.activity_title_0 {
+  appearance { role platform.pulse.appearance.activity_title_0 }
+}
+appearance role platform.pulse.appearance.activity_body_0 applies_to platform.pulse.component.activity_body_0 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_body_0 {
+  appearance { role platform.pulse.appearance.activity_body_0 }
+}
+appearance role platform.pulse.appearance.activity_time_0 applies_to platform.pulse.component.activity_time_0 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_time_0 {
+  appearance { role platform.pulse.appearance.activity_time_0 }
+}
+appearance role platform.pulse.appearance.activity_rule_0 applies_to platform.pulse.component.activity_rule_0 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.activity_rule_0 {
+  appearance { role platform.pulse.appearance.activity_rule_0 }
+}
+appearance role platform.pulse.appearance.activity_dot_1 applies_to platform.pulse.component.activity_dot_1 {
+  background use token(theme.platform_pulse.principal_accent)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.activity_dot_1 {
+  appearance { role platform.pulse.appearance.activity_dot_1 }
+}
+appearance role platform.pulse.appearance.activity_title_1 applies_to platform.pulse.component.activity_title_1 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.activity_title_1 {
+  appearance { role platform.pulse.appearance.activity_title_1 }
+}
+appearance role platform.pulse.appearance.activity_body_1 applies_to platform.pulse.component.activity_body_1 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_body_1 {
+  appearance { role platform.pulse.appearance.activity_body_1 }
+}
+appearance role platform.pulse.appearance.activity_time_1 applies_to platform.pulse.component.activity_time_1 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_time_1 {
+  appearance { role platform.pulse.appearance.activity_time_1 }
+}
+appearance role platform.pulse.appearance.activity_rule_1 applies_to platform.pulse.component.activity_rule_1 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.activity_rule_1 {
+  appearance { role platform.pulse.appearance.activity_rule_1 }
+}
+appearance role platform.pulse.appearance.activity_dot_2 applies_to platform.pulse.component.activity_dot_2 {
+  background use token(theme.platform_pulse.caution)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.activity_dot_2 {
+  appearance { role platform.pulse.appearance.activity_dot_2 }
+}
+appearance role platform.pulse.appearance.activity_title_2 applies_to platform.pulse.component.activity_title_2 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.activity_title_2 {
+  appearance { role platform.pulse.appearance.activity_title_2 }
+}
+appearance role platform.pulse.appearance.activity_body_2 applies_to platform.pulse.component.activity_body_2 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_body_2 {
+  appearance { role platform.pulse.appearance.activity_body_2 }
+}
+appearance role platform.pulse.appearance.activity_time_2 applies_to platform.pulse.component.activity_time_2 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_time_2 {
+  appearance { role platform.pulse.appearance.activity_time_2 }
+}
+appearance role platform.pulse.appearance.activity_rule_2 applies_to platform.pulse.component.activity_rule_2 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.activity_rule_2 {
+  appearance { role platform.pulse.appearance.activity_rule_2 }
+}
+appearance role platform.pulse.appearance.activity_dot_3 applies_to platform.pulse.component.activity_dot_3 {
+  background use token(theme.platform_pulse.positive)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.activity_dot_3 {
+  appearance { role platform.pulse.appearance.activity_dot_3 }
+}
+appearance role platform.pulse.appearance.activity_title_3 applies_to platform.pulse.component.activity_title_3 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.activity_title_3 {
+  appearance { role platform.pulse.appearance.activity_title_3 }
+}
+appearance role platform.pulse.appearance.activity_body_3 applies_to platform.pulse.component.activity_body_3 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_body_3 {
+  appearance { role platform.pulse.appearance.activity_body_3 }
+}
+appearance role platform.pulse.appearance.activity_time_3 applies_to platform.pulse.component.activity_time_3 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_time_3 {
+  appearance { role platform.pulse.appearance.activity_time_3 }
+}
+appearance role platform.pulse.appearance.activity_rule_3 applies_to platform.pulse.component.activity_rule_3 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.activity_rule_3 {
+  appearance { role platform.pulse.appearance.activity_rule_3 }
+}
+appearance role platform.pulse.appearance.activity_dot_4 applies_to platform.pulse.component.activity_dot_4 {
+  background use token(theme.platform_pulse.principal_accent)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.activity_dot_4 {
+  appearance { role platform.pulse.appearance.activity_dot_4 }
+}
+appearance role platform.pulse.appearance.activity_title_4 applies_to platform.pulse.component.activity_title_4 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.activity_title_4 {
+  appearance { role platform.pulse.appearance.activity_title_4 }
+}
+appearance role platform.pulse.appearance.activity_body_4 applies_to platform.pulse.component.activity_body_4 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_body_4 {
+  appearance { role platform.pulse.appearance.activity_body_4 }
+}
+appearance role platform.pulse.appearance.activity_time_4 applies_to platform.pulse.component.activity_time_4 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.activity_time_4 {
+  appearance { role platform.pulse.appearance.activity_time_4 }
+}

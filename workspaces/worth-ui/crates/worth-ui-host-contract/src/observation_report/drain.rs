@@ -2,6 +2,8 @@ use super::UiHostObservationBatch;
 use std::collections::{BTreeSet, VecDeque};
 use std::sync::Mutex;
 
+mod pointer_motion;
+
 pub const UI_HOST_OBSERVATION_ACTIVE_SESSION_LIMIT: usize = 16;
 pub const UI_HOST_OBSERVATION_DRAIN_BATCH_LIMIT: usize = 16;
 pub const UI_HOST_OBSERVATION_DRAIN_REPORT_LIMIT: usize = 256;
@@ -109,6 +111,23 @@ impl UiHostObservationRetention {
         &self,
         batch: UiHostObservationBatch,
     ) -> Result<(), UiHostObservationRetentionDenial> {
+        self.retain_with_pointer_coalescing(batch, false)
+    }
+
+    /// Retains ordered input, replacing only an immediately preceding compatible
+    /// pointer motion and explicitly reporting its replaced sequence range.
+    pub fn retain_latest_pointer_motion(
+        &self,
+        batch: UiHostObservationBatch,
+    ) -> Result<(), UiHostObservationRetentionDenial> {
+        self.retain_with_pointer_coalescing(batch, true)
+    }
+
+    fn retain_with_pointer_coalescing(
+        &self,
+        batch: UiHostObservationBatch,
+        coalesce_pointer: bool,
+    ) -> Result<(), UiHostObservationRetentionDenial> {
         let (reports, bytes) = measure_batches(std::slice::from_ref(&batch))
             .map_err(UiHostObservationRetentionDenial::Capacity)?;
         let mut state = self
@@ -118,6 +137,21 @@ impl UiHostObservationRetention {
         let host_session = batch.canonical_core().host_session();
         if !state.active_sessions.contains(&host_session) {
             return Err(UiHostObservationRetentionDenial::InactiveSession);
+        }
+        if coalesce_pointer {
+            if let Some(merged) = state
+                .batches
+                .back()
+                .and_then(|previous| pointer_motion::merge(previous, &batch))
+            {
+                // Compatible motion has identical payload shape and attribution.
+                // Replacing its position/time therefore changes no retained size.
+                *state
+                    .batches
+                    .back_mut()
+                    .expect("merged retained predecessor") = merged;
+                return Ok(());
+            }
         }
         if state.batches.len() == UI_HOST_OBSERVATION_DRAIN_BATCH_LIMIT {
             return Err(UiHostObservationRetentionDenial::Capacity(

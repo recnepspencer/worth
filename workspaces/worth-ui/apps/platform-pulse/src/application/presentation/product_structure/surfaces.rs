@@ -6,7 +6,22 @@ use worth_ui_platform_pulse::product_world::{
     PlatformPulseMosaicSurface, PlatformPulseProductComponent,
 };
 
-use super::descriptor::surface;
+fn surface(
+    identity: PlatformPulseMosaicSurface,
+    kind: SurfaceKind,
+    root: PlatformPulseProductComponent,
+    placement: SurfacePlacementClass,
+    state: SurfaceStateClass,
+) -> worth_ui::facade::declaration::SurfaceDescriptor {
+    use worth_ui::facade::declaration::{ComponentId, SurfaceDescriptor, SurfaceId};
+    SurfaceDescriptor::new(
+        SurfaceId::new(identity.id()).unwrap(),
+        kind,
+        ComponentId::new(root.id()).unwrap(),
+        placement,
+        state,
+    )
+}
 
 pub(super) fn register(
     builder: WorthUiApplicationBuilder<UiChangeProfileInstalled, UiIntentWiringSatisfied>,

@@ -7,6 +7,9 @@ use test_support::theme_session;
 #[path = "appearance_attachment_source_tests.rs"]
 mod attachment_source_tests;
 
+#[path = "appearance_role_body_source_tests.rs"]
+mod role_body_source_tests;
+
 #[path = "appearance_projection_denial_tests.rs"]
 mod denial_tests;
 
@@ -43,6 +46,8 @@ mod validation_tests;
 mod occurrence_geometry_tests;
 #[path = "appearance_projection_operability_tests.rs"]
 mod operability_tests;
+#[path = "mounted_scroll_geometry_tests.rs"]
+mod scroll_geometry_tests;
 #[path = "appearance_projection_selection_tests.rs"]
 mod selection_tests;
 

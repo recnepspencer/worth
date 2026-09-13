@@ -18,7 +18,7 @@ impl UiOverlayMotionOwnerExport {
     ) -> Result<Self, ()> {
         let mut rows = Vec::with_capacity(bindings.rows().len());
         for binding in bindings.rows() {
-            let target = crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+            let target = crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
                 bindings.runtime_surface(),
                 binding.portal().owner().mounted_instance_identity(),
                 binding.portal().diagnostic_value(),

@@ -13,13 +13,14 @@ const RASTER_ATTRIBUTES: [wgpu::VertexAttribute; 2] =
 const GLYPH_ATTRIBUTES: [wgpu::VertexAttribute; 3] =
     wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4];
 
-pub(super) struct UiNativePresentationPipelines {
+pub(crate) struct UiNativePresentationPipelines {
     filled: wgpu::RenderPipeline,
     clearing: wgpu::RenderPipeline,
     surface: wgpu::RenderPipeline,
     alpha: wgpu::RenderPipeline,
     color: wgpu::RenderPipeline,
     sampler: wgpu::Sampler,
+    transfer: wgpu::RenderPipeline,
 }
 
 fn transfer_pipeline(
@@ -30,7 +31,7 @@ fn transfer_pipeline(
     pipeline_with_blend(device, shader, format, None, &[])
 }
 
-pub(super) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentationPipelines {
+pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentationPipelines {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("worth-ui-retained-raster"),
         source: wgpu::ShaderSource::Wgsl(RASTER_SHADER.into()),
@@ -100,6 +101,15 @@ pub(super) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
         min_filter: wgpu::FilterMode::Linear,
         ..Default::default()
     });
+    let transfer_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("worth-ui-retained-to-surface"),
+        source: wgpu::ShaderSource::Wgsl(RETAINED_TO_SURFACE_SHADER.into()),
+    });
+    let transfer = transfer_pipeline(
+        device,
+        &transfer_shader,
+        wgpu::TextureFormat::Bgra8UnormSrgb,
+    );
     UiNativePresentationPipelines {
         filled: blended,
         clearing: replacing,
@@ -107,6 +117,7 @@ pub(super) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
         alpha,
         color,
         sampler,
+        transfer,
     }
 }
 
@@ -291,18 +302,9 @@ pub(super) fn draw_presentation_operations(
 
 pub(super) fn retained_transfer(
     graphics: &UiNativePresentationAccess,
+    pipelines: &UiNativePresentationPipelines,
 ) -> (wgpu::RenderPipeline, wgpu::BindGroup) {
-    let shader = graphics
-        .device()
-        .create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("worth-ui-retained-to-surface"),
-            source: wgpu::ShaderSource::Wgsl(RETAINED_TO_SURFACE_SHADER.into()),
-        });
-    let pipeline = transfer_pipeline(
-        graphics.device(),
-        &shader,
-        wgpu::TextureFormat::Bgra8UnormSrgb,
-    );
+    let pipeline = pipelines.transfer.clone();
     let view = graphics
         .retained_target()
         .create_view(&wgpu::TextureViewDescriptor::default());

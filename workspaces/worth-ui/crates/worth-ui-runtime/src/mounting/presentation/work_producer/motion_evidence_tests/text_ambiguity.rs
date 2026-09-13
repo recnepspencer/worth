@@ -31,7 +31,7 @@ fn selective_text_replacement_denies_ambiguous_node_surface_motion() {
     sampler
         .install(UiMotionCommitReceipt::for_sampling_test_transition(
             851,
-            UiMotionTargetIdentity::from_family_owner(
+            UiMotionTargetIdentity::from_mounted_owner(
                 world.requirement.semantic_surface(),
                 world.first_instance,
                 851,

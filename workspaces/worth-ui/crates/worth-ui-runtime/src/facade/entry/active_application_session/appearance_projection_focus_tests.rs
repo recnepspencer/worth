@@ -184,9 +184,9 @@ fn project(
             .1;
         assert_eq!(
             mechanic.paint(),
-            &UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
-                red, 0, 0, 255
-            ]),)
+            &UiMountedSurfacePaint::Fill(
+                UiMountedAppearanceColor::from_straight_srgba([red, 0, 0, 255]).into()
+            )
         );
         observed.push(receipt.mounted_instance());
     }

@@ -30,6 +30,7 @@ const REPLACEMENT_FRAME_DEADLINE: Duration = Duration::from_secs(5);
 
 pub(crate) struct PlatformPulseVisualIdentityExecution {
     state: Option<PlatformPulseVisualIdentityState>,
+    enabled: bool,
     readiness: Option<readiness::PlatformPulseVisualReadiness>,
     queued_rebind: Option<worth_ui::facade::rebind::UiRebindReceipt>,
 }
@@ -93,6 +94,8 @@ impl PlatformPulseVisualIdentityExecution {
     pub(crate) fn new() -> Self {
         Self {
             state: Some(PlatformPulseVisualIdentityState::AwaitingFirstFrame),
+            enabled: std::env::var_os("WORTH_UI_VISUAL_IDENTITY_JOURNEY")
+                .is_some_and(|value| value == "1"),
             readiness: None,
             queued_rebind: None,
         }
@@ -102,7 +105,9 @@ impl PlatformPulseVisualIdentityExecution {
         &mut self,
         signal: worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal,
     ) {
-        self.readiness = Some(readiness::PlatformPulseVisualReadiness::install(signal));
+        if self.enabled {
+            self.readiness = Some(readiness::PlatformPulseVisualReadiness::install(signal));
+        }
     }
 
     pub(crate) fn retains_rebind_receipt(&self) -> bool {
@@ -190,6 +195,10 @@ impl PlatformPulseVisualIdentityExecution {
             self.state = Some(state);
             return Err(PlatformPulseVisualExecutionDenial::InitialFrameAlreadyArmed);
         }
+        if !self.enabled {
+            self.state = Some(PlatformPulseVisualIdentityState::Retired);
+            return Ok(());
+        }
         let begin_at = now;
         let deadline = now
             .checked_add(REPLACEMENT_FRAME_DEADLINE)
@@ -239,6 +248,9 @@ impl PlatformPulseVisualIdentityExecution {
         _tick: u64,
         now: Instant,
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
+        if !self.enabled {
+            return Ok(());
+        }
         let deadline = replacement_frame_deadline(now)?;
         let state = self
             .state

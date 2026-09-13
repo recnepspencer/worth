@@ -9,6 +9,7 @@ mod projection;
 mod publication;
 mod raster_cache_reconstruction;
 mod replacement;
+mod scroll_geometry;
 mod selection_binding;
 #[cfg(test)]
 mod test_support;

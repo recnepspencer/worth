@@ -9,6 +9,7 @@ pub(crate) struct UiDeclaredPortalPlacementGeometry {
     maximum_height: u16,
     anchor_gap: u8,
     viewport_margin: u8,
+    centered: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -31,6 +32,7 @@ impl UiDeclaredPortalPlacementGeometry {
             maximum_height: 320,
             anchor_gap: 8,
             viewport_margin: 16,
+            centered: false,
         }
     }
 
@@ -40,6 +42,7 @@ impl UiDeclaredPortalPlacementGeometry {
             maximum_height: 320,
             anchor_gap: 8,
             viewport_margin: 24,
+            centered: true,
         }
     }
 
@@ -63,7 +66,18 @@ impl UiDeclaredPortalPlacementGeometry {
             maximum_height,
             anchor_gap,
             viewport_margin,
+            centered: false,
         })
+    }
+
+    pub(crate) const fn with_content_extent(mut self, extent: [u16; 2]) -> Self {
+        self.preferred_width = extent[0];
+        self.maximum_height = extent[1];
+        self
+    }
+
+    pub(crate) const fn centered(self) -> bool {
+        self.centered
     }
 
     pub(crate) const fn preferred_width(self) -> u16 {

@@ -30,7 +30,7 @@ fn presented_hit_index_changes_only_after_host_settlement_and_preserves_retired_
         f64::from(bounds.x() + bounds.width() / 2.0),
         f64::from(bounds.y() + bounds.height() / 2.0),
     ];
-    let target = UiMotionTargetIdentity::from_family_owner(surface, row.mounted_instance(), 99);
+    let target = UiMotionTargetIdentity::from_mounted_owner(surface, row.mounted_instance(), 99);
     // Only the semantic track receipt is a sampling fixture. Mounted completion,
     // work production, host acceptance, retention, and point lookup are production paths.
     let receipt = UiMotionCommitReceipt::for_sampling_test_transition(

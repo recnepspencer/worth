@@ -12,7 +12,7 @@ fn pending_motion_denies_semantic_mount_without_changing_accepted_truth() {
         .current_presentation_for_surface(surface)
         .unwrap();
     let target =
-        UiMotionTargetIdentity::from_family_owner(surface, command.mounted_instance(), 841);
+        UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 841);
     install(&mut session, target, original, 841, false, None);
     host.push_in_flight(
         vec![ScriptedSurfaceCompletion::Presented(completion(2, true))],

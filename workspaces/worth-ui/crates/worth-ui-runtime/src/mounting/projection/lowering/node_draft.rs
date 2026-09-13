@@ -27,6 +27,8 @@ impl UiMountedProjectionNodeDraft {
                 .with_surface_paint_posture(self.surface_paint_posture),
             appearance_clip: self.appearance_clip,
             surface_paint_order: self.surface_paint_order,
+            surface_geometry: self.surface_geometry,
+            portal_surface_appearance: self.portal_surface_appearance,
             has_appearance_attachment: self.has_appearance_attachment,
             semantic_text: self.semantic_text,
             hit_test: self.hit_test,

@@ -9,6 +9,10 @@ pub(crate) struct UiMountedPaintAttribution {
 }
 
 impl WorthUiMountedSessionState {
+    pub(crate) fn projection_changes_pending(&self) -> bool {
+        self.identity.projection_changes_pending()
+    }
+
     pub(crate) fn admits_retained_appearance_generation(
         &self,
         owners: &crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
@@ -200,6 +204,19 @@ impl WorthUiMountedSessionState {
         self.identity
             .current_projection()?
             .portal_owner_for_child(instance)
+    }
+
+    pub(crate) fn current_portal_content_extent(
+        &self,
+        owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Result<
+        Option<crate::runtime::portal::UiPortalContentBounds>,
+        crate::mounting::UiMountedProjectionDenial,
+    > {
+        self.identity
+            .current_projection()
+            .ok_or(crate::mounting::UiMountedProjectionDenial::PortalOverlayOwnerMissing)?
+            .portal_content_extent(owner)
     }
 
     pub(crate) fn native_observed_paint_attribution(

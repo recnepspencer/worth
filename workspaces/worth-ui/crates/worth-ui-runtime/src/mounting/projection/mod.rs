@@ -18,7 +18,6 @@ mod pointer_affordance_work;
 mod prepared_projection;
 mod semantic_text;
 
-#[cfg(test)]
 pub(crate) use appearance::UiMountedAppearanceClip;
 #[cfg(test)]
 pub(crate) use appearance::UiMountedAppearanceClipDenial;

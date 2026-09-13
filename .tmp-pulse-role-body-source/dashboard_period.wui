@@ -1,0 +1,73 @@
+portal platform.pulse.portal.period {
+  surface platform.pulse.surface.main
+  anchor platform.pulse.component.confirmation_target
+  layer transient
+  dismiss escape outside_press anchor_gone
+  focus first_enabled
+  motion system_popover
+}
+appearance role platform.pulse.appearance.period_shadow applies_to platform.pulse.component.period_shadow {
+  background use token(theme.platform_pulse.shadow)
+}
+component platform.pulse.component.period_shadow {
+  appearance { role platform.pulse.appearance.period_shadow }
+}
+appearance role platform.pulse.appearance.period_surface applies_to platform.pulse.component.period_surface {
+  background use token(theme.platform_pulse.raised_surface)
+  radius use token(theme.platform_pulse.radius.r12)
+  border use token(theme.platform_pulse.border.card)
+}
+component platform.pulse.component.period_surface {
+  appearance { role platform.pulse.appearance.period_surface }
+}
+appearance role platform.pulse.appearance.period_day applies_to platform.pulse.component.period_day {
+  background over [hover] {
+    cell outside when hover = outside use token(theme.platform_pulse.raised_surface)
+    cell hovered when hover = hovered use token(theme.platform_pulse.hover_surface)
+  }
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.period_day {
+  appearance { role platform.pulse.appearance.period_day }
+  interaction activate routes platform.pulse.portal.cancel.route;
+}
+appearance role platform.pulse.appearance.period_day_label applies_to platform.pulse.component.period_day_label {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.period_day_label {
+  appearance { role platform.pulse.appearance.period_day_label }
+}
+appearance role platform.pulse.appearance.period_week applies_to platform.pulse.component.period_week {
+  background over [hover] {
+    cell outside when hover = outside use token(theme.platform_pulse.raised_surface)
+    cell hovered when hover = hovered use token(theme.platform_pulse.hover_surface)
+  }
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.period_week {
+  appearance { role platform.pulse.appearance.period_week }
+  interaction activate routes platform.pulse.portal.cancel.route;
+}
+appearance role platform.pulse.appearance.period_week_label applies_to platform.pulse.component.period_week_label {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.period_week_label {
+  appearance { role platform.pulse.appearance.period_week_label }
+}
+appearance role platform.pulse.appearance.period_month applies_to platform.pulse.component.period_month {
+  background over [hover] {
+    cell outside when hover = outside use token(theme.platform_pulse.raised_surface)
+    cell hovered when hover = hovered use token(theme.platform_pulse.hover_surface)
+  }
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.period_month {
+  appearance { role platform.pulse.appearance.period_month }
+  interaction activate routes platform.pulse.portal.cancel.route;
+}
+appearance role platform.pulse.appearance.period_month_label applies_to platform.pulse.component.period_month_label {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.period_month_label {
+  appearance { role platform.pulse.appearance.period_month_label }
+}

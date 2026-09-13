@@ -183,8 +183,8 @@ class WorthUiContractGateTests(unittest.TestCase):
             protocol = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_frame/protocol.rs"
             protocol.parent.mkdir(parents=True)
             protocol.write_text("""
-                COMPATIBLE_FLOOR: u16 = 7; CURRENT: u16 = 9;
-                CURRENT_FRAME_SCHEMA: u16 = 6; CURRENT_PRESENTATION_SCHEMA: u16 = 6;
+                COMPATIBLE_FLOOR: u16 = 9; CURRENT: u16 = 10;
+                CURRENT_FRAME_SCHEMA: u16 = 8; CURRENT_PRESENTATION_SCHEMA: u16 = 8;
                 CURRENT_OBSERVATION_SCHEMA: u16 = 7; CURRENT_MEASUREMENT_SCHEMA: u16 = 5;
                 CURRENT_SOLICITED_EFFECT_SCHEMA: u16 = 1;
             """, encoding="utf-8")
@@ -210,8 +210,8 @@ class WorthUiContractGateTests(unittest.TestCase):
             protocol = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_frame/protocol.rs"
             protocol.parent.mkdir(parents=True)
             protocol.write_text("""
-                COMPATIBLE_FLOOR: u16 = 7; CURRENT: u16 = 8;
-                CURRENT_FRAME_SCHEMA: u16 = 6; CURRENT_PRESENTATION_SCHEMA: u16 = 6;
+                COMPATIBLE_FLOOR: u16 = 9; CURRENT: u16 = 10;
+                CURRENT_FRAME_SCHEMA: u16 = 8; CURRENT_PRESENTATION_SCHEMA: u16 = 8;
                 CURRENT_OBSERVATION_SCHEMA: u16 = 7; CURRENT_MEASUREMENT_SCHEMA: u16 = 5;
                 CURRENT_SOLICITED_EFFECT_SCHEMA: u16 = 1;
             """, encoding="utf-8")
@@ -228,7 +228,7 @@ class WorthUiContractGateTests(unittest.TestCase):
             )
             manifest = root / "protocol.json"
             advanced = dict(protocol_gate.EXPECTED_LIVE)
-            advanced["protocol_current"] = 8
+            advanced["protocol_current"] = 10
             manifest.write_text(json.dumps({"live": advanced}), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "live manifest must be exact"):
                 protocol_gate.validate(root, manifest)

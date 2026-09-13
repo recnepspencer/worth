@@ -95,7 +95,7 @@ impl UiThemeSlotUse {
         slot: super::UiThemeSlotIdentity,
         expected_kind: super::UiThemeValueKind,
     ) -> Result<Self, UiThemeSlotUseDenial> {
-        if aspect.value_kind() != expected_kind {
+        if !aspect.accepts_value_kind(expected_kind) {
             return Err(UiThemeSlotUseDenial::ValueKindMismatch);
         }
         Ok(Self {
@@ -171,10 +171,19 @@ impl UiAppearanceRoleDeclaration {
         let mut slot_uses = Vec::new();
         for (aspect, partition) in &partitions {
             for cell in partition.cells() {
-                if cell.result().value_kind() != aspect.value_kind() {
+                if !aspect.accepts_value_kind(cell.result().value_kind())
+                    || (matches!(applicability, UiAppearanceRoleApplicability::Backdrop)
+                        && cell.result().value_kind() == super::UiThemeValueKind::LinearGradient)
+                {
                     return Err(UiAppearanceRoleDeclarationDenial::ResultValueKindMismatch);
                 }
                 if let Some(slot) = cell.result().slot() {
+                    if slot_uses.iter().any(|slot_use: &UiThemeSlotUse| {
+                        slot_use.slot == *slot
+                            && slot_use.expected_kind != cell.result().value_kind()
+                    }) {
+                        return Err(UiAppearanceRoleDeclarationDenial::ResultValueKindMismatch);
+                    }
                     if !slot_uses.iter().any(|slot_use: &UiThemeSlotUse| {
                         slot_use.aspect == *aspect && slot_use.slot == *slot
                     }) {

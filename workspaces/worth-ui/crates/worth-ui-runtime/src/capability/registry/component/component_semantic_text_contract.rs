@@ -21,6 +21,8 @@ pub struct ComponentSemanticTextContract {
     scalar_spans: Box<[ComponentSemanticTextSpanContract]>,
     default_paint_identity: [u8; 32],
     appearance_foreground: bool,
+    lifecycle_caption: bool,
+    alignment: worth_ui_text::UiTextAlignment,
 }
 
 impl ComponentSemanticTextContract {
@@ -34,6 +36,8 @@ impl ComponentSemanticTextContract {
             scalar_spans: Box::new([]),
             default_paint_identity,
             appearance_foreground: false,
+            lifecycle_caption: true,
+            alignment: worth_ui_text::UiTextAlignment::Start,
         }
     }
 
@@ -51,6 +55,8 @@ impl ComponentSemanticTextContract {
             scalar_spans: Box::new([]),
             default_paint_identity,
             appearance_foreground: false,
+            lifecycle_caption: true,
+            alignment: worth_ui_text::UiTextAlignment::Start,
         }
     }
 
@@ -72,6 +78,8 @@ impl ComponentSemanticTextContract {
             scalar_spans: Box::new([]),
             default_paint_identity,
             appearance_foreground: false,
+            lifecycle_caption: true,
+            alignment: worth_ui_text::UiTextAlignment::Start,
         })
     }
 
@@ -91,6 +99,8 @@ impl ComponentSemanticTextContract {
             scalar_spans: scalar_spans.into_boxed_slice(),
             default_paint_identity,
             appearance_foreground: false,
+            lifecycle_caption: true,
+            alignment: worth_ui_text::UiTextAlignment::Start,
         })
     }
 
@@ -102,6 +112,25 @@ impl ComponentSemanticTextContract {
         validate_spans(&scalar_spans)?;
         self.scalar_spans = scalar_spans.into_boxed_slice();
         Ok(self)
+    }
+
+    /// Controls the visible lifecycle caption; Query lifecycle evidence is retained.
+    pub fn with_lifecycle_caption(mut self, visible: bool) -> Self {
+        self.lifecycle_caption = visible;
+        self
+    }
+
+    pub const fn shows_lifecycle_caption(&self) -> bool {
+        self.lifecycle_caption
+    }
+
+    pub fn with_alignment(mut self, alignment: worth_ui_text::UiTextAlignment) -> Self {
+        self.alignment = alignment;
+        self
+    }
+
+    pub const fn alignment(&self) -> worth_ui_text::UiTextAlignment {
+        self.alignment
     }
 
     pub fn with_appearance_foreground(mut self) -> Self {
@@ -179,11 +208,13 @@ impl ComponentSemanticTextContract {
                 digest
             });
         format!(
-            "semantic-text:{}:{}:{style}:line-height:{:?}:appearance:{}",
+            "semantic-text:{}:{}:{style}:line-height:{:?}:appearance:{}:caption:{}:alignment:{:?}",
             self.theme_token.as_str(),
             self.layer_semantic_order,
             self.line_height_millipoints,
             self.appearance_foreground,
+            self.lifecycle_caption,
+            self.alignment,
         ) + &spans
     }
 }

@@ -34,8 +34,13 @@ impl WorthUiPreparedApplicationPublication {
             .compare_semantic_contract(successor.prepared_authority().intent_catalog());
         let predecessor_demand = predecessor.consumed_fact_index();
         let successor_demand = successor.prepared_authority().consumed_fact_index();
-        let appearance_consumer_contract_unchanged =
-            predecessor_demand.has_same_appearance_consumer_contract(successor_demand);
+        let appearance_consumer_contract_unchanged = predecessor_demand
+            .has_same_appearance_consumer_contract(successor_demand)
+            && predecessor.capabilities().appearance_roles()
+                == successor
+                    .prepared_authority()
+                    .capabilities()
+                    .appearance_roles();
         let previous_projection = predecessor.semantic_handoff();
         let next_projection = successor.prepared_authority().semantic_handoff();
         let projection_contract_unchanged = previous_projection.projection_requirements()

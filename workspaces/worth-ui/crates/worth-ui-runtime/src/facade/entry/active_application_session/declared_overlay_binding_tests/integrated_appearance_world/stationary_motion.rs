@@ -89,7 +89,7 @@ fn stationary_pointer_refreshes_through_motion_host_settlement_and_next_appearan
         0,
         "baseline must consume its exact scripted completions"
     );
-    let target = UiMotionTargetIdentity::from_family_owner(surface, instance, 601);
+    let target = UiMotionTargetIdentity::from_mounted_owner(surface, instance, 601);
     // Marked semantic sampling fixture; the mounted work, host settlement,
     // interaction owner refresh, and appearance observation close are real.
     session

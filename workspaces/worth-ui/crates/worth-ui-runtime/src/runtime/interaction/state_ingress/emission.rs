@@ -12,21 +12,13 @@ use super::super::UiInteractionRuntimeState;
 pub(super) fn emit_pointer(
     state: &mut UiInteractionRuntimeState,
     outcomes: Vec<UiPointerGestureOutcome>,
-    core: UiHostObservationCanonicalCore,
     generation: &WorthUiActiveApplicationGenerationIdentity,
 ) -> Vec<UiInteractionTransition> {
     let mut transitions = Vec::new();
     for outcome in outcomes {
         match outcome {
             UiPointerGestureOutcome::Pressed(press) => {
-                let dismissal = UiDismissInteraction::outside_press(
-                    core.presentation(),
-                    press.sequence(),
-                    press.time_basis(),
-                    press.position(),
-                );
                 transitions.push(UiInteractionTransition::PointerPressed(press));
-                transitions.push(UiInteractionTransition::DismissRequested(dismissal));
             }
             UiPointerGestureOutcome::Completed(gesture) => {
                 if gesture.pointer_device_kind()
@@ -50,6 +42,28 @@ pub(super) fn emit_pointer(
         }
     }
     transitions
+}
+
+pub(super) fn outside_press(
+    core: UiHostObservationCanonicalCore,
+    report: &worth_ui_host_contract::UiHostObservationReport,
+) -> Option<UiInteractionTransition> {
+    let worth_ui_host_contract::UiHostObservationPayload::PointerButton {
+        transition: worth_ui_host_contract::UiHostPointerButtonTransition::Pressed,
+        position,
+        ..
+    } = report.payload()
+    else {
+        return None;
+    };
+    Some(UiInteractionTransition::DismissRequested(
+        UiDismissInteraction::outside_press(
+            core.presentation(),
+            report.sequence(),
+            report.time_basis(),
+            *position,
+        ),
+    ))
 }
 
 pub(super) fn emit_draft(

@@ -63,3 +63,9 @@ pub use crate::capability::{
     UiThemeSlotSuccessorCompatibility, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId,
     VisibleStateBindingDeclaration, WorthUiQueryViewRegistration, WorthUiViewBindingIdentity,
 };
+
+pub use worth_ui_host_contract::{
+    NormalizedPoint, UiAppearanceLogicalLength, UiSoftShadowGeometry, UiSurfaceGeometry,
+    UiSurfaceGeometryDenial, UiVectorSurfaceGeometry, VectorPath, VectorPathDenial,
+    VectorPathSegment,
+};

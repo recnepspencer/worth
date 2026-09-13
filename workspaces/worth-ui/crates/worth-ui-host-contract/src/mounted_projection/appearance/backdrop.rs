@@ -51,6 +51,7 @@ pub struct UiMountedBackdropMechanic {
     clip: super::UiAppearanceClip,
     background: super::UiMountedAppearanceColor,
     opacity: crate::UiMountedPresentationOpacity,
+    motion_target: Option<crate::UiMountedPortalPresentationAffinity>,
     attribution: UiMountedBackdropAppearanceAttribution,
 }
 
@@ -63,6 +64,7 @@ pub struct UiMountedBackdropCompletionInput {
     pub clip: super::UiAppearanceClip,
     pub background: super::UiMountedAppearanceColor,
     pub opacity: crate::UiMountedPresentationOpacity,
+    pub motion_target: Option<crate::UiMountedPortalPresentationAffinity>,
     pub attribution: UiMountedBackdropAppearanceAttribution,
 }
 
@@ -99,6 +101,7 @@ impl UiMountedBackdropMechanic {
             clip: input.clip,
             background: input.background,
             opacity: input.opacity,
+            motion_target: input.motion_target,
             attribution: input.attribution,
         })
     }
@@ -123,6 +126,9 @@ impl UiMountedBackdropMechanic {
     }
     pub const fn opacity(&self) -> crate::UiMountedPresentationOpacity {
         self.opacity
+    }
+    pub const fn motion_target(&self) -> Option<crate::UiMountedPortalPresentationAffinity> {
+        self.motion_target
     }
     pub const fn attribution(&self) -> UiMountedBackdropAppearanceAttribution {
         self.attribution
@@ -231,6 +237,7 @@ mod tests {
             clip: super::super::UiAppearanceClip::new(0, 0, 100, 80).unwrap(),
             background: super::super::UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 128]),
             opacity: crate::UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
+            motion_target: None,
             attribution: UiMountedBackdropAppearanceAttribution::from_runtime_transport(
                 semantic_surface,
                 placement,

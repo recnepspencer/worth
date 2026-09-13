@@ -40,7 +40,7 @@ pub(super) fn exercise(
         || action.action_count() != 1
         || action.written_bytes() == 0
         || action.content_fingerprint() == 0
-        || action.entry_source() != world.installation.portal_primary_source()
+        || action.entry_source() != world.installation.signals_source()
     {
         return Err(PlatformPulsePortalJourneyFailure::RuntimeServiceEvidence(
             "portal focus fallback was not one exact external source action",

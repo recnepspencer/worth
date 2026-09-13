@@ -18,7 +18,22 @@ pub(super) fn lower_differences(
         .keys()
         .chain(after.keys())
         .copied()
-        .filter(|identity| before.get(identity) != after.get(identity))
+        .filter(|identity| {
+            before.get(identity) != after.get(identity)
+                || before
+                    .get(identity)
+                    .zip(after.get(identity))
+                    .is_some_and(|(before, after)| {
+                        predecessor
+                            .capabilities()
+                            .appearance_roles()
+                            .get(before.role())
+                            != candidate
+                                .capabilities()
+                                .appearance_roles()
+                                .get(after.role())
+                    })
+        })
         .collect();
     for identity in changed {
         let selector = UiAuthoredFactSelector::node(identity);
@@ -32,6 +47,51 @@ pub(super) fn lower_differences(
                             | UiAuthoredFactKind::Retired
                     )
             })
+        }) {
+            facts.push(UiProducedFact::AuthoredSource(UiAuthoredChangedFact::new(
+                selector,
+                UiAuthoredFactKind::SemanticsChanged,
+            )));
+            super::enforce_fact_capacity(facts, fact_limit)?;
+        }
+    }
+    lower_backdrop_role_differences(predecessor, candidate, facts, fact_limit)
+}
+
+fn lower_backdrop_role_differences(
+    predecessor: &WorthUiPreparedApplicationAuthority,
+    candidate: &WorthUiPreparedApplicationAuthority,
+    facts: &mut Vec<UiProducedFact>,
+    fact_limit: usize,
+) -> Result<(), UiChangeClassificationDenial> {
+    let mut surfaces = BTreeSet::new();
+    for authority in [predecessor, candidate] {
+        let overlays = authority.authored_overlay_material();
+        for backdrop in overlays.backdrop_declarations() {
+            let declaration = backdrop.declaration().declaration();
+            if predecessor
+                .capabilities()
+                .appearance_roles()
+                .get(declaration.role())
+                == candidate
+                    .capabilities()
+                    .appearance_roles()
+                    .get(declaration.role())
+            {
+                continue;
+            }
+            let surface = overlays
+                .overlay_declaration_bindings()
+                .surface_name(declaration.surface())
+                .expect("sealed backdrop retains its authored surface identity");
+            surfaces.insert(format!("surface:{surface}"));
+        }
+    }
+    for surface in surfaces {
+        let selector = UiAuthoredFactSelector::node(surface);
+        if !facts.iter().any(|fact| {
+            fact.authored_source()
+                .is_some_and(|fact| fact.selector() == &selector)
         }) {
             facts.push(UiProducedFact::AuthoredSource(UiAuthoredChangedFact::new(
                 selector,

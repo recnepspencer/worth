@@ -11,6 +11,7 @@ use worth_ui_host_contract::WorthUiHostCapabilityReport;
 mod accepted_text;
 mod adapter;
 mod measurement_adapter;
+mod paint_observations;
 mod visual_capture_script;
 
 use visual_capture_script::ScriptedVisualCapture;
@@ -53,7 +54,9 @@ struct ScriptedPresentationState {
     wrong_next_deregistration_receipt: bool,
     cancellation_calls: Vec<u64>,
     presentation_calls: usize,
+    last_node_changes: Vec<worth_ui_host_contract::UiMountedPresentationNodeChange>,
     last_surface_colors: Vec<worth_ui_host_contract::UiMountedRgba8>,
+    last_appearance_samples: Vec<worth_ui_host_contract::UiMountedPresentationSampleChange>,
     accepted_text: accepted_text::ScriptedAcceptedText,
     last_presentation_correlation:
         Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation>,
@@ -100,7 +103,9 @@ impl Default for ScriptedPresentationState {
             wrong_next_deregistration_receipt: false,
             cancellation_calls: Vec::new(),
             presentation_calls: 0,
+            last_node_changes: Vec::new(),
             last_surface_colors: Vec::new(),
+            last_appearance_samples: Vec::new(),
             accepted_text: Default::default(),
             last_presentation_correlation: None,
             #[cfg(feature = "certification-support")]
@@ -255,10 +260,6 @@ impl ScriptedPresentationHost {
         self.state.lock().unwrap().presentations.len()
     }
 
-    pub fn last_surface_colors(&self) -> Vec<worth_ui_host_contract::UiMountedRgba8> {
-        self.state.lock().unwrap().last_surface_colors.clone()
-    }
-
     pub fn last_presentation_correlation(
         &self,
     ) -> Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation> {
@@ -282,16 +283,6 @@ impl ScriptedPresentationHost {
             .lock()
             .unwrap()
             .reconstruction_portal_overlay_counts
-            .clone()
-    }
-
-    pub fn reconstruction_sample_overrides(
-        &self,
-    ) -> Vec<Box<[worth_ui_host_contract::UiMountedPresentationSampleChange]>> {
-        self.state
-            .lock()
-            .unwrap()
-            .reconstruction_sample_overrides
             .clone()
     }
 

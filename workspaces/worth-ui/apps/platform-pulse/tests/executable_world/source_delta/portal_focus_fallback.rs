@@ -4,7 +4,6 @@ use super::atomic_replacement::{self, AppliedPulseSourceDelta, PulseSourceAction
 use super::{PulseSourceDeltaDefinitionFailure, PulseSourceDeltaIdentity};
 
 const PORTAL_PRIMARY_COMPONENT: &[u8] = b"component platform.pulse.component.portal_primary_target {\n  appearance { role platform.pulse.appearance.portal_primary_target }\n  interaction activate routes platform.pulse.action.route;\n}\n";
-const RETIRED_PORTAL_PRIMARY_SOURCE: &[u8] = b"\n";
 
 #[derive(Debug)]
 pub(crate) struct PortalFocusFallbackSourceDelta {
@@ -15,20 +14,26 @@ impl PortalFocusFallbackSourceDelta {
     pub(crate) fn from_checked_in(
         canonical: CanonicalPlatformPulse,
     ) -> Result<Self, PulseSourceDeltaDefinitionFailure> {
-        let source = canonical.portal_primary_source_bytes();
+        let source = canonical.signals_source_bytes();
         let component = token_for_source_line_endings(source, PORTAL_PRIMARY_COMPONENT);
         let count = source
             .windows(component.len())
             .filter(|candidate| *candidate == component)
             .count();
-        if count != 1 || source.len() != component.len() {
+        if count != 1 {
             return Err(match count {
                 0 => PulseSourceDeltaDefinitionFailure::PortalPrimaryComponentMissing,
                 count => PulseSourceDeltaDefinitionFailure::PortalPrimaryComponentAmbiguous(count),
             });
         }
+        let offset = source
+            .windows(component.len())
+            .position(|row| row == component)
+            .unwrap();
+        let mut bytes = source[..offset].to_vec();
+        bytes.extend_from_slice(&source[offset + component.len()..]);
         Ok(Self {
-            bytes: RETIRED_PORTAL_PRIMARY_SOURCE.into(),
+            bytes: bytes.into_boxed_slice(),
         })
     }
 
@@ -37,7 +42,7 @@ impl PortalFocusFallbackSourceDelta {
         installation: &IsolatedPulseInstallation,
     ) -> Result<AppliedPulseSourceDelta<Self>, PulseSourceActionFailure> {
         atomic_replacement::apply_path(
-            installation.portal_primary_source(),
+            installation.signals_source(),
             PulseSourceDeltaIdentity::PortalFocusFallback,
             &self.bytes,
         )

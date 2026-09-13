@@ -13,6 +13,9 @@ use crate::capability::{
 
 use super::{CapabilitySnapshotDigest, SnapshotMetrics};
 
+#[path = "authored_role_succession.rs"]
+mod authored_role_succession;
+
 /// Immutable capability snapshot consumed by later lowering phases.
 #[derive(Debug, Eq, PartialEq)]
 pub struct CapabilitySnapshot {

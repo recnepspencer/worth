@@ -165,9 +165,9 @@ fn live_native_preparation_uses_v2_appearance_and_cutover_protocol() {
             .as_str(),
         Some(UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2.as_str())
     );
-    assert_eq!(protocol.protocol().revision(), 7);
-    assert_eq!(protocol.mounted_frame().revision(), 6);
-    assert_eq!(protocol.mounted_presentation().revision(), 6);
+    assert_eq!(protocol.protocol().revision(), 9);
+    assert_eq!(protocol.mounted_frame().revision(), 8);
+    assert_eq!(protocol.mounted_presentation().revision(), 8);
     assert_eq!(protocol.observation().revision(), 7);
     assert_eq!(protocol.measurement().revision(), 5);
     assert_eq!(protocol.solicited_effect().revision(), 1);

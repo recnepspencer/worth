@@ -5,6 +5,10 @@ pub(crate) struct UiNativeAnalyticCoverage(u16);
 
 impl UiNativeAnalyticCoverage {
     pub(crate) const ZERO: Self = Self(0);
+
+    pub(crate) fn from_fraction(value: f64) -> Self {
+        Self((value.clamp(0.0, 1.0) * f64::from(u16::MAX)).round() as u16)
+    }
     pub(crate) const ONE: Self = Self(u16::MAX);
 
     pub(crate) const fn units(self) -> u16 {

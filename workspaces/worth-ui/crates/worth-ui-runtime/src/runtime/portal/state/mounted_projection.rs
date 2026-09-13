@@ -57,6 +57,7 @@ impl super::UiPortalRuntimeState {
                     .map(|placement| {
                         crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                             portal.diagnostic_value(),
+                            record.stack_ordinal,
                             portal.owner().mounted_instance_identity(),
                             record.semantic_surface,
                             placement.prepared(),
@@ -73,6 +74,9 @@ impl super::UiPortalRuntimeState {
             if let Some(placement) = transition.placement() {
                 inputs.push(crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                     target.diagnostic_value(),
+                    transition
+                        .stack_ordinal()
+                        .expect("opening Portal carries issued stack order"),
                     target.owner().mounted_instance_identity(),
                     transition.request().semantic_surface(),
                     placement,
@@ -94,6 +98,7 @@ impl super::UiPortalRuntimeState {
                     .map(|placement| {
                         crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                             portal.diagnostic_value(),
+                            record.stack_ordinal,
                             portal.owner().mounted_instance_identity(),
                             record.semantic_surface,
                             placement.prepared(),

@@ -1,4 +1,5 @@
 mod appearance;
+pub use appearance::{UiMountedLinearGradient, UiMountedSurfaceFill};
 mod color;
 mod geometry;
 mod headless_cache;
@@ -112,4 +113,9 @@ pub use tables::{
 pub use view::{
     UiMountedDrawableReference, UiMountedNodeProjectionView, UiMountedNodeProjectionViewInput,
     UiMountedProjectionView, UiMountedProjectionViewInput,
+};
+
+pub use appearance::{
+    NormalizedPoint, UiSoftShadowGeometry, UiSurfaceGeometry, UiSurfaceGeometryDenial,
+    UiVectorSurfaceGeometry, VectorPath, VectorPathDenial, VectorPathSegment,
 };

@@ -1,6 +1,38 @@
 use super::*;
 
 #[test]
+fn authored_role_body_change_is_not_evidence_only() {
+    for slot in [APPEARANCE_TOKEN, APPEARANCE_BASE_TOKEN] {
+        let mut session = source_backed_appearance_consumer_session();
+        let generation = session.active_generation_identity();
+        let role = validation_background_role(slot);
+        let source =
+            appearance_candidate_submission(&session, "appearance-consumer-current", Some(&role));
+        let mut turn = session.begin_observation_turn().unwrap();
+        turn.admit_source(source).unwrap();
+        let observations = turn.seal().unwrap();
+        let classified = session.classify_observations(observations).unwrap();
+        if slot == APPEARANCE_TOKEN {
+            // The watched provider supplies new provenance for identical meaning.
+            assert!(matches!(
+                classified,
+                crate::runtime::observation::UiChangeClassificationOutcome::EvidenceOnly(_)
+            ));
+        } else {
+            assert!(
+                matches!(
+                    classified,
+                    crate::runtime::observation::UiChangeClassificationOutcome::Changed(_)
+                ),
+                "a changed background slot must require successor presentation"
+            );
+        }
+        assert_eq!(session.active_generation_identity(), generation);
+        let _ = session.shutdown();
+    }
+}
+
+#[test]
 fn component_descriptor_rejects_the_actual_backdrop_contract() {
     let token = crate::capability::ThemeTokenId::new(APPEARANCE_TOKEN).unwrap();
     let result = appearance_component_with_contract(

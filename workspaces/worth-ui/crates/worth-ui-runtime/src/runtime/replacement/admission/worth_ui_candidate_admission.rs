@@ -23,13 +23,13 @@ impl WorthUiCandidateAdmission {
         counters.record_candidate_proof_check();
         let candidate_basis = candidate.basis();
         counters.record_snapshot_compatibility_check();
-        if candidate.lowering_basis().snapshot_digest() != self.active_basis.snapshot_digest() {
+        if candidate.predecessor_snapshot_digest() != self.active_basis.snapshot_digest() {
             return Err(WorthUiCandidateAdmissionReport::denied(
                 candidate_basis,
                 self.active_basis,
                 counters,
                 WorthUiCandidateAdmissionDenial::SnapshotMismatch {
-                    candidate_snapshot_digest: candidate.lowering_basis().snapshot_digest(),
+                    candidate_snapshot_digest: candidate.predecessor_snapshot_digest(),
                     active_snapshot_digest: self.active_basis.snapshot_digest(),
                 },
             ));

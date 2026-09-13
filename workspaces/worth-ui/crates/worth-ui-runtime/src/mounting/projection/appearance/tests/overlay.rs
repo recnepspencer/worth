@@ -15,6 +15,7 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
     let projection =
         UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 21, 4).unwrap();
     let node = UiMountedAppearanceNodeInput {
+        surface_geometry: worth_ui_host_contract::UiSurfaceGeometry::default(),
         geometry_input: None,
         issuer,
         semantic_surface: surface,
@@ -30,7 +31,7 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
         surface_border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
         surface_border_omissions: Box::new([]),
         surface_paint: Some(UiMountedSurfacePaint::Fill(
-            UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 255]),
+            UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 255]).into(),
         )),
         outline: None,
         text_foregrounds: Box::new([]),
@@ -46,7 +47,7 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
         1,
     )
     .unwrap();
-    let backdrop = UiMountedAppearanceBackdropInput {
+    let mut backdrop = UiMountedAppearanceBackdropInput {
         identity: identity.clone(),
         semantic_surface: surface,
         placement,
@@ -74,25 +75,24 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
     )
     .unwrap();
     let mut sidecar = UiMountedAppearanceSidecar::default();
-    let work = sidecar
-        .mount(UiMountedAppearanceLoweringInput {
-            frame,
+    let input = |backdrop| UiMountedAppearanceLoweringInput {
+        frame,
+        semantic_surface: surface,
+        presentation,
+        nodes: vec![node.clone()],
+        backdrops: vec![backdrop],
+        overlay: UiMountedAppearanceOverlayInput {
             semantic_surface: surface,
             presentation,
-            nodes: vec![node],
-            backdrops: vec![backdrop],
-            overlay: UiMountedAppearanceOverlayInput {
-                semantic_surface: surface,
-                presentation,
-                portal_revision: 7,
-                backdrop_revision: 9,
-                bottom_to_top: Box::new([
-                    UiOverlayParticipantIdentity::Backdrop(identity.clone()),
-                    UiOverlayParticipantIdentity::Portal(portal),
-                ]),
-            },
-        })
-        .unwrap();
+            portal_revision: 7,
+            backdrop_revision: 9,
+            bottom_to_top: Box::new([
+                UiOverlayParticipantIdentity::Backdrop(identity.clone()),
+                UiOverlayParticipantIdentity::Portal(portal),
+            ]),
+        },
+    };
+    let work = sidecar.mount(input(backdrop.clone())).unwrap();
 
     assert_eq!(work.posture(), UiMountedAppearanceWorkPosture::Initial);
     assert_eq!(
@@ -121,4 +121,14 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
                 if mechanic.extent().width() == 200 && !mechanic.participates_in_hit_testing()
         )
     }));
+    backdrop.motion_target = Some(
+        worth_ui_host_contract::UiMountedPortalPresentationAffinity::from_runtime_mounting(
+            portal, 91,
+        ),
+    );
+    let rebound = sidecar.mount(input(backdrop)).unwrap();
+    assert!(rebound.changes().iter().any(|change| matches!(change,
+        worth_ui_host_contract::UiMountedAppearanceMechanicChange::Replace { successor: UiMountedAppearanceMechanic::Backdrop(backdrop), .. }
+        if backdrop.motion_target().is_some_and(|target| target.portal_identity() == 91)
+    )), "unchanged pixels cannot hide a changed future Motion dependency");
 }

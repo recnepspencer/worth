@@ -181,6 +181,7 @@ fn encode_motion(bytes: &mut Vec<u8>, motion: super::UiBackdropMotionBasis) {
 fn encode_placement(bytes: &mut Vec<u8>, placement: super::UiBackdropPlacement) {
     match placement {
         super::UiBackdropPlacement::AboveSurfaceContent => bytes.push(1),
+        super::UiBackdropPlacement::ImmediatelyAboveSurfaceContent => bytes.push(6),
         super::UiBackdropPlacement::ImmediatelyBeforePortal(portal) => {
             bytes.push(2);
             bytes.extend_from_slice(&portal.value().to_le_bytes());

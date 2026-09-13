@@ -49,7 +49,7 @@ pub(super) fn capture(
         for portal in bindings.portals_for_declaration(declaration) {
             work.motion_bindings_visited += 1;
             motion_targets.insert(
-                UiMotionTargetIdentity::from_family_owner(
+                UiMotionTargetIdentity::from_portal_owner(
                     surface.runtime_surface,
                     portal.owner().mounted_instance_identity(),
                     portal.diagnostic_value(),
@@ -161,7 +161,7 @@ pub(super) fn localized_motion_source(
     let changed = changed
         .into_iter()
         .chain(changed_bindings.iter().map(|portal| {
-            UiMotionTargetIdentity::from_family_owner(
+            UiMotionTargetIdentity::from_portal_owner(
                 surface,
                 portal.owner().mounted_instance_identity(),
                 portal.diagnostic_value(),

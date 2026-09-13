@@ -172,6 +172,11 @@ fn relation(
     placement: UiBackdropPlacement,
 ) -> UiCompiledOverlayRelation {
     let (lower, upper, kind) = match placement {
+        UiBackdropPlacement::ImmediatelyAboveSurfaceContent => (
+            UiOverlayAnchor::SurfaceContent,
+            UiOverlayAnchor::Backdrop(backdrop),
+            UiOverlayRelationKind::ImmediatelyPrecedes,
+        ),
         UiBackdropPlacement::AboveSurfaceContent => (
             UiOverlayAnchor::SurfaceContent,
             UiOverlayAnchor::Backdrop(backdrop),

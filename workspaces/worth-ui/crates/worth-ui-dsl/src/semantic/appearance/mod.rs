@@ -3,11 +3,13 @@ mod attachment;
 mod canonical;
 mod capacity;
 mod diagnostics;
+mod linear_gradient;
 mod role;
 mod role_authoring;
 mod state_partition;
 mod state_partition_compiler;
 mod theme;
+pub use linear_gradient::{UiThemeGradientPoint, UiThemeLinearGradient};
 
 pub use aspect::{
     UiAppearanceAspect, UiAppearanceAspectApplicability, UiAppearanceAspectContract,

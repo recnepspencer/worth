@@ -14,6 +14,7 @@ use super::{UiMountedOccurrenceGeometryDenial, UiMountedSurfaceGeometryBatch};
 mod projection;
 #[path = "state/resolution.rs"]
 mod resolution;
+mod scroll;
 mod succession;
 
 use resolution::{
@@ -41,6 +42,8 @@ struct UiMountedSurfaceGeometry {
     layout_revision: super::UiMountedLayoutRevision,
     viewport: UiMountedCanonicalBox,
     occurrences: BTreeMap<UiMountedInstanceIdentity, UiMountedOccurrenceGeometryRow>,
+    children: BTreeMap<UiMountedInstanceIdentity, Vec<UiMountedInstanceIdentity>>,
+    scroll_poses: BTreeMap<UiMountedInstanceIdentity, crate::runtime::scroll::UiScrollOffset>,
     generation: Option<
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
     >,
@@ -218,6 +221,12 @@ impl UiMountedOccurrenceGeometryState {
         }
         let changed =
             changed_instances(self.surfaces.get(&batch.surface()), batch.viewport(), &rows);
+        let mut children = BTreeMap::<_, Vec<_>>::new();
+        for (instance, row) in &rows {
+            if let Some(parent) = row.parent {
+                children.entry(parent).or_default().push(*instance);
+            }
+        }
         self.surfaces.insert(
             batch.surface(),
             UiMountedSurfaceGeometry {
@@ -225,6 +234,8 @@ impl UiMountedOccurrenceGeometryState {
                 layout_revision: batch.layout_revision(),
                 viewport: batch.viewport(),
                 occurrences: rows,
+                children,
+                scroll_poses: BTreeMap::new(),
                 generation: Some(batch.basis.generation),
                 regions,
             },
@@ -291,19 +302,20 @@ impl UiMountedOccurrenceGeometryState {
     ) -> Box<[UiMountedInstanceIdentity]> {
         let mut affected = BTreeSet::new();
         for surface in self.surfaces.values_mut() {
-            let mut children = BTreeMap::<UiMountedInstanceIdentity, Vec<_>>::new();
-            for (candidate, row) in &surface.occurrences {
-                if let Some(parent) = row.parent {
-                    children.entry(parent).or_default().push(*candidate);
-                }
-            }
             let mut pending = vec![instance];
             while let Some(candidate) = pending.pop() {
-                if surface.occurrences.remove(&candidate).is_none() {
+                let Some(row) = surface.occurrences.remove(&candidate) else {
                     continue;
-                }
+                };
                 affected.insert(candidate);
-                if let Some(descendants) = children.remove(&candidate) {
+                surface.scroll_poses.remove(&candidate);
+                if let Some(parent) = row
+                    .parent
+                    .and_then(|parent| surface.children.get_mut(&parent))
+                {
+                    parent.retain(|child| *child != candidate);
+                }
+                if let Some(descendants) = surface.children.remove(&candidate) {
                     pending.extend(descendants);
                 }
             }

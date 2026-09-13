@@ -139,15 +139,19 @@ impl PlatformPulseApplicationRuntime {
     ) -> Option<PlatformPulsePreparedIntentPosture> {
         let (posture, observation) = match transition {
             WorthUiNativeIntentTransition::AttemptPrepared(prepared) => {
-                if let Err(denial) = self.intent_evidence_index.retain(prepared.dispatch()) {
+                let dispatch = prepared.dispatch();
+                let posture = prepared.into_posture();
+                if let Err(denial) = self
+                    .intent_evidence_index
+                    .retain(dispatch, posture.mounted_instance())
+                {
                     self.fail_intent_settlement(format!(
                         "prepared intent evidence could not be retained: {denial:?}"
                     ));
                     return None;
                 }
-                let observation =
-                    PlatformPulseIntentPostureObservation::admitted(prepared.dispatch());
-                (prepared.into_posture(), observation)
+                let observation = PlatformPulseIntentPostureObservation::admitted(dispatch);
+                (posture, observation)
             }
             WorthUiNativeIntentTransition::ConfirmationRequired(pending) => {
                 let observation =
@@ -289,9 +293,6 @@ impl PlatformPulseApplicationRuntime {
                 if !self.publish_query_denial_story(shell, denial) {
                     return false;
                 }
-            }
-            if !self.refresh_product_story(shell) {
-                return false;
             }
         }
         true

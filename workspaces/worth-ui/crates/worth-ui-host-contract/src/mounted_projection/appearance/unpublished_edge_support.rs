@@ -34,6 +34,7 @@ pub(super) fn surface_at(
     let bounds = UiAppearanceAllocationBounds::new(0, 0, 32, 32).unwrap();
     UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
             issuer,
             node_receipt: issuer.receipt_for(instance),
             bounds,
@@ -46,9 +47,9 @@ pub(super) fn surface_at(
             ),
             border_edges: UiMountedSurfaceBorderEdges::ALL,
             border_omissions: Box::new([]),
-            paint: UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
-                0, 0, 0, 255,
-            ])),
+            paint: UiMountedSurfacePaint::Fill(
+                UiMountedAppearanceColor::from_straight_srgba([0, 0, 0, 255]).into(),
+            ),
             opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
                 .unwrap(),

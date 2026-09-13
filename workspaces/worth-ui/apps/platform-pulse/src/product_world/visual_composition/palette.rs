@@ -19,6 +19,8 @@ pub enum PlatformPulsePaletteRole {
     ActionText,
     Positive,
     Caution,
+    NavigationSurface,
+    HoverSurface,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -28,7 +30,7 @@ pub enum PlatformPulseSourceSignalRole {
 }
 
 impl PlatformPulsePaletteRole {
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 13] = [
         Self::Canvas,
         Self::RaisedSurface,
         Self::ElevatedSurface,
@@ -40,21 +42,25 @@ impl PlatformPulsePaletteRole {
         Self::ActionText,
         Self::Positive,
         Self::Caution,
+        Self::NavigationSurface,
+        Self::HoverSurface,
     ];
 
     pub const fn authored_rgba(self) -> PlatformPulseRgba {
         PlatformPulseRgba(match self {
-            Self::Canvas => [0x0B, 0x0F, 0x14, 0xFF],
-            Self::RaisedSurface => [0x11, 0x16, 0x1C, 0xFF],
-            Self::ElevatedSurface => [0x17, 0x1D, 0x25, 0xFF],
-            Self::StructuralRule => [0x5F, 0x69, 0x77, 0xFF],
-            Self::PrimaryText => [0xF2, 0xF4, 0xF7, 0xFF],
-            Self::SecondaryText => [0xA1, 0xA9, 0xB4, 0xFF],
-            Self::PrincipalAccent => [0xAC, 0x67, 0xF2, 0xFF],
-            Self::ActionFill => [0x94, 0x40, 0xD4, 0xFF],
-            Self::ActionText => [0xFA, 0xFB, 0xFC, 0xFF],
-            Self::Positive => [0x5C, 0xC9, 0x78, 0xFF],
-            Self::Caution => [0xE0, 0xAD, 0x62, 0xFF],
+            Self::Canvas => [0xF6, 0xF4, 0xEF, 0xFF],
+            Self::RaisedSurface => [0xFF, 0xFF, 0xFF, 0xFF],
+            Self::ElevatedSurface => [0xF0, 0xEE, 0xF8, 0xFF],
+            Self::StructuralRule => [0xD8, 0xDC, 0xE7, 0xFF],
+            Self::PrimaryText => [0x17, 0x21, 0x3A, 0xFF],
+            Self::SecondaryText => [0x66, 0x70, 0x85, 0xFF],
+            Self::PrincipalAccent => [0x74, 0x67, 0xE8, 0xFF],
+            Self::ActionFill => [0x17, 0x23, 0x3C, 0xFF],
+            Self::ActionText => [0xFF, 0xFF, 0xFF, 0xFF],
+            Self::Positive => [0x2E, 0x9D, 0x72, 0xFF],
+            Self::Caution => [0xC9, 0x87, 0x2D, 0xFF],
+            Self::NavigationSurface => [0x17, 0x23, 0x3C, 0xFF],
+            Self::HoverSurface => [0xE9, 0xE6, 0xFF, 0xFF],
         })
     }
 
@@ -71,22 +77,26 @@ impl PlatformPulsePaletteRole {
             Self::ActionText => "action-text",
             Self::Positive => "positive",
             Self::Caution => "caution",
+            Self::NavigationSurface => "navigation-surface",
+            Self::HoverSurface => "hover-surface",
         }
     }
 
     pub const fn authored_hex(self) -> &'static str {
         match self {
-            Self::Canvas => "#0B0F14",
-            Self::RaisedSurface => "#11161C",
-            Self::ElevatedSurface => "#171D25",
-            Self::StructuralRule => "#5F6977",
-            Self::PrimaryText => "#F2F4F7",
-            Self::SecondaryText => "#A1A9B4",
-            Self::PrincipalAccent => "#AC67F2",
-            Self::ActionFill => "#9440D4",
-            Self::ActionText => "#FAFBFC",
-            Self::Positive => "#5CC978",
-            Self::Caution => "#E0AD62",
+            Self::Canvas => "#F6F4EF",
+            Self::RaisedSurface => "#FFFFFF",
+            Self::ElevatedSurface => "#F0EEF8",
+            Self::StructuralRule => "#D8DCE7",
+            Self::PrimaryText => "#17213A",
+            Self::SecondaryText => "#667085",
+            Self::PrincipalAccent => "#7467E8",
+            Self::ActionFill => "#17233C",
+            Self::ActionText => "#FFFFFF",
+            Self::Positive => "#2E9D72",
+            Self::Caution => "#C9872D",
+            Self::NavigationSurface => "#17233C",
+            Self::HoverSurface => "#E9E6FF",
         }
     }
 
@@ -103,6 +113,8 @@ impl PlatformPulsePaletteRole {
             Self::ActionText => "action_text",
             Self::Positive => "positive",
             Self::Caution => "caution",
+            Self::NavigationSurface => "navigation_surface",
+            Self::HoverSurface => "hover_surface",
         }
     }
 

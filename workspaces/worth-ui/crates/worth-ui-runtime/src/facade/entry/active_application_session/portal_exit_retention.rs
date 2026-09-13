@@ -298,11 +298,9 @@ impl UiPortalExitTerminalPending {
             Self::InFlight { completion, .. } => {
                 completion.matches_native_physical(class, presentation)
             }
-            Self::Indeterminate { .. } => matches!(
-                class,
-                worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery
-                    | worth_ui_host_native::UiNativePhysicalProgressClass::Presentation
-            ),
+            Self::Indeterminate { recovery, .. } => {
+                recovery.matches_native_physical(class, presentation)
+            }
             Self::Reconstruction { in_flight, .. } => {
                 let progress_class = match class {
                     worth_ui_host_native::UiNativePhysicalProgressClass::Presentation => {
@@ -362,7 +360,7 @@ mod tests {
     #[test]
     fn an_idle_coordinator_blocks_no_target_and_awaits_no_physical_work() {
         let coordinator = UiPortalExitRetentionCoordinator::new();
-        let target = crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+        let target = crate::runtime::motion::UiMotionTargetIdentity::from_mounted_owner(
             worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound()
                 .expect("fixture semantic surface"),
             worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound()

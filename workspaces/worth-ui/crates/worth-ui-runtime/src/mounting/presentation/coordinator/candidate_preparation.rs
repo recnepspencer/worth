@@ -201,7 +201,7 @@ impl UiPreparedFrameCandidates {
                 (Some(source_frame), Some(previous))
                     if reconstruction_required && source_frame == previous.frame() =>
                 {
-                    reconstruct(surface, source_frame, Some(previous))?
+                    reconstruct(surface, source, source_frame, Some(previous))?
                 }
                 (Some(source_frame), Some(previous)) if source_frame == previous.frame() => {
                     let projection = UiMountedPresentationState::successor_projection_required(
@@ -221,18 +221,19 @@ impl UiPreparedFrameCandidates {
                     )
                 }
                 (None, None) => (
-                    UiMountedPresentationState::from_projection(
+                    UiMountedPresentationState::from_projection_in_authored_order(
                         surface.projection(),
                         surface.requirement(),
                         None,
+                        source.frame().presentation_authored_order(),
                     ),
                     CandidateOrigin::Initial,
                 ),
                 (Some(source_frame), Some(previous)) if source_frame > previous.frame() => {
                     // A partially advanced frame reconstructs this exact older surface.
-                    reconstruct(surface, previous.frame(), Some(previous))?
+                    reconstruct(surface, source, previous.frame(), Some(previous))?
                 }
-                (Some(source_frame), None) => reconstruct(surface, source_frame, None)?,
+                (Some(source_frame), None) => reconstruct(surface, source, source_frame, None)?,
                 _ => return Err(UiHostSurfacePresentationDenial::StalePredecessor),
             };
             surfaces.push(UiPreparedSurfaceCandidate {
@@ -263,6 +264,7 @@ fn insert_instance_motion<K: std::hash::Hash + Eq>(
 
 fn reconstruct(
     surface: &crate::mounting::UiMountedSurfaceReceipt,
+    source: crate::mounting::UiMountedPresentationDeltaSource<'_>,
     predecessor: UiMountedFrameIdentity,
     retained: Option<&UiMountedPresentationState>,
 ) -> Result<(UiMountedPresentationState, CandidateOrigin), UiHostSurfacePresentationDenial> {
@@ -272,10 +274,11 @@ fn reconstruct(
         )
         .reconstruct_authored()
         .map_err(|_| UiHostSurfacePresentationDenial::MalformedProjection)?;
-    let mut state = UiMountedPresentationState::from_projection(
+    let mut state = UiMountedPresentationState::from_projection_in_authored_order(
         &projection,
         surface.requirement(),
         Some(predecessor),
+        source.frame().presentation_authored_order(),
     );
     if let Some(retained) = retained {
         state.inherit_reconstruction_motion(retained);

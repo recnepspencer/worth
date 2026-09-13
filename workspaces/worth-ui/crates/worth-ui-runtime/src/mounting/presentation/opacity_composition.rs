@@ -6,14 +6,7 @@ pub(in crate::mounting) fn compose_opacity(
     appearance: UiMountedAppearanceOpacity,
     motion_units: u16,
 ) -> UiMountedPresentationOpacity {
-    let product = u32::from(appearance.units()) * u32::from(motion_units);
-    let denominator = u32::from(u16::MAX);
-    let quotient = product / denominator;
-    let remainder = product % denominator;
-    let round_up =
-        remainder * 2 > denominator || (remainder * 2 == denominator && quotient % 2 == 1);
-    let units = (quotient + u32::from(round_up)).min(denominator) as u16;
-    UiMountedPresentationOpacity::from_runtime_composition(units)
+    UiMountedPresentationOpacity::from_runtime_appearance_motion(appearance, motion_units)
 }
 
 #[cfg(test)]

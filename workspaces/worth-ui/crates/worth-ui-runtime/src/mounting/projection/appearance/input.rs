@@ -47,6 +47,10 @@ impl UiMountedAppearanceNodeInput {
         let surface_border_omissions = lower_border_omissions(&surface_paint_posture)?;
         let outline = lower_outline(outline, bounds, radii, outline_fringe)?;
         Ok(Some(Self {
+            surface_geometry: geometry_input
+                .as_ref()
+                .map(|geometry| geometry.surface_geometry())
+                .unwrap_or_default(),
             geometry_input,
             issuer,
             semantic_surface,
@@ -109,7 +113,7 @@ fn resolve_mounting_basis(
 }
 
 fn lower_surface_paint(
-    fill: Option<worth_ui_host_contract::UiMountedAppearanceColor>,
+    fill: Option<worth_ui_host_contract::UiMountedSurfaceFill>,
     border: Option<(
         worth_ui_host_contract::UiMountedAppearanceColor,
         worth_ui_host_contract::UiAppearanceLogicalLength,
@@ -285,7 +289,7 @@ impl super::UiMountedAppearanceLoweringInput {
         for backdrop in &mut self.backdrops {
             backdrop.motion_opacity = backdrop
                 .motion_target
-                .map(|target| scope.instance_motion_opacity(target, true))
+                .map(|target| scope.instance_motion_opacity(target.owner(), true))
                 .transpose()?
                 .flatten()
                 .flatten();

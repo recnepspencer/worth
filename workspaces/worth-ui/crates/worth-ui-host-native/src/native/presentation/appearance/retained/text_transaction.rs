@@ -81,6 +81,7 @@ impl UiNativeAppearanceRetained {
         self.order
             .restore(undo.order)
             .map_err(UiNativeAppearanceRetainedDenial::Order)?;
+        self.remove_backdrop_motion(key);
         if let Some(current) = self.commands.remove(&key) {
             let text_commands = super::text_paint_commands(&current);
             self.remove_text_key(key, &text_commands);
@@ -88,6 +89,7 @@ impl UiNativeAppearanceRetained {
             self.family_counts[family_slot(current.family())] -= 1;
         }
         if let Some(previous) = undo.previous {
+            self.index_backdrop_motion(key, &previous);
             let text_commands = super::text_paint_commands(&previous);
             self.family_counts[family_slot(previous.family())] += 1;
             self.identities.insert(previous.identity(), key);

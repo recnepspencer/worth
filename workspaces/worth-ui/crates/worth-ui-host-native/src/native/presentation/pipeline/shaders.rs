@@ -38,7 +38,8 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 "#;
 
-pub(super) const ANALYTIC_SURFACE_SHADER: &str = r#"
+pub(super) const ANALYTIC_SURFACE_SHADER: &str = concat!(
+    r#"
 @group(0) @binding(0) var<storage, read> data: array<vec4<f32>>;
 
 struct VertexOutput {
@@ -83,6 +84,9 @@ fn omitted(side: u32, offset: f32) -> bool {
     return false;
 }
 
+"#,
+    include_str!("surface_geometry.wgsl"),
+    r#"
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let point = input.position.xy;
@@ -92,13 +96,30 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
         discard;
     }
     let radii = data[2];
-    let fill = data[3];
+    var fill = data[3];
+    let axis = data[arrayLength(&data) - 2u];
+    let start = bounds.xy + axis.xy * (bounds.zw - bounds.xy);
+    let end = bounds.xy + axis.zw * (bounds.zw - bounds.xy);
+    let direction = end - start;
+    let length_squared = dot(direction, direction);
+    if length_squared > 0.0 {
+        let fraction = clamp(dot(point - start, direction) / length_squared, 0.0, 1.0);
+        fill = mix(fill, data[arrayLength(&data) - 1u], fraction);
+    }
     let border = data[4];
     let metrics = data[5];
     let width = metrics.x;
     let opacity = metrics.y;
     let paint_kind = u32(metrics.z);
     let edge_bits = u32(metrics.w);
+    let geometry = data[6];
+    let geometry_kind = u32(geometry.y);
+    if geometry_kind == 1u || geometry_kind == 2u {
+        return fill * opacity * vector_coverage(point, bounds, geometry_kind, geometry.z, u32(geometry.w));
+    }
+    if geometry_kind == 3u {
+        return fill * opacity * shadow_coverage(point, bounds, geometry.z, geometry.w);
+    }
     let outer = coverage(rounded_distance(point, bounds, radii));
     var inner = outer;
     if width > 0.0 {
@@ -126,7 +147,8 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let fill_layer = fill * fill_coverage;
     return (border_layer + fill_layer * (1.0 - border_layer.a)) * opacity;
 }
-"#;
+"#
+);
 
 pub(super) const ALPHA_GLYPH_SHADER: &str = r#"
 @group(0) @binding(0) var atlas_page: texture_2d<f32>;

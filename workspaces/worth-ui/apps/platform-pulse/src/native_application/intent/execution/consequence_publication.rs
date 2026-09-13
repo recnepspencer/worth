@@ -96,7 +96,7 @@ impl PlatformPulseApplicationRuntime {
             self.fail_visual_identity(denial);
             return false;
         }
-        self.refresh_product_story(shell)
+        true
     }
 }
 

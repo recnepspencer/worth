@@ -302,6 +302,7 @@ fn rectangle(
             ),
             anchor_bounds: bounds,
             bounds,
+            paint_bounds: bounds,
             clip_bounds: bounds,
             color: UiMountedRgba8::new(30, 60, 90, 255),
             layer_semantic_order: 2,

@@ -2,6 +2,7 @@ use super::{UiAssembledMountedFrame, UiMountedFramePreparationDenial};
 
 pub struct UiPreparedMountedFrame {
     frame: UiAssembledMountedFrame,
+    motion_entrance: Option<crate::runtime::motion::UiPreparedMotionEntrance>,
 }
 
 impl UiAssembledMountedFrame {
@@ -38,7 +39,10 @@ impl UiAssembledMountedFrame {
             self.prepared_theme_binding = Some(change.prepared().successor().clone());
         }
         projection.finish(&mut self)?;
-        Ok(UiPreparedMountedFrame { frame: self })
+        Ok(UiPreparedMountedFrame {
+            frame: self,
+            motion_entrance: None,
+        })
     }
 }
 
@@ -51,6 +55,33 @@ impl std::ops::Deref for UiPreparedMountedFrame {
 }
 
 impl UiPreparedMountedFrame {
+    pub(crate) fn bind_motion_entrance(
+        &mut self,
+        entrance: Option<crate::runtime::motion::UiPreparedMotionEntrance>,
+    ) -> Result<(), crate::runtime::rebind::UiRebindPreparationDenial> {
+        if entrance.is_some_and(|entrance| entrance.frame() != self.canonical_core().frame()) {
+            return Err(
+                crate::runtime::rebind::UiRebindPreparationDenial::ConsequenceFrameMismatch,
+            );
+        }
+        self.motion_entrance = entrance;
+        Ok(())
+    }
+
+    pub(crate) const fn motion_entrance(
+        &self,
+    ) -> Option<crate::runtime::motion::UiPreparedMotionEntrance> {
+        self.motion_entrance
+    }
+
+    pub(crate) fn visual_region_basis(&self) -> crate::mounting::UiMountedVisualRegionBasis {
+        let mut basis = self.frame.visual_region_basis();
+        if let Some(entrance) = self.motion_entrance {
+            basis.presented_hits.prepare_motion_entrance(entrance);
+        }
+        basis
+    }
+
     pub(in crate::mounting) fn reconcile_current(
         identity: &crate::mounting::UiMountedIdentityState,
         replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
@@ -62,7 +93,10 @@ impl UiPreparedMountedFrame {
             protocol,
             capability_report,
         )?;
-        Ok(Self { frame })
+        Ok(Self {
+            frame,
+            motion_entrance: None,
+        })
     }
 
     pub(crate) fn record_accepted_motion_commands_visited(&mut self, count: usize) {

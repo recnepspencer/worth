@@ -196,6 +196,7 @@ impl WorthUiMountedSessionState {
     pub(crate) fn replace_occurrence_geometry(
         &mut self,
         batch: super::super::UiMountedSurfaceGeometryBatch,
+        scroll: Option<&mut crate::runtime::scroll::UiScrollRuntimeState>,
     ) -> Result<
         super::super::UiMountedLayoutCompletionReceipt,
         super::super::UiMountedOccurrenceGeometryDenial,
@@ -223,6 +224,16 @@ impl WorthUiMountedSessionState {
             seam_index_rows,
             seam_adjacencies_visited,
         ) = successor.replace_surface(&self.identity, batch)?;
+        let mut changed = changed.into_vec();
+        if let Some(scroll) = scroll {
+            changed.extend(
+                successor
+                    .restore_scroll_geometry(surface, &self.identity, scroll)?
+                    .into_vec(),
+            );
+        }
+        changed.sort_unstable();
+        changed.dedup();
         if !changed.is_empty() {
             self.identity
                 .mark_occurrence_geometry_changed(&changed)

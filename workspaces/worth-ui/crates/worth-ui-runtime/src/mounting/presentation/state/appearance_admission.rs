@@ -18,12 +18,17 @@ impl UiMountedPresentationAdmission {
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
     ) -> UiMountedAppearanceAdmission {
         let requires_complete = self.candidates.requires_complete_appearance_projection();
-        if requires_complete && self.frame.prepare_appearance_reconstruction().is_err() {
-            return self.deny_appearance_output();
+        if requires_complete {
+            if self.frame.prepare_appearance_reconstruction().is_err() {
+                return self.deny_appearance_output();
+            }
         }
         let targets = match self.frame.appearance_motion_targets(overlays) {
             Ok(targets) => targets,
-            Err(_) => return self.deny_appearance_output(),
+            Err(denial) => {
+                eprintln!("PULSE_APPEARANCE targets {denial:?}");
+                return self.deny_appearance_output();
+            }
         };
         let motion = self.candidates.accepted_appearance_motion(&targets);
         let refresh_visual_regions = !targets.is_empty()

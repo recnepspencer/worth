@@ -136,6 +136,7 @@ fn node(
     semantic_text: bool,
 ) -> UiMountedProjectionNodeRecord {
     UiMountedProjectionNodeRecord {
+        surface_geometry: worth_ui_host_contract::UiSurfaceGeometry::default(),
         receipt: UiMountedNodeReceipt::from_input(UiMountedNodeReceiptInput {
             mounted_instance: instance,
             graph_node: crate::graph::UiGraphNodeIdentity::new(graph),
@@ -178,6 +179,7 @@ fn node(
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
         surface_paint_order: Some(0),
+        portal_surface_appearance: true,
         has_appearance_attachment: true,
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
@@ -235,11 +237,18 @@ fn portal_overlay_for_graph(
         ),
         surface,
     );
-    let placement = crate::runtime::portal::UiPreparedPortalPlacement::for_request(&request, None)
-        .expect("the exact presented owner admits Portal placement")
-        .expect("an open request prepares Portal placement geometry");
+    let state = crate::runtime::portal::UiPortalRuntimeState::new(
+        crate::runtime::UiServiceStatePersistencePosture::SessionRestoreCandidate,
+    );
+    let transition = state
+        .prepare(request)
+        .expect("presented owner admits Portal opening");
+    let placement = transition.placement().expect("opening carries placement");
     crate::mounting::UiMountedPortalOverlayProjectionInput::new(
         identity.diagnostic_value(),
+        transition
+            .stack_ordinal()
+            .expect("opening carries issued order"),
         owner,
         surface,
         placement,
@@ -259,8 +268,8 @@ fn assert_child_suppressed(
     assert!(frame
         .portal_presentation_affinity_for_instance(child, surface, binding)
         .is_none());
-    assert!(!frame
-        .presentation_instance_order(surface, binding)
+    assert!(frame
+        .presentation_authored_order()
         .iter()
         .any(|instance| *instance == child));
     assert!(!frame

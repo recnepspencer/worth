@@ -221,7 +221,7 @@ fn advance_motion_epoch(
         .mounted
         .install_motion_commit(UiMotionCommitReceipt::for_sampling_test_transition(
             907,
-            UiMotionTargetIdentity::from_family_owner(
+            UiMotionTargetIdentity::from_mounted_owner(
                 target.surface(),
                 target.mounted_instance(),
                 907,

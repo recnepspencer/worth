@@ -3,7 +3,7 @@ use wgpu::util::DeviceExt;
 
 use super::super::{
     copy_evidence_pixels, draw_presentation_operations, draw_retained_to_surface,
-    presentation_pipelines, rectangle_vertices, retained_transfer, GlyphVertex, RasterVertex,
+    rectangle_vertices, retained_transfer, GlyphVertex, RasterVertex,
     UiNativePendingWgpuObligation, UiNativePresentationPipelines, UiNativeWgpuReadbackPoll,
 };
 use super::orchestrator::UiNativePresentationStagePort;
@@ -29,7 +29,8 @@ pub(super) fn present(
         plan: Some(plan),
         defer_initial_observation,
     };
-    lifecycle.run_presentation(&mut transaction)
+    let result = lifecycle.run_presentation(&mut transaction);
+    result
 }
 
 struct UiWgpuPresentationTransaction<'transaction, 'owners> {
@@ -94,7 +95,9 @@ fn encode_acquired(
     surface_texture: &wgpu::Texture,
     plan: UiNativePresentationPortPlan,
 ) -> (wgpu::CommandBuffer, wgpu::Buffer) {
-    let (surface_pipeline, surface_bind_group) = retained_transfer(graphics);
+    let generation = graphics.device_generation();
+    let pipelines = generation.presentation_pipelines();
+    let (surface_pipeline, surface_bind_group) = retained_transfer(graphics, pipelines);
     let retained_view = graphics
         .retained_target()
         .create_view(&wgpu::TextureViewDescriptor::default());
@@ -112,7 +115,6 @@ fn encode_acquired(
         "worth-ui-retained-glyph-vertices",
         encode_glyph_vertices(&glyph_vertices),
     );
-    let pipelines = presentation_pipelines(graphics.device());
     let commands = encode(
         graphics,
         retained_view,
@@ -123,7 +125,7 @@ fn encode_acquired(
         raster_vertex_buffer.as_ref(),
         glyph_vertex_buffer.as_ref(),
         atlas,
-        &pipelines,
+        pipelines,
         plan,
     );
     (commands, readback)

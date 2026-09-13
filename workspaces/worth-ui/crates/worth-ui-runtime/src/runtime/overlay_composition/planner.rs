@@ -90,15 +90,18 @@ impl UiOverlayPlanCounters {
     pub(crate) const fn backdrop_declarations_selected(self) -> usize {
         self.backdrop_declarations_selected
     }
+    #[cfg(feature = "certification-support")]
     pub(crate) const fn overlay_relation_edges_visited(self) -> usize {
         self.overlay_relation_edges_visited
     }
     pub(crate) const fn backdrop_mechanics_changed(self) -> usize {
         self.backdrop_mechanics_changed
     }
+    #[cfg(feature = "certification-support")]
     pub(crate) const fn backdrop_commands_replayed(self) -> usize {
         self.backdrop_commands_replayed
     }
+    #[cfg(feature = "certification-support")]
     pub(crate) const fn unrelated_neighborhoods_touched(self) -> usize {
         self.unrelated_neighborhoods_touched
     }

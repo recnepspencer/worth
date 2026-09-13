@@ -1,6 +1,27 @@
 use super::{UiMountedAppearanceStateMembers, UiMountedAppearanceStateMembership};
 
 impl UiMountedAppearanceStateMembers {
+    pub(in crate::mounting::projection::frame_storage) fn retained_surface(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Option<&worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic> {
+        let key = self.reverse.get(&instance)?;
+        let UiMountedAppearanceStateMembership::Retained(entry) = self.primary.get(key)? else {
+            return None;
+        };
+        entry
+            .sidecar
+            .current_facts()?
+            .records()
+            .iter()
+            .find_map(|fact| match fact.mechanic() {
+                worth_ui_host_contract::UiMountedAppearanceMechanic::Surface(surface) => {
+                    Some(surface)
+                }
+                _ => None,
+            })
+    }
+
     pub(in crate::mounting::projection::frame_storage) fn retained_sidecars(
         &self,
     ) -> impl Iterator<Item = &super::UiMountedAppearanceSidecar> {

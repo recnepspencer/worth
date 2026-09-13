@@ -1,0 +1,122 @@
+appearance role platform.pulse.appearance.service_stage applies_to platform.pulse.component.service_stage {
+  background use token(theme.platform_pulse.raised_surface)
+  radius use token(theme.platform_pulse.radius.r12)
+  border use token(theme.platform_pulse.border.card)
+}
+component platform.pulse.component.service_stage {
+  appearance { role platform.pulse.appearance.service_stage }
+}
+appearance role platform.pulse.appearance.service_body applies_to platform.pulse.component.service_body {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.service_body {
+  appearance { role platform.pulse.appearance.service_body }
+}
+appearance role platform.pulse.appearance.confirmation_target applies_to platform.pulse.component.confirmation_target {
+  background over [hover] {
+    cell outside when hover = outside use token(theme.platform_pulse.raised_surface)
+    cell hovered when hover = hovered use token(theme.platform_pulse.hover_surface)
+  }
+  radius use token(theme.platform_pulse.radius.r10)
+  border use token(theme.platform_pulse.border.card)
+}
+component platform.pulse.component.confirmation_target {
+  appearance { role platform.pulse.appearance.confirmation_target }
+  interaction activate routes platform.pulse.portal.open.route opens portal platform.pulse.portal.period;
+}
+appearance role platform.pulse.appearance.confirmation_label applies_to platform.pulse.component.confirmation_label {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.confirmation_label {
+  appearance { role platform.pulse.appearance.confirmation_label }
+}
+appearance role platform.pulse.appearance.period_chevron applies_to platform.pulse.component.period_chevron {
+  background use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.period_chevron {
+  appearance { role platform.pulse.appearance.period_chevron }
+}
+appearance role platform.pulse.appearance.chart_grid applies_to platform.pulse.component.chart_grid {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.chart_grid {
+  appearance { role platform.pulse.appearance.chart_grid }
+}
+appearance role platform.pulse.appearance.chart_area applies_to platform.pulse.component.chart_area {
+  background use linear_gradient token(theme.platform_pulse.chart_fill)
+}
+component platform.pulse.component.chart_area {
+  appearance { role platform.pulse.appearance.chart_area }
+}
+appearance role platform.pulse.appearance.query_accent applies_to platform.pulse.component.query_accent {
+  background use token(theme.platform_pulse.principal_accent)
+}
+component platform.pulse.component.query_accent {
+  appearance { role platform.pulse.appearance.query_accent }
+}
+appearance role platform.pulse.appearance.chart_y_0 applies_to platform.pulse.component.chart_y_0 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_y_0 {
+  appearance { role platform.pulse.appearance.chart_y_0 }
+}
+appearance role platform.pulse.appearance.chart_y_1 applies_to platform.pulse.component.chart_y_1 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_y_1 {
+  appearance { role platform.pulse.appearance.chart_y_1 }
+}
+appearance role platform.pulse.appearance.chart_y_2 applies_to platform.pulse.component.chart_y_2 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_y_2 {
+  appearance { role platform.pulse.appearance.chart_y_2 }
+}
+appearance role platform.pulse.appearance.chart_y_3 applies_to platform.pulse.component.chart_y_3 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_y_3 {
+  appearance { role platform.pulse.appearance.chart_y_3 }
+}
+appearance role platform.pulse.appearance.chart_x_0 applies_to platform.pulse.component.chart_x_0 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_x_0 {
+  appearance { role platform.pulse.appearance.chart_x_0 }
+}
+appearance role platform.pulse.appearance.chart_x_1 applies_to platform.pulse.component.chart_x_1 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_x_1 {
+  appearance { role platform.pulse.appearance.chart_x_1 }
+}
+appearance role platform.pulse.appearance.chart_x_2 applies_to platform.pulse.component.chart_x_2 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_x_2 {
+  appearance { role platform.pulse.appearance.chart_x_2 }
+}
+appearance role platform.pulse.appearance.chart_x_3 applies_to platform.pulse.component.chart_x_3 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_x_3 {
+  appearance { role platform.pulse.appearance.chart_x_3 }
+}
+appearance role platform.pulse.appearance.chart_x_4 applies_to platform.pulse.component.chart_x_4 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_x_4 {
+  appearance { role platform.pulse.appearance.chart_x_4 }
+}
+appearance role platform.pulse.appearance.chart_x_5 applies_to platform.pulse.component.chart_x_5 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_x_5 {
+  appearance { role platform.pulse.appearance.chart_x_5 }
+}
+appearance role platform.pulse.appearance.chart_x_6 applies_to platform.pulse.component.chart_x_6 {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+component platform.pulse.component.chart_x_6 {
+  appearance { role platform.pulse.appearance.chart_x_6 }
+}

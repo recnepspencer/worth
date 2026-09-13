@@ -2,6 +2,8 @@ mod backdrop;
 mod bounds;
 mod change;
 mod color;
+mod fill;
+pub use fill::{UiMountedLinearGradient, UiMountedSurfaceFill};
 mod compositing;
 mod frame;
 mod geometry_qualification;
@@ -17,6 +19,7 @@ mod portal_surface;
 mod radii;
 mod surface;
 mod surface_border;
+mod surface_geometry;
 mod text_damage;
 mod text_foreground;
 mod unpublished;
@@ -83,6 +86,10 @@ pub use surface::{
     UiMountedSurfaceAppearanceMechanic, UiMountedSurfaceBorderEdges, UiMountedSurfacePaint,
 };
 pub use surface_border::{UiMountedSurfaceBorderOmission, UiMountedSurfaceBorderSide};
+pub use surface_geometry::{
+    NormalizedPoint, UiSoftShadowGeometry, UiSurfaceGeometry, UiSurfaceGeometryDenial,
+    UiVectorSurfaceGeometry, VectorPath, VectorPathDenial, VectorPathSegment,
+};
 pub use text_damage::{UiAppearanceTextDamageRequirement, UiAppearanceTextDamageTransition};
 pub use text_foreground::{
     UiMountedTextForegroundAppearanceCompletionDenial,

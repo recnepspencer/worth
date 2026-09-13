@@ -41,10 +41,19 @@ pub(super) fn mounted_surface_with_edges(
     input: MountedSurfaceFixtureInput,
     border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges,
 ) -> UiMountedSurfaceAppearanceMechanic {
+    mounted_surface_geometry(input, border_edges, Default::default())
+}
+
+pub(super) fn mounted_surface_geometry(
+    input: MountedSurfaceFixtureInput,
+    border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges,
+    geometry: worth_ui_host_contract::UiSurfaceGeometry,
+) -> UiMountedSurfaceAppearanceMechanic {
     let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let issuer = UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
     UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {
+            geometry,
             issuer,
             node_receipt: issuer.receipt_for(UiMountedInstanceIdentity::mint_unbound().unwrap()),
             bounds: input.allocation,
@@ -79,7 +88,7 @@ pub(super) fn filled_surface(
         allocation: input.allocation,
         clip: UiAppearanceClip::new(x, y, width, height).unwrap(),
         radii: [UiAppearanceLogicalLength::ZERO; 4],
-        paint: UiMountedSurfacePaint::Fill(input.color),
+        paint: UiMountedSurfacePaint::Fill(input.color.into()),
         opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
     })
 }
@@ -151,6 +160,7 @@ pub(super) fn mounted_backdrop(input: MountedBackdropFixtureInput) -> UiMountedB
         clip: input.clip,
         background: input.background,
         opacity: input.opacity,
+        motion_target: None,
         attribution: UiMountedBackdropAppearanceAttribution::from_runtime_transport(
             input.semantic_surface,
             placement,

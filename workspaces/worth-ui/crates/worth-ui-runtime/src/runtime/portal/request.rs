@@ -11,6 +11,7 @@ pub(crate) struct UiPortalServiceRequest {
     parent: Option<super::UiPortalIdentity>,
     shielding: super::UiPortalInputShielding,
     shielding_uses_policy_default: bool,
+    content_extent: Option<super::UiPortalContentBounds>,
 }
 
 // Presented viewport boxes are canonical finite geometry, so equality is reflexive.
@@ -44,6 +45,7 @@ impl UiPortalServiceRequest {
             parent: None,
             shielding: super::UiPortalInputShielding::ContentBounds,
             shielding_uses_policy_default: true,
+            content_extent: None,
         }
     }
 
@@ -70,6 +72,7 @@ impl UiPortalServiceRequest {
             parent: Some(parent),
             shielding,
             shielding_uses_policy_default: false,
+            content_extent: None,
         }
     }
 
@@ -91,6 +94,7 @@ impl UiPortalServiceRequest {
             parent: None,
             shielding: super::UiPortalInputShielding::ContentBounds,
             shielding_uses_policy_default: false,
+            content_extent: None,
         }
     }
 
@@ -155,7 +159,19 @@ impl UiPortalServiceRequest {
         self.shielding
     }
 
-    pub(super) const fn with_policy(mut self, policy: crate::declaration::UiPortalPolicy) -> Self {
+    pub(crate) const fn with_content_extent(
+        mut self,
+        extent: Option<super::UiPortalContentBounds>,
+    ) -> Self {
+        self.content_extent = extent;
+        self
+    }
+
+    pub(super) const fn content_bounds(self) -> Option<super::UiPortalContentBounds> {
+        self.content_extent
+    }
+
+    pub(super) fn with_policy(mut self, policy: crate::declaration::UiPortalPolicy) -> Self {
         if matches!(self.operation, UiPortalServiceOperation::Open) {
             self.placement_geometry = Some(match policy.kind() {
                 crate::declaration::UiPortalPolicyKind::ModalDialog => {
@@ -166,6 +182,15 @@ impl UiPortalServiceRequest {
                     crate::declaration::UiDeclaredPortalPlacementGeometry::dropdown()
                 }
             });
+            if let Some(extent) = self.content_extent {
+                self.placement_geometry = match self.placement_geometry {
+                    Some(geometry) => Some(geometry.with_content_extent([
+                        extent.layout.width() as u16,
+                        extent.layout.height() as u16,
+                    ])),
+                    None => None,
+                };
+            }
             if self.shielding_uses_policy_default {
                 self.shielding = match policy.kind() {
                     crate::declaration::UiPortalPolicyKind::ModalDialog => {

@@ -48,11 +48,13 @@ pub enum UiThemeValueKind {
     CornerRadii,
     SolidStroke,
     SolidOutline,
+    LinearGradient,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum UiThemeValue {
     Color(UiThemeColor),
+    LinearGradient(super::UiThemeLinearGradient),
     Opacity(UiThemeOpacity),
     LogicalLength(UiLogicalLength),
     CornerRadii(UiThemeCornerRadii),
@@ -231,6 +233,7 @@ impl UiThemeValue {
     pub const fn kind(self) -> UiThemeValueKind {
         match self {
             Self::Color(_) => UiThemeValueKind::Color,
+            Self::LinearGradient(_) => UiThemeValueKind::LinearGradient,
             Self::Opacity(_) => UiThemeValueKind::Opacity,
             Self::LogicalLength(_) => UiThemeValueKind::LogicalLength,
             Self::CornerRadii(_) => UiThemeValueKind::CornerRadii,

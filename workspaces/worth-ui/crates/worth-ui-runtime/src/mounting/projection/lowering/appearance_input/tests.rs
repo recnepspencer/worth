@@ -66,6 +66,7 @@ fn projection(
 fn node() -> UiMountedProjectionNodeRecord {
     let withheld = UiMountedParticipationFact::new(UiMountedParticipationStatus::Withheld);
     UiMountedProjectionNodeRecord {
+        surface_geometry: worth_ui_host_contract::UiSurfaceGeometry::default(),
         receipt: UiMountedNodeReceipt::from_input(UiMountedNodeReceiptInput {
             mounted_instance: UiMountedInstanceIdentity::mint_unbound().unwrap(),
             graph_node: crate::graph::UiGraphNodeIdentity::new(1),
@@ -89,6 +90,7 @@ fn node() -> UiMountedProjectionNodeRecord {
         }),
         plan_index: Some(0),
         surface_paint_order: Some(0),
+        portal_surface_appearance: true,
         has_appearance_attachment: true,
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,

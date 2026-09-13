@@ -5,7 +5,9 @@ use worth_ui::facade::app::{
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentViewportAxisPlacement,
 };
-use worth_ui_platform_pulse::product_world::PlatformPulseMosaicRegion;
+use worth_ui_platform_pulse::product_world::{
+    dashboard_elements, DashboardScrollPanel, PlatformPulseMosaicRegion,
+};
 
 pub(super) fn publish_native_layout(
     shell: &mut WorthUiNativeApplicationShell,
@@ -48,6 +50,14 @@ fn prepare_native_layout_batch(
     components: &[worth_ui::facade::app::UiNativeMountedComponentLayoutInput],
     region_inputs: &[worth_ui::facade::app::UiNativeMountedRegionLayoutInput],
 ) -> Result<UiMountedSurfaceGeometryBatch, String> {
+    let panel_parents = dashboard_elements()
+        .into_iter()
+        .filter_map(|element| {
+            element
+                .scroll_panel
+                .map(|panel| (format!("component:{}", element.component_id()), panel))
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
     let mut occurrences = Vec::new();
     for component in components {
         let contract = component.allocation().ok_or_else(|| {
@@ -56,13 +66,37 @@ fn prepare_native_layout_batch(
                 component.authored_semantic_identity()
             )
         })?;
-        let coordinate_space = if component.portal_parent().is_some() {
+        let panel = panel_parents.get(component.authored_semantic_identity());
+        let parent = match panel {
+            Some(panel) => Some(
+                components
+                    .iter()
+                    .find(|input| {
+                        input.authored_semantic_identity()
+                            == format!("component:platform.pulse.component.{}", panel.owner())
+                    })
+                    .ok_or("native-layout-scroll-owner-missing")?
+                    .instance(),
+            ),
+            None => component.portal_parent(),
+        };
+        let coordinate_space = if parent.is_some() {
             UiMountedCoordinateSpace::GraphNodeLocal
         } else {
             UiMountedCoordinateSpace::HostSurface
         };
-        let bounds = resolve_allocation(contract, viewport, coordinate_space)?;
-        occurrences.push(match component.portal_parent() {
+        let mut bounds = resolve_allocation(contract, viewport, coordinate_space)?;
+        if let Some(panel) = panel {
+            let [x, y, _, _] = panel.content_rect();
+            bounds = canonical_box(
+                bounds.x() - f32::from(x),
+                bounds.y() - f32::from(y),
+                bounds.width(),
+                bounds.height(),
+                coordinate_space,
+            )?;
+        }
+        occurrences.push(match parent {
             Some(parent) => {
                 UiMountedOccurrenceGeometry::parent_relative(component.instance(), parent, bounds)
             }
@@ -165,25 +199,35 @@ fn region_bounds(
     let width = viewport.width();
     let height = viewport.height();
     let (x, y, region_width, region_height) = match region_kind {
+        kind if DashboardScrollPanel::ALL
+            .iter()
+            .any(|panel| panel.region() == kind) =>
+        {
+            let panel = DashboardScrollPanel::ALL
+                .into_iter()
+                .find(|panel| panel.region() == kind)
+                .unwrap();
+            (
+                owner.x(),
+                owner.y(),
+                owner.width(),
+                f32::from(panel.viewport_height()),
+            )
+        }
         kind if kind == PlatformPulseMosaicRegion::Viewport.id() => (0.0, 0.0, width, height),
         kind if kind == PlatformPulseMosaicRegion::Masthead.id() => {
-            (24.0, 24.0, (width - 48.0).max(0.0), 56.0)
+            (235.0, 0.0, (width - 235.0).max(0.0), 58.0)
         }
-        kind if kind == PlatformPulseMosaicRegion::EvidenceRail.id() => {
-            (24.0, 104.0, 216.0, (height - 176.0).max(0.0))
-        }
+        kind if kind == PlatformPulseMosaicRegion::EvidenceRail.id() => (0.0, 0.0, 235.0, height),
         kind if kind == PlatformPulseMosaicRegion::ServiceStage.id() => (
-            264.0,
-            104.0,
-            (width - 288.0).max(0.0),
-            (height - 176.0).max(0.0),
+            235.0,
+            58.0,
+            (width - 235.0).max(0.0),
+            (height - 58.0).max(0.0),
         ),
-        kind if kind == PlatformPulseMosaicRegion::StatusBand.id() => (
-            24.0,
-            (height - 48.0).max(0.0),
-            (width - 48.0).max(0.0),
-            24.0,
-        ),
+        kind if kind == PlatformPulseMosaicRegion::StatusBand.id() => {
+            (0.0, 930.0, 235.0, (height - 930.0).max(0.0))
+        }
         kind if kind == PlatformPulseMosaicRegion::ServiceTile.id()
             || kind == PlatformPulseMosaicRegion::NativeTile.id() =>
         {
@@ -302,7 +346,7 @@ mod tests {
         let service_region = region_bounds(
             PlatformPulseMosaicRegion::ServiceStage.id(),
             viewport,
-            service,
+            viewport,
         )
         .unwrap();
         assert_eq!(
@@ -312,9 +356,9 @@ mod tests {
                 service_region.width(),
                 service_region.height()
             ],
-            [0.0, 0.0, 832.0, 524.0]
+            [235.0, 58.0, 885.0, 642.0]
         );
-        assert_eq!(service.x() + service_region.x(), 264.0);
-        assert_eq!(service.y() + service_region.y(), 104.0);
+        assert_eq!(viewport.x() + service_region.x(), 235.0);
+        assert_eq!(viewport.y() + service_region.y(), 58.0);
     }
 }

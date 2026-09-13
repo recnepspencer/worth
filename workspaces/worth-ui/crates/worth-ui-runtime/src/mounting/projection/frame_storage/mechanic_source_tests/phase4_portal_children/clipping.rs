@@ -80,7 +80,7 @@ fn assert_presented_families(
         .portal_presentation_affinity_for_instance(child, surface, binding)
         .is_some());
     assert!(frame
-        .presentation_instance_order(surface, binding)
+        .presentation_authored_order()
         .iter()
         .any(|instance| *instance == child));
     let commands = frame.presentation_commands_for_instance(child, surface, binding);

@@ -24,7 +24,7 @@ pub(crate) fn motion_scale_evidence() -> UiMotionScaleEvidence {
         crate::mounting::presentation::motion_sampling::UiMountedMotionSampler::default();
 
     for index in 0..64_u64 {
-        let target = super::UiMotionTargetIdentity::from_family_owner(
+        let target = super::UiMotionTargetIdentity::from_mounted_owner(
             semantic_surface,
             worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
             index + 1,

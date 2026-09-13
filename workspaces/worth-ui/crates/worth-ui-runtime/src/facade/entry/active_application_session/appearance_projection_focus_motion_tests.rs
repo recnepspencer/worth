@@ -53,7 +53,7 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
         })
         .unwrap()
         .identity();
-    let target = UiMotionTargetIdentity::from_family_owner(surface, instance, 701);
+    let target = UiMotionTargetIdentity::from_mounted_owner(surface, instance, 701);
     // Only the semantic Motion track is a fixture. Mounted completion, host
     // acceptance, keyboard ingress, Focus, placement, and appearance are real.
     // Fixed track geometry makes the sample physically presentable; this proof

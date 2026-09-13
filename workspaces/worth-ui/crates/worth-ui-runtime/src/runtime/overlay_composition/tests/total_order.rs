@@ -326,6 +326,9 @@ fn model_backdrop(declaration: &BackdropDeclaration) -> ModelBackdrop {
     };
     let placement = match declaration.placement() {
         worth_ui_dsl::UiBackdropPlacement::AboveSurfaceContent => ModelPlacement::AboveContent,
+        worth_ui_dsl::UiBackdropPlacement::ImmediatelyAboveSurfaceContent => {
+            ModelPlacement::ImmediatelyAboveContent
+        }
         worth_ui_dsl::UiBackdropPlacement::ImmediatelyBeforePortal(portal) => {
             ModelPlacement::BeforePortal(portal.value())
         }

@@ -56,14 +56,12 @@ impl WorthUiActiveApplicationSession {
         if chain.owners().is_empty() {
             return Err(UiHostScrollObservationDenial::NoDeclaredScrollOwner);
         }
-        let mounted_incarnation =
-            crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
-                mounted.mount_incarnation(),
-            );
         let mut entries = Vec::with_capacity(chain.owners().len());
-        for owner in chain.owners().iter().copied() {
+        for (slot, owner) in chain.owners().iter().copied().enumerate() {
             let incarnation = match owner {
-                crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => mounted_incarnation,
+                crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => self
+                    .scroll_region_incarnation(mounted_instance, slot)
+                    .ok_or(UiHostScrollObservationDenial::AllocationUnavailable)?,
                 crate::runtime::scroll::UiScrollOwnerIdentity::Surface(_)
                 | crate::runtime::scroll::UiScrollOwnerIdentity::Viewport(_) => surface_incarnation,
             };
@@ -84,10 +82,28 @@ impl WorthUiActiveApplicationSession {
                     .ok_or(UiHostScrollObservationDenial::DeltaOutOfRange)?,
             )
         };
-        let bounds = self
-            .application
-            .scroll_bounds_for_chain(&entries, mounted.graph_node_identity())
+        let bounds = entries
+            .iter()
+            .enumerate()
+            .map(|(slot, entry)| {
+                self.scroll_bounds_for_mounted_owner(
+                    entry.owner(),
+                    mounted_instance,
+                    mounted.graph_node_identity(),
+                    slot,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()
             .map_err(map_bounds_denial)?;
+        let geometry = entries
+            .iter()
+            .enumerate()
+            .map(|(slot, _)| {
+                self.mounted
+                    .scroll_region_geometry(mounted_instance, slot)
+                    .map(|row| row.0)
+            })
+            .collect::<Vec<_>>();
         let request = crate::runtime::scroll::UiScrollDeltaRequest::new(
             entries,
             delta,
@@ -98,11 +114,33 @@ impl WorthUiActiveApplicationSession {
             },
         )
         .map_err(UiHostScrollObservationDenial::Route)?;
-        self.scroll
-            .as_mut()
+        let mut successor = self
+            .scroll
+            .as_ref()
             .expect("Scroll installation was proven before bounds preflight")
+            .clone();
+        let receipt = successor
             .route_with_reconciled_bounds(request, &bounds)
-            .map_err(UiHostScrollObservationDenial::Route)
+            .map_err(UiHostScrollObservationDenial::Route)?;
+        let poses = receipt
+            .transitions()
+            .iter()
+            .zip(geometry)
+            .filter_map(|(transition, owner)| {
+                owner.map(|owner| {
+                    (
+                        transition.owner().semantic_surface(),
+                        owner,
+                        transition.current(),
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+        self.mounted
+            .apply_scroll_geometries(&poses)
+            .map_err(|_| UiHostScrollObservationDenial::AllocationUnavailable)?;
+        *self.scroll.as_mut().expect("installed Scroll owner") = successor;
+        Ok(receipt)
     }
 
     fn resolve_scroll_target(

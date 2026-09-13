@@ -51,10 +51,34 @@ impl UiMountedPresentationState {
                 instance,
                 frame.appearance_surface_sample_geometry(instance),
             );
+            let affinity = frame
+                .presentation_delta_source()
+                .frame()
+                .portal_presentation_affinity_for_instance(
+                    instance,
+                    surface,
+                    self.requirement.binding(),
+                );
+            self.portal_motion_groups.replace_instance(
+                instance,
+                self.commands_by_instance.get(&instance),
+                affinity,
+                surface,
+                self.appearance_surfaces.get(&instance).is_some(),
+            );
         }
         for instance in frame.retired_appearance_instances() {
             self.appearance_opacity_by_instance.remove(instance);
             self.appearance_surfaces.remove(instance);
+            if !self.has_paint_commands(*instance) {
+                self.portal_motion_groups.replace_instance(
+                    *instance,
+                    None,
+                    None,
+                    self.requirement.semantic_surface(),
+                    false,
+                );
+            }
         }
     }
 

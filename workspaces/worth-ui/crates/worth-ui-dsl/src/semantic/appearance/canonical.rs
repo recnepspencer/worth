@@ -61,6 +61,20 @@ fn result(bytes: &mut Vec<u8>, result: &super::UiAppearanceDecisionResult) {
 
 fn literal(bytes: &mut Vec<u8>, value: super::UiThemeValue) {
     match value {
+        super::UiThemeValue::LinearGradient(gradient) => {
+            bytes.push(7);
+            for coordinate in gradient
+                .start()
+                .coordinates()
+                .into_iter()
+                .chain(gradient.end().coordinates())
+            {
+                bytes.extend_from_slice(&coordinate.to_le_bytes());
+            }
+            for color in gradient.colors() {
+                bytes.extend_from_slice(&color.channels());
+            }
+        }
         super::UiThemeValue::Color(color) => {
             bytes.push(1);
             bytes.extend_from_slice(&color.channels());
@@ -158,6 +172,7 @@ fn class_tag(class: super::UiAppearanceAxisClass) -> u8 {
 fn value_kind_tag(kind: super::UiThemeValueKind) -> u8 {
     match kind {
         super::UiThemeValueKind::Color => 1,
+        super::UiThemeValueKind::LinearGradient => 7,
         super::UiThemeValueKind::Opacity => 2,
         super::UiThemeValueKind::LogicalLength => 3,
         super::UiThemeValueKind::CornerRadii => 4,

@@ -36,6 +36,10 @@ pub(crate) struct UiNativeHostState {
     pub(crate) registrations: BTreeMap<u64, UiHostSurfaceRegistrationRequest>,
     pub(crate) registration_resources: BTreeMap<u64, UiNativeResourceOwner>,
     pub(crate) window: Option<UiNativeOwnedWindow>,
+    pub(crate) accepted_cursor: Option<(
+        worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        winit::window::CursorIcon,
+    )>,
     pub(crate) device: Option<UiNativeOwnedDevice>,
     pub(crate) presentation_surface: Option<UiNativeOwnedPresentationSurface>,
     pub(crate) last_retained_frame: Option<UiNativeRetainedFrameObservation>,
@@ -115,6 +119,7 @@ impl UiNativeHostState {
             registrations: BTreeMap::new(),
             registration_resources: BTreeMap::new(),
             window: None,
+            accepted_cursor: None,
             device: None,
             presentation_surface: None,
             last_retained_frame: None,

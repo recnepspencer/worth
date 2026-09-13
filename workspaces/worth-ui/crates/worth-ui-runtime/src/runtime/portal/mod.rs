@@ -1,5 +1,7 @@
 pub(crate) mod anchored_allocation;
 mod capacity;
+mod content_bounds;
+pub(crate) use content_bounds::UiPortalContentBounds;
 mod dismissal;
 mod identity;
 mod inspection;

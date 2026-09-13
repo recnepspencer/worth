@@ -103,6 +103,9 @@ impl UiNativeRetainedDrawList {
         let replacements = sample
             .changes()
             .iter()
+            // Appearance surfaces carry analytic coverage in their own replay
+            // index; only paint commands own retained text/image coverage here.
+            .filter(|change| !change.command().is_appearance_surface())
             .map(|change| {
                 let identity = change.command();
                 let command = self.command(identity).ok_or(Denial::CommandMismatch)?;

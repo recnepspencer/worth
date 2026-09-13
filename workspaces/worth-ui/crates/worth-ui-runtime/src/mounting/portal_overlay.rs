@@ -1,6 +1,7 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiMountedPortalOverlayProjectionInput {
     portal_identity: u64,
+    stack_ordinal: crate::runtime::portal::UiPortalStackOrdinal,
     owner: worth_ui_host_contract::UiMountedInstanceIdentity,
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     placement: crate::runtime::portal::UiPreparedPortalPlacement,
@@ -10,6 +11,7 @@ pub(crate) struct UiMountedPortalOverlayProjectionInput {
 impl UiMountedPortalOverlayProjectionInput {
     pub(crate) const fn new(
         portal_identity: u64,
+        stack_ordinal: crate::runtime::portal::UiPortalStackOrdinal,
         owner: worth_ui_host_contract::UiMountedInstanceIdentity,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         placement: crate::runtime::portal::UiPreparedPortalPlacement,
@@ -17,6 +19,7 @@ impl UiMountedPortalOverlayProjectionInput {
     ) -> Self {
         Self {
             portal_identity,
+            stack_ordinal,
             owner,
             surface,
             placement,
@@ -28,6 +31,10 @@ impl UiMountedPortalOverlayProjectionInput {
         self.owner
     }
 
+    pub(crate) const fn input_order(self) -> (u64, crate::runtime::portal::UiPortalStackOrdinal) {
+        (self.portal_identity, self.stack_ordinal)
+    }
+
     pub(crate) const fn surface(self) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
         self.surface
     }
@@ -36,6 +43,7 @@ impl UiMountedPortalOverlayProjectionInput {
         let left_presentation = self.placement.presentation();
         let right_presentation = other.placement.presentation();
         self.portal_identity == other.portal_identity
+            && self.stack_ordinal == other.stack_ordinal
             && self.owner == other.owner
             && self.surface == other.surface
             && left_presentation.host_surface() == right_presentation.host_surface()
@@ -43,6 +51,7 @@ impl UiMountedPortalOverlayProjectionInput {
             && self.placement.anchor() == other.placement.anchor()
             && self.placement.clip_bounds() == other.placement.clip_bounds()
             && self.placement.bounds() == other.placement.bounds()
+            && self.placement.paint_bounds() == other.placement.paint_bounds()
             && self.placement.layer() == other.placement.layer()
             && self.placement.shielding() == other.placement.shielding()
             && self.lifecycle == other.lifecycle
@@ -74,6 +83,7 @@ impl UiMountedPortalOverlayProjectionInput {
                 anchor_presentation: self.placement.presentation(),
                 anchor_bounds: self.placement.anchor(),
                 bounds,
+                paint_bounds: self.placement.paint_bounds().mounted_box(),
                 clip_bounds: self.placement.clip_bounds(),
                 color: worth_ui_host_contract::UiMountedRgba8::new(0, 0, 0, 0),
                 layer_semantic_order: u32::MAX - 4_096 + u32::from(layer.depth()),

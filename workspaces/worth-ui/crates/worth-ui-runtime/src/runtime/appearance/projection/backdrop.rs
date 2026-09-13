@@ -159,6 +159,7 @@ fn fold_motion(digest: u64, motion: worth_ui_dsl::UiBackdropMotionBasis) -> u64 
 fn fold_placement(digest: u64, placement: worth_ui_dsl::UiBackdropPlacement) -> u64 {
     match placement {
         worth_ui_dsl::UiBackdropPlacement::AboveSurfaceContent => fold(digest, 1),
+        worth_ui_dsl::UiBackdropPlacement::ImmediatelyAboveSurfaceContent => fold(digest, 6),
         worth_ui_dsl::UiBackdropPlacement::ImmediatelyBeforePortal(portal) => {
             fold(fold(digest, 2), portal.value())
         }

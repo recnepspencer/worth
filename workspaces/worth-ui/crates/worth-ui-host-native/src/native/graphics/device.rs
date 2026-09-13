@@ -2,6 +2,10 @@ use std::sync::Arc;
 
 use super::{UiNativeBackendDeviceGenerationMechanics, UiNativeBackendDeviceMechanics};
 
+#[cfg(test)]
+#[path = "device_pipeline_tests.rs"]
+mod pipeline_tests;
+
 pub(crate) struct UiNativeDeviceState {
     pub(crate) mechanics: UiNativeBackendDeviceMechanics,
     pub(in crate::native::graphics) generation: std::sync::Arc<UiNativeDeviceGeneration>,
@@ -10,6 +14,8 @@ pub(crate) struct UiNativeDeviceState {
 pub(crate) struct UiNativeDeviceGeneration {
     pub(crate) identity: u64,
     pub(crate) mechanics: UiNativeBackendDeviceGenerationMechanics,
+    presentation_pipelines:
+        std::sync::OnceLock<crate::native::presentation::UiNativePresentationPipelines>,
 }
 
 pub(crate) struct UiNativeDeviceOwners {
@@ -38,7 +44,15 @@ impl UiNativeDeviceGeneration {
         Self {
             identity,
             mechanics,
+            presentation_pipelines: std::sync::OnceLock::new(),
         }
+    }
+
+    pub(crate) fn presentation_pipelines(
+        &self,
+    ) -> &crate::native::presentation::UiNativePresentationPipelines {
+        self.presentation_pipelines
+            .get_or_init(|| crate::native::presentation::presentation_pipelines(self.device()))
     }
 }
 

@@ -184,7 +184,7 @@ fn active_track_capacity_denies_before_mutating_the_sampler() {
     let world = World::new();
     let mut sampler = UiMountedMotionSampler::default();
     for identity in 1..=sampling::MAX_PRESENTATION_TRACKS as u64 {
-        let target = crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+        let target = crate::runtime::motion::UiMotionTargetIdentity::from_mounted_owner(
             world.target.semantic_surface(),
             worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
             identity,
@@ -194,7 +194,7 @@ fn active_track_capacity_denies_before_mutating_the_sampler() {
             .unwrap();
     }
     let before = sampler.certification_observation();
-    let overflow = crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+    let overflow = crate::runtime::motion::UiMotionTargetIdentity::from_mounted_owner(
         world.target.semantic_surface(),
         worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
         10_000,
@@ -279,7 +279,7 @@ impl World {
         let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
         let frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
         Self {
-            target: crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+            target: crate::runtime::motion::UiMotionTargetIdentity::from_mounted_owner(
                 semantic,
                 worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
                 7,

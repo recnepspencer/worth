@@ -121,7 +121,16 @@ fn surface_text_retirement_waits_for_its_own_acceptance_and_survives_rejection()
         .unwrap();
     let replacement = world.replace_occurrence(0);
     assert_ne!(retired, replacement);
+    let calls_before = world.host.presentation_calls();
     world.execute(&[1], 3, true);
+    assert!(world.host.presentation_calls() > calls_before);
+    assert!(
+        world.host.last_node_changes().iter().all(|change| {
+            let instance = change.mounted_instance();
+            instance != retired && instance != replacement
+        }),
+        "surface B must not receive node edits for surface A's retired or new occurrence"
+    );
     assert_eq!(
         world
             .session

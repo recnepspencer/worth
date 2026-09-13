@@ -4,6 +4,24 @@ pub struct FrozenAppearanceRoleCapabilities {
 }
 
 impl FrozenAppearanceRoleCapabilities {
+    pub(crate) fn prepare_authored_succession<'a>(
+        &self,
+        declarations: impl IntoIterator<Item = &'a worth_ui_dsl::UiAppearanceRoleDeclaration>,
+    ) -> Result<Option<Self>, super::AppearanceRoleRegistrationDenial> {
+        let mut successor = None;
+        for declaration in declarations {
+            let index = self
+                .roles
+                .binary_search_by(|role| role.role().cmp(declaration.role()))
+                .map_err(|_| super::AppearanceRoleRegistrationDenial::UnregisteredIdentity)?;
+            if self.roles[index] != *declaration {
+                let roles = successor.get_or_insert_with(|| self.roles.clone());
+                roles[index] = declaration.clone();
+            }
+        }
+        Ok(successor.map(|roles| Self { roles }))
+    }
+
     #[cfg(test)]
     pub(crate) const fn empty() -> Self {
         Self { roles: Vec::new() }
@@ -90,5 +108,40 @@ mod tests {
             )],
         };
         assert_ne!(any.digest_basis(), constrained.digest_basis());
+    }
+
+    #[test]
+    fn authored_succession_preserves_registration_and_reuses_equal_meaning() {
+        let original = role(worth_ui_dsl::UiAppearanceRoleApplicability::AnyComponent);
+        let registered = FrozenAppearanceRoleCapabilities {
+            roles: vec![original.clone()],
+        };
+        assert_eq!(
+            registered.prepare_authored_succession([&original]),
+            Ok(None)
+        );
+        let changed = role(worth_ui_dsl::UiAppearanceRoleApplicability::Component(
+            worth_ui_dsl::UiDslComponentReference::new("test.component").unwrap(),
+        ));
+        let successor = registered
+            .prepare_authored_succession([&changed])
+            .unwrap()
+            .unwrap();
+        assert_eq!(registered.get(original.role()), Some(&original));
+        assert_eq!(successor.get(changed.role()), Some(&changed));
+        assert_ne!(registered.digest_basis(), successor.digest_basis());
+        let unknown = worth_ui_dsl::UiAppearanceRoleDeclaration::admit(
+            worth_ui_dsl::UiAppearanceRoleIdentity::new("unregistered.role").unwrap(),
+            original.revision(),
+            original.applicability().clone(),
+            original.aspect_contract(),
+            original.partitions().iter().cloned(),
+        )
+        .unwrap();
+        assert_eq!(
+            registered.prepare_authored_succession([&unknown]),
+            Err(super::super::AppearanceRoleRegistrationDenial::UnregisteredIdentity)
+        );
+        assert_eq!(registered.len(), 1);
     }
 }

@@ -18,6 +18,8 @@ mod effect_expectations;
 mod motion_evidence;
 pub(in crate::mounting) use motion_evidence::motion_acceptance_reserved_bytes;
 pub(super) use motion_evidence::UiPreparedCommandMotionAcceptance;
+#[path = "work_producer/motion_entrance.rs"]
+mod motion_entrance;
 #[path = "work_producer/motion_sample.rs"]
 mod motion_sample;
 #[path = "work_producer/overlay_attribution.rs"]

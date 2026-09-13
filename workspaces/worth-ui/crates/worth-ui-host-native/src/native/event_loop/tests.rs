@@ -83,7 +83,7 @@ impl UiNativeEventLoopClient for CleanupClient {
 
     fn presentation_attribution(
         &self,
-        _observed: &crate::native::UiNativePresentationObservation,
+        _observed: &crate::native::UiNativeRetainedFrameObservation,
     ) -> Option<super::UiNativeClientPresentationAttribution> {
         None
     }

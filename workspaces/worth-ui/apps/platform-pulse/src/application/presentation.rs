@@ -1,6 +1,7 @@
 mod appearance;
+mod fonts;
 mod product_structure;
-mod product_structure_geometry;
+pub(super) use fonts::PulseFonts;
 
 use worth_ui::facade::inspection::{
     UiVisualInspectionByteBudget, UiVisualInspectionCapacity, UiVisualInspectionPolicy,
@@ -13,10 +14,9 @@ pub(super) use appearance::PlatformPulseAppearanceRegistrationDenial;
 pub(super) use product_structure::register_structure;
 
 const PLATFORM_PULSE_RETAINED_PIXEL_BYTES: u64 = 2 * PLATFORM_PULSE_MAXIMUM_PIXEL_BYTES;
-// Active-dialog snapshots include mounted geometry, identity traces, and paint
-// indices (the first dialog already reserves 528,330 bytes). Bound the full
-// two-dialog composition to 1 MiB per receipt and two retained receipts.
-const PLATFORM_PULSE_STRUCTURAL_BYTES_PER_RECEIPT: u64 = 1 << 20;
+// The full dashboard retains text glyphs, vector mechanics and both overlays.
+// Inspection remains bounded to two snapshots of at most 8 MiB each.
+const PLATFORM_PULSE_STRUCTURAL_BYTES_PER_RECEIPT: u64 = 8 << 20;
 const PLATFORM_PULSE_RETAINED_STRUCTURAL_BYTES: u64 =
     2 * PLATFORM_PULSE_STRUCTURAL_BYTES_PER_RECEIPT;
 

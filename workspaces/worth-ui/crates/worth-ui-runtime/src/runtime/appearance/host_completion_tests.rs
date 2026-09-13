@@ -33,6 +33,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
         UiMountedNodeAppearanceAttribution::from_runtime_mounting(node_issuer, 1, 1).unwrap();
     let surface_mechanic = UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
             issuer: node_issuer,
             node_receipt: node_issuer.receipt_for(portal),
             bounds: allocation,
@@ -42,7 +43,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
             radii,
             border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
             border_omissions: Box::new([]),
-            paint: UiMountedSurfacePaint::Fill(color),
+            paint: UiMountedSurfacePaint::Fill(color.into()),
             opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection,
         },
@@ -110,6 +111,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
             background: color,
             opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             attribution: backdrop_attribution,
+            motion_target: None,
         },
     )
     .unwrap();

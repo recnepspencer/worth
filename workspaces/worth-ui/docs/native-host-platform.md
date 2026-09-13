@@ -89,7 +89,7 @@ a stop with retained external obligations also exposes cleanup authority.
 
 ## Presentation Contract
 
-Runtime owns presentation meaning and emits one sealed revision-6 work item:
+Runtime owns presentation meaning and emits one sealed revision-8 work item:
 
 - `Initial` carries every attributed command, stable total order, initial
   logical damage, auxiliary reconstruction state, and the surface-issued
@@ -104,12 +104,17 @@ mechanical indexes for execution, but they do not receive the complete
 projection on ordinary successor frames and do not rediscover semantic deltas.
 Candidate retained state commits only after every required surface succeeds.
 
-Revision 6 carries runtime-resolved surface fill, border and corner radii,
+Revision 8 carries runtime-resolved surface fill, border and corner radii,
 outline, text-range foreground, pointer affordance, Backdrop, and relational
 overlay-order mechanics. Native and headless hosts translate that sealed work;
 they do not select roles, theme cells, visual state, seams, or Portal order.
 Motion arrives as the exact accepted command sample already composed into the
 prepared appearance work.
+
+Surface fill is either solid or a two-stop linear gradient. Gradient endpoints
+are relative to the un-clipped allocation; sampling projects onto the physical
+axis and interpolates premultiplied linear-sRGB colors. Native and headless
+consumers preserve that geometry, clipping, and the composed presentation opacity.
 
 Border and outline geometry follows half-open mounted visual bounds. A seam
 omission is expressed in owner-surface local coordinates and applies only where
@@ -254,8 +259,8 @@ The checked-in qualified identities are:
 
 - text profile: `worth-ui-body-default-v1`;
 - native profile: `worth-ui-windows-dx12-v2`;
-- host protocol: revision 7;
-- mounted frame and presentation schemas: revision 6;
+- host protocol: revision 9;
+- mounted frame and presentation schemas: revision 8;
 - text schema: revision 4;
 - observation schema: revision 7;
 - measurement schema: revision 5;

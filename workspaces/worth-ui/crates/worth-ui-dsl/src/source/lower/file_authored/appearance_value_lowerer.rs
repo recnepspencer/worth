@@ -8,6 +8,14 @@ pub(super) fn transparent_value(aspect: UiAppearanceAspect) -> UiThemeValue {
     let zero = UiLogicalLength::new(0);
     match aspect.value_kind() {
         UiThemeValueKind::Color => UiThemeValue::Color(color),
+        UiThemeValueKind::LinearGradient => UiThemeValue::LinearGradient(
+            crate::UiThemeLinearGradient::new(
+                crate::UiThemeGradientPoint::new(0, 0).unwrap(),
+                crate::UiThemeGradientPoint::new(0, 10_000).unwrap(),
+                [color; 2],
+            )
+            .unwrap(),
+        ),
         UiThemeValueKind::Opacity => UiThemeValue::Opacity(UiThemeOpacity::ZERO),
         UiThemeValueKind::LogicalLength => UiThemeValue::LogicalLength(zero),
         UiThemeValueKind::CornerRadii => UiThemeValue::CornerRadii(

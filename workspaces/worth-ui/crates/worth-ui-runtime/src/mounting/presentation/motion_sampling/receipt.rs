@@ -327,7 +327,6 @@ impl UiPresentationMotionInstallationReceipt {
         Self { sample, terminal }
     }
 
-    #[cfg(test)]
     pub(crate) const fn sample(self) -> Option<UiPresentationMotionSampleReceipt> {
         self.sample
     }

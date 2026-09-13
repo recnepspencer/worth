@@ -40,7 +40,7 @@ pub(in crate::mounting::projection) fn portal_ancestor_clip(
     {
         return Ok(ancestry);
     }
-    let bounds = canonical_clip(portal.bounds())?;
+    let bounds = canonical_clip(portal.paint_bounds())?;
     let clip = canonical_clip(portal.clip_bounds())?;
     let (Some(bounds), Some(clip)) = (bounds, clip) else {
         return Ok(Clip::Suppressed);
@@ -69,8 +69,8 @@ fn translate_box(
     source_anchor: UiMountedCanonicalBox,
 ) -> Result<UiMountedCanonicalBox, Denial> {
     UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: bounds.x() + portal.bounds().x() - source_anchor.x(),
-        y: bounds.y() + portal.bounds().y() - source_anchor.y(),
+        x: bounds.x() + portal.paint_bounds().x() - source_anchor.x(),
+        y: bounds.y() + portal.paint_bounds().y() - source_anchor.y(),
         width: bounds.width(),
         height: bounds.height(),
         coordinate_space: bounds.coordinate_space(),
@@ -83,7 +83,7 @@ fn translate_clip(
     portal: UiMountedPortalOverlayMechanic,
     source_anchor: UiMountedCanonicalBox,
 ) -> Result<UiAppearanceClip, Denial> {
-    let presented = super::geometry::allocation(portal.bounds())?;
+    let presented = super::geometry::allocation(portal.paint_bounds())?;
     let anchor = super::geometry::allocation(source_anchor)?;
     let x = i64::from(clip.x()) + i64::from(presented.x()) - i64::from(anchor.x());
     let y = i64::from(clip.y()) + i64::from(presented.y()) - i64::from(anchor.y());

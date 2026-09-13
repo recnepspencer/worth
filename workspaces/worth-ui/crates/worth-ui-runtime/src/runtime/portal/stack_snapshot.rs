@@ -46,6 +46,9 @@ impl UiPortalSurfaceStackSnapshot {
                 ordinal,
                 lifecycle: super::UiPortalLifecyclePosture::Visible,
             };
+            if let Some(previous) = self.rows.get(&portal) {
+                self.order.remove(&previous.ordinal);
+            }
             self.rows.insert(portal, row);
             self.order.insert(ordinal, portal);
         }
@@ -103,6 +106,10 @@ impl UiPortalSurfaceStackSnapshot {
         )
     }
 }
+
+#[cfg(test)]
+#[path = "stack_snapshot_tests.rs"]
+mod tests;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiPortalStackRow {

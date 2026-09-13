@@ -393,7 +393,7 @@ fn schema_recovery_with_role_attachment_change_publishes_successor_appearance() 
             .unwrap();
         assert!(fragment.work().successor().mechanics().iter().any(|mechanic| matches!(mechanic,
             worth_ui_host_contract::UiMountedAppearanceMechanic::Surface(surface)
-                if matches!(surface.paint(), worth_ui_host_contract::UiMountedSurfacePaint::FillAndBorder { fill, .. }
+                if matches!(surface.paint(), worth_ui_host_contract::UiMountedSurfacePaint::FillAndBorder { fill: worth_ui_host_contract::UiMountedSurfaceFill::Solid(fill), .. }
                     if fill.straight_srgba() == [192, 64, 32, 128]))));
     }
     let _ = world.session.shutdown();

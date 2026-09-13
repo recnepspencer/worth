@@ -90,6 +90,7 @@ mod tests {
 pub enum AppearanceRoleRegistrationDenial {
     DuplicateIdentity,
     CapacityExceeded,
+    UnregisteredIdentity,
 }
 
 impl AppearanceRoleRegistry {

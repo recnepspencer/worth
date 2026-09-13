@@ -22,6 +22,8 @@ pub struct ComponentDescriptor {
     allocation_contracts:
         super::component_allocation_contract_state::ComponentAllocationContractState,
     surface_paint_order: Option<u32>,
+    surface_geometry: worth_ui_host_contract::UiSurfaceGeometry,
+    portal_surface_appearance: bool,
     semantic_text_contract: Option<super::ComponentSemanticTextContract>,
     hit_test_contract: Option<super::ComponentHitTestContract>,
     portal_child_contract: Option<super::ComponentPortalChildContract>,
@@ -38,6 +40,29 @@ pub enum ComponentAppearanceAspectContractDenial {
 }
 
 impl ComponentDescriptor {
+    pub fn with_surface_geometry(
+        mut self,
+        geometry: worth_ui_host_contract::UiSurfaceGeometry,
+    ) -> Self {
+        self.surface_geometry = geometry;
+        self
+    }
+
+    /// Declares that mounted Portal children supply the complete placed card composition.
+    /// The anchor's ordinary appearance and Portal interaction authority are unchanged.
+    pub fn with_portal_surface_from_children(mut self) -> Self {
+        self.portal_surface_appearance = false;
+        self
+    }
+
+    pub(crate) const fn portal_surface_appearance(&self) -> bool {
+        self.portal_surface_appearance
+    }
+
+    pub fn surface_geometry(&self) -> &worth_ui_host_contract::UiSurfaceGeometry {
+        &self.surface_geometry
+    }
+
     pub fn new(
         id: ComponentId,
         prop_schema: ComponentPropSchema,
@@ -60,6 +85,8 @@ impl ComponentDescriptor {
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
             surface_paint_order: None,
+            surface_geometry: Default::default(),
+            portal_surface_appearance: true,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
@@ -88,6 +115,8 @@ impl ComponentDescriptor {
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
             surface_paint_order: None,
+            surface_geometry: Default::default(),
+            portal_surface_appearance: true,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
@@ -116,6 +145,8 @@ impl ComponentDescriptor {
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
             surface_paint_order: None,
+            surface_geometry: Default::default(),
+            portal_surface_appearance: true,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,

@@ -16,6 +16,7 @@ pub(in crate::mounting::projection) struct UiMountedSemanticTextFormattingSeed {
     default: UiMountedSemanticTextDefault,
     scalar_spans: Box<[UiMountedSemanticTextResolvedSpan]>,
     layer_semantic_order: u32,
+    lifecycle_caption: bool,
 }
 
 #[derive(Clone, PartialEq)]
@@ -23,6 +24,7 @@ pub(in crate::mounting::projection) struct UiMountedSemanticTextDefault {
     color: UiMountedRgba8,
     style: Option<worth_ui_text::UiTextStyle>,
     line_height_millipoints: Option<u32>,
+    alignment: worth_ui_text::UiTextAlignment,
     paint_identity: UiMountedTextPaintSpanIdentity,
     appearance_foreground: bool,
 }
@@ -39,7 +41,10 @@ pub(in crate::mounting::projection) struct UiMountedSemanticTextResolvedSpan {
 #[derive(Clone, Copy)]
 pub(in crate::mounting::projection) enum UiMountedSemanticTextRowFormatting<'a> {
     Default(&'a UiMountedSemanticTextDefault),
-    ScalarSpans(&'a [UiMountedSemanticTextResolvedSpan], Option<u32>),
+    ScalarSpans(
+        &'a [UiMountedSemanticTextResolvedSpan],
+        &'a UiMountedSemanticTextDefault,
+    ),
 }
 
 pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
@@ -80,6 +85,7 @@ pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
         })?,
         style: contract.style().cloned(),
         line_height_millipoints: contract.line_height_millipoints(),
+        alignment: contract.alignment(),
         paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting(
             contract.default_paint_identity(),
         ),
@@ -106,6 +112,7 @@ pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
         default,
         scalar_spans: scalar_spans.into_boxed_slice(),
         layer_semantic_order: contract.layer_semantic_order(),
+        lifecycle_caption: contract.shows_lifecycle_caption(),
     }))
 }
 
@@ -119,6 +126,7 @@ fn lower_directive(
         })?,
         style: contract.style().cloned(),
         line_height_millipoints: contract.line_height_millipoints(),
+        alignment: contract.alignment(),
         paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting(
             contract.default_paint_identity(),
         ),
@@ -145,6 +153,7 @@ fn lower_directive(
         default,
         scalar_spans: scalar_spans.into_boxed_slice(),
         layer_semantic_order: contract.layer_semantic_order(),
+        lifecycle_caption: contract.shows_lifecycle_caption(),
     })
 }
 
@@ -174,8 +183,9 @@ fn resolve_color(
     theme_values: &crate::mounting::UiMountedThemeValueSource,
     token_id: &crate::capability::ThemeTokenId,
 ) -> Result<UiMountedRgba8, UiMountedProjectionDenial> {
-    if let Some(value) = theme_values.current_value(token_id) {
-        let crate::capability::ThemeTokenValue::Color(color) = value;
+    if let Some(crate::capability::ThemeTokenValue::Color(color)) =
+        theme_values.current_value(token_id)
+    {
         return Ok(mounted_color(*color));
     }
     Err(UiMountedProjectionDenial::MissingSemanticTextToken)
@@ -219,15 +229,14 @@ impl UiMountedSemanticTextFormattingSeed {
         if self.scalar_spans.is_empty() {
             self.default_row()
         } else {
-            UiMountedSemanticTextRowFormatting::ScalarSpans(
-                &self.scalar_spans,
-                self.default.line_height_millipoints,
-            )
+            UiMountedSemanticTextRowFormatting::ScalarSpans(&self.scalar_spans, &self.default)
         }
     }
 
     pub(in crate::mounting::projection) fn same_layout_as(&self, other: &Self) -> bool {
         self.default.style == other.default.style
+            && self.default.alignment == other.default.alignment
+            && self.lifecycle_caption == other.lifecycle_caption
             && self.default.line_height_millipoints == other.default.line_height_millipoints
             && self.scalar_spans.len() == other.scalar_spans.len()
             && self
@@ -261,11 +270,19 @@ impl UiMountedSemanticTextFormattingSeed {
                 color,
                 style: None,
                 line_height_millipoints: None,
+                alignment: worth_ui_text::UiTextAlignment::Start,
                 paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting([1; 32]),
                 appearance_foreground: false,
             },
             scalar_spans: Box::new([]),
             layer_semantic_order,
+            lifecycle_caption: true,
         }
+    }
+}
+
+impl UiMountedSemanticTextFormattingSeed {
+    pub(in crate::mounting::projection) fn shows_lifecycle_caption(&self) -> bool {
+        self.lifecycle_caption
     }
 }

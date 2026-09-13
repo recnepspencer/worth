@@ -23,7 +23,7 @@ pub(super) fn assert_green_content(
         match mechanic {
             UiMountedAppearanceMechanic::Surface(row) => {
                 assert!(
-                    matches!(row.paint(), UiMountedSurfacePaint::FillAndBorder { fill, .. }
+                    matches!(row.paint(), UiMountedSurfacePaint::FillAndBorder { fill: worth_ui_host_contract::UiMountedSurfaceFill::Solid(fill), .. }
                     if fill.straight_srgba() == [16, 128, 32, 128])
                 );
                 assert_eq!(row.opacity().units(), opacity);

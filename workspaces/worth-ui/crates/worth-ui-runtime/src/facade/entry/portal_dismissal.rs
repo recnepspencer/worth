@@ -6,7 +6,10 @@ mod completion;
 mod handles;
 #[path = "portal_dismissal/receipt.rs"]
 mod receipt;
+#[path = "portal_dismissal/trigger.rs"]
+mod trigger;
 pub use receipt::UiPortalDismissalPublicationReceipt;
+use trigger::dismissal_trigger;
 pub(crate) enum UiPortalDismissalPublicationOutcome<'session> {
     IgnoredNoMatchingPortal,
     IgnoredInsideTopmostPortal,
@@ -162,8 +165,12 @@ impl WorthUiActiveApplicationSession {
                 .expect("Portal installation was checked above")
                 .dismissal_target_identity(trigger)
             {
-                Some(portal) => match self.mounted.committed_motion_geometry_for_instance(
-                    portal.owner().mounted_instance_identity(),
+                Some(portal) => match self.mounted.committed_motion_geometry_for_target(
+                    crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
+                        semantic_surface,
+                        portal.owner().mounted_instance_identity(),
+                        portal.diagnostic_value(),
+                    ),
                     interaction.presentation(),
                 ) {
                     Ok(bounds) => bounds,
@@ -361,37 +368,5 @@ impl WorthUiActiveApplicationSession {
             }
         };
         present_portal_service_proposal(self, frame, proposal, true, now_tick)
-    }
-}
-
-fn dismissal_trigger(
-    interaction: crate::facade::interaction::UiDismissInteraction,
-    semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-) -> Option<crate::runtime::portal::UiPortalDismissalTrigger> {
-    match interaction.cause() {
-        crate::facade::interaction::UiDismissInteractionCause::Escape => {
-            Some(crate::runtime::portal::UiPortalDismissalTrigger::Escape { semantic_surface })
-        }
-        crate::facade::interaction::UiDismissInteractionCause::OutsidePress(position) => {
-            let basis = position.basis();
-            if basis.coordinate_space()
-                != worth_ui_host_contract::UiHostSurfaceCoordinateSpace::Viewport
-                || basis.coordinate_unit()
-                    != worth_ui_host_contract::UiHostSurfaceCoordinateUnit::LogicalPoint
-            {
-                return None;
-            }
-            let scale = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-            let point = [
-                (position.x_subpixels() as f64 / scale) as f32,
-                (position.y_subpixels() as f64 / scale) as f32,
-            ];
-            Some(
-                crate::runtime::portal::UiPortalDismissalTrigger::OutsidePress {
-                    semantic_surface,
-                    viewport_point_bits: point.map(f32::to_bits),
-                },
-            )
-        }
     }
 }

@@ -13,6 +13,51 @@ pub(super) struct UiMountedSemanticTextViewRows {
 }
 
 impl UiMountedProjectionFrame {
+    pub(super) fn source_text_deltas_are_presented(
+        &self,
+        instances: &[UiMountedInstanceIdentity],
+    ) -> bool {
+        instances.iter().all(|instance| self.semantic.node(*instance).is_some_and(|node| {
+            let geometry = node.completed_appearance_geometry();
+            geometry.portal_presentation.is_none()
+                && geometry.clip == crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped
+        }))
+    }
+
+    /// Ordinary commands, glyph attribution and appearance consume this same
+    /// mounted presentation geometry. Qualification remains in source space.
+    pub(super) fn present_semantic_text_row(
+        &self,
+        candidate: UiMountedSemanticTextMechanic,
+    ) -> Result<Option<UiMountedSemanticTextMechanic>, super::UiMountedAppearanceOutputDenial> {
+        use super::UiMountedAppearanceOutputDenial as Denial;
+        use crate::mounting::projection::appearance::UiMountedAppearanceClip as Clip;
+        let node = self
+            .semantic
+            .node(candidate.mounted_instance())
+            .ok_or(Denial::CurrentProjectionUnavailable)?;
+        let geometry = node.completed_appearance_geometry();
+        match geometry.clip {
+            Clip::Unresolved(denial) => return Err(Denial::AncestorClip(denial)),
+            Clip::Suppressed => return Ok(None),
+            _ => {}
+        }
+        let presented = match geometry.portal_presentation {
+            Some((portal, anchor)) => candidate.presented_within_portal(portal, anchor),
+            None => Ok(Some(candidate)),
+        };
+        presented
+            .and_then(|candidate| match (candidate, geometry.clip) {
+                (Some(candidate), Clip::Ancestor(clip)) => {
+                    candidate.clipped_to_appearance_ancestor(clip)
+                }
+                (candidate, _) => Ok(candidate),
+            })
+            .map_err(|denial| {
+                Denial::TextCandidate(UiMountedProjectionDenial::SemanticTextCompletion(denial))
+            })
+    }
+
     pub(super) fn semantic_text_view_rows(
         &self,
         surface: UiMountedProjectionSurface,
@@ -27,24 +72,12 @@ impl UiMountedProjectionFrame {
         )?;
         let mut rows = Vec::with_capacity(source_rows.len());
         for row in source_rows {
-            match self.portal_child_presentation(
-                row.mounted_instance(),
-                surface.surface,
-                surface.binding,
-            )? {
-                super::portal_child_view::UiMountedPortalChildPresentation::Ordinary => {
-                    rows.push(row)
-                }
-                super::portal_child_view::UiMountedPortalChildPresentation::Suppressed => {}
-                super::portal_child_view::UiMountedPortalChildPresentation::Presented(
-                    portal,
-                    source_anchor,
-                ) => rows.extend(
-                    row.presented_within_portal(portal, source_anchor)
-                        .map_err(UiMountedProjectionDenial::SemanticTextCompletion)?,
-                ),
-            }
+            rows.extend(
+                self.present_semantic_text_row(row)
+                    .map_err(|_| UiMountedProjectionDenial::AppearanceTextCandidatesUnavailable)?,
+            );
         }
+
         let mut references = UiMountedSemanticTextReferenceIndex::new();
         for (index, row) in rows.iter().enumerate() {
             let reference = u16::try_from(index)

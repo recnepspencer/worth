@@ -9,6 +9,11 @@ pub enum UiAppearanceAspect {
 }
 
 impl UiAppearanceAspect {
+    pub fn accepts_value_kind(self, kind: super::UiThemeValueKind) -> bool {
+        kind == self.value_kind()
+            || (self == Self::Background && kind == super::UiThemeValueKind::LinearGradient)
+    }
+
     pub const fn value_kind(self) -> super::UiThemeValueKind {
         match self {
             Self::Background | Self::Foreground => super::UiThemeValueKind::Color,

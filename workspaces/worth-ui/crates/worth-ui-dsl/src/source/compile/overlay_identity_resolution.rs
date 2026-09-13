@@ -214,6 +214,9 @@ fn resolve_backdrop(
         crate::source::lower::WorthUiBackdropPlacementSource::AboveSurfaceContent => {
             crate::UiBackdropPlacement::AboveSurfaceContent
         }
+        crate::source::lower::WorthUiBackdropPlacementSource::ImmediatelyAboveSurfaceContent => {
+            crate::UiBackdropPlacement::ImmediatelyAboveSurfaceContent
+        }
         crate::source::lower::WorthUiBackdropPlacementSource::ImmediatelyBeforePortal(portal) => {
             crate::UiBackdropPlacement::ImmediatelyBeforePortal(lookup(
                 tables.portal_named(portal),

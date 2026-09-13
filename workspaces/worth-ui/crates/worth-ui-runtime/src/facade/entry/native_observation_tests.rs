@@ -20,6 +20,10 @@ use worth_ui_host_contract::{
 mod support;
 use support::published;
 
+#[cfg(feature = "certification-support")]
+#[path = "native_observation_tests/wheel_retirement.rs"]
+mod wheel_retirement;
+
 #[test]
 fn native_observation_ready_path_drains_through_runtime_interaction_owner() {
     let host = ScriptedPresentationHost::native_display();

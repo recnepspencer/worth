@@ -93,7 +93,7 @@ pub trait UiNativeEventLoopClient {
     }
     fn presentation_attribution(
         &self,
-        observed: &crate::native::UiNativePresentationObservation,
+        observed: &crate::native::UiNativeRetainedFrameObservation,
     ) -> Option<UiNativeClientPresentationAttribution>;
     fn close(self) -> UiNativeEventLoopClientClose;
 }

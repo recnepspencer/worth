@@ -6,6 +6,10 @@ use worth_ui_host_contract::{
 use super::structural_admission::UiStructurallyAdmittedObservationBatch;
 use super::{UiHostObservationBatchDisposition, UiHostObservationReportDenial};
 
+#[cfg(test)]
+#[path = "sequence_coverage/retention_tests.rs"]
+mod retention_tests;
+
 pub(super) struct UiSequenceCoveredObservationBatch {
     batch: UiHostObservationBatch,
     disposition: UiHostObservationBatchDisposition,

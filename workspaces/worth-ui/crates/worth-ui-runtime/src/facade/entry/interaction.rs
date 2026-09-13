@@ -120,6 +120,8 @@ impl WorthUiActiveApplicationSession {
                         self.present_prepared_motion_tick(prepared, core.presentation());
                     }
                 }
+                self.host_exchange
+                    .retire_delivered_observation_batch(receipt.canonical_core());
                 UiHostInteractionIngressOutcome::Applied(receipt)
             }
             UiHostObservationReportOutcome::Duplicate(duplicate) => {

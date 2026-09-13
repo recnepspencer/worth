@@ -152,7 +152,7 @@ fn paint_command_sort_key(
 }
 
 fn sort_pins(pins: &mut [WorthUiPresentationPinBasis]) {
-    pins.sort_by_key(super::identity_parts::pin_sort_parts);
+    pins.sort_by_cached_key(super::identity_parts::pin_sort_parts);
 }
 
 fn validate_unique_pins(

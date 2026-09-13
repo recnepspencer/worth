@@ -9,7 +9,7 @@ fn pending_no_paint_motion_accepts_only_after_zero_cost_completion() {
         .current_presentation_for_surface(surface)
         .unwrap();
     let target =
-        UiMotionTargetIdentity::from_family_owner(surface, command.mounted_instance(), 819);
+        UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 819);
     install(&mut session, target, original, 819, false, None);
     present(&mut session, &host, surface, 1, 2);
     let original = session

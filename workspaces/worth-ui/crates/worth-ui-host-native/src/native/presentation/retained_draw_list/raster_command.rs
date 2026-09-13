@@ -129,6 +129,7 @@ impl UiNativeRetainedDrawList {
                 )?
             }
             UiNativeAppearanceCommand::Backdrop(mechanic) => {
+                let opacity = self.backdrop_sample_opacity(&mechanic)?;
                 let primitive = UiNativeBackdropPipeline::prepare(&mechanic, scale)
                     .map_err(|_| Denial::CommandMismatch)?;
                 let bounds = primitive.extent().pixel_bounds();
@@ -145,7 +146,7 @@ impl UiNativeRetainedDrawList {
                         rect,
                         source_rgba8: crate::native::presentation::retained_raster::sampled_color(
                             primitive.background().straight_srgba(),
-                            f32::from(primitive.opacity()) / f32::from(u16::MAX),
+                            opacity.factor(),
                         ),
                     })
             }

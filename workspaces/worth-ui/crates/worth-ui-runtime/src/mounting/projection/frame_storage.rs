@@ -35,6 +35,7 @@ mod mechanic_source;
 pub(crate) mod mechanic_source_tests;
 mod node_changes;
 mod portal_child_view;
+mod portal_content_extent;
 mod portal_mechanic_view;
 mod portal_overlay_view;
 mod presentation_effects;
@@ -245,7 +246,7 @@ impl UiMountedProjectionFrame {
 
     pub(super) fn complete_mechanics(&mut self) -> Result<(), UiMountedProjectionDenial> {
         self.complete_appearance_geometry()?;
-        let mutation = self.mechanics.apply(UiMountedMechanicCompletion {
+        let mut mutation = self.mechanics.apply(UiMountedMechanicCompletion {
             frame: self.frame,
             content: self.content_generation,
             receipts: &self.receipt_basis,
@@ -260,6 +261,13 @@ impl UiMountedProjectionFrame {
         )?;
         self.record_rows::<worth_ui_host_contract::UiMountedHitTestMechanic>(mutation.hit_tests)?;
         self.hit_index_work.merge(mutation.hit_index_work);
+        if self.portal_overlays_changed
+            || mutation.precise_instances.len() != self.changed_instances.len()
+            || !self.source_text_deltas_are_presented(&mutation.precise_instances)
+        {
+            mutation.precise_instances.clear();
+            mutation.command_changes.clear();
+        }
         self.precise_command_instances = mutation.precise_instances.into();
         self.presentation_command_changes = mutation.command_changes.into();
         self.complete_presented_hits()?;

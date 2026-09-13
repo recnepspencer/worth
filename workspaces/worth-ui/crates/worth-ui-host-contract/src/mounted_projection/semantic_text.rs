@@ -374,8 +374,8 @@ impl UiMountedSemanticTextMechanic {
         let mut presented = self.clone();
         presented.bounds = bounds;
         presented.clip_bounds = geometry.clip;
-        presented.origin_x = self.origin_x + portal.bounds().x() - source_anchor.x();
-        presented.origin_y = self.origin_y + portal.bounds().y() - source_anchor.y();
+        presented.origin_x = self.origin_x + portal.paint_bounds().x() - source_anchor.x();
+        presented.origin_y = self.origin_y + portal.paint_bounds().y() - source_anchor.y();
         presented.layer_semantic_order = portal
             .layer_semantic_order()
             .saturating_add(1 + self.layer_semantic_order.min(1_024));

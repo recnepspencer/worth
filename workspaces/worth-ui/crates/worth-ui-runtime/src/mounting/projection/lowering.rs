@@ -68,6 +68,8 @@ struct UiMountedProjectionNodeDraft {
     appearance_clip: super::appearance::UiMountedAppearanceClip,
     surface_paint_posture: super::super::UiMountedSurfacePaintPosture,
     surface_paint_order: Option<u32>,
+    surface_geometry: worth_ui_host_contract::UiSurfaceGeometry,
+    portal_surface_appearance: bool,
     has_appearance_attachment: bool,
     clip_ancestry_entries: usize,
     text_source_lookups: usize,

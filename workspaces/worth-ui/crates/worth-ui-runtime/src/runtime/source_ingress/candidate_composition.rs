@@ -64,6 +64,7 @@ impl WorthUiCandidateComposition {
         declaration_material: WorthUiPreparedDeclarationMaterial,
         semantic_handoff: WorthUiSemanticHandoffEvidence,
     ) -> Self {
+        let candidate = candidate.with_prepared_snapshot_succession(&semantic_handoff);
         let basis = WorthUiCandidateCompositionBasis {
             candidate: candidate.basis(),
             declaration_source: declaration_material.identity().clone(),
@@ -86,7 +87,7 @@ impl WorthUiCandidateComposition {
     }
 
     pub(super) fn snapshot_digest(&self) -> u64 {
-        self.candidate.lowering_basis().snapshot_digest()
+        self.candidate.predecessor_snapshot_digest()
     }
 
     pub(super) fn into_preparation_handoff(self) -> WorthUiCandidatePreparationHandoff {

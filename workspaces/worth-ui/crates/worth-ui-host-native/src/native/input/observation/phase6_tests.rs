@@ -151,10 +151,7 @@ fn button_event_uses_the_event_time_position_witness() {
 fn failed_retention_does_not_create_a_sequence_gap() {
     let mut state = presented_state();
     for index in 0..17 {
-        state.observe_window_event(&WindowEvent::CursorMoved {
-            device_id: DeviceId::dummy(),
-            position: PhysicalPosition::new(index as f64, 0.0),
-        });
+        state.observe_window_event(&WindowEvent::Focused(index % 2 == 0));
     }
 
     let reports = state
@@ -173,6 +170,88 @@ fn failed_retention_does_not_create_a_sequence_gap() {
         .all(|(index, report)| report.sequence().value() == index as u64 + 1));
 }
 
+#[test]
+fn deferred_motion_burst_stays_bounded_without_a_drain_and_preserves_the_button() {
+    let mut state = presented_state();
+    // The publication owner can be temporarily unable to admit a drain.
+    // No consumer is invoked during this complete burst.
+    for index in 0..65 {
+        state.observe_window_event(&WindowEvent::CursorMoved {
+            device_id: DeviceId::dummy(),
+            position: PhysicalPosition::new(index as f64, 20.0),
+        });
+        assert_eq!(state.report().terminal_stop(), None);
+    }
+    state.observe_window_event_at_with_pointer_witness(
+        &WindowEvent::MouseInput {
+            device_id: DeviceId::dummy(),
+            state: ElementState::Pressed,
+            button: MouseButton::Left,
+        },
+        70,
+        super::pointer::UiNativePointerPositionWitness::EventTime(PhysicalPosition::new(
+            64.0, 20.0,
+        )),
+    );
+    let batches = state.drain(HOST_SESSION).into_batches();
+    assert_eq!(batches.len(), 2);
+    assert_eq!(state.report().terminal_stop(), None);
+    assert_eq!(batches[0].reports()[0].sequence().value(), 65);
+    assert!(
+        matches!(batches[0].canonical_core().loss(), worth_ui_host_contract::UiHostObservationLoss::Coalesced { replaced, .. } if replaced.first().value() == 1 && replaced.last().value() == 64)
+    );
+    assert_eq!(batches[1].reports()[0].sequence().value(), 66);
+    assert_eq!(
+        batches[1].canonical_core().loss(),
+        worth_ui_host_contract::UiHostObservationLoss::Complete
+    );
+    assert!(
+        matches!(batches[1].reports()[0].payload(), UiHostObservationPayload::PointerButton { position, .. } if position.x_subpixels() == 64_000 && position.y_subpixels() == 20_000)
+    );
+}
+
+#[test]
+fn pointer_coalescing_preserves_button_and_presentation_boundaries() {
+    let mut state = presented_state();
+    let motion = WindowEvent::CursorMoved {
+        device_id: DeviceId::dummy(),
+        position: PhysicalPosition::new(30.0, 20.0),
+    };
+    state.observe_window_event(&motion);
+    state.observe_window_event(&motion);
+    state.observe_window_event_at_with_pointer_witness(
+        &WindowEvent::MouseInput {
+            device_id: DeviceId::dummy(),
+            state: ElementState::Pressed,
+            button: MouseButton::Left,
+        },
+        3,
+        super::pointer::UiNativePointerPositionWitness::EventTime(PhysicalPosition::new(
+            30.0, 20.0,
+        )),
+    );
+    state.observe_window_event(&motion);
+    state.observe_window_event(&motion);
+    assert!(state.record_completed_presentation(protocol(), HOST_SESSION, basis(2)));
+    state.observe_window_event(&motion);
+    let batches = state.drain(HOST_SESSION).into_batches();
+    assert_eq!(batches.len(), 4);
+    assert_eq!(
+        batches
+            .iter()
+            .map(|batch| batch.reports()[0].sequence().value())
+            .collect::<Vec<_>>(),
+        vec![2, 3, 5, 6]
+    );
+    assert!(matches!(
+        batches[1].reports()[0].payload(),
+        UiHostObservationPayload::PointerButton { .. }
+    ));
+    assert_ne!(
+        batches[2].canonical_core().presentation(),
+        batches[3].canonical_core().presentation()
+    );
+}
 #[test]
 fn cursor_left_before_first_presentation_denies_before_capture_mutation() {
     let mut state = UiNativeInputObservationState::new();

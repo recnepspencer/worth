@@ -31,6 +31,7 @@ pub(super) fn lower(
             border_edges: input.surface_border_edges,
             border_omissions: input.surface_border_omissions.clone(),
             paint,
+            geometry: input.surface_geometry.clone(),
             opacity: compose_opacity(
                 input.appearance_opacity,
                 input.motion_opacity.unwrap_or(u16::MAX),

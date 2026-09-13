@@ -23,7 +23,7 @@ impl UiMountedProjectionFrame {
         if node.receipt().semantic_surface() != surface {
             return Err(super::super::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch);
         }
-        Ok(node.has_appearance_attachment)
+        Ok(node.has_appearance_attachment && node.portal_surface_appearance)
     }
 
     pub(super) fn appearance_node_input(
@@ -296,7 +296,7 @@ impl UiMountedProjectionFrameOwner {
                 .backdrops
                 .iter()
                 .filter_map(|backdrop| backdrop.motion_target)
-                .map(|instance| (overlay.semantic_surface, instance))
+                .map(|target| (overlay.semantic_surface, target.owner()))
         }));
         // Overlay lowering reconstructs every active Portal surface, including
         // unchanged children with no Backdrop Motion dependency. Its accepted

@@ -35,6 +35,7 @@ impl UiNativeShutdownPort for UiNativeHostShutdownPort<'_> {
     fn release_derived_state(&mut self) {
         self.state.retained_draw_lists.clear();
         self.state.presentation_epochs.clear();
+        self.state.accepted_cursor = None;
         self.state.lifecycle.clear_recovery();
         let atlas_cleared = self.state.text_atlas.clear();
         self.state.text_atlas_completion = None;

@@ -64,7 +64,7 @@ fn opacity_sample_is_issued_for_text_with_only_overhanging_visible_coverage() {
     sampler
         .install(UiMotionCommitReceipt::for_sampling_test_transition(
             832,
-            UiMotionTargetIdentity::from_family_owner(
+            UiMotionTargetIdentity::from_mounted_owner(
                 world.requirement.semantic_surface(),
                 world.first_instance,
                 832,

@@ -71,6 +71,9 @@ impl super::UiPortalRuntimeState {
             if sampled_bounds
                 .or(committed_bounds)
                 .is_some_and(|bounds| contains(bounds, point))
+                || record
+                    .placement
+                    .is_some_and(|placement| contains(placement.prepared().anchor(), point))
             {
                 return Ok(UiPortalDismissalPreparation::Ignored(
                     UiPortalDismissalIgnoreReason::InsideTopmostPortal,

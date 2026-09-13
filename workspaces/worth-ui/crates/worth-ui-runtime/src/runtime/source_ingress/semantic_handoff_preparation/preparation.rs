@@ -16,13 +16,28 @@ pub(in crate::runtime::source_ingress) fn prepare_semantic_handoff(
     package: WorthUiSealedSemanticPackage,
     snapshot: &CapabilitySnapshot,
 ) -> Result<WorthUiPreparedSemanticHandoffMaterial, WorthUiSemanticHandoffPreparationDenial> {
-    let mut evidence = WorthUiSemanticHandoffEvidence::from_package(&package);
+    let mut evidence = WorthUiSemanticHandoffEvidence::from_package(&package, snapshot);
     if !package.protocol().is_current() {
         return Err(denial(
             evidence,
             WorthUiSemanticHandoffPreparationStop::UnsupportedProtocol,
         ));
     }
+    let successor_snapshot = snapshot
+        .refreeze_authored_appearance_roles(
+            package
+                .appearance_role_declarations()
+                .map(|declaration| declaration.role()),
+        )
+        .map_err(|cause| {
+            denial(
+                evidence.clone(),
+                WorthUiSemanticHandoffPreparationStop::AppearanceRoleRegistration(cause),
+            )
+        })?
+        .map(std::rc::Rc::new);
+    evidence.successor_snapshot = successor_snapshot.clone();
+    let snapshot = successor_snapshot.as_deref().unwrap_or(snapshot);
     let intent_material =
         crate::declaration::prepare_authored_intent_material(&package).map_err(|_| {
             denial(

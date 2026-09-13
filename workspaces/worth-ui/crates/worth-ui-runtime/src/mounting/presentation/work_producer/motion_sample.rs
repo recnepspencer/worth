@@ -44,6 +44,9 @@ impl UiMountedPresentationState {
                 return Err(UiMountedMotionSampleWorkDenial::PresentationBasisMismatch);
             }
             let portal_group = self.portal_motion_group(sample.target());
+            if sample.target().is_portal_contents() && portal_group.is_none() {
+                return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
+            }
             let portal_clip = portal_group
                 .as_ref()
                 .and_then(|group| group.viewport_clip());
@@ -51,12 +54,29 @@ impl UiMountedPresentationState {
             let identities = portal_group.map_or_else(
                 || {
                     self.command_identities_for_instance(instance)
+                        .filter(|identity| {
+                            !matches!(
+                                self.command_option(*identity),
+                                Some(worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay { .. })
+                            )
+                        })
                         .collect::<Vec<_>>()
                 },
                 |group| group.commands().collect::<Vec<_>>(),
             );
             let mut targets = Vec::with_capacity(identities.len().max(1));
             for identity in identities {
+                if identity.is_appearance_surface() {
+                    let target = self
+                        .appearance_surface_sample_target(identity.mounted_instance())
+                        .ok_or(UiMountedMotionSampleWorkDenial::UnknownTargetCommands)?;
+                    targets.push((
+                        identity,
+                        target.geometry().clip(),
+                        Some(target.geometry().bounds()),
+                    ));
+                    continue;
+                }
                 let command = self
                     .command_option(identity)
                     .ok_or(UiMountedMotionSampleWorkDenial::UnknownTargetCommands)?;

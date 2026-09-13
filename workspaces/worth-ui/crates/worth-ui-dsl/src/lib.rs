@@ -1,6 +1,7 @@
 mod semantic;
 mod source;
 mod support;
+pub use semantic::{UiThemeGradientPoint, UiThemeLinearGradient};
 
 #[cfg(feature = "certification-support")]
 pub use source::certification as certification_support;

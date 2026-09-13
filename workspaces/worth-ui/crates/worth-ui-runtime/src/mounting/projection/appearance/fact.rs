@@ -24,6 +24,7 @@ pub(crate) struct UiMountedAppearanceNodeInput {
     pub(super) surface_border_omissions:
         Box<[worth_ui_host_contract::UiMountedSurfaceBorderOmission]>,
     pub(super) surface_paint: Option<UiMountedSurfacePaint>,
+    pub(super) surface_geometry: worth_ui_host_contract::UiSurfaceGeometry,
     pub(super) outline: Option<UiMountedAppearanceOutlineInput>,
     pub(super) text_foregrounds: Box<[UiMountedAppearanceTextForegroundInput]>,
     pub(super) appearance_opacity: UiMountedAppearanceOpacity,
@@ -57,7 +58,8 @@ pub(crate) struct UiMountedAppearanceBackdropInput {
     pub(super) background: UiMountedAppearanceColor,
     pub(super) appearance_opacity: UiMountedAppearanceOpacity,
     pub(super) motion_opacity: Option<u16>,
-    pub(in crate::mounting::projection) motion_target: Option<UiMountedInstanceIdentity>,
+    pub(in crate::mounting::projection) motion_target:
+        Option<worth_ui_host_contract::UiMountedPortalPresentationAffinity>,
     pub(super) attribution: UiMountedBackdropAppearanceAttribution,
     pub(super) semantic_digest: u64,
 }

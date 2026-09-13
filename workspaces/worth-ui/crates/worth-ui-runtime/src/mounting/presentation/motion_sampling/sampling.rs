@@ -62,6 +62,16 @@ impl Default for UiMountedMotionSampler {
 }
 
 impl UiMountedMotionSampler {
+    pub(in crate::mounting) fn accept_published_entrance(
+        &mut self,
+        sample: super::UiPresentationMotionSampleReceipt,
+    ) {
+        self.tracks
+            .get_mut(&sample.target())
+            .expect("published entrance was installed from its exact Motion commit")
+            .accept_published_entrance(sample);
+    }
+
     pub(in crate::mounting) fn retained_targets(
         &self,
     ) -> Vec<crate::runtime::motion::UiMotionTargetIdentity> {
@@ -288,6 +298,10 @@ impl UiMountedMotionSampler {
         posture: super::UiPresentationReducedMotionPosture,
     ) {
         self.reduced_motion = posture;
+    }
+
+    pub(crate) const fn reduced_motion(&self) -> super::UiPresentationReducedMotionPosture {
+        self.reduced_motion
     }
 
     pub(crate) fn shutdown(&mut self) -> usize {

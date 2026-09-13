@@ -82,3 +82,9 @@ pub use worth_ui_runtime::facade::registry::descriptor::{
     UiThemeColorParseDenial, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId,
     VisibleStateBindingDeclaration, WorthUiViewBindingIdentity,
 };
+
+pub use worth_ui_runtime::facade::registry::descriptor::{
+    NormalizedPoint, UiAppearanceLogicalLength, UiSoftShadowGeometry, UiSurfaceGeometry,
+    UiSurfaceGeometryDenial, UiVectorSurfaceGeometry, VectorPath, VectorPathDenial,
+    VectorPathSegment,
+};

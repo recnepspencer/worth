@@ -249,6 +249,7 @@ impl UiNativeApplicationDriver {
         match runtime.physical_work_progressed(shell, progress) {
             Ok((shell, directive)) => {
                 self.shell = Some(shell);
+                self.arm_motion_readiness_now();
                 Ok(map_directive(directive))
             }
             Err(stopped) => {

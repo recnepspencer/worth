@@ -19,6 +19,8 @@ use worth_ui_host_contract::{
 
 #[path = "render_order_tests/appearance_only.rs"]
 mod appearance_only;
+#[path = "render_order_tests/backdrop_motion.rs"]
+mod backdrop_motion;
 #[path = "render_order_tests/locality.rs"]
 mod locality;
 #[path = "render_order_tests/portal_group.rs"]
@@ -355,6 +357,7 @@ fn surface_at(
     .unwrap();
     UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
             issuer,
             node_receipt: source.owner_receipt(),
             bounds: allocation,
@@ -373,9 +376,9 @@ fn surface_at(
             ),
             border_edges: UiMountedSurfaceBorderEdges::ALL,
             border_omissions: Box::new([]),
-            paint: UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
-                9, 10, 11, 255,
-            ])),
+            paint: UiMountedSurfacePaint::Fill(
+                UiMountedAppearanceColor::from_straight_srgba([9, 10, 11, 255]).into(),
+            ),
             opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection: UiMountedNodeAppearanceAttribution::from_runtime_mounting(issuer, 1, 1)
                 .unwrap(),

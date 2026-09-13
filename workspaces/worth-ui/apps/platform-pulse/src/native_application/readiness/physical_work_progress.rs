@@ -13,6 +13,7 @@ impl PlatformPulseApplicationRuntime {
         Box<worth_ui_native_platform::UiNativeApplicationRuntimeProgressStopped>,
     > {
         self.shell = Some(application);
+
         if self.progress_pending_frame_presentation(&progress) {
             if self.terminal_error.is_none() && self.pending_frame_presentation.is_none() {
                 self.advance_native_product_turn();
@@ -22,6 +23,7 @@ impl PlatformPulseApplicationRuntime {
         }
         let mut shell = self.take_runtime_shell();
         let managed = shell.progress_managed_rebind(&progress);
+
         if matches!(
             &self.pending_managed_rebind,
             Some(super::PlatformPulsePendingManagedRebind::ThemeSwitch(_))

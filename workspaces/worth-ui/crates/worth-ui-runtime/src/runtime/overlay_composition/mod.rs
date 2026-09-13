@@ -25,14 +25,17 @@ pub(crate) use owner_lifecycle::{UiOverlayCompositionOwnerLifecycle, UiOverlayOw
 pub(crate) use dependency_index::{UiOverlayChangeSet, UiOverlayChangedBasis};
 #[cfg(test)]
 pub(crate) use extent::UiOverlayRegionExtent;
+#[cfg(any(test, feature = "certification-support"))]
 pub(crate) use extent::{
     UiOverlayMotionBinding, UiOverlayMotionSnapshot, UiOverlaySurfaceExtentSnapshot,
 };
 #[cfg(test)]
 pub(crate) use planner::UiOverlayCompositionDenial;
+pub(crate) use planner::UiPreparedOverlayComposition;
+#[cfg(any(test, feature = "certification-support"))]
 pub(crate) use planner::{
     UiOverlayCapacityProfile, UiOverlayCompositionInput, UiOverlayCompositionState,
-    UiOverlayPortalBinding, UiPreparedOverlayComposition,
+    UiOverlayPortalBinding,
 };
 #[cfg(test)]
 pub(crate) use relation_graph::{

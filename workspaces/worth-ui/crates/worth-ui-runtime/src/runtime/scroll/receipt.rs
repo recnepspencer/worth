@@ -51,7 +51,7 @@ impl UiScrollChainTransition {
         }
     }
 
-    pub(in crate::runtime) const fn owner(self) -> super::UiScrollOwnerIdentity {
+    pub(crate) const fn owner(self) -> super::UiScrollOwnerIdentity {
         self.owner
     }
 
@@ -59,7 +59,7 @@ impl UiScrollChainTransition {
         self.previous
     }
 
-    pub(in crate::runtime) const fn current(self) -> super::UiScrollOffset {
+    pub(crate) const fn current(self) -> super::UiScrollOffset {
         self.current
     }
 
@@ -124,11 +124,11 @@ impl UiScrollCounters {
         self.rejected_requests
     }
 
-    pub(in crate::runtime) const fn owners_visited(self) -> u64 {
+    pub(crate) const fn owners_visited(self) -> u64 {
         self.owners_visited
     }
 
-    pub(in crate::runtime) const fn owners_changed(self) -> u64 {
+    pub(crate) const fn owners_changed(self) -> u64 {
         self.owners_changed
     }
 

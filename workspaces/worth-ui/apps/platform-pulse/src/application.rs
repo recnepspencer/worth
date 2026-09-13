@@ -111,17 +111,13 @@ pub(crate) fn prepare_composition(
             .take_initial_snapshot()
             .map_err(PlatformPulsePreparationDenial::InitialSourceSettlement)?;
         let initial_source = snapshot.source_revision().clone();
-        let fonts = std::sync::Arc::new(
-            worth_ui::facade::app::UiGlobalFontCollection::admit_qualified_profile()
-                .expect("embedded qualified Pulse text profile")
-                .0,
-        );
+        let fonts = presentation::PulseFonts::admit();
         let capability_builder = builder(
             registration.clone(),
             action_view.clone(),
             &intent_initial,
             intent_provider.clone(),
-            std::sync::Arc::clone(&fonts),
+            &fonts,
         )?;
         let capability_app = capability_builder.freeze().map_err(|denial| {
             PlatformPulsePreparationDenial::CapabilityApplication(Box::new(denial))
@@ -136,7 +132,7 @@ pub(crate) fn prepare_composition(
             action_view,
             &intent_initial,
             intent_provider,
-            fonts,
+            &fonts,
         )
         .map(|builder| {
             (
@@ -204,16 +200,19 @@ fn builder(
     action_view: WorthUiInstalledQueryView,
     intent: &PlatformPulseIntentInputRecord,
     provider: PlatformPulseActionProvider,
-    fonts: std::sync::Arc<worth_ui::facade::app::UiGlobalFontCollection>,
+    fonts: &presentation::PulseFonts,
 ) -> Result<
     WorthUiApplicationBuilder<UiChangeProfileInstalled, UiIntentWiringSatisfied>,
     PlatformPulsePreparationDenial,
 > {
-    let builder = register_structure(register_mosaic(
-        WorthUi::app()
-            .with_font_collection(fonts)
-            .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse()),
-    ));
+    let builder = register_structure(
+        register_mosaic(
+            WorthUi::app()
+                .with_font_collection(std::sync::Arc::clone(&fonts.collection))
+                .with_change_profile(dashboard_change_profile()),
+        ),
+        fonts,
+    );
     let builder = register_appearance(builder)
         .map_err(PlatformPulsePreparationDenial::Appearance)?
         .register_intent_boolean_fact(platform_pulse_close_portal_mutability_fact(), true)
@@ -256,4 +255,27 @@ fn builder(
         .register_scalar_projection(registration)
         .map(|builder| builder.with_visual_inspection_policy(visual_inspection_policy()))
         .map_err(PlatformPulsePreparationDenial::QueryRegistration)
+}
+
+fn dashboard_change_profile() -> worth_ui::facade::rebind::UiChangeProfile {
+    use worth_ui::facade::observation::{UiObservationProfile, UiObservationProfileInput};
+    use worth_ui::facade::rebind::{UiChangeProfile, UiRebindProfile};
+    // The authored dashboard is 77 KiB across eleven modules. Source ingress
+    // retains the package for a candidate, including unchanged modules.
+    let observation = UiObservationProfile::bounded(UiObservationProfileInput {
+        admitted_per_turn: 8,
+        retained_bytes_per_turn: 128 * 1024,
+        queued_during_effecting_rebind: 16,
+    })
+    .expect("dashboard source admission has a nonzero bounded budget");
+    let baseline = UiRebindProfile::platform_pulse();
+    let mut budget = baseline.budget();
+    // Comparison visits the full declaration set, not only the edited role.
+    // The dashboard has roughly 375 declarations plus its eleven modules.
+    budget.comparison_structural_entries = 512;
+    UiChangeProfile::new(
+        observation,
+        UiRebindProfile::bounded(budget, baseline.concurrency())
+            .expect("dashboard comparison retains bounded admission"),
+    )
 }

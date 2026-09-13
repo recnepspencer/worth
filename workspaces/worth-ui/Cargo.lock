@@ -4424,10 +4424,16 @@ dependencies = [
 [[package]]
 name = "worth-ui-dsl"
 version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+]
 
 [[package]]
 name = "worth-ui-host-contract"
 version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+]
 
 [[package]]
 name = "worth-ui-host-headless"

@@ -40,13 +40,13 @@ fn presented_index_portal_motion_selects_only_children_and_keeps_trigger_station
         UiHostPresentationEpoch::issued_by_host(1),
     );
     let target =
-        UiMotionTargetIdentity::from_family_owner(surface, owner, portal.portal_identity());
+        UiMotionTargetIdentity::from_portal_owner(surface, owner, portal.portal_identity());
     let b = portal.bounds();
     for size in [64, 4096] {
         let mut index = basis.presented_hits.clone();
         // Canonically completed unrelated rows make a broad surface scan observable.
         for n in 0..size {
-            let unrelated = UiMotionTargetIdentity::from_family_owner(
+            let unrelated = UiMotionTargetIdentity::from_mounted_owner(
                 surface,
                 UiMountedInstanceIdentity::mint_unbound().unwrap(),
                 77,

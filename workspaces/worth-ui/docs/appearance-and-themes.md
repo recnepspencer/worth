@@ -61,6 +61,13 @@ that catalog, then admit the bundle with its initial definition. The live Pulse
 theme construction is compiled in
 [`theme.rs`](../apps/platform-pulse/src/application/presentation/appearance/theme.rs).
 
+Component backgrounds also accept `UiThemeValue::LinearGradient`: two colors and
+distinct `UiThemeGradientPoint` endpoints in the 0–10,000 allocation-relative
+coordinate range. Declare its slot as `UiThemeValueKind::LinearGradient`; in WUI,
+use `background use linear_gradient token(...)`. Hover may select a separate
+solid-color slot, but one slot cannot claim both kinds. Foreground and Backdrop
+backgrounds do not accept gradients.
+
 ## DSL Authoring
 
 The DSL lowers to the same sealed role and attachment meaning. This excerpt is
@@ -131,6 +138,13 @@ Overlay order is relational. Authored before/after relations and Portal-issued
 stack order decide composition. Raw z-index, source order, object identity, and
 arbitrary numeric ranks do not resolve ambiguous overlap. Equal-order overlap
 without a lawful relation is denied.
+
+Use `place immediately_above_surface_content` for a scrim that dims the dashboard
+while leaving all presented Portals above it. `place above_surface_content` only
+states precedence and still denies an ambiguous order relative to Portals.
+Modal input shielding follows the accepted Portal-issued stack order, including
+sibling Portals at the same nesting depth; a visible panel below a modal does
+not gain interaction authority merely because it is painted above the scrim.
 
 Motion owns committed tracks and accepted samples. Appearance composes the exact
 accepted command sample during prepared presentation; it never turns a visual

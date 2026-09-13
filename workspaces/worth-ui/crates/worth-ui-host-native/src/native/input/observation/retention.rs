@@ -108,7 +108,7 @@ impl UiNativeInputObservationState {
         };
         let evidence_checkpoint = self.evidence.clone();
         self.evidence.record_batch(batch.reports());
-        if let Err(denial) = self.retention.retain(batch) {
+        if let Err(denial) = self.retention.retain_latest_pointer_motion(batch) {
             self.evidence = evidence_checkpoint;
             self.record_terminal_stop(UiNativeInputObservationStop::Retention(denial));
             return UiNativeInputObservationDisposition::Stopped;

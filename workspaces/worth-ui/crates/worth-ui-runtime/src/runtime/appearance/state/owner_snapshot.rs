@@ -99,7 +99,9 @@ impl UiAppearanceOwnerSnapshot {
         changed
     }
 
-    pub(crate) fn same_owner_snapshot(&self, other: &Self) -> bool {
+    /// A presentation refresh may advance Hover receipts without changing the
+    /// owner-issued target or class that produced the prepared pixels.
+    pub(crate) fn same_publication_predecessor(&self, other: &Self) -> bool {
         self.turn == other.turn
             && self.session == other.session
             && self.source_basis == other.source_basis
@@ -110,7 +112,11 @@ impl UiAppearanceOwnerSnapshot {
             && self.selection == other.selection
             && self.operability == other.operability
             && self.validation == other.validation
-            && self.pointer_presence == other.pointer_presence
+            && match (&self.pointer_presence, &other.pointer_presence) {
+                (None, None) => true,
+                (Some(before), Some(current)) => before.same_appearance_dependencies(current),
+                _ => false,
+            }
             && self.pressed == other.pressed
     }
 

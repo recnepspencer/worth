@@ -22,6 +22,7 @@ pub(crate) enum ModelPresence {
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum ModelPlacement {
     AboveContent,
+    ImmediatelyAboveContent,
     BeforePortal(u64),
     AfterPortal(u64),
     BeforeBackdrop(u64),
@@ -179,6 +180,7 @@ fn placement_edge(
 ) -> Result<(ModelNode, ModelNode, bool), ModelDenial> {
     match placement {
         ModelPlacement::AboveContent => Ok((ModelNode::Content, source.node, false)),
+        ModelPlacement::ImmediatelyAboveContent => Ok((ModelNode::Content, source.node, true)),
         ModelPlacement::BeforePortal(target) => Ok((
             source.node,
             portal_anchor(source.scope, target, portals)?,

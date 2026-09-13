@@ -62,6 +62,45 @@ fn rebound_portal_recompletion_keeps_raw_and_completed_coordinate_ownership_curr
     );
 }
 
+#[test]
+fn child_composed_portal_keeps_anchor_and_children_without_duplicating_anchor_fill() {
+    let mut world = GeometryWorld::new();
+    let mut frame = world.frame(&[0, 1], None);
+    let portal = world.owners[0];
+    let mut anchor = frame.semantic.node(portal).unwrap().clone();
+    anchor.portal_surface_appearance = false;
+    frame.semantic.insert_node(anchor);
+    assert!(
+        frame
+            .semantic
+            .node(portal)
+            .unwrap()
+            .has_appearance_attachment
+    );
+    assert!(!frame
+        .portal_has_appearance_attachment(portal, world.surfaces[0])
+        .unwrap());
+    assert!(frame
+        .portal_has_appearance_attachment(world.owners[1], world.surfaces[1])
+        .unwrap());
+    assert_geometry(
+        &context(&frame, world.children[0]),
+        [8., 52., 220., 120.],
+        [20_000, 60_000, 280_000, 320_000],
+    );
+    let binding = appearance_binding(world.surfaces[0], world.bindings[0]);
+    let geometry = UiMountedAppearanceGeometryScope::new(&[binding], None);
+    let mut state = UiMountedAppearanceFrameState::default();
+    state
+        .lower_overlays(
+            &frame,
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
+            &geometry,
+            &[appearance_overlay(world.surfaces[0], portal)],
+        )
+        .unwrap();
+}
+
 // This is the retained mounted boundary: an authored launch is covered separately.
 #[test]
 fn attached_portal_cannot_use_structural_order_to_hide_missing_retained_appearance() {

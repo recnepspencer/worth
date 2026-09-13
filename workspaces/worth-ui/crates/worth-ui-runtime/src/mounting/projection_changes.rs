@@ -144,7 +144,7 @@ impl UiMountedProjectionChanges {
         self.overflowed |= addition.overflowed;
     }
 
-    fn is_empty(&self) -> bool {
+    pub(super) fn is_empty(&self) -> bool {
         self.changed_instances.is_empty()
             && self.appearance_input_changed_instances.is_empty()
             && self.retired_instances.is_empty()

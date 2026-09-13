@@ -56,7 +56,7 @@ impl WorthUiPreparedConsequenceObservationCommit {
                     &session.intent_application_facts,
                     &session.interaction,
                 )
-                .is_some_and(|current| before.same_owner_snapshot(&current)),
+                .is_some_and(|current| before.same_publication_predecessor(&current)),
             _ => false,
         };
         let pointer_matches = match (
@@ -123,7 +123,21 @@ pub(super) fn prepare_intent_consequence_observation(
     session: &mut super::WorthUiActiveApplicationSession,
     batch: crate::runtime::observation::UiIntentConsequenceObservationBatch,
 ) -> Result<WorthUiPreparedIntentConsequenceObservation, WorthUiIntentConsequenceObservationStop> {
-    let predecessor_appearance = session.appearance_owner_snapshot.clone();
+    // Native input may have advanced owner receipts since the last painted
+    // frame. Seal the current predecessor that validation will later compare,
+    // without publishing those facts or replacing the accepted snapshot.
+    let predecessor_appearance = session
+        .appearance_owner_snapshot
+        .as_ref()
+        .and_then(|snapshot| {
+            snapshot.refresh_receipt_sources(
+                session.focus.as_ref(),
+                session.selection.as_ref(),
+                &session.intent_admission,
+                &session.intent_application_facts,
+                &session.interaction,
+            )
+        });
     let predecessor_pointer = session.pointer_affordance_snapshot.clone();
     let mut turn = match session.begin_observation_turn() {
         Ok(turn) => turn,

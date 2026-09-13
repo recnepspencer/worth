@@ -63,6 +63,14 @@ pub(crate) enum UiPortalProposalPreparationDenial {
 }
 
 impl UiStagedPortalProposalTransaction {
+    pub(crate) fn prepared_motion_entrance(
+        &self,
+    ) -> Option<crate::runtime::motion::UiPreparedMotionEntrance> {
+        self.motion
+            .as_ref()
+            .and_then(|motion| motion.prepared_entrance())
+    }
+
     pub(crate) fn overlay_appearance_sources(
         &self,
     ) -> (

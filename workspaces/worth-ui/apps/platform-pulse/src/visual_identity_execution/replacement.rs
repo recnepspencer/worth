@@ -30,6 +30,9 @@ impl PlatformPulseVisualIdentityExecution {
         tick: u64,
         now: Instant,
     ) -> Result<bool, PlatformPulseVisualExecutionDenial> {
+        if !self.enabled {
+            return Ok(true);
+        }
         if self.queued_rebind.is_some() {
             return Ok(false);
         }
@@ -55,6 +58,9 @@ impl PlatformPulseVisualIdentityExecution {
         _tick: u64,
         now: Instant,
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
+        if !self.enabled {
+            return Ok(());
+        }
         let deadline = replacement_frame_deadline(now)?;
         let state = self
             .state

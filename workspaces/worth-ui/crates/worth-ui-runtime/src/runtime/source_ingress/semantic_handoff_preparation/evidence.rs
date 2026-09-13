@@ -9,6 +9,8 @@ use super::WorthUiAuthoredOverlayMaterial;
 /// authored-to-runtime ownership transition.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthUiSemanticHandoffEvidence {
+    pub(super) predecessor_snapshot_digest: crate::capability::CapabilitySnapshotDigest,
+    pub(super) successor_snapshot: Option<std::rc::Rc<crate::capability::CapabilitySnapshot>>,
     identity: WorthUiSemanticPackageIdentity,
     protocol: WorthUiDslProtocolIdentity,
     authored_mode: WorthUiAuthoredMode,
@@ -47,8 +49,13 @@ pub struct WorthUiProjectionContentEdge {
 }
 
 impl WorthUiSemanticHandoffEvidence {
-    pub(super) fn from_package(package: &WorthUiSealedSemanticPackage) -> Self {
+    pub(super) fn from_package(
+        package: &WorthUiSealedSemanticPackage,
+        snapshot: &crate::capability::CapabilitySnapshot,
+    ) -> Self {
         Self {
+            predecessor_snapshot_digest: snapshot.digest(),
+            successor_snapshot: None,
             identity: package.identity().clone(),
             protocol: package.protocol(),
             authored_mode: package.authored_mode(),

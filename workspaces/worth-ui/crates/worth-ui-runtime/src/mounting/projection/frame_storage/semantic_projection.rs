@@ -12,6 +12,8 @@ pub(in crate::mounting) struct UiMountedProjectionNodeRecord {
     pub(in crate::mounting::projection) receipt: UiMountedNodeReceipt,
     pub(in crate::mounting::projection) plan_index: Option<u32>,
     pub(in crate::mounting::projection) surface_paint_order: Option<u32>,
+    pub(in crate::mounting::projection) surface_geometry: worth_ui_host_contract::UiSurfaceGeometry,
+    pub(in crate::mounting::projection) portal_surface_appearance: bool,
     pub(in crate::mounting::projection) has_appearance_attachment: bool,
     pub(in crate::mounting::projection) appearance_clip:
         super::super::appearance::UiMountedAppearanceClip,

@@ -63,6 +63,19 @@ fn fold(mut digest: u64, value: u64) -> u64 {
 fn fold_value(mut digest: u64, value: worth_ui_dsl::UiThemeValue) -> u64 {
     use worth_ui_dsl::UiThemeValue;
     match value {
+        UiThemeValue::LinearGradient(gradient) => gradient
+            .start()
+            .coordinates()
+            .into_iter()
+            .chain(gradient.end().coordinates())
+            .map(u64::from)
+            .chain(
+                gradient
+                    .colors()
+                    .into_iter()
+                    .flat_map(|color| color.channels().map(u64::from)),
+            )
+            .fold(digest, fold),
         UiThemeValue::Color(color) => color
             .channels()
             .into_iter()

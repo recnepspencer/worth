@@ -9,6 +9,27 @@ use std::collections::BTreeMap;
 mod text_geometry;
 
 #[test]
+fn ordinary_ancestor_clipping_reaches_text_commands_and_visual_inspection() {
+    let mut world = GeometryWorld::new();
+    let child = world.children[0];
+    adopt_value(&mut world, child);
+    let mut node = world.semantic.node(child).unwrap().clone();
+    node.portal_child_owner = None;
+    world.semantic.insert_node(node);
+    // Ordinary text occupies [8,12,220,120]. This viewport lies fully inside
+    // it; its visible extent must therefore be exactly 50x30, without Portal.
+    world.set_clip(
+        child,
+        Clip::Ancestor(UiAppearanceClip::new(30_000, 20_000, 50_000, 30_000).unwrap()),
+    );
+    let clipped = world.frame(&[], None);
+    assert_presented_text_clip(&clipped, child, Some([50.0, 30.0]));
+    world.set_clip(child, Clip::Suppressed);
+    let hidden = world.frame(&[], None);
+    assert_presented_text_clip(&hidden, child, None);
+}
+
+#[test]
 fn adopted_foreground_membership_follows_completed_candidate_visibility() {
     let mut world = GeometryWorld::new();
     let child = world.children[0];
@@ -49,6 +70,7 @@ fn adopted_foreground_membership_follows_completed_candidate_visibility() {
     let hidden_context = context(&hidden, child);
     assert!(matches!(hidden_context.appearance_clip, Clip::Ancestor(_)));
     assert!(hidden.appearance_text_candidates(child).unwrap().is_empty());
+    assert_presented_text_clip(&hidden, child, None);
     assert!(hidden_context.text_foreground_spans.is_empty());
     assert_eq!(context(&visible, child).text_foreground_spans, original);
     let removal = sidecar.mount(lower(&hidden_context, &projection)).unwrap();
@@ -77,6 +99,7 @@ fn adopted_foreground_membership_follows_completed_candidate_visibility() {
     assert_eq!(candidates.len(), 2);
     assert_eq!(candidates[0].clip_bounds().width(), 80.0);
     assert_eq!(candidates[0].clip_bounds().height(), 40.0);
+    assert_presented_text_clip(&restored, child, Some([80.0, 40.0]));
     let restored_work = sidecar
         .mount(lower(&context(&restored, child), &projection))
         .unwrap();
@@ -97,6 +120,85 @@ fn adopted_foreground_membership_follows_completed_candidate_visibility() {
             )
         ]
     );
+}
+
+fn assert_presented_text_clip(
+    frame: &UiMountedProjectionFrame,
+    instance: UiMountedInstanceIdentity,
+    expected: Option<[f32; 2]>,
+) {
+    let node = frame.semantic.node(instance).unwrap();
+    let surface = frame
+        .semantic
+        .surface_for(node.receipt.semantic_surface())
+        .unwrap();
+    let rows = frame.semantic_text_view_rows(surface).unwrap().rows;
+    let ordinary = rows
+        .iter()
+        .filter(|row| row.mounted_instance() == instance)
+        .collect::<Vec<_>>();
+    let commands =
+        frame.presentation_commands_for_instance(instance, surface.surface, surface.binding);
+    let paint = commands
+        .iter()
+        .filter_map(|command| match command {
+            UiMountedPaintCommand::SemanticText { mechanic, .. } => Some(mechanic),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    // Source commands retain their original layout-work accounting; reused
+    // projection rows clear it. Compare the actual presented attribution.
+    let attribution = |row: &&worth_ui_host_contract::UiMountedSemanticTextMechanic| {
+        (
+            row.node_receipt(),
+            row.bounds(),
+            row.clip_bounds(),
+            row.semantic_digest(),
+        )
+    };
+    assert_eq!(
+        ordinary.iter().map(attribution).collect::<Vec<_>>(),
+        paint.iter().map(attribution).collect::<Vec<_>>()
+    );
+    let appearance = frame.appearance_text_candidates(instance).unwrap();
+    assert_eq!(
+        ordinary.iter().map(attribution).collect::<Vec<_>>(),
+        appearance
+            .iter()
+            .collect::<Vec<_>>()
+            .iter()
+            .map(attribution)
+            .collect::<Vec<_>>()
+    );
+    let visual = frame
+        .visual_region_basis()
+        .for_binding(surface.binding, frame.receipt_basis.clone())
+        .unsupported_paint();
+    let visual = visual
+        .iter()
+        .filter(|row| row.node_receipt().mounted_instance() == instance)
+        .collect::<Vec<_>>();
+    assert_eq!(ordinary.len(), visual.len());
+    for row in &ordinary {
+        assert!(visual
+            .iter()
+            .any(|visual| visual.node_receipt() == row.node_receipt()
+                && visual.bounds() == row.bounds()
+                && visual.clip() == row.clip_bounds()
+                && visual.source_digest() == row.semantic_digest()));
+    }
+    if let Some([width, height]) = expected {
+        assert_eq!(ordinary.len(), 2);
+        for row in ordinary {
+            assert_eq!(row.clip_bounds().width(), width);
+            assert_eq!(row.clip_bounds().height(), height);
+        }
+    } else {
+        assert!(
+            ordinary.is_empty(),
+            "an invisible text row must not reach presentation"
+        );
+    }
 }
 
 fn foreground_role() -> worth_ui_dsl::UiAppearanceRoleDeclaration {

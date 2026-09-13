@@ -212,6 +212,7 @@ fn node(
     })
     .unwrap();
     UiMountedProjectionNodeRecord {
+        surface_geometry: worth_ui_host_contract::UiSurfaceGeometry::default(),
         receipt: UiMountedNodeReceipt::from_input(UiMountedNodeReceiptInput {
             mounted_instance: instance,
             graph_node: crate::graph::UiGraphNodeIdentity::new(90_000 + u64::from(rank)),
@@ -249,6 +250,7 @@ fn node(
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
         surface_paint_order: Some(0),
+        portal_surface_appearance: true,
         has_appearance_attachment: false,
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,

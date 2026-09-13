@@ -71,10 +71,19 @@ fn surface_region(
 
 fn surface_paint_alpha(surface: &UiMountedSurfaceAppearanceMechanic) -> u8 {
     let color_alpha = match surface.paint() {
-        UiMountedSurfacePaint::Fill(fill) => fill.straight_srgba()[3],
-        UiMountedSurfacePaint::FillAndBorder { fill, border, .. } => {
-            fill.straight_srgba()[3].max(border.straight_srgba()[3])
-        }
+        UiMountedSurfacePaint::Fill(fill) => fill
+            .colors()
+            .map(|color| color.straight_srgba()[3])
+            .into_iter()
+            .max()
+            .unwrap(),
+        UiMountedSurfacePaint::FillAndBorder { fill, border, .. } => fill
+            .colors()
+            .map(|color| color.straight_srgba()[3])
+            .into_iter()
+            .max()
+            .unwrap()
+            .max(border.straight_srgba()[3]),
         UiMountedSurfacePaint::Border { color, .. } => color.straight_srgba()[3],
     };
     let product = u32::from(color_alpha) * u32::from(surface.opacity().units());
@@ -93,7 +102,7 @@ pub(super) fn canonical_clip(
     canonical(clip.x(), clip.y(), clip.width(), clip.height())
 }
 
-fn canonical(x: i32, y: i32, width: u32, height: u32) -> Option<UiMountedCanonicalBox> {
+pub(super) fn canonical(x: i32, y: i32, width: u32, height: u32) -> Option<UiMountedCanonicalBox> {
     let units = UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT as f32;
     UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
         x: x as f32 / units,

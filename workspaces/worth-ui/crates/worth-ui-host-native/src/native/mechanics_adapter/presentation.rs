@@ -332,7 +332,10 @@ fn settle_presentation_failure(
                 .captures
                 .invalidate_source(view.binding().diagnostic_value());
             let token = view.issue_completion_token();
-            if !pending.bind_completion_identity(token.diagnostic_value()) {
+            if !pending.bind_completion_identity(
+                token.diagnostic_value(),
+                crate::native::presentation::appearance::cursor::completed_cursor(view),
+            ) {
                 return mark_presentation_indeterminate(state);
             }
             let _remembered = state.lifecycle.remember_pending_presentation(

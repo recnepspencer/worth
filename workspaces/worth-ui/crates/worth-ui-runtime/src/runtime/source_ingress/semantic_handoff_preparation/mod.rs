@@ -6,6 +6,7 @@ mod evidence;
 mod material;
 mod preparation;
 mod service_declaration_admission;
+mod snapshot_succession;
 #[cfg(test)]
 mod tests;
 

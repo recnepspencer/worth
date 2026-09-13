@@ -140,6 +140,13 @@ impl WorthUiActiveApplicationSession {
                         )
                     }
                 };
+                let extent = match self.mounted.current_portal_content_extent(handoff.target().mounted_instance()) {
+                    Ok(extent) => extent,
+                    Err(_) => return self.stop_intent_consequence(handoff,
+                        UiIntentConsequenceStopReason::RuntimeServicePortalPlacement(
+                            crate::runtime::intent_execution::UiIntentPortalPlacementStopReason::IncompatibleCoordinateSpace)),
+                };
+                let request = request.with_content_extent(extent);
                 let Some(portal) = self.portal.as_ref() else {
                     return self.stop_intent_consequence(
                         handoff,

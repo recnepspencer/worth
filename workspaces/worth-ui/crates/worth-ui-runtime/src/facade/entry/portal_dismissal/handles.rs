@@ -95,6 +95,27 @@ impl DetachedUiPortalDismissalInFlight {
 }
 
 impl DetachedUiPortalDismissalIndeterminate {
+    pub(in crate::facade::entry) fn matches_native_physical(
+        &self,
+        class: worth_ui_host_native::UiNativePhysicalProgressClass,
+        presentation: Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation>,
+    ) -> bool {
+        // An exit gets first refusal in the driver. Claim only its own recovery;
+        // another pending presentation must receive its completion unchanged.
+        matches!(
+            class,
+            worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery
+                | worth_ui_host_native::UiNativePhysicalProgressClass::Presentation
+        ) && presentation.is_some_and(|presentation| {
+            presentation.attempt() == self.frame.report().attempt()
+                && self
+                    .frame
+                    .report()
+                    .physical_recovery_bindings()
+                    .contains(&presentation.binding())
+        })
+    }
+
     pub(in crate::facade::entry) const fn session_identity(
         &self,
     ) -> crate::facade::WorthUiActiveApplicationSessionIdentity {

@@ -283,7 +283,7 @@ mod tests {
     fn route_removal_targets_the_identity_action_without_erasing_the_portal_action() {
         let canonical = CanonicalPlatformPulse::checked_in();
         assert_eq!(count(canonical.source_bytes(), INTENT_ROUTE_BINDING), 1);
-        let portal_source = canonical.portal_primary_source_bytes();
+        let portal_source = canonical.signals_source_bytes();
         assert_eq!(
             count(
                 portal_source,

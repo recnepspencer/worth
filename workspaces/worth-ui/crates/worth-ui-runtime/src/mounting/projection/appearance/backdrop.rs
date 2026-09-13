@@ -16,6 +16,7 @@ pub(crate) fn lower(
         extent: input.extent,
         clip: input.clip,
         background: input.background,
+        motion_target: input.motion_target,
         opacity: compose_opacity(
             input.appearance_opacity,
             input.motion_opacity.unwrap_or(u16::MAX),

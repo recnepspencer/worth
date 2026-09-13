@@ -4,6 +4,7 @@ mod model;
 mod progression;
 mod retention_admission;
 mod retention_snapshot;
+mod retirement;
 mod sequence_coverage;
 mod state;
 mod structural_admission;

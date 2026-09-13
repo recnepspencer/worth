@@ -1,3 +1,5 @@
+#[path = "content_geometry.rs"]
+mod content_geometry;
 use super::{UiHeadlessAppearanceFrameTranscript, UiHeadlessAppearanceMechanic};
 use worth_ui_host_contract::{
     compose_source_over, UiMountedAppearanceColor, UiMountedSurfaceAppearanceMechanic,
@@ -109,6 +111,7 @@ fn append_surface(
         i64::from(bounds.height()),
     ];
     let radii = surface.radii().corners().map(i64::from);
+    let shape_coverage = content_geometry::coverage(surface.geometry(), bounds, [x, y]);
     if !contains(
         [
             i64::from(clip.x()),
@@ -118,8 +121,11 @@ fn append_surface(
         ],
         x,
         y,
-    ) || !inside_contour(bounds, radii, x, y)
-    {
+    ) || if shape_coverage.is_some() {
+        !contains(bounds, x, y)
+    } else {
+        !inside_contour(bounds, radii, x, y)
+    } {
         return;
     }
     let (fill, border) = match surface.paint() {
@@ -138,7 +144,22 @@ fn append_surface(
         ),
     };
     if let Some(fill) = fill {
-        layers.push((fill, surface.opacity()));
+        let opacity = shape_coverage.map_or(surface.opacity(), |coverage| {
+            worth_ui_host_contract::UiMountedPresentationOpacity::from_runtime_composition(
+                (f64::from(surface.opacity().units()) * coverage).round() as u16,
+            )
+        });
+        let [left, top, width, height] = bounds;
+        let fill = fill.sample(
+            [
+                left as f64,
+                top as f64,
+                (left + width) as f64,
+                (top + height) as f64,
+            ],
+            [x as f64, y as f64],
+        );
+        layers.push((fill, opacity));
     }
     if let Some((border, width)) = border {
         if samples_border(
@@ -248,6 +269,7 @@ mod tests {
         let bounds = UiAppearanceAllocationBounds::new(0, 0, 10_000, 10_000).unwrap();
         let surface = UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
             UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
                 issuer,
                 node_receipt: issuer
                     .receipt_for(UiMountedInstanceIdentity::mint_unbound().unwrap()),

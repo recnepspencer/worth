@@ -1,5 +1,7 @@
 #[path = "motion_evidence_tests/empty_logical_damage.rs"]
 mod empty_logical_damage;
+#[path = "motion_evidence_tests/target_scope.rs"]
+mod target_scope;
 #[path = "motion_evidence_tests/text_ambiguity.rs"]
 mod text_ambiguity;
 
@@ -42,11 +44,28 @@ fn exact_command_slots_share_only_unchanged_overrides_and_accept_atomically() {
     let mut sampler = UiMountedMotionSampler::default();
     sampler
         .install(UiMotionCommitReceipt::for_sampling_test_transition(
-            831,
-            UiMotionTargetIdentity::from_family_owner(
+            830,
+            UiMotionTargetIdentity::from_mounted_owner(
                 world.requirement.semantic_surface(),
                 world.first_instance,
-                831,
+                830,
+            ),
+            presentation,
+            None,
+            true,
+            None,
+            false,
+            UiMotionDeclaration::portal_exit(),
+            None,
+        ))
+        .unwrap();
+    sampler
+        .install(UiMotionCommitReceipt::for_sampling_test_transition(
+            831,
+            UiMotionTargetIdentity::from_portal_owner(
+                world.requirement.semantic_surface(),
+                world.first_instance,
+                world.first_instance.diagnostic_value(),
             ),
             presentation,
             None,

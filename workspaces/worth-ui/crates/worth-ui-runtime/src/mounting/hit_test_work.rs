@@ -10,6 +10,7 @@ pub struct UiHitTestSpatialWork {
     pub(in crate::mounting) motion_members_visited: usize,
     pub(in crate::mounting) motion_rows_projected: usize,
     pub(in crate::mounting) motion_tracks_considered: usize,
+    pub(in crate::mounting) portal_rows_considered: usize,
 }
 
 impl UiHitTestSpatialWork {
@@ -40,6 +41,9 @@ impl UiHitTestSpatialWork {
     pub const fn motion_tracks_considered(self) -> usize {
         self.motion_tracks_considered
     }
+    pub const fn portal_rows_considered(self) -> usize {
+        self.portal_rows_considered
+    }
 
     pub(crate) fn merge(&mut self, other: impl Into<Self>) {
         let other = other.into();
@@ -52,6 +56,7 @@ impl UiHitTestSpatialWork {
         self.motion_members_visited += other.motion_members_visited;
         self.motion_rows_projected += other.motion_rows_projected;
         self.motion_tracks_considered += other.motion_tracks_considered;
+        self.portal_rows_considered += other.portal_rows_considered;
     }
 }
 

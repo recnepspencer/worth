@@ -25,7 +25,15 @@ impl UiMountedSemanticTextRowFormatting<'_> {
     ) -> Option<u32> {
         match self {
             Self::Default(default) => default.line_height_millipoints,
-            Self::ScalarSpans(_, line_height_millipoints) => line_height_millipoints,
+            Self::ScalarSpans(_, default) => default.line_height_millipoints,
+        }
+    }
+
+    pub(in crate::mounting::projection::semantic_text) const fn alignment(
+        self,
+    ) -> worth_ui_text::UiTextAlignment {
+        match self {
+            Self::Default(default) | Self::ScalarSpans(_, default) => default.alignment,
         }
     }
 

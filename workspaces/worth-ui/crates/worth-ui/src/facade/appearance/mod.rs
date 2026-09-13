@@ -18,9 +18,9 @@ pub use worth_ui_dsl::{
     UiMosaicRegionDeclarationIdentity, UiOverlayAnchor, UiOverlayPortalParticipant,
     UiOverlayRelation, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
     UiOverlayRelationKind, UiPortalDeclarationId, UiSemanticSurfaceDeclarationIdentity,
-    UiThemeColor, UiThemeColorParseDenial, UiThemeCornerRadii, UiThemeOpacity,
-    UiThemeOpacityDenial, UiThemeOutline, UiThemeSlotIdentity, UiThemeSolidStroke, UiThemeValue,
-    UiThemeValueKind,
+    UiThemeColor, UiThemeColorParseDenial, UiThemeCornerRadii, UiThemeGradientPoint,
+    UiThemeLinearGradient, UiThemeOpacity, UiThemeOpacityDenial, UiThemeOutline,
+    UiThemeSlotIdentity, UiThemeSolidStroke, UiThemeValue, UiThemeValueKind,
 };
 
 pub use worth_ui_runtime::facade::registry::descriptor::{

@@ -1,12 +1,12 @@
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum UiMountedSurfacePaint {
-    Fill(super::UiMountedAppearanceColor),
+    Fill(super::UiMountedSurfaceFill),
     Border {
         color: super::UiMountedAppearanceColor,
         inward_width: super::UiAppearanceLogicalLength,
     },
     FillAndBorder {
-        fill: super::UiMountedAppearanceColor,
+        fill: super::UiMountedSurfaceFill,
         border: super::UiMountedAppearanceColor,
         inward_width: super::UiAppearanceLogicalLength,
     },
@@ -69,6 +69,7 @@ pub struct UiMountedSurfaceAppearanceMechanic {
     border_edges: UiMountedSurfaceBorderEdges,
     border_omissions: Box<[super::UiMountedSurfaceBorderOmission]>,
     paint: UiMountedSurfacePaint,
+    geometry: super::UiSurfaceGeometry,
     opacity: crate::UiMountedPresentationOpacity,
     projection: super::UiMountedNodeAppearanceAttribution,
 }
@@ -85,6 +86,7 @@ pub struct UiMountedSurfaceAppearanceCompletionInput {
     pub border_edges: UiMountedSurfaceBorderEdges,
     pub border_omissions: Box<[super::UiMountedSurfaceBorderOmission]>,
     pub paint: UiMountedSurfacePaint,
+    pub geometry: super::UiSurfaceGeometry,
     pub opacity: crate::UiMountedPresentationOpacity,
     pub projection: super::UiMountedNodeAppearanceAttribution,
 }
@@ -96,9 +98,15 @@ pub enum UiMountedSurfaceAppearanceCompletionDenial {
     RadiiAllocationMismatch,
     BorderWidthExceedsHalfMinimumDimension,
     BorderOmissionOutOfBounds,
+    GeometryPaintMismatch,
+    GeometryExceedsAllocation,
 }
 
 impl UiMountedSurfaceAppearanceMechanic {
+    pub fn geometry(&self) -> &super::UiSurfaceGeometry {
+        &self.geometry
+    }
+
     #[doc(hidden)]
     pub fn reattribute_for_runtime_mounting(
         &self,
@@ -118,6 +126,7 @@ impl UiMountedSurfaceAppearanceMechanic {
             border_edges: self.border_edges,
             border_omissions: self.border_omissions.clone(),
             paint: self.paint.clone(),
+            geometry: self.geometry.clone(),
             opacity: self.opacity,
             projection: super::UiMountedNodeAppearanceAttribution::from_runtime_mounting(
                 issuer,
@@ -140,6 +149,32 @@ impl UiMountedSurfaceAppearanceMechanic {
         }
         if !input.radii.matches_allocation(input.bounds) {
             return Err(UiMountedSurfaceAppearanceCompletionDenial::RadiiAllocationMismatch);
+        }
+        if input.geometry != super::UiSurfaceGeometry::RoundedRectangle {
+            if !matches!(input.paint, UiMountedSurfacePaint::Fill(_))
+                || input.radii.corners() != [0; 4]
+                || !input.border_omissions.is_empty()
+            {
+                return Err(UiMountedSurfaceAppearanceCompletionDenial::GeometryPaintMismatch);
+            }
+            let inset = match &input.geometry {
+                super::UiSurfaceGeometry::Vector(vector) => {
+                    vector.stroke_width().map_or(0, |width| width.subpixels())
+                }
+                super::UiSurfaceGeometry::SoftShadow(shadow) => shadow.sigma().subpixels() * 6,
+                super::UiSurfaceGeometry::RoundedRectangle => 0,
+            };
+            if inset >= input.bounds.width().min(input.bounds.height()) {
+                return Err(UiMountedSurfaceAppearanceCompletionDenial::GeometryExceedsAllocation);
+            }
+            if let super::UiSurfaceGeometry::SoftShadow(shadow) = &input.geometry {
+                let caster_extent = input.bounds.width().min(input.bounds.height()) - inset;
+                if shadow.radius().subpixels() > caster_extent / 2 {
+                    return Err(
+                        UiMountedSurfaceAppearanceCompletionDenial::GeometryExceedsAllocation,
+                    );
+                }
+            }
         }
         let inward_width = match &input.paint {
             UiMountedSurfacePaint::Fill(_) => super::UiAppearanceLogicalLength::ZERO,
@@ -173,6 +208,7 @@ impl UiMountedSurfaceAppearanceMechanic {
             border_edges: input.border_edges,
             border_omissions: input.border_omissions,
             paint: input.paint,
+            geometry: input.geometry,
             opacity: input.opacity,
             projection: input.projection,
         })
@@ -234,6 +270,7 @@ mod tests {
         let instance = crate::UiMountedInstanceIdentity::mint_unbound().unwrap();
         let bounds = super::super::UiAppearanceAllocationBounds::new(0, 0, width, height).unwrap();
         UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
             issuer,
             node_receipt: issuer.receipt_for(instance),
             bounds,

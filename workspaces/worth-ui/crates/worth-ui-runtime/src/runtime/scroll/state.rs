@@ -151,8 +151,7 @@ impl UiScrollRuntimeState {
         ))
     }
 
-    #[cfg(test)]
-    pub(in crate::runtime) fn offset(
+    pub(crate) fn offset(
         &self,
         owner: super::UiScrollOwnerIdentity,
         incarnation: super::UiScrollOwnerIncarnation,

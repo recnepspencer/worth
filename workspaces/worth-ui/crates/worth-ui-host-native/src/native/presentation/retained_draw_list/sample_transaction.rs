@@ -146,6 +146,28 @@ impl UiNativeRetainedDrawList {
         UiNativeRetainedDrawListDenial,
     > {
         self.validate_sample(sample)?;
+        let mut damage = sample.damage().to_vec();
+        damage.extend(self.backdrop_sample_damage(sample));
+        // Appearance-only children can extend beyond the Portal body (for
+        // example its shadow). Replay their actual old and new paint coverage.
+        for change in sample
+            .changes()
+            .iter()
+            .filter(|change| change.command().is_appearance_surface())
+        {
+            for sampled in [
+                self.sample_overrides.get(&change.command()).copied(),
+                Some(*change),
+            ] {
+                if let Some(bounds) = self.sampled_target_bounds(change.command(), sampled)? {
+                    damage.push(
+                        worth_ui_host_contract::UiMountedLogicalDamage::from_runtime_mounting(
+                            bounds,
+                        ),
+                    );
+                }
+            }
+        }
         let undo = UiNativeRetainedSampleUndo {
             physical_coverage: Vec::new(),
             overrides: sample
@@ -170,7 +192,7 @@ impl UiNativeRetainedDrawList {
                 return Err(denial);
             }
         }
-        match self.replay_plan(sample.damage(), sample.changes().len(), 0) {
+        match self.replay_plan(&damage, sample.changes().len(), 0) {
             Ok(plan) => Ok((plan, undo)),
             Err(denial) => {
                 self.rollback_sample(undo)

@@ -53,6 +53,9 @@ pub(crate) fn prepare_application_authority(
         semantic_handoff,
         declaration_artifacts,
     ) = preparation_source.into_prepared_parts();
+    let capability_snapshot = semantic_handoff
+        .successor_snapshot()
+        .unwrap_or(capability_snapshot);
     let graph_handoffs = lower_graph_handoffs(&declaration_artifacts)
         .map_err(|denial| WorthUiApplicationPreparationDenial::GraphHandoff(Box::new(denial)))?;
     let graph_handoffs =
@@ -124,6 +127,9 @@ pub(crate) fn prepare_successor_application_authority(
     let (canonical_artifact, candidate, declaration_material, semantic_handoff) = submission
         .into_replacement_handoff()
         .into_replacement_parts();
+    let capability_snapshot = semantic_handoff
+        .successor_snapshot()
+        .unwrap_or_else(|| current.capability_authority());
     let (declaration_artifacts, declaration_source_identity) = declaration_material.into_parts();
     let graph_handoffs = lower_graph_handoffs(&declaration_artifacts)
         .map_err(|denial| WorthUiApplicationPreparationDenial::GraphHandoff(Box::new(denial)))?;
@@ -170,7 +176,7 @@ pub(crate) fn prepare_successor_application_authority(
     );
     let authority =
         WorthUiPreparedApplicationAuthority::seal(WorthUiPreparedApplicationAuthorityInput {
-            capability_snapshot: current.capability_authority(),
+            capability_snapshot,
             canonical_artifact,
             generation_lineage: WorthUiPreparedGenerationLineage::authored_source_successor(
                 authored_source_basis.clone(),

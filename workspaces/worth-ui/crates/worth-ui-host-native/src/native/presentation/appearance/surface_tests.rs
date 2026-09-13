@@ -46,7 +46,7 @@ fn seam_loser_omits_only_the_shared_border_edge_at_all_qualified_scales() {
 #[test]
 fn rounded_surface_keeps_fill_and_inward_border_separate_at_all_qualified_scales() {
     let paint = UiMountedSurfacePaint::FillAndBorder {
-        fill: UiMountedAppearanceColor::from_straight_srgba([10, 20, 30, 255]),
+        fill: UiMountedAppearanceColor::from_straight_srgba([10, 20, 30, 255]).into(),
         border: UiMountedAppearanceColor::from_straight_srgba([200, 100, 50, 255]),
         inward_width: logical_length(1_000),
     };
@@ -85,7 +85,7 @@ fn rounded_surface_paints_the_curved_border_between_allocation_edge_strips() {
             clip: UiAppearanceClip::new(0, 0, 64_000, 64_000).unwrap(),
             radii: [logical_length(24_000); 4],
             paint: UiMountedSurfacePaint::FillAndBorder {
-                fill: UiMountedAppearanceColor::from_straight_srgba([10, 20, 30, 255]),
+                fill: UiMountedAppearanceColor::from_straight_srgba([10, 20, 30, 255]).into(),
                 border: UiMountedAppearanceColor::from_straight_srgba([200, 100, 50, 255]),
                 inward_width: logical_length(2_000),
             },
@@ -108,9 +108,9 @@ fn analytic_box_reference_has_exact_inside_and_outside_limits() {
             allocation: allocation(0, 0, 20_000, 20_000),
             clip: UiAppearanceClip::new(0, 0, 20_000, 20_000).unwrap(),
             radii: [logical_length(0); 4],
-            paint: UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
-                1, 2, 3, 255,
-            ])),
+            paint: UiMountedSurfacePaint::Fill(
+                UiMountedAppearanceColor::from_straight_srgba([1, 2, 3, 255]).into(),
+            ),
             opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
         }),
         UiNativeAppearanceScale::qualified(1_500).unwrap(),
@@ -145,7 +145,7 @@ fn border_endpoints_are_total_at_all_qualified_scales() {
                 inward_width: logical_length(0),
             },
             UiMountedSurfacePaint::FillAndBorder {
-                fill: color,
+                fill: color.into(),
                 border: color,
                 inward_width: logical_length(0),
             },
@@ -172,7 +172,7 @@ fn border_endpoints_are_total_at_all_qualified_scales() {
                 inward_width: logical_length(5_000),
             },
             UiMountedSurfacePaint::FillAndBorder {
-                fill: color,
+                fill: color.into(),
                 border: color,
                 inward_width: logical_length(5_000),
             },

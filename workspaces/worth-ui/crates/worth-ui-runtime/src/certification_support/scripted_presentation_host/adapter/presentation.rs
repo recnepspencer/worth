@@ -16,7 +16,17 @@ impl ScriptedPresentationHost {
         let (outcome, queued_observation, queued_measurement) = {
             let mut state = self.state.lock().unwrap();
             state.presentation_calls += 1;
+            state.last_node_changes = match request.presentation_work() {
+                worth_ui_host_contract::UiMountedPresentationWorkView::Delta(work) => {
+                    work.nodes().to_vec()
+                }
+                _ => Vec::new(),
+            };
             state.last_surface_colors = surface_colors(request.appearance_work());
+            state.last_appearance_samples = request
+                .appearance_work()
+                .map(|work| work.sample_overrides().to_vec())
+                .unwrap_or_default();
             let mut requested_portal_commands = state.requested_portal_overlay_commands.clone();
             match request.presentation_work() {
                 worth_ui_host_contract::UiMountedPresentationWorkView::Initial(work) => {
@@ -165,7 +175,7 @@ fn surface_color(
     let color = match mechanic.paint() {
         worth_ui_host_contract::UiMountedSurfacePaint::Fill(color)
         | worth_ui_host_contract::UiMountedSurfacePaint::FillAndBorder { fill: color, .. } => {
-            *color
+            color.sample([0.0, 0.0, 1.0, 1.0], [0.5, 0.5])
         }
         worth_ui_host_contract::UiMountedSurfacePaint::Border { color, .. } => *color,
     };

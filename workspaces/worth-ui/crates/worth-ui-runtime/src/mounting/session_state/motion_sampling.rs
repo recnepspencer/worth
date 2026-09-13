@@ -8,6 +8,15 @@ pub(crate) enum UiMountedMotionSampleSettlement {
 }
 
 impl WorthUiMountedSessionState {
+    pub(crate) fn prepare_motion_entrance(
+        &self,
+        entrance: Option<crate::runtime::motion::UiPreparedMotionEntrance>,
+    ) -> Option<crate::runtime::motion::UiPreparedMotionEntrance> {
+        entrance.filter(|entrance| !(entrance.snaps_for_reduced_motion()
+            && self.motion_sampling.reduced_motion()
+                == crate::mounting::presentation::motion_sampling::UiPresentationReducedMotionPosture::Reduce))
+    }
+
     pub(crate) const fn last_motion_sampling_cost(
         &self,
     ) -> Option<crate::mounting::UiPresentationMotionSamplingCost> {
@@ -55,7 +64,13 @@ impl WorthUiMountedSessionState {
         crate::mounting::presentation::motion_sampling::UiPresentationMotionInstallationReceipt,
         crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial,
     > {
-        self.motion_sampling.install(receipt)
+        let installation = self.motion_sampling.install(receipt)?;
+        if let Some(sample) = installation.sample() {
+            if self.presentation.accept_published_entrance(sample)? {
+                self.motion_sampling.accept_published_entrance(sample);
+            }
+        }
+        Ok(installation)
     }
 
     pub(crate) fn retire_terminal_motion_sample(
@@ -193,9 +208,9 @@ impl WorthUiMountedSessionState {
             && self.motion_sampling.has_active_tracks()
     }
 
-    pub(crate) fn committed_motion_geometry_for_instance(
+    pub(crate) fn committed_motion_geometry_for_target(
         &self,
-        mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Result<
         Option<worth_ui_host_contract::UiMountedCanonicalBox>,
@@ -222,14 +237,13 @@ impl WorthUiMountedSessionState {
             .interaction_hit_test_basis(row_presentation)?
             .rows()
             .iter()
-            .find(|row| row.mounted_instance() == mounted_instance)
+            .find(|row| row.mounted_instance() == target.mounted_instance())
             .map(|row| row.bounds().coordinate_space())
             .ok_or(crate::mounting::UiPresentedFrameBasisDenial::Unknown)?;
-        let Some(geometry) = self
+        let sample = self
             .motion_sampling
-            .current_sample_for(mounted_instance, presentation)
-            .and_then(|sample| sample.geometry())
-        else {
+            .current_sample_for_target(target, presentation);
+        let Some(geometry) = sample.and_then(|sample| sample.geometry()) else {
             return Ok(None);
         };
         let components = geometry.components();

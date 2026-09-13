@@ -15,6 +15,9 @@ use worth_ui_host_contract::{
     UiMountedPresentationInitial, UiMountedPresentationWorkView, UiPresentationDeadline,
 };
 
+#[path = "superseded_transaction_tests/cursor.rs"]
+mod cursor;
+
 struct TerminalPresentationProbe {
     status: UiNativePhysicalSignalStatus,
 }

@@ -89,6 +89,10 @@ impl WorthUiPreparedApplicationLoweringAuthority {
         &self.facts.generation_identity
     }
 
+    pub(crate) fn capability_snapshot_digest(&self) -> crate::capability::CapabilitySnapshotDigest {
+        self.facts.capability_snapshot.digest()
+    }
+
     pub(crate) fn generation_witness(&self) -> super::WorthUiPreparedApplicationGenerationWitness {
         self.facts.generation_witness.clone()
     }

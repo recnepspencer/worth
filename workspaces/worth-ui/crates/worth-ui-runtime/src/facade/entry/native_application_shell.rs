@@ -324,6 +324,7 @@ impl WorthUiNativeApplicationShell {
     /// Whether admitted application presentation is awaiting mounted publication.
     pub fn native_application_presentation_pending(&self) -> bool {
         self.session.presentation.requires_mounted_projection()
+            || self.session.mounted.projection_changes_pending()
     }
 
     pub fn complete_frame_presentation(

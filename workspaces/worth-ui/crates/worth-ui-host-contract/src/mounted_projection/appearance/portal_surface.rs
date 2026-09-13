@@ -58,6 +58,7 @@ mod tests {
         let surface =
             super::super::UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
                 super::super::UiMountedSurfaceAppearanceCompletionInput {
+                    geometry: Default::default(),
                     issuer,
                     node_receipt: issuer.receipt_for(surface_instance),
                     bounds,
@@ -71,7 +72,7 @@ mod tests {
                     border_edges: super::super::UiMountedSurfaceBorderEdges::ALL,
                     border_omissions: Box::new([]),
                     paint: super::super::UiMountedSurfacePaint::Fill(
-                        super::super::UiMountedAppearanceColor::from_straight_srgba([0; 4]),
+                        super::super::UiMountedAppearanceColor::from_straight_srgba([0; 4]).into(),
                     ),
                     opacity: crate::UiMountedPresentationOpacity::from_runtime_composition(
                         u16::MAX,

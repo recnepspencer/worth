@@ -57,6 +57,8 @@ mod portal_motion;
 mod portal_observation;
 #[path = "active_application_session/runtime_access.rs"]
 mod runtime_access;
+#[path = "active_application_session/scroll_geometry.rs"]
+mod scroll_geometry;
 #[path = "active_application_session/scroll_observation.rs"]
 mod scroll_observation;
 #[path = "active_application_session/semantic_text_registration.rs"]

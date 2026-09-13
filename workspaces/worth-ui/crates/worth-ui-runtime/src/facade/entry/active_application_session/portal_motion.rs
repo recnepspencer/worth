@@ -10,7 +10,7 @@ impl super::WorthUiActiveApplicationSession {
             return Ok(None);
         }
         let portal = transition.portal();
-        let target = crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+        let target = crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
             transition.request().semantic_surface(),
             portal.owner().mounted_instance_identity(),
             portal.diagnostic_value(),
@@ -164,7 +164,7 @@ mod tests {
 
         assert!(matches!(
             crate::runtime::motion::UiMotionTransitionRequest::from_family_transition(
-                crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+                crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
                     semantic, mounted, 7,
                 ),
                 1,
@@ -180,7 +180,7 @@ mod tests {
             Err(crate::runtime::motion::UiMotionTransitionRequestDenial::BindingChangedWithoutRebind)
         ));
         construct_portal_motion_transition(
-            crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(semantic, mounted, 7),
+            crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(semantic, mounted, 7),
             1,
             2,
             predecessor,

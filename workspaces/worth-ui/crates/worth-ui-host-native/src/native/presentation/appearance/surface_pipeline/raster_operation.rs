@@ -51,6 +51,10 @@ impl UiNativeSurfaceRasterOperation {
                 *value *= scale;
             }
             self.storage[20] *= scale;
+            self.storage[26] *= scale;
+            if self.storage[25] == 3.0 {
+                self.storage[27] *= scale;
+            }
             let omission_count = self.storage[24] as usize;
             for row in self.storage[28..].chunks_exact_mut(4).take(omission_count) {
                 let axis_scale = if row[0] == 0.0 || row[0] == 2.0 {
@@ -161,9 +165,9 @@ mod tests {
             allocation: allocation(120_000, 0, 20_000, 20_000),
             clip: UiAppearanceClip::new(0, 0, 200_000, 100_000).unwrap(),
             radii: [logical_length(0); 4],
-            paint: UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
-                20, 40, 60, 255,
-            ])),
+            paint: UiMountedSurfacePaint::Fill(
+                UiMountedAppearanceColor::from_straight_srgba([20, 40, 60, 255]).into(),
+            ),
             opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
         });
         let primitive = UiNativeSurfacePipeline::prepare(

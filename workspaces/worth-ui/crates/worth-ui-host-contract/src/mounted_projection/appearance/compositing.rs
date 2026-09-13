@@ -2,6 +2,39 @@ use super::UiMountedAppearanceColor;
 use crate::UiMountedPresentationOpacity;
 
 const FIXED_ONE: u64 = 1_u64 << 32;
+pub(super) fn interpolate_linear(
+    colors: [UiMountedAppearanceColor; 2],
+    fraction: u32,
+) -> UiMountedAppearanceColor {
+    let channels = colors.map(UiMountedAppearanceColor::straight_srgba);
+    let weights = [65_536 - fraction, fraction];
+    let mix = |values: [u16; 2]| {
+        round_ratio_even(
+            u128::from(values[0]) * u128::from(weights[0])
+                + u128::from(values[1]) * u128::from(weights[1]),
+            65_536,
+        ) as u16
+    };
+    let alpha = channels.map(|color| u16::from(color[3]) * 257);
+    let mixed_alpha = mix(alpha);
+    if mixed_alpha == 0 {
+        return UiMountedAppearanceColor::from_straight_srgba([0; 4]);
+    }
+    let rgb = [0, 1, 2].map(|channel| {
+        let premultiplied = [0, 1].map(|i| mul_unit(decode_srgb(channels[i][channel]), alpha[i]));
+        let mixed = mix(premultiplied);
+        encode_srgb(
+            round_ratio_even(u128::from(mixed) * 65_535, u128::from(mixed_alpha)).min(65_535)
+                as u16,
+        )
+    });
+    UiMountedAppearanceColor::from_straight_srgba([
+        rgb[0],
+        rgb[1],
+        rgb[2],
+        round_ratio_even(u128::from(mixed_alpha) * 255, 65_535) as u8,
+    ])
+}
 pub const SRGB_LINEAR_THRESHOLD_NUMERATOR: u32 = 40_450;
 pub const SRGB_LINEAR_THRESHOLD_DENOMINATOR: u32 = 1_000_000;
 pub const SRGB_OFFSET_NUMERATOR: u32 = 55;

@@ -83,7 +83,7 @@ impl PlatformPulseApplicationRuntime {
             self.presentation_tick,
             std::time::Instant::now(),
         ) {
-            Ok(()) => self.refresh_product_story(shell),
+            Ok(()) => true,
             Err(denial) => {
                 self.fail_visual_identity(denial);
                 false

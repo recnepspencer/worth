@@ -36,9 +36,9 @@ pub(super) fn project(
                 };
                 assert_eq!(
                     mechanic.paint(),
-                    &UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
-                        red, 0, 0, 255
-                    ]))
+                    &UiMountedSurfacePaint::Fill(
+                        UiMountedAppearanceColor::from_straight_srgba([red, 0, 0, 255]).into()
+                    )
                 );
             }
             UiUnpublishedAppearanceFragmentIdentity::SurfacePointer { surface, pointer } => {

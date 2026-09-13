@@ -27,6 +27,7 @@ impl worth_ui_native_platform::UiNativeApplicationDefinition for PlatformPulseAp
         let composition = match prepare_composition(&self.launch) {
             Ok(composition) => composition,
             Err(denial) => {
+                eprintln!("WORTH UI application preparation failed: {denial}");
                 publish_preparation_failure(&self.publisher, &denial);
                 return preparation.deny(
                     worth_ui_native_platform::UiNativeApplicationPreparationDenialCause::ApplicationRejected,

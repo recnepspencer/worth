@@ -6,7 +6,7 @@ pub(super) fn validate(state: &mut WorthUiSemanticPackageSealingState) {
             partition
                 .cells()
                 .iter()
-                .any(|cell| cell.result().value_kind() != aspect.value_kind())
+                .any(|cell| !aspect.accepts_value_kind(cell.result().value_kind()))
         }) {
             state.diagnostics.push(sealing::appearance_diagnostic(
                 crate::WorthUiDslCompileDiagnosticCode::WrongAppearanceValueKind,

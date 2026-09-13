@@ -324,7 +324,8 @@ fn assert_initial(
             &worth_ui_host_contract::UiMountedSurfacePaint::Fill(
                 worth_ui_host_contract::UiMountedAppearanceColor::from_straight_srgba(
                     appearance::rgba(authoring::component_role_index(index), false)
-                ),
+                )
+                .into()
             )
         );
     }
@@ -372,7 +373,8 @@ fn assert_theme_delta(
             &worth_ui_host_contract::UiMountedSurfacePaint::Fill(
                 worth_ui_host_contract::UiMountedAppearanceColor::from_straight_srgba(
                     appearance::rgba(authoring::component_role_index(index), true)
-                ),
+                )
+                .into()
             )
         );
         let [x, y, width, height] = geometry::bounds(index);

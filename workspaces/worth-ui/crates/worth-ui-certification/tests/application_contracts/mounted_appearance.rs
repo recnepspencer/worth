@@ -213,7 +213,8 @@ fn assert_pulse_transcript(
         &worth_ui_host_contract::UiMountedSurfacePaint::Fill(
             worth_ui_host_contract::UiMountedAppearanceColor::from_straight_srgba([
                 47, 129, 247, 255,
-            ]),
+            ])
+            .into()
         )
     );
     assert_eq!(
@@ -221,7 +222,8 @@ fn assert_pulse_transcript(
         &worth_ui_host_contract::UiMountedSurfacePaint::Fill(
             worth_ui_host_contract::UiMountedAppearanceColor::from_straight_srgba([
                 242, 204, 96, 255,
-            ]),
+            ])
+            .into()
         )
     );
     assert_eq!(background.surface_paint_order(), 0);

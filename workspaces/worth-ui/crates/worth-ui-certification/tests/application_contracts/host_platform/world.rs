@@ -270,8 +270,11 @@ fn assert_exact_surface_rows<'a>(
             surface_bounds(row),
             expected.bounds.map(|value| u32::from(value) * 1_000)
         );
-        let worth_ui_host_contract::UiMountedSurfacePaint::Fill(color) = row.paint() else {
-            panic!("maximum-overlap surface must be a fill")
+        let worth_ui_host_contract::UiMountedSurfacePaint::Fill(
+            worth_ui_host_contract::UiMountedSurfaceFill::Solid(color),
+        ) = row.paint()
+        else {
+            panic!("maximum-overlap surface must be a solid fill")
         };
         assert_eq!(color.straight_srgba(), expected.rgba);
         assert_eq!(row.surface_paint_order(), u32::from(expected.order));

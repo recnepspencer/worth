@@ -180,6 +180,16 @@ fn resolve_collection(
 }
 
 impl UiMountedSemanticTextSeed {
+    pub(in crate::mounting::projection) fn requires_lifecycle_caption(&self) -> bool {
+        self.formatting.shows_lifecycle_caption()
+            || match &self.content {
+                UiMountedSemanticTextSeedContent::Scalar(value) => value.is_none(),
+                UiMountedSemanticTextSeedContent::Collection(rows) => {
+                    rows.selected_value_count() == 0
+                }
+            }
+    }
+
     pub(in crate::mounting::projection) fn require_complete_mechanics(&mut self) {
         self.transition = UiMountedSemanticTextSeedTransition::Complete;
     }

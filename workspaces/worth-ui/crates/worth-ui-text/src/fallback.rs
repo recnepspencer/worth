@@ -1,4 +1,5 @@
 use harfrust::{Direction, Language};
+mod script_context;
 use std::collections::HashMap;
 use std::sync::Arc;
 use worth_ui_host_contract::{UiQualifiedFontFaceIdentity, UiTextOriginalRange};
@@ -233,6 +234,7 @@ impl UiFallbackTextParagraph {
             })?;
             clusters.push(selected);
         }
+        script_context::resolve(&mut clusters);
         Ok(Self {
             analyzed,
             fonts,

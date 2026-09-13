@@ -1,6 +1,119 @@
 use super::*;
 
 #[test]
+fn appearance_only_sample_crosses_physical_preparation_and_rolls_back() {
+    use worth_ui_host_contract::{
+        UiMountedLogicalDamage, UiMountedPresentationSample, UiMountedPresentationSampleInput,
+    };
+    let world = DrawListWorld::new();
+    let frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
+    let mut retained = UiNativeRetainedDrawList::from_complete(
+        frame,
+        world.surface,
+        world.binding,
+        world.content,
+        world.requirement.baseline(),
+        &[],
+        &[],
+        UiMountedPaintOrderIntegrity::for_order(&[]),
+        &[],
+    )
+    .unwrap();
+    let source = world.rect(frame, world.first, 10.0, UiMountedRgba8::new(1, 2, 3, 255));
+    let mut appearance =
+        UiNativeAppearanceRetained::new(UiNativeAppearanceScale::qualified(1_000).unwrap());
+    appearance
+        .insert(
+            UiNativeAppearanceCommand::Surface(surface_at(source, 4)),
+            None,
+        )
+        .unwrap();
+    retained.staged_appearance = Some((world.requirement, appearance));
+    let identity = UiMountedPaintCommandIdentity::appearance_surface(world.first);
+    let sample_for_space = |coordinate_space| {
+        let bounds = |y| {
+            UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+                x: 0.0,
+                y,
+                width: 100.0,
+                height: 100.0,
+                coordinate_space,
+            })
+            .unwrap()
+        };
+        let transform =
+            UiMountedPresentationTransform::from_runtime_sampling(bounds(0.0), bounds(8.0))
+                .unwrap();
+        UiMountedPresentationSample::from_inert_mechanics(UiMountedPresentationSampleInput {
+            frame,
+            surface: world.surface,
+            binding: world.binding,
+            content: world.content,
+            baseline: world.requirement.baseline(),
+            production_cost: Default::default(),
+            changes: vec![UiMountedPresentationSampleChange::from_runtime_sampling(
+                identity,
+                Some(transform),
+                UiMountedPresentationOpacity::from_runtime_composition(32_768),
+            )],
+            damage: vec![UiMountedLogicalDamage::from_runtime_mounting(
+                source.bounds(),
+            )],
+        })
+        .unwrap()
+    };
+    let sample = sample_for_space(UiMountedCoordinateSpace::Viewport);
+    let basis = crate::native::presentation::raster::UiNativeRasterBasis::new([100, 100], 1.0);
+    let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    retained
+        .initialize_physical_coverage(basis, &atlas)
+        .unwrap();
+    assert!(
+        crate::native::presentation::sample::prepare_sample_plan(
+            basis,
+            &sample_for_space(UiMountedCoordinateSpace::HostSurface),
+            &atlas,
+            &mut retained,
+        )
+        .is_err(),
+        "a host-surface transform cannot address viewport appearance paint"
+    );
+    assert!(retained.sample_override(identity).is_none());
+    let (plan, undo) = crate::native::presentation::sample::prepare_sample_plan(
+        basis,
+        &sample,
+        &atlas,
+        &mut retained,
+    )
+    .unwrap_or_else(|_| {
+        panic!("admitted appearance surface must cross native physical preparation")
+    });
+    assert!(plan.operations.iter().any(|operation| matches!(
+        operation,
+        crate::native::presentation::UiNativeRasterOperation::Surface(_)
+    )));
+    assert!(plan.operations.iter().any(|operation| matches!(
+        operation,
+        crate::native::presentation::UiNativeRasterOperation::Surface(surface)
+            if surface.rect().physical_bounds() == [10.0, 8.0, 32.0, 24.0]
+    )), "sample damage must restore the child's whole moved coverage, including y=24..32 outside supplied owner damage");
+    assert_eq!(
+        retained
+            .sample_override(identity)
+            .unwrap()
+            .opacity()
+            .factor(),
+        32_768.0 / 65_535.0
+    );
+    assert!(
+        retained.command(identity).is_none(),
+        "surface sampling must not invent an ordinary paint command"
+    );
+    retained.rollback_sample(undo).unwrap();
+    assert!(retained.sample_override(identity).is_none());
+}
+
+#[test]
 fn appearance_only_surfaces_use_semantic_order_without_legacy_rect_anchors() {
     let world = DrawListWorld::new();
     let frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
@@ -191,6 +304,7 @@ pub(super) fn surface_outline_pair_in_group(
     let node_receipt = issuer.receipt_for(source.owner());
     let surface = UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {
+            geometry: Default::default(),
             issuer,
             node_receipt,
             bounds: allocation,
@@ -200,9 +314,9 @@ pub(super) fn surface_outline_pair_in_group(
             radii,
             border_edges: UiMountedSurfaceBorderEdges::ALL,
             border_omissions: Box::new([]),
-            paint: UiMountedSurfacePaint::Fill(UiMountedAppearanceColor::from_straight_srgba([
-                9, 10, 11, 255,
-            ])),
+            paint: UiMountedSurfacePaint::Fill(
+                UiMountedAppearanceColor::from_straight_srgba([9, 10, 11, 255]).into(),
+            ),
             opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
             projection,
         },

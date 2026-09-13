@@ -43,7 +43,7 @@ impl WorthUiMountedLayout<'_> {
         let receipt = self
             .session
             .mounted
-            .replace_occurrence_geometry(batch)
+            .replace_occurrence_geometry(batch, staged_scroll.as_mut())
             .map(|receipt| {
                 receipt
                     .with_region_plan_rows_visited(work.region_plan_rows_visited)

@@ -62,7 +62,7 @@ impl WorthUiActiveApplicationSession {
         prepare_successor_ownership(
             scroll,
             application,
-            &successor_view,
+            successor,
             publication,
             &self.mounted,
             self.scroll_owner_incarnation(),
@@ -74,7 +74,7 @@ impl WorthUiActiveApplicationSession {
 fn prepare_successor_ownership(
     scroll: &mut crate::runtime::scroll::UiScrollRuntimeState,
     application: &WorthUiPreparedApplicationActivation,
-    successor: &crate::mounting::UiMountedIdentityView,
+    successor: &crate::mounting::UiMountedGraphReplacementSuccessor,
     publication: Option<&crate::mounting::UiMountedFramePublicationReceipt>,
     mounted: &crate::mounting::WorthUiMountedSessionState,
     surface_incarnation: crate::runtime::scroll::UiScrollOwnerIncarnation,
@@ -83,7 +83,7 @@ fn prepare_successor_ownership(
     let plan =
         crate::mounting::UiMountedPlanProjectionSource::Executed(application.candidate_plan());
     let catalog = application.candidate_allocation_catalog();
-    for next in successor.mounted_instances() {
+    for next in successor.identity_view().mounted_instances() {
         let mounted_incarnation =
             crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
                 next.mount_incarnation(),
@@ -103,22 +103,52 @@ fn prepare_successor_ownership(
         let anchor = publication
             .and_then(|receipt| published_anchor(receipt, mounted, next.identity(), next.basis()));
         let mut registrations = Vec::with_capacity(chain.owners().len());
-        for owner in chain.owners().iter().copied() {
-            let Some(bounds) =
-                application.candidate_scroll_bounds(owner, next.graph_node_identity(), &catalog)
-            else {
-                registrations.clear();
-                break;
-            };
-            let incarnation = match owner {
-                crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => mounted_incarnation,
+        for (slot, owner) in chain.owners().iter().copied().enumerate() {
+            let (bounds, incarnation) = match owner {
+                crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => {
+                    let Some((mounted_owner, content, viewport)) = successor
+                        .scroll_region_geometry(owner.semantic_surface(), next.identity(), slot)
+                    else {
+                        registrations.clear();
+                        break;
+                    };
+                    let Some(bounds) = crate::runtime::scroll::UiScrollBounds::from_mounted_region(
+                        content, viewport,
+                    ) else {
+                        registrations.clear();
+                        break;
+                    };
+                    let Some(basis) = successor
+                        .layout_validation_identity()
+                        .projection_instance(mounted_owner)
+                    else {
+                        registrations.clear();
+                        break;
+                    };
+                    (
+                        bounds,
+                        crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
+                            basis.mount_incarnation(),
+                        ),
+                    )
+                }
                 crate::runtime::scroll::UiScrollOwnerIdentity::Surface(_)
-                | crate::runtime::scroll::UiScrollOwnerIdentity::Viewport(_) => surface_incarnation,
+                | crate::runtime::scroll::UiScrollOwnerIdentity::Viewport(_) => {
+                    let Some(bounds) = application.candidate_scroll_bounds(
+                        owner,
+                        next.graph_node_identity(),
+                        &catalog,
+                    ) else {
+                        registrations.clear();
+                        break;
+                    };
+                    (bounds, surface_incarnation)
+                }
             };
             registrations.push(crate::runtime::scroll::UiScrollOwnerRegistration::new(
                 owner,
                 incarnation,
-                axes_for(bounds),
+                bounds.axes(),
                 bounds,
                 crate::runtime::scroll::UiScrollOffset::origin(),
             ));
@@ -133,12 +163,8 @@ fn prepare_successor_ownership(
                     scroll
                         .reconcile_rebind(crate::runtime::scroll::UiScrollRebindRequest::new(
                             registration,
-                            anchor,
-                            if anchor.is_some() {
-                                crate::runtime::scroll::UiScrollAnchorPolicy::Rebase
-                            } else {
-                                crate::runtime::scroll::UiScrollAnchorPolicy::Clamp
-                            },
+                            None,
+                            crate::runtime::scroll::UiScrollAnchorPolicy::Clamp,
                         ))
                         .expect("prepared replacement retains valid Scroll geometry");
                 }
@@ -194,17 +220,4 @@ fn signed_subpixels(value: f32) -> Option<i64> {
         * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
     (scaled.is_finite() && scaled >= i64::MIN as f64 && scaled <= i64::MAX as f64)
         .then(|| scaled.round() as i64)
-}
-
-fn axes_for(
-    bounds: crate::runtime::scroll::UiScrollBounds,
-) -> crate::runtime::scroll::UiScrollAxes {
-    match (
-        bounds.max_inline_subpixels() > 0,
-        bounds.max_block_subpixels() > 0,
-    ) {
-        (true, false) => crate::runtime::scroll::UiScrollAxes::Inline,
-        (false, true) => crate::runtime::scroll::UiScrollAxes::Block,
-        (true, true) | (false, false) => crate::runtime::scroll::UiScrollAxes::Both,
-    }
 }

@@ -6,6 +6,17 @@ use worth_ui_host_contract::UiSurfaceBindingGeneration;
 use worth_ui_host_contract::{UiHostObservationPresentationBasis, UiMountedPaintCommandIdentity};
 
 impl UiMountedPresentationCoordinator {
+    pub(in crate::mounting) fn accept_published_entrance(
+        &mut self,
+        sample: super::super::motion_sampling::UiPresentationMotionSampleReceipt,
+    ) -> Result<bool, super::super::motion_sampling::UiPresentationMotionSamplingDenial> {
+        let presentation = sample.presentation_basis();
+        let state = self.presentation_states.get_mut(&presentation.binding())
+            .ok_or(super::super::motion_sampling::UiPresentationMotionSamplingDenial::PresentationTruthUnavailable)?;
+        state.accept_entrance(sample)
+            .map_err(|_| super::super::motion_sampling::UiPresentationMotionSamplingDenial::PresentationTruthUnavailable)
+    }
+
     pub(in crate::mounting) fn motion_appearance_instances(
         &self,
         binding: UiSurfaceBindingGeneration,

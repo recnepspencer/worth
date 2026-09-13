@@ -80,6 +80,29 @@ impl UiScrollOffset {
 }
 
 impl UiScrollBounds {
+    pub(crate) fn axes(self) -> UiScrollAxes {
+        match (self.max_inline_subpixels > 0, self.max_block_subpixels > 0) {
+            (true, false) => UiScrollAxes::Inline,
+            (false, true) => UiScrollAxes::Block,
+            (true, true) | (false, false) => UiScrollAxes::Both,
+        }
+    }
+
+    pub(crate) fn from_mounted_region(
+        content: worth_ui_host_contract::UiMountedCanonicalBox,
+        viewport: worth_ui_host_contract::UiMountedCanonicalBox,
+    ) -> Option<Self> {
+        let extent = |content: f32, viewport: f32| {
+            let value = f64::from((content - viewport).max(0.0))
+                * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
+            (value.is_finite() && value < i64::MAX as f64).then(|| value.round() as i64)
+        };
+        Self::new(
+            extent(content.width(), viewport.width())?,
+            extent(content.height(), viewport.height())?,
+        )
+    }
+
     pub(crate) const fn new(max_inline_subpixels: i64, max_block_subpixels: i64) -> Option<Self> {
         if max_inline_subpixels < 0 || max_block_subpixels < 0 {
             None

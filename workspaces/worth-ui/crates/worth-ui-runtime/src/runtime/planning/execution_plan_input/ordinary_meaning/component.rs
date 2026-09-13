@@ -72,6 +72,11 @@ impl WorthUiComponentPlanMeaning {
             Some(rank) => fold(fold(digest, 0x7375_7266_6f72_6401), u64::from(rank)),
             None => fold(digest, 0x7375_7266_6f72_6400),
         };
+        let digest = fold(digest, self.descriptor.surface_geometry().semantic_digest());
+        let digest = fold(
+            digest,
+            u64::from(self.descriptor.portal_surface_appearance()),
+        );
         let digest = self
             .semantic_text_layer_order()
             .map_or(digest, |order| fold(digest, u64::from(order)));
@@ -133,6 +138,14 @@ mod tests {
             meaning(component().with_surface_paint_order(23)).surface_paint_order(),
             Some(23),
         );
+    }
+
+    #[test]
+    fn portal_surface_composition_changes_plan_and_mounted_reuse_meaning() {
+        let anchor = meaning(component());
+        let children = meaning(component().with_portal_surface_from_children());
+        assert_ne!(anchor.semantic_digest(), children.semantic_digest());
+        assert!(!anchor.same_mounted_layout_meaning(&children));
     }
 
     fn component() -> ComponentDescriptor {

@@ -80,8 +80,8 @@ pub use mounted_projection::{
     UiMountedHitTestMechanic, UiMountedHitTestOrder, UiMountedHitTestProjection,
     UiMountedHitTestReference, UiMountedHitTestTable, UiMountedIdentityOverlayMechanic,
     UiMountedIdentityOverlayMechanicInput, UiMountedLayerProjection, UiMountedLayerReference,
-    UiMountedLayerRow, UiMountedLayerTable, UiMountedMechanicalRole, UiMountedMotionProjection,
-    UiMountedNodeAppearanceAttribution, UiMountedNodeProjectionView,
+    UiMountedLayerRow, UiMountedLayerTable, UiMountedLinearGradient, UiMountedMechanicalRole,
+    UiMountedMotionProjection, UiMountedNodeAppearanceAttribution, UiMountedNodeProjectionView,
     UiMountedNodeProjectionViewInput, UiMountedOmissionReason,
     UiMountedOutlineAppearanceCompletionDenial, UiMountedOutlineAppearanceCompletionInput,
     UiMountedOutlineAppearanceMechanic, UiMountedOverlayOrderMechanic,
@@ -105,7 +105,7 @@ pub use mounted_projection::{
     UiMountedSpatialBatchTable, UiMountedSurfaceAppearanceCompletionDenial,
     UiMountedSurfaceAppearanceCompletionInput, UiMountedSurfaceAppearanceMechanic,
     UiMountedSurfaceBorderEdges, UiMountedSurfaceBorderOmission, UiMountedSurfaceBorderSide,
-    UiMountedSurfacePaint, UiMountedTableProjectionStatus,
+    UiMountedSurfaceFill, UiMountedSurfacePaint, UiMountedTableProjectionStatus,
     UiMountedTextForegroundAppearanceCompletionDenial,
     UiMountedTextForegroundAppearanceCompletionInput, UiMountedTextForegroundAppearanceMechanic,
     UiMountedTextForegroundSpan, UiMountedTextPaintSpanIdentity, UiMountedTextSchemaVersion,
@@ -216,4 +216,9 @@ pub use visual_snapshot::{
     UiHostPixelColorSpace, UiHostPresentationEpoch, UiHostRealizedGeometry, UiHostRealizedOrdering,
     UiHostRealizedRegion, UiHostRealizedRegionParticipation, UiHostViewportTransformObservation,
     UiHostVisualCaptureRequest,
+};
+
+pub use mounted_projection::{
+    NormalizedPoint, UiSoftShadowGeometry, UiSurfaceGeometry, UiSurfaceGeometryDenial,
+    UiVectorSurfaceGeometry, VectorPath, VectorPathDenial, VectorPathSegment,
 };

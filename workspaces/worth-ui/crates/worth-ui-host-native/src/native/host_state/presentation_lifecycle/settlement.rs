@@ -59,6 +59,7 @@ impl UiNativeHostState {
                             ready.pending.completion_identity(),
                         );
                     }
+
                     ready.pending.mark_indeterminate();
                 }
             }
@@ -85,6 +86,7 @@ impl UiNativeHostState {
                     ready.pending.completion_identity(),
                 );
             }
+
             ready.pending.mark_indeterminate();
         }
         ready.pending.release_external(&mut self.resources);
@@ -108,7 +110,9 @@ impl UiNativeHostState {
             {
                 continue;
             }
-            match successor.inherit_predecessor_settlement(settlement) {
+            match successor
+                .inherit_predecessor_settlement(settlement, predecessor.prepared_cursor())
+            {
                 Ok(()) => {
                     predecessor.replace_settlement(
                         crate::native::presentation::UiNativePendingSurfaceSettlement::SupersededDeltaResolved,
@@ -124,6 +128,11 @@ impl UiNativeHostState {
             .is_some_and(|epoch| epoch.diagnostic_value() > predecessor_attempt);
         if committed_successor {
             settlement.commit_superseded_predecessor();
+            crate::native::presentation::appearance::cursor::accept_cursor(
+                self,
+                basis.attempt(),
+                predecessor.prepared_cursor(),
+            );
         } else {
             settlement.rollback_superseded_predecessor(self, basis);
         }
@@ -158,6 +167,7 @@ impl UiNativeHostState {
             let binding = ready.pending.physical_basis().binding().diagnostic_value();
             self.apply_qualified_derived_state_loss(binding, class);
         }
+
         ready.pending.mark_indeterminate();
         let Ok(recovery) = self
             .physical_signal
@@ -184,6 +194,7 @@ impl UiNativeHostState {
                 ready.pending.completion_identity(),
             );
         }
+
         ready.pending.mark_indeterminate();
         ready.pending.release_external(&mut self.resources);
         self.retain_if_completion_pending(ready);

@@ -8,6 +8,8 @@ use worth_ui_host_contract::{UiAppearanceClip, UiMountedAppearanceMechanic};
 
 #[path = "appearance_retention.rs"]
 mod appearance_retention;
+#[path = "content_bounds.rs"]
+mod content_bounds;
 #[path = "text_visibility.rs"]
 mod text_visibility;
 

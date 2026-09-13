@@ -60,6 +60,10 @@ fn push_node_rows(
         },
         rows,
     )?;
+    // Without a value, lifecycle remains the visible loading/error content.
+    if !seed.requires_lifecycle_caption() {
+        return Ok(());
+    }
     push_row(
         context,
         UiMountedSemanticTextRowBasis {
@@ -246,13 +250,14 @@ fn push_value_rows(
                 basis,
                 meaning: UiMountedSemanticTextValueMeaning::Scalar(Arc::clone(value)),
                 index: 0,
-                total: 2,
+                total: 1 + usize::from(seed.formatting().shows_lifecycle_caption()),
             },
             rows,
         ),
         super::UiMountedSemanticTextSeedContent::Scalar(None) => Ok(()),
         super::UiMountedSemanticTextSeedContent::Collection(collection) => {
-            let total = value_row_count(seed)? + 1;
+            let total =
+                value_row_count(seed)? + usize::from(seed.formatting().shows_lifecycle_caption());
             let mut index = 0usize;
             for row in collection.rows() {
                 for (field_ordinal, value) in row.selected_values().iter().enumerate() {

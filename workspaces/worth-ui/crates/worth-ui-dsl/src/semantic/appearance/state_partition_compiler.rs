@@ -222,7 +222,7 @@ impl UiAppearancePartitionAuthoring {
             .map(|index| resolve_cell(index, &self.cells, &names, &mut resolving))
             .collect::<Result<Vec<_>, _>>()?;
         for result in &results {
-            if result.value_kind() != aspect.value_kind() {
+            if !aspect.accepts_value_kind(result.value_kind()) {
                 return Err(UiAppearanceDecisionPartitionDenial::ResultValueKindMismatch);
             }
         }
@@ -244,7 +244,7 @@ impl UiAppearancePartitionAuthoring {
         if let Some(otherwise) = &self.otherwise {
             let otherwise_result =
                 resolve_otherwise(otherwise, &self.cells, &names, &mut resolving)?;
-            if otherwise_result.value_kind() != aspect.value_kind() {
+            if !aspect.accepts_value_kind(otherwise_result.value_kind()) {
                 return Err(UiAppearanceDecisionPartitionDenial::ResultValueKindMismatch);
             }
             expand_cells(&domains, &mut Vec::new(), &mut |classes| {

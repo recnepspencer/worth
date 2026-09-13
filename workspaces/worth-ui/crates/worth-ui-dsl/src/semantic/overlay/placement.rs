@@ -14,6 +14,7 @@ pub enum UiOverlayAnchor {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiBackdropPlacement {
     AboveSurfaceContent,
+    ImmediatelyAboveSurfaceContent,
     ImmediatelyBeforePortal(super::UiPortalDeclarationId),
     ImmediatelyAfterPortal(super::UiPortalDeclarationId),
     ImmediatelyBeforeBackdrop(super::UiBackdropIdentity),
@@ -296,6 +297,7 @@ impl UiBackdropPlacement {
                 Some(portal)
             }
             Self::AboveSurfaceContent
+            | Self::ImmediatelyAboveSurfaceContent
             | Self::ImmediatelyBeforeBackdrop(_)
             | Self::ImmediatelyAfterBackdrop(_) => None,
         }
@@ -307,6 +309,14 @@ fn relation(
 ) -> (UiOverlayAnchor, UiOverlayAnchor, UiOverlayRelationKind) {
     let backdrop_anchor = UiOverlayAnchor::Backdrop(backdrop.identity);
     match backdrop.placement {
+        UiBackdropPlacement::ImmediatelyAboveSurfaceContent => (
+            backdrop
+                .surface
+                .map(UiOverlayAnchor::SurfaceContentOn)
+                .unwrap_or(UiOverlayAnchor::SurfaceContent),
+            backdrop_anchor,
+            UiOverlayRelationKind::ImmediatelyPrecedes,
+        ),
         UiBackdropPlacement::AboveSurfaceContent => (
             backdrop
                 .surface
