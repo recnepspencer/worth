@@ -24,6 +24,7 @@ pub struct WorthQueryPrimaryGraph {
     pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
     source_owner: WorthQueryRelationalSourceOwner,
     aggregate_projections: Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
+    output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
@@ -103,6 +104,7 @@ impl WorthQueryPrimaryGraph {
             aggregate_projections: Arc::new(Mutex::new(
                 super::aggregate_projection::WorthQueryAggregateProjections::default(),
             )),
+            output_lineage: Arc::new(Mutex::new(Default::default())),
             truth_partition_role: None,
         }
     }
@@ -170,6 +172,7 @@ impl WorthQueryPrimaryGraph {
             layout: Arc::clone(&self.layout),
             primary_index_ids,
             aggregate_projections: Arc::clone(&self.aggregate_projections),
+            output_lineage: Arc::clone(&self.output_lineage),
             truth_partition_role: self.truth_partition_role.clone(),
         }
     }
@@ -203,6 +206,8 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
     pub(super) primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
     pub(super) aggregate_projections:
         Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
+    pub(super) output_lineage:
+        Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     pub(super) truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 

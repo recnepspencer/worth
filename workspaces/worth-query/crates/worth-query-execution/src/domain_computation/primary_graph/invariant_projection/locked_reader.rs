@@ -37,6 +37,10 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) realized_scope: WorthQueryRealizedProjectionScope,
     pub(super) aggregate_projections:
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
+    pub(super) output_lineage:
+        Arc<std::sync::Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub(super) selected_commit: Option<worth_relational::facade::history::CommitId>,
+    pub(super) output_lineage_ancestry: Option<Vec<worth_relational::facade::history::CommitId>>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -108,6 +112,12 @@ where
                 .snapshot_for_observation(&basis.observation())
                 .map_err(super::admission_denial::from_snapshot_admission_denial)
         })?;
+        let selected_commit = match basis.reference().target() {
+            worth_foundational::FoundationalBranchTarget::Empty => None,
+            worth_foundational::FoundationalBranchTarget::Basis(target) => Some(
+                worth_relational::facade::history::CommitId(target.selected_commit_id()),
+            ),
+        };
         let projected = self.graph.with_runtime_mut(|runtime| {
             catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
@@ -120,6 +130,9 @@ where
                     work_budget,
                     realized_scope: WorthQueryRealizedProjectionScope::default(),
                     aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
+                    output_lineage: Arc::clone(&self.graph.output_lineage),
+                    selected_commit,
+                    output_lineage_ancestry: None,
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);

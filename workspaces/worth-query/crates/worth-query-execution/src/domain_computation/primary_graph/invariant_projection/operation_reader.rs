@@ -42,6 +42,8 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
+    operation_scope:
+        Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
     decision_facts: &'reader mut BTreeSet<WorthQueryApplicationFactKey>,
     _operation: PhantomData<fn() -> Operation>,
 }
@@ -109,6 +111,7 @@ where
                 runtime_authority: self.runtime_authority,
                 binding_identity: &self.binding_identity,
                 admission_identity: None,
+                operation_scope: None,
                 decision_facts: &mut decision_facts,
                 _operation: PhantomData,
             };
@@ -147,6 +150,7 @@ where
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        operation_scope: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,
                     };
@@ -195,6 +199,7 @@ where
                             runtime_authority: self.runtime_authority,
                             binding_identity: &self.binding_identity,
                             admission_identity: Some(admission.admission_identity()),
+                            operation_scope: Some(admission.operation_scope_binding().clone()),
                             decision_facts: &mut decision_facts,
                             _operation: PhantomData,
                         };

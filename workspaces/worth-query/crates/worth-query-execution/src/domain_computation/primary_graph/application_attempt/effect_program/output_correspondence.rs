@@ -12,26 +12,32 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use candid
 #[cfg(test)]
 mod tests;
 
-pub(super) mod action {
-    pub trait Sealed {
-        const POSTURE: super::WorthQueryApplicationOutputPosture;
-    }
+pub(in crate::domain_computation::primary_graph) mod action {
+    pub trait Sealed {}
 }
 
 pub struct Preserve;
 pub struct Create;
 pub struct Retire;
 
-impl action::Sealed for Preserve {
+/// Marker implemented by Query's sealed output postures.
+pub trait WorthQueryApplicationOutputAction: action::Sealed {
+    const POSTURE: WorthQueryApplicationOutputPosture;
+}
+
+impl action::Sealed for Preserve {}
+impl WorthQueryApplicationOutputAction for Preserve {
     const POSTURE: WorthQueryApplicationOutputPosture =
         WorthQueryApplicationOutputPosture::Preserve;
 }
 
-impl action::Sealed for Create {
+impl action::Sealed for Create {}
+impl WorthQueryApplicationOutputAction for Create {
     const POSTURE: WorthQueryApplicationOutputPosture = WorthQueryApplicationOutputPosture::Create;
 }
 
-impl action::Sealed for Retire {
+impl action::Sealed for Retire {}
+impl WorthQueryApplicationOutputAction for Retire {
     const POSTURE: WorthQueryApplicationOutputPosture = WorthQueryApplicationOutputPosture::Retire;
 }
 
@@ -78,6 +84,12 @@ pub struct WorthQueryApplicationOutputCorrespondence {
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
+    pub(in crate::domain_computation::primary_graph) fn belongs_to<Binding: 'static>(
+        &self,
+    ) -> bool {
+        self.binding_type == Some(TypeId::of::<Binding>())
+    }
+
     pub fn entity<Binding, Entity, Action>(
         &self,
         role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
@@ -88,7 +100,7 @@ impl WorthQueryApplicationOutputCorrespondence {
     where
         Binding: 'static,
         Entity: 'static,
-        Action: action::Sealed,
+        Action: WorthQueryApplicationOutputAction,
     {
         if self.binding_type != Some(TypeId::of::<Binding>()) {
             return Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding);

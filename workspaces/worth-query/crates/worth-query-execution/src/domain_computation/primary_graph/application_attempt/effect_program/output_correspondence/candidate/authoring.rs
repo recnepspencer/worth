@@ -2,6 +2,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     retained_representation, WorthQueryApplicationEffectProgramBuilder,
 };
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputAction;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
@@ -18,7 +19,7 @@ impl<Schema, Operation, Input, Scope>
     ) where
         Binding: 'static,
         Entity: 'static,
-        Action: action::Sealed,
+        Action: WorthQueryApplicationOutputAction,
     {
         self.output_correspondence
             .prepare_test_role(role, entity_name);
@@ -48,7 +49,7 @@ impl<Schema, Operation, Input, Scope>
     where
         Binding: 'static,
         Entity: 'static,
-        Action: action::Sealed,
+        Action: WorthQueryApplicationOutputAction,
     {
         validate_role_name(role.name())?;
         let retained_representation_bytes =

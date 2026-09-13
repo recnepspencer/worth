@@ -236,6 +236,15 @@ impl WorthQueryPrimaryGraphLayout {
         self.entity_kinds.get(entity).copied()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn entity_name(
+        &self,
+        kind: KindId,
+    ) -> Option<&str> {
+        self.entity_kinds
+            .iter()
+            .find_map(|(name, candidate)| (*candidate == kind).then_some(name.as_str()))
+    }
+
     pub(in crate::domain_computation) fn relation(
         &self,
         relation: &str,

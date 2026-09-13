@@ -22,6 +22,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
     committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
     output_correspondence:
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
@@ -54,6 +55,7 @@ pub(super) fn seal(
         retained_preimage: committed.retained_preimage().cloned(),
         committed_dispatch_outbox,
         output_correspondence,
+        operation_scope: committed.attempt().affinity().operation_scope().clone(),
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     }
 }
@@ -119,5 +121,11 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
         &self.output_correspondence
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn operation_scope(
+        &self,
+    ) -> &crate::domain_computation::authorization::WorthQueryOperationScopeBinding {
+        &self.operation_scope
     }
 }

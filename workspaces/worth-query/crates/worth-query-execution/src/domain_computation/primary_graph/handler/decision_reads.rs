@@ -16,6 +16,21 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    /// Resolve a prior committed semantic output for this exact admitted scope.
+    pub fn prior_output<PriorBinding, Entity, Action>(
+        &mut self,
+        role: super::super::WorthQueryApplicationOutputRole<PriorBinding, Entity, Action>,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, HandlerExecutionDenial>
+    where
+        PriorBinding: 'static,
+        Entity: 'static,
+        Action: super::super::WorthQueryApplicationOutputAction,
+    {
+        self.reader()
+            .prior_output(role)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
     /// Resolve through the admitted snapshot and retain the identity-field fact
     /// that later candidate authoring and stale-source comparison require.
     pub fn resolve_entity<Entity, Aspect, Field, Value, Write, Unit>(

@@ -49,6 +49,7 @@ mod managed_bridge;
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod observations;
 mod ordinary_read;
+mod output_lineage;
 mod principal_key;
 pub(crate) mod product_activation;
 mod product_operation;
@@ -89,6 +90,7 @@ pub use crate::domain_computation::runtime_time::{
 };
 pub use invariant_installation::{WorthQueryApplicationInvariantFactories,
     WorthQueryApplicationInvariantSchemaResolver};
+pub use output_lineage::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub(in crate::domain_computation) use application_attempt::application_resource_request;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::{
     bind_mutation_preconditions, WorthQueryBoundMutationPreconditions,
@@ -125,7 +127,8 @@ pub use application_attempt::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationOutputAction, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial,
     WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
     WorthQueryRetireOutput,
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,

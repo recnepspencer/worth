@@ -64,10 +64,11 @@ pub(in crate::domain_computation::primary_graph) use effect_program::{
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputPosture,
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
-    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
+    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
+    WorthQueryRetireOutput,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{

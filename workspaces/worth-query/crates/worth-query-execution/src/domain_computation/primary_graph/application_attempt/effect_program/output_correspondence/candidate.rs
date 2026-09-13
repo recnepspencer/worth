@@ -11,8 +11,9 @@ use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::{CommitResult, EntityReference};
 
 use super::{
-    action, CommittedOutputBinding, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputRole,
+    CommittedOutputBinding, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputRole,
 };
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationRealizedEffect,
@@ -51,7 +52,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     ) where
         Binding: 'static,
         Entity: 'static,
-        Action: action::Sealed,
+        Action: WorthQueryApplicationOutputAction,
     {
         self.binding_type = Some(TypeId::of::<Binding>());
         self.expected_roles.insert(
@@ -118,7 +119,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     where
         Binding: 'static,
         Entity: 'static,
-        Action: action::Sealed,
+        Action: WorthQueryApplicationOutputAction,
     {
         validate_role_name(role.name)?;
         if !std::sync::Arc::ptr_eq(program, &target.program) {
@@ -166,7 +167,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     ) where
         Binding: 'static,
         Entity: 'static,
-        Action: action::Sealed,
+        Action: WorthQueryApplicationOutputAction,
     {
         self.binding_type = Some(TypeId::of::<Binding>());
         self.roles.insert(
@@ -190,7 +191,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     where
         Binding: 'static,
         Entity: 'static,
-        Action: action::Sealed,
+        Action: WorthQueryApplicationOutputAction,
     {
         self.validate_binding(role, target, program)?;
         self.insert_binding(role, target);

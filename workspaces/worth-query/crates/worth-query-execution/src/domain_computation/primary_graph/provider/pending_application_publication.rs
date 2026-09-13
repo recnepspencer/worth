@@ -227,16 +227,21 @@ fn publish_with_snapshot(
                 .expect("publication cutover retains its exact receipt basis"),
         );
     pending.release_before(runtime);
+    let completed = pending
+        .application
+        .take()
+        .expect("completed publication retains exact commit evidence until cutover");
+    provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .record(&completed);
     provider
         .completed_commit_evidence
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .record(
-            pending
-                .application
-                .take()
-                .expect("completed publication retains exact commit evidence until cutover"),
-        );
+        .record(completed);
     Ok(())
 }
 

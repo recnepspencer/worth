@@ -33,6 +33,7 @@ struct WorthQueryApplicationAttemptCore {
     graph_work_managed_run: WorthQueryGraphWorkManagedRunIdentity,
     branch: BranchId,
     request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
 }
 
 /// Inseparable authority association retained by the provider attempt store.
@@ -152,6 +153,7 @@ impl WorthQueryApplicationAttemptBasis {
                 graph_work_managed_run: admission.graph_work_managed_run_identity(),
                 branch: admission.graph_work_branch().clone(),
                 request: admission.publication_request().clone(),
+                operation_scope: admission.operation_scope_binding().clone(),
             },
             product: product.retained_clone(),
         })
@@ -271,6 +273,12 @@ impl WorthQueryApplicationAttemptAffinity {
 
     pub(in crate::domain_computation::primary_graph) fn operation(&self) -> &str {
         &self.basis.operation
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn operation_scope(
+        &self,
+    ) -> &crate::domain_computation::authorization::WorthQueryOperationScopeBinding {
+        &self.basis.operation_scope
     }
 
     pub(in crate::domain_computation::primary_graph) const fn graph_work_session(

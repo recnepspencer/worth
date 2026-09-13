@@ -1,10 +1,105 @@
 use super::*;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationOutputAction, WorthQueryApplicationOutputRole,
+    WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
+};
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
+    pub fn prior_output<Binding, Entity, Action>(
+        &mut self,
+        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryPriorOutputDenial>
+    where
+        Binding: 'static,
+        Entity: 'static,
+        Action: WorthQueryApplicationOutputAction,
+    {
+        let scope = self.operation_scope.as_ref().ok_or_else(|| {
+            WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::Unavailable,
+                role.name(),
+            )
+        })?;
+        let selected_commit = self.reader.selected_commit.ok_or_else(|| {
+            WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::Unavailable,
+                role.name(),
+            )
+        })?;
+        if self.reader.output_lineage_ancestry.is_none() {
+            let ancestry = self
+                .reader
+                .runtime
+                .history()
+                .ancestor_closure_by_commit_id_order(selected_commit);
+            if !self.reader.work_budget.can_afford(ancestry.len()) {
+                return Err(WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::WorkBudgetExceeded,
+                    role.name(),
+                ));
+            }
+            self.reader.work_budget.consume(ancestry.len());
+            self.reader
+                .work
+                .record_output_lineage_ancestry(ancestry.len());
+            self.reader.output_lineage_ancestry = Some(ancestry);
+        }
+        let ancestry = self
+            .reader
+            .output_lineage_ancestry
+            .as_ref()
+            .expect("output lineage ancestry was initialized");
+        if !self.reader.work_budget.can_afford(ancestry.len()) {
+            return Err(WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::WorkBudgetExceeded,
+                role.name(),
+            ));
+        }
+        let resolution = self
+            .reader
+            .output_lineage
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .resolve(ancestry, scope, role)?;
+        self.reader.work_budget.consume(resolution.commit_probes);
+        self.reader
+            .work
+            .record_output_lineage_lookup(resolution.commit_probes);
+        let record = self
+            .reader
+            .runtime
+            .read_truth()
+            .visible_entity_at_version(resolution.entity, self.reader.snapshot.version_id())
+            .ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::OutputUnavailable,
+                    role.name(),
+                )
+            })?;
+        let entity = self
+            .reader
+            .layout
+            .entity_name(record.kind.kind_id)
+            .ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::EntityMismatch,
+                    role.name(),
+                )
+            })?;
+        self.reader.realized_scope.record(resolution.entity);
+        Ok(WorthQueryInvariantEntityIdentity {
+            entity_id: resolution.entity,
+            kind: record.kind.kind_id,
+            entity: Arc::from(entity),
+            authority_identity: self.reader.authority_identity,
+            _marker: PhantomData,
+        })
+    }
+
     pub const fn version(&self) -> worth_relational::facade::identity::VersionId {
         self.reader.version()
     }

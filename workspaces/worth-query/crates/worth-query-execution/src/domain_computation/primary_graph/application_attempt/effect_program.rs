@@ -55,9 +55,10 @@ use candidate_reservation::{CandidateItemKind, WorthQueryCandidateReservation};
 use candidate_retained_representation as retained_representation;
 pub use output_correspondence::{
     Create as WorthQueryCreateOutput, Preserve as WorthQueryPreserveOutput,
-    Retire as WorthQueryRetireOutput, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputPosture,
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
+    Retire as WorthQueryRetireOutput, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationOutputRole,
 };
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::{
