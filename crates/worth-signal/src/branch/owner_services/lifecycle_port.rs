@@ -56,6 +56,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn diagnostic_owner_runtime_instance_id(&self) -> u64 {
         self.diagnostic_owner_runtime_instance_id
     }

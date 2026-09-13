@@ -2,8 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId};
 
-use super::SignalBranchBasisArtifact;
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalBranchForkRequestBasis {
     CurrentBranchHead,
@@ -23,6 +21,7 @@ pub struct SignalBranchForkRequest {
 }
 
 impl SignalBranchForkRequest {
+    #[cfg(test)]
     pub fn from_current_branch_head(name: impl Into<String>) -> Self {
         Self {
             branch_name: name.into(),
@@ -40,6 +39,7 @@ impl SignalBranchForkRequest {
         }
     }
 
+    #[cfg(test)]
     pub fn from_parent_branch_snapshot(
         name: impl Into<String>,
         parent_branch_id: SignalBranchId,
@@ -93,23 +93,24 @@ pub enum SignalBranchForkDenial {
 
 #[derive(Debug, Clone)]
 pub struct SignalBranchForkReceipt {
-    pub(super) request: SignalBranchForkRequest,
+    #[cfg(test)]
     pub(super) parent_basis: SignalBranchBasisArtifact,
+    #[cfg(test)]
     pub(super) requested_snapshot_basis: Option<SignalBranchBasisArtifact>,
     pub(super) created_branch: SignalBranchHandle,
+    #[cfg(test)]
     pub(super) created_branch_basis: SignalBranchBasisArtifact,
+    #[cfg(test)]
     pub(super) active_branch_after_fork_basis: SignalBranchBasisArtifact,
 }
 
 impl SignalBranchForkReceipt {
-    pub(crate) fn request(&self) -> &SignalBranchForkRequest {
-        &self.request
-    }
-
+    #[cfg(test)]
     pub(crate) fn parent_basis(&self) -> &SignalBranchBasisArtifact {
         &self.parent_basis
     }
 
+    #[cfg(test)]
     pub(crate) fn requested_snapshot_basis(&self) -> Option<&SignalBranchBasisArtifact> {
         self.requested_snapshot_basis.as_ref()
     }
@@ -118,11 +119,16 @@ impl SignalBranchForkReceipt {
         &self.created_branch
     }
 
+    #[cfg(test)]
     pub(crate) fn created_branch_basis(&self) -> &SignalBranchBasisArtifact {
         &self.created_branch_basis
     }
 
+    #[cfg(test)]
     pub(crate) fn active_branch_after_fork_basis(&self) -> &SignalBranchBasisArtifact {
         &self.active_branch_after_fork_basis
     }
 }
+
+#[cfg(test)]
+use super::SignalBranchBasisArtifact;

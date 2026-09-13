@@ -59,7 +59,9 @@ pub(in crate::branch::owner_services) fn execute_conditional_against_graph(
                 .as_mut()
                 .expect("unwound slot remains installed")
                 .partition;
-            drop(slot.take_conditional_unwind());
+            if let Some(unwind) = slot.take_conditional_unwind() {
+                unwind.release();
+            }
             std::panic::resume_unwind(payload)
         }
     }

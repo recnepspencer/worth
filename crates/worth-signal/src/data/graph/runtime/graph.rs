@@ -61,8 +61,7 @@ mod topology_state;
 mod traversal_state;
 
 pub(crate) use crate::logic::invalidation::causality::{
-    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedDirectCauseStores,
-    PreparedRetainedDirectCauseStores,
+    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedRetainedDirectCauseStores,
 };
 pub(crate) use branch_mutations::{BranchMutationNodeImage, BranchMutationRecord};
 pub use branch_mutations::{
@@ -71,10 +70,7 @@ pub use branch_mutations::{
 };
 pub(crate) use observation_state::{ObservationCaptureCleanup, RuntimeObservation};
 pub(crate) use performed_counter_state::InvalidationPerformedCounterState;
-pub(crate) use performed_work_state::{
-    PerformedTargetSnapshot, PerformedWorkBuffer, PerformedWorkCaptureState,
-    PreparedPerformedWorkCapture,
-};
+pub(crate) use performed_work_state::{PerformedWorkBuffer, PerformedWorkCaptureState};
 pub(crate) use persistent_fork::SignalGraphForkWork;
 #[cfg(test)]
 pub(crate) use persistent_fork::SignalGraphPersistentIdentity;

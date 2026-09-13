@@ -105,8 +105,11 @@ where
             | Err(SignalBranchRegistryDenial::ReservationCapacityExhausted { .. })
             | Err(SignalBranchRegistryDenial::NameAlreadyReserved)
             | Err(SignalBranchRegistryDenial::NameAlreadyInstalled)
-            | Err(SignalBranchRegistryDenial::ExpiredRetirement(_))
-            | Err(SignalBranchRegistryDenial::TargetCellDenied(_)) => {
+            | Err(SignalBranchRegistryDenial::ExpiredRetirement(_)) => {
+                return Err(SignalBranchRetentionAcquisitionDenial::ForeignBasis);
+            }
+            #[cfg(test)]
+            Err(SignalBranchRegistryDenial::TargetCellDenied(_)) => {
                 return Err(SignalBranchRetentionAcquisitionDenial::ForeignBasis);
             }
         };

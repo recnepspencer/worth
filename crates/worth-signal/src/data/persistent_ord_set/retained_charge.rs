@@ -1,11 +1,11 @@
 use super::PersistentOrdSet;
-use crate::data::persistent_ord_map::{RetainedMapMutationDenial, RetainedMapMutationOutcome};
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStorageMeasurement,
     RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
 };
 
 impl<T: Clone + Ord> PersistentOrdSet<T> {
+    #[cfg(test)]
     pub(crate) fn prepared_retained_charge(&self) -> Result<Charge, RetainedMapMutationDenial> {
         self.values.prepared_retained_charge()
     }
@@ -19,6 +19,7 @@ impl<T: Clone + Ord + RetainedStorageMeasurement> PersistentOrdSet<T> {
         self.values.prepare_retained_charge(work)
     }
 
+    #[cfg(test)]
     pub(crate) fn insert_with_retained_charge(
         &mut self,
         value: T,
@@ -29,6 +30,7 @@ impl<T: Clone + Ord + RetainedStorageMeasurement> PersistentOrdSet<T> {
             .map(|outcome| map_membership_change(outcome, Option::is_none))
     }
 
+    #[cfg(test)]
     pub(crate) fn remove_with_retained_charge(
         &mut self,
         value: &T,
@@ -40,6 +42,7 @@ impl<T: Clone + Ord + RetainedStorageMeasurement> PersistentOrdSet<T> {
     }
 }
 
+#[cfg(test)]
 fn map_membership_change(
     outcome: RetainedMapMutationOutcome<Option<()>>,
     changed: fn(&Option<()>) -> bool,
@@ -80,3 +83,6 @@ impl<T: Clone + Ord + RetainedStorageMeasurement> RetainedStorageForkPreparation
         self.values.prepare_fork_charge(work)
     }
 }
+
+#[cfg(test)]
+use crate::data::persistent_ord_map::{RetainedMapMutationDenial, RetainedMapMutationOutcome};

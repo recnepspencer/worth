@@ -26,9 +26,7 @@ mod traits;
 use self::fork_page::ForkPage;
 use self::iteration::PersistentVectorIter;
 use crate::data::retained_storage::RetainedStorageCharge;
-pub(crate) use capacity_edit::{
-    RetainedVectorCapacityDenial, RetainedVectorCapacityOutcome, RetainedVectorStagingDenial,
-};
+pub(crate) use capacity_edit::{RetainedVectorCapacityDenial, RetainedVectorStagingDenial};
 pub(crate) use charge_updates::{RetainedVectorMutationDenial, RetainedVectorMutationOutcome};
 
 const DEFAULT_PAGE_LEN: usize = 32;
@@ -358,3 +356,6 @@ impl<T: Clone, const PAGE_LEN: usize> Clone for PersistentVector<T, PAGE_LEN> {
         }
     }
 }
+
+#[cfg(test)]
+pub(crate) use capacity_edit::RetainedVectorCapacityOutcome;

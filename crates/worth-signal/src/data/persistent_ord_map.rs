@@ -248,6 +248,7 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn ptr_eq(&self, other: &Self) -> bool {
         match (&self.storage, &other.storage) {
             (
@@ -321,6 +322,7 @@ pub(crate) struct PersistentOrdMapEntry<'a, K: Clone + Ord, V: Clone> {
 }
 
 impl<'a, K: Clone + Ord, V: Clone> PersistentOrdMapEntry<'a, K, V> {
+    #[cfg(test)]
     pub(crate) fn or_insert(self, value: V) -> &'a mut V {
         self.or_insert_with(|| value)
     }
@@ -332,6 +334,7 @@ impl<'a, K: Clone + Ord, V: Clone> PersistentOrdMapEntry<'a, K, V> {
         self.map.get_mut(&self.key).expect("entry must exist")
     }
 
+    #[cfg(test)]
     pub(crate) fn and_modify(self, modify: impl FnOnce(&mut V)) -> Self {
         if let Some(value) = self.map.get_mut(&self.key) {
             modify(value);

@@ -29,6 +29,7 @@ impl RetainedStoragePreparation {
         }
     }
 
+    #[cfg(test)]
     pub(crate) const fn visits(&self) -> usize {
         self.visits
     }

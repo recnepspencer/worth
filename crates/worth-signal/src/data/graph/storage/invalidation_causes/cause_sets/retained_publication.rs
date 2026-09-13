@@ -333,6 +333,7 @@ fn map_vector_staging(denial: RetainedVectorStagingDenial) -> SignalError {
 
 fn map_vector_capacity(denial: RetainedVectorCapacityDenial) -> SignalError {
     match denial {
+        #[cfg(test)]
         RetainedVectorCapacityDenial::Accounting(denial) => map_accounting(denial),
         RetainedVectorCapacityDenial::CapacityExhausted { .. } => {
             SignalError::EvaluationStorageCapacityExhausted
@@ -343,8 +344,8 @@ fn map_vector_capacity(denial: RetainedVectorCapacityDenial) -> SignalError {
 fn map_map_mutation(denial: RetainedMapMutationDenial) -> SignalError {
     match denial {
         RetainedMapMutationDenial::Accounting(denial) => map_accounting(denial),
-        RetainedMapMutationDenial::PreparationRequired | RetainedMapMutationDenial::MissingKey => {
-            SignalError::EvaluationStorageUnavailable
-        }
+        RetainedMapMutationDenial::PreparationRequired => SignalError::EvaluationStorageUnavailable,
+        #[cfg(test)]
+        RetainedMapMutationDenial::MissingKey => SignalError::EvaluationStorageUnavailable,
     }
 }

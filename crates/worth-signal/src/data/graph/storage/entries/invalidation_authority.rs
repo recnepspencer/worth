@@ -82,34 +82,6 @@ impl SignalGraph {
         Ok(())
     }
 
-    pub(crate) fn advance_node_dependency_revision(
-        &mut self,
-        node: NodeId,
-    ) -> Result<(), SignalError> {
-        let invalidates_dependency_causes = {
-            let hot = self.hot_mut(node)?;
-            let invalidates = hot.pending_cause_set_id != PendingCauseSetId::EMPTY;
-            hot.dependency_revision.0 = hot
-                .dependency_revision
-                .0
-                .checked_add(1)
-                .expect("dependency revision overflow");
-            hot.pending_cause_set_id = PendingCauseSetId::EMPTY;
-            if invalidates {
-                hot.state = crate::data::node::NodeState::MaybeStale;
-                hot.dirty_aspects = AspectMask::EMPTY;
-                hot.dirty_partition_scope_aspects = AspectMask::EMPTY;
-            }
-            invalidates
-        };
-        let warm = self.warm_mut(node)?;
-        warm.pending_dependency_revalidation = None;
-        if invalidates_dependency_causes {
-            warm.dirty_partition_scope_payload.clear();
-        }
-        Ok(())
-    }
-
     pub(crate) fn replace_node_invalidation_cache(
         &mut self,
         node: NodeId,
@@ -159,6 +131,7 @@ impl SignalGraph {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn publish_node_revalidation_resolution(
         &mut self,
         node: NodeId,
@@ -169,6 +142,7 @@ impl SignalGraph {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn publish_node_cause_resolution(
         &mut self,
         node: NodeId,

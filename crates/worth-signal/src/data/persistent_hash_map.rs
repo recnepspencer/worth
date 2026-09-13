@@ -29,7 +29,7 @@ mod retained_charge;
 mod retained_charge_tests;
 
 use crate::data::retained_storage::RetainedStorageCharge;
-pub(crate) use charge_updates::{RetainedHashMutationDenial, RetainedHashMutationOutcome};
+pub(crate) use charge_updates::RetainedHashMutationDenial;
 use collision_extents::CollisionExtents;
 use entry_handle::SharedKey;
 use iteration::PersistentHashMapIter;
@@ -186,6 +186,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn clear(&mut self) {
         self.retained_charge = None;
         self.base_capacity = None;
@@ -214,6 +215,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn ptr_eq(&self, other: &Self) -> bool {
         match (&self.storage, &other.storage) {
             (
@@ -311,3 +313,6 @@ where
         self.map.get_mut(&self.key).expect("entry must exist")
     }
 }
+
+#[cfg(test)]
+pub(crate) use charge_updates::RetainedHashMutationOutcome;

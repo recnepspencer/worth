@@ -4,7 +4,7 @@ use crate::data::handle::NodeId;
 use crate::data::node::{CheckpointNodeImage, NodeEntry, NodeState};
 use crate::data::output::PartitionSubscription;
 use crate::data::reuse::ReuseBasis;
-use crate::data::{aspect::AspectVersion, core_profile::StableHashValue, output::ChangedRegion};
+use crate::data::{core_profile::StableHashValue, output::ChangedRegion};
 
 impl SignalGraph {
     pub(crate) fn replace_entry(
@@ -68,6 +68,7 @@ impl SignalGraph {
             .admit_evaluation_work(changed_regions, work)
     }
 
+    #[cfg(test)]
     pub(crate) fn apply_node_aspect_version(
         &mut self,
         node: NodeId,
@@ -109,6 +110,7 @@ impl SignalGraph {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn apply_node_artifact_write_delta(
         &mut self,
         node: NodeId,
@@ -163,6 +165,7 @@ impl SignalGraph {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn set_node_state(
         &mut self,
         node: NodeId,
@@ -205,3 +208,6 @@ impl SignalGraph {
         Ok(())
     }
 }
+
+#[cfg(test)]
+use crate::data::aspect::AspectVersion;

@@ -19,6 +19,7 @@ where
     T: Copy + Ord,
 {
     parent_branch: SignalBranchHandle,
+    #[cfg(test)]
     parent_basis: SignalBranchBasisArtifact,
     requested_snapshot_basis: Option<SignalBranchBasisArtifact>,
     created_branch_head_snapshot_id: Option<SignalSnapshotId>,
@@ -49,6 +50,7 @@ where
         self.fork_branch_resolved(request, None)
     }
 
+    #[cfg(test)]
     pub(crate) fn fork_branch_with_snapshot(
         &mut self,
         request: SignalBranchForkRequest,
@@ -134,20 +136,25 @@ where
             current_branch_name,
         );
 
+        #[cfg(test)]
         let created_branch_basis = match self.branch_basis_artifact(handle.clone()) {
             TransitionOutcome::Success(basis) => basis,
             other => {
                 panic!("created branch basis must validate immediately after admission: {other:?}")
             }
         };
+        #[cfg(test)]
         let active_branch_after_fork_basis = self.current_branch_basis_artifact();
 
         TransitionOutcome::success(SignalBranchForkReceipt {
-            request,
+            #[cfg(test)]
             parent_basis: resolved.parent_basis,
+            #[cfg(test)]
             requested_snapshot_basis: resolved.requested_snapshot_basis,
             created_branch: handle,
+            #[cfg(test)]
             created_branch_basis,
+            #[cfg(test)]
             active_branch_after_fork_basis,
         })
     }
@@ -161,6 +168,7 @@ where
             SignalBranchForkRequestBasis::CurrentBranchHead => {
                 let parent_branch = self.graph.current_branch();
                 Ok(ResolvedForkRequest {
+                    #[cfg(test)]
                     parent_basis: self.current_branch_basis_artifact(),
                     created_branch_head_snapshot_id: parent_branch.head_snapshot_id,
                     requested_snapshot_basis: None,
@@ -176,13 +184,14 @@ where
                         parent_branch_id: *parent_branch_id,
                     },
                 )?;
-                let parent_basis =
+                let _parent_basis =
                     expect_fork_branch_basis(self.branch_basis_artifact(parent_branch.clone()));
                 let source_branch_state =
                     self.materialize_parent_head_fork_state(parent_branch.clone())?;
                 Ok(ResolvedForkRequest {
                     created_branch_head_snapshot_id: parent_branch.head_snapshot_id,
-                    parent_basis,
+                    #[cfg(test)]
+                    parent_basis: _parent_basis,
                     requested_snapshot_basis: None,
                     source_branch_state,
                     parent_branch,
@@ -225,7 +234,7 @@ where
                         snapshot_id: snapshot.meta.snapshot_id,
                     });
                 }
-                let parent_basis =
+                let _parent_basis =
                     expect_fork_branch_basis(self.branch_basis_artifact(parent_branch.clone()));
                 let requested_snapshot_basis = expect_fork_branch_basis(
                     self.snapshot_branch_basis_artifact(parent_branch.clone(), snapshot),
@@ -234,7 +243,8 @@ where
                     materialize_snapshot_fork_state(self, parent_branch.clone(), snapshot)?;
                 Ok(ResolvedForkRequest {
                     created_branch_head_snapshot_id: Some(snapshot.meta.snapshot_id),
-                    parent_basis,
+                    #[cfg(test)]
+                    parent_basis: _parent_basis,
                     requested_snapshot_basis: Some(requested_snapshot_basis),
                     source_branch_state,
                     parent_branch,

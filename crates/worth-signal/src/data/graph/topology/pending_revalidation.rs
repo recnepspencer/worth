@@ -37,6 +37,7 @@ impl SignalGraph {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn pending_revalidation_waiters(
         &mut self,
         producer: NodeId,
@@ -103,6 +104,7 @@ mod tests;
 impl SignalGraph {
     /// Installs an already discovered outcome. No waiter traversal occurs here.
     /// The enclosing packet must reserve storage before its first publication.
+    #[cfg(test)]
     pub(crate) fn publish_pending_revalidation_resolution(
         &mut self,
         prepared: PreparedPendingRevalidationResolution,

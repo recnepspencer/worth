@@ -119,7 +119,10 @@ fn accounted_vector<R>(
 ) -> Result<R, SignalError> {
     match outcome.map_err(map_vector_mutation)? {
         RetainedVectorMutationOutcome::Accounted { output, .. } => Ok(output),
-        RetainedVectorMutationOutcome::Unaccounted { denial, .. } => Err(map_accounting(denial)),
+        RetainedVectorMutationOutcome::Unaccounted { output, denial } => {
+            drop(output);
+            Err(map_accounting(denial))
+        }
     }
 }
 
@@ -128,7 +131,10 @@ fn accounted_map<R>(
 ) -> Result<R, SignalError> {
     match outcome.map_err(map_map_mutation)? {
         RetainedMapMutationOutcome::Accounted { output, .. } => Ok(output),
-        RetainedMapMutationOutcome::Unaccounted { denial, .. } => Err(map_accounting(denial)),
+        RetainedMapMutationOutcome::Unaccounted { output, denial } => {
+            drop(output);
+            Err(map_accounting(denial))
+        }
     }
 }
 
@@ -154,9 +160,9 @@ fn map_vector_mutation(denial: RetainedVectorMutationDenial) -> SignalError {
 fn map_map_mutation(denial: RetainedMapMutationDenial) -> SignalError {
     match denial {
         RetainedMapMutationDenial::Accounting(denial) => map_accounting(denial),
-        RetainedMapMutationDenial::PreparationRequired | RetainedMapMutationDenial::MissingKey => {
-            SignalError::SnapshotIndexUnavailable
-        }
+        RetainedMapMutationDenial::PreparationRequired => SignalError::SnapshotIndexUnavailable,
+        #[cfg(test)]
+        RetainedMapMutationDenial::MissingKey => SignalError::SnapshotIndexUnavailable,
     }
 }
 

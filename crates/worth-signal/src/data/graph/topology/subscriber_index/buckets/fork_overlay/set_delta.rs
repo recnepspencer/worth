@@ -12,8 +12,8 @@ pub(in super::super) struct SetDelta {
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(in super::super) struct SetMergeTraversal {
-    pub(super) base_members: usize,
-    pub(super) range_seeks: usize,
+    pub(in super::super) base_members: usize,
+    pub(in super::super) range_seeks: usize,
 }
 
 impl SetDelta {

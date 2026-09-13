@@ -25,8 +25,15 @@ impl From<Denial> for RetainedVectorMutationDenial {
 /// a pre-effect denial and cannot be interpreted as rollback of the edit.
 #[derive(Debug)]
 pub(crate) enum RetainedVectorMutationOutcome<R> {
-    Accounted { output: R, charge: Charge },
-    Unaccounted { output: R, denial: Denial },
+    Accounted {
+        output: R,
+        #[cfg(test)]
+        charge: Charge,
+    },
+    Unaccounted {
+        output: R,
+        denial: Denial,
+    },
 }
 
 impl<T: Clone + RetainedStorageMeasurement, const PAGE_LEN: usize> PersistentVector<T, PAGE_LEN> {
@@ -60,11 +67,12 @@ impl<T: Clone + RetainedStorageMeasurement, const PAGE_LEN: usize> PersistentVec
         &mut self,
         work: &mut Preparation,
     ) -> Result<RetainedVectorMutationOutcome<Option<T>>, RetainedVectorMutationDenial> {
-        let charge = self.prepared_retained_charge()?;
+        let _validated_charge = self.prepared_retained_charge()?;
         let Some(index) = self.len().checked_sub(1) else {
             return Ok(RetainedVectorMutationOutcome::Accounted {
                 output: None,
-                charge,
+                #[cfg(test)]
+                charge: _validated_charge,
             });
         };
         self.update_retained_charge(index, work, |values| values.pop_back())
@@ -91,7 +99,11 @@ impl<T: Clone + RetainedStorageMeasurement, const PAGE_LEN: usize> PersistentVec
         match updated {
             Ok(charge) => {
                 self.retained_charge = Some(charge);
-                Ok(RetainedVectorMutationOutcome::Accounted { output, charge })
+                Ok(RetainedVectorMutationOutcome::Accounted {
+                    output,
+                    #[cfg(test)]
+                    charge,
+                })
             }
             Err(denial) => Ok(RetainedVectorMutationOutcome::Unaccounted { output, denial }),
         }

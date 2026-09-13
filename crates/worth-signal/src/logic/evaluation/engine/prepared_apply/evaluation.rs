@@ -15,11 +15,10 @@ use crate::logic::prepared::{PreparedEvaluation, PreparedEvaluationOutcome};
 
 use super::super::apply::{apply_effect_with_policy_and_condition, provisional_evaluated_verdict};
 use super::super::metadata::EvaluationExecutionMetadata;
-use super::input::{
-    apply_prepared_dependencies, ensure_temporal_outcome_alignment, lower_passive_prepared_effect,
-};
+use super::input::{ensure_temporal_outcome_alignment, lower_passive_prepared_effect};
 use super::reuse_admission::{resolve_evaluated_reuse_admission, EvaluatedReuseAdmission};
 
+#[cfg(test)]
 pub(crate) fn apply_prepared_evaluation_with_policy(
     graph: &mut SignalGraph,
     node: NodeId,
@@ -250,3 +249,6 @@ fn metadata_for_evaluated_application(
             reuse_origin: admission.decision.origin,
         })
 }
+
+#[cfg(test)]
+use super::input::apply_prepared_dependencies;

@@ -43,8 +43,4 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
     > {
         self.retained.readiness_delivery()
     }
-
-    pub(in crate::application_entry) fn retained(&self) -> Arc<WorthQueryOutputDemandSettlement> {
-        Arc::clone(&self.retained)
-    }
 }

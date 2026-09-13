@@ -19,6 +19,7 @@ impl SignalGraph {
         self.invalidation_performed_counters.snapshot()
     }
 
+    #[cfg(test)]
     pub(crate) fn invalidation_performed_work(
         &self,
     ) -> Vec<crate::data::proof::invalidation::progression::InvalidationWorkBindingAxes> {

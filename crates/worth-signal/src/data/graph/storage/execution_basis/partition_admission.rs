@@ -46,6 +46,7 @@ impl SignalExecutionBasis {
         ))
     }
 
+    #[cfg(test)]
     pub(crate) fn try_new_evaluation_partition(
         &self,
         work: &mut Work,

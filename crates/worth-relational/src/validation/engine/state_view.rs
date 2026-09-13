@@ -28,12 +28,6 @@ impl<'state> InvariantStateView<'state> {
         self.version_id
     }
 
-    pub(crate) fn touched_visible_entity_ids(
-        &self,
-    ) -> Option<Vec<crate::identity::data::EntityId>> {
-        self.touched_visible_entity_ids_with_budget(|_| true)
-    }
-
     pub(crate) fn touched_visible_entity_ids_with_budget(
         &self,
         mut charge: impl FnMut(usize) -> bool,
@@ -239,12 +233,6 @@ impl<'state> InvariantStateView<'state> {
     ) -> Option<VisibleRelationMetadata> {
         let partition = self.relation_partition_for_slot(partition_id, slot)?;
         self.relation_metadata_at(&partition.relation_arena, partition_id, slot)
-    }
-
-    pub(crate) fn touched_visible_relation_ids(
-        &self,
-    ) -> Option<Vec<crate::identity::data::RelationId>> {
-        self.touched_visible_relation_ids_with_budget(|_| true)
     }
 
     pub(crate) fn touched_visible_relation_ids_with_budget(

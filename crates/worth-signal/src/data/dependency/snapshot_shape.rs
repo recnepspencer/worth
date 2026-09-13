@@ -45,10 +45,6 @@ impl SnapshotShapeHandle {
         debug_assert!(index > 0);
         Self(NonZeroU32::new(index as u32))
     }
-
-    fn index(self) -> Option<usize> {
-        self.0.map(|index| index.get() as usize)
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]

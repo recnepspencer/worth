@@ -96,14 +96,6 @@ impl<T> DiagnosticHistory<T> {
         let _ = self.retained_charge.take();
         self.entries.remove(&position)
     }
-
-    pub(crate) fn clear(&mut self) {
-        let _ = self.retained_charge.take();
-        self.entries.clear();
-        self.retained_charge = ordered_index_charge::<u64, Arc<T>>(0)
-            .map(OnceLock::from)
-            .unwrap_or_default();
-    }
 }
 
 pub(crate) struct DiagnosticHistoryIter<'a, T> {

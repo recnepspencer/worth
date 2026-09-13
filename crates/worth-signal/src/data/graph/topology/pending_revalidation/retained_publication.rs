@@ -129,9 +129,9 @@ fn accounted<R>(outcome: RetainedMapMutationOutcome<R>) -> Result<R, SignalError
 fn map_mutation(denial: RetainedMapMutationDenial) -> SignalError {
     match denial {
         RetainedMapMutationDenial::Accounting(denial) => map_accounting(denial),
-        RetainedMapMutationDenial::PreparationRequired | RetainedMapMutationDenial::MissingKey => {
-            SignalError::EvaluationStorageUnavailable
-        }
+        RetainedMapMutationDenial::PreparationRequired => SignalError::EvaluationStorageUnavailable,
+        #[cfg(test)]
+        RetainedMapMutationDenial::MissingKey => SignalError::EvaluationStorageUnavailable,
     }
 }
 

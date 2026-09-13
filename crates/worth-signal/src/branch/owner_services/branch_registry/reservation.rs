@@ -137,6 +137,7 @@ impl<'a, S> SignalBranchReservation<'a, S> {
         self.install_cell(state, false)
     }
 
+    #[cfg(test)]
     pub(crate) fn install_fork_destination(
         self,
         state: S,

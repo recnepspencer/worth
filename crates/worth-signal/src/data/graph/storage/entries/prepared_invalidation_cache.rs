@@ -2,7 +2,6 @@
 use crate::data::aspect::{Aspect, AspectMask};
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
-use crate::data::handle::NodeId;
 use crate::data::output::PartitionSubscription;
 use crate::data::proof::invalidation::binding::ResolvedDependencyCause;
 use crate::logic::evaluation::EvaluationWork;
@@ -117,6 +116,7 @@ fn sift(scopes: &mut [(Aspect, PartitionSubscription)], mut root: usize, end: us
     }
 }
 impl SignalGraph {
+    #[cfg(test)]
     pub(crate) fn install_prepared_invalidation_cache(
         &mut self,
         node: NodeId,
@@ -134,3 +134,6 @@ impl SignalGraph {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+use crate::data::handle::NodeId;

@@ -39,6 +39,7 @@ impl SignalRetainedExecutionBasis {
         self._reservation.ledger().usage()
     }
 
+    #[cfg(test)]
     pub(crate) fn new_evaluation_partition(
         &self,
         work: &mut RetainedStoragePreparation,

@@ -139,9 +139,9 @@ fn map_version_mutation_denial(denial: RetainedMapMutationDenial) -> SignalError
         RetainedMapMutationDenial::Accounting(denial) => {
             crate::data::graph::runtime::graph::map_node_edit_accounting(denial)
         }
-        RetainedMapMutationDenial::PreparationRequired | RetainedMapMutationDenial::MissingKey => {
-            SignalError::EvaluationStorageUnavailable
-        }
+        RetainedMapMutationDenial::PreparationRequired => SignalError::EvaluationStorageUnavailable,
+        #[cfg(test)]
+        RetainedMapMutationDenial::MissingKey => SignalError::EvaluationStorageUnavailable,
     }
 }
 

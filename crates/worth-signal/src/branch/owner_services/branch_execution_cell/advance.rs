@@ -140,6 +140,8 @@ where
                 caller_unwind.resume()
             }
         };
+        self.counters
+            .record_diagnostic_publication(transaction.diagnostic_publication_work);
         SignalBranchCellWork {
             counters: &self.counters,
             movements: &self.movements,

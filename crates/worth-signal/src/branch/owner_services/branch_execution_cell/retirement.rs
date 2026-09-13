@@ -26,6 +26,7 @@ where
     T: Copy + Ord,
 {
     /// Consumes one owner-issued plan under its sole target-cell incarnation.
+    #[cfg(test)]
     pub(crate) fn retire_exact(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,

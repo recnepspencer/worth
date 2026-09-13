@@ -107,9 +107,9 @@ fn map_vector_mutation(denial: RetainedVectorMutationDenial) -> SignalError {
 fn map_map_mutation(denial: RetainedMapMutationDenial) -> SignalError {
     match denial {
         RetainedMapMutationDenial::Accounting(denial) => map_accounting(denial),
-        RetainedMapMutationDenial::PreparationRequired | RetainedMapMutationDenial::MissingKey => {
-            SignalError::SnapshotIndexUnavailable
-        }
+        RetainedMapMutationDenial::PreparationRequired => SignalError::SnapshotIndexUnavailable,
+        #[cfg(test)]
+        RetainedMapMutationDenial::MissingKey => SignalError::SnapshotIndexUnavailable,
     }
 }
 

@@ -18,14 +18,17 @@ pub(crate) struct SignalBranchSnapshotCellOutcome {
 }
 
 impl SignalBranchSnapshotCellOutcome {
+    #[cfg(test)]
     pub(crate) fn snapshot(&self) -> &SignalSnapshotV1 {
         &self.snapshot
     }
 
+    #[cfg(test)]
     pub(crate) fn observation(&self) -> &SignalBranchObservation {
         &self.observation
     }
 
+    #[cfg(test)]
     pub(crate) fn into_parts(self) -> (SignalSnapshotV1, SignalBranchObservation) {
         (self.snapshot, self.observation)
     }

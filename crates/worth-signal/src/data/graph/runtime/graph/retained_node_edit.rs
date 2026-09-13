@@ -112,6 +112,7 @@ impl<R> PreparedRetainedNodeEdit<R> {
         arena.retained_node_custody = custody;
         RetainedNodeEditOutcome::Installed {
             output: self.output,
+            #[cfg(test)]
             charge: self.charge,
         }
     }
@@ -121,6 +122,7 @@ impl<R> PreparedRetainedNodeEdit<R> {
 pub(crate) enum RetainedNodeEditOutcome<R> {
     Installed {
         output: R,
+        #[cfg(test)]
         charge: Charge,
     },
     Rejected {
@@ -333,6 +335,7 @@ fn map_mutation_denial(denial: RetainedVectorMutationDenial) -> RetainedNodeEdit
 
 fn map_capacity_denial(denial: RetainedVectorCapacityDenial) -> RetainedNodeEditDenial {
     match denial {
+        #[cfg(test)]
         RetainedVectorCapacityDenial::Accounting(denial) => {
             RetainedNodeEditDenial::Accounting(denial)
         }

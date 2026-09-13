@@ -202,6 +202,7 @@ where
         self.selected_branch_id
     }
 
+    #[cfg(test)]
     pub(super) fn close(&self) -> Result<(), SignalOwnerCloseDenial> {
         self.lifecycle
             .begin_explicit_close(self.runtime_instance_id)?;
@@ -252,6 +253,7 @@ where
         )
     }
 
+    #[cfg(test)]
     pub(super) fn live_count(&self) -> usize {
         self.registry.live_count()
     }

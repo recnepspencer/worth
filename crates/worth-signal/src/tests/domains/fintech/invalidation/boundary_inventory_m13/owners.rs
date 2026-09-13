@@ -258,9 +258,9 @@ fn phase_7_inventory_freezes_canonical_graph_owner_functions() {
             "node_dirty_partition_scope_payload",
             "node_pending_revalidation",
             "set_node_pending_cause_set_id",
-            "advance_node_dependency_revision",
             "replace_node_invalidation_cache",
             "install_node_dependency_revalidation",
+            "publish_node_cause_resolution",
             "publish_node_revalidation_resolution",
         ],
     );

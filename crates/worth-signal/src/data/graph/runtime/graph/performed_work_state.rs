@@ -60,6 +60,7 @@ impl PerformedWorkCaptureState {
         Arc::clone(&self.bindings)
     }
     /// Explicit diagnostic materialization of full performed bindings.
+    #[cfg(test)]
     pub(crate) fn snapshot(&self) -> Vec<InvalidationWorkBindingAxes> {
         let buffer = self
             .bindings

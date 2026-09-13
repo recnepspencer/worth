@@ -14,6 +14,7 @@ impl SignalGraph {
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn replace_dep_snapshot_materialized(
         &mut self,
         id: NodeId,

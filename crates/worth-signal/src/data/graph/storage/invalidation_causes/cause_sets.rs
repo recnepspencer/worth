@@ -7,7 +7,7 @@ mod slot_preparation;
 pub(crate) use retained_publication::{
     PreparedRetainedCauseStorePublication, RetainedCauseStorePublicationDraft,
 };
-pub(crate) use slot_preparation::{CauseSlotPreparation, PreparedCauseSlot};
+pub(crate) use slot_preparation::PreparedCauseSlot;
 mod reserved_fork;
 pub(crate) use normalization::NormalizedCauseSet;
 
@@ -162,6 +162,7 @@ impl CanonicalCauseSetStore {
             .ok_or_else(|| SignalError::invalid_input("unknown pending cause-set handle"))
     }
 
+    #[cfg(test)]
     pub(crate) fn replace_set(
         &mut self,
         current: PendingCauseSetId,

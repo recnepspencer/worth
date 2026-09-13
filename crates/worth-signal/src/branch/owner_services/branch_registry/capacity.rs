@@ -6,18 +6,22 @@ use super::{
 };
 
 impl<S> SignalBranchRegistry<S> {
+    #[cfg(test)]
     pub(crate) fn live_count(&self) -> usize {
         self.lock_state().live_count
     }
 
+    #[cfg(test)]
     pub(crate) fn reservation_count(&self) -> usize {
         self.lock_state().reservation_count
     }
 
+    #[cfg(test)]
     pub(crate) fn maximum_live_branches(&self) -> usize {
         self.maximum_live_branches
     }
 
+    #[cfg(test)]
     pub(crate) fn maximum_reservations(&self) -> usize {
         self.maximum_reservations
     }

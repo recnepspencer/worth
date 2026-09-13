@@ -9,8 +9,7 @@ pub(crate) use cause_aggregation::{
     changed_scopes_for_edge, reconcile_edge_cause, CauseAdmissionContext,
 };
 pub(crate) use dependency_admission::{
-    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedDirectCauseStores,
-    PreparedRetainedDirectCauseStores,
+    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedRetainedDirectCauseStores,
 };
 
 mod preparation_work;

@@ -51,7 +51,11 @@ impl DiagnosticsState {
         self.replay_events.back().map(|event| event.cursor)
     }
 
-    pub fn record_replay_event(&mut self, event: ReplayEvent) {
+    pub fn record_replay_event(&mut self, event: ReplayEvent) -> super::DiagnosticPublicationWork {
+        let mut work = super::DiagnosticPublicationWork {
+            recorded: 1,
+            evicted: 0,
+        };
         self.replay_events_by_branch
             .entry(event.branch_id)
             .or_default()
@@ -85,9 +89,11 @@ impl DiagnosticsState {
         let limit = self.installed_retention_budget.history_limit.max(1) * 32;
         while self.replay_events.len() > limit {
             if let Some(event) = self.replay_events.pop_front() {
+                work.evicted += 1;
                 self.replay_cursor_offset_base += 1;
                 self.remove_replay_event_from_index(&event);
             }
         }
+        work
     }
 }

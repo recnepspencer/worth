@@ -13,6 +13,7 @@ use super::{entry_handle, PersistentOrdMap, PersistentOrdMapStorage, SharedKey};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RetainedMapMutationDenial {
     PreparationRequired,
+    #[cfg(test)]
     MissingKey,
     Accounting(Denial),
 }
@@ -34,6 +35,7 @@ pub(crate) enum RetainedMapMutationOutcome<R> {
 impl<K: Clone + Ord + RetainedStorageMeasurement, V: Clone + RetainedStorageMeasurement>
     PersistentOrdMap<K, V>
 {
+    #[cfg(test)]
     pub(crate) fn edit_with_retained_charge<R>(
         &mut self,
         key: &K,

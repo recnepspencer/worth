@@ -1,14 +1,13 @@
-use super::retained_charge::{base_structure_charge, overlay_structure_charge};
-use super::{PersistentHashMap, PersistentHashMapStorage};
+use super::PersistentHashMap;
 use crate::data::retained_storage::{
-    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
-    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
+    RetainedStorageMeasurement, RetainedStoragePreparationDenial as Denial,
 };
 use std::hash::Hash;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RetainedHashMutationDenial {
     PreparationRequired,
+    #[cfg(test)]
     MissingKey,
     Accounting(Denial),
 }
@@ -22,14 +21,16 @@ impl From<Denial> for RetainedHashMutationDenial {
 /// Unaccounted preserves the actual mutation output. It is never a claim that
 /// an edit was rolled back; the enclosing owner must retain that distinction.
 #[derive(Debug)]
+#[cfg(test)]
 pub(crate) enum RetainedHashMutationOutcome<R> {
-    Accounted { output: R, charge: Charge },
+    Accounted { output: R },
     Unaccounted { output: R, denial: Denial },
 }
 
 impl<K: Clone + Eq + Hash + RetainedStorageMeasurement, V: Clone + RetainedStorageMeasurement>
     PersistentHashMap<K, V>
 {
+    #[cfg(test)]
     pub(crate) fn edit_with_retained_charge<R>(
         &mut self,
         key: &K,
@@ -44,6 +45,7 @@ impl<K: Clone + Eq + Hash + RetainedStorageMeasurement, V: Clone + RetainedStora
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn insert_with_retained_charge(
         &mut self,
         key: K,
@@ -56,6 +58,7 @@ impl<K: Clone + Eq + Hash + RetainedStorageMeasurement, V: Clone + RetainedStora
         self.update_retained_charge(&lookup, work, |map| map.insert(key, value))
     }
 
+    #[cfg(test)]
     pub(crate) fn remove_with_retained_charge(
         &mut self,
         key: &K,
@@ -64,6 +67,7 @@ impl<K: Clone + Eq + Hash + RetainedStorageMeasurement, V: Clone + RetainedStora
         self.update_retained_charge(key, work, |map| map.remove(key))
     }
 
+    #[cfg(test)]
     fn update_retained_charge<R>(
         &mut self,
         key: &K,
@@ -81,12 +85,13 @@ impl<K: Clone + Eq + Hash + RetainedStorageMeasurement, V: Clone + RetainedStora
         match updated {
             Ok(charge) => {
                 self.retained_charge = Some(charge);
-                Ok(RetainedHashMutationOutcome::Accounted { output, charge })
+                Ok(RetainedHashMutationOutcome::Accounted { output })
             }
             Err(denial) => Ok(RetainedHashMutationOutcome::Unaccounted { output, denial }),
         }
     }
 
+    #[cfg(test)]
     fn mutation_granule_charge(&self, key: &K, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
         match &self.storage {
@@ -116,3 +121,13 @@ impl<K: Clone + Eq + Hash + RetainedStorageMeasurement, V: Clone + RetainedStora
         }
     }
 }
+
+#[cfg(test)]
+use super::retained_charge::{base_structure_charge, overlay_structure_charge};
+#[cfg(test)]
+use super::PersistentHashMapStorage;
+#[cfg(test)]
+use crate::data::retained_storage::RetainedStoragePreparation as Preparation;
+
+#[cfg(test)]
+use crate::data::retained_storage::RetainedStorageCharge as Charge;

@@ -10,6 +10,7 @@ use crate::state::{
 use super::DiagnosticsState;
 
 impl DiagnosticsState {
+    #[cfg(test)]
     pub fn allocate_snapshot_meta(
         &mut self,
         policy: SignalRuntimePolicy,

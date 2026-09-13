@@ -3,14 +3,15 @@ use super::DiagnosticHistory;
 use super::DiagnosticsState;
 use crate::data::persistent_ord_map::PersistentOrdMap;
 use crate::data::retained_storage::{
-    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
-    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial,
+    RetainedStorageCharge as Charge, RetainedStoragePreparation as Preparation,
+    RetainedStoragePreparationDenial,
 };
 #[cfg(test)]
 use crate::state::SignalBranchId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum BranchCarrierChargeDenial {
+    #[cfg(test)]
     NotBranchCarrier,
     Storage(RetainedStoragePreparationDenial),
 }
@@ -53,6 +54,7 @@ impl DiagnosticsState {
 
     /// This is deliberately not a measurement of arbitrary mutable diagnostics.
     /// History-bearing state must use its owning growth accounting.
+    #[cfg(test)]
     pub(crate) fn retained_branch_carrier_charge(
         &self,
         work: &mut Preparation,
@@ -202,6 +204,7 @@ mod tests {
     }
 }
 
+#[cfg(test)]
 fn empty_history_charge<T>(
     values: &DiagnosticHistory<T>,
     work: &mut Preparation,
@@ -217,6 +220,7 @@ fn empty_history_charge<T>(
     }
 }
 
+#[cfg(test)]
 fn empty_map_charge<K: Clone + Ord, V: Clone>(
     values: &PersistentOrdMap<K, V>,
     work: &mut Preparation,
@@ -231,3 +235,6 @@ fn empty_map_charge<K: Clone + Ord, V: Clone>(
         .prepared_retained_charge()
         .map_err(|_| BranchCarrierChargeDenial::NotBranchCarrier)
 }
+
+#[cfg(test)]
+use crate::data::retained_storage::RetainedStorageMeasurement;

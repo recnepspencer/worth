@@ -20,6 +20,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    #[cfg(test)]
     pub(crate) fn restore_snapshot(
         &mut self,
         snapshot: &SignalSnapshotV1,

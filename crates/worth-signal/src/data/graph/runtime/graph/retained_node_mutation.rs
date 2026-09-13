@@ -80,11 +80,17 @@ impl SignalGraph {
             .map_err(map_edit)?;
         let prepared = match prepared {
             RetainedNodeEditPreparation::Ready(prepared) => prepared,
-            RetainedNodeEditPreparation::Rejected { denial, .. } => return Err(map_edit(denial)),
+            RetainedNodeEditPreparation::Rejected { output, denial } => {
+                drop(output);
+                return Err(map_edit(denial));
+            }
         };
         match prepared.install(&mut self.arena) {
             RetainedNodeEditOutcome::Installed { output, .. } => Ok(output),
-            RetainedNodeEditOutcome::Rejected { denial, .. } => Err(map_edit(denial)),
+            RetainedNodeEditOutcome::Rejected { output, denial } => {
+                drop(output);
+                Err(map_edit(denial))
+            }
         }
     }
 }

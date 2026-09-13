@@ -105,6 +105,7 @@ impl SignalBranchAdmissionReservation {
         lease
     }
 
+    #[cfg(test)]
     pub(crate) fn rebind_all(&mut self, branch_id: SignalBranchId) {
         self.binding
             .rebind_reserved_admitted(self.lease_ids.len(), self.branch_id, branch_id);

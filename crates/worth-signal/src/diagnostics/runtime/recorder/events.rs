@@ -8,11 +8,11 @@ pub(crate) fn record_transaction_semantic_event(
     detail: impl Into<String>,
     execution_record_id: Option<u64>,
     semantic_segment_id: Option<u64>,
-) {
+) -> crate::diagnostics::state::DiagnosticPublicationWork {
     if !graph.captures_observation_surface(
         crate::logic::transaction::SignalObservationSurface::ReplayDetail,
     ) {
-        return;
+        return Default::default();
     }
     let cursor = graph.diagnostics_state_mut().allocate_replay_cursor();
     let branch_id = graph.observe().current_branch().id;
@@ -31,7 +31,7 @@ pub(crate) fn record_transaction_semantic_event(
             None,
             None,
             Some(ReplayEventDetail::Message(detail.into())),
-        ));
+        ))
 }
 
 pub(crate) fn record_snapshot_event(

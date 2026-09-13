@@ -22,12 +22,9 @@ impl<T: Clone + Ord> PersistentOrdSet<T> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         self.values.len()
-    }
-
-    pub(crate) fn is_empty(&self) -> bool {
-        self.values.is_empty()
     }
 
     pub(crate) fn contains<Q>(&self, value: &Q) -> bool
@@ -46,14 +43,11 @@ impl<T: Clone + Ord> PersistentOrdSet<T> {
         self.values.remove(value).is_some()
     }
 
-    pub(crate) fn clear(&mut self) {
-        self.values.clear();
-    }
-
     pub(crate) fn iter(&self) -> impl Iterator<Item = &T> {
         self.values.keys()
     }
 
+    #[cfg(test)]
     pub(crate) fn ptr_eq(&self, other: &Self) -> bool {
         self.values.ptr_eq(&other.values)
     }

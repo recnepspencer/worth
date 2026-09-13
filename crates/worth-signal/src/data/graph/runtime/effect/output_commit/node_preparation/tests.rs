@@ -174,3 +174,4 @@ fn retained_lineage_stamp_consumes_the_callers_remaining_work() {
     })
     .unwrap();
 }
+use crate::data::handle::NodeId;

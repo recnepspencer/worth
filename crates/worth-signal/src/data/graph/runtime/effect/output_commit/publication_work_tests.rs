@@ -48,7 +48,7 @@ fn replaced_consumer_cause_handle_denies_before_combined_node_publication() {
     assert!(graph.pending_causes(consumer).unwrap().is_empty());
 }
 
-fn prepared(scope: &str) -> (SignalGraph, OutputCommitPacket) {
+fn prepared(scope: &str) -> (SignalGraph, Box<OutputCommitPacket>) {
     let mut graph = SignalGraph::new();
     let node = graph.node().produces_aspects(AspectMask::ALL).build();
     // A real settled consumer retains the published commit through its cause.

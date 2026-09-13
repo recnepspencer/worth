@@ -13,6 +13,12 @@ pub(crate) struct SignalRejectedConditionalEvaluation {
     storage: SignalEvaluationStorage,
 }
 
+impl SignalRejectedConditionalEvaluation {
+    pub(crate) fn release(self) {
+        drop(self.storage);
+    }
+}
+
 /// One candidate for the whole conditional attempt, including preparation.
 /// Observation and traversal remain with the existing partition. Resource
 /// admission must cover both roots before this ordinary persistent fork runs.

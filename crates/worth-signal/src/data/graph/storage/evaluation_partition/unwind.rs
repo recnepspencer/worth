@@ -33,6 +33,25 @@ pub(crate) enum SignalPartitionConditionalUnwindReason {
 }
 
 impl SignalPartitionConditionalUnwind {
+    /// Release the interrupted attempt before resuming the original panic.
+    pub(crate) fn release(self) {
+        let (reason, rejected) = self.into_parts();
+        match reason {
+            SignalPartitionConditionalUnwindReason::Execution {
+                counters,
+                observation,
+                cleanup,
+            } => {
+                drop((counters, observation, cleanup));
+            }
+            SignalPartitionConditionalUnwindReason::Observation { decision, cleanup } => {
+                drop((decision, cleanup));
+            }
+            SignalPartitionConditionalUnwindReason::Cleanup { completion } => drop(completion),
+        }
+        rejected.release();
+    }
+
     pub(super) fn new(
         reason: SignalPartitionConditionalUnwindReason,
         rejected: SignalRejectedConditionalEvaluation,

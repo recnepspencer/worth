@@ -1,5 +1,4 @@
 use super::DenseBitset;
-use crate::data::persistent_vector::RetainedVectorMutationDenial;
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStorageMeasurement,
     RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
@@ -10,10 +9,12 @@ use crate::data::retained_storage::{
 const WORD_CHARGE_VISITS: usize = 32;
 
 impl DenseBitset {
+    #[cfg(test)]
     pub(crate) fn prepared_retained_charge(&self) -> Result<Charge, RetainedVectorMutationDenial> {
         self.words.prepared_retained_charge()
     }
 
+    #[cfg(test)]
     pub(crate) fn prepare_retained_charge(
         &mut self,
         work: &mut Preparation,
@@ -72,3 +73,6 @@ impl RetainedStorageForkPreparation for DenseBitset {
         self.words.prepare_fork_charge(work)
     }
 }
+
+#[cfg(test)]
+use crate::data::persistent_vector::RetainedVectorMutationDenial;

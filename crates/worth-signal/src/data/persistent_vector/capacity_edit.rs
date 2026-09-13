@@ -1,12 +1,6 @@
 //! Staged replacement of a bounded persistent page under a retained ceiling.
-use super::{
-    PersistentVector, PersistentVectorStorage, RetainedVectorMutationDenial,
-    RetainedVectorMutationOutcome,
-};
-use crate::data::retained_storage::{
-    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
-    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial,
-};
+use super::{PersistentVector, PersistentVectorStorage, RetainedVectorMutationDenial};
+use crate::data::retained_storage::{RetainedStorageCharge as Charge, RetainedStorageMeasurement};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RetainedVectorStagingDenial {
@@ -16,11 +10,16 @@ pub(crate) enum RetainedVectorStagingDenial {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RetainedVectorCapacityDenial {
-    CapacityExhausted { maximum: Charge, required: Charge },
+    CapacityExhausted {
+        maximum: Charge,
+        required: Charge,
+    },
+    #[cfg(test)]
     Accounting(RetainedStoragePreparationDenial),
 }
 
 #[derive(Debug)]
+#[cfg(test)]
 pub(crate) enum RetainedVectorCapacityOutcome<R> {
     Installed {
         output: R,
@@ -65,6 +64,7 @@ impl<T: Clone + RetainedStorageMeasurement, const PAGE_LEN: usize> PersistentVec
     /// representation ceiling. Draft allocations and returned output require
     /// separate work/resource custody. Atomicity covers vector-owned storage,
     /// not external effects or shared interior mutation performed by `edit`.
+    #[cfg(test)]
     pub(crate) fn edit_with_retained_capacity<R>(
         &mut self,
         index: usize,
@@ -102,3 +102,11 @@ impl<T: Clone + RetainedStorageMeasurement, const PAGE_LEN: usize> PersistentVec
         })
     }
 }
+
+#[cfg(test)]
+use super::RetainedVectorMutationOutcome;
+#[cfg(test)]
+use crate::data::retained_storage::RetainedStoragePreparation as Preparation;
+
+#[cfg(test)]
+use crate::data::retained_storage::RetainedStoragePreparationDenial;

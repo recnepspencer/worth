@@ -7,7 +7,10 @@ where
     T: Copy + Ord,
 {
     #[cfg(test)]
-    pub(super) fn set_installation_work_budget_for_test(&self, maximum_visits: usize) {
+    pub(in crate::branch::owner_services::conditional_execution) fn set_installation_work_budget_for_test(
+        &self,
+        maximum_visits: usize,
+    ) {
         let owner = SignalOwner::upgrade(&self.owner).expect("test Signal owner remains available");
         let admission = owner.admit().expect("test Signal owner admits work");
         let cell = owner

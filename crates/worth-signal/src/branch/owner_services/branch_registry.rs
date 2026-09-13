@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::state::SignalBranchId;
 
-use super::branch_execution_cell::{SignalBranchCellAdmissionDenial, SignalBranchExecutionCell};
+use super::branch_execution_cell::SignalBranchExecutionCell;
 use super::counters::SignalOwnerServiceCounters;
 use super::lifecycle_state::{
     SignalOwnerAdmissionMismatch, SignalOwnerLifecycleIdentity, SignalOwnerLifecycleState,
@@ -37,18 +37,24 @@ pub(crate) enum SignalBranchRegistryDenial {
     ExpiredAdmission,
     DuplicateBranch(SignalBranchId),
     UnknownBranch(SignalBranchId),
-    LiveCapacityExhausted { maximum_live_branches: usize },
-    ReservationCapacityExhausted { maximum_reservations: usize },
+    LiveCapacityExhausted {
+        maximum_live_branches: usize,
+    },
+    ReservationCapacityExhausted {
+        maximum_reservations: usize,
+    },
     NameAlreadyReserved,
     NameAlreadyInstalled,
     RetirementInProgress(SignalBranchId),
     ExpiredRetirement(SignalBranchId),
+    #[cfg(test)]
     TargetCellDenied(SignalBranchCellAdmissionDenial),
     OwnerMetadataOrdering,
     OwnerReentry,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) enum SignalBranchRegistryPoisonRecovery {
     PreservedCanonicalMembership,
 }
@@ -244,6 +250,7 @@ impl<S> SignalBranchRegistry<S> {
         Ok(retirement)
     }
 
+    #[cfg(test)]
     pub(crate) fn poison_recovery(&self) -> Option<SignalBranchRegistryPoisonRecovery> {
         self.recovered_poison
             .load(Ordering::Acquire)
@@ -300,3 +307,6 @@ impl From<SignalOwnerAdmissionMismatch> for SignalBranchRegistryDenial {
         }
     }
 }
+
+#[cfg(test)]
+use super::branch_execution_cell::SignalBranchCellAdmissionDenial;

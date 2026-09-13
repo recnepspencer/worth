@@ -6,7 +6,7 @@ use crate::branch::{
     AdmittedSignalBranchBasis, SignalBranchAdmissionLease, SignalBranchObservation,
 };
 use crate::data::error::SignalError;
-use crate::state::{SignalBranchHandle, SignalSnapshotV1, SnapshotRestoreIntent};
+use crate::state::{SignalBranchHandle, SignalSnapshotV1};
 
 use super::super::runtime_state::SignalRuntime;
 use super::basis::{
@@ -21,6 +21,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    #[cfg(test)]
     pub(crate) fn current_branch_basis_artifact(&mut self) -> SignalBranchBasisArtifact {
         self.with_telemetry(|telemetry| telemetry.transaction.branch_basis_production_count += 1);
         let branch = self.graph.current_branch();
@@ -56,6 +57,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn snapshot_restore_branch_basis_artifact(
         &mut self,
         snapshot: &SignalSnapshotV1,
@@ -286,3 +288,6 @@ where
             })
     }
 }
+
+#[cfg(test)]
+use crate::state::SnapshotRestoreIntent;

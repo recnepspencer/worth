@@ -327,6 +327,7 @@ fn map_managed_reference_registry_denial(
         SignalBranchRegistryDenial::RetirementInProgress(_) => {
             ManagedSignalBranchReferenceAdmissionDenial::BranchRetirementInProgress
         }
+        #[cfg(test)]
         SignalBranchRegistryDenial::TargetCellDenied(_) => {
             ManagedSignalBranchReferenceAdmissionDenial::BranchLifecycleEnded
         }
@@ -361,6 +362,7 @@ pub(in crate::branch::owner_services) fn map_basis_registry_denial(
         SignalBranchRegistryDenial::RetirementInProgress(_) => {
             SignalBranchBasisObservationDenial::RetirementInProgress { branch_id }
         }
+        #[cfg(test)]
         SignalBranchRegistryDenial::TargetCellDenied(denial) => {
             crate::branch::owner_services::branch_execution_cell::basis::map_basis_cell_denial(
                 denial, branch_id,

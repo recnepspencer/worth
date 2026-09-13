@@ -62,7 +62,6 @@ fn invalidation_authority_stays_component_owned_and_responsibility_specific() {
         "node_dirty_partition_scope_payload(",
         "node_pending_revalidation(",
         "set_node_pending_cause_set_id(",
-        "advance_node_dependency_revision(",
         "replace_node_invalidation_cache(",
         "install_node_dependency_revalidation(",
     ] {

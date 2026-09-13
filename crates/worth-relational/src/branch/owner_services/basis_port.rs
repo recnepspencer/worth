@@ -15,13 +15,6 @@ pub struct RelationalBranchBasisPort {
 }
 
 impl RelationalBranchBasisPort {
-    pub(crate) fn from_runtime(runtime: &crate::runtime::RelationalRuntime) -> Self {
-        Self::new(RelationalOwnerServiceBinding::new(
-            runtime.state_binding(),
-            runtime.owner_binding(),
-        ))
-    }
-
     pub(super) fn new(owner: RelationalOwnerServiceBinding) -> Self {
         Self { owner }
     }

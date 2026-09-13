@@ -3,8 +3,7 @@ use crate::data::graph::subscription_candidates;
 use crate::logic::evaluation::EvaluationWork;
 mod publication;
 pub(crate) use publication::{
-    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedDirectCauseStores,
-    PreparedRetainedDirectCauseStores,
+    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedRetainedDirectCauseStores,
 };
 
 use crate::data::aspect::AspectMask;
@@ -12,7 +11,6 @@ use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
-use crate::data::proof::invalidation::binding::ResolvedDependencyCause;
 use crate::data::proof::invalidation::output_commit::ProducedAspectDelta;
 
 use super::{changed_scopes_for_edge, reconcile_edge_cause, CauseAdmissionContext};

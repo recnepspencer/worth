@@ -118,10 +118,12 @@ where
         &mut self.state
     }
 
+    #[cfg(test)]
     pub(crate) fn head_generation(&self) -> u64 {
         self.head_generation
     }
 
+    #[cfg(test)]
     pub(crate) fn restore_snapshot_id(&self) -> Option<SignalSnapshotId> {
         self.restore_snapshot_id
     }

@@ -30,8 +30,11 @@ pub use crate::branch::{
     SignalBranchRetirementBatchDenial, SignalBranchRetirementBatchReceipt,
     SignalBranchRetirementDenial, SignalBranchRetirementReason, SignalBranchRetirementReceipt,
 };
+#[cfg(test)]
 pub use basis::{
     bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
+};
+pub use basis::{
     SignalBranchBasis, SignalBranchBasisArtifact, SignalBranchBasisDenial,
     SignalBranchBasisIdentity, SignalBranchBasisReady, SignalBranchBasisValidationOutcome,
     SignalBranchHeadPosture, SignalBranchRestorePosture, StaleSignalBranchBasisArtifact,

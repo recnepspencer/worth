@@ -1,14 +1,10 @@
-use super::super::retained_charge::SignalExecutionBasisChargeDenial;
 use super::SignalEvaluationStorage;
-use crate::data::retained_storage::{
-    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
-    RetainedStoragePreparation as Preparation,
-};
 
 impl SignalEvaluationStorage {
     /// Explicit cold preparation of mutable roots, including full diagnostics.
     /// Excludes inline storage and other partition owners. Denial can prepare
     /// child metadata without changing semantics. Never a post-execution scan.
+    #[cfg(test)]
     pub(in crate::data::graph) fn prepare_mutable_heap_charge(
         &mut self,
         work: &mut Preparation,
@@ -56,3 +52,11 @@ impl SignalEvaluationStorage {
             .checked_add(diagnostics.prepare_retained_heap_charge(work)?)?)
     }
 }
+
+#[cfg(test)]
+use super::super::retained_charge::SignalExecutionBasisChargeDenial;
+#[cfg(test)]
+use crate::data::retained_storage::{
+    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+    RetainedStoragePreparation as Preparation,
+};

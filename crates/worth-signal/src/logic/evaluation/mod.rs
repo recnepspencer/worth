@@ -17,6 +17,7 @@ pub(crate) use effect::{
     EvaluationEffect, PendingDependencySnapshot, PreparedApplyResult, PreviousArtifactWarmSnapshot,
 };
 pub(crate) use engine::apply_prepared_evaluation_after_dependencies_with_policy;
+#[cfg(test)]
 pub(crate) use engine::apply_prepared_evaluation_with_policy;
 pub(crate) use engine::collect_effect_dependency_inputs_iter;
 pub use engine::EvaluationExecutionMetadata;
